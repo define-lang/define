@@ -153,7 +153,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "enclosing_quality_name": "position<local_box>",
             "triggered_quality_name": _MID,
             "line": 7,
-            "column": 9,
+            "column": 20,
             "file_path": "mid.dfn",
         },
         {
@@ -161,7 +161,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 7,
-            "column": 9,
+            "column": 20,
             "file_path": "mid.dfn",
         },
         {

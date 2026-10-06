@@ -54,7 +54,7 @@ class DestructionContractsGenerator:
         contribution = connection.contribution
         if contribution is None:
             return
-        yield from self._work.referenced_modules(contribution)
+        yield from self._work.referenced_modules(contribution.work)
 
     def generate(
         self,
@@ -101,12 +101,12 @@ class DestructionContractsGenerator:
                 if contribution is not None:
                     if kind == template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS:
                         statements = self._work.destructor_statements(
-                            contribution, from_contract_particle=True
+                            contribution.work, from_contract_particle=True
                         )
                     else:
                         statements = self._work.destroy_statements(
-                            contribution,
-                            connection.callee_destruction.destruction_fact.destruction.destroying_action,
+                            contribution.work,
+                            connection.callee_destruction.destruction_fact.destroying_definition.typed_name,
                             from_contract_particle=True,
                         )
                 if forwarded or statements:
@@ -140,8 +140,11 @@ class DestructionContractsGenerator:
         connection: destruction_contract.DestructionConnection,
     ) -> list[tuple[str, ast.PositionReference | None]]:
         forwarded: list[tuple[str, ast.PositionReference | None]] = []
+        contribution = connection.contribution
+        if contribution is None:
+            return forwarded
         callee_position = connection.callee_destruction.destruction_fact.destroyed_position_in_destroyer
-        for destruction in connection.forwarded_destructions:
+        for destruction in contribution.caller_particle_destructions:
             position = destruction.destruction_fact.destroyed_position_in_destroyer
             # A caller can discover a contracted child of a particle already
             # covered by the callee's contract. Forward through that callee

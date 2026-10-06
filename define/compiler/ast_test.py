@@ -803,6 +803,34 @@ class TestWithPrefix:
         )
 
 
+class TestWithoutPrefix:
+    def test_removes_prefix_typed_names(self):
+        reference = _position_reference_for(
+            "position<box>::action</b>::position</x>::position</y>"
+        )
+        prefix = _position_reference_for("position<box>::action</b>")
+        result = reference.without_prefix(prefix)
+        assert result.source_chained_name == "position</x>::position</y>"
+        assert result.canonical_chained_name_tuple == (
+            _position_reference_for(
+                "position</x>::position</y>"
+            ).canonical_chained_name_tuple
+        )
+
+    def test_preserves_subclass_and_location(self):
+        reference = _position_reference_for("position<box>::position</x>")
+        prefix = _position_reference_for("position<box>")
+        result = reference.without_prefix(prefix)
+        assert isinstance(result, ast.PositionReference)
+        assert result.location == reference.location
+
+    def test_inverts_with_prefix(self):
+        inner = _position_reference_for("position</x>")
+        prefix = _position_reference_for("position<box>::position</wrap>")
+        result = inner.with_prefix(prefix).without_prefix(prefix)
+        assert result.canonical_chained_name_tuple == inner.canonical_chained_name_tuple
+
+
 def _action_typed_name(path: str) -> ast.GlobalTypedNameReference:
     fqun = _make_fqun("my_lib", authority="my.domain.com")
     return ast.GlobalTypedNameReference(

@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 import msgspec
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph.destruction import (
-    destruction_contract,
-)
 
 if TYPE_CHECKING:
     from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 
 # Repeated executions of the same action must remain distinct while nested
@@ -28,14 +28,9 @@ class ActionExecution(msgspec.Struct, eq=False):
 
 
 class Destruction(msgspec.Struct):
-    """Known Destructors, contract contributions, and particle destructions."""
+    """A Simultaneous Transitive Destruction the action performs."""
 
-    work: destruction_contract.KnownDestructionWork = msgspec.field(
-        default_factory=destruction_contract.KnownDestructionWork
-    )
-    contract_destructions: list[destruction_contract.PropagatedDestruction] = (
-        msgspec.field(default_factory=list)
-    )
+    contribution: destruction_contract.DestructionContribution
 
 
 class GuaranteedParticleDestructors(msgspec.Struct):

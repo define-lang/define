@@ -48,10 +48,8 @@ py_library(
         "//define/compiler/validator/reference_graph/callee_execution:callee_execution_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
-        "//define/compiler/validator/reference_graph/destruction:destroyed_particles",
         "//define/compiler/validator/reference_graph/destruction:destroyer",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
-        "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",
         "//define/compiler/validator/reference_graph/destruction:destructor_guarantees",
         "//define/compiler/validator/reference_graph/destruction:guaranteed_particle_destruction",
         "//define/compiler/validator/reference_graph/particles:particle_info",
@@ -208,6 +206,7 @@ py_library(
     name = "reference_graph_validation_state",
     srcs = ["reference_graph_validation_state.py"],
     visibility = [
+        "//define/compiler/validator/reference_graph/callee_execution:__pkg__",
         "//define/compiler/validator/reference_graph/destruction:__pkg__",
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
     ],

@@ -10,18 +10,15 @@ if TYPE_CHECKING:
     from define.compiler import ast, chained_name
 
 
-class DirectDestruction(msgspec.Struct, frozen=True, eq=False):
-    """The destruction of one directly destroyed position, which also destroys every particle in its transitive child positions."""
-
-    directly_destroyed_position: ast.PositionReference
-    destroying_action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
-    is_automatic: bool
-
-
 class DestructionFact(msgspec.Struct, frozen=True, eq=False):
-    """Identifies the destruction of one specific particle."""
+    """That one specific particle was destroyed, and by which destruction."""
 
-    destruction: DirectDestruction
+    destroying_definition: ast.ActionDefinition
+    # The position the Destroy statement or Automatic Destruction named, whose
+    # destruction also destroyed every particle in its transitive child
+    # positions.
+    directly_destroyed_position: ast.PositionReference
+    is_automatic: bool
     destroyed_position_in_destroyer: ast.PositionReference
 
 
@@ -71,13 +68,39 @@ class KnownDestructionWork(msgspec.Struct):
             self.destructors or self.guaranteed_particle_destructors or self.positions
         )
 
+    def extend(self, other: KnownDestructionWork):
+        """Add the work of ``other``, a destruction of other particles at the same moment, after this work."""
+        self.destructors.extend(other.destructors)
+        self.guaranteed_particle_destructors.extend(
+            other.guaranteed_particle_destructors
+        )
+        self.positions.extend(other.positions)
 
-class DestructionConnection(msgspec.Struct):
-    """Contributions supplied or forwarded to one callee destruction."""
 
-    callee_destruction: PropagatedDestruction
-    # Positions are from the perspective of the particle the callee destroyed.
-    contribution: KnownDestructionWork | None = None
-    forwarded_destructions: list[PropagatedDestruction] = msgspec.field(
+class DestructionContribution(msgspec.Struct):
+    """What one action adds to the generated code of one Simultaneous Transitive Destruction."""
+
+    work: KnownDestructionWork = msgspec.field(default_factory=KnownDestructionWork)
+    # The destructions of particles from this action's caller, each in a
+    # Destruction Contract through which the callers add what they know.
+    caller_particle_destructions: list[PropagatedDestruction] = msgspec.field(
         default_factory=list
     )
+
+    def has_contribution(self) -> bool:
+        """Return whether this action adds anything to the destruction."""
+        return self.work.has_work() or bool(self.caller_particle_destructions)
+
+    def extend(self, other: DestructionContribution):
+        """Add the contribution of ``other``, to a destruction of other particles at the same moment, after this contribution."""
+        self.work.extend(other.work)
+        self.caller_particle_destructions.extend(other.caller_particle_destructions)
+
+
+class DestructionConnection(msgspec.Struct):
+    """What a caller adds to one callee destruction."""
+
+    callee_destruction: PropagatedDestruction
+    # Positions in its work are from the perspective of the particle the
+    # callee destroyed. None when the caller adds nothing.
+    contribution: DestructionContribution | None = None

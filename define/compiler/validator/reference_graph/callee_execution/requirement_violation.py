@@ -27,6 +27,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
     from define.compiler import ast
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 
 class _AutoDestruction(msgspec.Struct, frozen=True):
@@ -116,16 +119,18 @@ def direct_destructor(
     definition: ast.QualityDefinition,
     full_caller_chain: ast.PositionReference,
     occupant: particle_info.ParticleInfo | None,
-    destructor: action_contract.Destructor,
+    acting_on_position: ast.PositionReference,
+    destroyed_particle: particle_info.ParticleInfo,
+    action_assignment: action_contract.ActionAssignment,
     auto_destruction_target: ast.PositionReference | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
-    """Build the diagnostic for an unmet requirement of a destructor this body fires."""
+    """Build the diagnostic for an unmet requirement of a destructor this body fires on ``destroyed_particle``, in ``acting_on_position``."""
     enclosing_fqun = definition.typed_name.name_content.fqun
     definition_name = definition.typed_name.source_typed_name
     destructor_name = req.enclosing_action.typed_name.source_typed_name
     position_name = full_caller_chain.source_form_in_universe(enclosing_fqun)
     if auto_destruction_target is None:
-        location = destructor.position.location
+        location = acting_on_position.location
         auto_destruction = None
     else:
         location = auto_destruction_target.location
@@ -140,11 +145,11 @@ def direct_destructor(
         # The destructor is assigned when the particle is created, so its assignment
         # and origin lead; auto-destruction (if any) happens at block end, just before
         # the destruction that fires the destructor.
-        destructor.action_assignment().propagation_step(),
+        action_assignment.propagation_step(),
         action_contract.PropagationStep(
-            location=destructor.origin_position.location,
+            location=destroyed_particle.origin_position.location,
             kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
-            enclosing_quality_name=destructor.position.source_form_in_universe(
+            enclosing_quality_name=acting_on_position.source_form_in_universe(
                 enclosing_fqun
             ),
             triggered_quality_name=None,
@@ -185,8 +190,7 @@ def contract_destructor(
     resolved_position: ast.PositionReference,
     occupancy: position_occupancy.ChildOccupancy,
     definition: ast.QualityDefinition,
-    destroying_definition: ast.ActionDefinition,
-    destruction_contract: action_contract.DestructionContract,
+    destruction_fact: destruction_contract.DestructionFact,
     propagation_steps: Iterable[action_contract.PropagationStep],
     particle_position: ast.PositionReference,
     particle: particle_info.ParticleInfo,
@@ -198,10 +202,10 @@ def contract_destructor(
     destruction_requirement = msgspec.structs.replace(
         propagated_requirement,
         position=propagated_requirement.position.in_caller(
-            destruction_contract.propagated_destruction.destruction_fact.destroyed_position_in_destroyer
+            destruction_fact.destroyed_position_in_destroyer
         ),
-        inferred_at=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.location,
-        enclosing_action=destroying_definition,
+        inferred_at=destruction_fact.directly_destroyed_position.location,
+        enclosing_action=destruction_fact.destroying_definition,
         propagated_from=propagated_requirement,
     )
     position_name = resolved_position.source_form_in_universe(enclosing_fqun)
@@ -228,14 +232,14 @@ def contract_destructor(
     # happens after every trigger hop and just before the destructor fires (the
     # same placement direct_destructor uses).
     auto_step: list[action_contract.PropagationStep] = []
-    if destruction_contract.propagated_destruction.destruction_fact.destruction.is_automatic:
+    if destruction_fact.is_automatic:
         auto_step = _auto(
             _AutoDestruction(
-                local_position_name=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.source_form_in_universe(
+                local_position_name=destruction_fact.directly_destroyed_position.source_form_in_universe(
                     enclosing_fqun
                 ),
-                containing_definition_name=destruction_contract.propagated_destruction.destruction_fact.destruction.destroying_action.source_typed_name,
-                location=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.location,
+                containing_definition_name=destruction_fact.destroying_definition.typed_name.source_typed_name,
+                location=destruction_fact.directly_destroyed_position.location,
             )
         )
     steps = [

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import typing
 
-import msgspec
-
 from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.destruction import destruction_contract
@@ -19,16 +17,16 @@ if typing.TYPE_CHECKING:
     )
 
 
-class UnexpandedDestruction(msgspec.Struct, frozen=True):
-    """What a callee left at a child position, which the action never expanded."""
-
-    position: ast.PositionReference
-    # The call that runs the Destructors of what the callee left here,
-    # NOTHING, or EXPAND when destroying it has to expand it.
-    on_destruction: (
-        destruction_contract.RunGuaranteedParticleDestructors
-        | action_contract.OnDestruction
-    )
+# What a callee left at a child position that the action never expanded: the
+# call that runs its Destructors, NOTHING, or EXPAND when destroying it has to
+# expand it.
+type UnexpandedDestruction = (
+    destruction_contract.RunGuaranteedParticleDestructors
+    | action_contract.OnDestruction
+)
+# What destroying a particle finds in one of its child positions: the particle
+# there, or what a callee left there that the action never expanded.
+type FoundInChildPosition = particle_info.ParticleInfo | UnexpandedDestruction
 
 
 @typing.final
@@ -51,7 +49,7 @@ class DestroyedParticles:
         self,
         position: ast.PositionReference,
         parent_particle: particle_info.ParticleInfo,
-    ) -> particle_info.ParticleInfo | UnexpandedDestruction | None:
+    ) -> FoundInChildPosition | None:
         """Return the particle in ``position``, a child position of ``parent_particle``, or what a callee left there that the action never expanded, or None when nothing there is destroyed."""
         # A particle from the caller is never in a map, so nothing below it
         # was left unexpanded.
@@ -59,34 +57,7 @@ class DestroyedParticles:
             unexpanded = self._unexpanded_destruction(position)
             if unexpanded is not None:
                 return unexpanded
-        return self._particle_destroyed_at(position)
-
-    def particle_to_destroy_or_destructors_call_at(
-        self,
-        position: ast.PositionReference,
-        parent_particle: particle_info.ParticleInfo,
-    ) -> (
-        particle_info.ParticleInfo
-        | destruction_contract.RunGuaranteedParticleDestructors
-        | None
-    ):
-        """Return what destroying ``parent_particle`` finds in ``position``, one of its child positions: the particle to destroy there, expanding what a callee left when it has to be expanded, the call that runs the Destructors of what a callee left, or None when nothing there needs anything."""
-        found = self.particle_or_unexpanded_destruction_at(position, parent_particle)
-        if not isinstance(found, UnexpandedDestruction):
-            return found
-        on_destruction = found.on_destruction
-        if on_destruction == action_contract.OnDestruction.NOTHING:
-            return None
-        if on_destruction == action_contract.OnDestruction.EXPAND:
-            # Reading the particle expands what the callee left there. Only a
-            # particle has to be expanded to be destroyed, and the particle
-            # above it is not in error.
-            return typing.cast(
-                "particle_info.ParticleInfo", self._particle_destroyed_at(position)
-            )
-        return typing.cast(
-            "destruction_contract.RunGuaranteedParticleDestructors", on_destruction
-        )
+        return self.particle_destroyed_at(position)
 
     def child_names_and_destructors(
         self, qualities: tuple[ast.GlobalTypedNameReference, ...]
@@ -114,7 +85,7 @@ class DestroyedParticles:
                     child_names.append((quality, interface_position.typed_name))
         return child_names, destructors
 
-    def _particle_destroyed_at(
+    def particle_destroyed_at(
         self, position: ast.PositionReference
     ) -> particle_info.ParticleInfo | None:
         """Return the particle a destruction destroys in ``position``, expanding what a callee left there, or None."""
@@ -134,19 +105,14 @@ class DestroyedParticles:
             return None
         particles, left_here = left
         if left_here is None:
-            return UnexpandedDestruction(
-                position, action_contract.OnDestruction.NOTHING
-            )
+            return action_contract.OnDestruction.NOTHING
         if left_here.on_destruction != action_contract.OnDestruction.RUN_DESTRUCTORS:
-            return UnexpandedDestruction(position, left_here.on_destruction)
-        return UnexpandedDestruction(
-            position,
-            destruction_contract.RunGuaranteedParticleDestructors(
-                position=position,
-                action=particles.action,
-                position_in_action=typing.cast(
-                    "chained_name.PositionReferenceTuple",
-                    left_here.guaranteed_particle_destructors_position,
-                ),
+            return left_here.on_destruction
+        return destruction_contract.RunGuaranteedParticleDestructors(
+            position=position,
+            action=particles.action,
+            position_in_action=typing.cast(
+                "chained_name.PositionReferenceTuple",
+                left_here.guaranteed_particle_destructors_position,
             ),
         )

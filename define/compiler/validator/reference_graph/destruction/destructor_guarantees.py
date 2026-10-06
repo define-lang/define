@@ -15,6 +15,12 @@ if typing.TYPE_CHECKING:
     )
 
 
+# TODO: Consider a spec change that forbids Destructors from having empty or
+# unset requirements on their contracted positions. Today two Destructors on
+# one particle can require opposite states of a position whose state comes
+# from the caller. Validating them one at a time then reports the second
+# against the state the first's requirement made the action assume, and a
+# contract cannot record both requirements on one position.
 def check_destructor_guarantees(
     guarantees: dict[
         chained_name.PositionReferenceTuple,

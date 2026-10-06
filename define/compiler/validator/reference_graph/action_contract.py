@@ -416,7 +416,7 @@ class ChildState(msgspec.Struct, frozen=True):
 class DestructionContract(msgspec.Struct, frozen=True):
     """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
 
-    Callers higher in the stack use this to verify destructors they attach
+    Callers higher in the stack use this to validate destructors they attach
     that the destroying action could not see.
     """
 
@@ -424,38 +424,31 @@ class DestructionContract(msgspec.Struct, frozen=True):
     # The position in the shared snapshot stays fixed when a caller expresses
     # the particle's contracted origin from its own perspective.
     position_in_child_state: chained_name.ChainedNameTuple
-    # Verification belongs to a particle, not just a quality: different child
+    # Validation belongs to a particle, not just a quality: different child
     # particles can have the same Destructor assigned to them.
-    verified_destructors: quality_assignment.QualityAssignments
+    validated_destructors: quality_assignment.QualityAssignments
 
 
 @dataclass(frozen=True, slots=True)
 class DestructionContracts:
     """Contracts for particles sharing destruction-time state and propagation history."""
 
-    particles: list[DestructionContract] = field(default_factory=list, init=False)
-    # Callers repeatedly need membership checks while verifying child positions.
+    # Particles destroyed together share their destruction-time occupancy.
+    child_state: ChildState
+    particles: list[DestructionContract]
+    # Callers repeatedly need membership checks while validating child positions.
     positions: set[chained_name.ChainedNameTuple] = field(
         default_factory=set, init=False
     )
-    # Particles destroyed together share their destruction-time occupancy.
-    child_state: ChildState
-    # The trigger hops, in execution order, from the verifying definition's
+    # The trigger hops, in execution order, from the validating definition's
     # immediate callee down to the destroying action must remain available for
     # diagnostics without copying every earlier hop during propagation.
     propagation: PropagationHistory | None = None
 
-    def append(self, contract: DestructionContract):
-        """Add a particle's Destruction Contract to this collection."""
-        self.particles.append(contract)
-        self.positions.add(contract.position_in_child_state)
-
-    def child_occupancy(
-        self, contract: DestructionContract, position: chained_name.ChainedNameTuple
-    ) -> position_occupancy.ChildOccupancy | None:
-        """Look up child state relative to this contract's destroyed particle."""
-        return self.child_state.occupancy.get(
-            chained_name.with_prefix(position, contract.position_in_child_state)
+    def __post_init__(self):
+        """Index the positions of the destroyed particles."""
+        self.positions.update(
+            contract.position_in_child_state for contract in self.particles
         )
 
     def propagation_steps(self) -> Iterator[PropagationStep]:
@@ -481,21 +474,6 @@ class DestructionContracts:
                 action_assignment=None,
             )
         return requirement
-
-
-class Destructor(msgspec.Struct, frozen=True):
-    """One destructor paired with the position on which it triggers."""
-
-    destructor: ast.GlobalTypedNameReference
-    position: ast.PositionReference
-    origin_position: ast.PositionReference
-
-    def action_assignment(self) -> ActionAssignment:
-        """Return the destructor assignment used in diagnostics."""
-        return ActionAssignment(
-            quality=self.destructor,
-            assigned_to_position_name=self.origin_position.typed_names[-1],
-        )
 
 
 class ActionContract(msgspec.Struct, frozen=True):

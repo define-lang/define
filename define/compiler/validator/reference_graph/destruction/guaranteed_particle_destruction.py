@@ -20,6 +20,8 @@ from define.compiler.validator.reference_graph.destruction import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
@@ -44,7 +46,10 @@ class GuaranteedParticleDestruction(msgspec.Struct):
 def guaranteed_particle_destruction(
     definition: ast.ActionDefinition,
     transitive_implied_qualities: quality_assignment.QualityAssignments,
-    destroyed_particles: destroyed_particles.DestroyedParticles,
+    definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        validation_result.DefinitionValidationResult,
+    ],
     validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     tracker: particle_tracker.ParticleTracker,
 ) -> GuaranteedParticleDestruction:
@@ -53,7 +58,10 @@ def guaranteed_particle_destruction(
     Judged from the action's final state.
     """
     return _GuaranteedParticleDestructionBuilder(
-        definition, destroyed_particles, validation_state, tracker
+        definition,
+        destroyed_particles.DestroyedParticles(tracker, definition_results),
+        validation_state,
+        tracker,
     ).build(transitive_implied_qualities)
 
 
@@ -150,7 +158,7 @@ class _GuaranteedParticleDestructionBuilder:
     def _on_destruction(
         self,
         position: ast.PositionReference,
-        found: particle_info.ParticleInfo | destroyed_particles.UnexpandedDestruction,
+        found: destroyed_particles.FoundInChildPosition,
         position_in_action: chained_name.PositionReferenceTuple,
         destruction: GuaranteedParticleDestruction,
     ) -> (
@@ -163,11 +171,11 @@ class _GuaranteedParticleDestructionBuilder:
         each particle below it, unless it takes nothing; a method that runs
         Destructors is added only for what takes RUN_DESTRUCTORS.
         """
-        if isinstance(found, destroyed_particles.UnexpandedDestruction):
+        if not isinstance(found, particle_info.ParticleInfo):
             # What a callee left that it could not decide stays EXPAND here
             # without being expanded: this action's state below it is the
             # callee's, so deciding again would only repeat the callee's work.
-            return found.on_destruction
+            return found
         if found.source is particle_info.ParticleSource.CALLER:
             # A particle from the caller is never in a map: a caller always
             # applies its Guarantee, so destroying it always takes EXPAND.

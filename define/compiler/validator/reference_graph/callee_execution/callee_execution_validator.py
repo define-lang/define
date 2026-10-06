@@ -8,18 +8,23 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics
+from define.compiler.validator.reference_graph.callee_execution import (
+    callee_execution,
+)
+from define.compiler.validator.reference_graph.destruction import (
+    destruction_contract_validator,
+)
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler import chained_name
-    from define.compiler.validator import scope_tracker
+    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import (
         action_contract,
         action_requirement_validator,
-    )
-    from define.compiler.validator.reference_graph.callee_execution import (
-        callee_execution,
+        reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.dead_code import (
         dead_constraint_validator,
@@ -27,7 +32,6 @@ if typing.TYPE_CHECKING:
     )
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
-        destruction_contract_validator,
     )
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
@@ -50,11 +54,15 @@ class CalleeExecutionValidator:
     def __init__(
         self,
         definition: ast.ActionDefinition,
+        definition_results: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+            validation_result.DefinitionValidationResult,
+        ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
         requirement_validator: action_requirement_validator.ActionRequirementValidator,
         dead_constraint_validator: dead_constraint_validator.DeadConstraintValidator,
         dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
-        destruction_contract_validator: destruction_contract_validator.DestructionContractValidator,
     ):
         """Validate callees of ``definition`` against the state ``tracker`` holds."""
         self._definition = definition
@@ -62,7 +70,11 @@ class CalleeExecutionValidator:
         self._requirement_validator = requirement_validator
         self._dead_constraint_validator = dead_constraint_validator
         self._dead_value_write_validator = dead_value_write_validator
-        self._destruction_contract_validator = destruction_contract_validator
+        self._destruction_contract_validator = (
+            destruction_contract_validator.DestructionContractValidator(
+                definition, definition_results, validation_state, tracker
+            )
+        )
 
     def validate(
         self,
@@ -105,9 +117,16 @@ class CalleeExecutionValidator:
             )
         )
         destruction_result = self._destruction_contract_validator.validate(
-            contract.destruction_contracts, action_chain, scope
+            contract.destruction_contracts, action_chain
         )
-        validation_diagnostics.extend(destruction_result.diagnostics)
+        # Validating a Destructor can record a requirement that makes this
+        # action assume a particle is in a position. A walk that ran after
+        # that would find the assumed particle and treat it as destroyed, so
+        # the Destructors are validated only after every walk is done.
+        for destructor_execution in destruction_result.destructor_executions:
+            validation_diagnostics.extend(
+                self._validate_destructor_in_callee(destructor_execution, scope)
+            )
         occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
             contract,
@@ -123,6 +142,102 @@ class CalleeExecutionValidator:
             destruction_contracts=destruction_result.propagated_contracts,
             diagnostics=validation_diagnostics,
         )
+
+    def _validate_destructor_in_callee(
+        self,
+        execution: callee_execution.DestructorInCalleeExecution,
+        scope: scope_tracker.ScopeTracker,
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate a Destructor that ran when the callee destroyed its particle, as though it were running at the moment of destruction."""
+        validation_diagnostics = self._validate_destructor_occupancy_requirements(
+            execution, scope
+        )
+        validation_diagnostics.extend(
+            self._validate_destructor_value_requirements(execution)
+        )
+        return validation_diagnostics
+
+    def _validate_destructor_occupancy_requirements(
+        self,
+        execution: callee_execution.DestructorInCalleeExecution,
+        scope: scope_tracker.ScopeTracker,
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate the occupancy requirements of a Destructor that ran when the callee destroyed its particle."""
+        validation_diagnostics: list[diagnostics.Diagnostic] = []
+        # What the callee and the actions below it recorded decides a
+        # requirement. Anything else is as it was when this action triggered
+        # the callee, so it is an ordinary requirement at the position it
+        # was in then.
+        to_check: list[action_contract.OccupancyRequirementInCaller] = []
+        to_propagate: list[action_contract.OccupancyRequirementInCaller] = []
+        for occupancy_requirement in execution.contract.occupancy_requirements:
+            at_destruction = execution.occupancy_at_destruction(occupancy_requirement)
+            if isinstance(at_destruction, callee_execution.KnownAtDestruction):
+                violation = execution.violation_at_destruction(
+                    occupancy_requirement, at_destruction, self._definition
+                )
+                if violation is not None:
+                    validation_diagnostics.append(violation)
+                continue
+            to_check.append(
+                execution.requirement_in_caller(occupancy_requirement, at_destruction)
+            )
+            to_propagate.append(
+                execution.callee_requirement_in_caller(
+                    occupancy_requirement, at_destruction
+                )
+            )
+        self._requirement_validator.propagate_action_requirements(
+            execution.state_at_destruction.trigger.callee.location, to_propagate, scope
+        )
+        validation_diagnostics.extend(
+            self._requirement_validator.check_occupancy_requirements(
+                execution, to_check
+            )
+        )
+        return validation_diagnostics
+
+    def _validate_destructor_value_requirements(
+        self, execution: callee_execution.DestructorInCalleeExecution
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate the value requirements of a Destructor that ran when the callee destroyed its particle."""
+        validation_diagnostics: list[diagnostics.Diagnostic] = []
+        # What the callee and the actions below it recorded decides a
+        # requirement. Anything else is as it was when this action triggered
+        # the callee, so it is an ordinary requirement at the position it
+        # was in then.
+        to_check: list[action_contract.ValueRequirementInCaller] = []
+        to_propagate: list[action_contract.ValueRequirementInCaller] = []
+        for value_requirement in execution.contract.value_requirements:
+            at_destruction = execution.value_at_destruction(value_requirement)
+            if isinstance(at_destruction, callee_execution.KnownAtDestruction):
+                particle = execution.state_at_destruction.caller_particle_at(
+                    at_destruction.position_in_child_state
+                )
+                if particle is not None:
+                    self._dead_value_write_validator.mark_particle_used(particle)
+                violation = execution.violation_at_destruction(
+                    value_requirement, at_destruction, self._definition
+                )
+                if violation is not None:
+                    validation_diagnostics.append(violation)
+                continue
+            to_check.append(
+                execution.requirement_in_caller(value_requirement, at_destruction)
+            )
+            to_propagate.append(
+                execution.callee_requirement_in_caller(
+                    value_requirement, at_destruction
+                )
+            )
+        self._requirement_validator.propagate_value_requirements(
+            execution.state_at_destruction.trigger.callee.location, to_propagate
+        )
+        self._dead_value_write_validator.mark_required_values_used(to_propagate)
+        validation_diagnostics.extend(
+            self._requirement_validator.check_value_requirements(execution, to_check)
+        )
+        return validation_diagnostics
 
     def _record_occupied_interface_child_position_violations(
         self,

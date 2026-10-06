@@ -714,7 +714,7 @@ def test_destructor_requirement_propagates_to_caller_via_implied_position(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _DESTRUCTOR_EMPTY,
             "line": 11,
-            "column": 9,
+            "column": 20,
             "file_path": "inner.dfn",
         },
         {

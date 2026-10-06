@@ -647,6 +647,25 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
             ),
         )
 
+    def without_prefix(self, prefix: ChainedName) -> Self:
+        """Return a copy of ``self`` with ``prefix``'s typed names removed from the front.
+
+        ``prefix`` must be a prefix of ``self``. The result has the same
+        subclass as ``self``.
+        """
+        return type(self)(
+            location=self.location,
+            typed_names=self.typed_names[len(prefix.typed_names) :],
+            # Slicing the canonical tuple avoids recomputing it, for the same
+            # reason with_prefix passes it.
+            _canonical_chained_name_tuple=self._tag(
+                chained_name.without_prefix(
+                    self.canonical_chained_name_tuple,
+                    prefix.canonical_chained_name_tuple,
+                )
+            ),
+        )
+
     def with_position_suffix(self, *names: TypedNameReference) -> PositionReference:
         """Return a PositionReference extending this chain with ``names`` appended.
 

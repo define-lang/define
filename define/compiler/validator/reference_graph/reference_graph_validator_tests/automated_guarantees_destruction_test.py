@@ -32,7 +32,7 @@ def _destroyed_positions(
     assert isinstance(step, codegen_input.Destruction)
     return [
         destroyed.position.canonical_chained_name_tuple
-        for destroyed in step.work.positions
+        for destroyed in step.contribution.work.positions
     ]
 
 
@@ -782,8 +782,8 @@ def test_destructor_requirement_inside_what_a_callee_left_holds_without_expandin
     assert_no_errors(result.program_result)
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
-    assert step.work.destructors == []
-    (run,) = step.work.guaranteed_particle_destructors
+    assert step.contribution.work.destructors == []
+    (run,) = step.contribution.work.guaranteed_particle_destructors
     assert run.position.canonical_chained_name_tuple == (
         _HOLDER,
         "position<my.domain.com:my_lib:/box>",
@@ -871,7 +871,8 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert [
-        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+        destructor.canonical_chained_name_tuple
+        for destructor in step.contribution.work.destructors
     ] == [
         (
             *(
@@ -882,7 +883,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             _CLEANUP,
         )
     ]
-    assert step.work.guaranteed_particle_destructors == []
+    assert step.contribution.work.guaranteed_particle_destructors == []
     assert _destroyed_positions(result) == [
         (
             _HOLDER,
@@ -957,7 +958,8 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert [
-        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+        destructor.canonical_chained_name_tuple
+        for destructor in step.contribution.work.destructors
     ] == [
         (
             *(
@@ -968,7 +970,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             _CLEANUP,
         )
     ]
-    assert step.work.guaranteed_particle_destructors == []
+    assert step.contribution.work.guaranteed_particle_destructors == []
     assert _destroyed_positions(result) == [
         (
             _HOLDER,
@@ -1097,7 +1099,8 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert [
-        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+        destructor.canonical_chained_name_tuple
+        for destructor in step.contribution.work.destructors
     ] == [
         (
             *(
@@ -1108,7 +1111,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             _CLEANUP,
         )
     ]
-    assert step.work.guaranteed_particle_destructors == []
+    assert step.contribution.work.guaranteed_particle_destructors == []
     assert _destroyed_positions(result) == [
         (
             _HOLDER,
@@ -1136,8 +1139,8 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
-    assert step.work.destructors == []
-    (run,) = step.work.guaranteed_particle_destructors
+    assert step.contribution.work.destructors == []
+    (run,) = step.contribution.work.guaranteed_particle_destructors
     assert run.position.canonical_chained_name_tuple == (
         _HOLDER,
         "position<my.domain.com:my_lib:/box>",
@@ -1217,7 +1220,8 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert [
-        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+        destructor.canonical_chained_name_tuple
+        for destructor in step.contribution.work.destructors
     ] == [
         (
             *(
@@ -1228,7 +1232,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             _CLEANUP,
         )
     ]
-    assert step.work.guaranteed_particle_destructors == []
+    assert step.contribution.work.guaranteed_particle_destructors == []
     assert _destroyed_positions(result) == [
         (
             _HOLDER,
@@ -1258,8 +1262,8 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
-    assert step.work.destructors == []
-    (run,) = step.work.guaranteed_particle_destructors
+    assert step.contribution.work.destructors == []
+    (run,) = step.contribution.work.guaranteed_particle_destructors
     assert run.position.canonical_chained_name_tuple == (
         _HOLDER,
         "position<my.domain.com:my_lib:/box>",

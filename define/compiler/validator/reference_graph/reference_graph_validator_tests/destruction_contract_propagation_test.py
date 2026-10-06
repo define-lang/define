@@ -580,7 +580,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "enclosing_quality_name": "position<local_box>",
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 9,
+            "column": 20,
             "file_path": "inner.dfn",
         },
         {
@@ -588,7 +588,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 7,
-            "column": 9,
+            "column": 20,
             "file_path": "inner.dfn",
         },
         {

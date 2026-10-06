@@ -82,16 +82,20 @@ def _assert_shared_state_with_independent_facts(
         first.propagated_destruction.destruction_fact
         is not second.propagated_destruction.destruction_fact
     )
+    first_fact = first.propagated_destruction.destruction_fact
+    second_fact = second.propagated_destruction.destruction_fact
+    assert first_fact.destroying_definition is second_fact.destroying_definition
     assert (
-        first.propagated_destruction.destruction_fact.destruction
-        is second.propagated_destruction.destruction_fact.destruction
+        first_fact.directly_destroyed_position
+        is second_fact.directly_destroyed_position
     )
+    assert first_fact.is_automatic == second_fact.is_automatic
     positions: list[tuple[str, ...]] = []
     for contract in contracts.particles:
         positions.append(
             contract.propagated_destruction.contracted_position.canonical_chained_name_tuple
         )
-        assert contract.verified_destructors.assignments == ()
+        assert contract.validated_destructors.assignments == ()
     assert sorted(positions) == [
         _chain("position<run>"),
         _chain("position<run>", "position<my.domain.com:my_lib:/child>"),
@@ -319,7 +323,7 @@ def test_caller_passed_child_of_local_parent_keeps_its_contract(
     assert contract.position_in_child_state == (
         "position<my.domain.com:my_lib:/child>",
     )
-    assert contract.verified_destructors.assignments == ()
+    assert contract.validated_destructors.assignments == ()
 
     # Only the caller-passed child continues through middle; no particle in this
     # destruction needs to propagate beyond the Action that created it.
@@ -351,14 +355,20 @@ def test_shared_state_uses_each_moved_particles_own_origin(
         parent.position_in_child_state,
         child.position_in_child_state,
     }
-    occupancy = contracts.child_occupancy(
-        parent, _chain("position<my.domain.com:my_lib:/child>")
+    occupancy = contracts.child_state.occupancy.get(
+        chained_name.with_prefix(
+            _chain("position<my.domain.com:my_lib:/child>"),
+            parent.position_in_child_state,
+        )
     )
     assert occupancy is not None
     assert occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
     assert (
-        contracts.child_occupancy(
-            child, _chain("position<my.domain.com:my_lib:/resource>")
+        contracts.child_state.occupancy.get(
+            chained_name.with_prefix(
+                _chain("position<my.domain.com:my_lib:/resource>"),
+                child.position_in_child_state,
+            )
         )
         is None
     )

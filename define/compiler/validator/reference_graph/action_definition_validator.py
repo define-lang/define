@@ -34,9 +34,7 @@ from define.compiler.validator.reference_graph.dead_code import (
     dead_value_write_validator,
 )
 from define.compiler.validator.reference_graph.destruction import (
-    destroyed_particles,
     destroyer,
-    destruction_contract_validator,
     destructor_guarantees,
     guaranteed_particle_destruction,
 )
@@ -128,20 +126,6 @@ class ActionDefinitionValidator:
         )
 
     @cached_property
-    def _destruction_contract_validator(
-        self,
-    ) -> destruction_contract_validator.DestructionContractValidator:
-        return destruction_contract_validator.DestructionContractValidator(
-            self._definition,
-            self._definition_results,
-            self._validation_state,
-            self._tracker,
-            self._dead_value_write_validator,
-            self._destroyed_particles,
-            self._requirement_validator,
-        )
-
-    @cached_property
     def _position_quality_resolver(
         self,
     ) -> position_quality_resolver.PositionQualityResolver:
@@ -183,26 +167,22 @@ class ActionDefinitionValidator:
     ) -> callee_execution_validator.CalleeExecutionValidator:
         return callee_execution_validator.CalleeExecutionValidator(
             self._definition,
+            self._definition_results,
+            self._validation_state,
             self._tracker,
             self._requirement_validator,
             self._dead_constraint_validator,
             self._dead_value_write_validator,
-            self._destruction_contract_validator,
         )
 
     @cached_property
     def _destroyer(self) -> destroyer.Destroyer:
         return destroyer.Destroyer(
-            self._destroyed_particles,
+            self._definition,
+            self._definition_results,
             self._tracker,
             self._callee_execution_validator,
             self._validation_state,
-        )
-
-    @cached_property
-    def _destroyed_particles(self) -> destroyed_particles.DestroyedParticles:
-        return destroyed_particles.DestroyedParticles(
-            self._tracker, self._definition_results
         )
 
     @cached_property
@@ -261,20 +241,11 @@ class ActionDefinitionValidator:
                 scope,
             )
 
-    def _destroy_particles(
-        self,
-        targets: Sequence[destroyer.DestructionTarget],
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Destroy the target particles and every particle below them."""
-        result = self._destroyer.destroy(targets, scope)
+    def _record_destruction(self, result: destroyer.DestroyResult):
+        """Record what a destruction this action performs produces."""
         self._diagnostics.extend(result.diagnostics)
         self._destruction_contracts.extend(result.destruction_contracts)
-        self._steps.append(
-            codegen_input.Destruction(
-                work=result.work, contract_destructions=result.contract_destructions
-            )
-        )
+        self._steps.append(codegen_input.Destruction(contribution=result.contribution))
 
     def _process_interface_arrival(
         self,
@@ -379,30 +350,12 @@ class ActionDefinitionValidator:
         occupying Positions defined only within this block are simultaneously
         automatically destroyed.
         """
-        targets: list[destroyer.DestructionTarget] = []
+        local_position_names: list[ast.LocalTypedNameReference] = []
         for definition in scope.current_scope_definitions():
-            position = ast.PositionReference(
-                typed_names=(definition.typed_name,),
-                location=definition.location,
-            )
-            # Spec: "If the compiler is uncertain about whether a position still
-            # contains a particle, it only destroys the particle if
-            # one is present."
-            occupancy = self._tracker.get_occupancy_info(position)
-            if occupancy.has_error or occupancy.occupant is None:
-                continue
-            auto_destruction_target = occupancy.occupant.last_position
-            targets.append(
-                destroyer.DestructionTarget(
-                    destruction=destruction_contract_types.DirectDestruction(
-                        directly_destroyed_position=position,
-                        destroying_action=self._definition.typed_name,
-                        is_automatic=True,
-                    ),
-                    auto_destruction_target=auto_destruction_target,
-                )
-            )
-        self._destroy_particles(targets, scope)
+            local_position_names.append(definition.typed_name)
+        self._record_destruction(
+            self._destroyer.destroy_automatically(local_position_names, scope)
+        )
 
     def _analyze_value_setting(
         self,
@@ -666,20 +619,7 @@ class ActionDefinitionValidator:
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
             return
-        destruction = destruction_contract_types.DirectDestruction(
-            directly_destroyed_position=stmt.target_position,
-            destroying_action=self._definition.typed_name,
-            is_automatic=False,
-        )
-
-        self._destroy_particles(
-            (
-                destroyer.DestructionTarget(
-                    destruction=destruction, auto_destruction_target=None
-                ),
-            ),
-            scope,
-        )
+        self._record_destruction(self._destroyer.destroy(stmt.target_position, scope))
 
     def _analyze_move(
         self,
@@ -850,7 +790,7 @@ class ActionDefinitionValidator:
                 self._position_quality_resolver.get_transitive_implied_qualities(
                     self._implied_quality_list
                 ),
-                self._destroyed_particles,
+                self._definition_results,
                 self._validation_state,
                 self._tracker,
             )

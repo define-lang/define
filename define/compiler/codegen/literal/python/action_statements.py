@@ -95,7 +95,7 @@ class ActionStatementsGenerator:
                     for connection in step.destruction_connections:
                         modules.update(contracts.referenced_modules(connection))
                 case codegen_input.Destruction():
-                    modules.update(work.referenced_modules(step.work))
+                    modules.update(work.referenced_modules(step.contribution.work))
                 case codegen_input.ActionOperationExecution():
                     modules.add(
                         self._converter.function_reference(
@@ -301,7 +301,7 @@ class ActionStatementsGenerator:
         # but contracts would need to preserve contributions per particle rather
         # than flattening them into separate Destructor and destruction lists.
         statements = work.destructor_statements(
-            destruction.work, from_contract_particle=False
+            destruction.contribution.work, from_contract_particle=False
         )
         for context_type, prefix in (
             (
@@ -310,7 +310,7 @@ class ActionStatementsGenerator:
             ),
             (template_context.DestroyContractChildrenContext, naming.DESTROY_PREFIX),
         ):
-            for propagated in destruction.contract_destructions:
+            for propagated in destruction.contribution.caller_particle_destructions:
                 name = contract_names[propagated]
                 position = propagated.destruction_fact.destroyed_position_in_destroyer
                 statements.append(
@@ -321,7 +321,7 @@ class ActionStatementsGenerator:
                 )
         statements.extend(
             work.destroy_statements(
-                destruction.work,
+                destruction.contribution.work,
                 self._action_input.definition.typed_name,
                 from_contract_particle=False,
             )

@@ -221,21 +221,17 @@ class ParticleTracker:
             particle_info.ParticleValueState.ERROR, position.location
         )
 
-    def snapshot_child_states(
-        self, for_positions: Sequence[ast.PositionReference]
-    ) -> list[action_contract.ChildState]:
-        """Capture child occupancy for Positions destroyed together, in order.
+    def snapshot_child_state(
+        self, position: ast.PositionReference
+    ) -> action_contract.ChildState:
+        """Capture the child occupancy of a Position about to be destroyed.
 
-        An explicit Destroy has one target; Automatic Destruction targets
-        locally defined Positions, each with a single name.
-
-        Each snapshot is decoupled from later tracker mutation. Its keys are
+        The snapshot is decoupled from later tracker mutation. Its keys are
         chained-name suffixes below the snapshotted
         particle, so a caller's snapshot of the same particle shares the key
         space and merges directly.
         """
-        keys = [position.canonical_chained_name_tuple for position in for_positions]
-        return [self._store.snapshot_child_state(key) for key in keys]
+        return self._store.snapshot_child_state(position.canonical_chained_name_tuple)
 
     def collect_caller_destruction_state(
         self,

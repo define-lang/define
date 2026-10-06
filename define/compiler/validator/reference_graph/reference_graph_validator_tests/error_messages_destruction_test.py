@@ -954,13 +954,13 @@ def test_destruction_contract_auto_destruction_format(
                 create a particle in position<box>::action</mid>::position<run>.
                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<local_box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/mid>':
-            File "mid.dfn", line 7, column 9
+            File "mid.dfn", line 7, column 20
                 define the position<local_box>.
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                           ^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/mid>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
-            File "mid.dfn", line 7, column 9
+            File "mid.dfn", line 7, column 20
                 define the position<local_box>.
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                           ^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:
             File "delete_destructor.dfn", line 7, column 30
                 move the particle in position</file> to position<_holder>.
