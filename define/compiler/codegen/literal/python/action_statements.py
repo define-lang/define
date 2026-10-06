@@ -64,10 +64,12 @@ class ActionStatementsGenerator:
         for step in self._action_input.steps:
             match step:
                 case ast.LocalPositionDefinition():
-                    for constraint in self._converter.constraints_to_class_references(
-                        step.constraints
-                    ):
-                        modules.add(constraint.module_name)
+                    modules.update(
+                        constraint.module_name
+                        for constraint in self._converter.constraints_to_class_references(
+                            step.constraints
+                        )
+                    )
                 case ast.CreateParticleStatement():
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
@@ -110,8 +112,10 @@ class ActionStatementsGenerator:
                                 self._converter.referenced_modules(argument.looking_at)
                             )
         for guaranteed in self._action_input.guaranteed_particle_destructors:
-            for destructor in guaranteed.destructors:
-                modules.add(self._converter.class_reference(destructor).module_name)
+            modules.update(
+                self._converter.class_reference(destructor).module_name
+                for destructor in guaranteed.destructors
+            )
             for reference in guaranteed.for_child_positions:
                 modules.add(
                     self._converter.class_reference(reference.action).module_name

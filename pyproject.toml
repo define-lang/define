@@ -56,24 +56,30 @@ ignore = [
   "PERF401", # Loops are preferred over comprehensions that are not simple.
   "PLC1901", # Explicit empty-string comparisons distinguish other falsey values.
   "PLR2004", # Tests compare against literal values.
-  "PTH201", # Keep the existing current-directory path style until B5 is decided.
   "RUF105", # Existing noqa comments need no Ruff-specific replacement.
   "RUF201", # Rule codes are allowed in Ruff selectors.
   "S404", # Tooling deliberately imports subprocess to run commands.
 ]
 extend-select = [
   "D421", # Describe properties as values rather than actions.
+  "E266", # Use one leading hash for block comments.
   "FURB113", # Batch consecutive list appends.
   "FURB118", # Prefer operator functions for simple sort keys.
+  "FURB142", # Batch set additions.
+  "PLC2701", # Flag imports of private names from other modules.
+  "PLC2801", # Avoid unnecessary direct dunder calls.
   "PLR0904", # Enforce size limits in vibe-coded sources; others opt out below.
   "PLR0914",
   "PLR0916",
   "PLR6201", # Use set literals for membership in hashable constants.
   "PLW0717",
   "PLW1514", # Require explicit text file encodings.
+  "PTH201", # Use implicit current-directory paths.
+  "RUF029", # Require async functions to use async behavior.
   "RUF031", # Parenthesize tuple subscripts.
   "RUF052", # Flag local variables that are named as unused but then accessed.
   "RUF067", # Keep handwritten package initializers free of executable definitions.
+  "RUF069", # Flag unreliable floating-point equality.
   "W",  # pycodestyle warnings
   "I",  # isort
   "N",  # pep8-naming
@@ -119,6 +125,9 @@ allow-magic-value-types = []
 parenthesize-tuple-in-subscript = true
 
 [tool.ruff.lint.extend-per-file-ignores]
+"define/compiler/codegen/literal/python/generator.py" = [
+    "PLC2701", # Bazel treats the private sibling renderer as external when linting one source.
+]
 "!{checks/**,tools/**,define/compiler/driver_fuzz_test.py}" = [
     "PLR09", # Size limits apply to the vibe-coded sources above.
     "PLW0717", # The same scope applies to the try-clause size limit.

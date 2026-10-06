@@ -139,9 +139,9 @@ def raise_token_error(
     file_path: pathlib.PurePosixPath | None,
 ):
     """Classify a token error into a specific exception type."""
-    ####################################
-    ## First Character Classification ##
-    ####################################
+    ##################################
+    # First Character Classification #
+    ##################################
 
     # This needs to come first; it's the only error type that reliably escapes control
     # characters.
@@ -166,9 +166,9 @@ def raise_token_error(
     ):
         raise parser_exceptions.ExtraWhitespace(e, file_path)
 
-    ################################
-    ## End of File Classification ##
-    ################################
+    ##############################
+    # End of File Classification #
+    ##############################
 
     if e.token.type == "$END":
         # We classify an EOF like a '}' at the same point, so a
@@ -180,9 +180,9 @@ def raise_token_error(
     if "SPACE" in e.accepts:
         e = _error_with_missing_space(e, file_path)
 
-    ###############################
-    ## e.accepts Classification ##
-    ###############################
+    ############################
+    # e.accepts Classification #
+    ############################
 
     if e.accepts in ({"DBLQUOTE"}, {"LITERAL_CONTENT", "DBLQUOTE"}):
         raise parser_exceptions.InvalidLiteralSyntax(e, file_path)
@@ -364,9 +364,9 @@ def raise_token_error(
     ):
         raise parser_exceptions.GlobalPositionDefinitionInLocalContext(e, file_path)
 
-    #######################
-    ## Generic Fallbacks ##
-    #######################
+    #####################
+    # Generic Fallbacks #
+    #####################
 
     # This is a generic fallback because we don't want to mask more specific errors above.
     # (For example, 'position  <foo>' should throw MissingOpenAngleBracket, not this error.)

@@ -20,7 +20,8 @@ import time
 import typing
 from typing import Protocol, cast
 
-import _remote_debugging  # pyright: ignore[reportMissingImports]
+# CPython exposes RemoteUnwinder through this private module.
+import _remote_debugging  # noqa: PLC2701  # pyright: ignore[reportMissingImports]
 import click
 import msgspec
 

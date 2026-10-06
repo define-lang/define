@@ -176,7 +176,7 @@ def test_collector_reports_every_loop_type_executed_only_once(tmp_path: Path):
         namespace["consume_async_for"],
     )
 
-    async def values():
+    async def values():  # noqa: RUF029 - Exercise an async generator in the coverage collector.
         yield 1
 
     collector = loop_coverage.LoopCoverageCollector(manifest_path, report_path)

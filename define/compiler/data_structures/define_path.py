@@ -114,7 +114,7 @@ class DefinePathFromPosix(DefinePath):
         # PurePosixPath uses "." as its relative-root identity element;
         # DefinePath uses "". The bridge maps between them so the join
         # operator behaves the same way in either representation.
-        path_str = "" if path_obj == PurePosixPath(".") else str(path_obj)
+        path_str = "" if path_obj == PurePosixPath() else str(path_obj)
         super().__init__(path_str)
         self._path_obj = path_obj
 

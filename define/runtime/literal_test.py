@@ -366,7 +366,7 @@ class TestValue:
     def test_value(self):
         particle = literal.ValueParticle[float]()
         particle.value = -12.5
-        assert particle.value == -12.5
+        assert particle.value == -12.5  # noqa: RUF069 - Assignment preserves this exact value.
 
     def test_unset_value_raises(self):
         particle = literal.ValueParticle[float]()
@@ -448,7 +448,7 @@ class TestAction:
         typed_pos.particle.value = 2.5
 
         assert typed_pos is pos
-        assert pos.particle.value == 2.5
+        assert pos.particle.value == 2.5  # noqa: RUF069 - Assignment preserves this exact value.
 
 
 class TestParticleActions:

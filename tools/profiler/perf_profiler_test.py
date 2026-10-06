@@ -567,7 +567,7 @@ def test_cpu_percentages_include_native_and_filtered_python_samples():
     assert analysis.unattributed_cpu_ns == 20
     assert len(analysis.self_function_rows) == 1
     assert analysis.self_function_rows[0].cpu_time_ns == 50
-    assert analysis.self_function_rows[0].percentage == 50.0
+    assert analysis.self_function_rows[0].percentage == 50.0  # noqa: RUF069 - This ratio is exactly one half.
 
 
 def test_filters_perf_relationships_and_threads():

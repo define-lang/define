@@ -82,8 +82,8 @@ class TestASTNodeIdentity:
         second = ast.LocalNameContent(location=_LOC, name="item")
 
         assert first != second
-        assert hash(first) == object.__hash__(first)
-        assert hash(second) == object.__hash__(second)
+        assert hash(first) == object.__hash__(first)  # noqa: PLC2801 - Verify identity hashing.
+        assert hash(second) == object.__hash__(second)  # noqa: PLC2801 - Verify identity hashing.
 
 
 class TestSourceFormTypedNameParts:

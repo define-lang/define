@@ -235,7 +235,7 @@ class TestAsPosixPath:
 
 class TestDefinePathFromPosix:
     def test_current_directory_is_empty_path(self):
-        source = PurePosixPath(".")
+        source = PurePosixPath()
         path = define_path.DefinePathFromPosix(source)
 
         assert path == define_path.EMPTY
