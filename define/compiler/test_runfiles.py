@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from python.runfiles import runfiles
 
 
 def resolve_from_env(variable: str) -> Path:

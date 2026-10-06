@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import cast
 
 import yaml
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from python.runfiles import runfiles
 
 _RULES = Path("checks/rules")
 _RULE_TESTS = Path("checks/rule-tests")

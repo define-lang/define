@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 import msgspec
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from python.runfiles import runfiles
 
 from tools.profiler import schema
 

@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from python.runfiles import runfiles
 
 from tools.generators import generate_large_define_source
 from tools.profiler import schema, wall_analyzer, wall_critical_path

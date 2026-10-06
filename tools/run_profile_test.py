@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import click.testing
-from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
+from python.runfiles import runfiles
 
 from tools import profile_orchestration as run_profile
 from tools.profiler import analyzer, perf_analyzer, perf_test_support, schema
