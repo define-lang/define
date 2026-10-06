@@ -106,7 +106,7 @@ class DefineCharError(DefineSyntaxError):
 
     @property
     def escaped_char(self) -> str:
-        """Return the character in a readable escaped form."""
+        """The character in a readable escaped form."""
         return source_map.escape_invisible(self.char)
 
     @override

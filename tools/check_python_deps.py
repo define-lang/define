@@ -49,12 +49,12 @@ class DependencyChanges(msgspec.Struct, frozen=True):
 
     @property
     def missing(self) -> frozenset[str]:
-        """Return dependencies required by imports but not declared."""
+        """Dependencies required by imports but not declared."""
         return self.expected - self.target.deps
 
     @property
     def unnecessary(self) -> frozenset[str]:
-        """Return declared dependencies not required by imports."""
+        """Declared dependencies not required by imports."""
         return self.target.deps - self.expected
 
 

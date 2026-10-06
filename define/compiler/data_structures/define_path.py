@@ -66,14 +66,14 @@ class DefinePath:
 
     @property
     def parts(self) -> list[str]:
-        """Return the path's segments as split on '/'."""
+        """The path's segments, split on '/'."""
         if not self._path:
             return []
         return self._path.split("/")
 
     @property
     def name(self) -> str:
-        """Return the path's last component."""
+        """The path's last component."""
         idx = self._path.rfind("/")
         return self._path[idx + 1 :] if idx >= 0 else self._path
 

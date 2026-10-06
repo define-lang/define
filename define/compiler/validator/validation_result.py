@@ -72,7 +72,7 @@ class DefinitionValidationResult(msgspec.Struct):
 
     @property
     def diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """Return diagnostics sorted by source location (line, then column)."""
+        """Diagnostics sorted by source location (line, then column)."""
         return sorted(
             self._diagnostics,
             key=lambda d: (d.location.line, d.location.column),
@@ -106,7 +106,7 @@ class FileValidationResult:
 
     @property
     def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
-        """Return file-level and per-definition diagnostics as a read-only view."""
+        """File-level and per-definition diagnostics as a read-only view."""
         return (
             list(self.file_diagnostics)
             + [

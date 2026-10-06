@@ -54,16 +54,21 @@ ignore = [
   "INP001",
   "ISC003", # Explicit string concatenation is allowed.
   "PERF401", # Loops are preferred over comprehensions that are not simple.
+  "PLC1901", # Explicit empty-string comparisons distinguish other falsey values.
   "PLR2004", # Tests compare against literal values.
   "PTH201", # Keep the existing current-directory path style until B5 is decided.
+  "RUF105", # Existing noqa comments need no Ruff-specific replacement.
+  "RUF201", # Rule codes are allowed in Ruff selectors.
   "S404", # Tooling deliberately imports subprocess to run commands.
 ]
 extend-select = [
+  "D421", # Describe properties as values rather than actions.
   "PLR0904", # Enforce size limits in vibe-coded sources; others opt out below.
   "PLR0914",
   "PLR0916",
   "PLW0717",
   "RUF031", # Parenthesize tuple subscripts.
+  "RUF052", # Flag local variables that are named as unused but then accessed.
   "RUF067", # Keep handwritten package initializers free of executable definitions.
   "W",  # pycodestyle warnings
   "I",  # isort
@@ -138,6 +143,7 @@ parenthesize-tuple-in-subscript = true
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
+    "RUF052", # Generated names preserve the source program's identifiers.
     "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/testdata/**/expected_trace/**/*.py" = [
@@ -152,6 +158,7 @@ parenthesize-tuple-in-subscript = true
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
+    "RUF052", # Generated names preserve the source program's identifiers.
     "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/*_test.py" = [

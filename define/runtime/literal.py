@@ -94,12 +94,12 @@ class Quality:
 
     @property
     def name(self) -> str:
-        """Return the Define name derived from this quality's Python class."""
+        """The Define name derived from this quality's Python class."""
         return type(self).full_name()
 
     @property
     def on_particle(self) -> Particle:
-        """Return the particle this quality is assigned to."""
+        """The particle this quality is assigned to."""
         return self._on_particle
 
 
@@ -152,7 +152,7 @@ class ValueParticle[ValueType](Particle):
 
     @property
     def value(self) -> ValueType:
-        """Return this particle's value, raising UnsetValueError if it is not set."""
+        """The particle's value; access raises UnsetValueError if unset."""
         if self._value is None:
             raise UnsetValueError
         return self._value
@@ -170,7 +170,7 @@ class Position(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Return the name of this position."""
+        """The name of this position."""
 
     @abstractmethod
     def _get_constraints(self) -> tuple[type[Quality], ...]:
@@ -178,12 +178,12 @@ class Position(ABC):
 
     @property
     def has_particle(self) -> bool:
-        """Return whether this position contains a particle."""
+        """Whether this position contains a particle."""
         return self._particle is not None
 
     @property
     def particle(self) -> Particle:
-        """Return the particle, raising NoParticleError if none exists."""
+        """The particle; access raises NoParticleError if none exists."""
         if self._particle is None:
             raise NoParticleError(self.name)
         return self._particle
@@ -246,7 +246,7 @@ class GlobalPosition[ValueType](Quality, Position):
     @property
     @override
     def particle(self) -> ValueParticle[ValueType]:
-        """Return the particle, raising NoParticleError if none exists."""
+        """The particle; access raises NoParticleError if none exists."""
         # Validation only allows a particle into this position if its value type
         # is this position's value type.
         return cast("ValueParticle[ValueType]", super().particle)
@@ -278,13 +278,13 @@ class LocalPosition[ValueType](Position):
     @property
     @override
     def name(self) -> str:
-        """Return the name of this position."""
+        """The name of this position."""
         return self._name
 
     @property
     @override
     def particle(self) -> ValueParticle[ValueType]:
-        """Return the particle, raising NoParticleError if none exists."""
+        """The particle; access raises NoParticleError if none exists."""
         # Validation only allows a particle into this position if its value type
         # is this position's value type.
         return cast("ValueParticle[ValueType]", super().particle)
@@ -334,7 +334,7 @@ class Action(Quality):
 
     @property
     def interface_positions(self) -> tuple[Position, ...]:
-        """Return this action's interface positions, in declaration order."""
+        """The action's interface positions, in declaration order."""
         return tuple(self._interface_positions.values())
 
     def run(self) -> None:

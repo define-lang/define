@@ -43,12 +43,12 @@ class FileValidationContext(msgspec.Struct, frozen=True, dict=True):
 
     @cached_property
     def full_path(self) -> define_path.DefinePath:
-        """Return full filesystem path for this validation context."""
+        """The full filesystem path for this validation context."""
         return self.root_prefix / self.file_path
 
     @cached_property
     def expected_definition_path(self) -> define_path.DefinePath | None:
-        """Return the expected definition path for filesystem-backed validation."""
+        """The expected definition path for filesystem-backed validation."""
         return self.file_path.without_suffix(constants.DEFINE_FILE_SUFFIX)
 
 
@@ -62,7 +62,7 @@ class EmptyFileValidationContext(FileValidationContext, frozen=True, dict=True):
 
     @cached_property
     def expected_definition_path(self) -> define_path.DefinePath | None:
-        """Return no expected definition path for source-only validation."""
+        """The expected definition path, absent for source-only validation."""
         return None
 
 

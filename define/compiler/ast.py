@@ -300,7 +300,7 @@ class PositionDefinition(QualityDefinition):
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
-        """Return the typed names of this position's constraint requirements, in source order."""
+        """The typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
             return ()
         return tuple(req.typed_global_name for req in self.constraints.requirements)
@@ -312,7 +312,7 @@ class NameContent(ASTNode, abc.ABC):
     @property
     @abc.abstractmethod
     def source_name(self) -> str:
-        """Return the inner content as it appears in the source."""
+        """The inner content as it appears in the source."""
 
 
 class LocalNameContent(NameContent):
@@ -359,7 +359,7 @@ class LocalPositionDefinition(ASTNode):
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
-        """Return the typed names of this position's constraint requirements, in source order."""
+        """The typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
             return ()
         return tuple(req.typed_global_name for req in self.constraints.requirements)
@@ -421,12 +421,12 @@ class TypedName(ASTNode, Generic[NameContentT_co], kw_only=True):  # noqa: UP046
 
     @property
     def source_typed_name(self) -> str:
-        """Return typed-name text as it appears in the source."""
+        """The typed-name text as it appears in the source."""
         return self._source_typed_name
 
     @property
     def full_typed_name(self) -> str:
-        """Return canonical typed-name text including effective FQUN and path."""
+        """The canonical typed-name text including the effective FQUN and path."""
         return self._source_typed_name
 
 
@@ -571,12 +571,12 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
 
     @property
     def source_chained_name(self) -> str:
-        """Return chained name text as it appears in the source."""
+        """The chained name text as it appears in the source."""
         return "::".join(elem.source_typed_name for elem in self.typed_names)
 
     @property
     def starts_with_global(self) -> bool:
-        """Return whether the chain's first element is a global reference."""
+        """Whether the chain's first element is a global reference."""
         return isinstance(self.typed_names[0], GlobalTypedNameReference)
 
     def get_last_action(self) -> GlobalTypedNameReference | None:
@@ -887,7 +887,7 @@ class PositionConstraintBlock(ASTNode):
 
     @property
     def value_constraint(self) -> GlobalTypedNameReference | None:
-        """Return the first value this block requires, if any."""
+        """The first value this block requires, if any."""
         for requirement in self.requirements:
             if requirement.typed_global_name.name_type == name_types.NameType.VALUE:
                 return requirement.typed_global_name
@@ -907,7 +907,7 @@ class GlobalPathName(ASTNode):
 
     @property
     def relative_path(self) -> define_path.DefinePath:
-        """Return the path as a relative DefinePath."""
+        """The path as a relative DefinePath."""
         return define_path.DefinePath(self.name[1:])
 
     def file_path(
@@ -1018,7 +1018,7 @@ class ActionDefinition(QualityDefinition):
 
     @property
     def interface_position_names(self) -> tuple[TypedName[NameContent], ...]:
-        """Return the TypedName objects for all interface positions."""
+        """The TypedName objects for all interface positions."""
         return tuple(pos.typed_name for pos in self.interface_positions)
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
@@ -1030,7 +1030,7 @@ class ActionDefinition(QualityDefinition):
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:
-        """Return the trigger condition's PositionReference, if valid."""
+        """The trigger condition's PositionReference, if valid."""
         condition = self.trigger_conditions.condition
         if self.trigger_position is None or not isinstance(
             condition, PositionPresenceStatement
