@@ -5,8 +5,6 @@ from __future__ import annotations
 import operator
 import typing
 
-import msgspec
-
 from define.compiler import chained_name
 from define.compiler.validator.reference_graph.particles import (
     guarantee_generation,
@@ -30,15 +28,6 @@ if typing.TYPE_CHECKING:
         quality_assignment,
     )
     from define.compiler.validator.reference_graph.destruction import child_state
-
-
-class OccupancyInfo(msgspec.Struct, frozen=True):
-    """A position's error state and occupant, resolved together in one lookup."""
-
-    # When an ancestor is in an error condition we ignore the position entirely,
-    # so the occupant is meaningless and left None.
-    has_error: bool
-    occupant: particle_info.ParticleInfo | None
 
 
 @typing.final
@@ -75,25 +64,17 @@ class ParticleTracker:
         key = in_position.canonical_chained_name_tuple
         return self._store.has_error_in_chain(key)
 
-    def get_occupancy_info(self, in_position: ast.PositionReference) -> OccupancyInfo:
+    def get_occupancy_info(
+        self, in_position: ast.PositionReference
+    ) -> particle_state_store.OccupancyInfo:
         """Return the error state and occupant of ``in_position`` together.
 
-        This is a performance optimization for the common case of needing both
-        whether a position is in an error condition and what particle occupies
-        it. It returns exactly what ``has_error_state`` and ``get_occupant``
-        would for the same position, so it is only correct to use when both
-        answers are about the same position at the same moment; for two different
-        positions, ask about each separately. The result is a snapshot of the
-        current state, so re-query after any operation that could change the
-        position rather than reusing an earlier result.
+        It returns exactly what ``has_error_state`` and ``get_occupant_or_none``
+        would for the same position, except that the occupant is None when
+        the position is in error. The result is a snapshot of the current
+        state.
         """
-        key = in_position.canonical_chained_name_tuple
-        if self._store.has_error_in_chain(key):
-            return OccupancyInfo(has_error=True, occupant=None)
-        return OccupancyInfo(
-            has_error=False,
-            occupant=self._store.occupant_or_none(key),
-        )
+        return self._store.occupancy_info(in_position.canonical_chained_name_tuple)
 
     def state_without_expanding_by_key(
         self, key: chained_name.PositionReferenceTuple

@@ -21,6 +21,15 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
+class OccupancyInfo(msgspec.Struct, frozen=True):
+    """A position's error state and occupant, resolved together in one lookup."""
+
+    # When an ancestor is in an error condition we ignore the position entirely,
+    # so the occupant is meaningless and left None.
+    has_error: bool
+    occupant: particle_info.ParticleInfo | None
+
+
 class PositionState(msgspec.Struct):
     """Everything the store knows about one position.
 
@@ -577,6 +586,15 @@ class ParticleStateStore:
         """Return whether a particle is known to exist at this position."""
         node = self._node(key)
         return node is not None and node.particle is not None
+
+    def occupancy_info(self, key: chained_name.PositionReferenceTuple) -> OccupancyInfo:
+        """Return the error state and occupant of this position, from one lookup of its node."""
+        node = self._node(key)
+        if node is None:
+            return OccupancyInfo(has_error=self._has_error_above(key), occupant=None)
+        if node.is_in_error_chain:
+            return OccupancyInfo(has_error=True, occupant=None)
+        return OccupancyInfo(has_error=False, occupant=node.particle)
 
     def has_error_in_chain(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether this position or any ancestor has error occupancy state."""
