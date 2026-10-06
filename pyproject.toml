@@ -34,6 +34,10 @@ ignore = [
   # Conflict with the ruff formatter.
   "COM812",
   "ISC001",
+  # These docstring layouts conflict with D211 and D212, respectively.
+  "D203",
+  "D213",
+  "D413", # A blank line before closing docstring quotes adds no value here.
   # The formatter owns line length, and Define source is never split across
   # Python lines.
   "E501",
@@ -154,9 +158,6 @@ exclude = [
     "**/testdata/**/expected/**/*.py",
     "**/testdata/**/expected_trace/**/*.py",
 ]
-
-[tool.ruff.lint.pydocstyle]
-convention = "pep257"
 
 [tool.pytest.ini_options]
 addopts = "--tb=short --no-header -q"
