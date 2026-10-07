@@ -25,6 +25,7 @@ _DELETE_FILE1 = "action<my.domain.com:my_lib:/delete_file1>"
 _DELETE_FILE2 = "action<my.domain.com:my_lib:/delete_file2>"
 _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
 _DELETE_EMPTY_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_empty_destructor>"
+_CLOSE_DETAIL_DESTRUCTOR = "action<my.domain.com:my_lib:/close_detail_destructor>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
@@ -811,3 +812,158 @@ def test_visible_and_caller_attached_destructors_coexist(
         (_CLOSE_FILE, _DELETE_FILE2),
         (_TEST, _CLOSE_FILE),
     ]
+
+
+def test_assignment_in_destructor_requirement_chain_appears_once(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+
+    through_caller_attached_destructor = all_diags[0]
+    assert isinstance(
+        through_caller_attached_destructor,
+        diagnostics.InferredRequirementViolationDiagnostic,
+    )
+    assert through_caller_attached_destructor.location.line == 21
+    assert through_caller_attached_destructor.location.column == 30
+    assert through_caller_attached_destructor.location.file_path == PurePosixPath(
+        "test.dfn"
+    )
+    assert (
+        through_caller_attached_destructor.position_name
+        == "position<box>::action</close_file>::position<target>::position</file>::position</detail>"
+    )
+    assert through_caller_attached_destructor.action_name == _CLOSE_FILE
+    assert through_caller_attached_destructor.required_empty is False
+    assert through_caller_attached_destructor.required_value is False
+    assert_propagation_chain(
+        through_caller_attached_destructor,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my_file>",
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 13,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/file>",
+            "triggered_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "line": 3,
+            "column": 20,
+            "file_path": "file.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "triggered_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "line": 8,
+            "column": 33,
+            "file_path": "delete_file_destructor.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "close_detail_destructor.dfn",
+        },
+    )
+
+    directly_known = all_diags[1]
+    assert isinstance(
+        directly_known, diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert directly_known.location.line == 21
+    assert directly_known.location.column == 30
+    assert directly_known.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        directly_known.position_name
+        == "position<box>::action</close_file>::position<target>::position</file>::position</detail>"
+    )
+    assert directly_known.action_name == _CLOSE_FILE
+    assert directly_known.required_empty is False
+    assert directly_known.required_value is False
+    assert_propagation_chain(
+        directly_known,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/file>",
+            "triggered_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "line": 3,
+            "column": 20,
+            "file_path": "file.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</file>",
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLOSE_DETAIL_DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "close_detail_destructor.dfn",
+        },
+    )
+
+    emptied_file = all_diags[2]
+    assert isinstance(
+        emptied_file, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+    )
+    assert emptied_file.location.line == 7
+    assert emptied_file.location.column == 30
+    assert emptied_file.location.file_path == PurePosixPath(
+        "delete_file_destructor.dfn"
+    )
+    assert emptied_file.position_name == "position</file>"

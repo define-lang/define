@@ -141,7 +141,11 @@ class Destroyer:
         for execution in destructor_executions:
             # A Destructor publishes no Destruction Contracts, and the known
             # destruction work records only its action chain, so only the
-            # diagnostics are needed from the result.
+            # diagnostics are needed from the result. Its Guarantees are not
+            # applied: every position it can guarantee is at or below a
+            # particle destroyed right after, and the Destructors of one
+            # destruction are all validated against the state at the moment
+            # of destruction.
             validation_diagnostics.extend(
                 self._callee_execution_validator.validate(execution, scope).diagnostics
             )

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import typing
 
 import msgspec
@@ -10,9 +9,6 @@ import msgspec
 from define.compiler import ast, chained_name
 from define.compiler.validator import codegen_input
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.callee_execution import (
-    requirement_violation,
-)
 from define.compiler.validator.reference_graph.destruction import (
     destroyed_particles,
     destruction_contract,
@@ -308,15 +304,23 @@ class _GuaranteedParticleDestructionBuilder:
         action_chain = chained_name.action(
             (*position.canonical_chained_name_tuple, destructor.full_typed_name)
         )
-        for requirement in itertools.chain(
-            contract.occupancy_requirements, contract.value_requirements
-        ):
-            occupancy, value_state = self._tracker.state_without_expanding_by_key(
+        for occupancy_requirement in contract.occupancy_requirements:
+            occupancy, _ = self._tracker.state_without_expanding_by_key(
                 chained_name.in_caller(
-                    action_chain, requirement.position.canonical_chained_name_tuple
+                    action_chain,
+                    occupancy_requirement.position.canonical_chained_name_tuple,
                 )
             )
-            if requirement_violation.is_violated(requirement, occupancy, value_state):
+            if occupancy_requirement.is_violated_by(occupancy):
+                return False
+        for value_requirement in contract.value_requirements:
+            occupancy, value_state = self._tracker.state_without_expanding_by_key(
+                chained_name.in_caller(
+                    action_chain,
+                    value_requirement.position.canonical_chained_name_tuple,
+                )
+            )
+            if value_requirement.is_violated_by(occupancy, value_state):
                 return False
         return True
 

@@ -375,15 +375,23 @@ class ParticleTracker:
         *,
         parent_particle: particle_info.ParticleInfo | None,
     ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
-        """Record that this action triggered ``action_chain``, and apply the triggered action's guarantees."""
+        """Record that this action triggered ``action_chain``, and return each interface child position of it that was occupied when it triggered, with where its particle arrived."""
         occupied_interface_child_position_violations = (
             self._occupied_interface_child_positions(
                 action_chain, contract.implied_quality_names
             )
         )
         self._mark_interface_arrivals_passed_to_callee(action_chain, parent_particle)
-        self._store.trigger(action_chain, contract, parent_particle)
+        self._store.record_trigger(action_chain, parent_particle)
         return occupied_interface_child_position_violations
+
+    def apply_guarantees(
+        self,
+        action_chain: ast.ActionReference,
+        contract: action_contract.ActionContract,
+    ):
+        """Apply the Guarantees of ``action_chain``, which this action triggered."""
+        self._store.apply_guarantees(action_chain, contract)
 
     def _occupied_interface_child_positions(
         self,

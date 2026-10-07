@@ -186,9 +186,34 @@ class PositionOccupancyRequirement(PositionRequirement, frozen=True):
         """Whether this requirement requires an occupied position."""
         return self.required_state == position_occupancy.PositionOccupancyState.OCCUPIED
 
+    def is_violated_by(
+        self, occupancy: position_occupancy.PositionOccupancyState
+    ) -> bool:
+        """Return whether a position with ``occupancy`` violates this requirement."""
+        # A position in error has no knowable state to violate a requirement.
+        return occupancy not in {
+            position_occupancy.PositionOccupancyState.ERROR,
+            self.required_state,
+        }
+
 
 class ValueRequirement(PositionRequirement, frozen=True):
     """A contracted position must have a particle with a set value."""
+
+    @staticmethod
+    def is_violated_by(
+        occupancy: position_occupancy.PositionOccupancyState,
+        value_state: particle_info.ParticleValueState | None,
+    ) -> bool:
+        """Return whether a position with ``occupancy``, and with ``value_state`` when it is occupied, violates a value requirement."""
+        return (
+            occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
+            and value_state
+            not in {
+                particle_info.ParticleValueState.SET,
+                particle_info.ParticleValueState.ERROR,
+            }
+        )
 
 
 class PositionRequirementInCaller[Requirement: PositionRequirement](

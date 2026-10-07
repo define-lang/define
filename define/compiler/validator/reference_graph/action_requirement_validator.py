@@ -8,9 +8,6 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
-from define.compiler.validator.reference_graph.callee_execution import (
-    requirement_violation,
-)
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
@@ -217,7 +214,7 @@ class ActionRequirementValidator:
             if occupant is not None
             else position_occupancy.PositionOccupancyState.EMPTY
         )
-        return requirement_violation.is_violated(req, state, None), occupant
+        return req.is_violated_by(state), occupant
 
     def infer_value_requirement(
         self,
@@ -294,8 +291,7 @@ class ActionRequirementValidator:
         # Occupancy failures already have their own diagnostic.
         if occupancy.has_error or particle is None:
             return None
-        if not requirement_violation.is_violated(
-            requirement.requirement,
+        if not requirement.requirement.is_violated_by(
             position_occupancy.PositionOccupancyState.OCCUPIED,
             particle.value_state,
         ):

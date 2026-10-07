@@ -11,7 +11,6 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:__pkg__",
     ],
     deps = [
-        ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
@@ -50,24 +49,6 @@ py_library(
     ],
 )
 
-py_library(
-    name = "requirement_violation",
-    srcs = ["requirement_violation.py"],
-    visibility = [
-        "//define/compiler/validator/reference_graph:__pkg__",
-        "//define/compiler/validator/reference_graph/destruction:__pkg__",
-    ],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:position_occupancy",
-        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
-        "//define/compiler/validator/reference_graph/particles:particle_info",
-        "@pypi//msgspec",
-    ],
-)
-
 format_test(
     name = "format_test",
     srcs = glob(["*.py"]),
@@ -79,7 +60,6 @@ pyright_test(
     deps = [
         ":callee_execution",
         ":callee_execution_validator",
-        ":requirement_violation",
     ],
 )
 

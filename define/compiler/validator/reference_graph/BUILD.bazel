@@ -73,7 +73,6 @@ py_library(
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator/reference_graph/callee_execution",
-        "//define/compiler/validator/reference_graph/callee_execution:requirement_violation",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
     ],

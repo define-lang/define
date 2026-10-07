@@ -7,17 +7,14 @@ import typing
 import msgspec
 
 from define.compiler import chained_name
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
-from define.compiler.validator.reference_graph.callee_execution import (
-    requirement_violation,
-)
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph.destruction import (
         destruction_walk,
     )
@@ -62,13 +59,42 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
         """Return the diagnostic for a requirement of the callee, in ``position_in_caller``, that the state of ``definition`` violates."""
-        return requirement_violation.trigger_violation(
-            req=requirement,
-            definition=definition,
-            full_caller_chain=position_in_caller,
-            acting_on_position=self.acting_on_position,
-            occupant=occupant,
-            action_assignment=self.action_assignment,
+        position_name = position_in_caller.source_form_in_universe(
+            definition.typed_name.name_content.fqun
+        )
+        fill = _fill_steps(
+            position_name,
+            occupant.last_position.location if occupant is not None else None,
+        )
+        chain = requirement.propagation_chain()
+        trigger_step = action_contract.PropagationStep(
+            location=self.acting_on_position.location,
+            kind=(
+                action_contract.PropagationKind.CONSTRUCTOR_TRIGGER
+                if requirement.enclosing_action.is_constructor
+                else action_contract.PropagationKind.ACTION_TRIGGER
+            ),
+            enclosing_quality_name=definition.typed_name.source_typed_name,
+            triggered_quality_name=requirement.enclosing_action.typed_name.source_typed_name,
+        )
+        action_assignment = self.action_assignment
+        if action_assignment is not None:
+            steps = [
+                action_assignment.propagation_step(),
+                trigger_step,
+                *fill,
+                *chain,
+            ]
+        else:
+            # An ordinary action can only trigger after the state satisfying its
+            # Trigger Conditions Block already exists.
+            steps = [*fill, trigger_step, *chain]
+        return _diagnostic(
+            location=self.acting_on_position.location,
+            position_name=position_name,
+            requirement=requirement,
+            action_name=requirement.enclosing_action.typed_name.source_typed_name,
+            steps=steps,
         )
 
 
@@ -100,6 +126,24 @@ class DestructorExecution(CalleeExecution, frozen=True):
             ],
         )
 
+    def assignment_and_origin_steps(
+        self, enclosing_fqun: ast.Fqun
+    ) -> list[action_contract.PropagationStep]:
+        """Return the steps that lead a chain about this Destructor: its assignment to the particle, then where the particle came from, named in ``enclosing_fqun``."""
+        # The destructor is assigned when the particle is created, so its
+        # assignment and origin lead.
+        return [
+            self.action_assignment.propagation_step(),
+            action_contract.PropagationStep(
+                location=self.parent_particle.origin_position.location,
+                kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
+                enclosing_quality_name=self.acting_on_position.source_form_in_universe(
+                    enclosing_fqun
+                ),
+                triggered_quality_name=None,
+            ),
+        ]
+
 
 class DestructorCalleeExecution(DestructorExecution, frozen=True):
     """One execution of a Destructor that this action directly knows."""
@@ -123,15 +167,47 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
-        return requirement_violation.direct_destructor(
-            req=requirement,
-            definition=definition,
-            full_caller_chain=position_in_caller,
-            occupant=occupant,
-            acting_on_position=self.acting_on_position,
-            destroyed_particle=self.parent_particle,
-            action_assignment=self.action_assignment,
-            auto_destruction_target=self.auto_destruction_target,
+        enclosing_fqun = definition.typed_name.name_content.fqun
+        definition_name = definition.typed_name.source_typed_name
+        destructor_name = requirement.enclosing_action.typed_name.source_typed_name
+        position_name = position_in_caller.source_form_in_universe(enclosing_fqun)
+        if self.auto_destruction_target is None:
+            location = self.acting_on_position.location
+            auto_destruction_steps: list[action_contract.PropagationStep] = []
+        else:
+            location = self.auto_destruction_target.location
+            auto_destruction_steps = [
+                _auto_destruction_step(
+                    self.auto_destruction_target.source_form_in_universe(
+                        enclosing_fqun
+                    ),
+                    definition_name,
+                    location,
+                )
+            ]
+        steps = [
+            *self.assignment_and_origin_steps(enclosing_fqun),
+            *_fill_steps(
+                position_name,
+                occupant.last_position.location if occupant is not None else None,
+            ),
+            # Automatic Destruction happens at block end, just before the
+            # destruction that fires the destructor.
+            *auto_destruction_steps,
+            action_contract.PropagationStep(
+                location=location,
+                kind=action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+                enclosing_quality_name=definition_name,
+                triggered_quality_name=destructor_name,
+            ),
+            *requirement.propagation_chain(),
+        ]
+        return _diagnostic(
+            location=location,
+            position_name=position_name,
+            requirement=requirement,
+            action_name=destructor_name,
+            steps=steps,
         )
 
 
@@ -221,35 +297,26 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
             self.requirement_of_callee(requirement), caller_position
         )
 
-    def violation_at_destruction(
-        self,
-        requirement: action_contract.PositionRequirement,
-        at_destruction: KnownAtDestruction,
-        definition: ast.ActionDefinition,
-    ) -> diagnostics.InferredRequirementViolationDiagnostic | None:
-        """Return the diagnostic for ``requirement``, one of the Destructor's, if the state ``at_destruction`` recorded at the moment of destruction violates it."""
-        if not requirement_violation.is_violated(
-            requirement, at_destruction.occupancy.state, at_destruction.value_state
-        ):
-            return None
-        return self.destruction_requirement_violation(
-            requirement, at_destruction.position, at_destruction.occupancy, definition
+    def requirement_of_destroyer[Requirement: action_contract.PositionRequirement](
+        self, requirement: Requirement
+    ) -> Requirement:
+        """Return ``requirement``, one of the Destructor's, as a requirement of the destroyer, propagated from the Destructor's own requirement."""
+        destruction_fact = self.root.destruction_fact
+        return requirement.propagated_to(
+            destruction_fact.destroying_definition,
+            inferred_at=destruction_fact.directly_destroyed_position.location,
+            position=requirement.position.in_caller(
+                destruction_fact.destroyed_position_in_destroyer
+            ),
+            action_assignment=None,
         )
 
     def requirement_of_callee[Requirement: action_contract.PositionRequirement](
         self, requirement: Requirement
     ) -> Requirement:
         """Return ``requirement``, one of the Destructor's, as a requirement of the callee: the destroyer's requirement, propagated through each action between the callee and the destroyer."""
-        destruction_fact = self.root.destruction_fact
         return self.state_at_destruction.callee_contracts.destroyer_requirement_as_callee_requirement(
-            requirement.propagated_to(
-                destruction_fact.destroying_definition,
-                inferred_at=destruction_fact.directly_destroyed_position.location,
-                position=requirement.position.in_caller(
-                    destruction_fact.destroyed_position_in_destroyer
-                ),
-                action_assignment=None,
-            )
+            self.requirement_of_destroyer(requirement)
         )
 
     @typing.override
@@ -280,15 +347,103 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
         """Return the diagnostic for ``requirement``, one of the Destructor's on ``position``, which ``occupancy`` at the moment of destruction violates."""
-        return requirement_violation.contract_destructor(
-            propagated_requirement=requirement,
-            resolved_position=position,
-            occupancy=occupancy,
-            definition=definition,
-            destruction_fact=self.root.destruction_fact,
-            propagation_steps=self.state_at_destruction.callee_contracts.propagation_steps(),
-            particle_position=self.acting_on_position,
-            particle=self.parent_particle,
-            trigger=self.state_at_destruction.trigger,
-            destructor_quality=self.action_chain.get_last_action(),
+        enclosing_fqun = definition.typed_name.name_content.fqun
+        destruction_fact = self.root.destruction_fact
+        trigger = self.state_at_destruction.trigger
+        destroyer_requirement = self.requirement_of_destroyer(requirement)
+        position_name = position.source_form_in_universe(enclosing_fqun)
+        fill_at = occupancy.filled_at if _requires_empty(requirement) else None
+        if _requires_empty(requirement) and fill_at is None:
+            raise ValueError(
+                "an empty-requirement violation means the position is filled, "
+                + "so its fill site must be known"
+            )
+        # If the destroyer auto-destroyed the particle at its block's end, that
+        # happens after every trigger hop and just before the destructor fires
+        # (the same placement a directly known Destructor uses).
+        auto_destruction_steps: list[action_contract.PropagationStep] = []
+        if destruction_fact.is_automatic:
+            auto_destruction_steps.append(
+                _auto_destruction_step(
+                    destruction_fact.directly_destroyed_position.source_form_in_universe(
+                        enclosing_fqun
+                    ),
+                    destruction_fact.destroying_definition.typed_name.source_typed_name,
+                    destruction_fact.directly_destroyed_position.location,
+                )
+            )
+        steps = [
+            *self.assignment_and_origin_steps(enclosing_fqun),
+            trigger.step(),
+            *_fill_steps(position_name, fill_at),
+            *self.state_at_destruction.callee_contracts.propagation_steps(),
+            *auto_destruction_steps,
+            *destroyer_requirement.propagation_chain(),
+        ]
+        # The validating definition's own trigger of the callee is the runner the
+        # requirement gates.
+        return _diagnostic(
+            location=trigger.callee.location,
+            position_name=position_name,
+            requirement=requirement,
+            action_name=trigger.callee.get_last_action().full_typed_name,
+            steps=steps,
         )
+
+
+# Steps in a requirement violation's propagation chain are listed in the order
+# they would run if the program executed step by step, which differs by the
+# kind of execution, so each execution builds its own chain from these steps.
+
+
+def _fill_steps(
+    position_name: str, fill_at: ast.SourceLocation | None
+) -> list[action_contract.PropagationStep]:
+    if fill_at is None:
+        return []
+    return [
+        action_contract.PropagationStep(
+            location=fill_at,
+            kind=action_contract.PropagationKind.FILL_SITE,
+            enclosing_quality_name=position_name,
+            triggered_quality_name=None,
+        )
+    ]
+
+
+def _auto_destruction_step(
+    local_position_name: str,
+    containing_definition_name: str,
+    location: ast.SourceLocation,
+) -> action_contract.PropagationStep:
+    return action_contract.PropagationStep(
+        location=location,
+        kind=action_contract.PropagationKind.AUTO_DESTRUCTION,
+        enclosing_quality_name=local_position_name,
+        triggered_quality_name=containing_definition_name,
+    )
+
+
+def _requires_empty(requirement: action_contract.PositionRequirement) -> bool:
+    return (
+        isinstance(requirement, action_contract.PositionOccupancyRequirement)
+        and not requirement.requires_occupied
+    )
+
+
+def _diagnostic(
+    *,
+    location: ast.SourceLocation,
+    position_name: str,
+    requirement: action_contract.PositionRequirement,
+    action_name: str,
+    steps: list[action_contract.PropagationStep],
+) -> diagnostics.InferredRequirementViolationDiagnostic:
+    return diagnostics.InferredRequirementViolationDiagnostic(
+        location=location,
+        position_name=position_name,
+        propagation_chain=steps,
+        required_empty=_requires_empty(requirement),
+        required_value=isinstance(requirement, action_contract.ValueRequirement),
+        action_name=action_name,
+    )

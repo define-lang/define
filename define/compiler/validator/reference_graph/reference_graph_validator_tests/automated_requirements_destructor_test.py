@@ -25,6 +25,7 @@ _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
 _DESTROY_CARRIER = "action<my.domain.com:my_lib:/destroy_carrier>"
 _P = "action<my.domain.com:my_lib:/p>"
+_SECOND_DESTRUCTOR = "action<my.domain.com:my_lib:/second_destructor>"
 
 # Moves its own interface position's particle out and back, so it requires
 # that position to be occupied while leaving it unchanged (no guarantee).
@@ -481,3 +482,74 @@ def test_callee_attached_destructor_requirement_validated_at_owning_caller(
         (_TEST, _MAKE_THING),
         (_TEST, _DESTRUCTOR),
     ]
+
+
+def test_destructor_requirement_checked_when_another_destructor_changes_contracted_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+
+    second_destructor_violation = all_diags[0]
+    assert isinstance(
+        second_destructor_violation, diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert second_destructor_violation.location.line == 15
+    assert second_destructor_violation.location.column == 33
+    assert second_destructor_violation.location.file_path == PurePosixPath("test.dfn")
+    assert second_destructor_violation.position_name == "position<thing>::position</p>"
+    assert second_destructor_violation.action_name == _SECOND_DESTRUCTOR
+    assert second_destructor_violation.required_empty is True
+    assert second_destructor_violation.required_value is False
+    assert_propagation_chain(
+        second_destructor_violation,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<thing>",
+            "triggered_quality_name": _SECOND_DESTRUCTOR,
+            "line": 9,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<thing>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<thing>::position</p>",
+            "triggered_quality_name": None,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _SECOND_DESTRUCTOR,
+            "line": 15,
+            "column": 33,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SECOND_DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "second_destructor.dfn",
+        },
+    )
+
+    emptied_p = all_diags[1]
+    assert isinstance(emptied_p, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic)
+    assert emptied_p.location.line == 7
+    assert emptied_p.location.column == 30
+    assert emptied_p.location.file_path == PurePosixPath("first_destructor.dfn")
+    assert emptied_p.position_name == "position</p>"

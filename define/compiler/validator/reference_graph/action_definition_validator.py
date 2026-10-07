@@ -303,6 +303,7 @@ class ActionDefinitionValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         result = self._callee_execution_validator.validate(execution, scope)
+        self._tracker.apply_guarantees(execution.action_chain, execution.contract)
         self._diagnostics.extend(result.diagnostics)
         self._steps.append(
             codegen_input.ActionExecution(

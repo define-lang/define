@@ -579,16 +579,24 @@ class ParticleStateStore:
         self._placed(to_key, target.location)
         _ = self._put(from_key, PositionState(emptied_by=source))
 
-    def trigger(
+    def record_trigger(
+        self,
+        action: ast.ActionReference,
+        parent_particle: particle_info.ParticleInfo | None,
+    ):
+        """Record that this action triggered an action on a particle."""
+        last_action = action.get_last_action()
+        self._triggered[(parent_particle, last_action.full_typed_name)] = (
+            last_action.location
+        )
+
+    def apply_guarantees(
         self,
         action: ast.ActionReference,
         contract: action_contract.ActionContract,
-        parent_particle: particle_info.ParticleInfo | None,
     ):
-        """Record that this action triggered an action on a particle, and apply the action's Guarantees."""
-        last_action = action.get_last_action()
-        triggered_at = last_action.location
-        self._triggered[(parent_particle, last_action.full_typed_name)] = triggered_at
+        """Apply the Guarantees of ``action``, which this action triggered."""
+        triggered_at = action.get_last_action().location
         action_parent_position = _action_parent_position_key(action)
         guaranteed_keys: list[chained_name.PositionReferenceTuple] = []
         # Each particle from the caller that the callee moved leaves its

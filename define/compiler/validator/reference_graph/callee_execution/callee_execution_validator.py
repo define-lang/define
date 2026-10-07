@@ -81,7 +81,12 @@ class CalleeExecutionValidator:
         execution: callee_execution.CalleeExecution,
         scope: scope_tracker.ScopeTracker,
     ) -> CalleeExecutionValidationResult:
-        """Trigger the callee, and return what validating its execution produces."""
+        """Trigger the callee, and return what validating its execution produces.
+
+        This records what triggering the callee requires of this action's
+        state, but does not apply the callee's Guarantees; the caller applies
+        them when it needs them.
+        """
         action_chain = execution.action_chain
         contract = execution.contract
         action_assignment = execution.action_assignment
@@ -173,11 +178,15 @@ class CalleeExecutionValidator:
         for occupancy_requirement in execution.contract.occupancy_requirements:
             at_destruction = execution.occupancy_at_destruction(occupancy_requirement)
             if isinstance(at_destruction, callee_execution.KnownAtDestruction):
-                violation = execution.violation_at_destruction(
-                    occupancy_requirement, at_destruction, self._definition
-                )
-                if violation is not None:
-                    validation_diagnostics.append(violation)
+                if occupancy_requirement.is_violated_by(at_destruction.occupancy.state):
+                    validation_diagnostics.append(
+                        execution.destruction_requirement_violation(
+                            occupancy_requirement,
+                            at_destruction.position,
+                            at_destruction.occupancy,
+                            self._definition,
+                        )
+                    )
                 continue
             to_check.append(
                 execution.requirement_in_caller(occupancy_requirement, at_destruction)
@@ -216,11 +225,17 @@ class CalleeExecutionValidator:
                 )
                 if particle is not None:
                     self._dead_value_write_validator.mark_particle_used(particle)
-                violation = execution.violation_at_destruction(
-                    value_requirement, at_destruction, self._definition
-                )
-                if violation is not None:
-                    validation_diagnostics.append(violation)
+                if value_requirement.is_violated_by(
+                    at_destruction.occupancy.state, at_destruction.value_state
+                ):
+                    validation_diagnostics.append(
+                        execution.destruction_requirement_violation(
+                            value_requirement,
+                            at_destruction.position,
+                            at_destruction.occupancy,
+                            self._definition,
+                        )
+                    )
                 continue
             to_check.append(
                 execution.requirement_in_caller(value_requirement, at_destruction)
