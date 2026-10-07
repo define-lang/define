@@ -129,7 +129,7 @@ project: {
 
 This solves both problems above:
 
-- It creates forward compatibilty for config files by eliminating the "bool to
+- It creates forward compatibility for config files by eliminating the "bool to
   enum" migration entirely.
 - Because of how textproto parsing works, if you need to move from
   `Defcl::Boolean` to another enum type, it's still possible as long as you need

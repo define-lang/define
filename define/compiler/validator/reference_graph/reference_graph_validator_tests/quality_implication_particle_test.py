@@ -152,7 +152,7 @@ def test_create_in_occupied_implied_position(
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
-def test_destroy_in_empty_implied_position_inferrs_created(
+def test_destroy_in_empty_implied_position_infers_created(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(

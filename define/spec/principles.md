@@ -34,7 +34,7 @@ is structured, have simpler compilers, easier automated refactoring, etc.
 
 This means that even when the syntax and semantics of the language might allow
 us to write the same thing multiple ways, we should pick one of those ways and
-make the compiler actually forbid th eother pattern whenever it is detected.
+make the compiler actually forbid the other pattern whenever it is detected.
 
 ## Previous Languages Do Not Justify Decisions
 
@@ -84,8 +84,8 @@ hard it is to maintain a system that is both correct and easy to keep modifying,
 over time, usually among disconnected groups of software developers. Thus,
 Define optimizes for these problems over all other problems.
 
-We can think of Define as a purism of total maintability. The maintainability of
-an _ecosystem_ of Define programs by large numbers of programmers over a long
+We can think of Define as a purism of total maintainability. The maintainability
+of an _ecosystem_ of Define programs by large numbers of programmers over a long
 period of time is our top priority and overrides all other priorities for the
 design of Define. When I say "an ecosystem of Define programs" I mean multiple
 libraries and different pieces of code that all have to interact with each
@@ -104,7 +104,7 @@ elimination, fast symbol lookup, and all sorts of other things.
 Thus, we aren't _eliminating_ developer convenience. We just _start_ with
 maintainability as our total guide and we theorize that this will allow us to
 _get_ to a great developer experience, as opposed to sacrificing maintainability
-in the language design in exchange for the immediate convenince of typing code.
+in the language design in exchange for the immediate convenience of typing code.
 
 ## Define is Explicit
 

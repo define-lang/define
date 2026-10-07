@@ -127,7 +127,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         """The FQUN of the definition currently being transformed."""
         if self._context.enclosing_fqun is None:
             raise ValueError(
-                "tried to transform a name refeence before reading the enclosing definition name"
+                "tried to transform a name reference before reading the enclosing definition name"
             )
         return self._context.enclosing_fqun
 

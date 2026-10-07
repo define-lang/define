@@ -31,7 +31,7 @@ The language is currently in early prototyping stages.
 
 ### Philosophy
 
-[The Phillsophy of Define](define/docs/philosophy.md): A document originally
+[The Philosophy of Define](define/docs/philosophy.md): A document originally
 written in 2016 by @mkanat that explains the motivations and thoughts that were
 originally behind the language.
 

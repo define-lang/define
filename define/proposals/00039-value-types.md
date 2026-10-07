@@ -607,7 +607,7 @@ context of what logical operation is being executed, when doing optimizations.
 They've made a few different implementation choices, in particular around how
 operations are connected to abstract data types. I think their design decisions
 make a lot of sense for a generic compiler backend. In particular, their system
-of association allows much more fredom and requires writing less code. (Those
+of association allows much more freedom and requires writing less code. (Those
 differences will become clearer in a later proposal, but the general comparison
 with MLIR was worth pointing out here in this proposal as an overall thing.) We
 may decide to go in a similar direction in the future, but I wanted to start off

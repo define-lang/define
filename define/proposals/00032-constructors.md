@@ -16,7 +16,7 @@ creating a shared piece of code, you don't want to rely on every user of that
 code to set the initial state correctly; you want the variable to just come
 "prepackaged" with the right initial state.
 
-These requirements can get even more cmoplex, when you want to initialize the
+These requirements can get even more complex, when you want to initialize the
 state of an entire _form_ of particles. For example, if you have a locked queue,
 you want to set the mutex to unlocked and the queue to be an empty array (or
 perhaps a pre-allocated list of a certain size, for efficiency).

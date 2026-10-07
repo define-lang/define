@@ -68,7 +68,7 @@ flowchart LR
   run with `bazelisk test //...`. Run it explicitly with
   `bazelisk test //define/compiler:driver_fuzz_test` after changes to the
   parser, transformer, validator, or error classification code.
-- Update the fuzz test's code genration when the syntax or semantics of the
+- Update the fuzz test's code generation when the syntax or semantics of the
   language change, so that the generated inputs remain representative of valid
   and near-valid Define source.
 - When a fuzz test failure reveals a bug, add a targeted unit test for the

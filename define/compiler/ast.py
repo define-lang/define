@@ -39,7 +39,7 @@ class SourceLocation(msgspec.Struct, frozen=True):
     end_column: int
     file_path: PurePosixPath | None = None
 
-    # We use this instead of Lark's propagate_positions because propogate_positions
+    # We use this instead of Lark's propagate_positions because propagate_positions
     # was very slow (it was the #1 CPU consumer in compilation, overall).
     @classmethod
     def from_ast_or_token(

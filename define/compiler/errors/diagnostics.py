@@ -903,7 +903,7 @@ class LocalActionNameDiagnostic(Diagnostic):
     )
 
 
-# TODO: Inform the developer if the creation ocurred due to an inferred requirement
+# TODO: Inform the developer if the creation occurred due to an inferred requirement
 # from the caller. That's also relevant when you have multiple constructors run on
 # the same position that do something conflicting to one of the other positions, and
 # you need to refer to three things (the create statement that triggered the

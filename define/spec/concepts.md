@@ -1991,8 +1991,8 @@ programming language.
 On top of the problem of needing to represent some form in the physical universe
 via a symbol (a "meaning" or "value" on a dimension point), we have to contend
 with the fact that programs run on different types of computers, and that
-commputers themselves evolve over time. Thus, you actually have multiple
-problems to contend with in a value system:
+computers themselves evolve over time. Thus, you actually have multiple problems
+to contend with in a value system:
 
 1. The abstract _idea_ of a computer. It does math, but you don't know how. It
    can give you values and you can send it values, but you don't know how that
@@ -2009,7 +2009,7 @@ the computer did it.
 Programming languages must deal with both sides of this problem: they must
 present a logical form of operations to the programmer, but also be able to
 deterministically translate that into the instructions that get sent to the
-computer, ideally in a way that allows the computer to execute them efficently.
+computer, ideally in a way that allows the computer to execute them efficiently.
 
 In a sense, this actually gives you two different machines that you have to
 consider: (1) an imaginary machine that executes pure logic (2) a physical
@@ -2115,7 +2115,7 @@ other forms.
 
 ### Representations vs Concepts
 
-Funnily enough, all the different representaions of a number are _all_
+Funnily enough, all the different representations of a number are _all_
 representations of the _same concept_. So the concept doesn't change through
 translation layers, just the representation.
 

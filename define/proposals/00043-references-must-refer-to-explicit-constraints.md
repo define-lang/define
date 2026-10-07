@@ -20,7 +20,7 @@ create a particle in position<foo>::position</child>.
 ```
 
 As long as `position</parent>` implies `position</child>`, you can refer to
-`position</chlid>` even though the constraints in this file did not indicate
+`position</child>` even though the constraints in this file did not indicate
 that `position</child>` was available. This causes a few problems.
 
 ### 1: It's Confusing

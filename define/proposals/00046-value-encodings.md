@@ -357,7 +357,7 @@ less than 1.
 ### Specialized Encodings
 
 There is one interesting case that I ran across in my research: Rust enum
-optimization. For example, cconsider `Option<NonZeroU32>`. Logically, it has two
+optimization. For example, consider `Option<NonZeroU32>`. Logically, it has two
 alternatives:
 
 - `None`
@@ -386,7 +386,7 @@ In my analysis thus far, all necessary character, integer, and decimal encodings
 used in any real hardware can be represented via this system.
 
 There are things that people call "encodings" that cannot be represented by this
-system, but that is becasue they are not primitive values, but rather an
+system, but that is because they are not primitive values, but rather an
 _algorithm_. This is most common with compression schemes, image encodings, RPC
 protocols, etc. Those would be represented by code that actively encodes and
 decodes things, not by Define's value-type system.
