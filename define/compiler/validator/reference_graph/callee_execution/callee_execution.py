@@ -51,6 +51,11 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         """Where diagnostics about this execution point."""
         return self.acting_on_position.location
 
+    @property
+    def trigger_kind(self) -> action_contract.PropagationKind:
+        """How the action being validated triggers the callee, as a propagation step names it."""
+        return action_contract.PropagationKind.ACTION_TRIGGER
+
     def requirement_violation(
         self,
         requirement: action_contract.PositionRequirement,
@@ -69,11 +74,7 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         chain = requirement.propagation_chain()
         trigger_step = action_contract.PropagationStep(
             location=self.acting_on_position.location,
-            kind=(
-                action_contract.PropagationKind.CONSTRUCTOR_TRIGGER
-                if requirement.enclosing_action.is_constructor
-                else action_contract.PropagationKind.ACTION_TRIGGER
-            ),
+            kind=self.trigger_kind,
             enclosing_quality_name=definition.typed_name.source_typed_name,
             triggered_quality_name=requirement.enclosing_action.typed_name.source_typed_name,
         )
@@ -108,6 +109,11 @@ class ConstructorCalleeExecution(CalleeExecution, frozen=True):
             quality=self.action_chain.get_last_action(),
             assigned_to_position_name=self.acting_on_position.typed_names[-1],
         )
+
+    @property
+    @typing.override
+    def trigger_kind(self) -> action_contract.PropagationKind:
+        return action_contract.PropagationKind.CONSTRUCTOR_TRIGGER
 
 
 class DestructorExecution(CalleeExecution, frozen=True):

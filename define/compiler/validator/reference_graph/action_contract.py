@@ -70,13 +70,15 @@ class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
     caller: ast.ActionDefinition
     # The triggered callee, as the caller named it where it triggered it.
     callee: ast.ActionReference
+    # How the caller triggered the callee.
+    kind: PropagationKind
     previous: PropagationHistory | None
 
     def step(self) -> PropagationStep:
         """Return the propagation step that describes this trigger."""
         return PropagationStep(
             location=self.callee.location,
-            kind=PropagationKind.ACTION_TRIGGER,
+            kind=self.kind,
             enclosing_quality_name=self.caller.typed_name.source_typed_name,
             triggered_quality_name=self.callee.typed_names[-1].full_typed_name,
         )

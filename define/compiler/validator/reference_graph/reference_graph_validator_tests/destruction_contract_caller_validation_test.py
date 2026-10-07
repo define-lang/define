@@ -1403,3 +1403,66 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
         (_MID, _INNER),
         (_TEST, _MID),
     ]
+
+
+def test_destructor_requirement_violation_through_constructor_names_constructor_trigger(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "position<item>::position</left>::position</needed>"
+    )
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/cleanup>"
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is False
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<left>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 8,
+            "column": 28,
+            "file_path": "initialize.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<item>::position</left>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "initialize.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 6,
+            "column": 33,
+            "file_path": "cleanup.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )

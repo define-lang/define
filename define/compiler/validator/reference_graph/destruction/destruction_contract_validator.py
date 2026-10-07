@@ -19,7 +19,7 @@ from define.compiler.validator.reference_graph.destruction import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterator
 
     from define.compiler import ast, chained_name
     from define.compiler.data_structures import typed_name_dict
@@ -74,23 +74,22 @@ class DestructionContractValidator:
         )
 
     def validate(
-        self,
-        contracts: Sequence[action_contract.DestructionContracts],
-        action_chain: ast.ActionReference,
+        self, execution: callee_execution.CalleeExecution
     ) -> DestructionContractValidationResult:
-        """Add what this action knows to the destructions of the callee that ``action_chain`` triggers."""
+        """Add what this action knows to the destructions of the callee that ``execution`` triggers."""
         result = DestructionContractValidationResult()
-        for callee_contracts in contracts:
-            self._add_to_callee_destruction(callee_contracts, action_chain, result)
+        for callee_contracts in execution.contract.destruction_contracts:
+            self._add_to_callee_destruction(callee_contracts, execution, result)
         return result
 
     def _add_to_callee_destruction(
         self,
         callee_contracts: action_contract.DestructionContracts,
-        action_chain: ast.ActionReference,
+        execution: callee_execution.CalleeExecution,
         result: DestructionContractValidationResult,
     ):
         """Add what this action knows to one destruction of the callee, whose Destruction Contracts share a Child State."""
+        action_chain = execution.action_chain
         contracted_roots: list[destruction_walk.DestructionRoot] = []
         connections: list[destruction_contract.DestructionConnection] = []
         for callee_contract in callee_contracts.particles:
@@ -119,6 +118,7 @@ class DestructionContractValidator:
         trigger = action_contract.PropagationHistory(
             caller=self._definition,
             callee=action_chain,
+            kind=execution.trigger_kind,
             previous=callee_contracts.propagation,
         )
         state = _callee_state_at_destruction(

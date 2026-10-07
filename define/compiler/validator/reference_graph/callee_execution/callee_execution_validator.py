@@ -121,9 +121,7 @@ class CalleeExecutionValidator:
                 execution, value_requirements
             )
         )
-        destruction_result = self._destruction_contract_validator.validate(
-            contract.destruction_contracts, action_chain
-        )
+        destruction_result = self._destruction_contract_validator.validate(execution)
         # Validating a Destructor can record a requirement that makes this
         # action assume a particle is in a position. A walk that ran after
         # that would find the assumed particle and treat it as destroyed, so

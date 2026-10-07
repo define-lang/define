@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/initialize> {
+    it also assigns the position</left>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<left> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<left>.
+        move the particle in position<left> to position</left>.
+    }
+}
