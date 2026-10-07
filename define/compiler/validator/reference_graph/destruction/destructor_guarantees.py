@@ -10,17 +10,39 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
 
 
-# TODO: Consider a spec change that forbids Destructors from having empty or
-# unset requirements on their contracted positions. Today two Destructors on
-# one particle can require opposite states of a position whose state comes
-# from the caller. Validating them one at a time then reports the second
-# against the state the first's requirement made the action assume, and a
-# contract cannot record both requirements on one position.
+def destructor_requirements_to_publish(
+    requirements: Iterable[action_contract.PositionOccupancyRequirement],
+    enclosing_fqun: ast.Fqun,
+) -> tuple[
+    list[action_contract.PositionOccupancyRequirement], list[diagnostics.Diagnostic]
+]:
+    """Return a Destructor's occupancy requirements that its contract may publish, and a diagnostic for each requirement that a position is empty, which a Destructor may not have."""
+    published: list[action_contract.PositionOccupancyRequirement] = []
+    validation_diagnostics: list[diagnostics.Diagnostic] = []
+    for requirement in requirements:
+        if requirement.requires_occupied:
+            published.append(requirement)
+            continue
+        # The Destructor is already reported for the requirement, so its
+        # callers do not check it again.
+        validation_diagnostics.append(
+            diagnostics.DestructorRequiresEmptyPositionDiagnostic(
+                location=requirement.inferred_at,
+                position_name=requirement.position.source_form_in_universe(
+                    enclosing_fqun
+                ),
+            )
+        )
+    return published, validation_diagnostics
+
+
 def check_destructor_guarantees(
     guarantees: dict[
         chained_name.PositionReferenceTuple,

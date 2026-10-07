@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/inner> {
     define the position<incoming> {
         it may only contain particles where {
-            it has the action</destructor_empty>.
+            it has the action</destructor>.
         }
     }
     define the position<run>.
@@ -10,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/inner> {
     } and it does {
         define the position<local> {
             it may only contain particles where {
-                it has the action</destructor_empty>.
+                it has the action</destructor>.
             }
         }
         move the particle in position<incoming> to position<local>.

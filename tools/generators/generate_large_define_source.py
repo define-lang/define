@@ -239,12 +239,12 @@ def _emit_action_with_implications_and_constructor(
 def _emit_destructor_action(fqun_path: str) -> list[str]:
     return [
         f"define the potential action<{fqun_path}> {{",
-        f"{_OUTER_INDENT}define the position<_noop>.",
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}this particle is being destroyed.",
         f"{_OUTER_INDENT}}} and it does {{",
-        # A destructor must leave every position in the state it was in.
-        # Create-then-destroy nets to zero so no guarantee diagnostic fires.
+        # A destructor may not require a contracted position to be empty, so
+        # its scratch position is local to the action statements block.
+        f"{_INNER_INDENT}define the position<_noop>.",
         f"{_INNER_INDENT}create a particle in position<_noop>.",
         f"{_INNER_INDENT}destroy the particle in position<_noop>.",
         f"{_OUTER_INDENT}}}",

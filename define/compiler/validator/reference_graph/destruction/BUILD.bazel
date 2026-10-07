@@ -21,7 +21,6 @@ py_test(
     srcs = ["child_state_test.py"],
     deps = [
         ":child_state",
-        "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",

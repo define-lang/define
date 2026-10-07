@@ -7,8 +7,10 @@ define the potential action<my.domain.com:my_lib:/fill_1> {
     } and it does {
         destroy the particle in position<run>.
         create a particle in position</child_a>.
+        create a particle in position</child_a>::position</child_2>.
         create a particle in position</child_a>::action</fill_2>::position<run>.
         create a particle in position</child_b>.
+        create a particle in position</child_b>::position</child_2>.
         create a particle in position</child_b>::action</fill_2>::position<run>.
     }
 }

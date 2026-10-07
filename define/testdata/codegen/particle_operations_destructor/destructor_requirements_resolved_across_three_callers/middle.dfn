@@ -10,7 +10,6 @@ define the potential action<my.domain.com:my_lib:/middle> {
         the position<target> has a particle.
     } and it does {
         create a particle in position<target>::position</middle_known>.
-        destroy the particle in position<target>::position</middle_known>.
         move the particle in position<target> to action</destroyer>::position<target>.
         create a particle in action</destroyer>::position<run>.
     }

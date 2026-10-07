@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing
-from pathlib import PurePosixPath
 from unittest import mock
 
 import pytest
@@ -122,14 +121,13 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     )
     assert first_contracts.child_state is not second_contracts.child_state
     child_position = _chain("position<my.domain.com:my_lib:/child>")
-    occupied = first_contracts.child_state.occupancy.get(child_position)
-    assert occupied is not None
-    assert occupied.state == position_occupancy.PositionOccupancyState.OCCUPIED
-    assert occupied.filled_at is not None
-    assert occupied.filled_at.file_path == PurePosixPath("middle.dfn")
+    assert (
+        first_contracts.child_state.occupancy.get(child_position)
+        == position_occupancy.PositionOccupancyState.OCCUPIED
+    )
     assert (
         second_contracts.child_state.occupancy.get(child_position)
-        == position_occupancy.EMPTY_OCCUPANCY
+        == position_occupancy.PositionOccupancyState.EMPTY
     )
 
 
@@ -256,7 +254,9 @@ def test_large_child_states_share_extend_and_compact_from_source(
     project["test.dfn"] = "\n".join(lines) + "\n"
     result = validate_project(project, max_workers=1)
     assert_no_errors(result.program_result)
-    snapshots: list[child_state.ChildStateStore[position_occupancy.ChildOccupancy]] = []
+    snapshots: list[
+        child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
+    ] = []
     for stage, count in enumerate(counts):
         (contracts,) = published_contracts[
             f"action<my.domain.com:my_lib:/stage{stage}>"
@@ -274,8 +274,7 @@ def test_large_child_states_share_extend_and_compact_from_source(
             occupancy = snapshot.get(
                 _chain(f"position<my.domain.com:my_lib:/child{index}>")
             )
-            assert occupancy is not None
-            assert occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
+            assert occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
         assert snapshot.get(_chain("position<unknown>")) is None
         for index in range(count, counts[-1]):
             assert (
@@ -348,8 +347,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
             parent.position_in_child_state,
         )
     )
-    assert occupancy is not None
-    assert occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
+    assert occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
     assert (
         contracts.child_state.occupancy.get(
             chained_name.with_prefix(

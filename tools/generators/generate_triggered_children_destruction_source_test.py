@@ -76,7 +76,7 @@ def test_error_program_reports_its_one_error(tmp_path: Path):
     assert diagnostic.parent_position_name == "position<scratch>"
 
 
-def test_in_destructor_contracted_program_reports_each_particle_left_on_the_contracted_particle(
+def test_in_destructor_contracted_program_reports_each_child_required_empty_and_each_particle_left(
     tmp_path: Path,
 ):
     source = (
@@ -85,8 +85,8 @@ def test_in_destructor_contracted_program_reports_each_particle_left_on_the_cont
     )
     result = driver.Driver().compile_source(source, tmp_path / "generated")
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.all_diagnostics) == 4
+    first, second, third, fourth = result.all_diagnostics
     assert isinstance(first, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
     assert first.location.line == 75
     assert first.location.column == 30
@@ -99,6 +99,18 @@ def test_in_destructor_contracted_program_reports_each_particle_left_on_the_cont
     assert second.location.end_line == 77
     assert second.location.end_column == 50
     assert second.position_name == "position</kept>::position</child_1_1>"
+    assert isinstance(third, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert third.location.line == 91
+    assert third.location.column == 30
+    assert third.location.end_line == 91
+    assert third.location.end_column == 77
+    assert third.position_name == "position</kept>::position</child_1_0>"
+    assert isinstance(fourth, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert fourth.location.line == 91
+    assert fourth.location.column == 30
+    assert fourth.location.end_line == 91
+    assert fourth.location.end_column == 77
+    assert fourth.position_name == "position</kept>::position</child_1_1>"
 
 
 @pytest.mark.parametrize(("depth", "fan_out"), [(0, 1), (1, 0)])

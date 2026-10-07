@@ -1,5 +1,5 @@
 # action</mid> is the knower of the Destructor on the particle it passes to action</inner>, which empties the particle's position</shelf> before destroying it.
-# action</mid> resolves the Destructor itself: position</shelf> is empty at destruction, so position</shelf>::position</book> below it is empty too.
+# action</mid> resolves the Destructor itself: position</shelf> is empty at destruction, so position</shelf>::position</book> below it is empty too, which violates the Destructor's requirement that it is occupied.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

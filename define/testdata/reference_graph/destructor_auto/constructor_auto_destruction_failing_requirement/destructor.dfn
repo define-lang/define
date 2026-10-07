@@ -1,0 +1,12 @@
+# Moves the particle in its own interface position out and back, so it
+# requires that position to be occupied when the destructor fires.
+define the potential action<my.domain.com:my_lib:/destructor> {
+    define the position<item>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<_holder>.
+        move the particle in position<item> to position<_holder>.
+        move the particle in position<_holder> to position<item>.
+    }
+}

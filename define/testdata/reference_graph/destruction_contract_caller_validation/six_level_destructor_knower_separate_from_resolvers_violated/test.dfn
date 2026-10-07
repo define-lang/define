@@ -1,6 +1,4 @@
-# When outer knows the destructor but no required states, while middle (blind) makes the occupied-required position known-empty and inner (blind) fills the empty-required one, outer is the only place every state is known, so it reports both violations there with p2's fill site carried from inner.
-# inner filled p2; outer never touched it, so the fill site is the one the
-# contract carried up from inner.
+# When outer knows the destructor but no required states, while middle (blind) makes one occupied-required position known-empty and inner (blind) makes the other known-empty, outer is the only place every state is known, so it reports both violations there from the states the contract carried up.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

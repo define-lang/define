@@ -1575,6 +1575,11 @@ started. An occupied position contains the same particle in the same position
 with the same qualities. These unchanged Action Guarantees are the complete set
 of Action Guarantees produced by a destructor.
 
+### Destructor Automatic Action Requirements
+
+Destructors may not have an Automatic Action Requirement that a position is
+empty or that a value is unset.
+
 ### Destructor Requirement Validation
 
 A destructor has [Automatic Action Requirements](#automatic-action-requirements)

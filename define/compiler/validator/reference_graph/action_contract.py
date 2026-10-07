@@ -347,7 +347,7 @@ class ChildPositionParticles(msgspec.Struct, frozen=True):
 class ChildState(msgspec.Struct, frozen=True):
     """Independent occupancy and value knowledge at destruction time."""
 
-    occupancy: child_state.ChildStateStore[position_occupancy.ChildOccupancy]
+    occupancy: child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
     # Unknown values have no entry, so resolving a value only adds knowledge.
     values: child_state.ChildStateStore[particle_info.ParticleValueState]
     # For each position at or below the destroyed position that the
@@ -376,7 +376,7 @@ class ChildState(msgspec.Struct, frozen=True):
 
     def occupancy_at(
         self, position: chained_name.ChainedNameTuple
-    ) -> position_occupancy.ChildOccupancy | None:
+    ) -> position_occupancy.PositionOccupancyState | None:
         """Return a position's destruction-time occupancy, including what callees left there that was never expanded, if it is known."""
         occupancy = self.occupancy.get(position)
         if occupancy is not None:
@@ -390,22 +390,21 @@ class ChildState(msgspec.Struct, frozen=True):
             above = self.occupancy.get(chained_name.ChainedNameTuple(position[:length]))
             if above is None:
                 continue
-            if above.state == position_occupancy.PositionOccupancyState.EMPTY:
-                return position_occupancy.EMPTY_OCCUPANCY
-            if above.state == position_occupancy.PositionOccupancyState.ERROR:
-                return position_occupancy.ERROR_OCCUPANCY
+            if above != position_occupancy.PositionOccupancyState.OCCUPIED:
+                return above
             break
         is_below_new_particle, left = self._left_by_callees(position)
         if left is None:
             # The child positions of a new particle are empty until something
             # fills them.
-            return position_occupancy.EMPTY_OCCUPANCY if is_below_new_particle else None
+            return (
+                position_occupancy.PositionOccupancyState.EMPTY
+                if is_below_new_particle
+                else None
+            )
         if isinstance(left.guarantee, ErrorGuarantee):
-            return position_occupancy.ERROR_OCCUPANCY
-        return position_occupancy.ChildOccupancy(
-            position_occupancy.PositionOccupancyState.OCCUPIED,
-            filled_at=left.guarantee.caused_by.location,
-        )
+            return position_occupancy.PositionOccupancyState.ERROR
+        return position_occupancy.PositionOccupancyState.OCCUPIED
 
     def value_at(
         self, position: chained_name.ChainedNameTuple

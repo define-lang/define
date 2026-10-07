@@ -4,10 +4,9 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<box> {
             it may only contain particles where {
-                it has the action</destructor_empty>.
+                it has the action</destructor>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</destructor_empty>::position<item>.
     }
 }

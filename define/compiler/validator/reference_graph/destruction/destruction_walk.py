@@ -84,7 +84,7 @@ class CalleeStateAtDestruction(msgspec.Struct, frozen=True):
         occupancy = self.child_state.occupancy.get(position_in_child_state)
         return (
             occupancy is not None
-            and occupancy.state == position_occupancy.PositionOccupancyState.EMPTY
+            and occupancy == position_occupancy.PositionOccupancyState.EMPTY
         )
 
     def caller_particle_at(

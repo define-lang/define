@@ -3,7 +3,8 @@ define the potential action<my.domain.com:my_lib:/cleanup> {
     it happens when {
         this particle is being destroyed.
     } and it does {
-        create a particle in position</child_1>::position</child_2>.
-        destroy the particle in position</child_1>::position</child_2>.
+        define the position<_holder>.
+        move the particle in position</child_1>::position</child_2> to position<_holder>.
+        move the particle in position<_holder> to position</child_1>::position</child_2>.
     }
 }

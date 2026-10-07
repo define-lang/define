@@ -1,4 +1,4 @@
-# first_destructor changes its contracted position</p>, which breaks DLP 41. second_destructor requires position</p> empty, and /test filled it, so second_destructor's requirement is still violated at the moment of destruction.
+# Both destructors require position</p> occupied, and /test left it empty. first_destructor also changes position</p>, which breaks DLP 41, but second_destructor's requirement is still validated against the state at the moment of destruction.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -7,11 +7,9 @@ define the potential action<my.domain.com:my_lib:/test> {
             it may only contain particles where {
                 it has the action</first_destructor>.
                 it has the action</second_destructor>.
-                it has the position</p>.
             }
         }
         create a particle in position<thing>.
-        create a particle in position<thing>::position</p>.
         destroy the particle in position<thing>.
     }
 }

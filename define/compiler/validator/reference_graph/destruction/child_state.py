@@ -121,7 +121,7 @@ def _extended_state[State](
 
 
 type ChildOccupancyMap = dict[
-    chained_name.ChainedNameTuple, position_occupancy.ChildOccupancy
+    chained_name.ChainedNameTuple, position_occupancy.PositionOccupancyState
 ]
 type ChildValueMap = dict[
     chained_name.ChainedNameTuple, particle_info.ParticleValueState

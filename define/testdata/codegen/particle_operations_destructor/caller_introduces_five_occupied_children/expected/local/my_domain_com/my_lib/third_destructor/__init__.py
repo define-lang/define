@@ -4,14 +4,12 @@ from typing import ClassVar, Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.third
 
 
 class ThirdDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.third.ThirdPosition,
-        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
@@ -29,9 +27,8 @@ class ThirdDestructorAction(literal.Action):
                 local.my_domain_com.my_lib.third.ThirdPosition
             )
         )
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).destroy_particle()
+        marker = literal.LocalPosition[Never](
+            "position<marker>",
+        )
+        marker.create_particle()
+        marker.destroy_particle()

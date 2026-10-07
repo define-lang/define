@@ -369,7 +369,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
         diagnostic.position_name
         == "action</destroyer>::position<holder>::position</child_1>::position</child_2>"
     )
-    assert diagnostic.required_empty is True
+    assert diagnostic.required_empty is False
     assert diagnostic.required_value is False
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/destroyer>"
     assert_propagation_chain(
@@ -399,14 +399,6 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "action</destroyer>::position<holder>::position</child_1>::position</child_2>",
-            "triggered_quality_name": None,
-            "line": 8,
-            "column": 30,
-            "file_path": "fill_2.dfn",
-        },
-        {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": _CLEANUP,
@@ -418,7 +410,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
-            "line": 6,
+            "line": 7,
             "column": 30,
             "file_path": "cleanup.dfn",
         },
@@ -604,7 +596,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
         diagnostic.position_name
         == "action</destroyer>::position<holder>::position</box>::position</child_a>::position</child_2>"
     )
-    assert diagnostic.required_empty is True
+    assert diagnostic.required_empty is False
     assert diagnostic.required_value is False
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/destroyer>"
     assert_propagation_chain(
@@ -634,14 +626,6 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "action</destroyer>::position<holder>::position</box>::position</child_a>::position</child_2>",
-            "triggered_quality_name": None,
-            "line": 8,
-            "column": 30,
-            "file_path": "fill_2.dfn",
-        },
-        {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": _CLEANUP,
@@ -653,7 +637,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
-            "line": 6,
+            "line": 7,
             "column": 30,
             "file_path": "cleanup.dfn",
         },

@@ -1,4 +1,4 @@
-# When outer knows the destructor but no required states, while middle (blind to the destructor) fills the occupied-required position and inner (also blind) empties the empty-required one, the destructor is checked once at outer using the contract-carried states and passes.
+# When outer knows the destructor but no required states, while middle (blind to the destructor) fills one occupied-required position and inner (also blind) fills the other, the destructor is checked once at outer using the contract-carried states and passes.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

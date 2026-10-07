@@ -1,4 +1,4 @@
-# action</middle> is the knower of the Destructor: it resolves position</p2>, which it fills, and reports that violation itself.
+# action</middle> is the knower of the Destructor: it resolves position</p2>, which it empties, and reports that violation itself.
 # position</p1> comes from action</outer>, so action</middle> requires it to be occupied,
 # and action</outer>, which empties it, violates that requirement where it triggers action</middle>.
 define the potential action<my.domain.com:my_lib:/test> {

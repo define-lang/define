@@ -62,7 +62,6 @@ class TestGenerateSourceLines:
         source = "\n".join(
             gen.generate_source_lines(gen.GraphOptions(layers=3, width=3, fan_out=2))
         )
-        assert "define the potential position" in source
         assert "define the potential action" in source
         assert "it may only contain particles where" in source
         assert "this particle is being destroyed" in source
@@ -219,7 +218,7 @@ def test_destructor_cascades():
     assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("this particle is being destroyed.") == 4
-    assert len(result.definition_results) == 8
+    assert len(result.definition_results) == 7
 
 
 def test_invalid_destructor_depth():

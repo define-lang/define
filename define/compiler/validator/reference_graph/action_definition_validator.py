@@ -846,7 +846,14 @@ class ActionDefinitionValidator:
             requirements,
         )
         destruction_contracts = self._destruction_contracts
+        published_requirements = list(requirements.values())
         if self._definition.is_destructor:
+            published_requirements, requirement_diagnostics = (
+                destructor_guarantees.destructor_requirements_to_publish(
+                    published_requirements, self._enclosing_fqun
+                )
+            )
+            self._diagnostics.extend(requirement_diagnostics)
             self._diagnostics.extend(
                 destructor_guarantees.check_destructor_guarantees(
                     guarantees, self._tracker, self._enclosing_fqun
@@ -857,7 +864,7 @@ class ActionDefinitionValidator:
             # already reported as a forbidden Guarantee.
             destruction_contracts = []
         contract = action_contract.ActionContract(
-            occupancy_requirements=list(requirements.values()),
+            occupancy_requirements=published_requirements,
             value_requirements=list(
                 self._requirement_validator.value_requirements.values()
             ),

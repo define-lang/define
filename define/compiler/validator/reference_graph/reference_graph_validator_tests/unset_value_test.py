@@ -1204,7 +1204,7 @@ def test_multiple_value_requirements(
     )
 
 
-def test_destructor_value_and_empty_requirements(
+def test_destructor_value_and_occupied_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
@@ -1610,14 +1610,14 @@ def test_destructor_multiple_value_requirements(
     )
 
 
-def test_knower_requires_emptiness_and_value_of_its_caller_set(
+def test_knower_requires_occupancy_and_value_of_its_caller_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
 
 
-def test_knower_requires_emptiness_and_value_of_its_caller_unset(
+def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
@@ -1625,7 +1625,7 @@ def test_knower_requires_emptiness_and_value_of_its_caller_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
+    assert diagnostic.location.line == 22
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
@@ -1641,7 +1641,7 @@ def test_knower_requires_emptiness_and_value_of_its_caller_unset(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1649,7 +1649,7 @@ def test_knower_requires_emptiness_and_value_of_its_caller_unset(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
-            "line": 20,
+            "line": 22,
             "column": 47,
             "file_path": "test.dfn",
         },
@@ -1681,7 +1681,7 @@ def test_knower_requires_emptiness_and_value_of_its_caller_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 16,
+            "line": 17,
             "column": 78,
             "file_path": "cleanup.dfn",
         },

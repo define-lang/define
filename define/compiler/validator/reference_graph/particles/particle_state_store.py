@@ -54,17 +54,14 @@ class PositionState(msgspec.Struct):
     # nodes.
     unexpanded: action_contract.ChildPositionParticles | None = None
 
-    def child_occupancy(self) -> position_occupancy.ChildOccupancy | None:
+    def child_occupancy(self) -> position_occupancy.PositionOccupancyState | None:
         """Return this position's occupancy as Child State records it, or None when nothing about it is known."""
         if self.has_error:
-            return position_occupancy.ERROR_OCCUPANCY
+            return position_occupancy.PositionOccupancyState.ERROR
         if self.particle is not None:
-            return position_occupancy.ChildOccupancy(
-                position_occupancy.PositionOccupancyState.OCCUPIED,
-                filled_at=self.particle.last_position.location,
-            )
+            return position_occupancy.PositionOccupancyState.OCCUPIED
         if self.emptied_by is not None:
-            return position_occupancy.EMPTY_OCCUPANCY
+            return position_occupancy.PositionOccupancyState.EMPTY
         return None
 
     def child_value(self) -> particle_info.ParticleValueState | None:

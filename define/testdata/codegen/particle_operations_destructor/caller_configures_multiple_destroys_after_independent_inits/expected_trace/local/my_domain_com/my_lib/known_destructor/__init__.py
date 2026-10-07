@@ -4,14 +4,12 @@ from typing import ClassVar, Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.empty_marker
 import local.my_domain_com.my_lib.marker
 
 
 class KnownDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.MarkerPosition,
-        local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition,
     )
 
     @override
@@ -31,11 +29,3 @@ class KnownDestructorAction(literal.Action):
             )
         )
         literal.record_operation("known_destructor.move(retained_marker, /marker)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
-        ).create_particle()
-        literal.record_operation("known_destructor.create(/empty_marker)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
-        ).destroy_particle()
-        literal.record_operation("known_destructor.destroy(/empty_marker)")

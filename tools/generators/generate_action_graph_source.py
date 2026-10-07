@@ -80,7 +80,6 @@ _OUTER_INDENT = "    "
 _INNER_INDENT = "        "
 _DEEP_INDENT = "            "
 
-_MARKER_POSITION = "/marker"
 _MARKER_DESTRUCTOR = "/marker_destructor"
 
 
@@ -115,25 +114,24 @@ def _emit_header() -> list[str]:
 
 
 def _emit_destructor_definitions(prefix: str, depth: int) -> list[str]:
-    marker = _qualified(prefix, _MARKER_POSITION)
-    lines = [f"define the potential position<{marker}>.", ""]
+    lines: list[str] = []
     for index in reversed(range(depth)):
         path = _MARKER_DESTRUCTOR if index == 0 else f"{_MARKER_DESTRUCTOR}_{index}"
         lines.extend(
             [
                 f"define the potential action<{_qualified(prefix, path)}> {{",
-                f"{_OUTER_INDENT}it also assigns the position<{_MARKER_POSITION}>.",
                 f"{_OUTER_INDENT}it happens when {{",
                 f"{_INNER_INDENT}this particle is being destroyed.",
                 f"{_OUTER_INDENT}}} and it does {{",
             ]
         )
-        # A destructor must leave every contracted position as it found it.
-        # Create-then-destroy of the implied marker nets to zero.
+        # A destructor may not require a contracted position to be empty, so
+        # its marker position is local to the action statements block.
         lines.extend(
             [
-                f"{_INNER_INDENT}create a particle in position<{_MARKER_POSITION}>.",
-                f"{_INNER_INDENT}destroy the particle in position<{_MARKER_POSITION}>.",
+                f"{_INNER_INDENT}define the position<marker>.",
+                f"{_INNER_INDENT}create a particle in position<marker>.",
+                f"{_INNER_INDENT}destroy the particle in position<marker>.",
             ]
         )
         if index + 1 < depth:

@@ -90,11 +90,6 @@ _DESTRUCTOR_CONTRIBUTION_CASES = (
 
 _LATER_INIT_CONFIGURATION_CASES = [
     pytest.param(
-        "contributed_destructor_move_removes_fill_after_two_destruction_dependencies",
-        "extra_destructor",
-        ("test", "caller"),
-    ),
-    pytest.param(
         "caller_configures_destructor_after_independent_inits",
         "extra_destructor",
         ("test", "caller"),

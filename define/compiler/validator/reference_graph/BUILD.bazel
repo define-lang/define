@@ -150,10 +150,6 @@ py_library(
     name = "position_occupancy",
     srcs = ["position_occupancy.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "@pypi//msgspec",
-    ],
 )
 
 py_library(

@@ -7,12 +7,13 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<source> {
             it may only contain particles where {
                 it has the action</destructor>.
+                it has the position</item>.
                 it has the position</child>.
             }
         }
         create a particle in position<source>.
         create a particle in position<source>::position</child>.
-        create a particle in position<source>::position</child>::position</item>.
+        create a particle in position<source>::position</item>.
         move the particle in position<source> to action</destroyer>::position<run>.
     }
 }

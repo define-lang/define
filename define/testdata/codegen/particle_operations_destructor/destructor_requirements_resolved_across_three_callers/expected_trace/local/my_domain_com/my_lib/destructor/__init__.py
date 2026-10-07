@@ -21,6 +21,9 @@ class DestructorAction(literal.Action):
         callee_holder = literal.LocalPosition[Never](
             "position<callee_holder>",
         )
+        middle_holder = literal.LocalPosition[Never](
+            "position<middle_holder>",
+        )
         creator_holder = literal.LocalPosition[Never](
             "position<creator_holder>",
         )
@@ -38,12 +41,16 @@ class DestructorAction(literal.Action):
         literal.record_operation("destructor.move(callee_holder, /callee_known)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
-        ).create_particle()
-        literal.record_operation("destructor.create(/middle_known)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
-        ).destroy_particle()
-        literal.record_operation("destructor.destroy(/middle_known)")
+        ).move_particle_to(
+            middle_holder
+        )
+        literal.record_operation("destructor.move(/middle_known, middle_holder)")
+        middle_holder.move_particle_to(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
+            )
+        )
+        literal.record_operation("destructor.move(middle_holder, /middle_known)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).move_particle_to(

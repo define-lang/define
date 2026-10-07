@@ -24,7 +24,6 @@ _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _DELETE_FILE1 = "action<my.domain.com:my_lib:/delete_file1>"
 _DELETE_FILE2 = "action<my.domain.com:my_lib:/delete_file2>"
 _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
-_DELETE_EMPTY_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_empty_destructor>"
 _CLOSE_DETAIL_DESTRUCTOR = "action<my.domain.com:my_lib:/close_detail_destructor>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
@@ -39,18 +38,12 @@ def test_circular_destructor_contract_is_skipped(
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].constraint_name == "action</close_file>"
-    assert all_diags[0].position_name == "position<dependency>"
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[0].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
-    assert all_diags[0].location.file_path == PurePosixPath("destructor.dfn")
-    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[1].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
-    assert all_diags[1].location.line == 4
-    assert all_diags[1].location.column == 24
-    assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[0].location.file_path == PurePosixPath("close_file.dfn")
     assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
 
 
@@ -60,18 +53,12 @@ def test_circular_caller_attached_destructor_contract_is_skipped(
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].constraint_name == "action</caller>"
-    assert all_diags[0].position_name == "position<dependency>"
-    assert all_diags[0].location.line == 4
-    assert all_diags[0].location.column == 24
-    assert all_diags[0].location.file_path == PurePosixPath("destructor.dfn")
-    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[1].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
-    assert all_diags[1].location.line == 13
-    assert all_diags[1].location.column == 28
-    assert all_diags[1].location.file_path == PurePosixPath("caller.dfn")
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[0].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("caller.dfn")
     assert action_graph(result.reference_graph_result) == [(_CALLER, _CLOSE_FILE)]
 
 
@@ -263,90 +250,22 @@ def test_caller_unknown_child_state_requirement_violated(
     ]
 
 
-def test_caller_known_empty_requirement_satisfied(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _DELETE_EMPTY_DESTRUCTOR),
-        (_TEST, _CLOSE_FILE),
-    ]
-
-
-def test_caller_known_empty_requirement_violated(
+def test_caller_attached_destructor_requiring_empty_position_is_reported_only_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 21
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].required_empty is True
-    assert all_diags[0].action_name == _CLOSE_FILE
-    assert (
-        all_diags[0].position_name
-        == "position<box>::action</close_file>::position<target>::position</file>"
+    assert all_diags[0].location.file_path == PurePosixPath(
+        "delete_empty_destructor.dfn"
     )
-    assert_propagation_chain(
-        all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<my_file>",
-            "triggered_quality_name": _DELETE_EMPTY_DESTRUCTOR,
-            "line": 13,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
-            "triggered_quality_name": None,
-            "line": 18,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _CLOSE_FILE,
-            "line": 21,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</file>",
-            "triggered_quality_name": None,
-            "line": 19,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DELETE_EMPTY_DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": _DELETE_EMPTY_DESTRUCTOR,
-            "triggered_quality_name": None,
-            "line": 6,
-            "column": 30,
-            "file_path": "delete_empty_destructor.dfn",
-        },
-    )
-    assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _DELETE_EMPTY_DESTRUCTOR),
-        (_TEST, _CLOSE_FILE),
-    ]
+    assert all_diags[0].position_name == "position</file>"
 
 
 def test_two_caller_attached_destructors_validated_independently(

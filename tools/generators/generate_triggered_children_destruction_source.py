@@ -45,8 +45,8 @@ class Shape(enum.StrEnum):
     # destroyed when the Destructor ends.
     IN_DESTRUCTOR = "in-destructor"
     # A Destructor triggers the first action on a particle in one of its
-    # implied positions, so the program reports each particle that action
-    # leaves there.
+    # implied positions, so the program reports each position that action
+    # requires to be empty there and each particle it leaves there.
     IN_DESTRUCTOR_CONTRACTED = "in-destructor-contracted"
     # Every action triggers the next one on its own parent particle, once per
     # ``fan_out``, and destroys the particle that action created there before

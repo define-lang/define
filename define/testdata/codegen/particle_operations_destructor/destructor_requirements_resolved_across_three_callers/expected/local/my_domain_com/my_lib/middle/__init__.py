@@ -48,11 +48,6 @@ class MiddleAction(literal.Action):
         ).create_particle()
         self.get_interface_position(
             "position<target>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
-        ).destroy_particle()
-        self.get_interface_position(
-            "position<target>"
         ).move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
@@ -98,3 +93,6 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         self._destroy_position_target(
             particle
         )
+        particle.get_position(
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
+        ).destroy_particle()

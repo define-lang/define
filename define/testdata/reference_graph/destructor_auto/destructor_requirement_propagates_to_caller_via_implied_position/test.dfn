@@ -10,13 +10,11 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<my_file> {
             it may only contain particles where {
-                it has the action</destructor_empty>.
-                it has the position</item>.
+                it has the action</destructor>.
             }
         }
         create a particle in position<box>.
         create a particle in position<my_file>.
-        create a particle in position<my_file>::position</item>.
         move the particle in position<my_file> to position<box>::action</inner>::position<incoming>.
         create a particle in position<box>::action</inner>::position<run>.
     }

@@ -3,7 +3,8 @@ define the potential action<my.domain.com:my_lib:/second_destructor> {
     it happens when {
         this particle is being destroyed.
     } and it does {
-        create a particle in position</p>.
-        destroy the particle in position</p>.
+        define the position<_holder>.
+        move the particle in position</p> to position<_holder>.
+        move the particle in position<_holder> to position</p>.
     }
 }

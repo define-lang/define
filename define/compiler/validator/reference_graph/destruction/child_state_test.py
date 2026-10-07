@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -16,19 +16,16 @@ def _chain(*names: str) -> chained_name.ChainedNameTuple:
 
 
 def test_independent_callers():
-    location = ast.start_of_file_location()
-    occupied = position_occupancy.ChildOccupancy(
-        position_occupancy.PositionOccupancyState.OCCUPIED, location
-    )
+    occupied = position_occupancy.PositionOccupancyState.OCCUPIED
     original_values = {
         _chain("parent"): occupied,
-        _chain("parent", "empty"): position_occupancy.EMPTY_OCCUPANCY,
-        _chain("parent", "error"): position_occupancy.ERROR_OCCUPANCY,
+        _chain("parent", "empty"): position_occupancy.PositionOccupancyState.EMPTY,
+        _chain("parent", "error"): position_occupancy.PositionOccupancyState.ERROR,
     }
     original = child_state.FlatChildStateStore(original_values)
     first = original.with_caller({_chain("first"): occupied})
     second = original.with_caller(
-        {_chain("second"): position_occupancy.ERROR_OCCUPANCY}
+        {_chain("second"): position_occupancy.PositionOccupancyState.ERROR}
     )
     for position, occupancy in original_values.items():
         assert original.get(position) is occupancy
@@ -39,22 +36,24 @@ def test_independent_callers():
     assert first.get(_chain("first")) is occupied
     assert first.get(_chain("second")) is None
     assert second.get(_chain("first")) is None
-    assert second.get(_chain("second")) is position_occupancy.ERROR_OCCUPANCY
+    assert (
+        second.get(_chain("second")) is position_occupancy.PositionOccupancyState.ERROR
+    )
     assert first.get(_chain("unknown")) is None
 
 
 def test_repeated_compaction_preserves_earlier_states():
-    occupied = position_occupancy.ChildOccupancy(
-        position_occupancy.PositionOccupancyState.OCCUPIED, ast.start_of_file_location()
-    )
+    occupied = position_occupancy.PositionOccupancyState.OCCUPIED
     occupancies = (
         occupied,
-        position_occupancy.EMPTY_OCCUPANCY,
-        position_occupancy.ERROR_OCCUPANCY,
+        position_occupancy.PositionOccupancyState.EMPTY,
+        position_occupancy.PositionOccupancyState.ERROR,
     )
-    snapshots: list[child_state.ChildStateStore[position_occupancy.ChildOccupancy]] = []
+    snapshots: list[
+        child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
+    ] = []
     oracles: list[child_state.ChildOccupancyMap] = []
-    snapshot: child_state.ChildStateStore[position_occupancy.ChildOccupancy] = (
+    snapshot: child_state.ChildStateStore[position_occupancy.PositionOccupancyState] = (
         child_state.FlatChildStateStore({})
     )
     expected: child_state.ChildOccupancyMap = {}
@@ -83,16 +82,18 @@ def test_large_branching_callers_preserve_retained_knowledge():
     randomizer = random.Random(74921)  # noqa: S311 - Reproducible caller topology.
     initial: child_state.ChildOccupancyMap = {}
     for index in range(1_024):
-        initial[_chain(str(index))] = position_occupancy.EMPTY_OCCUPANCY
-    histories: list[child_state.ChildStateStore[position_occupancy.ChildOccupancy]] = [
-        child_state.FlatChildStateStore(initial)
-    ]
+        initial[_chain(str(index))] = position_occupancy.PositionOccupancyState.EMPTY
+    histories: list[
+        child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
+    ] = [child_state.FlatChildStateStore(initial)]
     oracles = [initial]
     for index in range(80):
         callee = randomizer.randrange(len(histories))
         knowledge: child_state.ChildOccupancyMap = {}
         for key in range(1_024 + index * 300, 1_324 + index * 300):
-            knowledge[_chain(str(key))] = position_occupancy.ERROR_OCCUPANCY
+            knowledge[_chain(str(key))] = (
+                position_occupancy.PositionOccupancyState.ERROR
+            )
         oracles.append(knowledge | oracles[callee])
         histories.append(histories[callee].with_caller(knowledge))
     positions = [_chain(str(index)) for index in range(1_024 + 80 * 300 + 1)]
@@ -102,9 +103,7 @@ def test_large_branching_callers_preserve_retained_knowledge():
 
 
 def test_resolve_value_without_changing_occupancy():
-    occupied = position_occupancy.ChildOccupancy(
-        position_occupancy.PositionOccupancyState.OCCUPIED, ast.start_of_file_location()
-    )
+    occupied = position_occupancy.PositionOccupancyState.OCCUPIED
     original = action_contract.ChildState(
         child_state.FlatChildStateStore({_chain("value"): occupied}),
         child_state.FlatChildStateStore({}),
@@ -132,9 +131,7 @@ def test_resolve_value_without_changing_occupancy():
 
 
 def test_value_and_occupancy_stores_compact_independently():
-    occupied = position_occupancy.ChildOccupancy(
-        position_occupancy.PositionOccupancyState.OCCUPIED, ast.start_of_file_location()
-    )
+    occupied = position_occupancy.PositionOccupancyState.OCCUPIED
     occupancies = {_chain(str(index)): occupied for index in range(32)}
     values = {
         _chain(str(index)): particle_info.ParticleValueState.SET for index in range(16)

@@ -11,10 +11,8 @@ define the potential action<my.domain.com:my_lib:/middle> {
     } and it does {
         create a particle in position<run>::position</child>.
         create a particle in position<run>::position</child>::position</item>.
-        destroy the particle in position<run>::position</child>::position</item>.
         create a particle in position<run>::position</other_child>.
         create a particle in position<run>::position</other_child>::position</item>.
-        destroy the particle in position<run>::position</other_child>::position</item>.
         move the particle in position<run> to action</destroyer>::position<run>.
     }
 }

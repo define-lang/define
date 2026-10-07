@@ -178,12 +178,11 @@ class CalleeExecutionValidator:
         for occupancy_requirement in execution.contract.occupancy_requirements:
             at_destruction = execution.occupancy_at_destruction(occupancy_requirement)
             if isinstance(at_destruction, callee_execution.KnownAtDestruction):
-                if occupancy_requirement.is_violated_by(at_destruction.occupancy.state):
+                if occupancy_requirement.is_violated_by(at_destruction.occupancy):
                     validation_diagnostics.append(
                         execution.destruction_requirement_violation(
                             occupancy_requirement,
                             at_destruction.position,
-                            at_destruction.occupancy,
                             self._definition,
                         )
                     )
@@ -226,13 +225,12 @@ class CalleeExecutionValidator:
                 if particle is not None:
                     self._dead_value_write_validator.mark_particle_used(particle)
                 if value_requirement.is_violated_by(
-                    at_destruction.occupancy.state, at_destruction.value_state
+                    at_destruction.occupancy, at_destruction.value_state
                 ):
                     validation_diagnostics.append(
                         execution.destruction_requirement_violation(
                             value_requirement,
                             at_destruction.position,
-                            at_destruction.occupancy,
                             self._definition,
                         )
                     )

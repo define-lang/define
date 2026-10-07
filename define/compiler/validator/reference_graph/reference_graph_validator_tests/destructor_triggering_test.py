@@ -28,19 +28,7 @@ def test_and_normal_action(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_destroys_implied_position(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
-
-
 def test_destruction_contract(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
-
-
-def test_empty_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)

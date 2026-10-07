@@ -3,12 +3,6 @@
 from __future__ import annotations
 
 import enum
-import typing
-
-import msgspec
-
-if typing.TYPE_CHECKING:
-    from define.compiler import ast
 
 
 class PositionOccupancyState(enum.Enum):
@@ -17,19 +11,3 @@ class PositionOccupancyState(enum.Enum):
     EMPTY = enum.auto()
     OCCUPIED = enum.auto()
     ERROR = enum.auto()
-
-
-class ChildOccupancy(msgspec.Struct, frozen=True):
-    """A child position's occupancy and fill location."""
-
-    state: PositionOccupancyState
-    # Where the occupying particle was last placed, so a caller that resolves an
-    # empty-requirement violation from this record (rather than from its own
-    # tracker) can still report the fill site. Only set when state is OCCUPIED.
-    filled_at: ast.SourceLocation | None = None
-
-
-# The empty and error states carry no fill site, so a single shared instance
-# serves every position. OCCUPIED must be constructed with its own filled_at.
-EMPTY_OCCUPANCY = ChildOccupancy(PositionOccupancyState.EMPTY)
-ERROR_OCCUPANCY = ChildOccupancy(PositionOccupancyState.ERROR)

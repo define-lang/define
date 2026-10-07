@@ -1351,6 +1351,18 @@ class DestructorGuaranteeDiagnostic(Diagnostic):
     position_name: str
 
 
+class DestructorRequiresEmptyPositionDiagnostic(Diagnostic):
+    """A destructor requires one of its contracted positions to be empty."""
+
+    position_name: str
+
+    message_format: ClassVar[str] = (
+        "a destructor may not require a position to be empty.\n"
+        "However, this line requires '{self.position_name}' to be empty when the"
+        " destructor runs."
+    )
+
+
 class DestructorProducesEmptyGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     """Diagnostic for when a destructor leaves a contracted position empty that started occupied."""
 

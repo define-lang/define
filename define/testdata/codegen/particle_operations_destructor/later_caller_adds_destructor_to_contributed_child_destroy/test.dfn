@@ -1,5 +1,5 @@
 # Middle contributes the child's Destroy, and a later caller supplies the
-# child's Destructor. Its /marker Destroy precedes both simultaneous Destroys.
+# child's Destructor. Its marker Destroy precedes both simultaneous Destroys.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</middle>.
     it happens when {

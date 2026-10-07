@@ -27,7 +27,7 @@ class KnownAtDestruction(msgspec.Struct, frozen=True):
     # From this action's perspective, below the destroyed particle.
     position: ast.PositionReference
     position_in_child_state: chained_name.ChainedNameTuple
-    occupancy: position_occupancy.ChildOccupancy
+    occupancy: position_occupancy.PositionOccupancyState
     value_state: particle_info.ParticleValueState | None
 
 
@@ -268,7 +268,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
             return state.position_in_caller(position, position_in_child_state)
         value_state = state.child_state.value_at(position_in_child_state)
         if (
-            occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
+            occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
             and value_state is None
         ):
             return state.position_in_caller(position, position_in_child_state)
@@ -328,36 +328,21 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
         return self.destruction_requirement_violation(
-            requirement,
-            position_in_caller,
-            position_occupancy.EMPTY_OCCUPANCY
-            if occupant is None
-            else position_occupancy.ChildOccupancy(
-                position_occupancy.PositionOccupancyState.OCCUPIED,
-                filled_at=occupant.last_position.location,
-            ),
-            definition,
+            requirement, position_in_caller, definition
         )
 
     def destruction_requirement_violation(
         self,
         requirement: action_contract.PositionRequirement,
         position: ast.PositionReference,
-        occupancy: position_occupancy.ChildOccupancy,
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
-        """Return the diagnostic for ``requirement``, one of the Destructor's on ``position``, which ``occupancy`` at the moment of destruction violates."""
+        """Return the diagnostic for ``requirement``, one of the Destructor's on ``position``, which the state at the moment of destruction violates."""
         enclosing_fqun = definition.typed_name.name_content.fqun
         destruction_fact = self.root.destruction_fact
         trigger = self.state_at_destruction.trigger
         destroyer_requirement = self.requirement_of_destroyer(requirement)
         position_name = position.source_form_in_universe(enclosing_fqun)
-        fill_at = occupancy.filled_at if _requires_empty(requirement) else None
-        if _requires_empty(requirement) and fill_at is None:
-            raise ValueError(
-                "an empty-requirement violation means the position is filled, "
-                + "so its fill site must be known"
-            )
         # If the destroyer auto-destroyed the particle at its block's end, that
         # happens after every trigger hop and just before the destructor fires
         # (the same placement a directly known Destructor uses).
@@ -375,7 +360,6 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         steps = [
             *self.assignment_and_origin_steps(enclosing_fqun),
             trigger.step(),
-            *_fill_steps(position_name, fill_at),
             *self.state_at_destruction.callee_contracts.propagation_steps(),
             *auto_destruction_steps,
             *destroyer_requirement.propagation_chain(),

@@ -3,8 +3,8 @@
 
 A particle carrying two destructors (d1, d2) is passed down a long chain of
 Action Executions and destroyed at the bottom, where both destructors fire with
-unmet requirements (p1 is filled, so d1's empty-requirement is violated; p2 is
-emptied, so d2's occupied-requirement is violated). The chain must trace every
+unmet requirements (p1 and p2 are both emptied, so the occupied requirements of
+d1 and d2 are violated). The chain must trace every
 trigger hop from the validating definition down to the destruction, the same way
 ordinary requirement propagation does.
 
@@ -57,8 +57,9 @@ _FILES = {
         "    it happens when {\n"
         "        this particle is being destroyed.\n"
         "    } and it does {\n"
-        "        create a particle in position</p1>.\n"
-        "        destroy the particle in position</p1>.\n"
+        "        define the position<_holder>.\n"
+        "        move the particle in position</p1> to position<_holder>.\n"
+        "        move the particle in position<_holder> to position</p1>.\n"
         "    }\n"
         "}\n"
     ),
@@ -129,14 +130,12 @@ _FILES = {
         "    it also assigns the action</do_nothing>.\n"
         "    define the position<trigger_pos> {\n"
         "        it may only contain particles where {\n"
-        "            it has the position</p1>.\n"
         "            it has the position</p2>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
         "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        create a particle in position<trigger_pos>::position</p1>.\n"
         "        create a particle in position<trigger_pos>::position</p2>.\n"
         "        destroy the particle in position<trigger_pos>::position</p2>.\n"
         "        move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.\n"
@@ -269,7 +268,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     d2_diag = all_diags[0]
     d1_diag = all_diags[1]
     assert d2_diag.required_empty is False
-    assert d1_diag.required_empty is True
+    assert d1_diag.required_empty is False
 
     # d1 is hidden from every trigger position below outer_implied::incoming, so
     # its contract is validated at outer_implied (the first caller that knows d1).
@@ -278,7 +277,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         File "outer_implied.dfn", line 18, column 52
             move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs.
+        'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be occupied before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/d1>' is assigned to 'position<incoming>':
@@ -293,12 +292,8 @@ def test_destruction_contract_traces_every_trigger_hop(
             File "outer_implied.dfn", line 18, column 52
                 move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' is filled here:
-            File "triggered_by_outer_implied.dfn", line 12, column 30
-                create a particle in position<trigger_pos>::position</p1>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
-            File "triggered_by_outer_implied.dfn", line 15, column 55
+            File "triggered_by_outer_implied.dfn", line 13, column 55
                 move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.
                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
@@ -318,8 +313,8 @@ def test_destruction_contract_traces_every_trigger_hop(
                 destroy the particle in position<to_destroy>.
                                         ^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/d1>' infers this requirement:
-            File "d1.dfn", line 6, column 30
-                create a particle in position</p1>.
+            File "d1.dfn", line 7, column 30
+                move the particle in position</p1> to position<_holder>.
                                      ^^^^^^^^^^^^^""")
 
     # d2 is invisible everywhere below position</carrier>, so the first caller
@@ -350,7 +345,7 @@ def test_destruction_contract_traces_every_trigger_hop(
                 move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
-            File "triggered_by_outer_implied.dfn", line 15, column 55
+            File "triggered_by_outer_implied.dfn", line 13, column 55
                 move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.
                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':

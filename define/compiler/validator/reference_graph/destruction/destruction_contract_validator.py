@@ -187,8 +187,7 @@ def _callee_state_at_destruction(
         # if the callee moved it.
         if (
             known_occupancy is not None
-            and known_occupancy.state
-            == position_occupancy.PositionOccupancyState.OCCUPIED
+            and known_occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
         ):
             value = root_state.child_value()
             if value is not None and callee_child_state.values.get(name) is None:
@@ -212,10 +211,7 @@ def _callee_state_at_destruction(
                 child_occupancy = child_position_state.child_occupancy()
                 if child_occupancy is not None:
                     occupancy[name] = child_occupancy
-            elif (
-                known_occupancy.state
-                != position_occupancy.PositionOccupancyState.OCCUPIED
-            ):
+            elif known_occupancy != position_occupancy.PositionOccupancyState.OCCUPIED:
                 # The callee knows this position is empty or has an error, so
                 # this action's particle cannot supply a value here.
                 continue

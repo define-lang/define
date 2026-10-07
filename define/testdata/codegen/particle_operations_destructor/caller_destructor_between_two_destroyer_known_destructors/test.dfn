@@ -1,6 +1,6 @@
 # The caller assigns /caller_destructor between the two Destructors known by
-# /destroyer. All three leave /marker empty, so each Destructor's Guarantee
-# precedes the next Destructor in reverse assignment order.
+# /destroyer. /destroyer runs the two it knows, and the caller's contribution
+# then runs /caller_destructor.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

@@ -174,17 +174,10 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
                                      ^^^^^^^^^^^^^^""")
 
 
-def test_destructor_requires_empty_position_format(
+def test_destructor_requiring_empty_position_format(
     validate_project: ValidateProject,
 ):
     files = {
-        "child_q.dfn": (
-            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the action</destructor_empty>.\n"
-            "    }\n"
-            "}\n"
-        ),
         "destructor_empty.dfn": (
             "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
             "    define the position<item>.\n"
@@ -203,18 +196,10 @@ def test_destructor_requires_empty_position_format(
             "    } and it does {\n"
             "        define the position<box> {\n"
             "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
+            "                it has the action</destructor_empty>.\n"
             "            }\n"
             "        }\n"
-            "        define the position<staging> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<staging>.\n"
-            "        create a particle in position<staging>::position</child_q>.\n"
-            "        move the particle in position<staging> to position<box>.\n"
-            "        create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
+            "        create a particle in position<box>.\n"
             "        destroy the particle in position<box>.\n"
             "    }\n"
             "}\n"
@@ -224,33 +209,15 @@ def test_destructor_requires_empty_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 19, column 33
-            destroy the particle in position<box>.
-                                    ^^^^^^^^^^^^^
-        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
-
-        This error happens because:
-          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
-            File "child_q.dfn", line 3, column 20
-                it has the action</destructor_empty>.
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^
-          the particle in 'position<box>::position</child_q>' comes from here:
-            File "test.dfn", line 16, column 30
-                create a particle in position<staging>::position</child_q>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
-            File "test.dfn", line 18, column 30
-                create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "test.dfn", line 19, column 33
-                destroy the particle in position<box>.
-                                        ^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
-            File "destructor_empty.dfn", line 6, column 30
-                create a particle in position<item>.
-                                     ^^^^^^^^^^^^^^""")
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "destructor_empty.dfn", line 6, column 30
+            create a particle in position<item>.
+                                 ^^^^^^^^^^^^^^
+        a destructor may not require a position to be empty.
+        However, this line requires 'position<item>' to be empty when the destructor runs.""")
+    )
 
 
 def test_aware_destructor_requirement_surfaces_as_action_requires_format(
@@ -366,7 +333,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         allow_entry_action_interface_positions=True,
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 3
     assert (
         all_diags[0].format(result.program_result.source_map)
         == textwrap.dedent("""\
@@ -377,7 +344,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         However, this line empties 'position<incoming>' and then nothing puts the same particle back into that position.""")
     )
     assert (
-        all_diags[1].format(result.program_result.source_map)
+        all_diags[2].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 17, column 65
             move the particle in position<tmp>::position</child> to position<dest>.
@@ -404,9 +371,9 @@ def test_destructor_occupied_guarantee_format(
         {"test.dfn": test_source}, allow_entry_action_interface_positions=True
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert (
-        all_diags[0].format(result.program_result.source_map)
+        all_diags[1].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 6, column 30
             create a particle in position<item>.
@@ -414,88 +381,6 @@ def test_destructor_occupied_guarantee_format(
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line creates a new particle in 'position<item>' and then nothing removes it from that position.""")
     )
-
-
-def test_auto_destruction_destructor_requires_empty_position_format(
-    validate_project: ValidateProject,
-):
-    files = {
-        "child_q.dfn": (
-            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the action</destructor_empty>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "destructor_empty.dfn": (
-            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
-            "    define the position<item>.\n"
-            "    it happens when {\n"
-            "        this particle is being destroyed.\n"
-            "    } and it does {\n"
-            "        create a particle in position<item>.\n"
-            "        destroy the particle in position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "test.dfn": (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    it happens when {\n"
-            "        this particle is created.\n"
-            "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
-            "        define the position<staging> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<staging>.\n"
-            "        create a particle in position<staging>::position</child_q>.\n"
-            "        move the particle in position<staging> to position<box>.\n"
-            "        create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-    }
-    result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 17, column 51
-            move the particle in position<staging> to position<box>.
-                                                      ^^^^^^^^^^^^^
-        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
-
-        This error happens because:
-          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
-            File "child_q.dfn", line 3, column 20
-                it has the action</destructor_empty>.
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^
-          the particle in 'position<box>::position</child_q>' comes from here:
-            File "test.dfn", line 16, column 30
-                create a particle in position<staging>::position</child_q>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
-            File "test.dfn", line 18, column 30
-                create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          the particle in 'position<box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>':
-            File "test.dfn", line 17, column 51
-                move the particle in position<staging> to position<box>.
-                                                          ^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "test.dfn", line 17, column 51
-                move the particle in position<staging> to position<box>.
-                                                          ^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
-            File "destructor_empty.dfn", line 6, column 30
-                create a particle in position<item>.
-                                     ^^^^^^^^^^^^^^""")
 
 
 def test_auto_destruction_destructor_requires_occupied_position_format(
@@ -569,101 +454,6 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30
                 move the particle in position<item> to position<_holder>.
-                                     ^^^^^^^^^^^^^^""")
-
-
-def test_destructor_cascade_through_action_format(
-    validate_project: ValidateProject,
-):
-    files = {
-        "destructor_empty.dfn": (
-            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
-            "    define the position<item>.\n"
-            "    it happens when {\n"
-            "        this particle is being destroyed.\n"
-            "    } and it does {\n"
-            "        create a particle in position<item>.\n"
-            "        destroy the particle in position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "item.dfn": "define the potential position<my.domain.com:my_lib:/item>.\n",
-        "inner.dfn": (
-            "define the potential action<my.domain.com:my_lib:/inner> {\n"
-            "    define the position<incoming> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the action</destructor_empty>.\n"
-            "            it has the position</item>.\n"
-            "        }\n"
-            "    }\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<local> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the action</destructor_empty>.\n"
-            "            }\n"
-            "        }\n"
-            "        define the position<item_holder>.\n"
-            "        move the particle in position<incoming>::position</item> to position<item_holder>.\n"
-            "        move the particle in position<incoming> to position<local>.\n"
-            "        move the particle in position<item_holder> to position<local>::action</destructor_empty>::position<item>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "test.dfn": (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    it happens when {\n"
-            "        this particle is created.\n"
-            "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the action</inner>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<box>.\n"
-            "        create a particle in position<box>::action</inner>::position<incoming>.\n"
-            "        create a particle in position<box>::action</inner>::position<incoming>::position</item>.\n"
-            "        create a particle in position<box>::action</inner>::position<run>.\n"
-            "    }\n"
-            "}\n"
-        ),
-    }
-    result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        File "inner.dfn", line 19, column 52
-            move the particle in position<incoming> to position<local>.
-                                                       ^^^^^^^^^^^^^^^
-        'position<local>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
-
-        This error happens because:
-          'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<incoming>':
-            File "inner.dfn", line 4, column 24
-                it has the action</destructor_empty>.
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^
-          the particle in 'position<local>' comes from here:
-            File "inner.dfn", line 18, column 30
-                move the particle in position<incoming>::position</item> to position<item_holder>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'position<local>::action</destructor_empty>::position<item>' is filled here:
-            File "inner.dfn", line 20, column 55
-                move the particle in position<item_holder> to position<local>::action</destructor_empty>::position<item>.
-                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          the particle in 'position<local>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/inner>':
-            File "inner.dfn", line 19, column 52
-                move the particle in position<incoming> to position<local>.
-                                                           ^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/inner>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
-            File "inner.dfn", line 19, column 52
-                move the particle in position<incoming> to position<local>.
-                                                           ^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
-            File "destructor_empty.dfn", line 6, column 30
-                create a particle in position<item>.
                                      ^^^^^^^^^^^^^^""")
 
 
@@ -759,125 +549,6 @@ def test_destruction_contract_requires_occupied_format(
                                      ^^^^^^^^^^^^^^^""")
 
 
-def test_destruction_contract_requires_empty_format(
-    validate_project: ValidateProject,
-):
-    """A caller-attached destructor requires its implied position</p2> empty; a blind filler (which knows only position</p2>) fills it, so /test validates the empty-requirement violation with the fill site carried up from the contract."""
-    files = {
-        "p2.dfn": "define the potential position<my.domain.com:my_lib:/p2>.\n",
-        "d.dfn": (
-            "define the potential action<my.domain.com:my_lib:/d> {\n"
-            "    it also assigns the position</p2>.\n"
-            "    it happens when {\n"
-            "        this particle is being destroyed.\n"
-            "    } and it does {\n"
-            "        create a particle in position</p2>.\n"
-            "        destroy the particle in position</p2>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "close_file.dfn": (
-            "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-            "    define the position<target>.\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        destroy the particle in position<target>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "filler.dfn": (
-            "define the potential action<my.domain.com:my_lib:/filler> {\n"
-            "    define the position<incoming> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</p2>.\n"
-            "        }\n"
-            "    }\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the action</close_file>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<box>.\n"
-            "        create a particle in position<incoming>::position</p2>.\n"
-            "        move the particle in position<incoming> to position<box>::action</close_file>::position<target>.\n"
-            "        create a particle in position<box>::action</close_file>::position<run>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        "test.dfn": (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    it happens when {\n"
-            "        this particle is created.\n"
-            "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the action</filler>.\n"
-            "            }\n"
-            "        }\n"
-            "        define the position<my_file> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the action</d>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<box>.\n"
-            "        create a particle in position<my_file>.\n"
-            "        move the particle in position<my_file> to position<box>::action</filler>::position<incoming>.\n"
-            "        create a particle in position<box>::action</filler>::position<run>.\n"
-            "    }\n"
-            "}\n"
-        ),
-    }
-    result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 18, column 30
-            create a particle in position<box>::action</filler>::position<run>.
-                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'position<box>::action</filler>::position<incoming>::position</p2>' must be empty before 'action<my.domain.com:my_lib:/filler>' runs.
-
-        This error happens because:
-          'action<my.domain.com:my_lib:/d>' is assigned to 'position<my_file>':
-            File "test.dfn", line 12, column 28
-                it has the action</d>.
-                           ^^^^^^^^^^
-          the particle in 'position<box>::action</filler>::position<incoming>' comes from here:
-            File "test.dfn", line 16, column 30
-                create a particle in position<my_file>.
-                                     ^^^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/filler>':
-            File "test.dfn", line 18, column 30
-                create a particle in position<box>::action</filler>::position<run>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'position<box>::action</filler>::position<incoming>::position</p2>' is filled here:
-            File "filler.dfn", line 17, column 30
-                create a particle in position<incoming>::position</p2>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/filler>' triggers 'action<my.domain.com:my_lib:/close_file>':
-            File "filler.dfn", line 19, column 30
-                create a particle in position<box>::action</close_file>::position<run>.
-                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d>':
-            File "close_file.dfn", line 7, column 33
-                destroy the particle in position<target>.
-                                        ^^^^^^^^^^^^^^^^
-          'action<my.domain.com:my_lib:/d>' infers this requirement:
-            File "d.dfn", line 6, column 30
-                create a particle in position</p2>.
-                                     ^^^^^^^^^^^^^""")
-
-
-# TODO: The auto-destruction step still names 'position<local_box>', a local
-# position inside mid that does not appear in the pointed-at line. A future
-# change should show the stack of positional moves that carried the particle to
-# where it was auto-destroyed.
 def test_destruction_contract_auto_destruction_format(
     validate_project: ValidateProject,
 ):
@@ -1189,10 +860,10 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
     }
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     # test.dfn's Destructor reports this, but it is located in b.dfn.
     assert (
-        all_diags[0].format(result.program_result.source_map)
+        all_diags[1].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "b.dfn", line 7, column 30
             create a particle in position</out>.

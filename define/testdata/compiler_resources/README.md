@@ -218,10 +218,10 @@ fills, an action that creates a particle with a Destructor and then one that
 destroys it, `in-destructor` has a Destructor create and fill the particle,
 which is destroyed when the Destructor ends, `in-destructor-contracted` has a
 Destructor fill a particle in one of its implied positions, so both programs
-report the particles that leaves there, and `same-particle` has every action
-trigger the next one on its own parent particle and destroy the particle that
-action created there before triggering it again, so there are no child
-particles.
+report the positions that requires to be empty there and the particles it leaves
+there, and `same-particle` has every action trigger the next one on its own
+parent particle and destroy the particle that action created there before
+triggering it again, so there are no child particles.
 
 ```sh
 for shape in local destructors contracted move rearrange rearrange-destructors error dependent-siblings in-destructor in-destructor-contracted same-particle; do

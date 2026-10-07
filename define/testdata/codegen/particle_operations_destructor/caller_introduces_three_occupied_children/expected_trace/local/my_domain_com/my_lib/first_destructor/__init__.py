@@ -5,13 +5,11 @@ from typing import ClassVar, Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.first
-import local.my_domain_com.my_lib.marker
 
 
 class FirstDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.first.FirstPosition,
-        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
@@ -31,11 +29,10 @@ class FirstDestructorAction(literal.Action):
             )
         )
         literal.record_operation("first_destructor.move(holder, /first)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).create_particle()
-        literal.record_operation("first_destructor.create(/marker)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).destroy_particle()
-        literal.record_operation("first_destructor.destroy(/marker)")
+        marker = literal.LocalPosition[Never](
+            "position<marker>",
+        )
+        marker.create_particle()
+        literal.record_operation("first_destructor.create(marker)")
+        marker.destroy_particle()
+        literal.record_operation("first_destructor.destroy(marker)")
