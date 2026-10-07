@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/fill_3> {
+    it also assigns the position</first>.
+    it also assigns the position</second>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</first>.
+        create a particle in position</second>.
+    }
+}

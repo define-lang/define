@@ -1,0 +1,17 @@
+# action</make> creates a particle in its interface position<box> and
+# guarantees a particle with a Destructor in its child position</inner>. This
+# action never expands it, so destroying position<holder> runs action</cleanup>
+# through action</make>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</make>::position<run>.
+    }
+}

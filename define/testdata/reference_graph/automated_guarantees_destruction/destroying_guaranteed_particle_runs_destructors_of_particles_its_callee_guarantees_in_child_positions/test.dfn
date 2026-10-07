@@ -1,0 +1,18 @@
+# action</fill_3> guarantees particles with Destructors in two child positions
+# of the particle that action</fill_2> creates in position</middle>, which is a
+# child position of the particle that action</fill_1> creates in
+# position</child>. Destroying position<holder> runs both Destructors through
+# action</fill_1>, which runs them through action</fill_2>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

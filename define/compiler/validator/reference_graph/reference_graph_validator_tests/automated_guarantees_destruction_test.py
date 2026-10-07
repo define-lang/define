@@ -759,6 +759,40 @@ def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when
     ]
 
 
+def test_destroying_guaranteed_particles_runs_every_destructor_of_each(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.reference_graph_result) == [
+        (_BUILD, "action<my.domain.com:my_lib:/make>"),
+        (_TEST, _BUILD),
+        (_TEST, _CLEANUP),
+        (_TEST, "action<my.domain.com:my_lib:/cleanup_b>"),
+        (_TEST, _CLEANUP),
+    ]
+
+
+def test_destroying_guaranteed_particle_runs_destructors_of_particles_its_callee_guarantees_in_child_positions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.reference_graph_result) == [
+        (
+            "action<my.domain.com:my_lib:/fill_2>",
+            "action<my.domain.com:my_lib:/fill_3>",
+        ),
+        (
+            "action<my.domain.com:my_lib:/fill_1>",
+            "action<my.domain.com:my_lib:/fill_2>",
+        ),
+        (_TEST, "action<my.domain.com:my_lib:/fill_1>"),
+        (_TEST, _CLEANUP),
+        (_TEST, _CLEANUP),
+    ]
+
+
 def test_destructor_requirement_inside_what_a_callee_left_holds_without_expanding(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
