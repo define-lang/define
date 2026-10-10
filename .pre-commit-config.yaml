@@ -41,6 +41,7 @@ repos:
           bazelisk test --noshow_progress
           //define/proposals:validate_proposals_test
           //defcl/proposals:validate_proposals_test
+          //define/standard/proposals:validate_proposals_test
           //tools:sync_agent_permissions_test
         language: system
         types_or: [markdown, json]

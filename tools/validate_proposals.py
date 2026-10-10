@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate proposal files in the define/proposals/ directory."""
+"""Validate proposal files in the proposals directories."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ REQUIRED_METADATA: list[str] = [
 
 PROPOSAL_TITLE_PREFIX = "Define Language Proposal"
 DCL_PROPOSAL_TITLE_PREFIX = "Define Configuration Language Proposal"
+STANDARD_LIBRARY_PROPOSAL_TITLE_PREFIX = "Define Standard Library Proposal"
 
 FILENAME_PATTERN = re.compile(r"^(\d{5})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 
@@ -80,10 +81,12 @@ def validate_title(
 
     proposal_number = filename_result.proposal_number
 
-    is_dcl_proposal = "defcl" in filepath.parts
-    expected_prefix = (
-        DCL_PROPOSAL_TITLE_PREFIX if is_dcl_proposal else PROPOSAL_TITLE_PREFIX
-    )
+    if "defcl" in filepath.parts:
+        expected_prefix = DCL_PROPOSAL_TITLE_PREFIX
+    elif "standard" in filepath.parts:
+        expected_prefix = STANDARD_LIBRARY_PROPOSAL_TITLE_PREFIX
+    else:
+        expected_prefix = PROPOSAL_TITLE_PREFIX
 
     pattern = rf"^# {re.escape(expected_prefix)} {proposal_number}: (.+)$"
     match = re.match(pattern, title_line)

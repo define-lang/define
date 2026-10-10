@@ -313,6 +313,7 @@ py_binary(
     visibility = [
         "//defcl/proposals:__pkg__",
         "//define/proposals:__pkg__",
+        "//define/standard/proposals:__pkg__",
     ],
     deps = [
         "@pypi//msgspec",
