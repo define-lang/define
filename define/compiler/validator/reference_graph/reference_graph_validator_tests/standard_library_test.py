@@ -99,6 +99,15 @@ def test_every_definition_is_valid(
             standard_library_file("number/natural/subtract_saturating.dfn"),
             standard_library_file("text.dfn"),
             standard_library_file("text/unicode/scalar.dfn"),
+            standard_library_file("text/unicode/scalar/equal.dfn"),
+            standard_library_file("text/unicode/scalar/greater_than_or_equal.dfn"),
+            standard_library_file("text/unicode/scalar/less_than.dfn"),
+            standard_library_file("text/unicode/scalar/less_than_or_equal.dfn"),
+            standard_library_file("text/unicode/scalar/utf8.dfn"),
+            standard_library_file("text/unicode/scalar/utf8/equal.dfn"),
+            standard_library_file("text/unicode/scalar/utf8/greater_than_or_equal.dfn"),
+            standard_library_file("text/unicode/scalar/utf8/less_than.dfn"),
+            standard_library_file("text/unicode/scalar/utf8/less_than_or_equal.dfn"),
             standard_library_file("text/unicode/utf8.dfn"),
         ]
     )

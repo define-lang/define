@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/at_least)
+test.set_value(/reading, "e")
+test.execute(operation<standard:/text/unicode/scalar/greater_than_or_equal>, /reading, "a", /at_least)

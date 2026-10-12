@@ -1,0 +1,20 @@
+# An action checks whether two positions hold the same scalar with the built-in scalar equal.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</reading>.
+    it also assigns the position</limit>.
+    it also assigns the position</matches>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</reading>.
+        create a particle in position</limit>.
+        create a particle in position</matches>.
+        set the value of position</reading> to literal<standard:/text>"q".
+        set the value of position</limit> to literal<standard:/text>"q".
+        execute the operation<standard:/text/unicode/scalar/equal> {
+            with view<a> looking at position</reading>.
+            with view<b> looking at position</limit>.
+            with view<result> looking at position</matches>.
+        }
+    }
+}

@@ -1,0 +1,6 @@
+test.create(/reading)
+test.create(/limit)
+test.create(/below)
+test.set_value(/reading, "z")
+test.set_value(/limit, "é")
+test.execute(operation<standard:/text/unicode/scalar/less_than>, /reading, /limit, /below)

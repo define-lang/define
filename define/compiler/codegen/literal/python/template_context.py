@@ -288,6 +288,7 @@ class BinaryOperator(enum.Enum):
     EQUAL = enum.auto()
     LESS_THAN = enum.auto()
     LESS_THAN_OR_EQUAL = enum.auto()
+    GREATER_THAN_OR_EQUAL = enum.auto()
 
 
 class BinaryOperationContext(EncodingOperationStatementContext):

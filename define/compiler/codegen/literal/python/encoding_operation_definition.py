@@ -243,6 +243,30 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         operand_views=("view<a>", "view<b>"),
         result_view="view<result>",
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/greater_than_or_equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.GREATER_THAN_OR_EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/less_than>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/less_than_or_equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN_OR_EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
 }
 
 

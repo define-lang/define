@@ -24,6 +24,8 @@ or
 <
             {%- when BinaryOperator::LessThanOrEqual -%}
 <=
+            {%- when BinaryOperator::GreaterThanOrEqual -%}
+>=
             {%- endmatch %} {{ statement.right }}
         {%- when EncodingOperationStatement::PrefixOperation with (statement) -%}
             {%- match statement.operator -%}

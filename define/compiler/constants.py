@@ -128,4 +128,16 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/natural/subtract_saturating>": (
         "/number/natural/ascii/subtract_saturating"
     ),
+    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/equal>": (
+        "/text/unicode/scalar/utf8/equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/less_than>": (
+        "/text/unicode/scalar/utf8/less_than"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/less_than_or_equal>": (
+        "/text/unicode/scalar/utf8/less_than_or_equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/greater_than_or_equal>": (
+        "/text/unicode/scalar/utf8/greater_than_or_equal"
+    ),
 }

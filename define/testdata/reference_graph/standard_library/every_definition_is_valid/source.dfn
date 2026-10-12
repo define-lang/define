@@ -149,6 +149,26 @@ define the potential position<my.domain.com:my_lib:/letter> {
         it has the value<standard:/text/unicode/scalar>.
     }
 }
+define the potential position<my.domain.com:my_lib:/letter_equal> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/letter_below> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/letter_at_most> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/letter_at_least> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</bits>.
     it also assigns the position</masked>.
@@ -180,6 +200,10 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</integer_at_most>.
     it also assigns the position</integer_magnitude>.
     it also assigns the position</letter>.
+    it also assigns the position</letter_equal>.
+    it also assigns the position</letter_below>.
+    it also assigns the position</letter_at_most>.
+    it also assigns the position</letter_at_least>.
     it happens when {
         this particle is created.
     } and it does {
@@ -359,6 +383,30 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<value> looking at position</offset>.
         }
         create a particle in position</letter>.
+        create a particle in position</letter_equal>.
+        create a particle in position</letter_below>.
+        create a particle in position</letter_at_most>.
+        create a particle in position</letter_at_least>.
         set the value of position</letter> to literal<standard:/text>"q".
+        execute the operation<standard:/text/unicode/scalar/equal> {
+            with view<a> looking at position</letter>.
+            with view<b> looking at literal<standard:/text>"r".
+            with view<result> looking at position</letter_equal>.
+        }
+        execute the operation<standard:/text/unicode/scalar/less_than> {
+            with view<a> looking at position</letter>.
+            with view<b> looking at literal<standard:/text>"r".
+            with view<result> looking at position</letter_below>.
+        }
+        execute the operation<standard:/text/unicode/scalar/less_than_or_equal> {
+            with view<a> looking at position</letter>.
+            with view<b> looking at literal<standard:/text>"r".
+            with view<result> looking at position</letter_at_most>.
+        }
+        execute the operation<standard:/text/unicode/scalar/greater_than_or_equal> {
+            with view<a> looking at position</letter>.
+            with view<b> looking at literal<standard:/text>"r".
+            with view<result> looking at position</letter_at_least>.
+        }
     }
 }

@@ -1,0 +1,6 @@
+test.create(/reading)
+test.create(/limit)
+test.create(/matches)
+test.set_value(/reading, "q")
+test.set_value(/limit, "q")
+test.execute(operation<standard:/text/unicode/scalar/equal>, /reading, /limit, /matches)
