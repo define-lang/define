@@ -147,13 +147,13 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   //tools/generators:generate_reference_graph_project -- \
   --output define/testdata/compiler_resources/reference_depth_updates_project \
   --shape depth-updates \
-  --modules 16384
+  --modules 8192
 
 bazelisk run --noshow_progress --ui_event_filters=-info \
   //tools/generators:generate_reference_graph_project -- \
   --output define/testdata/compiler_resources/reference_depth_updates_control_project \
   --shape depth-updates \
-  --modules 16384 \
+  --modules 8192 \
   --reverse-references
 ```
 
