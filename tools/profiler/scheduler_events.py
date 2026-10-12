@@ -11,6 +11,8 @@ import typing
 
 import msgspec
 
+from tools.profiler import perf_profiler
+
 if typing.TYPE_CHECKING:
     from tools.profiler import schema
 
@@ -252,6 +254,8 @@ def start(
             "--no-buildid",
             "--synth=no",
             "--clockid=mono",
+            "--mmap-pages",
+            str(perf_profiler.RING_BUFFER_PAGES),
             "--event",
             "sched:sched_waking",
             "--event",

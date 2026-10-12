@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tools.profiler import perf_profiler
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -28,6 +30,8 @@ def require_perf_recording(temporary_directory: Path):
             "-g",
             "--call-graph",
             "fp",
+            "-m",
+            str(perf_profiler.RING_BUFFER_PAGES),
             "-o",
             str(temporary_directory / "perf-capability-check.data"),
             "--",

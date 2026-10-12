@@ -101,7 +101,10 @@ py_library(
     testonly = True,
     srcs = ["perf_test_support.py"],
     visibility = ["//tools:__pkg__"],
-    deps = ["@pypi//pytest"],
+    deps = [
+        ":perf_profiler",
+        "@pypi//pytest",
+    ],
 )
 
 # PRF-022: Launcher safety. PRF-049: Event-driven coordination.
@@ -249,6 +252,7 @@ py_library(
     srcs = ["scheduler_events.py"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":perf_profiler",
         ":schema",
         "@pypi//msgspec",
     ],

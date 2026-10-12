@@ -19,6 +19,10 @@ _BAZEL_PYTHON_ENTRYPOINT_MARKER = "__PEX_PY_BINARY_ENTRYPOINT__"
 _BAZEL_PYTHON_EXEC = 'exec "python3" '
 # CPython and perf require this fixed exchange path rather than TMPDIR.
 _PERF_MAP_DIRECTORY = pathlib.Path("/tmp")  # noqa: S108
+# perf's default ring buffer for unprivileged users takes the user's entire
+# perf_event_mlock_kb budget, so any concurrent perf record by the same user
+# fails to start. Smaller buffers let concurrent sessions share that budget.
+RING_BUFFER_PAGES = 32
 
 
 class Metadata(typing.TypedDict):
@@ -259,6 +263,8 @@ def capture(
                 "-g",
                 "--call-graph",
                 "fp",
+                "-m",
+                str(RING_BUFFER_PAGES),
                 "-o",
                 os.fspath(recorded_data_path),
                 "--",
