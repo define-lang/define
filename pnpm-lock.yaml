@@ -10,18 +10,18 @@ importers:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.40.1
+        version: 1.40.2
 
   tools:
     devDependencies:
       prettier:
         specifier: latest
-        version: 3.9.9
+        version: 3.9.10
 
 packages:
 
-  basedpyright@1.40.1:
-    resolution: {integrity: sha512-98BUK6yuNcUCgaEVaaFzhW4ReGjB8Tip9XBX4s7rGIsoKtc1Be7O4PB0A8Z4zV42FKvfUR5hwYzRYafU/BVTtQ==}
+  basedpyright@1.40.2:
+    resolution: {integrity: sha512-9uld8+5tZC2Gxf8nIynyunK0N4xn01W1ApzLMXDAcuA8uJq2QSfldYn9gSbxn9MWR8wmHDo7GaEHLhlnLFHaJA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -30,18 +30,18 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  prettier@3.9.9:
-    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
+  prettier@3.9.10:
+    resolution: {integrity: sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==}
     engines: {node: '>=14'}
     hasBin: true
 
 snapshots:
 
-  basedpyright@1.40.1:
+  basedpyright@1.40.2:
     optionalDependencies:
       fsevents: 2.3.3
 
   fsevents@2.3.3:
     optional: true
 
-  prettier@3.9.9: {}
+  prettier@3.9.10: {}
