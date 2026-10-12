@@ -59,6 +59,16 @@ define the potential position<my.domain.com:my_lib:/at_most> {
         it has the value<standard:/boolean>.
     }
 }
+define the potential position<my.domain.com:my_lib:/count> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/offset> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
         it has the value<standard:/number/rational>.
@@ -119,6 +129,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</same>.
     it also assigns the position</below>.
     it also assigns the position</at_most>.
+    it also assigns the position</count>.
+    it also assigns the position</offset>.
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
@@ -179,6 +191,10 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/boolean>"false".
             with view<result> looking at position</exactly_one>.
         }
+        create a particle in position</count>.
+        create a particle in position</offset>.
+        set the value of position</count> to literal<standard:/number>"3".
+        set the value of position</offset> to literal<standard:/number>"-3".
         create a particle in position</total>.
         create a particle in position</remaining>.
         create a particle in position</product>.

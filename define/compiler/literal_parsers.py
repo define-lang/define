@@ -121,24 +121,47 @@ def _parse_binary_ascii(content: str) -> str:
     raise LiteralParseError("binary values are written without leading zeros", 0)
 
 
-def _parse_binary_ascii_as_decimal_ascii(content: str) -> str:
+# TODO: Add a binary literal translator into integers that accepts a leading -
+# for negative values.
+def _parse_binary_ascii_as_natural_ascii(content: str) -> str:
     # TODO: Convert binary literals longer than about 14,000 bits, which exceed
     # Python's limit on converting an int to a decimal string and so raise
     # ValueError.
     return str(int(_parse_binary_ascii(content), 2))
 
 
-def _parse_decimal_ascii_as_binary_ascii(content: str) -> str:
-    decimal = _parse_decimal_ascii(content)
+def _reject_negative(decimal: str):
     if decimal.startswith("-"):
-        raise LiteralParseError("binary values cannot be negative", 0)
+        raise LiteralParseError("negative numbers are not allowed", 0)
+
+
+def _reject_fraction(decimal: str):
     decimal_point = decimal.find(".")
     if decimal_point != -1:
-        raise LiteralParseError("binary values are whole numbers", decimal_point)
+        raise LiteralParseError("only whole numbers are allowed", decimal_point)
+
+
+def _parse_decimal_ascii_as_binary_ascii(content: str) -> str:
+    decimal = _parse_decimal_ascii(content)
+    _reject_negative(decimal)
+    _reject_fraction(decimal)
     # TODO: Convert decimal literals longer than 4300 digits, which exceed
     # Python's limit on converting a decimal string to an int and so raise
     # ValueError.
     return format(int(decimal), "b")
+
+
+def _parse_decimal_ascii_as_integer_ascii(content: str) -> str:
+    decimal = _parse_decimal_ascii(content)
+    _reject_fraction(decimal)
+    return decimal
+
+
+def _parse_decimal_ascii_as_natural_ascii(content: str) -> str:
+    decimal = _parse_decimal_ascii(content)
+    _reject_negative(decimal)
+    _reject_fraction(decimal)
+    return decimal
 
 
 # Keyed by the Potential Literal's encoding and then the value's encoding.
@@ -150,7 +173,15 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
         constants.BINARY_ASCII_ENCODING,
         constants.DECIMAL_ASCII_ENCODING,
-    ): _parse_binary_ascii_as_decimal_ascii,
+    ): _parse_binary_ascii_as_natural_ascii,
+    (
+        constants.BINARY_ASCII_ENCODING,
+        constants.INTEGER_ASCII_ENCODING,
+    ): _parse_binary_ascii_as_natural_ascii,
+    (
+        constants.BINARY_ASCII_ENCODING,
+        constants.NATURAL_ASCII_ENCODING,
+    ): _parse_binary_ascii_as_natural_ascii,
     (
         constants.BOOLEAN_ASCII_ENCODING,
         constants.BOOLEAN_ASCII_ENCODING,
@@ -163,4 +194,12 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
         constants.DECIMAL_ASCII_ENCODING,
         constants.DECIMAL_ASCII_ENCODING,
     ): _parse_decimal_ascii,
+    (
+        constants.DECIMAL_ASCII_ENCODING,
+        constants.INTEGER_ASCII_ENCODING,
+    ): _parse_decimal_ascii_as_integer_ascii,
+    (
+        constants.DECIMAL_ASCII_ENCODING,
+        constants.NATURAL_ASCII_ENCODING,
+    ): _parse_decimal_ascii_as_natural_ascii,
 }

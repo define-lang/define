@@ -62,6 +62,8 @@ def test_every_definition_is_valid(
             standard_library_file("number/decimal/ascii/minimum.dfn"),
             standard_library_file("number/decimal/ascii/negate.dfn"),
             standard_library_file("number/decimal/ascii/truncate.dfn"),
+            standard_library_file("number/integer.dfn"),
+            standard_library_file("number/natural.dfn"),
             standard_library_file("number/rational.dfn"),
             standard_library_file("number/rational/absolute_value.dfn"),
             standard_library_file("number/rational/add.dfn"),

@@ -14,7 +14,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[float](
+        source = literal.LocalPosition[int](
             "position<source>",
         )
         source.create_particle()

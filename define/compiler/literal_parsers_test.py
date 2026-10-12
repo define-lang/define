@@ -19,6 +19,12 @@ _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.DECIMAL_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING)
 ]
+_PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.DECIMAL_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+]
+_PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.DECIMAL_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+]
 
 
 @pytest.mark.parametrize("content", ["0", "1", "1001"])
@@ -140,9 +146,9 @@ def test_decimal_ascii_as_binary_ascii_accepts(content: str, binary: str):
 @pytest.mark.parametrize(
     ("content", "reason", "content_index"),
     [
-        ("-3", "binary values cannot be negative", 0),
-        ("2.5", "binary values are whole numbers", 1),
-        ("-2.5", "binary values cannot be negative", 0),
+        ("-3", "negative numbers are not allowed", 0),
+        ("2.5", "only whole numbers are allowed", 1),
+        ("-2.5", "negative numbers are not allowed", 0),
         ("03", "numbers are written without leading zeros", 0),
     ],
 )
@@ -151,5 +157,50 @@ def test_decimal_ascii_as_binary_ascii_rejects(
 ):
     with pytest.raises(literal_parsers.LiteralParseError) as error:
         _ = _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize("content", ["0", "5", "-5", "123456789012"])
+def test_decimal_ascii_as_integer_ascii_accepts(content: str):
+    assert _PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII(content) == content
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("2.5", "only whole numbers are allowed", 1),
+        ("-2.5", "only whole numbers are allowed", 2),
+        ("03", "numbers are written without leading zeros", 0),
+    ],
+)
+def test_decimal_ascii_as_integer_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize("content", ["0", "5", "123456789012"])
+def test_decimal_ascii_as_natural_ascii_accepts(content: str):
+    assert _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII(content) == content
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-3", "negative numbers are not allowed", 0),
+        ("2.5", "only whole numbers are allowed", 1),
+        ("-2.5", "negative numbers are not allowed", 0),
+        ("03", "numbers are written without leading zeros", 0),
+    ],
+)
+def test_decimal_ascii_as_natural_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII(content)
     assert error.value.reason == reason
     assert error.value.content_index == content_index

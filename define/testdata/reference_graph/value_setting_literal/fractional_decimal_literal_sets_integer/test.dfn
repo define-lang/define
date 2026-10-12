@@ -1,0 +1,15 @@
+# A decimal literal cannot set an integer value to a fraction.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<target>.
+        set the value of position<target> to literal<standard:/number>"2.5".
+        destroy the particle in position<target>.
+    }
+}

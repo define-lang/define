@@ -446,6 +446,47 @@ def test_negative_decimal_literal_sets_binary(
     assert diagnostic.content == "-3"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
-    assert diagnostic.reason == "binary values cannot be negative"
+    assert diagnostic.reason == "negative numbers are not allowed"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 72
+
+
+def test_binary_literal_sets_integer(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+
+
+def test_negative_decimal_literal_sets_natural(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.content == "-3"
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
+    assert diagnostic.reason == "negative numbers are not allowed"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 72
+
+
+def test_fractional_decimal_literal_sets_integer(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.content == "2.5"
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/integer/ascii>"
+    assert diagnostic.reason == "only whole numbers are allowed"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 73

@@ -22,6 +22,8 @@ _ENCODING_PYTHON_TYPES: Final = {
     constants.BINARY_ASCII_ENCODING: "int",
     constants.BOOLEAN_ASCII_ENCODING: "bool",
     constants.DECIMAL_ASCII_ENCODING: "float",
+    constants.INTEGER_ASCII_ENCODING: "int",
+    constants.NATURAL_ASCII_ENCODING: "int",
 }
 
 _PYTHON_BOOLEANS: Final = {"true": "True", "false": "False"}
@@ -36,7 +38,8 @@ def _python_boolean(content: str) -> str:
 
 
 def _python_decimal(content: str) -> str:
-    # Decimal ASCII content is already a valid Python number.
+    # Decimal, integer, and natural ASCII content is already a valid Python
+    # number.
     return content
 
 
@@ -44,6 +47,8 @@ _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
     constants.BINARY_ASCII_ENCODING: _python_binary,
     constants.BOOLEAN_ASCII_ENCODING: _python_boolean,
     constants.DECIMAL_ASCII_ENCODING: _python_decimal,
+    constants.INTEGER_ASCII_ENCODING: _python_decimal,
+    constants.NATURAL_ASCII_ENCODING: _python_decimal,
 }
 
 
