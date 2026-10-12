@@ -71,7 +71,7 @@ def test_replace_deps_adds_sorted_multiline_attribute():
             label="//example:example",
             rule_class="py_library",
             build_file=Path("BUILD.bazel"),
-            source=Path("example.py"),
+            sources=(Path("example.py"),),
             deps=frozenset(),
         ),
     ) == [
@@ -296,14 +296,14 @@ def test_repository_analysis_removes_conftest_dep_after_fixture_removal(
         "//define/example:example_test",
         "py_test",
         Path("define/example/BUILD.bazel"),
-        Path("define/example/example_test.py"),
+        (Path("define/example/example_test.py"),),
         frozenset({"//define/example:conftest"}),
     )
     repository = check_python_deps.RepositoryAnalysis(
         tmp_path,
         (
             check_python_deps.ParsedTarget(
-                target, ast.parse("def test_example(removed_fixture): pass\n")
+                target, (ast.parse("def test_example(removed_fixture): pass\n"),)
             ),
         ),
         {"define.example.conftest": "//define/example:conftest"},
@@ -345,7 +345,7 @@ py_library(
         "//tools:first",
         "py_library",
         Path("tools/BUILD.bazel"),
-        Path("tools/first.py"),
+        (Path("tools/first.py"),),
         frozenset({"@pypi//click"}),
         frozenset({"@pypi//click"}),
     )
@@ -353,7 +353,7 @@ py_library(
         "//tools:second",
         "py_library",
         Path("tools/BUILD.bazel"),
-        Path("tools/second.py"),
+        (Path("tools/second.py"),),
         frozenset({"//old:unused"}),
     )
     repository = check_python_deps.RepositoryAnalysis(tmp_path, (), {}, {}, {})
@@ -372,7 +372,120 @@ py_library(
     assert 'name = "second"' in contents
 
 
-def test_load_repository_rejects_python_targets_with_multiple_sources(
+def test_repository_analysis_combines_imports_and_fixtures_of_test_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        check_python_deps,
+        "COMBINED_TEST_TARGETS",
+        frozenset({"//define/example:example"}),
+    )
+    package = tmp_path / "define/example"
+    package.mkdir(parents=True)
+    _ = (package / "owned_module.py").write_text("")
+    _ = (package / "other_module.py").write_text("")
+    _ = (package / "conftest.py").write_text(
+        "import pytest\n@pytest.fixture\ndef shared_fixture(): pass\n"
+    )
+    _ = (package / "first_test.py").write_text(
+        "from define.example import owned_module\ndef test_first(): pass\n"
+    )
+    _ = (package / "second_test.py").write_text(
+        """from define.example import other_module
+from define.example import first_test
+def test_second(shared_fixture): pass
+"""
+    )
+    _ = (package / "BUILD.bazel").write_text(
+        """py_library(name = "owned_module", srcs = ["owned_module.py"])
+py_library(name = "other_module", srcs = ["other_module.py"])
+py_library(name = "conftest", srcs = ["conftest.py"], deps = ["@pypi//pytest"])
+py_test(
+    name = "example",
+    srcs = ["first_test.py", "second_test.py"],
+    deps = ["//old:unused"],
+)
+"""
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+    results = check_python_deps.analyze_targets(
+        repository, [package / "second_test.py"]
+    )
+
+    test_target = check_python_deps.PythonTarget(
+        "//define/example:example",
+        "py_test",
+        Path("define/example/BUILD.bazel"),
+        (Path("define/example/first_test.py"), Path("define/example/second_test.py")),
+        frozenset({"//old:unused"}),
+    )
+    assert repository.module_owners == {
+        "define.example.owned_module": "//define/example:owned_module",
+        "define.example.other_module": "//define/example:other_module",
+        "define.example.conftest": "//define/example:conftest",
+        "define.example.first_test": "//define/example:example",
+        "define.example.second_test": "//define/example:example",
+    }
+    assert results == check_python_deps.AnalysisResults(
+        (
+            check_python_deps.DependencyChanges(
+                test_target,
+                frozenset(
+                    {
+                        "//define/example:conftest",
+                        "//define/example:other_module",
+                        "//define/example:owned_module",
+                    }
+                ),
+            ),
+        ),
+        {},
+    )
+
+
+def test_repository_analysis_keeps_package_init_deps_selected_by_build_file(
+    tmp_path: Path,
+):
+    package = tmp_path / "define/example"
+    package.mkdir(parents=True)
+    runner_package = tmp_path / "tools/bzl"
+    runner_package.mkdir(parents=True)
+    _ = (package / "__init__.py").write_text("")
+    _ = (package / "BUILD.bazel").write_text(
+        'py_library(name = "example", srcs = ["__init__.py"], deps = ["//kept:dep"])\n'
+    )
+    _ = (runner_package / "pyright_test_runner.py").write_text("")
+    _ = (runner_package / "BUILD.bazel").write_text(
+        'py_binary(name = "pyright_test_runner", srcs = ["pyright_test_runner.py"])\n'
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+    results = check_python_deps.analyze_targets(
+        repository, [Path("define/example/BUILD.bazel")]
+    )
+
+    assert repository.module_owners == {"define.example": "//define/example:example"}
+    assert results == check_python_deps.AnalysisResults((), {})
+
+
+def test_load_repository_rejects_unlisted_tests_with_multiple_sources(
+    tmp_path: Path,
+):
+    package = tmp_path / "tools"
+    package.mkdir()
+    _ = (package / "BUILD.bazel").write_text(
+        'py_test(name = "example_test", srcs = ["first_test.py", "second_test.py"])\n'
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="tools:example_test must have exactly one Python source",
+    ):
+        _ = check_python_deps.load_repository(tmp_path)
+
+
+def test_load_repository_rejects_libraries_with_multiple_sources(
     tmp_path: Path,
 ):
     package = tmp_path / "tools"

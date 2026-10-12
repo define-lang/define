@@ -23,7 +23,7 @@ go_library(
 )
 
 py_library(
-    name = "core_py",
+    name = "init_py",
     srcs = ["__init__.py"],
     deps = ["//defcl/schema"],
 )

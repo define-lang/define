@@ -97,14 +97,17 @@ _package_init_target_is_named_after_its_directory_test = unittest.make(
     _package_init_target_is_named_after_its_directory_impl,
 )
 
-def _package_init_target_takes_py_suffix_when_directory_name_is_taken_impl(ctx):
+def _package_init_target_is_named_init_py_when_directory_name_is_taken_impl(ctx):
     env = unittest.begin(ctx)
-    rules = [("core", {"embed": (":boolean_go_proto",), "kind": "go_library"})] + _py_library("core_py", "__init__.py")
-    asserts.equals(env, [], build_file_violations("core", rules))
+    directory_target = [("core", {"embed": (":boolean_go_proto",), "kind": "go_library"})]
+    asserts.equals(env, [], build_file_violations("core", directory_target + _py_library("init_py", "__init__.py")))
+    asserts.equals(env, [
+        'py_library "core_py" must be named "init_py"',
+    ], build_file_violations("core", directory_target + _py_library("core_py", "__init__.py")))
     return unittest.end(env)
 
-_package_init_target_takes_py_suffix_when_directory_name_is_taken_test = unittest.make(
-    _package_init_target_takes_py_suffix_when_directory_name_is_taken_impl,
+_package_init_target_is_named_init_py_when_directory_name_is_taken_test = unittest.make(
+    _package_init_target_is_named_init_py_when_directory_name_is_taken_impl,
 )
 
 def _proto_targets_are_named_after_their_source_impl(ctx):
@@ -249,7 +252,7 @@ def build_file_checks_test_suite(name):
                 _test_targets_must_be_small_test,
                 _python_targets_are_named_after_their_source_test,
                 _package_init_target_is_named_after_its_directory_test,
-                _package_init_target_takes_py_suffix_when_directory_name_is_taken_test,
+                _package_init_target_is_named_init_py_when_directory_name_is_taken_test,
                 _proto_targets_are_named_after_their_source_test,
                 _go_targets_are_named_after_their_directory_test,
                 _targets_must_be_in_alphabetical_order_test,

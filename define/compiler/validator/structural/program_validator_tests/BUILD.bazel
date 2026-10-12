@@ -4,377 +4,109 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-py_test(
-    name = "action_operation_execution_test",
-    size = "small",
-    srcs = ["action_operation_execution_test.py"],
-    data = ["//define/testdata/structural/action_operation_execution"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "action_statements_block_test",
-    size = "small",
-    srcs = ["action_statements_block_test.py"],
-    data = ["//define/testdata/structural/action_statements_block"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "cross_fqun_walking_test",
-    size = "small",
-    srcs = ["cross_fqun_walking_test.py"],
-    data = ["//define/testdata/structural/cross_fqun_walking"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destroy_particle_test",
-    size = "small",
-    srcs = ["destroy_particle_test.py"],
-    data = ["//define/testdata/structural/destroy_particle"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "diagnostic_collection_test",
-    size = "small",
-    srcs = ["diagnostic_collection_test.py"],
-    data = ["//define/testdata/structural/diagnostic_collection"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "duplicate_definitions_test",
-    size = "small",
-    srcs = ["duplicate_definitions_test.py"],
-    data = ["//define/testdata/structural/duplicate_definitions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "duplicate_position_constraint_test",
-    size = "small",
-    srcs = ["duplicate_position_constraint_test.py"],
-    data = ["//define/testdata/structural/duplicate_position_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "encoding_definition_test",
-    size = "small",
-    srcs = ["encoding_definition_test.py"],
-    data = ["//define/testdata/structural/encoding_definition"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "encoding_operation_definition_test",
-    size = "small",
-    srcs = ["encoding_operation_definition_test.py"],
-    data = ["//define/testdata/structural/encoding_operation_definition"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:name_types",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "entry_action_test",
-    size = "small",
-    srcs = ["entry_action_test.py"],
-    data = ["//define/testdata/structural/entry_action"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "error_messages_test",
-    size = "small",
-    srcs = ["error_messages_test.py"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:exceptions",
-        "//define/compiler/errors:parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "file_not_found_test",
-    size = "small",
-    srcs = ["file_not_found_test.py"],
-    data = ["//define/testdata/structural/file_not_found"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:exceptions",
-    ],
-)
-
-py_test(
-    name = "file_validation_result_test",
-    size = "small",
-    srcs = ["file_validation_result_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:config",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:exceptions",
-        "//define/compiler/errors:parser_exceptions",
-        "//define/compiler/errors:source_map",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "fqun_mismatch_test",
-    size = "small",
-    srcs = ["fqun_mismatch_test.py"],
-    data = ["//define/testdata/structural/fqun_mismatch"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "global_name_walking_test",
-    size = "small",
-    srcs = ["global_name_walking_test.py"],
-    data = ["//define/testdata/structural/global_name_walking"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:file_validator",
-    ],
-)
-
-py_test(
-    name = "local_name_conflicts_test",
-    size = "small",
-    srcs = ["local_name_conflicts_test.py"],
-    data = ["//define/testdata/structural/local_name_conflicts"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_particle_test",
-    size = "small",
-    srcs = ["move_particle_test.py"],
-    data = ["//define/testdata/structural/move_particle"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "name_format_positions_test",
-    size = "small",
-    srcs = ["name_format_positions_test.py"],
-    data = ["//define/testdata/structural/name_format_positions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "non_filesystem_walk_test",
-    size = "small",
-    srcs = ["non_filesystem_walk_test.py"],
-    data = ["//define/testdata/structural/non_filesystem_walk"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "operation_definition_test",
-    size = "small",
-    srcs = ["operation_definition_test.py"],
-    data = ["//define/testdata/structural/operation_definition"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:name_types",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "operation_execution_test",
-    size = "small",
-    srcs = ["operation_execution_test.py"],
-    data = ["//define/testdata/structural/operation_execution"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "parallel_test",
-    size = "small",
-    srcs = ["parallel_test.py"],
-    data = ["//define/testdata/structural/parallel"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:file_validator",
-    ],
-)
-
-py_test(
-    name = "path_mismatch_test",
-    size = "small",
-    srcs = ["path_mismatch_test.py"],
-    data = ["//define/testdata/structural/path_mismatch"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "position_constraint_references_test",
-    size = "small",
-    srcs = ["position_constraint_references_test.py"],
-    data = ["//define/testdata/structural/position_constraint_references"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "potential_literal_definition_test",
-    size = "small",
-    srcs = ["potential_literal_definition_test.py"],
-    data = ["//define/testdata/structural/potential_literal_definition"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "program_config_test",
-    size = "small",
-    srcs = ["program_config_test.py"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
-    name = "program_validator_tests",
+    name = "init_py",
     srcs = ["__init__.py"],
 )
 
+# These test files each run in a fraction of a second, so a separate pytest
+# process for each one spent most of its time starting up. Running them in one
+# py_test is an exception to the one-rule-per-source-file convention.
 py_test(
-    name = "quality_implication_test",
+    name = "program_validator_tests",
     size = "small",
-    srcs = ["quality_implication_test.py"],
-    data = ["//define/testdata/structural/quality_implication"],
+    srcs = [
+        "action_operation_execution_test.py",
+        "action_statements_block_test.py",
+        "cross_fqun_walking_test.py",
+        "destroy_particle_test.py",
+        "diagnostic_collection_test.py",
+        "duplicate_definitions_test.py",
+        "duplicate_position_constraint_test.py",
+        "encoding_definition_test.py",
+        "encoding_operation_definition_test.py",
+        "entry_action_test.py",
+        "error_messages_test.py",
+        "file_not_found_test.py",
+        "file_validation_result_test.py",
+        "fqun_mismatch_test.py",
+        "global_name_walking_test.py",
+        "local_name_conflicts_test.py",
+        "move_particle_test.py",
+        "name_format_positions_test.py",
+        "non_filesystem_walk_test.py",
+        "operation_definition_test.py",
+        "operation_execution_test.py",
+        "parallel_test.py",
+        "path_mismatch_test.py",
+        "position_constraint_references_test.py",
+        "potential_literal_definition_test.py",
+        "program_config_test.py",
+        "quality_implication_test.py",
+        "reserved_name_positions_test.py",
+        "standard_library_test.py",
+        "trigger_conditions_test.py",
+        "universe_without_authority_test.py",
+        "unreferenced_positions_test.py",
+        "validation_timing_stats_test.py",
+        "value_constraint_test.py",
+        "value_definition_test.py",
+        "value_setting_literal_test.py",
+        "value_setting_test.py",
+    ],
+    data = [
+        "//define/testdata/structural/action_operation_execution",
+        "//define/testdata/structural/action_statements_block",
+        "//define/testdata/structural/cross_fqun_walking",
+        "//define/testdata/structural/destroy_particle",
+        "//define/testdata/structural/diagnostic_collection",
+        "//define/testdata/structural/duplicate_definitions",
+        "//define/testdata/structural/duplicate_position_constraint",
+        "//define/testdata/structural/encoding_definition",
+        "//define/testdata/structural/encoding_operation_definition",
+        "//define/testdata/structural/entry_action",
+        "//define/testdata/structural/file_not_found",
+        "//define/testdata/structural/fqun_mismatch",
+        "//define/testdata/structural/global_name_walking",
+        "//define/testdata/structural/local_name_conflicts",
+        "//define/testdata/structural/move_particle",
+        "//define/testdata/structural/name_format_positions",
+        "//define/testdata/structural/non_filesystem_walk",
+        "//define/testdata/structural/operation_definition",
+        "//define/testdata/structural/operation_execution",
+        "//define/testdata/structural/parallel",
+        "//define/testdata/structural/path_mismatch",
+        "//define/testdata/structural/position_constraint_references",
+        "//define/testdata/structural/potential_literal_definition",
+        "//define/testdata/structural/quality_implication",
+        "//define/testdata/structural/reserved_name_positions",
+        "//define/testdata/structural/standard_library",
+        "//define/testdata/structural/trigger_conditions",
+        "//define/testdata/structural/universe_without_authority",
+        "//define/testdata/structural/unreferenced_positions",
+        "//define/testdata/structural/value_constraint",
+        "//define/testdata/structural/value_definition",
+        "//define/testdata/structural/value_setting",
+        "//define/testdata/structural/value_setting_literal",
+    ],
+    # Keep about 200 tests per shard.
+    shard_count = 2,
     deps = [
+        ":test_helpers",
+        "//define/compiler:ast",
+        "//define/compiler:config",
         "//define/compiler:conftest",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:exceptions",
+        "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/errors:source_map",
+        "//define/compiler/validator:stats",
         "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "reserved_name_positions_test",
-    size = "small",
-    srcs = ["reserved_name_positions_test.py"],
-    data = ["//define/testdata/structural/reserved_name_positions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "standard_library_test",
-    size = "small",
-    srcs = ["standard_library_test.py"],
-    data = ["//define/testdata/structural/standard_library"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:file_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
     ],
 )
 
@@ -398,105 +130,6 @@ filegroup(
     visibility = ["//define/testdata:__pkg__"],
 )
 
-py_test(
-    name = "trigger_conditions_test",
-    size = "small",
-    srcs = ["trigger_conditions_test.py"],
-    data = ["//define/testdata/structural/trigger_conditions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "universe_without_authority_test",
-    size = "small",
-    srcs = ["universe_without_authority_test.py"],
-    data = ["//define/testdata/structural/universe_without_authority"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "unreferenced_positions_test",
-    size = "small",
-    srcs = ["unreferenced_positions_test.py"],
-    data = ["//define/testdata/structural/unreferenced_positions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "validation_timing_stats_test",
-    size = "small",
-    srcs = ["validation_timing_stats_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler/validator:stats",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "value_constraint_test",
-    size = "small",
-    srcs = ["value_constraint_test.py"],
-    data = ["//define/testdata/structural/value_constraint"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "value_definition_test",
-    size = "small",
-    srcs = ["value_definition_test.py"],
-    data = ["//define/testdata/structural/value_definition"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "value_setting_literal_test",
-    size = "small",
-    srcs = ["value_setting_literal_test.py"],
-    data = ["//define/testdata/structural/value_setting_literal"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "value_setting_test",
-    size = "small",
-    srcs = ["value_setting_test.py"],
-    data = ["//define/testdata/structural/value_setting"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
 # --- Format checking ---
 
 format_test(
@@ -510,45 +143,9 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":action_operation_execution_test",
-        ":action_statements_block_test",
-        ":cross_fqun_walking_test",
-        ":destroy_particle_test",
-        ":diagnostic_collection_test",
-        ":duplicate_definitions_test",
-        ":duplicate_position_constraint_test",
-        ":encoding_definition_test",
-        ":encoding_operation_definition_test",
-        ":entry_action_test",
-        ":error_messages_test",
-        ":file_not_found_test",
-        ":file_validation_result_test",
-        ":fqun_mismatch_test",
-        ":global_name_walking_test",
-        ":local_name_conflicts_test",
-        ":move_particle_test",
-        ":name_format_positions_test",
-        ":non_filesystem_walk_test",
-        ":operation_definition_test",
-        ":operation_execution_test",
-        ":parallel_test",
-        ":path_mismatch_test",
-        ":position_constraint_references_test",
-        ":potential_literal_definition_test",
-        ":program_config_test",
+        ":init_py",
         ":program_validator_tests",
-        ":quality_implication_test",
-        ":reserved_name_positions_test",
-        ":standard_library_test",
         ":test_helpers",
-        ":trigger_conditions_test",
-        ":universe_without_authority_test",
-        ":unreferenced_positions_test",
-        ":validation_timing_stats_test",
-        ":value_constraint_test",
-        ":value_definition_test",
-        ":value_setting_literal_test",
-        ":value_setting_test",
     ],
 )
 

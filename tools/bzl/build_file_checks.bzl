@@ -75,9 +75,9 @@ def _expected_name(call, package_name, call_names, embedded):
             return None
         if source == "__init__.py":
             # A package whose directory name is taken by another target names
-            # its Python package target with a `_py` suffix.
+            # its Python package target init_py.
             if package_name in call_names and package_name != call.name:
-                return package_name + "_py"
+                return "init_py"
             return package_name
         return source.removesuffix(".pyi").removesuffix(".py")
     if call.function == "proto_library":

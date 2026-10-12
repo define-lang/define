@@ -4,651 +4,186 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+py_library(
+    name = "init_py",
+    srcs = ["__init__.py"],
+)
+
+# These test files each run in a fraction of a second, so a separate pytest
+# process for each one spent most of its time starting up. Running them in one
+# py_test is an exception to the one-rule-per-source-file convention.
 py_test(
-    name = "action_operation_execution_test",
+    name = "reference_graph_validator_tests",
     size = "small",
-    srcs = ["action_operation_execution_test.py"],
-    data = ["//define/testdata/reference_graph/action_operation_execution"],
+    srcs = [
+        "action_operation_execution_test.py",
+        "action_triggering_test.py",
+        "automated_guarantees_constructor_implied_test.py",
+        "automated_guarantees_constructor_test.py",
+        "automated_guarantees_destruction_test.py",
+        "automated_guarantees_destructor_test.py",
+        "automated_guarantees_error_test.py",
+        "automated_guarantees_implied_position_test.py",
+        "automated_guarantees_implied_to_interface_test.py",
+        "automated_guarantees_many_actions_test.py",
+        "automated_guarantees_require_consumption_test.py",
+        "automated_guarantees_test.py",
+        "automated_guarantees_transitive_implied_identity_test.py",
+        "automated_guarantees_transitive_implied_occupancy_test.py",
+        "automated_requirements_constructor_implied_test.py",
+        "automated_requirements_constructor_move_test.py",
+        "automated_requirements_constructor_propagation_test.py",
+        "automated_requirements_constructor_test.py",
+        "automated_requirements_destructor_implied_test.py",
+        "automated_requirements_destructor_move_test.py",
+        "automated_requirements_destructor_propagation_test.py",
+        "automated_requirements_destructor_test.py",
+        "automated_requirements_diamond_test.py",
+        "automated_requirements_implied_position_test.py",
+        "automated_requirements_many_actions_child_name_move_test.py",
+        "automated_requirements_many_actions_direct_propagation_test.py",
+        "automated_requirements_many_actions_name_resolution_test.py",
+        "automated_requirements_many_actions_trigger_move_test.py",
+        "automated_requirements_move_test.py",
+        "automated_requirements_nested_implied_test.py",
+        "automated_requirements_override_test.py",
+        "automated_requirements_test.py",
+        "built_in_operations_test.py",
+        "chained_name_constraint_test.py",
+        "chained_name_global_start_test.py",
+        "chained_name_multi_element_test.py",
+        "chained_name_test.py",
+        "constructor_triggering_test.py",
+        "create_particle_test.py",
+        "create_without_parent_test.py",
+        "dead_code_test.py",
+        "dead_value_write_test.py",
+        "destroy_particle_test.py",
+        "destruction_contract_caller_validation_test.py",
+        "destruction_contract_propagation_test.py",
+        "destruction_contract_recording_test.py",
+        "destruction_contract_state_test.py",
+        "destruction_contract_test.py",
+        "destructor_auto_test.py",
+        "destructor_cascade_test.py",
+        "destructor_triggering_test.py",
+        "encoding_constraint_test.py",
+        "encoding_operation_test.py",
+        "error_messages_complex_test.py",
+        "error_messages_destruction_test.py",
+        "error_messages_test.py",
+        "implied_action_triggering_test.py",
+        "inferred_action_occupancy_test.py",
+        "move_chained_constraint_test.py",
+        "move_cross_fqun_test.py",
+        "move_local_constraint_test.py",
+        "move_particle_test.py",
+        "move_state_tracking_test.py",
+        "move_without_parent_test.py",
+        "operation_arguments_test.py",
+        "operation_view_directions_test.py",
+        "operation_view_requirements_test.py",
+        "particle_conflict_test.py",
+        "quality_implication_particle_test.py",
+        "quality_implication_test.py",
+        "reference_graph_invariants_test.py",
+        "standard_library_test.py",
+        "trigger_conditions_test.py",
+        "unset_value_test.py",
+        "value_constraint_test.py",
+        "value_setting_literal_test.py",
+        "value_setting_test.py",
+    ],
+    data = [
+        "//define/testdata/reference_graph/action_operation_execution",
+        "//define/testdata/reference_graph/action_triggering",
+        "//define/testdata/reference_graph/automated_guarantees",
+        "//define/testdata/reference_graph/automated_guarantees_constructor",
+        "//define/testdata/reference_graph/automated_guarantees_constructor_implied",
+        "//define/testdata/reference_graph/automated_guarantees_destruction",
+        "//define/testdata/reference_graph/automated_guarantees_destructor",
+        "//define/testdata/reference_graph/automated_guarantees_error",
+        "//define/testdata/reference_graph/automated_guarantees_implied_position",
+        "//define/testdata/reference_graph/automated_guarantees_implied_to_interface",
+        "//define/testdata/reference_graph/automated_guarantees_many_actions",
+        "//define/testdata/reference_graph/automated_guarantees_require_consumption",
+        "//define/testdata/reference_graph/automated_guarantees_transitive_implied_identity",
+        "//define/testdata/reference_graph/automated_guarantees_transitive_implied_occupancy",
+        "//define/testdata/reference_graph/automated_requirements",
+        "//define/testdata/reference_graph/automated_requirements_constructor",
+        "//define/testdata/reference_graph/automated_requirements_constructor_implied",
+        "//define/testdata/reference_graph/automated_requirements_constructor_move",
+        "//define/testdata/reference_graph/automated_requirements_constructor_propagation",
+        "//define/testdata/reference_graph/automated_requirements_destructor",
+        "//define/testdata/reference_graph/automated_requirements_destructor_implied",
+        "//define/testdata/reference_graph/automated_requirements_destructor_move",
+        "//define/testdata/reference_graph/automated_requirements_destructor_propagation",
+        "//define/testdata/reference_graph/automated_requirements_diamond",
+        "//define/testdata/reference_graph/automated_requirements_implied_position",
+        "//define/testdata/reference_graph/automated_requirements_many_actions_child_name_move",
+        "//define/testdata/reference_graph/automated_requirements_many_actions_direct_propagation",
+        "//define/testdata/reference_graph/automated_requirements_many_actions_name_resolution",
+        "//define/testdata/reference_graph/automated_requirements_many_actions_trigger_move",
+        "//define/testdata/reference_graph/automated_requirements_move",
+        "//define/testdata/reference_graph/automated_requirements_nested_implied",
+        "//define/testdata/reference_graph/automated_requirements_override",
+        "//define/testdata/reference_graph/built_in_operations",
+        "//define/testdata/reference_graph/chained_name",
+        "//define/testdata/reference_graph/chained_name_constraint",
+        "//define/testdata/reference_graph/chained_name_global_start",
+        "//define/testdata/reference_graph/chained_name_multi_element",
+        "//define/testdata/reference_graph/constructor_triggering",
+        "//define/testdata/reference_graph/create_particle",
+        "//define/testdata/reference_graph/create_without_parent",
+        "//define/testdata/reference_graph/dead_code",
+        "//define/testdata/reference_graph/dead_value_write",
+        "//define/testdata/reference_graph/destroy_particle",
+        "//define/testdata/reference_graph/destruction_contract",
+        "//define/testdata/reference_graph/destruction_contract_caller_validation",
+        "//define/testdata/reference_graph/destruction_contract_propagation",
+        "//define/testdata/reference_graph/destruction_contract_recording",
+        "//define/testdata/reference_graph/destruction_contract_state",
+        "//define/testdata/reference_graph/destructor_auto",
+        "//define/testdata/reference_graph/destructor_cascade",
+        "//define/testdata/reference_graph/destructor_triggering",
+        "//define/testdata/reference_graph/encoding_constraint",
+        "//define/testdata/reference_graph/encoding_operation",
+        "//define/testdata/reference_graph/implied_action_triggering",
+        "//define/testdata/reference_graph/inferred_action_occupancy",
+        "//define/testdata/reference_graph/move_chained_constraint",
+        "//define/testdata/reference_graph/move_cross_fqun",
+        "//define/testdata/reference_graph/move_local_constraint",
+        "//define/testdata/reference_graph/move_particle",
+        "//define/testdata/reference_graph/move_state_tracking",
+        "//define/testdata/reference_graph/move_without_parent",
+        "//define/testdata/reference_graph/operation_arguments",
+        "//define/testdata/reference_graph/operation_view_directions",
+        "//define/testdata/reference_graph/operation_view_requirements",
+        "//define/testdata/reference_graph/particle_conflict",
+        "//define/testdata/reference_graph/quality_implication",
+        "//define/testdata/reference_graph/quality_implication_particle",
+        "//define/testdata/reference_graph/reference_graph_invariants",
+        "//define/testdata/reference_graph/standard_library",
+        "//define/testdata/reference_graph/trigger_conditions",
+        "//define/testdata/reference_graph/unset_value",
+        "//define/testdata/reference_graph/value_constraint",
+        "//define/testdata/reference_graph/value_setting",
+        "//define/testdata/reference_graph/value_setting_literal",
+    ],
+    # Keep about 200 tests per shard.
+    shard_count = 6,
     deps = [
         ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "action_triggering_test",
-    size = "small",
-    srcs = ["action_triggering_test.py"],
-    data = ["//define/testdata/reference_graph/action_triggering"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_constructor_implied_test",
-    size = "small",
-    srcs = ["automated_guarantees_constructor_implied_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_constructor_implied"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_constructor_test",
-    size = "small",
-    srcs = ["automated_guarantees_constructor_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_constructor"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_destruction_test",
-    size = "small",
-    srcs = ["automated_guarantees_destruction_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_destruction"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:codegen_input",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_destructor_test",
-    size = "small",
-    srcs = ["automated_guarantees_destructor_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_destructor"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_error_test",
-    size = "small",
-    srcs = ["automated_guarantees_error_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_error"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_implied_position_test",
-    size = "small",
-    srcs = ["automated_guarantees_implied_position_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_implied_position"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_implied_to_interface_test",
-    size = "small",
-    srcs = ["automated_guarantees_implied_to_interface_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_implied_to_interface"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_many_actions_test",
-    size = "small",
-    srcs = ["automated_guarantees_many_actions_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_many_actions"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_require_consumption_test",
-    size = "small",
-    srcs = ["automated_guarantees_require_consumption_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_test",
-    size = "small",
-    srcs = ["automated_guarantees_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_transitive_implied_identity_test",
-    size = "small",
-    srcs = ["automated_guarantees_transitive_implied_identity_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_transitive_implied_identity"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_transitive_implied_occupancy_test",
-    size = "small",
-    srcs = ["automated_guarantees_transitive_implied_occupancy_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_transitive_implied_occupancy"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_constructor_implied_test",
-    size = "small",
-    srcs = ["automated_requirements_constructor_implied_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_constructor_implied"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_constructor_move_test",
-    size = "small",
-    srcs = ["automated_requirements_constructor_move_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_constructor_move"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_constructor_propagation_test",
-    size = "small",
-    srcs = ["automated_requirements_constructor_propagation_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_constructor_propagation"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_constructor_test",
-    size = "small",
-    srcs = ["automated_requirements_constructor_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_constructor"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_destructor_implied_test",
-    size = "small",
-    srcs = ["automated_requirements_destructor_implied_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_destructor_implied"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_destructor_move_test",
-    size = "small",
-    srcs = ["automated_requirements_destructor_move_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_destructor_move"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_destructor_propagation_test",
-    size = "small",
-    srcs = ["automated_requirements_destructor_propagation_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_destructor_propagation"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_destructor_test",
-    size = "small",
-    srcs = ["automated_requirements_destructor_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_destructor"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_diamond_test",
-    size = "small",
-    srcs = ["automated_requirements_diamond_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_diamond"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_implied_position_test",
-    size = "small",
-    srcs = ["automated_requirements_implied_position_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_implied_position"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_many_actions_child_name_move_test",
-    size = "small",
-    srcs = ["automated_requirements_many_actions_child_name_move_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_many_actions_child_name_move"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_many_actions_direct_propagation_test",
-    size = "small",
-    srcs = ["automated_requirements_many_actions_direct_propagation_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_many_actions_direct_propagation"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_many_actions_name_resolution_test",
-    size = "small",
-    srcs = ["automated_requirements_many_actions_name_resolution_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_many_actions_name_resolution"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_many_actions_trigger_move_test",
-    size = "small",
-    srcs = ["automated_requirements_many_actions_trigger_move_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_many_actions_trigger_move"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_move_test",
-    size = "small",
-    srcs = ["automated_requirements_move_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_move"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_nested_implied_test",
-    size = "small",
-    srcs = ["automated_requirements_nested_implied_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_nested_implied"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_override_test",
-    size = "small",
-    srcs = ["automated_requirements_override_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements_override"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_requirements_test",
-    size = "small",
-    srcs = ["automated_requirements_test.py"],
-    data = ["//define/testdata/reference_graph/automated_requirements"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "built_in_operations_test",
-    size = "small",
-    srcs = ["built_in_operations_test.py"],
-    data = ["//define/testdata/reference_graph/built_in_operations"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "chained_name_constraint_test",
-    size = "small",
-    srcs = ["chained_name_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/chained_name_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "chained_name_global_start_test",
-    size = "small",
-    srcs = ["chained_name_global_start_test.py"],
-    data = ["//define/testdata/reference_graph/chained_name_global_start"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "chained_name_multi_element_test",
-    size = "small",
-    srcs = ["chained_name_multi_element_test.py"],
-    data = ["//define/testdata/reference_graph/chained_name_multi_element"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "chained_name_test",
-    size = "small",
-    srcs = ["chained_name_test.py"],
-    data = ["//define/testdata/reference_graph/chained_name"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "constructor_triggering_test",
-    size = "small",
-    srcs = ["constructor_triggering_test.py"],
-    data = ["//define/testdata/reference_graph/constructor_triggering"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "create_particle_test",
-    size = "small",
-    srcs = ["create_particle_test.py"],
-    data = ["//define/testdata/reference_graph/create_particle"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "create_without_parent_test",
-    size = "small",
-    srcs = ["create_without_parent_test.py"],
-    data = ["//define/testdata/reference_graph/create_without_parent"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "dead_code_test",
-    size = "small",
-    srcs = ["dead_code_test.py"],
-    data = ["//define/testdata/reference_graph/dead_code"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "dead_value_write_test",
-    size = "small",
-    srcs = ["dead_value_write_test.py"],
-    data = ["//define/testdata/reference_graph/dead_value_write"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destroy_particle_test",
-    size = "small",
-    srcs = ["destroy_particle_test.py"],
-    data = ["//define/testdata/reference_graph/destroy_particle"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destruction_contract_caller_validation_test",
-    size = "small",
-    srcs = ["destruction_contract_caller_validation_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract_caller_validation"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destruction_contract_propagation_test",
-    size = "small",
-    srcs = ["destruction_contract_propagation_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract_propagation"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destruction_contract_recording_test",
-    size = "small",
-    srcs = ["destruction_contract_recording_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract_recording"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destruction_contract_state_test",
-    size = "small",
-    srcs = ["destruction_contract_state_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract_state"],
-    deps = [
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler:conftest",
+        "//define/compiler:constants",
+        "//define/compiler:literal_parsers",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
@@ -656,322 +191,6 @@ py_test(
         "//define/compiler/validator/reference_graph:test_helpers",
         "//define/compiler/validator/reference_graph/destruction:child_state",
         "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "destruction_contract_test",
-    size = "small",
-    srcs = ["destruction_contract_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destructor_auto_test",
-    size = "small",
-    srcs = ["destructor_auto_test.py"],
-    data = ["//define/testdata/reference_graph/destructor_auto"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destructor_cascade_test",
-    size = "small",
-    srcs = ["destructor_cascade_test.py"],
-    data = ["//define/testdata/reference_graph/destructor_cascade"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "destructor_triggering_test",
-    size = "small",
-    srcs = ["destructor_triggering_test.py"],
-    data = ["//define/testdata/reference_graph/destructor_triggering"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "encoding_constraint_test",
-    size = "small",
-    srcs = ["encoding_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/encoding_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "encoding_operation_test",
-    size = "small",
-    srcs = ["encoding_operation_test.py"],
-    data = ["//define/testdata/reference_graph/encoding_operation"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:name_types",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "error_messages_complex_test",
-    size = "small",
-    srcs = ["error_messages_complex_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "error_messages_destruction_test",
-    size = "small",
-    srcs = ["error_messages_destruction_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-    ],
-)
-
-py_test(
-    name = "error_messages_test",
-    size = "small",
-    srcs = ["error_messages_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "implied_action_triggering_test",
-    size = "small",
-    srcs = ["implied_action_triggering_test.py"],
-    data = ["//define/testdata/reference_graph/implied_action_triggering"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "inferred_action_occupancy_test",
-    size = "small",
-    srcs = ["inferred_action_occupancy_test.py"],
-    data = ["//define/testdata/reference_graph/inferred_action_occupancy"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_chained_constraint_test",
-    size = "small",
-    srcs = ["move_chained_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/move_chained_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_cross_fqun_test",
-    size = "small",
-    srcs = ["move_cross_fqun_test.py"],
-    data = ["//define/testdata/reference_graph/move_cross_fqun"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_local_constraint_test",
-    size = "small",
-    srcs = ["move_local_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/move_local_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_particle_test",
-    size = "small",
-    srcs = ["move_particle_test.py"],
-    data = ["//define/testdata/reference_graph/move_particle"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_state_tracking_test",
-    size = "small",
-    srcs = ["move_state_tracking_test.py"],
-    data = ["//define/testdata/reference_graph/move_state_tracking"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "move_without_parent_test",
-    size = "small",
-    srcs = ["move_without_parent_test.py"],
-    data = ["//define/testdata/reference_graph/move_without_parent"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "operation_arguments_test",
-    size = "small",
-    srcs = ["operation_arguments_test.py"],
-    data = ["//define/testdata/reference_graph/operation_arguments"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "operation_view_directions_test",
-    size = "small",
-    srcs = ["operation_view_directions_test.py"],
-    data = ["//define/testdata/reference_graph/operation_view_directions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:name_types",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "operation_view_requirements_test",
-    size = "small",
-    srcs = ["operation_view_requirements_test.py"],
-    data = ["//define/testdata/reference_graph/operation_view_requirements"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "particle_conflict_test",
-    size = "small",
-    srcs = ["particle_conflict_test.py"],
-    data = ["//define/testdata/reference_graph/particle_conflict"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "quality_implication_particle_test",
-    size = "small",
-    srcs = ["quality_implication_particle_test.py"],
-    data = ["//define/testdata/reference_graph/quality_implication_particle"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "quality_implication_test",
-    size = "small",
-    srcs = ["quality_implication_test.py"],
-    data = ["//define/testdata/reference_graph/quality_implication"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "reference_graph_invariants_test",
-    size = "small",
-    srcs = ["reference_graph_invariants_test.py"],
-    data = ["//define/testdata/reference_graph/reference_graph_invariants"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-    ],
-)
-
-py_library(
-    name = "reference_graph_validator_tests",
-    srcs = ["__init__.py"],
-)
-
-py_test(
-    name = "standard_library_test",
-    size = "small",
-    srcs = ["standard_library_test.py"],
-    data = ["//define/testdata/reference_graph/standard_library"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -991,76 +210,6 @@ filegroup(
     visibility = ["//define/testdata:__pkg__"],
 )
 
-py_test(
-    name = "trigger_conditions_test",
-    size = "small",
-    srcs = ["trigger_conditions_test.py"],
-    data = ["//define/testdata/reference_graph/trigger_conditions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "unset_value_test",
-    size = "small",
-    srcs = ["unset_value_test.py"],
-    data = ["//define/testdata/reference_graph/unset_value"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
-py_test(
-    name = "value_constraint_test",
-    size = "small",
-    srcs = ["value_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/value_constraint"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:constants",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "value_setting_literal_test",
-    size = "small",
-    srcs = ["value_setting_literal_test.py"],
-    data = ["//define/testdata/reference_graph/value_setting_literal"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:literal_parsers",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "value_setting_test",
-    size = "small",
-    srcs = ["value_setting_test.py"],
-    data = ["//define/testdata/reference_graph/value_setting"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-    ],
-)
-
 # --- Format checking ---
 
 format_test(
@@ -1074,85 +223,9 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":action_operation_execution_test",
-        ":action_triggering_test",
-        ":automated_guarantees_constructor_implied_test",
-        ":automated_guarantees_constructor_test",
-        ":automated_guarantees_destruction_test",
-        ":automated_guarantees_destructor_test",
-        ":automated_guarantees_error_test",
-        ":automated_guarantees_implied_position_test",
-        ":automated_guarantees_implied_to_interface_test",
-        ":automated_guarantees_many_actions_test",
-        ":automated_guarantees_require_consumption_test",
-        ":automated_guarantees_test",
-        ":automated_guarantees_transitive_implied_identity_test",
-        ":automated_guarantees_transitive_implied_occupancy_test",
-        ":automated_requirements_constructor_implied_test",
-        ":automated_requirements_constructor_move_test",
-        ":automated_requirements_constructor_propagation_test",
-        ":automated_requirements_constructor_test",
-        ":automated_requirements_destructor_implied_test",
-        ":automated_requirements_destructor_move_test",
-        ":automated_requirements_destructor_propagation_test",
-        ":automated_requirements_destructor_test",
-        ":automated_requirements_diamond_test",
-        ":automated_requirements_implied_position_test",
-        ":automated_requirements_many_actions_child_name_move_test",
-        ":automated_requirements_many_actions_direct_propagation_test",
-        ":automated_requirements_many_actions_name_resolution_test",
-        ":automated_requirements_many_actions_trigger_move_test",
-        ":automated_requirements_move_test",
-        ":automated_requirements_nested_implied_test",
-        ":automated_requirements_override_test",
-        ":automated_requirements_test",
-        ":built_in_operations_test",
-        ":chained_name_constraint_test",
-        ":chained_name_global_start_test",
-        ":chained_name_multi_element_test",
-        ":chained_name_test",
-        ":constructor_triggering_test",
-        ":create_particle_test",
-        ":create_without_parent_test",
-        ":dead_code_test",
-        ":dead_value_write_test",
-        ":destroy_particle_test",
-        ":destruction_contract_caller_validation_test",
-        ":destruction_contract_propagation_test",
-        ":destruction_contract_recording_test",
-        ":destruction_contract_state_test",
-        ":destruction_contract_test",
-        ":destructor_auto_test",
-        ":destructor_cascade_test",
-        ":destructor_triggering_test",
-        ":encoding_constraint_test",
-        ":encoding_operation_test",
-        ":error_messages_complex_test",
-        ":error_messages_destruction_test",
-        ":error_messages_test",
-        ":implied_action_triggering_test",
-        ":inferred_action_occupancy_test",
-        ":move_chained_constraint_test",
-        ":move_cross_fqun_test",
-        ":move_local_constraint_test",
-        ":move_particle_test",
-        ":move_state_tracking_test",
-        ":move_without_parent_test",
-        ":operation_arguments_test",
-        ":operation_view_directions_test",
-        ":operation_view_requirements_test",
-        ":particle_conflict_test",
-        ":quality_implication_particle_test",
-        ":quality_implication_test",
-        ":reference_graph_invariants_test",
+        ":init_py",
         ":reference_graph_validator_tests",
-        ":standard_library_test",
         ":test_helpers",
-        ":trigger_conditions_test",
-        ":unset_value_test",
-        ":value_constraint_test",
-        ":value_setting_literal_test",
-        ":value_setting_test",
     ],
 )
 

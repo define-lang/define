@@ -14,15 +14,24 @@ import msgspec
 
 PYTHON_RULE_CLASSES: Final = frozenset({"py_binary", "py_library", "py_test"})
 BAZEL_IMPORTS: Final = {"python.runfiles": "@rules_python//python/runfiles"}
+# The test files in these directories each run too briefly to justify their own
+# interpreter startup, so each directory combines them into one py_test.
+COMBINED_TEST_TARGETS: Final = frozenset(
+    {
+        "//define/compiler/parsing/parser_tests:parser_tests",
+        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:reference_graph_validator_tests",
+        "//define/compiler/validator/structural/program_validator_tests:program_validator_tests",
+    }
+)
 
 
 class PythonTarget(msgspec.Struct, frozen=True):
-    """A hand-maintained one-source Python target."""
+    """A hand-maintained Python target."""
 
     label: str
     rule_class: str
     build_file: Path
-    source: Path
+    sources: tuple[Path, ...]
     deps: frozenset[str]
     kept_deps: frozenset[str] = frozenset()
     generated_source: bool = False
@@ -66,10 +75,10 @@ class ImportAnalysis(msgspec.Struct, frozen=True):
 
 
 class ParsedTarget(msgspec.Struct, frozen=True):
-    """A Python target paired with its parsed source."""
+    """A Python target paired with the parsed tree of each of its sources."""
 
     target: PythonTarget
-    tree: ast.Module
+    trees: tuple[ast.Module, ...]
 
 
 class RepositoryAnalysis(msgspec.Struct, frozen=True):
@@ -195,20 +204,21 @@ def _python_target(
 ) -> PythonTarget:
     package = build_file.parent
     sources = _string_list(call, "srcs")
-    if len(sources) != 1:
+    if label not in COMBINED_TEST_TARGETS and len(sources) != 1:
         raise ValueError(
             f"{label} must have exactly one Python source, found {sources}"
         )
-    if not sources[0].endswith((".py", ".pyi")):
-        raise ValueError(f"{label} source must be a Python file, found {sources[0]!r}")
+    for source in sources:
+        if not source.endswith((".py", ".pyi")):
+            raise ValueError(f"{label} source must be a Python file, found {source!r}")
     return PythonTarget(
         label=label,
         rule_class=rule_class,
         build_file=build_file,
-        source=package / sources[0].removeprefix(":"),
+        sources=tuple(package / source.removeprefix(":") for source in sources),
         deps=_declared_deps(call, package),
         kept_deps=_kept_deps(lines, call, package),
-        generated_source=sources[0].startswith(":"),
+        generated_source=any(source.startswith(":") for source in sources),
     )
 
 
@@ -292,18 +302,15 @@ def _load_targets(
         proto_sources.update(found_proto)
         py_proto_deps.update(found_py_proto)
 
-    module_owners = {
-        module_name(target.source): target.label
-        for target in targets
-        if target.source.name != "pyright_test_runner.py"
-    }
-    module_owners.update(
-        {
-            target.source.stem: target.label
-            for target in targets
-            if target.source.parent == Path("tools")
-        }
-    )
+    module_owners: dict[str, str] = {}
+    for target in targets:
+        for source in target.sources:
+            if source.name != "pyright_test_runner.py":
+                module_owners[module_name(source)] = target.label
+    for target in targets:
+        for source in target.sources:
+            if source.parent == Path("tools"):
+                module_owners[source.stem] = target.label
     for label, proto_dep in py_proto_deps.items():
         source = proto_sources.get(proto_dep)
         if source is not None:
@@ -472,6 +479,20 @@ def _external_module_owners() -> dict[str, str]:
     return owners
 
 
+def _target_imports(
+    parsed_target: ParsedTarget,
+    module_owners: dict[str, str],
+    external_module_owners: dict[str, str],
+) -> ImportAnalysis:
+    dependencies: set[str] = set()
+    unresolved: set[str] = set()
+    for tree in parsed_target.trees:
+        analysis = analyze_imports(tree, module_owners, external_module_owners)
+        dependencies.update(analysis.dependencies)
+        unresolved.update(analysis.unresolved)
+    return ImportAnalysis(frozenset(dependencies), frozenset(unresolved))
+
+
 def _expected_deps(
     parsed_target: ParsedTarget,
     import_analysis: ImportAnalysis,
@@ -481,19 +502,22 @@ def _expected_deps(
     target = parsed_target.target
     expected = set(import_analysis.dependencies)
     expected.update(target.kept_deps)
-    if target.source.name == "__init__.py":
+    if any(source.name == "__init__.py" for source in target.sources):
         expected.update(target.deps)
     expected.discard(target.label)
     if target.rule_class == "py_test":
-        requested_fixtures = requested_fixture_names(parsed_target.tree)
-        package = target.source.parent
-        while package.parts:
-            conftest = package / "conftest.py"
-            if requested_fixtures & conftest_fixtures.get(conftest, frozenset()):
-                conftest_owner = module_owners.get(module_name(conftest))
-                if conftest_owner is not None and conftest_owner != target.label:
-                    expected.add(conftest_owner)
-            package = package.parent
+        requested_fixtures: set[str] = set()
+        for tree in parsed_target.trees:
+            requested_fixtures.update(requested_fixture_names(tree))
+        for source in target.sources:
+            package = source.parent
+            while package.parts:
+                conftest = package / "conftest.py"
+                if requested_fixtures & conftest_fixtures.get(conftest, frozenset()):
+                    conftest_owner = module_owners.get(module_name(conftest))
+                    if conftest_owner is not None and conftest_owner != target.label:
+                        expected.add(conftest_owner)
+                package = package.parent
     return frozenset(expected)
 
 
@@ -590,6 +614,23 @@ def _relative_files(files: list[Path], repository: Path) -> frozenset[Path]:
     )
 
 
+def _is_selected(
+    target: PythonTarget,
+    selected_files: frozenset[Path],
+    changed_conftest_packages: set[Path],
+) -> bool:
+    if target.build_file in selected_files:
+        return True
+    for source in target.sources:
+        if source in selected_files:
+            return True
+        if target.rule_class == "py_test" and any(
+            source.is_relative_to(package) for package in changed_conftest_packages
+        ):
+            return True
+    return False
+
+
 def _selected_targets(
     parsed_targets: tuple[ParsedTarget, ...], selected_files: frozenset[Path]
 ) -> tuple[ParsedTarget, ...]:
@@ -601,18 +642,12 @@ def _selected_targets(
     return tuple(
         parsed_target
         for parsed_target in parsed_targets
-        if (
-            parsed_target.target.source in selected_files
-            or parsed_target.target.build_file in selected_files
-            or (
-                parsed_target.target.rule_class == "py_test"
-                and any(
-                    parsed_target.target.source.is_relative_to(package)
-                    for package in changed_conftest_packages
-                )
-            )
-        )
+        if _is_selected(parsed_target.target, selected_files, changed_conftest_packages)
     )
+
+
+def _parse_source(repository: Path, source: Path) -> ast.Module:
+    return ast.parse((repository / source).read_text(), filename=str(source))
 
 
 def _load_repository(
@@ -620,25 +655,22 @@ def _load_repository(
     external_module_owners: dict[str, str],
 ) -> RepositoryAnalysis:
     targets, pyright_targets, module_owners = _load_targets(repository)
-    parsed_targets = tuple(
-        ParsedTarget(
-            target,
-            ast.parse(
-                (repository / target.source).read_text(),
-                filename=str(target.source),
-            ),
-        )
-        for target in targets
-        if not target.generated_source
-    )
-    conftest_fixtures = {
-        parsed_target.target.source: fixture_names(parsed_target.tree)
-        for parsed_target in parsed_targets
-        if parsed_target.target.source.name == "conftest.py"
-    }
+    parsed_targets: list[ParsedTarget] = []
+    for target in targets:
+        if target.generated_source:
+            continue
+        trees = tuple(_parse_source(repository, source) for source in target.sources)
+        parsed_targets.append(ParsedTarget(target, trees))
+    conftest_fixtures: dict[Path, frozenset[str]] = {}
+    for parsed_target in parsed_targets:
+        for source, tree in zip(
+            parsed_target.target.sources, parsed_target.trees, strict=True
+        ):
+            if source.name == "conftest.py":
+                conftest_fixtures[source] = fixture_names(tree)
     return RepositoryAnalysis(
         repository,
-        parsed_targets,
+        tuple(parsed_targets),
         module_owners,
         external_module_owners,
         conftest_fixtures,
@@ -720,8 +752,8 @@ def analyze_targets(
         repository_analysis.parsed_targets, selected_files
     )
     import_analyses = {
-        parsed_target.target.label: analyze_imports(
-            parsed_target.tree,
+        parsed_target.target.label: _target_imports(
+            parsed_target,
             repository_analysis.module_owners,
             repository_analysis.external_module_owners,
         )
