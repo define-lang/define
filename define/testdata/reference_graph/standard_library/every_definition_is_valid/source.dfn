@@ -408,5 +408,6 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/text>"r".
             with view<result> looking at position</letter_at_least>.
         }
+        set the value of position</letter> to literal<standard:/text/unicode/code_point>"71".
     }
 }

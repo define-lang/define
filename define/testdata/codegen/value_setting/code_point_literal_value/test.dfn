@@ -1,0 +1,19 @@
+# Code-point literals set scalar values, including scalars that Define and Python source cannot contain directly.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</null>.
+    it also assigns the position</tab>.
+    it also assigns the position</accent>.
+    it also assigns the position</emoji>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</null>.
+        set the value of position</null> to literal<standard:/text/unicode/code_point>"0".
+        create a particle in position</tab>.
+        set the value of position</tab> to literal<standard:/text/unicode/code_point>"9".
+        create a particle in position</accent>.
+        set the value of position</accent> to literal<standard:/text/unicode/code_point>"301".
+        create a particle in position</emoji>.
+        set the value of position</emoji> to literal<standard:/text/unicode/code_point>"1F600".
+    }
+}

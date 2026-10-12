@@ -1,0 +1,8 @@
+test.create(/null)
+test.set_value(/null, "\U00000000")
+test.create(/tab)
+test.set_value(/tab, "\U00000009")
+test.create(/accent)
+test.set_value(/accent, "́")
+test.create(/emoji)
+test.set_value(/emoji, "😀")

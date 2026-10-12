@@ -19,6 +19,9 @@ _PARSE_BINARY_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING)
 ]
+_PARSE_CODE_POINT_ASCII_AS_SCALAR_UTF8 = literal_parsers.LITERAL_PARSERS[
+    (constants.CODE_POINT_ASCII_ENCODING, constants.SCALAR_UTF8_ENCODING)
+]
 _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.DECIMAL_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING)
 ]
@@ -282,4 +285,47 @@ def test_utf8_as_scalar_utf8_rejects(content: str, content_index: int):
     with pytest.raises(literal_parsers.LiteralParseError) as error:
         _ = _PARSE_UTF8_AS_SCALAR_UTF8(content)
     assert error.value.reason == "there must be exactly one scalar"
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(
+    ("content", "scalar"),
+    [
+        ("0", "\x00"),
+        ("9", "\t"),
+        ("71", "q"),
+        ("E9", "\u00e9"),
+        ("301", "\u0301"),
+        ("D7FF", "\ud7ff"),
+        ("E000", "\ue000"),
+        ("1F600", "\U0001f600"),
+        ("10FFFF", "\U0010ffff"),
+    ],
+)
+def test_code_point_ascii_as_scalar_utf8_accepts(content: str, scalar: str):
+    assert _PARSE_CODE_POINT_ASCII_AS_SCALAR_UTF8(content) == scalar
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("", "there must be at least one hex digit", 0),
+        ("e9", "hex digits are written in uppercase", 0),
+        ("1f600", "hex digits are written in uppercase", 1),
+        ("U+0301", "'U' is not allowed in a code point", 0),
+        ("E9G", "'G' is not allowed in a code point", 2),
+        ("0301", "code points are written without leading zeros", 0),
+        ("00", "code points are written without leading zeros", 0),
+        ("D800", "surrogates are not scalars", 0),
+        ("DFFF", "surrogates are not scalars", 0),
+        ("110000", "code points end at 10FFFF", 0),
+        ("FFFFFFFFFFFFFFFFFFFF", "code points end at 10FFFF", 0),
+    ],
+)
+def test_code_point_ascii_as_scalar_utf8_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_CODE_POINT_ASCII_AS_SCALAR_UTF8(content)
+    assert error.value.reason == reason
     assert error.value.content_index == content_index

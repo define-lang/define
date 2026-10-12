@@ -1,0 +1,10 @@
+# A code-point literal sets a scalar value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</letter>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</letter>.
+        set the value of position</letter> to literal<standard:/text/unicode/code_point>"E9".
+    }
+}

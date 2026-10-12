@@ -28,6 +28,9 @@ STANDARD_LIBRARY_ROOT: Final = define_path.DefinePathFromPosix(
 # The standard universe's files in define/standard define these encodings.
 BINARY_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/binary/ascii>"
 BOOLEAN_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/boolean/ascii>"
+CODE_POINT_ASCII_ENCODING: Final = (
+    f"encoding<{STANDARD_UNIVERSE}:/text/unicode/code_point/ascii>"
+)
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
 INTEGER_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/integer/ascii>"
 NATURAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/natural/ascii>"

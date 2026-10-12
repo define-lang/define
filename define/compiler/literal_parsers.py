@@ -189,6 +189,36 @@ def _parse_utf8_as_scalar_utf8(content: str) -> str:
     return content
 
 
+# Code points have no length, so leading zeros would give one code point
+# several spellings.
+_CODE_POINT_ASCII: Final = re.compile(r"0|[1-9A-F][0-9A-F]*")
+_HEX_DIGITS: Final = frozenset(string.digits + "ABCDEF")
+
+
+def _parse_code_point_ascii_as_scalar_utf8(content: str) -> str:
+    if _CODE_POINT_ASCII.fullmatch(content) is None:
+        raise _code_point_ascii_error(content)
+    code_point = int(content, 16)
+    if code_point > 0x10FFFF:
+        raise LiteralParseError("code points end at 10FFFF", 0)
+    if 0xD800 <= code_point <= 0xDFFF:
+        raise LiteralParseError("surrogates are not scalars", 0)
+    return chr(code_point)
+
+
+def _code_point_ascii_error(content: str) -> LiteralParseError:
+    # Only invalid content reaches this, so it favors clear errors over speed.
+    if not content:
+        return LiteralParseError("there must be at least one hex digit", 0)
+    for index, char in enumerate(content):
+        if char in _HEX_DIGITS:
+            continue
+        if char in "abcdef":
+            return LiteralParseError("hex digits are written in uppercase", index)
+        return LiteralParseError(f"'{char}' is not allowed in a code point", index)
+    return LiteralParseError("code points are written without leading zeros", 0)
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
@@ -211,6 +241,10 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
         constants.BOOLEAN_ASCII_ENCODING,
         constants.BOOLEAN_ASCII_ENCODING,
     ): _parse_boolean_ascii,
+    (
+        constants.CODE_POINT_ASCII_ENCODING,
+        constants.SCALAR_UTF8_ENCODING,
+    ): _parse_code_point_ascii_as_scalar_utf8,
     (
         constants.DECIMAL_ASCII_ENCODING,
         constants.BINARY_ASCII_ENCODING,

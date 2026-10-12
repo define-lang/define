@@ -98,6 +98,8 @@ def test_every_definition_is_valid(
             standard_library_file("number/natural/subtract.dfn"),
             standard_library_file("number/natural/subtract_saturating.dfn"),
             standard_library_file("text.dfn"),
+            standard_library_file("text/unicode/code_point.dfn"),
+            standard_library_file("text/unicode/code_point/ascii.dfn"),
             standard_library_file("text/unicode/scalar.dfn"),
             standard_library_file("text/unicode/scalar/equal.dfn"),
             standard_library_file("text/unicode/scalar/greater_than_or_equal.dfn"),

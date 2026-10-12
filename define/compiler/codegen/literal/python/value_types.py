@@ -44,10 +44,18 @@ def _python_decimal(content: str) -> str:
     return content
 
 
-def _python_text(content: str) -> str:
-    # Define source cannot contain any other character that a Python string
-    # literal must escape.
-    escaped = content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+_PYTHON_STRING_ESCAPES: Final = {"\\": "\\\\", '"': '\\"', "\n": "\\n"}
+
+
+def _python_scalar(content: str) -> str:
+    if content in _PYTHON_STRING_ESCAPES:
+        escaped = _PYTHON_STRING_ESCAPES[content]
+    elif content.isprintable():
+        escaped = content
+    else:
+        # Code-point literals can set scalars that would be invisible or invalid
+        # in Python source, such as NUL.
+        escaped = f"\\U{ord(content):08x}"
     return f'"{escaped}"'
 
 
@@ -57,7 +65,7 @@ _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
     constants.DECIMAL_ASCII_ENCODING: _python_decimal,
     constants.INTEGER_ASCII_ENCODING: _python_decimal,
     constants.NATURAL_ASCII_ENCODING: _python_decimal,
-    constants.SCALAR_UTF8_ENCODING: _python_text,
+    constants.SCALAR_UTF8_ENCODING: _python_scalar,
 }
 
 

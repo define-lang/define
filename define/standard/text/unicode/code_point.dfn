@@ -1,0 +1,3 @@
+define the potential literal<standard:/text/unicode/code_point> {
+    it has the encoding</text/unicode/code_point/ascii>.
+}
