@@ -110,24 +110,41 @@ def _parse_boolean_ascii(content: str) -> str:
 _BINARY: Final = re.compile(r"0|1[01]*")
 
 
-def _parse_binary_ascii(content: str) -> str:
-    if _BINARY.fullmatch(content) is not None:
-        return content
-    if not content:
-        raise LiteralParseError("there must be at least one bit", 0)
-    for index, char in enumerate(content):
-        if char not in "01":
+def _binary_bits(content: str, start: int) -> str:
+    bits = content[start:]
+    if _BINARY.fullmatch(bits) is not None:
+        return bits
+    if not bits:
+        raise LiteralParseError("there must be at least one bit", start)
+    for index in range(start, len(content)):
+        if content[index] not in "01":
             raise LiteralParseError("only the bits 0 and 1 are allowed", index)
-    raise LiteralParseError("binary values are written without leading zeros", 0)
+    raise LiteralParseError("binary values are written without leading zeros", start)
 
 
-# TODO: Add a binary literal translator into integers that accepts a leading -
-# for negative values.
-def _parse_binary_ascii_as_natural_ascii(content: str) -> str:
+def _parse_binary_ascii(content: str) -> str:
+    return _binary_bits(content, 0)
+
+
+def _binary_as_decimal(bits: str) -> str:
     # TODO: Convert binary literals longer than about 14,000 bits, which exceed
     # Python's limit on converting an int to a decimal string and so raise
     # ValueError.
-    return str(int(_parse_binary_ascii(content), 2))
+    return str(int(bits, 2))
+
+
+def _parse_binary_ascii_as_integer_ascii(content: str) -> str:
+    sign = "-" if content.startswith("-") else ""
+    bits = _binary_bits(content, len(sign))
+    if sign and bits == "0":
+        raise LiteralParseError("zero is written without a minus sign", 0)
+    return sign + _binary_as_decimal(bits)
+
+
+def _parse_binary_ascii_as_natural_ascii(content: str) -> str:
+    if content.startswith("-"):
+        raise LiteralParseError("negative numbers are not allowed", 0)
+    return _binary_as_decimal(_parse_binary_ascii(content))
 
 
 def _reject_negative(decimal: str):
@@ -173,11 +190,11 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
         constants.BINARY_ASCII_ENCODING,
         constants.DECIMAL_ASCII_ENCODING,
-    ): _parse_binary_ascii_as_natural_ascii,
+    ): _parse_binary_ascii_as_integer_ascii,
     (
         constants.BINARY_ASCII_ENCODING,
         constants.INTEGER_ASCII_ENCODING,
-    ): _parse_binary_ascii_as_natural_ascii,
+    ): _parse_binary_ascii_as_integer_ascii,
     (
         constants.BINARY_ASCII_ENCODING,
         constants.NATURAL_ASCII_ENCODING,

@@ -10,6 +10,12 @@ _PARSE_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.BINARY_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING)
 ]
+_PARSE_BINARY_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.BINARY_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+]
+_PARSE_BINARY_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.BINARY_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+]
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING)
 ]
@@ -63,6 +69,55 @@ def test_binary_ascii_as_decimal_ascii_rejects():
         _ = _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII("0101")
     assert error.value.reason == "binary values are written without leading zeros"
     assert error.value.content_index == 0
+
+
+@pytest.mark.parametrize(
+    ("content", "integer"),
+    [("0", "0"), ("1011", "11"), ("-1", "-1"), ("-1011", "-11")],
+)
+def test_binary_ascii_as_integer_ascii_accepts(content: str, integer: str):
+    assert _PARSE_BINARY_ASCII_AS_INTEGER_ASCII(content) == integer
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-", "there must be at least one bit", 1),
+        ("--1", "only the bits 0 and 1 are allowed", 1),
+        ("-102", "only the bits 0 and 1 are allowed", 3),
+        ("1-1", "only the bits 0 and 1 are allowed", 1),
+        ("-01", "binary values are written without leading zeros", 1),
+        ("-0", "zero is written without a minus sign", 0),
+    ],
+)
+def test_binary_ascii_as_integer_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_BINARY_ASCII_AS_INTEGER_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(("content", "natural"), [("0", "0"), ("1011", "11")])
+def test_binary_ascii_as_natural_ascii_accepts(content: str, natural: str):
+    assert _PARSE_BINARY_ASCII_AS_NATURAL_ASCII(content) == natural
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-1", "negative numbers are not allowed", 0),
+        ("0101", "binary values are written without leading zeros", 0),
+    ],
+)
+def test_binary_ascii_as_natural_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_BINARY_ASCII_AS_NATURAL_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
 
 
 @pytest.mark.parametrize("content", ["true", "false"])

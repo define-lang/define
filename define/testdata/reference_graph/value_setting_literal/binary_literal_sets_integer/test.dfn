@@ -1,10 +1,10 @@
-# A binary literal sets an integer value to the integer it represents.
+# A binary literal with a minus sign sets an integer value to a negative number.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</count>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position</count>.
-        set the value of position</count> to literal<standard:/binary>"1011".
+        set the value of position</count> to literal<standard:/binary>"-1011".
     }
 }
