@@ -76,7 +76,7 @@
                 {%- endif %}
         {%- endmatch %}
         {%- if let Some(label) = statement.operation_label %}
-        literal.record_operation("{{ label }}")
+        literal.record_operation({{ label|python_string }})
         {%- endif %}
     {%- endfor %}
 {% endmacro %}

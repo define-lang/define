@@ -38,6 +38,24 @@ impl FunctionReference {
     }
 }
 
+mod filters {
+    /// Writes the text as a Python string literal.
+    #[askama::filter_fn]
+    pub fn python_string<T: std::fmt::Display>(
+        text: T,
+        _: &dyn askama::Values,
+    ) -> askama::Result<String> {
+        // Define source cannot contain any other character that a Python string
+        // literal must escape.
+        let escaped = text
+            .to_string()
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('\n', "\\n");
+        Ok(format!("\"{escaped}\""))
+    }
+}
+
 #[derive(Template)]
 #[template(path = "module_header.j2", escape = "none")]
 struct ModuleHeader {

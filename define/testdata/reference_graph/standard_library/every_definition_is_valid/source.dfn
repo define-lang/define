@@ -144,6 +144,11 @@ define the potential position<my.domain.com:my_lib:/integer_magnitude> {
         it has the value<standard:/number/natural>.
     }
 }
+define the potential position<my.domain.com:my_lib:/letter> {
+    it may only contain particles where {
+        it has the value<standard:/text/unicode/scalar>.
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</bits>.
     it also assigns the position</masked>.
@@ -174,6 +179,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</integer_below>.
     it also assigns the position</integer_at_most>.
     it also assigns the position</integer_magnitude>.
+    it also assigns the position</letter>.
     it happens when {
         this particle is created.
     } and it does {
@@ -352,5 +358,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         execute the operation<standard:/number/integer/negate> {
             with view<value> looking at position</offset>.
         }
+        create a particle in position</letter>.
+        set the value of position</letter> to literal<standard:/text>"q".
     }
 }

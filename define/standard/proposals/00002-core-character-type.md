@@ -145,12 +145,12 @@ are truly UTF-8.
 ## Solution
 
 Define chooses to be explicit. We do not have a type called "character" and
-instead we start with `value</unicode/scalar>` as our simplest character-like
-type. This can then have multiple different encodings, such as
-`encoding</unicode/utf8>`, which will be the default and most common encoding
-when dealing with input/output strings. But it can also be encoded into some
-`/binary` encoding directly, or represented in the backend by an unsigned 32-bit
-integer, as necessary and most appropriate for optimization.
+instead we start with `value</text/unicode/scalar>` as our simplest
+character-like type. This can then have multiple different encodings, such as
+`encoding</text/unicode/scalar/utf8>`, which will be the default and most common
+encoding when dealing with input/output strings. But it can also be encoded into
+some `/binary` encoding directly, or represented in the backend by an unsigned
+32-bit integer, as necessary and most appropriate for optimization.
 
 Define does not presently intend to make any promises about exactly how scalars
 are encoded, because that would limit our optimization options in the future.
@@ -173,40 +173,40 @@ future).
 
 Define programs accepting any bytes that could be invalid UTF-8 must validate
 them at that boundary, and the language should provide facilities to do so. Once
-data claims to be `encoding</unicode/utf8>` then all parts of the program can
-assume it is valid. The same would be true of any other input Unicode encoding
-that comes from outside the program.
+data claims to be `encoding</text/unicode/utf8>` then all parts of the program
+can assume it is valid. The same would be true of any other input Unicode
+encoding that comes from outside the program.
 
 ## A Real Program
 
 ### Value and Literal
 
 ```define
-define the potential value<standard:/unicode/scalar>.
+define the potential value<standard:/text/unicode/scalar>.
 
-define the potential literal<standard:/unicode/scalar> {
-    it has the encoding</unicode/utf8>.
+define the potential literal<standard:/text> {
+    it has the encoding</text/unicode/utf8>.
 }
 ```
 
 The literal parser rejects any literal content that is not exactly one scalar.
-For example, `literal<standard:/unicode/scalar>"é"` is an error when the `é` is
-written as `e` followed by `U+0301`.
+For example, `literal<standard:/text>"é"` is an error when the `é` is written as
+`e` followed by `U+0301`.
 
 ### Operations
 
 ```define
-define the operation<standard:/unicode/scalar/less_than> {
+define the operation<standard:/text/unicode/scalar/less_than> {
     define the view<a> {
         it is read.
         it may only contain particles where {
-            it has the value</unicode/scalar>.
+            it has the value</text/unicode/scalar>.
         }
     }
     define the view<b> {
         it is read.
         it may only contain particles where {
-            it has the value</unicode/scalar>.
+            it has the value</text/unicode/scalar>.
         }
     }
     define the view<result> {
@@ -222,17 +222,17 @@ define the operation<standard:/unicode/scalar/less_than> {
 }
 ```
 
-`standard:/unicode/scalar/equal` has the same views. `less_than` compares
+`standard:/text/unicode/scalar/equal` has the same views. `less_than` compares
 scalars by their position in Unicode, not by how any human language sorts its
 characters.
 
 ```define
-define the operation<standard:/unicode/scalar/lowercase_simple> {
+define the operation<standard:/text/unicode/scalar/lowercase_simple> {
     define the view<value> {
         it is read.
         it is written.
         it may only contain particles where {
-            it has the value</unicode/scalar>.
+            it has the value</text/unicode/scalar>.
         }
     }
 
@@ -242,7 +242,7 @@ define the operation<standard:/unicode/scalar/lowercase_simple> {
 }
 ```
 
-`standard:/unicode/scalar/uppercase_simple` has the same views.
+`standard:/text/unicode/scalar/uppercase_simple` has the same views.
 
 These use Unicode's _simple_ case mappings, which always map one scalar to
 exactly one scalar. Scalars whose full case mapping produces a sequence are left
@@ -254,7 +254,7 @@ unchanged, so `uppercase_simple` leaves `ß` as `ß`. The full case mappings, li
 A terminal menu reads one key press at a time. Pressing `q` quits, whether or
 not Caps Lock is on.
 
-In this program, `/menu/key` has the value `standard:/unicode/scalar` and
+In this program, `/menu/key` has the value `standard:/text/unicode/scalar` and
 `/menu/quit_requested` has the value `standard:/boolean`.
 
 ```define
@@ -269,18 +269,18 @@ define the potential action<define-lang.org:menu:/menu/read_key> {
     } and it does {
         define the position<lowercase_key> {
             it may only contain particles where {
-                it has the value<standard:/unicode/scalar>.
+                it has the value<standard:/text/unicode/scalar>.
             }
         }
         create a particle in position<lowercase_key>.
         set the value of position<lowercase_key> to position</menu/key>.
-        execute the operation<standard:/unicode/scalar/lowercase_simple> {
+        execute the operation<standard:/text/unicode/scalar/lowercase_simple> {
             with view<value> looking at position<lowercase_key>.
         }
 
-        execute the operation<standard:/unicode/scalar/equal> {
+        execute the operation<standard:/text/unicode/scalar/equal> {
             with view<a> looking at position<lowercase_key>.
-            with view<b> looking at literal<standard:/unicode/scalar>"q".
+            with view<b> looking at literal<standard:/text>"q".
             with view<result> looking at position</menu/quit_requested>.
         }
 

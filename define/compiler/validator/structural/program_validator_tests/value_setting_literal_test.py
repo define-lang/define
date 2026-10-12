@@ -167,4 +167,4 @@ def test_undefined_standard_literal(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 52
-    assert diagnostic.definition_name == "literal<standard:/text>"
+    assert diagnostic.definition_name == "literal<standard:/missing>"

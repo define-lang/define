@@ -24,6 +24,7 @@ _ENCODING_PYTHON_TYPES: Final = {
     constants.DECIMAL_ASCII_ENCODING: "float",
     constants.INTEGER_ASCII_ENCODING: "int",
     constants.NATURAL_ASCII_ENCODING: "int",
+    constants.SCALAR_UTF8_ENCODING: "str",
 }
 
 _PYTHON_BOOLEANS: Final = {"true": "True", "false": "False"}
@@ -43,12 +44,20 @@ def _python_decimal(content: str) -> str:
     return content
 
 
+def _python_text(content: str) -> str:
+    # Define source cannot contain any other character that a Python string
+    # literal must escape.
+    escaped = content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+    return f'"{escaped}"'
+
+
 _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
     constants.BINARY_ASCII_ENCODING: _python_binary,
     constants.BOOLEAN_ASCII_ENCODING: _python_boolean,
     constants.DECIMAL_ASCII_ENCODING: _python_decimal,
     constants.INTEGER_ASCII_ENCODING: _python_decimal,
     constants.NATURAL_ASCII_ENCODING: _python_decimal,
+    constants.SCALAR_UTF8_ENCODING: _python_text,
 }
 
 

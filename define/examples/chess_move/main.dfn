@@ -37,7 +37,7 @@ define the potential action<define-lang.org:chess_move:/main> {
             }
         }
         create a particle in position<same_file>.
-        execute the operation<standard:/unicode/scalar/equal> {
+        execute the operation<standard:/text/unicode/scalar/equal> {
             with view<a> looking at position<from>::action</square/check>::position<file>.
             with view<b> looking at position<to>::action</square/check>::position<file>.
             with view<result> looking at position<same_file>.
@@ -49,7 +49,7 @@ define the potential action<define-lang.org:chess_move:/main> {
             }
         }
         create a particle in position<same_rank>.
-        execute the operation<standard:/unicode/scalar/equal> {
+        execute the operation<standard:/text/unicode/scalar/equal> {
             with view<a> looking at position<from>::action</square/check>::position<rank>.
             with view<b> looking at position<to>::action</square/check>::position<rank>.
             with view<result> looking at position<same_rank>.

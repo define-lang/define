@@ -97,5 +97,8 @@ def test_every_definition_is_valid(
             standard_library_file("number/natural/multiply.dfn"),
             standard_library_file("number/natural/subtract.dfn"),
             standard_library_file("number/natural/subtract_saturating.dfn"),
+            standard_library_file("text.dfn"),
+            standard_library_file("text/unicode/scalar.dfn"),
+            standard_library_file("text/unicode/utf8.dfn"),
         ]
     )

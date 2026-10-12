@@ -1,0 +1,19 @@
+# Text literals set scalar values, including scalars that are escaped in Define and in Python.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</letter>.
+    it also assigns the position</quote>.
+    it also assigns the position</backslash>.
+    it also assigns the position</newline>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</letter>.
+        set the value of position</letter> to literal<standard:/text>"é".
+        create a particle in position</quote>.
+        set the value of position</quote> to literal<standard:/text>"\"".
+        create a particle in position</backslash>.
+        set the value of position</backslash> to literal<standard:/text>"\\".
+        create a particle in position</newline>.
+        set the value of position</newline> to literal<standard:/text>"\n".
+    }
+}

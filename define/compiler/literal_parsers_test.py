@@ -31,6 +31,9 @@ _PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.DECIMAL_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
 ]
+_PARSE_UTF8_AS_SCALAR_UTF8 = literal_parsers.LITERAL_PARSERS[
+    (constants.UTF8_ENCODING, constants.SCALAR_UTF8_ENCODING)
+]
 
 
 @pytest.mark.parametrize("content", ["0", "1", "1001"])
@@ -258,4 +261,25 @@ def test_decimal_ascii_as_natural_ascii_rejects(
     with pytest.raises(literal_parsers.LiteralParseError) as error:
         _ = _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII(content)
     assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize("content", ["q", " ", '"', "\n", "\u00e9", "\U0001f600"])
+def test_utf8_as_scalar_utf8_accepts(content: str):
+    assert _PARSE_UTF8_AS_SCALAR_UTF8(content) == content
+
+
+@pytest.mark.parametrize(
+    ("content", "content_index"),
+    [
+        ("", 0),
+        ("qq", 1),
+        ("e\u0301", 1),
+        ("\U0001f468\u200d\U0001f467", 1),
+    ],
+)
+def test_utf8_as_scalar_utf8_rejects(content: str, content_index: int):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_UTF8_AS_SCALAR_UTF8(content)
+    assert error.value.reason == "there must be exactly one scalar"
     assert error.value.content_index == content_index

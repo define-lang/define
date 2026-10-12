@@ -181,6 +181,14 @@ def _parse_decimal_ascii_as_natural_ascii(content: str) -> str:
     return decimal
 
 
+def _parse_utf8_as_scalar_utf8(content: str) -> str:
+    if not content:
+        raise LiteralParseError("there must be exactly one scalar", 0)
+    if len(content) > 1:
+        raise LiteralParseError("there must be exactly one scalar", 1)
+    return content
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
@@ -219,4 +227,8 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
         constants.DECIMAL_ASCII_ENCODING,
         constants.NATURAL_ASCII_ENCODING,
     ): _parse_decimal_ascii_as_natural_ascii,
+    (
+        constants.UTF8_ENCODING,
+        constants.SCALAR_UTF8_ENCODING,
+    ): _parse_utf8_as_scalar_utf8,
 }

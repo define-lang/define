@@ -6,12 +6,12 @@ define the potential action<define-lang.org:chess_move:/square/check> {
     define the position<run>.
     define the position<file> {
         it may only contain particles where {
-            it has the value<standard:/unicode/scalar>.
+            it has the value<standard:/text/unicode/scalar>.
         }
     }
     define the position<rank> {
         it may only contain particles where {
-            it has the value<standard:/unicode/scalar>.
+            it has the value<standard:/text/unicode/scalar>.
         }
     }
 
@@ -26,7 +26,7 @@ define the potential action<define-lang.org:chess_move:/square/check> {
             }
         }
         create a particle in position<file_at_least_a>.
-        execute the operation<standard:/unicode/scalar/greater_than_or_equal> {
+        execute the operation<standard:/text/unicode/scalar/greater_than_or_equal> {
             with view<a> looking at position<file>.
             with view<b> looking at literal<standard:/text>"a".
             with view<result> looking at position<file_at_least_a>.
@@ -38,7 +38,7 @@ define the potential action<define-lang.org:chess_move:/square/check> {
             }
         }
         create a particle in position<file_at_most_h>.
-        execute the operation<standard:/unicode/scalar/less_than_or_equal> {
+        execute the operation<standard:/text/unicode/scalar/less_than_or_equal> {
             with view<a> looking at position<file>.
             with view<b> looking at literal<standard:/text>"h".
             with view<result> looking at position<file_at_most_h>.
@@ -50,7 +50,7 @@ define the potential action<define-lang.org:chess_move:/square/check> {
             }
         }
         create a particle in position<rank_at_least_1>.
-        execute the operation<standard:/unicode/scalar/greater_than_or_equal> {
+        execute the operation<standard:/text/unicode/scalar/greater_than_or_equal> {
             with view<a> looking at position<rank>.
             with view<b> looking at literal<standard:/text>"1".
             with view<result> looking at position<rank_at_least_1>.
@@ -62,7 +62,7 @@ define the potential action<define-lang.org:chess_move:/square/check> {
             }
         }
         create a particle in position<rank_at_most_8>.
-        execute the operation<standard:/unicode/scalar/less_than_or_equal> {
+        execute the operation<standard:/text/unicode/scalar/less_than_or_equal> {
             with view<a> looking at position<rank>.
             with view<b> looking at literal<standard:/text>"8".
             with view<result> looking at position<rank_at_most_8>.
