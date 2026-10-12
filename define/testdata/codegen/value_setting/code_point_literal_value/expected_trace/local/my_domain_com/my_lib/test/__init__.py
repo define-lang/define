@@ -27,7 +27,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.null.NullPosition
         ).particle.value = "\U00000000"
-        literal.record_operation("test.set_value(/null, \"\\U00000000\")")
+        literal.record_operation('test.set_value(/null, "\\U00000000")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.tab.TabPosition
         ).create_particle()
@@ -35,7 +35,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.tab.TabPosition
         ).particle.value = "\U00000009"
-        literal.record_operation("test.set_value(/tab, \"\\U00000009\")")
+        literal.record_operation('test.set_value(/tab, "\\U00000009")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.accent.AccentPosition
         ).create_particle()
@@ -43,7 +43,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.accent.AccentPosition
         ).particle.value = "́"
-        literal.record_operation("test.set_value(/accent, \"́\")")
+        literal.record_operation('test.set_value(/accent, "́")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.emoji.EmojiPosition
         ).create_particle()
@@ -51,4 +51,4 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.emoji.EmojiPosition
         ).particle.value = "😀"
-        literal.record_operation("test.set_value(/emoji, \"😀\")")
+        literal.record_operation('test.set_value(/emoji, "😀")')

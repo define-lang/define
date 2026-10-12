@@ -27,15 +27,15 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.letter.LetterPosition
         ).particle.value = "é"
-        literal.record_operation("test.set_value(/letter, \"é\")")
+        literal.record_operation('test.set_value(/letter, "é")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.quote.QuotePosition
         ).create_particle()
         literal.record_operation("test.create(/quote)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.quote.QuotePosition
-        ).particle.value = "\""
-        literal.record_operation("test.set_value(/quote, \"\\\"\")")
+        ).particle.value = '"'
+        literal.record_operation("test.set_value(/quote, '\"')")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.backslash.BackslashPosition
         ).create_particle()
@@ -43,7 +43,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.backslash.BackslashPosition
         ).particle.value = "\\"
-        literal.record_operation("test.set_value(/backslash, \"\\\\\")")
+        literal.record_operation('test.set_value(/backslash, "\\\\")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.newline.NewlinePosition
         ).create_particle()
@@ -51,4 +51,4 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.newline.NewlinePosition
         ).particle.value = "\n"
-        literal.record_operation("test.set_value(/newline, \"\\n\")")
+        literal.record_operation('test.set_value(/newline, "\\n")')

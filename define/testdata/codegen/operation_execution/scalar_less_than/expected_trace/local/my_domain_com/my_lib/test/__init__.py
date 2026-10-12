@@ -34,11 +34,11 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.reading.ReadingPosition
         ).particle.value = "z"
-        literal.record_operation("test.set_value(/reading, \"z\")")
+        literal.record_operation('test.set_value(/reading, "z")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.limit.LimitPosition
         ).particle.value = "é"
-        literal.record_operation("test.set_value(/limit, \"é\")")
+        literal.record_operation('test.set_value(/limit, "é")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.below.BelowPosition
         ).particle.value = standard.text.unicode.scalar.utf8.less_than(

@@ -44,10 +44,15 @@ def _python_decimal(content: str) -> str:
     return content
 
 
-_PYTHON_STRING_ESCAPES: Final = {"\\": "\\\\", '"': '\\"', "\n": "\\n"}
+_PYTHON_STRING_ESCAPES: Final = {"\\": "\\\\", "\n": "\\n"}
 
 
 def _python_scalar(content: str) -> str:
+    # Python formatters such as ruff and Black write a double quote inside single
+    # quotes rather than escaping it, so generated code stays unchanged when
+    # formatted.
+    if content == '"':
+        return "'\"'"
     if content in _PYTHON_STRING_ESCAPES:
         escaped = _PYTHON_STRING_ESCAPES[content]
     elif content.isprintable():

@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         ).create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.quote.QuotePosition
-        ).particle.value = "\""
+        ).particle.value = '"'
         self.on_particle.get_position(
             local.my_domain_com.my_lib.backslash.BackslashPosition
         ).create_particle()

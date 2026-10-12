@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.reading.ReadingPosition
         ).particle.value = "e"
-        literal.record_operation("test.set_value(/reading, \"e\")")
+        literal.record_operation('test.set_value(/reading, "e")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.at_least.AtLeastPosition
         ).particle.value = standard.text.unicode.scalar.utf8.greater_than_or_equal(
@@ -37,4 +37,4 @@ class TestAction(literal.Action):
             ).particle.value,
             "a",
         )
-        literal.record_operation("test.execute(operation<standard:/text/unicode/scalar/greater_than_or_equal>, /reading, \"a\", /at_least)")
+        literal.record_operation('test.execute(operation<standard:/text/unicode/scalar/greater_than_or_equal>, /reading, "a", /at_least)')

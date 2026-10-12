@@ -34,11 +34,11 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.reading.ReadingPosition
         ).particle.value = "q"
-        literal.record_operation("test.set_value(/reading, \"q\")")
+        literal.record_operation('test.set_value(/reading, "q")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.limit.LimitPosition
         ).particle.value = "q"
-        literal.record_operation("test.set_value(/limit, \"q\")")
+        literal.record_operation('test.set_value(/limit, "q")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.matches.MatchesPosition
         ).particle.value = standard.text.unicode.scalar.utf8.equal(

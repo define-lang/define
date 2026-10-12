@@ -1,7 +1,7 @@
 test.create(/letter)
 test.set_value(/letter, "é")
 test.create(/quote)
-test.set_value(/quote, "\"")
+test.set_value(/quote, '"')
 test.create(/backslash)
 test.set_value(/backslash, "\\")
 test.create(/newline)

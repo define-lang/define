@@ -45,14 +45,22 @@ mod filters {
         text: T,
         _: &dyn askama::Values,
     ) -> askama::Result<String> {
+        let text = text.to_string();
+        // Python formatters such as ruff and Black pick whichever quote needs
+        // fewer escapes, preferring double quotes on a tie, so generated code
+        // picks the same way to stay unchanged when formatted.
+        let quote = if text.matches('"').count() > text.matches('\'').count() {
+            '\''
+        } else {
+            '"'
+        };
         // Define source cannot contain any other character that a Python string
         // literal must escape.
         let escaped = text
-            .to_string()
             .replace('\\', "\\\\")
-            .replace('"', "\\\"")
+            .replace(quote, &format!("\\{quote}"))
             .replace('\n', "\\n");
-        Ok(format!("\"{escaped}\""))
+        Ok(format!("{quote}{escaped}{quote}"))
     }
 }
 
