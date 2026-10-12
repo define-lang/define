@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/smaller)
+test.set_value(/reading, 3)
+test.execute(operation<standard:/number/natural/minimum>, /reading, 4, /smaller)

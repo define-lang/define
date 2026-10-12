@@ -1,0 +1,16 @@
+# An action writes the absolute value of a position's value to another position using the built-in integer absolute value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</offset>.
+    it also assigns the position</distance>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</offset>.
+        create a particle in position</distance>.
+        set the value of position</offset> to literal<standard:/number>"-3".
+        execute the operation<standard:/number/integer/absolute_value> {
+            with view<value> looking at position</offset>.
+            with view<result> looking at position</distance>.
+        }
+    }
+}

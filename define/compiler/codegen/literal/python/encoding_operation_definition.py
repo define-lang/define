@@ -43,12 +43,29 @@ class _PrefixOperation(msgspec.Struct, frozen=True):
     view: str
 
 
+class _ExpressionOperation(msgspec.Struct, frozen=True):
+    """A computer operation written as a fixed expression over views."""
+
+    operator: template_context.ExpressionOperator
+    operand_views: tuple[str, ...]
+    result_view: str
+
+
 class _FunctionCall(msgspec.Struct, frozen=True):
     """A computer operation that calls a Python library function."""
 
     function: naming.FunctionReference
     argument_views: tuple[str, ...]
     result_view: str
+
+
+type _ComputerOperation = (
+    _BinaryOperation
+    | _LiteralOperation
+    | _PrefixOperation
+    | _ExpressionOperation
+    | _FunctionCall
+)
 
 
 def _unary_function_call(module_name: str, function_name: str) -> _FunctionCall:
@@ -73,9 +90,7 @@ def _binary_function_call(module_name: str, function_name: str) -> _FunctionCall
 
 # The computer operations that the compiler knows how to perform, by the
 # Encoding Operation that executes them.
-_COMPUTER_OPERATIONS: Final[
-    dict[str, _BinaryOperation | _LiteralOperation | _PrefixOperation | _FunctionCall]
-] = {
+_COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/and>": _BinaryOperation(
         operator=template_context.BinaryOperator.BITWISE_AND,
         left_view="view<a>",
@@ -119,6 +134,123 @@ _COMPUTER_OPERATIONS: Final[
         operator=template_context.BinaryOperator.EXCLUSIVE_OR,
         left_view="view<a>",
         right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/absolute_value>": _FunctionCall(
+        function=naming.FunctionReference(function_name="abs", module_name="builtins"),
+        argument_views=("view<value>",),
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/add>": _BinaryOperation(
+        operator=template_context.BinaryOperator.ADD,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/decrement>": _LiteralOperation(
+        operator=template_context.BinaryOperator.SUBTRACT,
+        view="view<value>",
+        literal="1",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/increment>": _LiteralOperation(
+        operator=template_context.BinaryOperator.ADD,
+        view="view<value>",
+        literal="1",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/less_than>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/less_than_or_equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN_OR_EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/maximum>": _binary_function_call(
+        "builtins", "max"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/minimum>": _binary_function_call(
+        "builtins", "min"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/multiply>": _BinaryOperation(
+        operator=template_context.BinaryOperator.MULTIPLY,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/negate>": _PrefixOperation(
+        operator=template_context.PrefixOperator.NEGATE, view="view<value>"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/subtract>": _BinaryOperation(
+        operator=template_context.BinaryOperator.SUBTRACT,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/add>": _BinaryOperation(
+        operator=template_context.BinaryOperator.ADD,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/decrement_saturating>": _ExpressionOperation(
+        operator=template_context.ExpressionOperator.SATURATING_DECREMENT,
+        operand_views=("view<value>",),
+        result_view="view<value>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/increment>": _LiteralOperation(
+        operator=template_context.BinaryOperator.ADD,
+        view="view<value>",
+        literal="1",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/less_than>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/less_than_or_equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN_OR_EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/maximum>": _binary_function_call(
+        "builtins", "max"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/minimum>": _binary_function_call(
+        "builtins", "min"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/multiply>": _BinaryOperation(
+        operator=template_context.BinaryOperator.MULTIPLY,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/subtract>": _BinaryOperation(
+        operator=template_context.BinaryOperator.SUBTRACT,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/subtract_saturating>": _ExpressionOperation(
+        operator=template_context.ExpressionOperator.SATURATING_SUBTRACT,
+        operand_views=("view<a>", "view<b>"),
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/absolute_value>": _unary_function_call(
@@ -325,6 +457,15 @@ class EncodingOperationDefinitionGenerator:
                 return template_context.PrefixOperationContext(
                     operator=computer_operation.operator, operand=value, result=value
                 ), [value]
+            case _ExpressionOperation():
+                result = view_names[computer_operation.result_view]
+                return template_context.ExpressionOperationContext(
+                    operator=computer_operation.operator,
+                    operands=[
+                        view_names[view] for view in computer_operation.operand_views
+                    ],
+                    result=result,
+                ), [result]
             case _FunctionCall():
                 result = view_names[computer_operation.result_view]
                 return template_context.CallContext(
@@ -338,7 +479,7 @@ class EncodingOperationDefinitionGenerator:
 
 def _lookup_computer_operation(
     definition: ast.EncodingOperationDefinition,
-) -> _BinaryOperation | _LiteralOperation | _PrefixOperation | _FunctionCall:
+) -> _ComputerOperation:
     # Code generation relies on validation to report computer operations that
     # the compiler cannot perform.
     return _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]

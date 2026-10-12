@@ -1,0 +1,3 @@
+test.create(/count)
+test.set_value(/count, 0)
+test.execute(operation<standard:/number/natural/decrement_saturating>, /count)

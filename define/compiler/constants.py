@@ -57,6 +57,75 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     ),
     f"operation<{STANDARD_UNIVERSE}:/boolean/not>": "/boolean/ascii/not",
     f"operation<{STANDARD_UNIVERSE}:/boolean/or>": "/boolean/ascii/or",
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/absolute_value>": (
+        "/number/integer/ascii/absolute_value"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/add>": (
+        "/number/integer/ascii/add"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/decrement>": (
+        "/number/integer/ascii/decrement"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/equal>": (
+        "/number/integer/ascii/equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/increment>": (
+        "/number/integer/ascii/increment"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/less_than>": (
+        "/number/integer/ascii/less_than"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/less_than_or_equal>": (
+        "/number/integer/ascii/less_than_or_equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/maximum>": (
+        "/number/integer/ascii/maximum"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/minimum>": (
+        "/number/integer/ascii/minimum"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/multiply>": (
+        "/number/integer/ascii/multiply"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/negate>": (
+        "/number/integer/ascii/negate"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/subtract>": (
+        "/number/integer/ascii/subtract"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/add>": (
+        "/number/natural/ascii/add"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/decrement_saturating>": (
+        "/number/natural/ascii/decrement_saturating"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/equal>": (
+        "/number/natural/ascii/equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/increment>": (
+        "/number/natural/ascii/increment"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/less_than>": (
+        "/number/natural/ascii/less_than"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/less_than_or_equal>": (
+        "/number/natural/ascii/less_than_or_equal"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/maximum>": (
+        "/number/natural/ascii/maximum"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/minimum>": (
+        "/number/natural/ascii/minimum"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/multiply>": (
+        "/number/natural/ascii/multiply"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/subtract>": (
+        "/number/natural/ascii/subtract"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/subtract_saturating>": (
+        "/number/natural/ascii/subtract_saturating"
+    ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/absolute_value>": (
         "/number/decimal/ascii/absolute_value"
     ),

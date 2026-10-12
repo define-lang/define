@@ -1,0 +1,13 @@
+define the encoding_operation<standard:/number/integer/ascii/decrement> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding</number/integer/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

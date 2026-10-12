@@ -1,0 +1,23 @@
+# TODO: Let executions choose what happens when the absolute value does not fit
+# in a natural encoding with a fixed width, such as the absolute value of the
+# most negative integer:
+#   - Saturate to the largest natural number.
+#   - Report an error.
+define the operation<standard:/number/integer/absolute_value> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number/integer>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

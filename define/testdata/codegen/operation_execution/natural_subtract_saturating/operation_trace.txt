@@ -1,0 +1,4 @@
+test.create(/balance)
+test.create(/remaining)
+test.set_value(/balance, 2)
+test.execute(operation<standard:/number/natural/subtract_saturating>, /balance, 5, /remaining)

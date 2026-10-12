@@ -1,0 +1,4 @@
+test.create(/offset)
+test.create(/distance)
+test.set_value(/offset, -3)
+test.execute(operation<standard:/number/integer/absolute_value>, /offset, /distance)

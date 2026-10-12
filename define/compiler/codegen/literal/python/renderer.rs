@@ -342,6 +342,32 @@ struct PrefixOperation {
     result: String,
 }
 
+enum ExpressionOperator {
+    SaturatingSubtract,
+    SaturatingDecrement,
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for ExpressionOperator {
+    type Error = PyErr;
+    fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        let name: String = object.getattr("name")?.extract()?;
+        match name.as_str() {
+            "SATURATING_SUBTRACT" => Ok(Self::SaturatingSubtract),
+            "SATURATING_DECREMENT" => Ok(Self::SaturatingDecrement),
+            _ => Err(PyRuntimeError::new_err(format!(
+                "Unknown expression operator: {name}"
+            ))),
+        }
+    }
+}
+
+#[derive(FromPyObject)]
+struct ExpressionOperation {
+    operator: ExpressionOperator,
+    operands: Vec<String>,
+    result: String,
+}
+
 #[derive(FromPyObject)]
 struct Call {
     function: FunctionReference,
@@ -352,6 +378,7 @@ struct Call {
 enum EncodingOperationStatement {
     BinaryOperation(BinaryOperation),
     PrefixOperation(PrefixOperation),
+    ExpressionOperation(ExpressionOperation),
     Call(Call),
 }
 
@@ -362,6 +389,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
         match kind.as_str() {
             "BINARY_OPERATION" => Ok(Self::BinaryOperation(object.extract()?)),
             "PREFIX_OPERATION" => Ok(Self::PrefixOperation(object.extract()?)),
+            "EXPRESSION_OPERATION" => Ok(Self::ExpressionOperation(object.extract()?)),
             "CALL" => Ok(Self::Call(object.extract()?)),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown Encoding Operation statement kind: {kind}"

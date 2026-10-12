@@ -33,6 +33,13 @@ or
 not{{ " " }}
             {%- endmatch -%}
 {{ statement.operand }}
+        {%- when EncodingOperationStatement::ExpressionOperation with (statement) -%}
+            {%- match statement.operator -%}
+                {%- when ExpressionOperator::SaturatingSubtract -%}
+{{ statement.operands[0] }} - {{ statement.operands[1] }} if {{ statement.operands[0] }} > {{ statement.operands[1] }} else 0
+                {%- when ExpressionOperator::SaturatingDecrement -%}
+{{ statement.operands[0] }} - 1 if {{ statement.operands[0] }} > 0 else 0
+            {%- endmatch -%}
         {%- when EncodingOperationStatement::Call with (statement) -%}
 {{ statement.function.name_in_module(module_name) }}({{ statement.arguments|join(", ") }})
     {%- endmatch -%}
@@ -61,6 +68,8 @@ def {{ self.function_name }}(
     {{ binary_operation.result }} = {{ expression(statement, module_name) }}
             {%- when EncodingOperationStatement::PrefixOperation with (prefix_operation) %}
     {{ prefix_operation.result }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::ExpressionOperation with (expression_operation) %}
+    {{ expression_operation.result }} = {{ expression(statement, module_name) }}
             {%- when EncodingOperationStatement::Call with (call) %}
     {% if !call.results.is_empty() %}{{ call.results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}

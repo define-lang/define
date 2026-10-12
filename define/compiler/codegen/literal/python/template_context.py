@@ -264,6 +264,7 @@ class EncodingOperationStatementKind(enum.Enum):
 
     BINARY_OPERATION = enum.auto()
     PREFIX_OPERATION = enum.auto()
+    EXPRESSION_OPERATION = enum.auto()
     CALL = enum.auto()
 
 
@@ -317,6 +318,24 @@ class PrefixOperationContext(EncodingOperationStatementContext):
     )
     operator: PrefixOperator
     operand: str
+    result: str
+
+
+class ExpressionOperator(enum.Enum):
+    """An operation written as an expression over its operands."""
+
+    SATURATING_SUBTRACT = enum.auto()
+    SATURATING_DECREMENT = enum.auto()
+
+
+class ExpressionOperationContext(EncodingOperationStatementContext):
+    """Write an expression operator's expression over its operands."""
+
+    kind: ClassVar[EncodingOperationStatementKind] = (
+        EncodingOperationStatementKind.EXPRESSION_OPERATION
+    )
+    operator: ExpressionOperator
+    operands: list[str]
     result: str
 
 

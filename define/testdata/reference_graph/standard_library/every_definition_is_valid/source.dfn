@@ -69,6 +69,96 @@ define the potential position<my.domain.com:my_lib:/offset> {
         it has the value<standard:/number/integer>.
     }
 }
+define the potential position<my.domain.com:my_lib:/natural_sum> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_product> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_difference> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_saturated_difference> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_smaller> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_larger> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_equal> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_below> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/natural_at_most> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_sum> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_product> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_difference> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_smaller> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_larger> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_equal> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_below> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_at_most> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/integer_magnitude> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
         it has the value<standard:/number/rational>.
@@ -131,6 +221,24 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</at_most>.
     it also assigns the position</count>.
     it also assigns the position</offset>.
+    it also assigns the position</natural_sum>.
+    it also assigns the position</natural_product>.
+    it also assigns the position</natural_difference>.
+    it also assigns the position</natural_saturated_difference>.
+    it also assigns the position</natural_smaller>.
+    it also assigns the position</natural_larger>.
+    it also assigns the position</natural_equal>.
+    it also assigns the position</natural_below>.
+    it also assigns the position</natural_at_most>.
+    it also assigns the position</integer_sum>.
+    it also assigns the position</integer_product>.
+    it also assigns the position</integer_difference>.
+    it also assigns the position</integer_smaller>.
+    it also assigns the position</integer_larger>.
+    it also assigns the position</integer_equal>.
+    it also assigns the position</integer_below>.
+    it also assigns the position</integer_at_most>.
+    it also assigns the position</integer_magnitude>.
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
@@ -195,6 +303,128 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</offset>.
         set the value of position</count> to literal<standard:/number>"3".
         set the value of position</offset> to literal<standard:/number>"-3".
+        create a particle in position</natural_sum>.
+        create a particle in position</natural_product>.
+        create a particle in position</natural_difference>.
+        create a particle in position</natural_saturated_difference>.
+        create a particle in position</natural_smaller>.
+        create a particle in position</natural_larger>.
+        create a particle in position</natural_equal>.
+        create a particle in position</natural_below>.
+        create a particle in position</natural_at_most>.
+        create a particle in position</integer_sum>.
+        create a particle in position</integer_product>.
+        create a particle in position</integer_difference>.
+        create a particle in position</integer_smaller>.
+        create a particle in position</integer_larger>.
+        create a particle in position</integer_equal>.
+        create a particle in position</integer_below>.
+        create a particle in position</integer_at_most>.
+        create a particle in position</integer_magnitude>.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_sum>.
+        }
+        execute the operation<standard:/number/natural/multiply> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_product>.
+        }
+        execute the operation<standard:/number/natural/subtract> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_difference>.
+        }
+        execute the operation<standard:/number/natural/subtract_saturating> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_saturated_difference>.
+        }
+        execute the operation<standard:/number/natural/minimum> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_smaller>.
+        }
+        execute the operation<standard:/number/natural/maximum> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_larger>.
+        }
+        execute the operation<standard:/number/natural/equal> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_equal>.
+        }
+        execute the operation<standard:/number/natural/less_than> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_below>.
+        }
+        execute the operation<standard:/number/natural/less_than_or_equal> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_at_most>.
+        }
+        execute the operation<standard:/number/natural/increment> {
+            with view<value> looking at position</count>.
+        }
+        execute the operation<standard:/number/natural/decrement_saturating> {
+            with view<value> looking at position</count>.
+        }
+        execute the operation<standard:/number/integer/add> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_sum>.
+        }
+        execute the operation<standard:/number/integer/multiply> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_product>.
+        }
+        execute the operation<standard:/number/integer/subtract> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_difference>.
+        }
+        execute the operation<standard:/number/integer/minimum> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_smaller>.
+        }
+        execute the operation<standard:/number/integer/maximum> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_larger>.
+        }
+        execute the operation<standard:/number/integer/equal> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_equal>.
+        }
+        execute the operation<standard:/number/integer/less_than> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_below>.
+        }
+        execute the operation<standard:/number/integer/less_than_or_equal> {
+            with view<a> looking at position</offset>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</integer_at_most>.
+        }
+        execute the operation<standard:/number/integer/absolute_value> {
+            with view<value> looking at position</offset>.
+            with view<result> looking at position</integer_magnitude>.
+        }
+        execute the operation<standard:/number/integer/increment> {
+            with view<value> looking at position</offset>.
+        }
+        execute the operation<standard:/number/integer/decrement> {
+            with view<value> looking at position</offset>.
+        }
+        execute the operation<standard:/number/integer/negate> {
+            with view<value> looking at position</offset>.
+        }
         create a particle in position</total>.
         create a particle in position</remaining>.
         create a particle in position</product>.

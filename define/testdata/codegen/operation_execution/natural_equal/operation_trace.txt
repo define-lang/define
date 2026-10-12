@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/matches)
+test.set_value(/reading, 3)
+test.execute(operation<standard:/number/natural/equal>, /reading, 3, /matches)
