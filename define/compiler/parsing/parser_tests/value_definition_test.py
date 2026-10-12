@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 def test_value_definition(parse: Parse):
     tree = parse(
-        "define the potential value<mv:define-lang.org:parser:/number/rational>.\n"
+        "define the potential value<mv:define-lang.org:parser:/number/natural>.\n"
     )
     assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/number/rational"
+        "mv:define-lang.org:parser:/number/natural"
     ]
     assert test_helpers.get_tokens_by_type(tree, "DEFINE_THE_POTENTIAL_VALUE") == [
         "define the potential value"
@@ -35,15 +35,15 @@ def test_value_definition_requires_global_name(parse: Parse):
 
 def test_value_definition_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the potential value<standard:/number/rational>\n")
+        _ = parse("define the potential value<standard:/number/natural>\n")
     assert error.value.token == "\n"
     assert error.value.location.line == 1
-    assert error.value.location.column == 54
+    assert error.value.location.column == 53
 
 
 def test_value_definition_disallows_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the potential value<standard:/number/rational> {\n}\n")
+        _ = parse("define the potential value<standard:/number/natural> {\n}\n")
     assert error.value.token == " {"
     assert error.value.location.line == 1
-    assert error.value.location.column == 54
+    assert error.value.location.column == 53

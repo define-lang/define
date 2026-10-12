@@ -2,7 +2,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
     it also assigns the position</copy>.
     define the position<input> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     it happens when {

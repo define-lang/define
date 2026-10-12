@@ -3,13 +3,13 @@ define the operation<my.domain.com:my_lib:/compare> {
     define the view<left> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<right> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -23,12 +23,12 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<first> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         define the position<second> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         create a particle in position<first>.

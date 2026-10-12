@@ -3,19 +3,19 @@ define the operation<my.domain.com:my_lib:/sum> {
     define the view<first> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<second> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -27,7 +27,7 @@ define the operation<my.domain.com:my_lib:/total> {
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 

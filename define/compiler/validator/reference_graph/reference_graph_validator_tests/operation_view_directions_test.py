@@ -197,7 +197,7 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position</value>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
 def test_read_and_written_view_requires_set_value_in_action(

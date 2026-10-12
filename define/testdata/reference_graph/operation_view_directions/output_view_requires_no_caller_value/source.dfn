@@ -3,13 +3,13 @@ define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<target> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -20,7 +20,7 @@ define the operation<my.domain.com:my_lib:/copy> {
 define the potential action<my.domain.com:my_lib:/run> {
     define the position<number> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the position<trigger>.

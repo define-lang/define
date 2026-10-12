@@ -249,4 +249,4 @@ def test_literal_for_view_with_value_constraint(
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "value<standard:/number/rational>"
+    assert diagnostic.constraint_name == "value<standard:/number/natural>"

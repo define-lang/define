@@ -1,7 +1,7 @@
 # Copying position<number> reads its value, and this action guarantees the copy.
 define the potential position<my.domain.com:my_lib:/copy> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
@@ -11,7 +11,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<number> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         create a particle in position<number>.

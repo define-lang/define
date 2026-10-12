@@ -44,21 +44,6 @@ define the potential position<my.domain.com:my_lib:/exactly_one> {
         it has the value<standard:/boolean>.
     }
 }
-define the potential position<my.domain.com:my_lib:/same> {
-    it may only contain particles where {
-        it has the value<standard:/boolean>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/below> {
-    it may only contain particles where {
-        it has the value<standard:/boolean>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/at_most> {
-    it may only contain particles where {
-        it has the value<standard:/boolean>.
-    }
-}
 define the potential position<my.domain.com:my_lib:/count> {
     it may only contain particles where {
         it has the value<standard:/number/natural>.
@@ -159,53 +144,6 @@ define the potential position<my.domain.com:my_lib:/integer_magnitude> {
         it has the value<standard:/number/natural>.
     }
 }
-define the potential position<my.domain.com:my_lib:/total> {
-    it may only contain particles where {
-        it has the value<standard:/number/rational>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/remaining> {
-    it may only contain particles where {
-        it has the value<standard:/number/rational>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/product> {
-    it may only contain particles where {
-        it has the value<standard:/number/rational>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/smaller> {
-    it may only contain particles where {
-        it has the value<standard:/number/rational>.
-    }
-}
-define the potential position<my.domain.com:my_lib:/larger> {
-    it may only contain particles where {
-        it has the value<standard:/number/rational>.
-    }
-}
-define the encoding_operation<my.domain.com:my_lib:/increment> {
-    define the view<number> {
-        it is read.
-        it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
-        }
-    }
-    define the view<result> {
-        it is written.
-        it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
-        }
-    }
-
-    it does {
-        execute the encoding_operation<standard:/number/decimal/ascii/infix_add> {
-            with view<a> looking at view<number>.
-            with view<b> looking at literal<standard:/number>"1".
-            with view<result> looking at view<result>.
-        }
-    }
-}
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</bits>.
     it also assigns the position</masked>.
@@ -216,9 +154,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</both>.
     it also assigns the position</either>.
     it also assigns the position</exactly_one>.
-    it also assigns the position</same>.
-    it also assigns the position</below>.
-    it also assigns the position</at_most>.
     it also assigns the position</count>.
     it also assigns the position</offset>.
     it also assigns the position</natural_sum>.
@@ -239,11 +174,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</integer_below>.
     it also assigns the position</integer_at_most>.
     it also assigns the position</integer_magnitude>.
-    it also assigns the position</total>.
-    it also assigns the position</remaining>.
-    it also assigns the position</product>.
-    it also assigns the position</smaller>.
-    it also assigns the position</larger>.
     it happens when {
         this particle is created.
     } and it does {
@@ -277,9 +207,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</both>.
         create a particle in position</either>.
         create a particle in position</exactly_one>.
-        create a particle in position</same>.
-        create a particle in position</below>.
-        create a particle in position</at_most>.
         set the value of position</flag> to literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position</flag>.
@@ -424,72 +351,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         execute the operation<standard:/number/integer/negate> {
             with view<value> looking at position</offset>.
-        }
-        create a particle in position</total>.
-        create a particle in position</remaining>.
-        create a particle in position</product>.
-        create a particle in position</smaller>.
-        create a particle in position</larger>.
-        execute the operation<standard:/number/rational/add> {
-            with view<a> looking at literal<standard:/number>"1".
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/increment> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/decrement> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/negate> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/subtract> {
-            with view<a> looking at literal<standard:/number>"5".
-            with view<b> looking at position</total>.
-            with view<result> looking at position</remaining>.
-        }
-        execute the operation<standard:/number/rational/multiply> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</product>.
-        }
-        execute the operation<standard:/number/rational/absolute_value> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/floor> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/ceiling> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/truncate> {
-            with view<value> looking at position</total>.
-        }
-        execute the operation<standard:/number/rational/minimum> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</smaller>.
-        }
-        execute the operation<standard:/number/rational/maximum> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</larger>.
-        }
-        execute the operation<standard:/number/rational/equal> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</same>.
-        }
-        execute the operation<standard:/number/rational/less_than> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</below>.
-        }
-        execute the operation<standard:/number/rational/less_than_or_equal> {
-            with view<a> looking at position</total>.
-            with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</at_most>.
         }
     }
 }

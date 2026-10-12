@@ -1,12 +1,12 @@
 # action</cleanup> requires the value of position</value> when position<box> is destroyed.
 define the potential position<my.domain.com:my_lib:/value> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential position<my.domain.com:my_lib:/kept> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/keep> {
@@ -14,7 +14,7 @@ define the potential action<my.domain.com:my_lib:/keep> {
     define the position<run>.
     define the position<input> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     it happens when {

@@ -37,7 +37,7 @@ def test_mismatched_types(
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_value_type == "value</text>"
-    assert diagnostic.source_value_type == "value<standard:/number/rational>"
+    assert diagnostic.source_value_type == "value<standard:/number/natural>"
 
 
 def test_mismatched_type_target_is_not_reported_unset(
@@ -54,7 +54,7 @@ def test_mismatched_type_target_is_not_reported_unset(
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_value_type == "value</text>"
-    assert diagnostic.source_value_type == "value<standard:/number/rational>"
+    assert diagnostic.source_value_type == "value<standard:/number/natural>"
 
 
 def test_target_missing_type(

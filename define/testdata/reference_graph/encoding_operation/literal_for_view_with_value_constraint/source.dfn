@@ -3,7 +3,7 @@ define the encoding_operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }

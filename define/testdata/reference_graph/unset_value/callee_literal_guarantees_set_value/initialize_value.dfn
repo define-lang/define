@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/initialize_value> {
     define the position<recipient> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     it happens when {

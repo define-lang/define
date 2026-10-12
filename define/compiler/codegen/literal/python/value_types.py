@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 # The type argument of positions whose particles have no value that code
 # looking through them can use.
 NO_VALUE: Final = "Never"
-# TODO: Emit values of rationals as exact fractions, such as
-# fractions.Fraction, instead of Python floats, which cannot represent most
-# rationals and so can also make rational comparisons give the wrong answer.
+# TODO: Emit decimal values as exact fractions, such as fractions.Fraction,
+# instead of Python floats, which cannot represent most decimals and so can
+# also make decimal comparisons give the wrong answer.
 _ENCODING_PYTHON_TYPES: Final = {
     constants.BINARY_ASCII_ENCODING: "int",
     constants.BOOLEAN_ASCII_ENCODING: "bool",

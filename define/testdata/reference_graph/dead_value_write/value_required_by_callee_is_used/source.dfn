@@ -1,7 +1,7 @@
 # action</consume> requires the value of its position<input>, so writing it before the trigger is a use.
 define the potential position<my.domain.com:my_lib:/copy> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/consume> {
@@ -9,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
     define the position<run>.
     define the position<input> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     it happens when {

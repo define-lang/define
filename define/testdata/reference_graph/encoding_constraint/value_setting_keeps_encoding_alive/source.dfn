@@ -1,14 +1,14 @@
 # Using a particle in a Value Setting Statement keeps its encoding constraint alive.
 define the potential position<my.domain.com:my_lib:/copy> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/consume> {
     it also assigns the position</copy>.
     define the position<input> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     it happens when {
@@ -30,7 +30,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<number> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
                 it has the encoding<standard:/number/decimal/ascii>.
             }
         }

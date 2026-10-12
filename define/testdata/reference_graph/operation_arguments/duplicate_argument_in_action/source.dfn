@@ -1,12 +1,12 @@
 # view<a> looks at two things in the same execution within an action.
 define the potential position<my.domain.com:my_lib:/first> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential position<my.domain.com:my_lib:/second> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
@@ -18,7 +18,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</first>.
         create a particle in position</second>.
         set the value of position</first> to literal<standard:/number>"1".
-        execute the operation<standard:/number/rational/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at position</first>.
             with view<a> looking at literal<standard:/number>"3".
             with view<b> looking at literal<standard:/number>"2".

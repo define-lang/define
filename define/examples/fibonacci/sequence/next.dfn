@@ -12,15 +12,14 @@ define the potential action<define-lang.org:fibonacci:/sequence/next> {
         # Store the current value temporarily
         define the position<temp> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
-                it has the constraint</non_negative>.
+                it has the value<standard:/number/natural>.
             }
         }
         create a particle in position<temp>.
         set the value of position<temp> to position</sequence/current>.
 
         # new current = current + previous (the next Fibonacci number)
-        execute the operation<standard:/number/rational/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at position<temp>.
             with view<b> looking at position</sequence/previous>.
             with view<result> looking at position</sequence/current>.

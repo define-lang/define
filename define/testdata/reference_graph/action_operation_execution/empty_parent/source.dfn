@@ -1,20 +1,20 @@
 # A view may not look at a child position of an empty position.
 define the potential position<my.domain.com:my_lib:/child> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<target> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -28,7 +28,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<first> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         define the position<box> {

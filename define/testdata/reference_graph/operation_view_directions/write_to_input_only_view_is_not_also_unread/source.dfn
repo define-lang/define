@@ -3,7 +3,7 @@ define the operation<my.domain.com:my_lib:/store> {
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -15,7 +15,7 @@ define the operation<my.domain.com:my_lib:/bump> {
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 

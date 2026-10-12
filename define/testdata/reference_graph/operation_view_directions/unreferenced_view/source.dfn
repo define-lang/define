@@ -3,7 +3,7 @@ define the operation<my.domain.com:my_lib:/inspect> {
     define the view<value> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -15,13 +15,13 @@ define the operation<my.domain.com:my_lib:/check> {
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<unused> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 

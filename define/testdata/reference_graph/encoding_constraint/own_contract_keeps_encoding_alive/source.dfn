@@ -2,7 +2,7 @@
 define the potential action<my.domain.com:my_lib:/run> {
     define the position<output> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }

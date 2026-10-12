@@ -68,16 +68,6 @@ type _ComputerOperation = (
 )
 
 
-def _unary_function_call(module_name: str, function_name: str) -> _FunctionCall:
-    return _FunctionCall(
-        function=naming.FunctionReference(
-            function_name=function_name, module_name=module_name
-        ),
-        argument_views=("view<value>",),
-        result_view="view<value>",
-    )
-
-
 def _binary_function_call(module_name: str, function_name: str) -> _FunctionCall:
     return _FunctionCall(
         function=naming.FunctionReference(
@@ -252,73 +242,6 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         operator=template_context.ExpressionOperator.SATURATING_SUBTRACT,
         operand_views=("view<a>", "view<b>"),
         result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/absolute_value>": _unary_function_call(
-        "builtins", "abs"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/ceiling>": _unary_function_call(
-        "math", "ceil"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/equal>": _BinaryOperation(
-        operator=template_context.BinaryOperator.EQUAL,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/floor>": _unary_function_call(
-        "math", "floor"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>": _BinaryOperation(
-        operator=template_context.BinaryOperator.ADD,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_decrement>": _LiteralOperation(
-        operator=template_context.BinaryOperator.SUBTRACT,
-        view="view<value>",
-        literal="1",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_increment>": _LiteralOperation(
-        operator=template_context.BinaryOperator.ADD,
-        view="view<value>",
-        literal="1",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_multiply>": _BinaryOperation(
-        operator=template_context.BinaryOperator.MULTIPLY,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/less_than>": _BinaryOperation(
-        operator=template_context.BinaryOperator.LESS_THAN,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/less_than_or_equal>": _BinaryOperation(
-        operator=template_context.BinaryOperator.LESS_THAN_OR_EQUAL,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/maximum>": _binary_function_call(
-        "builtins", "max"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/minimum>": _binary_function_call(
-        "builtins", "min"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_subtract>": _BinaryOperation(
-        operator=template_context.BinaryOperator.SUBTRACT,
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/negate>": _PrefixOperation(
-        operator=template_context.PrefixOperator.NEGATE, view="view<value>"
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/truncate>": _unary_function_call(
-        "math", "trunc"
     ),
 }
 

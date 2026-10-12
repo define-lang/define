@@ -56,7 +56,7 @@ _FULL_POSITION = (
     + "    it may only contain particles where {\n"
     + "        it has the position</child>.\n"
     + "        it has the action</other>.\n"
-    + "        it has the value</number/rational>.\n"
+    + "        it has the value</number/natural>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -519,7 +519,7 @@ def test_position_constraint_block_fields():
         "it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"
-        "        it has the value</number/rational>.\n"
+        "        it has the value</number/natural>.\n"
         "    }"
     )
 
@@ -624,7 +624,7 @@ def test_local_position_definition_with_constraints_fields():
 
 
 def test_value_definition_fields():
-    source = "define the potential value<mv:example.com:example:/number/rational>.\n"
+    source = "define the potential value<mv:example.com:example:/number/natural>.\n"
     program = test_helpers.parse_and_transform(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
@@ -633,14 +633,14 @@ def test_value_definition_fields():
     assert definition.typed_name.name_type == name_types.NameType.VALUE
     name = definition.typed_name.name_content
     assert isinstance(name, ast.DefinitionGlobalNameContent)
-    assert name.source_name == "mv:example.com:example:/number/rational"
+    assert name.source_name == "mv:example.com:example:/number/natural"
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=1, end_column=len(source)
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
     assert (
         _slice(source, definition.typed_name.location)
-        == "value<mv:example.com:example:/number/rational>"
+        == "value<mv:example.com:example:/number/natural>"
     )
     assert _slice(source, name.location) == name.source_name
     assert program.location == definition.location
@@ -649,7 +649,7 @@ def test_value_definition_fields():
 def test_value_definition_between_other_definitions():
     source = (
         _SIMPLE_POSITION
-        + "define the potential value<standard:/number/rational>.\n"
+        + "define the potential value<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
     program = test_helpers.parse_and_transform(source)
@@ -660,7 +660,7 @@ def test_value_definition_between_other_definitions():
 
 
 def test_encoding_definition_fields():
-    source = "define the encoding<mv:example.com:example:/number/rational>.\n"
+    source = "define the encoding<mv:example.com:example:/number/natural>.\n"
     program = test_helpers.parse_and_transform(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
@@ -669,14 +669,14 @@ def test_encoding_definition_fields():
     assert definition.typed_name.name_type == name_types.NameType.ENCODING
     name = definition.typed_name.name_content
     assert isinstance(name, ast.DefinitionGlobalNameContent)
-    assert name.source_name == "mv:example.com:example:/number/rational"
+    assert name.source_name == "mv:example.com:example:/number/natural"
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=1, end_column=len(source)
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
     assert (
         _slice(source, definition.typed_name.location)
-        == "encoding<mv:example.com:example:/number/rational>"
+        == "encoding<mv:example.com:example:/number/natural>"
     )
     assert _slice(source, name.location) == name.source_name
     assert program.location == definition.location
@@ -685,7 +685,7 @@ def test_encoding_definition_fields():
 def test_encoding_definition_between_other_definitions():
     source = (
         _SIMPLE_POSITION
-        + "define the encoding<standard:/number/rational>.\n"
+        + "define the encoding<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
     program = test_helpers.parse_and_transform(source)
@@ -726,7 +726,7 @@ def test_position_definition_full_fields():
         "    it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"
-        "        it has the value</number/rational>.\n"
+        "        it has the value</number/natural>.\n"
         "    }\n"
         "}"
     )

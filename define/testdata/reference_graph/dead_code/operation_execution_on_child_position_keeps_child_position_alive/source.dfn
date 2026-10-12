@@ -1,14 +1,14 @@
 # Looking at a child position keeps the child position constraint alive on its parent.
 define the potential position<my.domain.com:my_lib:/child> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the operation<my.domain.com:my_lib:/read> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 

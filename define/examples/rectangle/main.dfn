@@ -6,17 +6,17 @@ define the potential action<define-lang.org:rectangle:/main> {
     } and it does {
         define the position<width> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         define the position<height> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         define the position<area> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
 
@@ -28,7 +28,7 @@ define the potential action<define-lang.org:rectangle:/main> {
 
         # position<area> is now 25.
         create a particle in position<area>.
-        execute the operation<standard:/number/rational/multiply> {
+        execute the operation<standard:/number/natural/multiply> {
             with view<a> looking at position<width>.
             with view<b> looking at position<height>.
             with view<result> looking at position<area>.
@@ -36,13 +36,13 @@ define the potential action<define-lang.org:rectangle:/main> {
 
         define the position<square_volume> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
 
         # Now we multiply that area by 10 to get volume.
         create a particle in position<square_volume>.
-        execute the operation<standard:/number/rational/multiply> {
+        execute the operation<standard:/number/natural/multiply> {
             with view<a> looking at position<area>.
             with view<b> looking at literal<standard:/number>"10".
             with view<result> looking at position<square_volume>.
@@ -53,7 +53,7 @@ define the potential action<define-lang.org:rectangle:/main> {
         set the value of position<height> to literal<standard:/number>"5".
 
         # After this, position<area> will contain 50.
-        execute the operation<standard:/number/rational/multiply> {
+        execute the operation<standard:/number/natural/multiply> {
             with view<a> looking at position<width>.
             with view<b> looking at position<height>.
             with view<result> looking at position<area>.
@@ -61,13 +61,13 @@ define the potential action<define-lang.org:rectangle:/main> {
 
         define the position<volume> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
 
         # And give that a third dimension to make volume 250.
         create a particle in position<volume>.
-        execute the operation<standard:/number/rational/multiply> {
+        execute the operation<standard:/number/natural/multiply> {
             with view<a> looking at position<area>.
             with view<b> looking at literal<standard:/number>"5".
             with view<result> looking at position<volume>.
@@ -77,7 +77,7 @@ define the potential action<define-lang.org:rectangle:/main> {
         # true.
         # TODO: Once we have I/O we can print this out.
         create a particle in position</same_volume>.
-        execute the operation<standard:/number/rational/equal> {
+        execute the operation<standard:/number/natural/equal> {
             with view<a> looking at position<square_volume>.
             with view<b> looking at position<volume>.
             with view<result> looking at position</same_volume>.

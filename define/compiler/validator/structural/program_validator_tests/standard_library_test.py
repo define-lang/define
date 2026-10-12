@@ -23,11 +23,11 @@ def test_referenced_definition_loads_only_its_file(
     assert_no_errors(result)
     assert [str(file_result.file_path) for file_result in result.file_results] == [
         "<string>",
-        standard_library_file("number/rational.dfn"),
+        standard_library_file("number/natural.dfn"),
     ]
     assert sorted(name.full_typed_name for name in result.definition_results) == [
         "position<my.domain.com:my_lib:/total>",
-        "value<standard:/number/rational>",
+        "value<standard:/number/natural>",
     ]
 
 
@@ -43,12 +43,12 @@ def test_standard_references_load_their_files(
             "<string>",
             standard_library_file("number.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
-            standard_library_file("number/rational.dfn"),
+            standard_library_file("number/natural.dfn"),
         ]
     )
     assert sorted(name.full_typed_name for name in result.definition_results) == [
         "action<my.domain.com:my_lib:/test>",
         "encoding<standard:/number/decimal/ascii>",
         "literal<standard:/number>",
-        "value<standard:/number/rational>",
+        "value<standard:/number/natural>",
     ]

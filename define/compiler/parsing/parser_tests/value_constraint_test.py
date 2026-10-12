@@ -17,13 +17,13 @@ def test_value_constraint_short_name(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
-        + "        it has the value</number/rational>.\n"
+        + "        it has the value</number/natural>.\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/item",
-        "/number/rational",
+        "/number/natural",
     ]
     assert get_tokens_by_type(tree, "VALUE") == ["value"]
 
@@ -32,13 +32,13 @@ def test_value_constraint_full_name(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
-        + "        it has the value<standard:/number/rational>.\n"
+        + "        it has the value<standard:/number/natural>.\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/item",
-        "standard:/number/rational",
+        "standard:/number/natural",
     ]
 
 

@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/run> {
     define the position<number> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the position<trigger>.

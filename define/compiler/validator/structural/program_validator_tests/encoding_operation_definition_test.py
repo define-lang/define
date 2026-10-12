@@ -92,7 +92,7 @@ def test_view_value_constraint(
     assert value.location.file_path is None
     assert value.location.line == 6
     assert value.location.column == 24
-    assert value.constraint_name == "value<standard:/number/rational>"
+    assert value.constraint_name == "value<standard:/number/natural>"
 
 
 def test_view_value_and_encoding_constraints(
@@ -108,7 +108,7 @@ def test_view_value_and_encoding_constraints(
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "value<standard:/number/rational>"
+    assert diagnostic.constraint_name == "value<standard:/number/natural>"
 
 
 def test_view_position_constraint(

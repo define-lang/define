@@ -1423,10 +1423,10 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
     # built-in value types have encodings.
     statements = [
         _local_position_with_requirements(
-            "source", [("value", "standard:/number/rational")], indent="        "
+            "source", [("value", "standard:/number/natural")], indent="        "
         ),
         _local_position_with_requirements(
-            "target", [("value", "standard:/number/rational")], indent="        "
+            "target", [("value", "standard:/number/natural")], indent="        "
         ),
         _create_particle_statement("position<source>", indent="        "),
         _create_particle_statement("position<target>", indent="        "),
@@ -1459,7 +1459,7 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
         "copy.dfn": (
             f"define the potential position<{universe_name}:/copy> {{\n"
             "    it may only contain particles where {\n"
-            "        it has the value<standard:/number/rational>.\n"
+            "        it has the value<standard:/number/natural>.\n"
             "    }\n"
             "}\n"
         ),

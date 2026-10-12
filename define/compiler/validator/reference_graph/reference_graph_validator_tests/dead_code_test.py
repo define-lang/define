@@ -98,7 +98,7 @@ def test_guarantee_on_unresolved_implied_position_is_ignored(
     assert all_diags[0].location.column == 34
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.DeadValueConstraintDiagnostic)
-    assert all_diags[1].constraint_name == "value<standard:/number/rational>"
+    assert all_diags[1].constraint_name == "value<standard:/number/natural>"
     assert all_diags[1].position_name == "position<box>"
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 28

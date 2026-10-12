@@ -4,13 +4,13 @@ define the operation<my.domain.com:my_lib:/increment_by> {
         it is read.
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
     define the view<amount> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 
@@ -22,7 +22,7 @@ define the operation<my.domain.com:my_lib:/bump> {
     define the view<number> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
         }
     }
 

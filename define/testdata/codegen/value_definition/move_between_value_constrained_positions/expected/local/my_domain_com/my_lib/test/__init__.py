@@ -11,7 +11,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        item = literal.LocalPosition[float](
+        item = literal.LocalPosition[int](
             "position<item>",
         )
         worker = literal.LocalPosition[Never](

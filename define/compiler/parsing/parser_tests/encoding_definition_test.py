@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 
 
 def test_encoding_definition(parse: Parse):
-    tree = parse("define the encoding<mv:define-lang.org:parser:/number/rational>.\n")
+    tree = parse("define the encoding<mv:define-lang.org:parser:/number/natural>.\n")
     assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/number/rational"
+        "mv:define-lang.org:parser:/number/natural"
     ]
     assert test_helpers.get_tokens_by_type(tree, "DEFINE_THE_ENCODING") == [
         "define the encoding"
@@ -33,18 +33,18 @@ def test_encoding_definition_requires_global_name(parse: Parse):
 
 def test_encoding_definition_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the encoding<standard:/number/rational>\n")
+        _ = parse("define the encoding<standard:/number/natural>\n")
     assert error.value.token == "\n"
     assert error.value.location.line == 1
-    assert error.value.location.column == 47
+    assert error.value.location.column == 46
 
 
 def test_encoding_definition_disallows_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the encoding<standard:/number/rational> {\n}\n")
+        _ = parse("define the encoding<standard:/number/natural> {\n}\n")
     assert error.value.token == " {"
     assert error.value.location.line == 1
-    assert error.value.location.column == 47
+    assert error.value.location.column == 46
 
 
 def test_encoding_definition_disallows_potential(parse: Parse):

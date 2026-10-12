@@ -63,7 +63,7 @@ def test_move_without_value(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
 def test_move_through_unconstrained_position(
@@ -126,7 +126,7 @@ def test_value_use_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value<standard:/number/rational>"
+    assert diagnostic.constraint_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 14
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -141,7 +141,7 @@ def test_value_setting_target_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value<standard:/number/rational>"
+    assert diagnostic.constraint_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     dead_write = result.all_diagnostics[1]
@@ -206,7 +206,7 @@ def test_callee_contract_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
-    assert diagnostic.constraint_name == "value<standard:/number/rational>"
+    assert diagnostic.constraint_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 18
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
