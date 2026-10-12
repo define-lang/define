@@ -717,7 +717,7 @@ def test_value_setting_type_mismatch_format(
         "        }\n"
         "        define the position<y> {\n"
         "            it may only contain particles where {\n"
-        "                it has the value<standard:/number/rational>.\n"
+        "                it has the value<standard:/number/natural>.\n"
         "            }\n"
         "        }\n"
         "        create a particle in position<x>.\n"
@@ -747,7 +747,7 @@ def test_value_setting_type_mismatch_format(
         File "test.dfn", line 18, column 41
             set the value of position<x> to position<y>.
                                             ^^^^^^^^^^^
-        this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/rational>.""")
+        this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/natural>.""")
     )
 
 
@@ -759,7 +759,7 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
         "    } and it does {\n"
         "        define the position<target> {\n"
         "            it may only contain particles where {\n"
-        "                it has the value<standard:/number/rational>.\n"
+        "                it has the value<standard:/number/natural>.\n"
         "            }\n"
         "        }\n"
         "        create a particle in position<target>.\n"
@@ -783,7 +783,7 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
         File "test.dfn", line 11, column 75
             set the value of position<target> to literal<standard:/number>"1.2.3".
                                                                               ^
-        '1.2.3' is not a valid value for 'literal<standard:/number>' here, because it cannot be represented as 'encoding<standard:/number/decimal/ascii>': a number may have only one decimal point.""")
+        '1.2.3' is not a valid value for 'literal<standard:/number>' here, because it cannot be represented as 'encoding<standard:/number/natural/ascii>': a number may have only one decimal point.""")
     )
 
 
@@ -795,7 +795,7 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
         "    } and it does {\n"
         "        define the position<target> {\n"
         "            it may only contain particles where {\n"
-        "                it has the value<standard:/number/rational>.\n"
+        "                it has the value<standard:/number/natural>.\n"
         "            }\n"
         "        }\n"
         "        create a particle in position<target>.\n"
@@ -819,8 +819,8 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
         File "test.dfn", line 11, column 46
             set the value of position<target> to literal</text>"5".
                                                  ^^^^^^^^^^^^^^
-        literal</text> cannot set a value<standard:/number/rational>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/rational>.
-        To set a value<standard:/number/rational>, use a literal with one of these encodings:
+        literal</text> cannot set a value<standard:/number/natural>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/natural>.
+        To set a value<standard:/number/natural>, use a literal with one of these encodings:
             encoding<standard:/binary/ascii>
             encoding<standard:/number/decimal/ascii>""")
 
@@ -1486,7 +1486,7 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
         "value.dfn": (
             "define the potential position<my.domain.com:my_lib:/value> {\n"
             "    it may only contain particles where {\n"
-            "        it has the value<standard:/number/rational>.\n"
+            "        it has the value<standard:/number/natural>.\n"
             "    }\n"
             "}\n"
         ),
@@ -1528,19 +1528,19 @@ def test_undefined_operation_view_format(
                 "    define the view<first> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the value<standard:/number/rational>.\n"
+                "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the view<second> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the value<standard:/number/rational>.\n"
+                "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the view<third> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the value<standard:/number/rational>.\n"
+                "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
                 "\n"
@@ -1640,7 +1640,7 @@ def test_operation_argument_position_violates_constraints_format(
                 "    define the view<source> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the value<standard:/number/rational>.\n"
+                "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
                 "\n"
@@ -1660,7 +1660,7 @@ def test_operation_argument_position_violates_constraints_format(
             with view<source> looking at position<number>.
                                          ^^^^^^^^^^^^^^^^
         'view<source>' cannot look at 'position<number>' because the particle in 'position<number>' does not have the required qualities:
-          value<standard:/number/rational>""")
+          value<standard:/number/natural>""")
 
 
 def test_occupied_action_interface_when_action_triggers_format(

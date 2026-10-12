@@ -1,12 +1,12 @@
 # An action adds a position's value and a literal with the built-in addition.
 define the potential position<my.domain.com:my_lib:/augend> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
-        it has the value<standard:/number/rational>.
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
@@ -18,7 +18,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</augend>.
         create a particle in position</total>.
         set the value of position</augend> to literal<standard:/number>"1".
-        execute the operation<standard:/number/rational/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at position</augend>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</total>.

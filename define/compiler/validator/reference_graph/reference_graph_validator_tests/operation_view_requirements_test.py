@@ -51,7 +51,7 @@ def test_value_mismatch(
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.VIEW
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
 def test_invalid_literal_content(
@@ -67,7 +67,7 @@ def test_invalid_literal_content(
     assert diagnostic.location.column == 68
     assert diagnostic.content == "abc"
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "'a' is not allowed in a number"
 
 
@@ -148,7 +148,7 @@ def test_invalid_literal_content_in_action(
     assert diagnostic.location.column == 68
     assert diagnostic.content == "x"
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "'x' is not allowed in a number"
 
 
@@ -168,7 +168,7 @@ def test_position_missing_value_type(
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position<second>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
 def test_position_value_mismatch(
@@ -187,7 +187,7 @@ def test_position_value_mismatch(
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position<second>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
 def test_particle_qualities_in_unconstrained_position(

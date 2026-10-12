@@ -1,7 +1,7 @@
 test.create(worker)
 test.create(worker::/assign::target)
 test.create(worker::/assign::source)
-test.set_value(worker::/assign::source, 0.25)
+test.set_value(worker::/assign::source, 4)
 test.create(worker::/assign::trigger)
 assign.set_value(target, source)
 assign.destroy(trigger)

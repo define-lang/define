@@ -51,7 +51,7 @@ def test_empty_literal_content(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.content == ""
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "there must be at least one digit"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 72
@@ -68,7 +68,7 @@ def test_invalid_literal_content(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.content == "+5"
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "positive numbers are written without a +"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 72
@@ -85,7 +85,7 @@ def test_invalid_literal_in_destructor_does_not_report_changed_value(
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.content == "+5"
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "positive numbers are written without a +"
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 72
@@ -116,7 +116,7 @@ def test_no_literal_parser(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value<standard:/number/rational>"
+    assert diagnostic.value_type == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -141,7 +141,7 @@ def test_only_matching_encodings_suggested(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value<standard:/number/rational>"
+    assert diagnostic.value_type == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -359,7 +359,7 @@ def test_invalid_boolean_literal_content(
     assert diagnostic.location.column == 73
 
 
-def test_boolean_literal_sets_rational(
+def test_boolean_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
@@ -370,7 +370,7 @@ def test_boolean_literal_sets_rational(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal<standard:/boolean>"
     assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
-    assert diagnostic.value_type == "value<standard:/number/rational>"
+    assert diagnostic.value_type == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -420,7 +420,7 @@ def test_binary_literal_sets_boolean(
     assert diagnostic.location.column == 46
 
 
-def test_binary_literal_sets_rational(
+def test_binary_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result

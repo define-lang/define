@@ -23,18 +23,18 @@ class AssignAction(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition[Never]("position<trigger>"),
-                literal.LocalPosition[float]("position<target>"),
-                literal.LocalPosition[float]("position<source>"),
+                literal.LocalPosition[int]("position<target>"),
+                literal.LocalPosition[int]("position<source>"),
             ],
         )
 
     @override
     def run(self, destruction_contracts: AssignDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
-            "position<target>", float
+            "position<target>", int
         ).particle.value = (
             self.get_interface_position(
-                "position<source>", float
+                "position<source>", int
             ).particle.value
         )
         destruction_contracts.run_destructors_position_trigger(

@@ -34,9 +34,9 @@ class TestAction(literal.Action):
         worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
-            "position<source>", float
-        ).particle.value = 0.25
-        literal.record_operation("test.set_value(worker::/assign::source, 0.25)")
+            "position<source>", int
+        ).particle.value = 4
+        literal.record_operation("test.set_value(worker::/assign::source, 4)")
         worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(

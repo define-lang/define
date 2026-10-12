@@ -2622,8 +2622,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</augend>.
         create a particle in position</total>.
-        set the value of position</augend> to literal<standard:/number>"1.5".
-        execute the operation<standard:/number/rational/add> {
+        set the value of position</augend> to literal<standard:/number>"3".
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at position</augend>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</total>.
@@ -2637,19 +2637,19 @@ class TestAction(literal.Action):
     def run(self):
         self.on_particle.get_position(AugendPosition).create_particle()
         self.on_particle.get_position(TotalPosition).create_particle()
-        self.on_particle.get_position(AugendPosition).particle.value = 1.5
+        self.on_particle.get_position(AugendPosition).particle.value = 3
         self.on_particle.get_position(
             TotalPosition
-        ).particle.value = standard.number.decimal.ascii.infix_add(
+        ).particle.value = standard.number.natural.ascii.add(
             self.on_particle.get_position(AugendPosition).particle.value,
             2,
         )
 ```
 
-### encoding_operation<standard:/number/decimal/ascii/infix_add>
+### encoding_operation<standard:/number/natural/ascii/add>
 
 ```python
-# standard/number/decimal/ascii/__init__.py
-def infix_add(a: float, b: float) -> float:
+# standard/number/natural/ascii/__init__.py
+def add(a: int, b: int) -> int:
     return a + b
 ```

@@ -13,14 +13,14 @@ if TYPE_CHECKING:
     )
 
 
-def test_rational_add_in_action(
+def test_natural_add_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
-def test_rational_add_missing_argument(
+def test_natural_add_missing_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
@@ -32,10 +32,10 @@ def test_rational_add_missing_argument(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 21
     assert diagnostic.view_name == "view<result>"
-    assert diagnostic.operation_name == "operation<standard:/number/rational/add>"
+    assert diagnostic.operation_name == "operation<standard:/number/natural/add>"
 
 
-def test_infix_add_in_encoding_operation(
+def test_natural_add_in_encoding_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()

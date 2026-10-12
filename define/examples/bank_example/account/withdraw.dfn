@@ -6,7 +6,7 @@ define the potential action<define-lang.org:bank:/account/withdraw> {
     }
     define the position<amount> {
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/natural>.
             it has the constraint</positive>.
         }
     }
@@ -20,11 +20,11 @@ define the potential action<define-lang.org:bank:/account/withdraw> {
     } and it does {
         define the position<new_balance> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the value<standard:/number/natural>.
             }
         }
         create a particle in position<new_balance>.
-        execute the operation<standard:/number/rational/subtract> {
+        execute the operation<standard:/number/natural/subtract_saturating> {
             with view<a> looking at position</account/balance>.
             with view<b> looking at position<amount>.
             with view<result> looking at position<new_balance>.

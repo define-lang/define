@@ -98,7 +98,7 @@ def test_function_reference_in_standard_universe():
                 location=_LOCATION,
             ),
             path=ast.GlobalPathName(
-                name="/number/decimal/ascii/infix_add", location=_LOCATION
+                name="/number/natural/ascii/add", location=_LOCATION
             ),
             location=_LOCATION,
         ),
@@ -107,7 +107,7 @@ def test_function_reference_in_standard_universe():
     assert converter.function_reference(
         encoding_operation_name
     ) == naming.FunctionReference(
-        module_name="standard.number.decimal.ascii", function_name="infix_add"
+        module_name="standard.number.natural.ascii", function_name="add"
     )
 
 
