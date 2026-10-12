@@ -53,6 +53,10 @@ _PROFILER_EVENT_BYTES: dict[_ProfilerEvent, bytes] = {
 }
 
 _STOPPED_THREAD_STATES = (ord("T"), ord("t"))
+# TODO: Remove when the profiler runs on a Python release that includes the fix
+# for https://github.com/python/cpython/issues/151022. Until then, CPython's
+# remote unwinder cannot read a code object line table larger than 4096 bytes.
+_LINE_TABLE_LIMIT_ERROR_PREFIX = "Invalid bytes length ("
 
 
 # PRF-001: No call-correlated wall profiling work.
@@ -162,6 +166,8 @@ def _observation_failure_kind(  # noqa: PLR0911 - The match maps distinct failur
             return schema.ObservationFailureKind.TARGET_RESUME_FAILED
         case _TargetStopError():
             return schema.ObservationFailureKind.TARGET_STOP_FAILED
+        case RuntimeError() if str(failure).startswith(_LINE_TABLE_LIMIT_ERROR_PREFIX):
+            return schema.ObservationFailureKind.LINE_TABLE_TOO_LARGE
         case RuntimeError():
             return schema.ObservationFailureKind.STACK_UNWIND_FAILED
         case TypeError() | ValueError():
@@ -582,18 +588,22 @@ def _failed_observation_capture(
     process_exit_confirmed = isinstance(failure, _TargetExitRaceError) or (
         target.poll() is not None
     )
+    if process_exit_confirmed:
+        failure_kind = schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
     status: typing.Literal["discarded", "missed"] = (
-        "missed" if process_exit_confirmed else "discarded"
+        "missed"
+        if failure_kind
+        in {
+            schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION,
+            schema.ObservationFailureKind.LINE_TABLE_TOO_LARGE,
+        }
+        else "discarded"
     )
     return _ObservationCapture(
         result={
             **timing,
             "status": status,
-            "failure_kind": (
-                schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
-                if process_exit_confirmed
-                else failure_kind
-            ),
+            "failure_kind": failure_kind,
             "failure_reason": f"{type(failure).__name__}: {failure}",
         },
         unwinder=None,
@@ -897,7 +907,9 @@ def _scheduled_observation(
     )
     session.state.retained_unwinder = captured.unwinder
     target_exited = (
-        isinstance(captured.result, dict) and captured.result["status"] == "missed"
+        isinstance(captured.result, dict)
+        and captured.result["failure_kind"]
+        is schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION
     )
     return captured.result, target_exited
 
@@ -907,6 +919,23 @@ def _has_python_stack(observation: schema.Observation) -> bool:
     if observation["status"] != "successful":
         return False
     return any(thread["stack"] for thread in observation["threads"])
+
+
+def _runtime_initializing_observation(
+    failed_observation: schema.FailedObservation,
+) -> schema.FailedObservation:
+    # PRF-024: Explicit failures. PRF-025: Failure threshold.
+    # Until CPython finishes initializing, its runtime structures are absent or
+    # incomplete, so unwinding fails for reasons unrelated to profiler accuracy.
+    return {
+        "scheduled_interval_ns": failed_observation["scheduled_interval_ns"],
+        "target_running_ns": failed_observation["target_running_ns"],
+        "pause_started_ns": failed_observation["pause_started_ns"],
+        "pause_ended_ns": failed_observation["pause_ended_ns"],
+        "status": "missed",
+        "failure_kind": schema.ObservationFailureKind.RUNTIME_INITIALIZING,
+        "failure_reason": failed_observation["failure_reason"],
+    }
 
 
 def _persist_observation(
@@ -919,6 +948,12 @@ def _persist_observation(
     # PRF-022: Launcher safety. PRF-027: Incremental persistence.
     # PRF-050: Minimal stopped section. PRF-051: Schedule-isolated persistence.
     result = _normalize_observation(work) if isinstance(work, _RawObservation) else work
+    if (
+        not state.python_stack_observed
+        and isinstance(result, dict)
+        and result["failure_kind"] is schema.ObservationFailureKind.STACK_UNWIND_FAILED
+    ):
+        result = _runtime_initializing_observation(result)
     records, observation = writer.observation_record(result)
     has_python_stack = _has_python_stack(observation)
     if has_python_stack and not state.python_stack_observed:
@@ -979,9 +1014,22 @@ class _ObservationProcessor:
         _exception: BaseException | None,
         _traceback: object,
     ) -> typing.Literal[False]:
-        self._work.put(None)
-        self._thread.join()
+        # PRF-027: Incremental persistence. An interruption while finishing must
+        # wait for queued observations, which belong before the final records.
+        interruption: _CaptureInterrupted | None = None
         try:
+            self._work.put(None)
+        except _CaptureInterrupted as error:
+            interruption = error
+            self._work.put(None)
+        while self._thread.is_alive():
+            try:
+                self._thread.join()
+            except _CaptureInterrupted as error:
+                interruption = error
+        try:
+            if interruption is not None:
+                raise interruption
             if exception_type is None:
                 self.raise_if_failed()
         finally:

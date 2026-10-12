@@ -58,6 +58,12 @@ class ProfilerEventReader(msgspec.Struct):
             self.buffered_events.extend(line.decode() for line in complete_lines)
         return False
 
+    def read_until_closed(self):
+        """Consume events until every writer closes the event descriptor."""
+        # The profiler's event writes never block, so a full pipe fails the capture.
+        while os.read(self.file_descriptor, 4096):
+            pass
+
 
 def runfile(variable: str) -> Path:
     """Resolve a declared test runfile."""
@@ -156,25 +162,43 @@ def assert_capture_summary(
 
 def assert_recorded_observations(
     observations: list[schema.Observation],
-) -> tuple[list[schema.SuccessfulObservation], int]:
+) -> tuple[list[schema.SuccessfulObservation], int, int]:
     """Assert and partition retained observation records."""
     successful: list[schema.SuccessfulObservation] = []
     discarded = 0
+    missed = 0
+    python_stack_observed = False
     for observation in observations:
         if observation["status"] == "successful":
             successful.append(observation)
+            python_stack_observed |= any(
+                thread["stack"] for thread in observation["threads"]
+            )
+            continue
+        if observation["status"] == "missed":
+            if (
+                observation["failure_kind"]
+                is schema.ObservationFailureKind.RUNTIME_INITIALIZING
+            ):
+                assert not python_stack_observed
+            else:
+                assert (
+                    observation["failure_kind"]
+                    is schema.ObservationFailureKind.LINE_TABLE_TOO_LARGE
+                )
+            missed += 1
         else:
             assert observation["status"] == "discarded"
             assert isinstance(
                 observation["failure_kind"],
                 schema.ObservationFailureKind,
             )
-            assert observation["failure_reason"]
-            exception_name, separator, _ = observation["failure_reason"].partition(": ")
-            assert exception_name
-            assert separator
             discarded += 1
-    return successful, discarded
+        assert observation["failure_reason"]
+        exception_name, separator, _ = observation["failure_reason"].partition(": ")
+        assert exception_name
+        assert separator
+    return successful, discarded, missed
 
 
 def assert_observations_through_exit(
@@ -182,8 +206,10 @@ def assert_observations_through_exit(
 ) -> tuple[list[schema.SuccessfulObservation], int, int]:
     """Assert observations ending at the target lifecycle boundary."""
     observations = profile.observations
-    if observations[-1]["status"] == "missed":
-        successful, discarded = assert_recorded_observations(observations[:-1])
-        return successful, discarded, 1
-    successful, discarded = assert_recorded_observations(observations)
-    return successful, discarded, 0
+    if observations[-1]["status"] == "missed" and observations[-1]["failure_kind"] in {
+        schema.ObservationFailureKind.TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION,
+        schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION,
+    }:
+        successful, discarded, missed = assert_recorded_observations(observations[:-1])
+        return successful, discarded, missed + 1
+    return assert_recorded_observations(observations)

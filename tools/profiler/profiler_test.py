@@ -138,6 +138,7 @@ def test_main_profiles_relative_target(
             with exit_gate.open("wb") as exit_gate_writer:
                 _ = exit_gate_writer.write(b"1")
             release_succeeded.set()
+            event_reader.read_until_closed()
 
     release_thread = threading.Thread(target=release_target)
     release_thread.start()
@@ -833,13 +834,13 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
         profile.failures[-1]["kind"] == schema.CaptureFailureKind.PROFILER_INTERRUPTED
     )
     assert profile.observation_counts["successful"] > 1
-    observations, discarded_observations = test_helpers.assert_recorded_observations(
-        profile.observations
+    observations, discarded_observations, missed_observations = (
+        test_helpers.assert_recorded_observations(profile.observations)
     )
     assert profile.observation_counts == {
         "successful": len(observations),
         "discarded": discarded_observations,
-        "missed": 0,
+        "missed": missed_observations,
     }
     assert not Path(f"/proc/{profile.process_id}").exists()
 
@@ -1007,13 +1008,13 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     assert (
         profile.failures[-1]["kind"] == schema.CaptureFailureKind.PROFILER_INTERRUPTED
     )
-    observations, discarded_observations = test_helpers.assert_recorded_observations(
-        profile.observations
+    observations, discarded_observations, missed_observations = (
+        test_helpers.assert_recorded_observations(profile.observations)
     )
     assert profile.observation_counts == {
         "successful": len(observations),
         "discarded": discarded_observations,
-        "missed": 0,
+        "missed": missed_observations,
     }
     process_id = _observed_process_id(profile_path)
     assert process_id is not None

@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 MAX_DISCARDED_RATE = 0.001
 
 
@@ -23,9 +23,11 @@ class ObservationFailureKind(enum.StrEnum):
 
     # PRF-004: No stale-stack reuse. PRF-024: Explicit failures.
     INCONSISTENT_STACK = "inconsistent-stack"
+    LINE_TABLE_TOO_LARGE = "line-table-too-large"
     MALFORMED_OBSERVATION = "malformed-observation"
     OBSERVATION_SYSTEM_ERROR = "observation-system-error"
     PERMISSION_DENIED = "permission-denied"
+    RUNTIME_INITIALIZING = "runtime-initializing"
     STACK_UNWIND_FAILED = "stack-unwind-failed"
     TARGET_EXITED_BEFORE_SCHEDULED_OBSERVATION = (
         "target-exited-before-scheduled-observation"

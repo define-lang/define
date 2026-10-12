@@ -564,11 +564,15 @@ checkpoint.
 3. **PRF-023: Guaranteed resume.** Every stop has a corresponding resume in a
    `finally` path. Profiler failure must not leave the compiler stopped.
 4. **PRF-024: Explicit failures.** Permission errors, malformed stacks, missed
-   intervals, process-exit races, and serializer failures are recorded
-   separately.
+   intervals, process-exit races, unwinding before CPython initializes its
+   runtime, frames whose line tables exceed CPython's remote unwinder limit, and
+   serializer failures are recorded separately.
 5. **PRF-025: Failure threshold.** Excluding the observation that races with a
-   confirmed process exit, at least 99.9% of attempted blocking observations
-   must be retained on the repository stress workloads.
+   confirmed process exit, unwinding failures that precede the first observed
+   Python stack, and frames whose line tables exceed the remote unwinder limit
+   of CPython 3.14 (https://github.com/python/cpython/issues/151022), at least
+   99.9% of attempted blocking observations must be retained on the repository
+   stress workloads.
 6. **PRF-026: No silent partial success.** A capture with compiler diagnostics,
    a nonzero compiler exit, an incomplete raw profile, or a failure rate above
    the threshold is not a successful profile.

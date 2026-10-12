@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import queue
 import random
 import select
 import signal
@@ -604,6 +605,77 @@ def test_observation_record_reuses_frame_definition():
     assert observation["threads"][0]["stack"] == [0, 0]
 
 
+# PRF-024: Explicit failures. PRF-025: Failure threshold.
+def test_unwind_failure_before_python_stack_is_runtime_initializing(
+    tmp_path: Path,
+):
+    profile_path = tmp_path / "observations.jsonl"
+    state = _capture_state()
+    failed_observation: schema.FailedObservation = {
+        **_observation_timing(),
+        "status": "discarded",
+        "failure_kind": schema.ObservationFailureKind.STACK_UNWIND_FAILED,
+        "failure_reason": "RuntimeError: No interpreter state found",
+    }
+
+    with profile_path.open("w", encoding="utf-8") as profile_file:
+        profiler._persist_observation(  # pyright: ignore[reportPrivateUsage]
+            profiler._ProfileWriter(profile_file),  # pyright: ignore[reportPrivateUsage]
+            state,
+            failed_observation,
+            _attached_runtime(),
+            None,
+        )
+
+    assert profile_path.read_text(encoding="utf-8").splitlines() == [
+        '{"observation":{"failure_kind":"runtime-initializing",'
+        + '"failure_reason":"RuntimeError: No interpreter state found",'
+        + '"pause_ended_ns":25,"pause_started_ns":20,"scheduled_interval_ns":10,'
+        + '"status":"missed","target_running_ns":15},"record_type":"observation"}'
+    ]
+    assert state.python_stack_observed is False
+
+
+# PRF-024: Explicit failures. PRF-025: Failure threshold.
+@pytest.mark.parametrize(
+    ("python_stack_observed", "failure_kind"),
+    [
+        (True, schema.ObservationFailureKind.STACK_UNWIND_FAILED),
+        (False, schema.ObservationFailureKind.INCONSISTENT_STACK),
+        (False, schema.ObservationFailureKind.PERMISSION_DENIED),
+    ],
+)
+def test_other_observation_failures_remain_discarded(
+    tmp_path: Path,
+    *,
+    python_stack_observed: bool,
+    failure_kind: schema.ObservationFailureKind,
+):
+    profile_path = tmp_path / "observations.jsonl"
+    failed_observation: schema.FailedObservation = {
+        **_observation_timing(),
+        "status": "discarded",
+        "failure_kind": failure_kind,
+        "failure_reason": "failure",
+    }
+
+    with profile_path.open("w", encoding="utf-8") as profile_file:
+        profiler._persist_observation(  # pyright: ignore[reportPrivateUsage]
+            profiler._ProfileWriter(profile_file),  # pyright: ignore[reportPrivateUsage]
+            _capture_state(python_stack_observed=python_stack_observed),
+            failed_observation,
+            _attached_runtime(),
+            None,
+        )
+
+    assert profile_path.read_text(encoding="utf-8").splitlines() == [
+        f'{{"observation":{{"failure_kind":"{failure_kind}",'
+        + '"failure_reason":"failure",'
+        + '"pause_ended_ns":25,"pause_started_ns":20,"scheduled_interval_ns":10,'
+        + '"status":"discarded","target_running_ns":15},"record_type":"observation"}'
+    ]
+
+
 # PRF-002: Independent sampling schedule. PRF-004: No stale-stack reuse.
 # PRF-024: Explicit failures.
 def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
@@ -860,7 +932,31 @@ def test_observation_prepares_unwinder_before_stopping_target():
     ]
 
 
-def test_observation_records_stopped_capture_failure():
+@pytest.mark.parametrize(
+    ("failure", "status", "failure_kind"),
+    [
+        (
+            RuntimeError("unwind failed"),
+            "discarded",
+            schema.ObservationFailureKind.STACK_UNWIND_FAILED,
+        ),
+        (
+            RuntimeError("Invalid bytes length (5105) at 0x37dc88b0000"),
+            "missed",
+            schema.ObservationFailureKind.LINE_TABLE_TOO_LARGE,
+        ),
+        (
+            profiler._TargetExitRaceError("target exited"),  # pyright: ignore[reportPrivateUsage]
+            "missed",
+            schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION,
+        ),
+    ],
+)
+def test_observation_records_stopped_capture_failure(
+    failure: Exception,
+    status: str,
+    failure_kind: schema.ObservationFailureKind,
+):
     retained_unwinder = typing.cast(
         "profiler._Unwinder",  # pyright: ignore[reportPrivateUsage]
         typing.cast("object", types.SimpleNamespace()),
@@ -879,7 +975,7 @@ def test_observation_records_stopped_capture_failure():
             profiler,
             "_capture_stopped_threads",
             autospec=True,
-            side_effect=RuntimeError("unwind failed"),
+            side_effect=failure,
         ),
     ):
         captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
@@ -898,11 +994,70 @@ def test_observation_records_stopped_capture_failure():
         )
 
     assert isinstance(captured.result, dict)
-    assert (
-        captured.result["failure_kind"]
-        is schema.ObservationFailureKind.STACK_UNWIND_FAILED
-    )
+    assert captured.result["status"] == status
+    assert captured.result["failure_kind"] is failure_kind
+    assert captured.result["failure_reason"] == f"{type(failure).__name__}: {failure}"
     assert captured.unwinder is None
+
+
+# PRF-011: Complete invocation. PRF-024: Explicit failures.
+@pytest.mark.parametrize(
+    ("failure_kind", "target_exited"),
+    [
+        (schema.ObservationFailureKind.LINE_TABLE_TOO_LARGE, False),
+        (schema.ObservationFailureKind.TARGET_EXITED_DURING_OBSERVATION, True),
+    ],
+)
+def test_scheduled_observation_stops_only_after_target_exit(
+    *,
+    failure_kind: schema.ObservationFailureKind,
+    target_exited: bool,
+):
+    failed_observation: schema.FailedObservation = {
+        **_observation_timing(),
+        "status": "missed",
+        "failure_kind": failure_kind,
+        "failure_reason": "RuntimeError: failure",
+    }
+    processor = typing.cast(
+        "profiler._ObservationProcessor",  # pyright: ignore[reportPrivateUsage]
+        typing.cast("object", types.SimpleNamespace(failure_file_descriptor=33)),
+    )
+    with (
+        mock.patch.object(
+            process_events,
+            "wait_for_schedule",
+            autospec=True,
+            return_value=process_events.ScheduleEvent.DEADLINE,
+        ),
+        mock.patch.object(
+            profiler,
+            "_capture_observation",
+            autospec=True,
+            return_value=profiler._ObservationCapture(  # pyright: ignore[reportPrivateUsage]
+                result=failed_observation,
+                unwinder=None,
+            ),
+        ),
+    ):
+        result, observed_target_exit = profiler._scheduled_observation(  # pyright: ignore[reportPrivateUsage]
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=_target_process(),
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=_capture_state(),
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=0.01,
+                launched_ns=0,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
+            processor,
+            scheduled_interval_ns=10,
+        )
+
+    assert result == failed_observation
+    assert observed_target_exit is target_exited
 
 
 def _missed_observation(
@@ -1163,6 +1318,119 @@ def test_observation_processor_discards_queued_work_after_failure():
     ):
         process_work()
 
+    assert processed_times == [15]
+
+
+# PRF-023: Guaranteed resume. PRF-027: Incremental persistence.
+def test_observation_processor_persists_queued_work_when_interrupted_while_finishing():
+    release_processing = threading.Event()
+    processed_times: list[int] = []
+    join = threading.Thread.join
+    join_count = 0
+
+    def persist_observation(
+        _writer: object,
+        _state: object,
+        work: schema.FailedObservation,
+        _attached_runtime: object,
+        _event_file_descriptor: object,
+    ):
+        assert release_processing.wait(5)
+        processed_times.append(work["target_running_ns"])
+
+    def interrupted_join(thread: threading.Thread, timeout: float | None = None):
+        nonlocal join_count
+        join_count += 1
+        if join_count == 1:
+            release_processing.set()
+            raise profiler._CaptureInterrupted(signal.SIGTERM)  # pyright: ignore[reportPrivateUsage]
+        join(thread, timeout)
+
+    processor = profiler._ObservationProcessor(  # pyright: ignore[reportPrivateUsage]
+        profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+        _capture_state(),
+        _attached_runtime(),
+        None,
+    )
+
+    def finish_processing():
+        with processor:
+            processor.submit(_missed_observation(0))
+            processor.submit(_missed_observation(1))
+
+    with (
+        mock.patch.object(
+            profiler,
+            "_persist_observation",
+            autospec=True,
+            side_effect=persist_observation,
+        ),
+        mock.patch.object(
+            threading.Thread,
+            "join",
+            autospec=True,
+            side_effect=interrupted_join,
+        ),
+        pytest.raises(profiler._CaptureInterrupted) as raised,  # pyright: ignore[reportPrivateUsage]
+    ):
+        finish_processing()
+
+    assert raised.value.signal_number == signal.SIGTERM
+    assert processed_times == [15, 16]
+    assert join_count == 2
+
+
+# PRF-023: Guaranteed resume. PRF-027: Incremental persistence.
+def test_observation_processor_finishes_when_interrupted_while_ending_work():
+    processed_times: list[int] = []
+
+    def persist_observation(
+        _writer: object,
+        _state: object,
+        work: schema.FailedObservation,
+        _attached_runtime: object,
+        _event_file_descriptor: object,
+    ):
+        processed_times.append(work["target_running_ns"])
+
+    class EndOfWorkInterruptedQueue(queue.SimpleQueue[object]):
+        end_of_work_interrupted: bool = False
+
+        @typing.override
+        def put(self, item: object, block: bool = True, timeout: float | None = None):
+            if item is None and not self.end_of_work_interrupted:
+                self.end_of_work_interrupted = True
+                raise profiler._CaptureInterrupted(signal.SIGINT)  # pyright: ignore[reportPrivateUsage]
+            super().put(item, block, timeout)
+
+    def finish_processing():
+        with mock.patch.object(
+            queue,
+            "SimpleQueue",
+            autospec=True,
+            side_effect=EndOfWorkInterruptedQueue,
+        ):
+            processor = profiler._ObservationProcessor(  # pyright: ignore[reportPrivateUsage]
+                profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                _capture_state(),
+                _attached_runtime(),
+                None,
+            )
+        with processor:
+            processor.submit(_missed_observation(0))
+
+    with (
+        mock.patch.object(
+            profiler,
+            "_persist_observation",
+            autospec=True,
+            side_effect=persist_observation,
+        ),
+        pytest.raises(profiler._CaptureInterrupted) as raised,  # pyright: ignore[reportPrivateUsage]
+    ):
+        finish_processing()
+
+    assert raised.value.signal_number == signal.SIGINT
     assert processed_times == [15]
 
 
