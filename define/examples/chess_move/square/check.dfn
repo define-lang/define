@@ -1,0 +1,103 @@
+# Checks whether a square, written as a file letter and a rank digit like e4,
+# is on the chess board.
+define the potential action<define-lang.org:chess_move:/square/check> {
+    it also assigns the position</square/on_board>.
+
+    define the position<run>.
+    define the position<file> {
+        it may only contain particles where {
+            it has the value<standard:/unicode/scalar>.
+        }
+    }
+    define the position<rank> {
+        it may only contain particles where {
+            it has the value<standard:/unicode/scalar>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        # The files a through h and the ranks 1 through 8 are each consecutive
+        # scalars, so two comparisons check a whole range.
+        define the position<file_at_least_a> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<file_at_least_a>.
+        execute the operation<standard:/unicode/scalar/greater_than_or_equal> {
+            with view<a> looking at position<file>.
+            with view<b> looking at literal<standard:/text>"a".
+            with view<result> looking at position<file_at_least_a>.
+        }
+
+        define the position<file_at_most_h> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<file_at_most_h>.
+        execute the operation<standard:/unicode/scalar/less_than_or_equal> {
+            with view<a> looking at position<file>.
+            with view<b> looking at literal<standard:/text>"h".
+            with view<result> looking at position<file_at_most_h>.
+        }
+
+        define the position<rank_at_least_1> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<rank_at_least_1>.
+        execute the operation<standard:/unicode/scalar/greater_than_or_equal> {
+            with view<a> looking at position<rank>.
+            with view<b> looking at literal<standard:/text>"1".
+            with view<result> looking at position<rank_at_least_1>.
+        }
+
+        define the position<rank_at_most_8> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<rank_at_most_8>.
+        execute the operation<standard:/unicode/scalar/less_than_or_equal> {
+            with view<a> looking at position<rank>.
+            with view<b> looking at literal<standard:/text>"8".
+            with view<result> looking at position<rank_at_most_8>.
+        }
+
+        define the position<file_on_board> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<file_on_board>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<file_at_least_a>.
+            with view<b> looking at position<file_at_most_h>.
+            with view<result> looking at position<file_on_board>.
+        }
+
+        define the position<rank_on_board> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<rank_on_board>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<rank_at_least_1>.
+            with view<b> looking at position<rank_at_most_8>.
+            with view<result> looking at position<rank_on_board>.
+        }
+
+        create a particle in position</square/on_board>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<file_on_board>.
+            with view<b> looking at position<rank_on_board>.
+            with view<result> looking at position</square/on_board>.
+        }
+        destroy the particle in position<run>.
+    }
+}

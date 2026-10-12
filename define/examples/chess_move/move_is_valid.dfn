@@ -1,0 +1,5 @@
+define the potential position<define-lang.org:chess_move:/move_is_valid> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}

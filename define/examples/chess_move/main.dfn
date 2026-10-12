@@ -1,0 +1,101 @@
+# Checks that the opening move e2 to e4 goes from a square on the board to a
+# different square on the board.
+define the potential action<define-lang.org:chess_move:/main> {
+    it also assigns the position</move_is_valid>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<from> {
+            it may only contain particles where {
+                it has the action</square/check>.
+                it has the position</square/on_board>.
+            }
+        }
+        create a particle in position<from>.
+        create a particle in position<from>::action</square/check>::position<file>.
+        set the value of position<from>::action</square/check>::position<file> to literal<standard:/text>"e".
+        create a particle in position<from>::action</square/check>::position<rank>.
+        set the value of position<from>::action</square/check>::position<rank> to literal<standard:/text>"2".
+        create a particle in position<from>::action</square/check>::position<run>.
+
+        define the position<to> {
+            it may only contain particles where {
+                it has the action</square/check>.
+                it has the position</square/on_board>.
+            }
+        }
+        create a particle in position<to>.
+        create a particle in position<to>::action</square/check>::position<file>.
+        set the value of position<to>::action</square/check>::position<file> to literal<standard:/text>"e".
+        create a particle in position<to>::action</square/check>::position<rank>.
+        set the value of position<to>::action</square/check>::position<rank> to literal<standard:/text>"4".
+        create a particle in position<to>::action</square/check>::position<run>.
+
+        define the position<same_file> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<same_file>.
+        execute the operation<standard:/unicode/scalar/equal> {
+            with view<a> looking at position<from>::action</square/check>::position<file>.
+            with view<b> looking at position<to>::action</square/check>::position<file>.
+            with view<result> looking at position<same_file>.
+        }
+
+        define the position<same_rank> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<same_rank>.
+        execute the operation<standard:/unicode/scalar/equal> {
+            with view<a> looking at position<from>::action</square/check>::position<rank>.
+            with view<b> looking at position<to>::action</square/check>::position<rank>.
+            with view<result> looking at position<same_rank>.
+        }
+
+        define the position<same_square> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<same_square>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<same_file>.
+            with view<b> looking at position<same_rank>.
+            with view<result> looking at position<same_square>.
+        }
+
+        define the position<leaves_square> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<leaves_square>.
+        set the value of position<leaves_square> to position<same_square>.
+        execute the operation<standard:/boolean/not> {
+            with view<value> looking at position<leaves_square>.
+        }
+
+        define the position<both_on_board> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<both_on_board>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<from>::position</square/on_board>.
+            with view<b> looking at position<to>::position</square/on_board>.
+            with view<result> looking at position<both_on_board>.
+        }
+
+        # position</move_is_valid> will be true.
+        create a particle in position</move_is_valid>.
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position<both_on_board>.
+            with view<b> looking at position<leaves_square>.
+            with view<result> looking at position</move_is_valid>.
+        }
+    }
+}

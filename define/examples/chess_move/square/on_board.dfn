@@ -1,0 +1,5 @@
+define the potential position<define-lang.org:chess_move:/square/on_board> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
