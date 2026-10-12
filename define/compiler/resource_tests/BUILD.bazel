@@ -95,7 +95,7 @@ py_test(
         "TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_same_particle)",
         "TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_same_particle_control)",
     },
-    shard_count = 4,
+    shard_count = 8,
     tags = ["no-coverage"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
