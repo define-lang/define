@@ -1,3 +1,6 @@
+Constraints should probably be allowed to imply positions and make statements
+about them. That's a later proposal.
+
 ### 5: Logical Properties of Operations
 
 In a language like Define that strives for verification, we have to know: when

@@ -248,6 +248,159 @@ something portable or readable:
 - In Python, `errno.errorcode[e.errno]` gives the name and `os.strerror` gives
   the message.
 
+## How Verified Languages Order I/O
+
+### SPARK (Ada): Properties of External State
+
+SPARK describes each thing the outside world can see or change as **external
+state**: a volatile variable (often placed at a device register's address) or an
+`Abstract_State` declared `External` that stands for a whole device or stream.
+Four boolean properties describe how the outside world interacts with it:
+
+- **`Async_Writers`:** the outside world may change it at any time. Proof can't
+  assume two reads give the same value, and can't assume any particular value.
+  Example: a sensor.
+- **`Async_Readers`:** the outside world may observe it at any time. Example: an
+  actuator.
+- **`Effective_Reads`:** reading it changes it. Each read consumes something,
+  like the next byte of an input port. Requires `Async_Writers`.
+- **`Effective_Writes`:** every write matters, and the final value is considered
+  to be the whole sequence of values written, not just the last one. Two writes
+  in a row can't be merged into one. Example: an output port. Requires
+  `Async_Readers`.
+
+A plain `Volatile` object has all four. Once any one is specified, the rest
+default to false. Typical combinations: a sensor is `Async_Writers`, an actuator
+is `Async_Readers`, an input port is `Async_Writers` + `Effective_Reads`, and an
+output port is `Async_Readers` + `Effective_Writes`.
+
+How the properties enter the rest of the language:
+
+- **Every subprogram declares which state it touches.** A `Global` contract
+  lists each piece of state with a mode (`Input`, `Output`, `In_Out`), and a
+  `Depends` contract says which outputs depend on which inputs. Flow analysis
+  checks the body against both.
+- **With `Effective_Reads`, a read is also a write.** Reading an input port must
+  be declared `In_Out`, with `Depends => (Port => Port)`. So reads of the same
+  input port depend on each other, and the order comes from ordinary data flow,
+  not from a separate ordering rule.
+- **Restrictions keep these reads visible.**
+  - A read of an `Async_Writers` object must be the entire right-hand side of an
+    assignment, so it can't hide inside a larger expression.
+  - Ordinary functions can't read external state at all, because SPARK functions
+    must be free of side effects. A function may read `Async_Writers` state (but
+    not `Effective_Reads` state) if it's marked `Volatile_Function`, and calls
+    to it have the same restrictions as a direct read.
+- **Abstract state hides the details but keeps the properties.** A package can
+  declare
+  `Abstract_State => (Port with External => (Async_Writers, Effective_Reads))`
+  and later refine it into concrete variables. The concrete variables must not
+  have properties the abstract state didn't declare. Callers only see the
+  abstract state and its properties.
+
+SPARK executes statements in the order written, so these properties are used for
+analysis rather than for reordering. What carries over is the dependency model:
+operations on different external states have no dependency between them, and the
+properties say exactly when operations on the same state depend on each other.
+
+To copy this design into Define:
+
+- Model each stream or device as a particle with properties corresponding to the
+  four above.
+- Treat reading a particle with the `Effective_Reads` property as both reading
+  and changing it, so that position dependencies (DLP 44) keep reads of the same
+  stream in order.
+- Let operations on different particles be reordered freely.
+- Forbid merging writes to a particle with the `Effective_Writes` property.
+
+### IronFleet (Dafny): Reduction
+
+IronFleet verifies distributed systems: several hosts, each running its own
+single-threaded program, communicating only by UDP packets. The proofs are
+simplest if each host's step (receive packets, compute, send packets) happens
+atomically, with no other host's operations in between. In reality, all hosts
+run at the same time and their operations interleave arbitrarily. IronFleet
+bridges the gap with **reduction**: proving that any real interleaving is
+equivalent to one where each host's step is contiguous.
+
+The pieces:
+
+- **A trusted UDP interface.** Dafny has no networking, so IronFleet adds
+  trusted `Init`, `Send`, and `Receive` methods that call the .NET UDP stack.
+- **A journal of I/O events.** The network interface keeps a ghost variable (one
+  that exists only for verification and isn't compiled) recording every send and
+  receive, with all arguments and return values.
+- **A mandatory main loop.** Each host runs `ImplInit` and then repeats
+  `ImplNext` forever. Each iteration returns the list of I/O events it
+  performed, and the loop asserts that the journal grew by exactly those events
+  and that they satisfy the **reduction-enabling obligation**:
+
+  ```dafny
+  method Main() {
+    var s := ImplInit();
+    while (true)
+      invariant ImplInvariant(s);
+    {
+      ghost var journal_old := get_event_journal();
+      ghost var ios_performed:seq<IoEvent>;
+      s, ios_performed := ImplNext(s);
+      assert get_event_journal() == journal_old + ios_performed;
+      assert ReductionObligation(ios_performed);
+    }
+  }
+  ```
+
+- **The obligation.** Within one step, a host performs all of its receives
+  before all of its sends. Time-dependent operations get an extra rule, because
+  a clock reading is a sample of a reality shared with every other host and so
+  creates an ordering constraint with them even without any messages. A step may
+  perform at most one time-dependent operation: a clock read, a blocking
+  receive, or a non-blocking receive that returns nothing. All receives must
+  come before it and all sends after it.
+
+Why the obligation is enough: hosts can't see each other's state, only the
+packets they send. So any real execution can be rearranged into another one,
+keeping:
+
+1. each host receiving the same packets in the same order,
+2. the order of packet sends,
+3. every packet being sent before it's received,
+4. the order of operations on each individual host.
+
+Any proof about the rearranged execution also holds for the real one, because
+only the packets sent, their contents and their order, are visible from outside.
+Receives can always move earlier: whatever was received was already sent. Sends
+can always move later: nothing another host did in between can depend on a
+packet that hadn't arrived. When each step does all receives before all sends,
+these moves can pull each step's operations together until no other host's
+operations sit between them. The paper argues this informally; the
+machine-checked part is only that every step obeys the obligation.
+
+The implementation itself doesn't reorder anything. Each host still runs its
+operations in program order. The reduction argument only lets the proof treat
+each step as one atomic action.
+
+To copy this design into Define:
+
+- Keep a record of the I/O events each action performs, as a value that exists
+  only for analysis.
+- Classify each kind of I/O event by which way it can move relative to other
+  hosts' or processes' events: receives can move earlier and sends can move
+  later, while time-dependent events (clock reads, receives that wait or find
+  nothing) can move in neither direction.
+- Require each action's events to follow the pattern "receives, then at most one
+  time-dependent event, then sends." Actions that follow it can be treated as
+  atomic with respect to the outside world.
+
+### Sources
+
+- AdaCore,
+  [Advanced SPARK: Systems Programming](https://learn-latest.adacore.com/courses/advanced-spark/chapters/systems_programming.html).
+- [SPARK Reference Manual: Packages](https://docs.adacore.com/spark2014-docs/html/lrm/packages.html).
+- Hawblitzel et al.,
+  [IronFleet: Proving Practical Distributed Systems Correct](https://www.andrew.cmu.edu/user/bparno/papers/ironfleet.pdf),
+  SOSP 2015, sections 2.3, 3.4, 3.6, and 3.7.
+
 ## Related
 
 - [I/O alternatives](io-alternatives.md): ways to avoid the kernel's extra copy
