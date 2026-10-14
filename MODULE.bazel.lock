@@ -1598,406 +1598,456 @@
   },
   "facts": {
     "@@aspect_rules_py+//py:extensions.bzl%python_interpreters": {
-      "release_index_v2_20261009_https://github.com/astral-sh/python-build-standalone/releases/download_install_only": {
-        "3.10/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.10.22+20261009-aarch64-apple-darwin-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "02d1a66b5fe8676e6df5084f4e0b71779a4e6f1c46f192d3d3a12b7eb3a789ec"
-        },
-        "3.10/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.10.22+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "ad9fc572c8e67cae305de627433e3cb6d459cbe94711921d5b673766b5a20c72"
-        },
-        "3.10/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.10.22+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "77d4f539387565ae87f0fcdcc8c3f200fd81384d01438ce26b1bbda56d10a91c"
-        },
-        "3.10/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.10.22+20261009-i686-pc-windows-msvc-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "1c2284452668a8e529db8b6c63693642395fdf70e46d23e85c8af32d0993851f"
-        },
-        "3.10/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.10.22+20261009-x86_64-apple-darwin-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "998d4159933724eba107bbb0e01ed920d267d59c815b256fc39ffe8658df1350"
-        },
-        "3.10/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.10.22+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "cb023e83e42d8937ba77c7cf83641083c3b81e88e1226e1c694a347ae1924d54"
-        },
-        "3.10/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.10.22+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "1780de9ddda04e956d2a4a0ad09b7f5667d92f4f12cd0881ec939de5d542903f"
-        },
-        "3.10/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.10.22+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
-          "full_version": "3.10.22",
-          "sha256": "7d17e29e3d7405e1264796af0c96e32fcd7993d8a040be20eb626539ac47aad3"
-        },
+      "release_index_v2_20261013_https://github.com/astral-sh/python-build-standalone/releases/download_install_only": {
         "3.11/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.11.17+20261009-aarch64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-aarch64-apple-darwin-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "7b6068989d9b6a0e2a883352b7d0d141ce8670a61360bf4ddabac0e046a08e10"
+          "sha256": "d81d757a9785850393cd695a9a686c765a6370fbdc83738589ef2ecd3e5c44b3"
         },
         "3.11/aarch64-pc-windows-msvc/default": {
-          "filename": "cpython-3.11.17+20261009-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "6b6d9dbc9f1a8b93027cee00daa9f2dd0c7391ce379f772988a22cdcb4c15b73"
+          "sha256": "a1e65ec8fbfbb5dba01e3844ddc3e9ebcad446d6e6822cae9b1cc9717957dcef"
         },
         "3.11/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.11.17+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "693ef5c3064e13af98178fba648c4757be92b842546a0ee2dae19ce1e3d863ba"
+          "sha256": "643954c07b04c18e215f812691cd5fa15d924fec1f3a5fdd9c1789484382ac24"
         },
         "3.11/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.11.17+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "5c27430b2751d16c21bd759fe2eedbb7a2ce00b5794c42e6fc62a04d1c0bf3ed"
+          "sha256": "29fa9208e6f51c08f0696c0b1ccb067abe9c1d44b8c0a5e447ccded227f935b1"
         },
         "3.11/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.11.17+20261009-i686-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-i686-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "f7caf1b325b50becf66a5f525e42c5bb27fb78697fa48bbaa34fcfced5560c49"
+          "sha256": "48fa8d4d61af087464f6173285e405c26f49f5448a64c64931132f016b944db9"
         },
         "3.11/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.11.17+20261009-x86_64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-x86_64-apple-darwin-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "f957074ae87c81d98ef4a48ea5ff81565d8f8e1d1dcfee41c8e3a2ba344fcf39"
+          "sha256": "3acde87324867dab4e63329be3010130c75bfc4a3709db00866862d750a3bba3"
         },
         "3.11/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.11.17+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "4d307648d2fe5f8d927e10380cc33eb7afd8a34a7efe0ed786b5860b5f2d3408"
+          "sha256": "7616ab1f74aab975bd91eb0a657a74a092a63a46cac38c5f3f9415c79fd781f5"
         },
         "3.11/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.11.17+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "035b0ccfe7f3d38ab3ddab505290d200c6a265b95fbd5fac76c358751d6bb6a8"
+          "sha256": "846bf682e2b67393f2affa5e5c0994e446abc3a7cc5bb699890c36346823644c"
         },
         "3.11/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.11.17+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.11.17+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.11.17",
-          "sha256": "660c09eed6c9b9260f3bb74d4d747335fc90b76b89190e3090c20e663d4d4338"
+          "sha256": "51160d0cad601f104c36b3c24fb3498f2cee4ca0134bb75fb9ef150aebf66c81"
         },
         "3.12/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.12.15+20261009-aarch64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-aarch64-apple-darwin-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "83dcb04777c798bd95f3687acf9ae84b09860272ee6bdfb05be8bcf9447f75b8"
+          "sha256": "ba32036ad8f4c434d97a1ee7feef8b7edc0fac16777639b97e39c74a108e4440"
         },
         "3.12/aarch64-pc-windows-msvc/default": {
-          "filename": "cpython-3.12.15+20261009-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "4da354e7366d4437fceea714eab1bbdca1eb17bba4491a3d20b9c6af94b44f68"
+          "sha256": "5a2aa29c73e72b512279bfc3f795b51dc6ae09b8fb7cea801459f49896d3bac6"
         },
         "3.12/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.12.15+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "b342ccfb577fda349d0237c98b24848234ca767c10f034628a5ff9fc858d662f"
+          "sha256": "34a43010cc05982d8b5debbad7d09f7b1200117ebf018f7acfd656895e408205"
         },
         "3.12/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.12.15+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "cba21b4d6e2eea8c92b32075d6a2e4a83e9be95609eaf5af4acb84e7b95fab2c"
+          "sha256": "fe4fd4d854787fcaee7d5c3b0525c1a7fe08ac77215823afd09d70d31fc013a2"
         },
         "3.12/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.12.15+20261009-i686-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-i686-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "754c2fc82ccd41384c37fc8826b518de4adb55778fe17d95461e994576e7c9e7"
+          "sha256": "24ca200087d3af70af3df80b58b395633fe9fa952d94ddd79ee1769831bd86bc"
         },
         "3.12/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.12.15+20261009-x86_64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-x86_64-apple-darwin-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "4c84ef5abe4bc145646175fce9b881936d60126b9a3f9a24c6308e2d035ca5c6"
+          "sha256": "9686ddd8639b855905447ea4a16eb54a804a9ef12afbe7c9ecb1412d9c1fbc98"
         },
         "3.12/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.12.15+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "194c8f0d9e0de6f1c4576e5dfa67819a48c764be87608b74b8ad43387a57b93b"
+          "sha256": "bbc902d4d187ac4914915bf538196a064b49109a33a104965b5164ced5b80a1e"
         },
         "3.12/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.12.15+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "5864001bf969db329fadc2b654c4878c6027d170c6bd77e28f88666260bcaf63"
+          "sha256": "5d546fc004fc2435fa142eb8f42ed8de5eb4725963dc22f7e6671014a80eb560"
         },
         "3.12/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.12.15+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.12.15+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.12.15",
-          "sha256": "6a3e77c80f38970de5b1a2c6ad3b87f65d159f42b63365c6774e9fa194a720ab"
+          "sha256": "080203712a5627a5913a8fef589bcd455b32a2fd44e4404bf6504be5063c9bf5"
         },
         "3.13/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.13.16+20261009-aarch64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-aarch64-apple-darwin-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "3338fcd572a670ec45ac9ef75480b95595ea9b6b5dd320952fcf5df185089941"
+          "sha256": "ca0e6a70fb75a0984751bd75493e3de77680aef7fbd0fea9b903c299537b3423"
         },
         "3.13/aarch64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "f84da5494c7e28a76a4ffa6ffdea87c31553b30dbb2f5323bdaaa1574a19bea0"
+          "sha256": "853f0e13fa0a925b29001fd9834ed590879d2041d375f716031fbb7ed9a5a4a5"
         },
         "3.13/aarch64-pc-windows-msvc/default": {
-          "filename": "cpython-3.13.16+20261009-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "76b76cbc2f3036b62cfa03bcc50acd24266be4099abd5b4e908844e761126fc2"
+          "sha256": "00d904e6fcd7853770ce71cfbf48d274d9f393d38cbfccc88f9fc81e18fd094b"
         },
         "3.13/aarch64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "2572f302489763d5d6327f7b2f4176a70bcbdf497c765a2e82e9a3b2a652a5d1"
+          "sha256": "98a55ca1daec0b08a70dcbc363c4a7bab5826235a32b18782e8ee72c54a65ba0"
         },
         "3.13/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.13.16+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "397ca401f416c3c99330a6be16d735d0cbeaf53e82070b80395b2fb4a8891f34"
+          "sha256": "0fce0605da7b6532d5bdaec185336ffaaddd02ec04e27382014952ca4857ed6d"
         },
         "3.13/aarch64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "615a5292cdf58470309f0ab7c64dbeb4f842cb075ca5f3e097fb155957a735d7"
+          "sha256": "8122b36eb7a9c2e375d88c7cc616d14664c3e05b6978b39d63f58192a367292b"
         },
         "3.13/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.13.16+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "2bb3b8ffd8d72d7616a045c1d2d68393ecb4f5b69d2064e8da5c2145fcfa36b8"
+          "sha256": "f4e4ad26d4fe42c858c00e9046ed6f1582709417e9f13fc55111ffce1f481698"
         },
         "3.13/aarch64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "254f8c7f7cc5b4944c6b9a6fdc48052dee36223935d3604d0437cbb9e7d3ee1f"
+          "sha256": "fa0fc7f44ecb6a7e8e3f6bd5a28edf3448e0fca6ab3a850e3ccc5f11f6272bc7"
         },
         "3.13/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.13.16+20261009-i686-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-i686-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "92020cff604a8ce617c28e14c4b982d0e5c076f48009dc19b24312e58674ca50"
+          "sha256": "9426fda0e3534d5ef2d4597316d67ebf95168b0e79eafe2d8d00e3febb375d1f"
         },
         "3.13/i686-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "2a017298583ea0029e373f17bf3c0bdb36737bca5dbb7144db192c8eddd035c6"
+          "sha256": "79f734873926d2c837d310dac305c8974fe34ea875e62cbae663990db5b84548"
         },
         "3.13/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.13.16+20261009-x86_64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-x86_64-apple-darwin-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "1c3ecfe6c0c1c200508ff9f93b436e3d8125faf9ff9e70a9dee65699593297da"
+          "sha256": "d1f2e7b5f0cfa25fc856fea819890bbe722f47a692e5ce2552636b5240930b38"
         },
         "3.13/x86_64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "10ecea7113cc7774a62356746c7650edf8aec917f5f956ecb997b31a7d07d91e"
+          "sha256": "a5d92b2c430697036bea0f23e9193296496d11cd17ba6ac0eed68869423a334e"
         },
         "3.13/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.13.16+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "286285f159bc711e4f0d89bd3d01993d3a321b84bd6593bd66dc816c23609388"
+          "sha256": "e1f9233e780fbe951e531b0eb207d794e1c3fb39d523a6f481f4fc01ef2b6ca5"
         },
         "3.13/x86_64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "d7c06290338ddd33faaf7686a190f0fd3616c0383eb80fd6c035eccd9746de91"
+          "sha256": "7ef0c5ed86bc65584d89004b85db42ee12d37d1c88cd76e89cf4c1c06082135b"
         },
         "3.13/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.13.16+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "1cca1041f693f110a2e0d16417090b8996258c7a121e90eeab66c2f40ea407f2"
+          "sha256": "e588e50db882fa6a89f926d9a9ad64e445183af0eda5bda226a2c151b17db8a6"
         },
         "3.13/x86_64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "9ac150ed2ea6e24fc411c77454f2aff6a23c32f4d57aa7ae338e218fb21f9427"
+          "sha256": "d5a13e024444b052523c6b33300c99b11e11ea976c9b37ed54f243dd6d146b20"
         },
         "3.13/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.13.16+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.13.16+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.13.16",
-          "sha256": "8f5665657484d4b7beeba48eb8a805f66212ec200c762614713072072f16d28d"
+          "sha256": "fec50ea80fa2ae5b59291e09250fe90be5a7752c805b9f339d5c5a4001c5fd96"
         },
         "3.13/x86_64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.13.16+20261009-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.13.16+20261013-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.13.16",
-          "sha256": "befd68e152f905e04cc00acbbb3cb2e7a927923feae8625b5941e354e0586b9a"
+          "sha256": "593f89299facf87501c610dbb78f54c8d5aac16107fb8d63ce62703df3f89ec6"
         },
         "3.14/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.14.8+20261009-aarch64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-aarch64-apple-darwin-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "ff8e1ddc02a9df3190b62d5af475cb642a02cfc77901ef780f9826cc23b51934"
+          "sha256": "709f419d175eb015f810b68aa54bdae1d776c9824cb362aa701c93b0a9f2a9e7"
         },
         "3.14/aarch64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "93a3f5d82f80e3f4b43ba14d9970a739529b73337a760dc5d1eb77bb304249a0"
+          "sha256": "8ff8ffaef9ddfa53beec701353dd9a8af13348a99b08fd13b8218fe47d6276de"
         },
         "3.14/aarch64-pc-windows-msvc/default": {
-          "filename": "cpython-3.14.8+20261009-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "bc397fe30873c50d52c07d3489dd36ae05547c0c541e2f765d197bf0a4821c58"
+          "sha256": "8b7980d500d05821feb9078df2f41f4b5f3bd6a4e4e57b7e6c2fe40c22042a39"
         },
         "3.14/aarch64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "78cdd5f118f43a0398786d6f4c55d1e95da6d1196e5df75a3f4020883362af04"
+          "sha256": "56ac36855c02419c37565ad27344c73619b1cf8b2e4ff0f93a66e77d51de9f17"
         },
         "3.14/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.14.8+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "2a99838d2ba71c91d9c72929ee73cdfad2ccd093d7746a14094f50e583989ec3"
+          "sha256": "6c3cfb175acca2748d5a9e42208c523bfbc1099ddb928615b5f328ba7c106e83"
         },
         "3.14/aarch64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "84d45346e4fbd264e190af31bdd49b91364c57c04dba3f2971813417dc17c3ff"
+          "sha256": "b96ae51b204a64390e90df2be8cad658ec42bd742eea60cf8122de0f55a58746"
         },
         "3.14/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.14.8+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "abda8084b0cfd427aa1a6e46012df4ff263dce7556386f59f8897834342286ee"
+          "sha256": "c077b33fa98878bbae7e46e00cd2f06595df9c470a77dc37b3e673caa3e4ca47"
         },
         "3.14/aarch64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "e84aef6e51e201a603c3cdfc74370e2836ea3a96f6d63ab6451dd657fea8fa29"
+          "sha256": "88c3bce17ca17e70ead8e913b26f886ec8937601da202c000d10d24de6426249"
         },
         "3.14/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.14.8+20261009-i686-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-i686-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "dc5dbeb0402eac3f80c54093c417bf13ce2880691b79215c241cb16882403f7b"
+          "sha256": "3dc81d043cbe388de6804b590ca5be49991e30c48d02a3d4fd6dceb6df33f8eb"
         },
         "3.14/i686-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "d8cbb71c11e96a06431daac0901950555ae88c4d06eaa87fc267acd9e12f2b64"
+          "sha256": "d00335508941b9e1312ce11d9cd446ac45f3de91bc0b11350c69f6e0a4da52fe"
         },
         "3.14/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.14.8+20261009-x86_64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-x86_64-apple-darwin-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "9694bf8c8c1fb1250dd6f05e7914ebbbe7180e0f11b7feaf5edb2f6acebe4153"
+          "sha256": "e09bce050cf075e777d1a802c4a11b6d43d54291b5f76911887173b28ad9c9fd"
         },
         "3.14/x86_64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "6f4b7b3747f2c49c1394d641fa4c832e75dbeafd8898f210bf14b7df64755fdf"
+          "sha256": "326200309e11b4acfaae1091c893cf6f7baa35f4d1cfeed26b64e4a9065c0449"
         },
         "3.14/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.14.8+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "6c03535bfa5888dd73b0c0ebd91b76a2fdfa06eedaa411b0c4c9e664db6b4bb4"
+          "sha256": "3adacae2a39dfcbebe8d95a6e87a0dee167a057ab8f822eacf38e5fa4c97f76e"
         },
         "3.14/x86_64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "0eda28d2a8e08caf697dc0c4cdbd03df0bda8cd1d7ba4cfecae4cba719af02fc"
+          "sha256": "ebec994bb916ca8183f3b59f85c24f1b02930ea2dba6635896876d6f95f71cb4"
         },
         "3.14/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.14.8+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "83f9cb480b702548c592443f86209cf0fc03448d90692df257f095c01791dccc"
+          "sha256": "322271a761140ffb3f522431048f701831e412c8f64770103d2b881ee2bbaed0"
         },
         "3.14/x86_64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "938939a1ee185585e69621ed5b3d8a179522bb0d9d660c4a9d388b767b0434a3"
+          "sha256": "d1ebefdb19272371b023f9ac75c9456f3df84b74f818684364c8782261587db8"
         },
         "3.14/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.14.8+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.14.8+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.14.8",
-          "sha256": "2bc46a1f43c16847d9f680d530b3617d914b664782607baaafbf317114ba0ad1"
+          "sha256": "38d4d31652b56c47da9f32f68aa88e5e4e25fe168992fed79bf213bbfe6837aa"
         },
         "3.14/x86_64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.14.8+20261009-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.14.8+20261013-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.14.8",
-          "sha256": "2bca1b0e3659911a9ebe48c8d1bd67afbea8ecb90ae7c2fdd5e0b5607b9e08ef"
+          "sha256": "f5b26af274ded171897dd5e17935b16f61c31958a9cdeb5556225b71457e7d54"
         },
         "3.15/aarch64-apple-darwin/default": {
-          "filename": "cpython-3.15.0+20261009-aarch64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-aarch64-apple-darwin-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "3fb079450ee57075a790b94634206759501166e0a99de459cdad095f6c158d39"
+          "sha256": "f5d1d82e2f5660d4decae5d2b7470631850bcd7bd39595d9c3cca3c5ee54eae7"
         },
         "3.15/aarch64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "01f6223e05bd92a2cc7722eae45ae8591c6837a05af94a894fc7f6f8f8fe6592"
+          "sha256": "ebd2cb28b6cf134660382d7a6b482a46b115917771d04857205ae79558b842e8"
         },
         "3.15/aarch64-pc-windows-msvc/default": {
-          "filename": "cpython-3.15.0+20261009-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "95052a0841dd039cfbbf5205dcde9c0c97341c629cd28294ddd1af93bd1fb55f"
+          "sha256": "588a4d0817d74fd632c235868a8218f63baee4ce40126ebe16b5e1826a1b86ba"
         },
         "3.15/aarch64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "76e960e6768a1d3f6fbc4a4120d2f9fea465e496fcb4e015d5c73ff5c45d6698"
+          "sha256": "5b3102dceefdd3cf9b1aa496a57e79e1e2e49b9ada41b1a115b749f95d6e2ee2"
         },
         "3.15/aarch64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.15.0+20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "f02953d2c56c7eaa2fa3a21f2680a823b8748959c571ac149cd76b0fd1a1c33c"
+          "sha256": "26a54e8fbde81bcc39ba35ad855a6a573295c023793c20fff1670a560649bcd7"
         },
         "3.15/aarch64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "a404137ddb03738d823b84217d2f0d0b0311f1ff32372e9230376cc428cfd0be"
+          "sha256": "cdee375c16dfbcc0e056dc04051d6d7c6adc087d66f3c9146818b36b6cacf082"
         },
         "3.15/aarch64-unknown-linux-musl/default": {
-          "filename": "cpython-3.15.0+20261009-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "9bdc0bf73c0071907641915827b38550c6a439d15376ab6bce0bd6a29deed10a"
+          "sha256": "f6cfb96aeddd912cffde7cfe0b9f176a674a8d82d4174d9fee0247510e31c2e5"
         },
         "3.15/aarch64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "4ce950273c619fc4c872f358a64b5486b98cee63192458c69e31d18a90abafdd"
+          "sha256": "c8f04a6396d99777e2e58e0949a9a0e508ff32ed684dcee7eb3439250bf47d3d"
         },
         "3.15/i686-pc-windows-msvc/default": {
-          "filename": "cpython-3.15.0+20261009-i686-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-i686-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "0c7f3918b1c6cf546c9a812f265d7219883b64a17751d863a1bc0a656d96eaa0"
+          "sha256": "33fcec91a9dd650ea5bbc48c0af47234083c7ef4f6d7afa3f1c3acd8546616f1"
         },
         "3.15/i686-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "a24241daa06274eaa7bc12cc85feb7e9b7024913eaa1ca246623cd4d1f85d220"
+          "sha256": "73f5e1e16d7ddac9f6dabd850c28462f8690e1098d2f217b9f5a47428af7fb4c"
         },
         "3.15/x86_64-apple-darwin/default": {
-          "filename": "cpython-3.15.0+20261009-x86_64-apple-darwin-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-x86_64-apple-darwin-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "5b73d275ef59c742ae58a13130381ddf3451a5a96b2d802c8d5aa0741511baa7"
+          "sha256": "c4adbda246262a55920ec0804f5a6a9a3a1e5948f3423da71926320b2489e50e"
         },
         "3.15/x86_64-apple-darwin/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "6ff8f4012c29cedf22c4175fec1eb3d2e08149143c0a88bd0c1fb57fbf10b1da"
+          "sha256": "49bdcd38155ac67a7e1c5f4c04b411a41f04db43a109bcb5296b81e095cdb767"
         },
         "3.15/x86_64-pc-windows-msvc/default": {
-          "filename": "cpython-3.15.0+20261009-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "195aeb879561118627db196e1b07704bd873c7fe80ac8068aaecb475f9db25a4"
+          "sha256": "0d9950ba8c6399203e60ed6a2452fc4e8def35c83fb6da00ec815784b7887483"
         },
         "3.15/x86_64-pc-windows-msvc/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "8556fd14390928666a52d414ac4d981727bf4fbc2cc5d0b6d2dec08cb333b998"
+          "sha256": "a966ece53897b836a54db82bc4c2cf683572d33313f0cb0b42e3343df7e500ca"
         },
         "3.15/x86_64-unknown-linux-gnu/default": {
-          "filename": "cpython-3.15.0+20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "95ba085863806dacf0fd7119c590154bbcd3351099e55c0808a9c61603e320a8"
+          "sha256": "e02a368dd5dc76ffe0599e5109ad6c1ee84e597910758b0e006bab25372a8921"
         },
         "3.15/x86_64-unknown-linux-gnu/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "55e98538d12f144f4c7e02f9530762fa2c51e2c6f52fed54f88d22e3e99c5196"
+          "sha256": "6f28d0cf288253466985697a6274cb3236ecee6bee15750f5e25074aa9ad6a85"
         },
         "3.15/x86_64-unknown-linux-musl/default": {
-          "filename": "cpython-3.15.0+20261009-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "filename": "cpython-3.15.0+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
           "full_version": "3.15.0",
-          "sha256": "60cfeb7119e2b8af4f8ea2bbba3d63a65e093ce50e82495e1d8c9b32d97e34d2"
+          "sha256": "357e22749a58bc664d0ff3c126618182da30a7d691615a2e569c3ca46017cb4e"
         },
         "3.15/x86_64-unknown-linux-musl/freethreaded": {
-          "filename": "cpython-3.15.0+20261009-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "filename": "cpython-3.15.0+20261013-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
           "full_version": "3.15.0",
-          "sha256": "20dbf2103e58390bf623c65b528bef972d1d9b0f13bbcf937267666f3ae75466"
+          "sha256": "05e46aac7a1dca1850e64d90cb430dccbfa7a3c39827a883f250157124a4f0bc"
+        },
+        "3.16/aarch64-apple-darwin/default": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-apple-darwin-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "c85c759829d4084d25f20e40ee919076b8b419fd91a5807ef61e0145ebdb5625"
+        },
+        "3.16/aarch64-apple-darwin/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "c6d6db49ba848f6361fb4a05288f1188e5662e050ee01a7b76e6c31b1a44b2e9"
+        },
+        "3.16/aarch64-pc-windows-msvc/default": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-pc-windows-msvc-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "f6252cf3e0b47a3f702784e9c462fae4aee08a32559ef8bff8df2c60507f98ee"
+        },
+        "3.16/aarch64-pc-windows-msvc/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "dd871f7ca0446d321e385dbf053f9418e277221a7910811b877fbd883cb64bb4"
+        },
+        "3.16/aarch64-unknown-linux-gnu/default": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-unknown-linux-gnu-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "d6ff506fea1b924c9d304582da9d285c1e10c21ca83000efc9b41a0ed8fb2f1b"
+        },
+        "3.16/aarch64-unknown-linux-gnu/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "4d25b69788651baf6d174677efb9c89c8e9c54fc496b59ee7a1e4e610c7322fd"
+        },
+        "3.16/aarch64-unknown-linux-musl/default": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-unknown-linux-musl-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "1128e1d49ad72c2b341b83e34f945701a7dda38dbcf1ccc4a87c70fda8d4b0af"
+        },
+        "3.16/aarch64-unknown-linux-musl/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-aarch64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "1251c278d12ce01e880d91e60ab6aff17e7d992ed18119cc3c5c45da0abca005"
+        },
+        "3.16/i686-pc-windows-msvc/default": {
+          "filename": "cpython-3.16.0a1+20261013-i686-pc-windows-msvc-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "c350fccc057b6eeacd8541a76956a8e6b2be3fabb93b56bf620bc698841acc03"
+        },
+        "3.16/i686-pc-windows-msvc/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-i686-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "73a48214ce786e4965219a2e3f54397c44a295db0c1bcb48b548a5ebe506c9b3"
+        },
+        "3.16/x86_64-apple-darwin/default": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-apple-darwin-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "aef1adc461e6c6b35c1204bb5654f6a77b31d4e4e639fc95215b7a1c5de12849"
+        },
+        "3.16/x86_64-apple-darwin/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-apple-darwin-freethreaded+pgo+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "5ec6915eb90f8bdc12bcaab4104254ec996be6d5ff6dbea9cd08438237da8188"
+        },
+        "3.16/x86_64-pc-windows-msvc/default": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-pc-windows-msvc-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "2ef0c7af4b8539844aad2e2c441101b4812362bd4817a347b470a6c9a33e1b67"
+        },
+        "3.16/x86_64-pc-windows-msvc/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-pc-windows-msvc-freethreaded+pgo-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "c2e2b772d1733bab28c36195335e8bf0687c8ca5dbf31d018b54f46b88311e61"
+        },
+        "3.16/x86_64-unknown-linux-gnu/default": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "5ebac3bff1390009b8af41bf8cd8653a33f6305474c91f5f53cbd1180a36fc01"
+        },
+        "3.16/x86_64-unknown-linux-gnu/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-unknown-linux-gnu-freethreaded+pgo+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "6724f930272894d5176ec57e24646b54bf671c19fd339aef8392a439a9c52260"
+        },
+        "3.16/x86_64-unknown-linux-musl/default": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-unknown-linux-musl-install_only.tar.gz",
+          "full_version": "3.16.0a1",
+          "sha256": "f37ce66ec994c3fe4658d19d857a503ccf7145f5869dbb8553db8561f9380379"
+        },
+        "3.16/x86_64-unknown-linux-musl/freethreaded": {
+          "filename": "cpython-3.16.0a1+20261013-x86_64-unknown-linux-musl-freethreaded+lto-full.tar.zst",
+          "full_version": "3.16.0a1",
+          "sha256": "85a78dcd3465a0f912d4002c166854eb9e2126ffed090da1ac8880ad0c0d2178"
         }
       }
     },
