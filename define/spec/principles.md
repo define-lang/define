@@ -189,3 +189,55 @@ provide errors that tell the developer exactly what is wrong, with sufficient
 information that they can fix it. If we know or suspect what the fix is, we
 should say it. If there is longer documentation about the error somewhere, we
 should link to it.
+
+## Define Strives for Precision
+
+As a verified language, the behavior that Define guarantees must be, as much as
+possible, the actual behavior of the program that actually runs on the hardware.
+We already specify in our [requirements](requirements.md) that Define must be
+_sound_: meaning it never guarantees that the program will behave in a way that
+it doesn't behave at runtime. However, ideally we would like Define to be
+_precise_ as well: it exactly specifies all possible behavior of the system.
+
+The desire for full precision is in tension with other desires a programming
+language has. For example, as a verified language, we need to model logical
+behaviors the compiler can reason about, possibly in a cross-platform way, even
+when different platforms have different behavior. Also, we want our compiler to
+be fast, so you can't do things like perfectly model floating-point behavior
+(which involves a very slow algorithm).
+
+There are a few ways to deal with these problems. One of them is to simply
+guarantee less. Instead of saying "this is always a positive number," you say
+"this is always a number." That is, you sacrifice some precision, but retain
+soundness.
+
+The problem with sacrificing precision is that you lose out on potential
+optimizations you could do when compiling for some platforms. (For example,
+imagine some set of integers were always less than 256 each on some platform. If
+you wanted to do SIMD operations with those integers, you _could_ do 8-bit lanes
+for those SIMD operations if you knew they always fit in 8 bits.) You also might
+actually _want_ to write a program only for one specific architecture/OS and
+thus might want to rely on the logical constraints that that hardware or OS
+provides in the actual logic of your program instead of having to handle
+impossible edge cases in your code.
+
+Thus, I believe the right trade-off for Define is for _operations_ to map as
+closely as possible to the logical behavior of target platforms (potentially
+including cross-platform standards like POSIX where we know those standards are
+actually adhered to). But for anything that needs to be a cross-platform
+abstraction where _logical_ behavior is different across platforms, use actions
+to abstract away hardware operations. This would involve using some system to
+select behavior at compile time (which operation to run for this platform) to
+whatever degree possible and then "smoothing over" the cross-platform
+differences by compromises or translations the action performs, thus giving the
+action some sort of consistent contract. Thus you might have an operation for,
+say, a Linux `read` syscall, but general file opening and reading would be an
+action.
+
+In this way, you offer both potential precision and power to the programmer if
+that's what they desire (they can use the direct operation) but you offer
+simpler abstraction if that's what they prefer instead.
+
+In many cases, if we do this right, we still don't lose the optimization power
+of the compiler, because the compiler selects the right concrete operation to
+use at compile time and thus knows how to optimize that.

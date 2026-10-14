@@ -143,3 +143,10 @@ constraints intractable:
    the "integer" then you've exploded the possibilities of what could happen.
    Even bitwise operations like bitwise AND or OR can be a nightmare because you
    are shifting _so many_ conditions all at once.
+
+## Soundness of Programs
+
+Define must never guarantee that a program _will_ do something that a real
+running program _doesn't_ do. For example, you can't guarantee "this `read` call
+will return exactly the error number `-4` on all platforms" if that's not what
+the real program will do at runtime.
