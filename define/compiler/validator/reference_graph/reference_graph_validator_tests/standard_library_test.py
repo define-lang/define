@@ -47,6 +47,8 @@ def test_every_definition_is_valid(
             standard_library_file("boolean/or.dfn"),
             standard_library_file("number.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
+            standard_library_file("number/hex.dfn"),
+            standard_library_file("number/hex/ascii.dfn"),
             standard_library_file("number/integer.dfn"),
             standard_library_file("number/integer/absolute_value.dfn"),
             standard_library_file("number/integer/add.dfn"),

@@ -1,0 +1,6 @@
+test.create(/bits)
+test.set_value(/bits, 0b1011)
+test.create(/count)
+test.set_value(/count, 255)
+test.create(/offset)
+test.set_value(/offset, -47)

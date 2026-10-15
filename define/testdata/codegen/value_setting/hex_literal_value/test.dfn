@@ -1,0 +1,16 @@
+# Hex literals set binary, natural, and integer values.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</bits>.
+    it also assigns the position</count>.
+    it also assigns the position</offset>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</bits>.
+        set the value of position</bits> to literal<standard:/number/hex>"B".
+        create a particle in position</count>.
+        set the value of position</count> to literal<standard:/number/hex>"FF".
+        create a particle in position</offset>.
+        set the value of position</offset> to literal<standard:/number/hex>"-2F".
+    }
+}

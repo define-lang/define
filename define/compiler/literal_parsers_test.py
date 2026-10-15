@@ -34,6 +34,15 @@ _PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
     (constants.DECIMAL_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
 ]
+_PARSE_HEX_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.HEX_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING)
+]
+_PARSE_HEX_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.HEX_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+]
+_PARSE_HEX_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
+    (constants.HEX_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+]
 _PARSE_UTF8_AS_SCALAR_UTF8 = literal_parsers.LITERAL_PARSERS[
     (constants.UTF8_ENCODING, constants.SCALAR_UTF8_ENCODING)
 ]
@@ -327,5 +336,98 @@ def test_code_point_ascii_as_scalar_utf8_rejects(
 ):
     with pytest.raises(literal_parsers.LiteralParseError) as error:
         _ = _PARSE_CODE_POINT_ASCII_AS_SCALAR_UTF8(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(
+    ("content", "bits"),
+    [("0", "0"), ("1", "1"), ("B", "1011"), ("2F", "101111"), ("100", "100000000")],
+)
+def test_hex_ascii_as_binary_ascii_accepts(content: str, bits: str):
+    assert _PARSE_HEX_ASCII_AS_BINARY_ASCII(content) == bits
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-1", "negative numbers are not allowed", 0),
+        ("0B", "numbers are written without leading zeros", 0),
+        ("b", "hex digits are written in uppercase", 0),
+    ],
+)
+def test_hex_ascii_as_binary_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_HEX_ASCII_AS_BINARY_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(
+    ("content", "integer"),
+    [
+        ("0", "0"),
+        ("9", "9"),
+        ("A", "10"),
+        ("FF", "255"),
+        ("-1", "-1"),
+        ("-2F", "-47"),
+        ("10000000000000000", "18446744073709551616"),
+    ],
+)
+def test_hex_ascii_as_integer_ascii_accepts(content: str, integer: str):
+    assert _PARSE_HEX_ASCII_AS_INTEGER_ASCII(content) == integer
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("", "there must be at least one hex digit", 0),
+        ("-", "there must be at least one hex digit", 1),
+        ("ff", "hex digits are written in uppercase", 0),
+        ("-2f", "hex digits are written in uppercase", 2),
+        ("+1", "positive numbers are written without a +", 0),
+        ("-+1", "'+' is not allowed in a hex number", 1),
+        ("--1", "a minus sign may only appear at the start", 1),
+        ("1-1", "a minus sign may only appear at the start", 1),
+        ("1.8", "only whole numbers are allowed", 1),
+        ("0x1F", "'x' is not allowed in a hex number", 1),
+        ("G", "'G' is not allowed in a hex number", 0),
+        ("0F", "numbers are written without leading zeros", 0),
+        ("-0F", "numbers are written without leading zeros", 1),
+        ("00", "numbers are written without leading zeros", 0),
+        ("-0", "zero is written without a minus sign", 0),
+    ],
+)
+def test_hex_ascii_as_integer_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_HEX_ASCII_AS_INTEGER_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(("content", "natural"), [("0", "0"), ("FF", "255")])
+def test_hex_ascii_as_natural_ascii_accepts(content: str, natural: str):
+    assert _PARSE_HEX_ASCII_AS_NATURAL_ASCII(content) == natural
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-1", "negative numbers are not allowed", 0),
+        ("-0", "negative numbers are not allowed", 0),
+        ("0FF", "numbers are written without leading zeros", 0),
+        ("1-", "a minus sign may only appear at the start", 1),
+    ],
+)
+def test_hex_ascii_as_natural_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_HEX_ASCII_AS_NATURAL_ASCII(content)
     assert error.value.reason == reason
     assert error.value.content_index == content_index

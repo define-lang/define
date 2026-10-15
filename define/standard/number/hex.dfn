@@ -1,0 +1,3 @@
+define the potential literal<standard:/number/hex> {
+    it has the encoding</number/hex/ascii>.
+}

@@ -258,7 +258,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position</count>.
         create a particle in position</offset>.
-        set the value of position</count> to literal<standard:/number>"3".
+        set the value of position</count> to literal<standard:/number/hex>"3".
         set the value of position</offset> to literal<standard:/number>"-3".
         create a particle in position</natural_sum>.
         create a particle in position</natural_product>.

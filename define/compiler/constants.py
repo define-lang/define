@@ -32,6 +32,7 @@ CODE_POINT_ASCII_ENCODING: Final = (
     f"encoding<{STANDARD_UNIVERSE}:/text/unicode/code_point/ascii>"
 )
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
+HEX_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/hex/ascii>"
 INTEGER_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/integer/ascii>"
 NATURAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/natural/ascii>"
 SCALAR_UTF8_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/text/unicode/scalar/utf8>"

@@ -219,6 +219,64 @@ def _code_point_ascii_error(content: str) -> LiteralParseError:
     return LiteralParseError("code points are written without leading zeros", 0)
 
 
+# Leading zeros would give one number several spellings.
+_HEX_NUMBER: Final = re.compile(r"0|[1-9A-F][0-9A-F]*")
+
+
+def _hex_number_digits(content: str, start: int) -> str:
+    digits = content[start:]
+    if _HEX_NUMBER.fullmatch(digits) is None:
+        raise _hex_number_error(content, start)
+    return digits
+
+
+def _hex_number_error(content: str, start: int) -> LiteralParseError:
+    # Only invalid content reaches this, so it favors clear errors over speed.
+    if start == len(content):
+        return LiteralParseError("there must be at least one hex digit", start)
+    for index in range(start, len(content)):
+        char = content[index]
+        if char in _HEX_DIGITS:
+            continue
+        if char in "abcdef":
+            return LiteralParseError("hex digits are written in uppercase", index)
+        if char == "+" and index == 0:
+            return LiteralParseError("positive numbers are written without a +", index)
+        if char == "-":
+            return LiteralParseError("a minus sign may only appear at the start", index)
+        if char == ".":
+            return LiteralParseError("only whole numbers are allowed", index)
+        return LiteralParseError(f"'{char}' is not allowed in a hex number", index)
+    return LiteralParseError("numbers are written without leading zeros", start)
+
+
+def _hex_as_decimal(digits: str) -> str:
+    # TODO: Convert hex literals longer than about 3,500 digits, which exceed
+    # Python's limit on converting an int to a decimal string and so raise
+    # ValueError.
+    return str(int(digits, 16))
+
+
+def _parse_hex_ascii_as_binary_ascii(content: str) -> str:
+    if content.startswith("-"):
+        raise LiteralParseError("negative numbers are not allowed", 0)
+    return format(int(_hex_number_digits(content, 0), 16), "b")
+
+
+def _parse_hex_ascii_as_integer_ascii(content: str) -> str:
+    sign = "-" if content.startswith("-") else ""
+    digits = _hex_number_digits(content, len(sign))
+    if sign and digits == "0":
+        raise LiteralParseError("zero is written without a minus sign", 0)
+    return sign + _hex_as_decimal(digits)
+
+
+def _parse_hex_ascii_as_natural_ascii(content: str) -> str:
+    if content.startswith("-"):
+        raise LiteralParseError("negative numbers are not allowed", 0)
+    return _hex_as_decimal(_hex_number_digits(content, 0))
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
@@ -261,6 +319,18 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
         constants.DECIMAL_ASCII_ENCODING,
         constants.NATURAL_ASCII_ENCODING,
     ): _parse_decimal_ascii_as_natural_ascii,
+    (
+        constants.HEX_ASCII_ENCODING,
+        constants.BINARY_ASCII_ENCODING,
+    ): _parse_hex_ascii_as_binary_ascii,
+    (
+        constants.HEX_ASCII_ENCODING,
+        constants.INTEGER_ASCII_ENCODING,
+    ): _parse_hex_ascii_as_integer_ascii,
+    (
+        constants.HEX_ASCII_ENCODING,
+        constants.NATURAL_ASCII_ENCODING,
+    ): _parse_hex_ascii_as_natural_ascii,
     (
         constants.UTF8_ENCODING,
         constants.SCALAR_UTF8_ENCODING,

@@ -120,6 +120,7 @@ def test_no_literal_parser(
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
+        "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -145,6 +146,7 @@ def test_only_matching_encodings_suggested(
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
+        "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -374,6 +376,7 @@ def test_boolean_literal_sets_natural(
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
+        "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -538,3 +541,27 @@ def test_invalid_code_point_literal_content(
     assert diagnostic.reason == "'U' is not allowed in a code point"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 89
+
+
+def test_hex_literal_sets_integer(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+
+
+def test_invalid_hex_literal_content(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.content == "0x1F"
+    assert diagnostic.potential_literal == "literal<standard:/number/hex>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
+    assert diagnostic.reason == "'x' is not allowed in a hex number"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 77
