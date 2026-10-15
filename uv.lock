@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -498,7 +498,6 @@ dev = [
     { name = "pygithub" },
     { name = "pytest" },
     { name = "pyyaml" },
-    { name = "requests" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "types-protobuf" },
@@ -529,7 +528,6 @@ dev = [
     { name = "pygithub" },
     { name = "pytest", specifier = ">=6" },
     { name = "pyyaml" },
-    { name = "requests" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "types-protobuf" },

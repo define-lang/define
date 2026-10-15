@@ -249,12 +249,6 @@ BUILD file generator.
   )
   ```
 
-### Keeping Dependencies Up to Date
-
-- Run `uv run tools/update_toolchains.py` to update Go SDK version, buf
-  toolchain (version + SHA256), node version, and multitool (ast-grep, ruff,
-  uv).
-
 ## Compute Performance and Memory Efficiency
 
 - We are building a compiler. It could involve millions of lines of code, a

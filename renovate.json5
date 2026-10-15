@@ -19,6 +19,15 @@
         '{"releases": [{"version": $match($join(releases.version, " "), /final data files for version (\\d+\\.\\d+\\.\\d+)/).groups[0]}]}',
       ],
     },
+    // rules_nodejs can only download the Node.js versions it has hashes for,
+    // so its node_versions.bzl lists the versions we can use. Each version is
+    // a dictionary key on a line of its own.
+    rules_nodejs: {
+      format: "plain",
+      transformTemplates: [
+        '{"releases": releases[$contains(version, /^"\\d+\\.\\d+\\.\\d+": \\{$/)].{"version": $substringBefore($substring(version, 1), "\\"")}}',
+      ],
+    },
   },
   customManagers: [
     {
@@ -61,6 +70,49 @@
       datasourceTemplate: "rust-version",
       versioningTemplate: "rust-release-channel",
     },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^MODULE\\.bazel$/"],
+      matchStrings: [
+        'go_sdk\\.download\\(version = "(?<currentValue>[^"]+)"\\)',
+      ],
+      depNameTemplate: "go",
+      datasourceTemplate: "golang-version",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^MODULE\\.bazel$/"],
+      matchStrings: [
+        'buf\\.toolchains\\(\\s*sha256 = "(?<currentDigest>[0-9a-f]{64})",\\s*version = "(?<currentValue>[^"]+)",\\s*\\)',
+      ],
+      depNameTemplate: "bufbuild/buf",
+      datasourceTemplate: "github-release-attachments",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^MODULE\\.bazel$/"],
+      matchStringsStrategy: "combination",
+      matchStrings: [
+        'bazel_dep\\(name = "rules_nodejs", version = "(?<rulesNodejsVersion>[^"]+)"\\)',
+        'node\\.toolchain\\(node_version = "(?<currentValue>[^"]+)"\\)',
+      ],
+      depNameTemplate: "node",
+      datasourceTemplate: "custom.rules_nodejs",
+      registryUrlTemplate: "https://raw.githubusercontent.com/bazel-contrib/rules_nodejs/v{{{rulesNodejsVersion}}}/nodejs/private/node_versions.bzl",
+      // Only LTS versions are stable in node versioning.
+      versioningTemplate: "node",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^tools/multitool\\.lock\\.json$/"],
+      matchStrings: [
+        '"url": "https://github\\.com/(?<depName>[^/"]+/[^/"]+)/releases/download/(?<currentValue>[^/"]+)/[^"]+",(?:\\s*"file": "[^"]*",)?\\s*"sha256": "(?<currentDigest>[0-9a-f]{64})"',
+      ],
+      datasourceTemplate: "github-release-attachments",
+      // Some asset names drop the "v" of their release tag, so replace the
+      // version without it everywhere in the match.
+      autoReplaceStringTemplate: "{{{replace currentDigest newDigest (replace (replace '\\.' '\\.' (replace '^v' '' currentValue)) (replace '^v' '' newValue) replaceString)}}}",
+    },
   ],
   packageRules: [
     {
@@ -94,6 +146,12 @@
     {
       matchManagers: ["gomod"],
       groupName: "go dependencies",
+    },
+    {
+      // MODULE.bazel and go.mod name the same Go version.
+      matchDatasources: ["golang-version"],
+      groupName: "Go SDK",
+      rangeStrategy: "bump",
     },
     {
       matchManagers: ["pep621"],

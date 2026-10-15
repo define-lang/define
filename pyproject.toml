@@ -309,7 +309,6 @@ dev = [
     "pygithub",
     "pytest>=6",
     "pyyaml",
-    "requests",
     "ruff",
     "setuptools",
     "types-protobuf",

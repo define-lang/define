@@ -279,12 +279,6 @@ native_binary(
     visibility = ["//:__pkg__"],
 )
 
-py_binary(
-    name = "update_toolchains",
-    srcs = ["update_toolchains.py"],
-    deps = ["@pypi//requests"],
-)
-
 native_test(
     name = "uv_lock_test",
     size = "small",
@@ -410,7 +404,6 @@ pyright_test(
         ":serve_report_test",
         ":setup_local_dev",
         ":sync_agent_permissions",
-        ":update_toolchains",
         ":validate_proposals",
     ],
 )
