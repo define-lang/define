@@ -13,13 +13,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   update-lockfile:
-    if: github.actor == 'renovate[bot]'
-    runs-on: ubuntu-latest
+    name: Update MODULE.bazel.lock
+    if: ${{ github.actor == 'renovate[bot]' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
-      contents: write
+      contents: write # Commits the updated lockfile to the Renovate branch.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

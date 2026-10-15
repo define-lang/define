@@ -22,6 +22,14 @@
   },
   customManagers: [
     {
+      // The github-actions manager reads only literal runs-on values, not the
+      // runners of a matrix.
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/workflows/ci\\.yaml$/"],
+      matchStrings: ["- (?<depName>ubuntu|macos)-(?<currentValue>[\\d.]+)"],
+      datasourceTemplate: "github-runners",
+    },
+    {
       customType: "regex",
       managerFilePatterns: ["/^tools/generate_invisible_characters\\.py$/"],
       matchStrings: [
@@ -61,6 +69,17 @@
     },
     {
       matchManagers: ["github-actions"],
+      groupName: "github actions",
+    },
+    {
+      matchManagers: ["github-actions"],
+      matchDepTypes: ["action", "workflow"],
+      // Matches action-release-cooldown in .github/jactionlint.yaml.
+      minimumReleaseAge: "2 days",
+    },
+    {
+      // The runners of the test matrix come from a custom manager.
+      matchDatasources: ["github-runners"],
       groupName: "github actions",
     },
     {

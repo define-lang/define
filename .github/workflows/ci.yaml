@@ -14,13 +14,23 @@ concurrency:
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   coverage:
+    name: Coverage
     if: >-
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-latest
+      ${{
+        github.event.pull_request.user.login != 'renovate[bot]' &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
+      }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write # Authenticates the Codecov upload without a stored token.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,20 +46,27 @@ jobs:
       - name: Coverage
         run: bazelisk coverage --noshow_progress --combined_report=lcov //...
 
+      # Fork pull requests cannot get an OIDC token, and Codecov accepts their
+      # uploads without one.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           disable_search: true
           fail_ci_if_error: true
           files: bazel-out/_coverage/_coverage_report.dat
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ !github.event.pull_request.head.repo.fork }}
 
   test:
+    name: Test (${{ matrix.os }})
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os:
+          - ubuntu-26.04
+          - macos-26
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,8 +86,11 @@ jobs:
         run: bazelisk build --noshow_progress //...
 
   lint:
-    runs-on: ubuntu-latest
+    name: Lint
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,6 +115,11 @@ jobs:
 
       - name: Check for broken symlinks
         run: uv run tools/check_symlinks.py
+
+      - name: Check GitHub Actions against the GitHub API
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bazelisk run --noshow_progress //.github:jactionlint_online
 
       - name: Build buf plugin
         run: bazelisk build --noshow_progress //defcl/buf

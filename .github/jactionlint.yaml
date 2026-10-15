@@ -1,0 +1,35 @@
+profile: pedantic
+generated-files: report
+config-secrets: []
+config-variables: []
+rules:
+  # Matches minimumReleaseAge for GitHub Actions in renovate.json5, so Renovate
+  # never proposes a version that this rule rejects.
+  action-release-cooldown:
+    days: 2
+  agentic-actions:
+    any-trigger: true
+  continue-on-error:
+    steps: true
+  forbidden-uses:
+    allow:
+      - actions/checkout
+      - astral-sh/setup-uv
+      - bazel-contrib/setup-bazel
+      - bufbuild/buf-action
+      - codecov/codecov-action
+  max-run-lines:
+    max: 5
+  timeout-too-long:
+    max: 60
+  unsound-prefix-match:
+    refs: true
+  unused-ignore:
+    zizmor: true
+  workflow-secret-scope:
+    job-level: true
+ignores:
+  - rule: action-release-cooldown
+    uses: bazel-contrib/setup-bazel
+    reason:
+      0.19.1 merged before the cooldown existed; it is old enough on 2026-10-16

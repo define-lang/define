@@ -1,9 +1,27 @@
-load("@bazel_skylib//rules:native_binary.bzl", "native_test")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 filegroup(
     name = "github_workflows",
     srcs = glob(["workflows/*.yaml"]),
+)
+
+# Runs every rule, including those that ask the GitHub API, which a sandboxed
+# test cannot reach.
+native_binary(
+    name = "jactionlint_online",
+    src = "jactionlint_online.sh",
+    out = "jactionlint_online_runner",
+    args = [
+        "$(rootpath @multitool//tools/jactionlint)",
+        "$(rootpath @multitool//tools/shellcheck)",
+        "$(rootpath @multitool//tools/ruff)",
+    ],
+    data = [
+        "@multitool//tools/jactionlint",
+        "@multitool//tools/ruff",
+        "@multitool//tools/shellcheck",
+    ],
 )
 
 # The script checkers are pinned because jactionlint otherwise uses whatever
@@ -15,12 +33,15 @@ native_test(
     out = "jactionlint_test_runner",
     args = [
         "--no-color",
+        "--config-file=$(rootpath jactionlint.yaml)",
         "--no-online",
+        "--strict-exit",
         "--shellcheck=$(rootpath @multitool//tools/shellcheck)",
         "--ruff=$(rootpath @multitool//tools/ruff)",
         "$(rootpaths :github_workflows)",
     ],
     data = [
+        "jactionlint.yaml",
         ":github_workflows",
         "@multitool//tools/ruff",
         "@multitool//tools/shellcheck",
