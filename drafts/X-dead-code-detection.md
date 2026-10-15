@@ -13,3 +13,5 @@ one other interface position.
 
 We could _maybe_ track action liveness through output positions modularly in a
 way similar to Destruction Contracts. It might involve some complex bookkeeping.
+
+Any interface position that starts and ends empty is dead code.
