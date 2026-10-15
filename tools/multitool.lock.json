@@ -56,33 +56,33 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.72.0/buf-Linux-aarch64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Linux-aarch64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "7641bd7e06a37a54cbb8c789f53465899def96196ab5c08057432f781a15d517",
+        "sha256": "54a5d5500992deb3239bfee61c9f0ef7646b6f6b231d2c255fdfc16eeb50564c",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.72.0/buf-Linux-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Linux-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "a9c6186cf6fcf062b247345e1b7b12c26f580c1b2a4bbf4d3fe080abf85ceee8",
+        "sha256": "cc482285b2c388c93f8bed0a972330695c1c8dd121d5ece460d25ceed93f21ac",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.72.0/buf-Darwin-arm64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Darwin-arm64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "be040ae0ca381103dfda68a36738695c4db3e48de8e91412acdc3d991f39b91e",
+        "sha256": "4bc72e8d823e3b0e27df1715dec2c0c7a1a533bc07b67f98f8fdfbc4007a82ca",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.72.0/buf-Darwin-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Darwin-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "8b87e66786b46b20e7f7e328c9e15f64f636041acfdbf93374873d9014a62d30",
+        "sha256": "1a8d6778176f8d6dfc9182342109a44a8dfafb73f91f5d297276f25960589483",
         "os": "macos",
         "cpu": "x86_64"
       }
