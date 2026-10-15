@@ -127,6 +127,42 @@
       }
     ]
   },
+  "jactionlint": {
+    "binaries": [
+      {
+        "kind": "archive",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.2.0/jactionlint_2.2.0_linux_arm64.tar.gz",
+        "file": "jactionlint",
+        "sha256": "6d4c3831cc360b14550fb2f4605b4de9d2761515cd3fd5c1da718528b314647d",
+        "os": "linux",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.2.0/jactionlint_2.2.0_linux_amd64.tar.gz",
+        "file": "jactionlint",
+        "sha256": "8137d5bfe266dd5e48d2af2306827785ce07c6988e04b1c3d6ad4776e97d27d2",
+        "os": "linux",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.2.0/jactionlint_2.2.0_darwin_arm64.tar.gz",
+        "file": "jactionlint",
+        "sha256": "622b29b15a59618bc032163073209ffc434252e9a19eafd451e69207a50f266a",
+        "os": "macos",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.2.0/jactionlint_2.2.0_darwin_amd64.tar.gz",
+        "file": "jactionlint",
+        "sha256": "74efa76b1c200a2b7778c28e9aa0c3ba1c843863006a2f8916f252f8c048d42b",
+        "os": "macos",
+        "cpu": "x86_64"
+      }
+    ]
+  },
   "multitool": {
     "binaries": [
       {
@@ -211,6 +247,42 @@
         "file": "ruff.exe",
         "sha256": "02fe2fc6d04eb4e768c34daaca4990b327ea83e84b0eac58affb924c0f554a75",
         "os": "windows",
+        "cpu": "x86_64"
+      }
+    ]
+  },
+  "shellcheck": {
+    "binaries": [
+      {
+        "kind": "archive",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz",
+        "file": "shellcheck-v0.11.0/shellcheck",
+        "sha256": "68a8133197a50beb8803f8d42f9908d1af1c5540d4bb05fdfca8c1fa47decefc",
+        "os": "linux",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz",
+        "file": "shellcheck-v0.11.0/shellcheck",
+        "sha256": "b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6",
+        "os": "linux",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz",
+        "file": "shellcheck-v0.11.0/shellcheck",
+        "sha256": "339b930feb1ea764467013cc1f72d09cd6b869ebf1013296ba9055ab2ffbd26f",
+        "os": "macos",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz",
+        "file": "shellcheck-v0.11.0/shellcheck",
+        "sha256": "c2c15e08df0e8fbc374c335b230a7ee958c313fa5714817a59aa59f1aa594f51",
+        "os": "macos",
         "cpu": "x86_64"
       }
     ]
