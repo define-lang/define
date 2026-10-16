@@ -17,7 +17,7 @@ See [define/spec/spec.md] for the language specification.
 ## Formatting
 
 - After making a change to any file, reformat by running
-  `bazelisk run --noshow_progress --ui_event_filters=-info //tools:format`
+  `bazelisk run --noshow_progress --ui_event_filters=-info //:format`
 
 ## Python Execution
 
@@ -234,20 +234,6 @@ BUILD file generator.
 
 - Each package with Python targets has its own `pyright_test` target that
   type-checks that package's Python targets.
-
-### Python Format Checking
-
-- Every BUILD file that contains Python targets must also have a `format_test`
-  target that checks formatting of all Python sources in that package.
-- **When creating a new BUILD file with Python targets**, add:
-  ```starlark
-  load("//tools/bzl:format.bzl", "format_test")
-  format_test(
-      name = "format_test",
-      srcs = glob(["*.py"]),
-      python = "@multitool//tools/ruff",
-  )
-  ```
 
 ## Compute Performance and Memory Efficiency
 

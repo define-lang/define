@@ -1,5 +1,4 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
@@ -25,12 +24,6 @@ py_test(
         "//tools:runfiles",
         "@pypi//pyyaml",
     ],
-)
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 pyright_test(

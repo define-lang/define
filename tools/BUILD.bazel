@@ -1,9 +1,7 @@
-load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
@@ -344,66 +342,6 @@ py_library(
         ":runfiles",
         "@pypi//msgspec",
     ],
-)
-
-# --- Format checking ---
-
-format_multirun(
-    name = "format",
-    javascript = ":prettier",
-    javascript_check_args = [
-        "--check",
-        "--log-level=warn",
-    ],
-    javascript_fix_args = [
-        "--write",
-        "--log-level=warn",
-    ],
-    markdown = ":prettier",
-    markdown_check_args = [
-        "--check",
-        "--log-level=warn",
-    ],
-    markdown_fix_args = [
-        "--write",
-        "--log-level=warn",
-    ],
-    protocol_buffer = "@multitool//tools/buf",
-    python = "@multitool//tools/ruff",
-    rust = "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
-    rust_check_args = [
-        "--edition",
-        "2024",
-        "--check",
-    ],
-    rust_fix_args = [
-        "--edition",
-        "2024",
-    ],
-    starlark = "@multitool//tools/buildifier",
-    starlark_check_args = [
-        "-mode=check",
-        "-lint=warn",
-    ],
-    starlark_fix_args = [
-        "-mode=fix",
-        "-lint=fix",
-    ],
-    yaml = ":prettier",
-    yaml_check_args = [
-        "--check",
-        "--log-level=warn",
-    ],
-    yaml_fix_args = [
-        "--write",
-        "--log-level=warn",
-    ],
-)
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 # --- Type-checking ---

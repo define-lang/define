@@ -1,14 +1,11 @@
 """Loading-time checks for hand-maintained BUILD file conventions."""
 
-# Formatting, linting, type-checking, and package setup targets live in their
-# own sections of a BUILD file instead of among the ordered targets.
+# Linting, type-checking, and package setup targets live in their own sections
+# of a BUILD file instead of among the ordered targets.
 _META_FUNCTIONS = [
-    "format_multirun",
-    "format_test",
     "npm_link_all_packages",
     "pyright_test",
     "rust_clippy_test",
-    "rustfmt_test",
 ]
 
 _PYTHON_FUNCTIONS = ["py_binary", "py_library", "py_test"]
@@ -27,9 +24,6 @@ _RUNFILES_DIRECTORY_VARIABLES = ["location", "locations", "rootpath", "rootpaths
 # Iterating every attribute of every rule dominates package loading, so the
 # check reads only the attributes where these variables are expanded.
 _MAKE_VARIABLE_ATTRIBUTES = ["args", "cmd", "cmd_bash", "cmd_bat", "cmd_ps", "copts", "env", "linkopts"]
-
-# aspect_rules_lint's format_test passes $(locations) to its own test runner.
-_THIRD_PARTY_RUNFILES_DIRECTORY_FUNCTIONS = ["format_test"]
 
 def _label_name(label):
     return label.split(":")[-1].split("/")[-1]
@@ -188,8 +182,6 @@ def _attribute_strings(value):
 def _runfiles_directory_variable_violations(rules):
     violations = []
     for rule_name, rule in rules:
-        if rule.get("generator_function") in _THIRD_PARTY_RUNFILES_DIRECTORY_FUNCTIONS:
-            continue
         for attribute in _MAKE_VARIABLE_ATTRIBUTES:
             for text in _attribute_strings(rule.get(attribute)):
                 for variable in _runfiles_directory_variables(text):

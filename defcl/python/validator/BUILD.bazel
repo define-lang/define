@@ -1,6 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 
 py_library(
@@ -67,14 +66,6 @@ py_library(
     srcs = ["__init__.py"],
     visibility = ["//defcl/python:__pkg__"],
     deps = ["//defcl/python"],
-)
-
-# --- Format checking ---
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 check_build_file()

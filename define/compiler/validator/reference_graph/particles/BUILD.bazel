@@ -1,6 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
@@ -82,12 +81,6 @@ py_library(
         "//define/compiler/validator/reference_graph:position_occupancy",
         "@pypi//msgspec",
     ],
-)
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 pyright_test(

@@ -71,18 +71,17 @@ repos:
         exclude: ^vendored/
 
       - id: rust-checks
-        name: Rust lint and format checks
+        name: Rust lint checks
         entry:
           bazelisk test --noshow_progress
           //define/compiler/codegen/literal/python:clippy_test
-          //define/compiler/codegen/literal/python:rustfmt_test
         language: system
         files: (\.rs|\.j2|Cargo\.toml|Cargo\.lock|rust-toolchain\.toml)$
         pass_filenames: false
 
       - id: format
         name: reformat files
-        entry: bazelisk run --noshow_progress //tools:format --
+        entry: bazelisk run --noshow_progress //:format
         language: system
         pass_filenames: false
         require_serial: true

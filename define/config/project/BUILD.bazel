@@ -2,7 +2,6 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 
 proto_library(
     name = "config_proto",
@@ -21,17 +20,6 @@ py_library(
     srcs = ["__init__.py"],
     visibility = ["//define/config:__pkg__"],
     deps = ["//define/config"],
-)
-
-# --- Format checking ---
-
-format_test(
-    name = "format_test",
-    srcs = glob(
-        ["*.py"],
-        exclude = ["*_pb2.py"],
-    ),
-    python = "@multitool//tools/ruff",
 )
 
 check_build_file()

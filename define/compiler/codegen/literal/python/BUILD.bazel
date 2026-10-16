@@ -1,9 +1,8 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@crates//:defs.bzl", "lint_config")
-load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
@@ -225,27 +224,12 @@ py_library(
     ],
 )
 
-# --- Format checking ---
-
-rustfmt_test(
-    name = "rustfmt_test",
-    size = "small",
-    targets = [":renderer_shared"],
-)
+# --- Linting ---
 
 rust_clippy_test(
     name = "clippy_test",
     size = "small",
     targets = [":renderer_shared"],
-)
-
-format_test(
-    name = "format_test",
-    srcs = glob([
-        "*.py",
-        "*.pyi",
-    ]),
-    python = "@multitool//tools/ruff",
 )
 
 # --- Type-checking ---

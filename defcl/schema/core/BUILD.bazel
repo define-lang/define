@@ -3,7 +3,6 @@ load("@rules_go//go:def.bzl", "go_library")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 
 proto_library(
     name = "boolean_proto",
@@ -26,12 +25,6 @@ py_library(
     name = "init_py",
     srcs = ["__init__.py"],
     deps = ["//defcl/schema"],
-)
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 check_build_file()

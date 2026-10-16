@@ -47,8 +47,7 @@ blocked TODO is a success, not a failure.
    `bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev`
 2. Read the TODO in context and confirm the fix plan still matches the code.
 3. Implement the fix.
-4. Format:
-   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:format`
+4. Format: `bazelisk run --noshow_progress --ui_event_filters=-info //:format`
 5. If you changed any Python imports or BUILD targets:
    `uv run tools/check_python_deps.py <changed files>`
 6. Run the full suite:

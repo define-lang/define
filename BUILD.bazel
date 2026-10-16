@@ -41,6 +41,13 @@ basedpyright_bin.basedpyright_langserver_binary(
     visibility = ["//:__subpackages__"],
 )
 
+# --- Formatting ---
+
+alias(
+    name = "format",
+    actual = "//tools/format",
+)
+
 # --- Lock file management ---
 
 alias(

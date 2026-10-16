@@ -47,7 +47,7 @@ same time, because they share that state directory.
    - run the most targeted pytest command that covers the new or changed tests
      first
    - rerun the specific mutant or focused mutmut pattern
-   - finish with `bazelisk run --noshow_progress //tools:format`
+   - finish with `bazelisk run --noshow_progress //:format`
    - finish with `bazelisk test --noshow_progress //...`
 
 ## Report Generation

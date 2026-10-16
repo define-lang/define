@@ -119,7 +119,7 @@ jobs:
         run: bazelisk mod deps --noshow_progress --lockfile_mode=error
 
       - name: Format
-        run: bazelisk run --noshow_progress //tools:format.check
+        run: bazelisk run --noshow_progress //:format -- --check --all
 
       - name: Check Python BUILD dependencies
         run: uv run tools/check_python_deps.py --check

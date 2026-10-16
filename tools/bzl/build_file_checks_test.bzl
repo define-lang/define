@@ -26,15 +26,6 @@ def _py_test(name, size = "small", tags = [], source = None):
 def _py_library(name, source):
     return [(name, {"kind": "py_library", "srcs": (":" + source,)})]
 
-def _format_test():
-    return _macro_rules(
-        "format_test",
-        "format_test",
-        "test_suite",
-        {},
-        helpers = ["format_test_srcs", "format_test_Python_with_ruff"],
-    )
-
 def _pyright_test(deps):
     return [
         ("pyright_test_deps", {
@@ -58,7 +49,7 @@ def _test_targets_must_be_small_impl(ctx):
         _py_test("manual_test", size = "medium", tags = ["manual"]) +
         [("missing_test", {"kind": "sh_test", "srcs": (":missing_test.sh",)})] +
         _py_test("small_test") +
-        _format_test()
+        [("clippy_test", {"kind": "rust_clippy_test"})]
     )
     asserts.equals(env, [
         'test target "large_test" must set size = "small"',
@@ -165,10 +156,9 @@ _targets_must_be_in_alphabetical_order_test = unittest.make(
 def _order_ignores_meta_targets_impl(ctx):
     env = unittest.begin(ctx)
     rules = (
-        _macro_rules("format_multirun", "format", "multirun", {}) +
+        [("node_modules", {"generator_function": "npm_link_all_packages", "kind": "filegroup"})] +
         _py_library("ast", "ast.py") +
         _py_library("parser", "parser.py") +
-        _format_test() +
         _pyright_test([":ast", "//tools:parser"])
     )
     asserts.equals(env, [], build_file_violations("tools", rules))
@@ -248,13 +238,6 @@ def _runfiles_directory_variables_are_forbidden_impl(ctx):
         ("env_location", {"env": {"TOOL": "$(location)"}, "kind": "sh_test", "size": "small"}),
         ("escaped", {"cmd": "echo $$(location :tool) $$$$(rootpath :tool) > $@", "kind": "genrule"}),
         ("execpath", {"cmd": "$(execpath :generator) $@", "kind": "genrule"}),
-        ("format_test_Python_with_ruff", {
-            "args": ("$(locations :format_test_srcs)",),
-            "generator_function": "format_test",
-            "generator_name": "format_test",
-            "kind": "sh_test",
-            "size": "small",
-        }),
         ("rlocationpath", {"env": {"TOOL": "$(rlocationpath :tool)"}, "kind": "sh_test", "size": "small"}),
         ("variable_after_escaped_dollar", {"cmd": "echo $$$(location :tool) > $@", "kind": "genrule"}),
     ]

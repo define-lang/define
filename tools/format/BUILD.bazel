@@ -1,0 +1,36 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_binary(
+    name = "format",
+    srcs = ["main.go"],
+    data = [
+        "//tools:prettier",
+        "@multitool//tools/buf",
+        "@multitool//tools/buildifier",
+        "@multitool//tools/ruff",
+        "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
+    ],
+    visibility = ["//:__pkg__"],
+    x_defs = {
+        "bufRlocationPath": "$(rlocationpath @multitool//tools/buf)",
+        "buildifierRlocationPath": "$(rlocationpath @multitool//tools/buildifier)",
+        "prettierRlocationPath": "$(rlocationpath //tools:prettier)",
+        "ruffRlocationPath": "$(rlocationpath @multitool//tools/ruff)",
+        "rustfmtRlocationPath": "$(rlocationpath @rules_rust//rust/toolchain:current_rustfmt_toolchain)",
+    },
+    deps = ["@rules_go//go/runfiles"],
+)
+
+go_test(
+    name = "format_test",
+    size = "small",
+    srcs = ["main_test.go"],
+    data = [":format"],
+    x_defs = {
+        "formatRlocationPath": "$(rlocationpath :format)",
+    },
+    deps = ["@rules_go//go/runfiles"],
+)
+
+check_build_file()

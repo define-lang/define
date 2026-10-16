@@ -1,6 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
@@ -208,14 +207,6 @@ filegroup(
     testonly = True,
     srcs = glob(["*_test.py"]),
     visibility = ["//define/testdata:__pkg__"],
-)
-
-# --- Format checking ---
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@multitool//tools/ruff",
 )
 
 # --- Type-checking ---

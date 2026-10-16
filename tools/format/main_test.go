@@ -1,0 +1,245 @@
+package main_test
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/bazelbuild/rules_go/go/runfiles"
+)
+
+// The runfiles path of the format binary, set at link time.
+var formatRlocationPath string
+
+func newRepository(t *testing.T, files map[string]string) string {
+	t.Helper()
+	// Isolate git from the user's and the system's configuration.
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	repository := t.TempDir()
+	writeFiles(t, repository, files)
+	git(t, repository, "init", "--quiet")
+	git(t, repository, "add", ".")
+	git(t, repository, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--quiet", "--allow-empty", "--message=Initial")
+	return repository
+}
+
+func writeFiles(t *testing.T, directory string, files map[string]string) {
+	t.Helper()
+	for path, content := range files {
+		path = filepath.Join(directory, path)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func git(t *testing.T, repository string, arguments ...string) {
+	t.Helper()
+	command := exec.Command("git", arguments...)
+	command.Dir = repository
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
+	}
+}
+
+func runFormat(t *testing.T, environment []string, arguments ...string) (string, int) {
+	t.Helper()
+	binary, err := runfiles.Rlocation(formatRlocationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command(binary, arguments...)
+	command.Env = append(os.Environ(), environment...)
+	output, err := command.CombinedOutput()
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		return string(output), exitError.ExitCode()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(output), 0
+}
+
+func runFormatIn(t *testing.T, workspace, workingDirectory string, arguments ...string) (string, int) {
+	t.Helper()
+	return runFormat(t, []string{
+		"BUILD_WORKSPACE_DIRECTORY=" + workspace,
+		"BUILD_WORKING_DIRECTORY=" + workingDirectory,
+	}, arguments...)
+}
+
+func assertFiles(t *testing.T, directory string, expected map[string]string) {
+	t.Helper()
+	for path, content := range expected {
+		actual, err := os.ReadFile(filepath.Join(directory, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(actual) != content {
+			t.Errorf("%s is %q, expected %q", path, actual, content)
+		}
+	}
+}
+
+func assertSucceeded(t *testing.T, output string, exitCode int) {
+	t.Helper()
+	if exitCode != 0 || output != "" {
+		t.Fatalf("format exited with %d and output:\n%s", exitCode, output)
+	}
+}
+
+func TestAllFormatsEveryLanguage(t *testing.T) {
+	repository := newRepository(t, map[string]string{
+		"BUILD.bazel": "filegroup(name=\"all\")\n",
+		"a.json":      "{\"a\":1}\n",
+		"a.md":        "*  a\n",
+		"a.proto":     "syntax = \"proto3\";\n\npackage   a;\n",
+		"a.py":        "x  =  1\n",
+		"a.rs":        "fn  main(){}\n",
+		"a.yaml":      "a:   1\n",
+	})
+	output, exitCode := runFormatIn(t, repository, repository, "--all")
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, map[string]string{
+		"BUILD.bazel": "filegroup(name = \"all\")\n",
+		"a.json":      "{ \"a\": 1 }\n",
+		"a.md":        "- a\n",
+		"a.proto":     "syntax = \"proto3\";\n\npackage a;\n",
+		"a.py":        "x = 1\n",
+		"a.rs":        "fn main() {}\n",
+		"a.yaml":      "a: 1\n",
+	})
+}
+
+func TestDefaultFormatsOnlyChangedAndUntrackedFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{
+		".gitignore":   "ignored.py\n",
+		"committed.py": "x  =  1\n",
+		"deleted.py":   "x = 1\n",
+		"modified.py":  "x = 1\n",
+	})
+	if err := os.Remove(filepath.Join(repository, "deleted.py")); err != nil {
+		t.Fatal(err)
+	}
+	writeFiles(t, repository, map[string]string{
+		"ignored.py":   "x  =  1\n",
+		"modified.py":  "x  =  2\n",
+		"untracked.py": "x  =  3\n",
+	})
+	output, exitCode := runFormatIn(t, repository, repository)
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, map[string]string{
+		"committed.py": "x  =  1\n",
+		"ignored.py":   "x  =  1\n",
+		"modified.py":  "x = 2\n",
+		"untracked.py": "x = 3\n",
+	})
+}
+
+func TestPathsFormatEveryFileUnderThem(t *testing.T) {
+	repository := newRepository(t, map[string]string{
+		"a.py":                 "x  =  1\n",
+		"directory/a.py":       "x  =  2\n",
+		"directory/child/a.py": "x  =  3\n",
+		"directory/child/b.py": "x  =  4\n",
+	})
+	output, exitCode := runFormatIn(t, repository, filepath.Join(repository, "directory"), "child")
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, map[string]string{
+		"a.py":                 "x  =  1\n",
+		"directory/a.py":       "x  =  2\n",
+		"directory/child/a.py": "x = 3\n",
+		"directory/child/b.py": "x = 4\n",
+	})
+}
+
+func TestSkipsVendoredAndGeneratedFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{
+		".gitattributes": "vendored/** linguist-vendored\ngenerated.py linguist-generated\n",
+		"generated.py":   "x  =  1\n",
+		"vendored/a.py":  "x  =  2\n",
+	})
+	output, exitCode := runFormatIn(t, repository, repository, "--all")
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, map[string]string{
+		"generated.py":  "x  =  1\n",
+		"vendored/a.py": "x  =  2\n",
+	})
+}
+
+func TestSkipsSymbolicLinks(t *testing.T) {
+	outside := t.TempDir()
+	writeFiles(t, outside, map[string]string{"a.py": "x  =  1\n"})
+	repository := newRepository(t, map[string]string{})
+	if err := os.Symlink(filepath.Join(outside, "a.py"), filepath.Join(repository, "link.py")); err != nil {
+		t.Fatal(err)
+	}
+	output, exitCode := runFormatIn(t, repository, repository)
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, outside, map[string]string{"a.py": "x  =  1\n"})
+}
+
+func TestFormatsFilesBeyondOneCommandLine(t *testing.T) {
+	// Each file name and the space after it are 103 characters, so 300 of
+	// them are longer than one command line.
+	files := map[string]string{}
+	expected := map[string]string{}
+	for index := range 300 {
+		path := fmt.Sprintf("%s%03d.py", strings.Repeat("a", 96), index)
+		files[path] = "x  =  1\n"
+		expected[path] = "x = 1\n"
+	}
+	repository := newRepository(t, files)
+	output, exitCode := runFormatIn(t, repository, repository, "--all")
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, expected)
+}
+
+func TestCheckSucceedsForFormattedFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{"a.py": "x = 1\n"})
+	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
+	assertSucceeded(t, output, exitCode)
+}
+
+func TestCheckReportsUnformattedFilesWithoutChangingThem(t *testing.T) {
+	repository := newRepository(t, map[string]string{})
+	writeFiles(t, repository, map[string]string{"a.py": "x  =  1\n"})
+	output, exitCode := runFormatIn(t, repository, repository, "--check")
+	if exitCode != 1 || !strings.HasSuffix(output, "Files are not formatted. Run `bazelisk run //:format` to format them.\n") {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+	assertFiles(t, repository, map[string]string{"a.py": "x  =  1\n"})
+}
+
+func TestCheckAllSuggestsFormattingAllFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{"a.py": "x  =  1\n"})
+	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
+	if exitCode != 1 || !strings.HasSuffix(output, "Files are not formatted. Run `bazelisk run //:format -- --all` to format them.\n") {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+}
+
+func TestFormatFailsWhenAFormatterFails(t *testing.T) {
+	repository := newRepository(t, map[string]string{})
+	writeFiles(t, repository, map[string]string{"a.py": "x = (\n"})
+	output, exitCode := runFormatIn(t, repository, repository)
+	if exitCode != 1 || !strings.HasSuffix(output, "ruff: exit status 2\n") {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+}
+
+func TestRequiresBazelRun(t *testing.T) {
+	output, exitCode := runFormat(t, nil)
+	if exitCode != 1 || output != "format must be run with bazel run\n" {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+}
