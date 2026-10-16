@@ -194,8 +194,8 @@ function-call frequency. A path composed of many short calls can receive more
 profiler overhead than a path with the same unprofiled cost and fewer calls.
 That can change the ranking the profiler is supposed to measure. VizTracer also
 records every function entry and exit, which creates unnecessary trace volume
-for generated stress workloads. See the [VizTracer concurrency and tracing
-documentation][viztracer].
+for generated stress workloads. See the
+[VizTracer concurrency and tracing documentation][viztracer].
 
 Deterministic instrumentation remains appropriate when exact call counts are the
 question. It must not be used to rank normal compiler hotspots.
@@ -243,8 +243,9 @@ hooks. Python 3.14t support, however, is currently present only on its
 development branch and is awaiting a release. The upstream validation history
 also shows that earlier free-threaded captures had very high error rates. Moving
 from one pinned development profiler to another would not provide the desired
-reliability improvement. See Austin's [free-threaded support
-issue][austin-issue] and [implementation pull request][austin-pr].
+reliability improvement. See Austin's
+[free-threaded support issue][austin-issue] and
+[implementation pull request][austin-pr].
 
 Austin can be reconsidered after a release and a repository-specific lifecycle,
 bias, and repeatability evaluation.

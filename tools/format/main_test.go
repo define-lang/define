@@ -125,13 +125,15 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 }
 
 func TestFormatsMarkdownAndItsPythonCodeBlocks(t *testing.T) {
+	// prettier keeps setext headings, but dprint rewrites them as ATX
+	// headings.
 	repository := newRepository(t, map[string]string{
-		"a.md": "*  a\n\n```python\nx  =  1\n```\n",
+		"a.md": "A\n=\n\n*  a\n\n```python\nx  =  1\n```\n",
 	})
 	output, exitCode := runFormatIn(t, repository, repository, "--all")
 	assertSucceeded(t, output, exitCode)
 	assertFiles(t, repository, map[string]string{
-		"a.md": "- a\n\n```python\nx = 1\n```\n",
+		"a.md": "# A\n\n- a\n\n```python\nx = 1\n```\n",
 	})
 }
 

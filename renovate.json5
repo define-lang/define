@@ -101,6 +101,14 @@
     {
       customType: "regex",
       managerFilePatterns: ["/^MODULE\\.bazel$/"],
+      matchStrings: [
+        'http_file\\([^)]*?sha256 = "(?<currentDigest>[0-9a-f]{64})",\\s*urls = \\["https://github\\.com/(?<depName>[^/"]+/[^/"]+)/releases/download/(?<currentValue>[^/"]+)/[^"]+"\\],\\s*\\)',
+      ],
+      datasourceTemplate: "github-release-attachments",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^MODULE\\.bazel$/"],
       matchStringsStrategy: "combination",
       matchStrings: [
         'bazel_dep\\(name = "rules_nodejs", version = "(?<rulesNodejsVersion>[^"]+)"\\)',

@@ -254,8 +254,8 @@ every interface position, and verifies it satisfies the requirements for the
 next iteration. This covers the vast majority of practical loops.
 
 Loop bodies that contain bag emptiness conditionals require the compiler to
-consider multiple code paths, but the analysis is still modular and per-action
---- no whole-program reasoning is needed.
+consider multiple code paths, but the analysis is still modular and
+per-action --- no whole-program reasoning is needed.
 
 ### Detecting Misuse
 

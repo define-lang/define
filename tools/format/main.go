@@ -27,14 +27,16 @@ import (
 	"github.com/bazelbuild/rules_go/go/runfiles"
 )
 
-// Runfiles paths of the formatter binaries, set at link time.
+// Runfiles paths of the formatter binaries and plugins, set at link time.
 var (
-	bufRlocationPath        string
-	buildifierRlocationPath string
-	gofumptRlocationPath    string
-	prettierRlocationPath   string
-	ruffRlocationPath       string
-	rustfmtRlocationPath    string
+	bufRlocationPath                  string
+	buildifierRlocationPath           string
+	dprintMarkdownPluginRlocationPath string
+	dprintRlocationPath               string
+	gofumptRlocationPath              string
+	prettierRlocationPath             string
+	ruffRlocationPath                 string
+	rustfmtRlocationPath              string
 )
 
 // Windows limits a command line to 32767 characters.
@@ -58,6 +60,9 @@ type formatter struct {
 	// A single-threaded formatter's files are split across several
 	// processes.
 	singleThreaded bool
+	// pluginRlocationPaths are the runfiles paths of plugins that the
+	// formatter takes after --plugins, followed by -- before the files.
+	pluginRlocationPaths []string
 }
 
 var (
@@ -72,6 +77,14 @@ var (
 		fixArguments:   []string{"-mode=fix", "-lint=fix"},
 		checkArguments: []string{"-mode=check", "-lint=warn"},
 		singleThreaded: true,
+	}
+	dprint = &formatter{
+		rlocationPath: dprintRlocationPath,
+		// At the default log level, dprint reports every file it formats, and
+		// at lower log levels its check reports no diffs.
+		fixArguments:         []string{"fmt", "--log-level=warn"},
+		checkArguments:       []string{"check"},
+		pluginRlocationPaths: []string{dprintMarkdownPluginRlocationPath},
 	}
 	gofumpt = &formatter{
 		rlocationPath: gofumptRlocationPath,
@@ -101,7 +114,7 @@ var (
 )
 
 // The formatters run in this order so that their output is deterministic.
-var formatters = []*formatter{buf, buildifier, gofumpt, prettier, ruff, rustfmt}
+var formatters = []*formatter{buf, buildifier, dprint, gofumpt, prettier, ruff, rustfmt}
 
 // Formatters rewrite whole files, so a file with several formatters is
 // formatted by one of them at a time, in order.
@@ -112,7 +125,7 @@ var formattersByExtension = map[string][]*formatter{
 	".json":  {prettier},
 	".json5": {prettier},
 	// ruff formats the Python code blocks in Markdown files.
-	".md":    {prettier, ruff},
+	".md":    {dprint, ruff},
 	".proto": {buf},
 	".py":    {ruff},
 	".pyi":   {ruff},
@@ -179,6 +192,17 @@ func formatterCommands(allRunfiles *runfiles.Runfiles, workspace string, check b
 		arguments := formatter.fixArguments
 		if check {
 			arguments = formatter.checkArguments
+		}
+		if len(formatter.pluginRlocationPaths) > 0 {
+			arguments = append(append([]string{}, arguments...), "--plugins")
+			for _, pluginRlocationPath := range formatter.pluginRlocationPaths {
+				plugin, err := allRunfiles.Rlocation(pluginRlocationPath)
+				if err != nil {
+					log.Fatal(err)
+				}
+				arguments = append(arguments, plugin)
+			}
+			arguments = append(arguments, "--")
 		}
 		processes := 1
 		if formatter.singleThreaded {

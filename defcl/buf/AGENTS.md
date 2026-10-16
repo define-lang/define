@@ -9,8 +9,8 @@ This directory contains a custom buf lint plugin written in Go.
 
 ## Formatting
 
-- Format Go code with `go fmt ./...`
-- Format .md files with `prettier --write`
+- Format with
+  `bazelisk run --noshow_progress --ui_event_filters=-info //:format`
 
 ## Adding New Rules
 

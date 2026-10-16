@@ -155,28 +155,27 @@ Languages like Haskell do something called Optimistic Concurrency with Software
 Transactional Memory. It works by treating actions like database transactions.
 Here's how it does that:
 
-1.  **The Recording Phase**: When an action (transaction) starts, it creates a
-    private log.
-    - Every time it reads a variable (like a ball in `position</my_ball>`), it
-      records the version it saw.
-    - Every time it writes to a variable, it writes to the private log, not the
-      real universe.
+1. **The Recording Phase**: When an action (transaction) starts, it creates a
+   private log.
+   - Every time it reads a variable (like a ball in `position</my_ball>`), it
+     records the version it saw.
+   - Every time it writes to a variable, it writes to the private log, not the
+     real universe.
 
-2.  **The Validation Phase (Commit)**: When the action finishes, the STM runtime
-    pauses for a microsecond to check the "Real Universe."
-    - It asks: "Has any variable I read changed since I started?"
+2. **The Validation Phase (Commit)**: When the action finishes, the STM runtime
+   pauses for a microsecond to check the "Real Universe."
+   - It asks: "Has any variable I read changed since I started?"
 
-3.  **The Resolution**:
-    - **Success**: If nothing changed, the private log is flushed to the real
-      universe instantaneously.
+3. **The Resolution**:
+   - **Success**: If nothing changed, the private log is flushed to the real
+     universe instantaneously.
 
-    - **Conflict**: If `action</move_left>` finished 1 nanosecond ago and moved
-      a ball into `position</left>`, then the parallel `action</move_right>`
-      transaction realizes its snapshot is stale. It automatically abandons
-      everything.
+   - **Conflict**: If `action</move_left>` finished 1 nanosecond ago and moved a
+     ball into `position</left>`, then the parallel `action</move_right>`
+     transaction realizes its snapshot is stale. It automatically abandons
+     everything.
 
-4.  **Retries**: When a transaction fails, the runtime automatically restarts
-    it.
+4. **Retries**: When a transaction fails, the runtime automatically restarts it.
 
 This is super cool, but it doesn't solve our problems for Define, because it
 means that when we statically analyze the program, we can't know whether

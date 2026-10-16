@@ -173,6 +173,18 @@ multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitoo
 multitool.hub(lockfile = "//tools:multitool.lock.json")
 use_repo(multitool, "multitool")
 
+# --- dprint plugins ---
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+# dprint only loads plugins whose file names end in .wasm.
+http_file(
+    name = "dprint_plugin_markdown",
+    downloaded_file_path = "markdown.wasm",
+    sha256 = "5cebd0459bf1aa13fb027331720158d03e2a897b1d9f7b3bf93cac661ca4ddbd",
+    urls = ["https://github.com/dprint/dprint-plugin-markdown/releases/download/0.26.0/plugin.wasm"],
+)
+
 # --- NodeJS ---
 
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
