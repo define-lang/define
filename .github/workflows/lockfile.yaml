@@ -6,6 +6,8 @@ on:
       - "renovate/**"
     paths:
       - MODULE.bazel
+      # The crate extension records facts from Cargo.lock in MODULE.bazel.lock.
+      - Cargo.lock
 
 permissions: {}
 

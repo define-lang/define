@@ -2,6 +2,10 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
   automerge: false,
+  // The lockfile workflow commits to Renovate branches as this author. Renovate
+  // must keep rebasing those branches so the lockfile is regenerated against
+  // the latest main.
+  gitIgnoredAuthors: ["41898282+github-actions[bot]@users.noreply.github.com"],
   postUpdateOptions: ["gomodTidy"],
   lockFileMaintenance: {
     enabled: true,

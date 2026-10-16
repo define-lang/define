@@ -130,3 +130,16 @@ jobs:
           format: false
           pr_comment: false
           push: false
+
+      # Every Bazel command updates a stale lockfile, so a lockfile changed by
+      # this job was stale. Bot pull requests are skipped because the lockfile
+      # workflow fixes them with a commit that does not rerun CI.
+      - name: Check that MODULE.bazel.lock is up to date
+        if: >-
+          ${{
+            github.event.pull_request.user.login != 'renovate[bot]' &&
+            github.event.pull_request.user.login != 'dependabot[bot]'
+          }}
+        run: |
+          bazelisk mod deps --noshow_progress --lockfile_mode=update
+          git diff --exit-code MODULE.bazel.lock
