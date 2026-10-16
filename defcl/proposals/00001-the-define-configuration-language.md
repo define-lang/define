@@ -202,8 +202,8 @@ if config["log_level"] == "DEBUG":
     enable_debugging()
 
 # If I typo the string, no programming language will even warn me.
-if config["log_level"] == "DBUG": # <--- BUG!
-  ...
+if config["log_level"] == "DBUG":  # <--- BUG!
+    ...
 ```
 
 The solutions for this are always language-specific, like using Pydantic in

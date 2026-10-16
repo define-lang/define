@@ -124,6 +124,17 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 	})
 }
 
+func TestFormatsMarkdownAndItsPythonCodeBlocks(t *testing.T) {
+	repository := newRepository(t, map[string]string{
+		"a.md": "*  a\n\n```python\nx  =  1\n```\n",
+	})
+	output, exitCode := runFormatIn(t, repository, repository, "--all")
+	assertSucceeded(t, output, exitCode)
+	assertFiles(t, repository, map[string]string{
+		"a.md": "- a\n\n```python\nx = 1\n```\n",
+	})
+}
+
 func TestDefaultFormatsOnlyChangedAndUntrackedFiles(t *testing.T) {
 	repository := newRepository(t, map[string]string{
 		".gitignore":   "ignored.py\n",

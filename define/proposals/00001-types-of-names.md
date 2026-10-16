@@ -48,9 +48,11 @@ take this Python program:
 ```Python
 import time
 
+
 class Clock:
     def get_time(self) -> float:
         return time.time()
+
 
 def main():
     my_clock = Clock()
@@ -77,8 +79,10 @@ It is quite easy for a programmer to make a mistake like:
 ```Python
 import time
 
+
 class clock:
     pass
+
 
 clock = time.time()
 ```

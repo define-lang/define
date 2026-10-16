@@ -15,8 +15,10 @@ example, this Python program routinely confuses Python programmers:
 ```Python
 my_number = 0
 
+
 def set_number_to_ten():
     my_number = 10
+
 
 set_number_to_ten()
 print(my_number)
@@ -28,8 +30,10 @@ the same as the `my_number` outside of the function. This, however, works:
 ```Python
 my_number = 10
 
+
 def print_my_number():
     print(my_number)
+
 
 print_my_number()
 ```
@@ -39,9 +43,11 @@ That prints `10`. But _this_ does not work:
 ```Python
 my_number = 10
 
+
 def print_my_number():
     print(my_number)
     my_number = 20
+
 
 print_my_number()
 ```
@@ -105,6 +111,7 @@ import time
 
 now = time.time
 
+
 def one_minute_later_than_now():
     one_minute_in_seconds = 60
     return now() + one_minute_in_seconds
@@ -114,6 +121,7 @@ def one_minute_later_than_now():
 
 ```Python
 import clock
+
 
 def start_and_end_time():
     return (clock.now(), clock.one_minute_later_than_now())
@@ -131,6 +139,7 @@ Imagine you have this Python file:
 
 ```Python
 import uuid
+
 
 def my_function():
     time = uuid.uuid1()

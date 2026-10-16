@@ -204,6 +204,9 @@ force-exclude = true
 exclude = [
     "**/testdata/**/expected/**/*.py",
     "**/testdata/**/expected_trace/**/*.py",
+    # Its code blocks show the generated code exactly as the code generator
+    # writes it.
+    "define/compiler/codegen/literal/python/generated_code_examples.md",
 ]
 
 [tool.pytest.ini_options]

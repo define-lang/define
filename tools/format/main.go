@@ -103,25 +103,28 @@ var (
 // The formatters run in this order so that their output is deterministic.
 var formatters = []*formatter{buf, buildifier, gofumpt, prettier, ruff, rustfmt}
 
-var formattersByExtension = map[string]*formatter{
-	".bazel": buildifier,
-	".bzl":   buildifier,
-	".go":    gofumpt,
-	".json":  prettier,
-	".json5": prettier,
-	".md":    prettier,
-	".proto": buf,
-	".py":    ruff,
-	".pyi":   ruff,
-	".rs":    rustfmt,
-	".yaml":  prettier,
-	".yml":   prettier,
+// Formatters rewrite whole files, so a file with several formatters is
+// formatted by one of them at a time, in order.
+var formattersByExtension = map[string][]*formatter{
+	".bazel": {buildifier},
+	".bzl":   {buildifier},
+	".go":    {gofumpt},
+	".json":  {prettier},
+	".json5": {prettier},
+	// ruff formats the Python code blocks in Markdown files.
+	".md":    {prettier, ruff},
+	".proto": {buf},
+	".py":    {ruff},
+	".pyi":   {ruff},
+	".rs":    {rustfmt},
+	".yaml":  {prettier},
+	".yml":   {prettier},
 }
 
-func formatterFor(path string) *formatter {
+func formattersFor(path string) []*formatter {
 	name := filepath.Base(path)
 	if name == "BUILD" {
-		return buildifier
+		return []*formatter{buildifier}
 	}
 	return formattersByExtension[filepath.Ext(name)]
 }
@@ -140,13 +143,31 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	files := formattableFiles(workspace, listFiles(workspace, *all || len(pathspecs) > 0, pathspecs))
+	stages := formattableFiles(workspace, listFiles(workspace, *all || len(pathspecs) > 0, pathspecs))
 
 	allRunfiles, err := runfiles.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	var commands []*exec.Cmd
+	succeeded := true
+	for _, files := range stages {
+		succeeded = runAll(formatterCommands(allRunfiles, workspace, *check, files)) && succeeded
+	}
+	if !succeeded {
+		if *check && *all {
+			log.Fatal("Files are not formatted. Run `bazelisk run //:format -- --all` to format them.")
+		}
+		if *check {
+			log.Fatal("Files are not formatted. Run `bazelisk run //:format` to format them.")
+		}
+		os.Exit(1)
+	}
+}
+
+// formatterCommands returns the formatter runs that format the files, which
+// are grouped by formatter.
+func formatterCommands(allRunfiles *runfiles.Runfiles, workspace string, check bool, files map[*formatter][]string) []*exec.Cmd {
+	var result []*exec.Cmd
 	for _, formatter := range formatters {
 		if len(files[formatter]) == 0 {
 			continue
@@ -156,7 +177,7 @@ func main() {
 			log.Fatal(err)
 		}
 		arguments := formatter.fixArguments
-		if *check {
+		if check {
 			arguments = formatter.checkArguments
 		}
 		processes := 1
@@ -167,18 +188,10 @@ func main() {
 			command := exec.Command(tool, append(append([]string{}, arguments...), batch...)...)
 			command.Dir = workspace
 			command.Env = append(os.Environ(), allRunfiles.Env()...)
-			commands = append(commands, command)
+			result = append(result, command)
 		}
 	}
-	if !runAll(commands) {
-		if *check && *all {
-			log.Fatal("Files are not formatted. Run `bazelisk run //:format -- --all` to format them.")
-		}
-		if *check {
-			log.Fatal("Files are not formatted. Run `bazelisk run //:format` to format them.")
-		}
-		os.Exit(1)
-	}
+	return result
 }
 
 // workspacePathspecs converts paths relative to the directory where the user
@@ -209,13 +222,14 @@ func listFiles(workspace string, allTracked bool, pathspecs []string) []string {
 	return append(splitNul(tracked), splitNul(untracked)...)
 }
 
-// formattableFiles groups the regular files that have a formatter by their
-// formatter. Symbolic links are skipped because their targets are formatted
+// formattableFiles groups the regular files that have formatters into stages,
+// where stage N holds each file's Nth formatter, and groups each stage's files
+// by formatter. Symbolic links are skipped because their targets are formatted
 // under their own paths.
-func formattableFiles(workspace string, paths []string) map[*formatter][]string {
+func formattableFiles(workspace string, paths []string) []map[*formatter][]string {
 	var candidates []string
 	for _, path := range paths {
-		if formatterFor(path) == nil {
+		if formattersFor(path) == nil {
 			continue
 		}
 		info, err := os.Lstat(filepath.Join(workspace, path))
@@ -235,14 +249,19 @@ func formattableFiles(workspace string, paths []string) map[*formatter][]string 
 	}
 	attributeArguments := append([]string{"check-attr", "-z", "--stdin"}, ignoredAttributes...)
 	ignored := ignoredFiles(git(workspace, []byte(strings.Join(candidates, "\x00")), attributeArguments...))
-	files := map[*formatter][]string{}
+	var stages []map[*formatter][]string
 	for _, path := range candidates {
-		if !ignored[path] {
-			formatter := formatterFor(path)
-			files[formatter] = append(files[formatter], path)
+		if ignored[path] {
+			continue
+		}
+		for stage, stageFormatter := range formattersFor(path) {
+			if stage == len(stages) {
+				stages = append(stages, map[*formatter][]string{})
+			}
+			stages[stage][stageFormatter] = append(stages[stage][stageFormatter], path)
 		}
 	}
-	return files
+	return stages
 }
 
 // ignoredFiles reads the output of `git check-attr -z`, which is a sequence

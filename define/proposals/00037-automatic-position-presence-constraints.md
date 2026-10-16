@@ -60,6 +60,7 @@ def process_middle_element(data: list[int]) -> int:
     value = data[index]
     return value
 
+
 def compute_safe_index(max_val: int) -> int:
     return max_val // 2
 ```

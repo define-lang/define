@@ -189,6 +189,7 @@ class Adder:
     def add(x, y):
         return x + y
 
+
 my_adder = Adder()
 print(myAdder.__class__)
 ```
@@ -923,6 +924,7 @@ class Toaster:
     def toast(self, bread_type: str) -> str:
         return "toasted " + bread_type
 
+
 my_toaster = Toaster()
 my_bread = "white bread"
 result = my_toaster.toast(my_bread)
@@ -1415,9 +1417,9 @@ this into something like a form:
 
 ```Python
 class Color:
-    hue : int
-    saturation : int
-    luminance : int
+    hue: int
+    saturation: int
+    luminance: int
 ```
 
 In the way that we think about universes, there are a few different ways we

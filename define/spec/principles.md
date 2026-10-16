@@ -117,16 +117,18 @@ inheritance, like this:
 
 ```Python
 class SuperClassOne:
-  def cool_function(self):
-    print("I'm cool!")
+    def cool_function(self):
+        print("I'm cool!")
+
 
 class SuperClassTwo:
-  def cool_function(self):
-    print("I am also cool!")
+    def cool_function(self):
+        print("I am also cool!")
+
 
 class MyClass(SuperClassOne, SuperClassTwo):
-  def cool_function(self):
-    super().cool_function()
+    def cool_function(self):
+        super().cool_function()
 ```
 
 That will print `I'm cool!` followed by `I am also cool!`. If the superclasses
@@ -157,9 +159,9 @@ into Define:
 
 ```Python
 def do_crazy_stuff(foo, bar, baz):
-  qux = foo + bar
-  my_value = qux * baz
-  return my_value
+    qux = foo + bar
+    my_value = qux * baz
+    return my_value
 ```
 
 That looks straightforward, but really it's sort of crazy because of the lack of
