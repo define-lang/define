@@ -22,8 +22,8 @@ py_test(
     ],
     env = {"AST_GREP": "$(rlocationpath @multitool//tools/ast-grep)"},
     deps = [
+        "//tools:runfiles",
         "@pypi//pyyaml",
-        "@rules_python//python/runfiles",
     ],
 )
 

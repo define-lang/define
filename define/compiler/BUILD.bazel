@@ -239,9 +239,7 @@ py_test(
     # The compiler runs in a subprocess, so this test's own process executes no
     # instrumented code and the coverage reporter fails on an empty data set.
     tags = ["no-coverage"],
-    deps = [
-        ":test_runfiles",
-    ],
+    deps = ["//tools:runfiles"],
 )
 
 py_test(
@@ -287,14 +285,6 @@ py_test(
     ],
 )
 
-py_library(
-    name = "test_runfiles",
-    testonly = True,
-    srcs = ["test_runfiles.py"],
-    visibility = ["//define/compiler/resource_tests:__pkg__"],
-    deps = ["@rules_python//python/runfiles"],
-)
-
 # --- Format checking ---
 
 format_test(
@@ -330,7 +320,6 @@ pyright_test(
         ":name_types",
         ":overall_stats",
         ":overall_stats_test",
-        ":test_runfiles",
     ],
 )
 

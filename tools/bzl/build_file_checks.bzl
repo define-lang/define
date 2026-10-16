@@ -20,6 +20,17 @@ _CODEGEN_TESTDATA_TARGETS = ["codegen_testdata", "tracing_testdata"]
 # rules_go instantiates go_binary through an internal macro.
 _FUNCTION_ALIASES = {"go_binary_macro": "go_binary"}
 
+# These only resolve where Bazel creates a runfiles directory, which Windows
+# does not do by default.
+_RUNFILES_DIRECTORY_VARIABLES = ["location", "locations", "rootpath", "rootpaths"]
+
+# Iterating every attribute of every rule dominates package loading, so the
+# check reads only the attributes where these variables are expanded.
+_MAKE_VARIABLE_ATTRIBUTES = ["args", "cmd", "cmd_bash", "cmd_bat", "cmd_ps", "copts", "env", "linkopts"]
+
+# aspect_rules_lint's format_test passes $(locations) to its own test runner.
+_THIRD_PARTY_RUNFILES_DIRECTORY_FUNCTIONS = ["format_test"]
+
 def _label_name(label):
     return label.split(":")[-1].split("/")[-1]
 
@@ -144,6 +155,50 @@ def _pyright_violations(calls, rules):
         if call.function in _PYTHON_FUNCTIONS and call.name not in covered
     ]
 
+def _runfiles_directory_variables(value):
+    if "$(" not in value:
+        return []
+    variables = []
+    pieces = value.split("$(")
+    for index in range(1, len(pieces)):
+        preceding = pieces[index - 1]
+
+        # "$$" is an escaped "$", so "$(" starts a variable only after an even
+        # number of other "$".
+        if (len(preceding) - len(preceding.rstrip("$"))) % 2 == 1:
+            continue
+        variable = pieces[index].partition(")")[0].partition(" ")[0]
+        if variable in _RUNFILES_DIRECTORY_VARIABLES:
+            variables.append(variable)
+    return variables
+
+def _attribute_strings(value):
+    value_type = type(value)
+    if value_type == "string":
+        return [value]
+    if value_type == "list" or value_type == "tuple":
+        return [element for element in value if type(element) == "string"]
+    if value_type == "dict":
+        strings = []
+        for key, element in value.items():
+            strings.extend([text for text in [key, element] if type(text) == "string"])
+        return strings
+    return []
+
+def _runfiles_directory_variable_violations(rules):
+    violations = []
+    for rule_name, rule in rules:
+        if rule.get("generator_function") in _THIRD_PARTY_RUNFILES_DIRECTORY_FUNCTIONS:
+            continue
+        for attribute in _MAKE_VARIABLE_ATTRIBUTES:
+            for text in _attribute_strings(rule.get(attribute)):
+                for variable in _runfiles_directory_variables(text):
+                    violations.append(
+                        '"%s" uses $(%s) in "%s"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions' %
+                        (rule_name, variable, attribute),
+                    )
+    return violations
+
 def _codegen_testdata_violations(calls):
     if [call for call in calls if call.function == "pyright_test"]:
         return []
@@ -168,7 +223,8 @@ def build_file_violations(package_name, rules):
         _name_violations(calls, package_name) +
         _order_violations(calls) +
         _pyright_violations(calls, rules) +
-        _codegen_testdata_violations(calls)
+        _codegen_testdata_violations(calls) +
+        _runfiles_directory_variable_violations(rules)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable

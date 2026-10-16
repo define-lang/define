@@ -12,6 +12,7 @@ from unittest import mock
 
 import click.testing
 
+from tools import runfiles
 from tools.profiler import (
     analyzer,
     process_events,
@@ -82,7 +83,7 @@ while time.monotonic() < end:
 
     result = subprocess.run(
         [
-            str(test_helpers.runfile("PROFILER_BINARY")),
+            str(runfiles.resolve_from_env("PROFILER_BINARY")),
             "--profile",
             str(profile_path),
             "--workload",
@@ -144,7 +145,7 @@ def test_main_profiles_relative_target(
     release_thread.start()
     profile_process = subprocess.Popen(
         [
-            str(test_helpers.runfile("PROFILER_BINARY")),
+            str(runfiles.resolve_from_env("PROFILER_BINARY")),
             "--profile",
             str(profile_path),
             "--workload",
@@ -404,7 +405,7 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     _assert_complete_profile(profile_path)
     analysis_result = subprocess.run(
         [
-            str(test_helpers.runfile("ANALYZER_BINARY")),
+            str(runfiles.resolve_from_env("ANALYZER_BINARY")),
             "--profile",
             str(profile_path),
             "--limit",
@@ -434,7 +435,7 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
 # PRF-031: Retired-thread fixture. PRF-033: Waiting-thread fixture.
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
 def test_continuous_profile_bounds_retired_thread_attribution():
-    profile = schema.load(test_helpers.runfile("PROFILER_CONTINUOUS_PROFILE"))
+    profile = schema.load(runfiles.resolve_from_env("PROFILER_CONTINUOUS_PROFILE"))
     observations, _, _ = test_helpers.assert_observations_through_exit(profile)
     sampled_functions = _sampled_functions(profile, observations)
     assert {
@@ -540,7 +541,7 @@ def _assert_cross_thread_handoffs(
 def test_wall_critical_path_recovers_cross_thread_handoffs(
     capsys: pytest.CaptureFixture[str],
 ):
-    profile_path = test_helpers.runfile("PROFILER_CRITICAL_PATH_PROFILE")
+    profile_path = runfiles.resolve_from_env("PROFILER_CRITICAL_PATH_PROFILE")
     profile = schema.load(profile_path)
     assert profile.complete is True
     assert profile.success is True
@@ -557,7 +558,7 @@ def test_wall_critical_path_recovers_cross_thread_handoffs(
 
     analysis_result = subprocess.run(
         [
-            str(test_helpers.runfile("ANALYZER_BINARY")),
+            str(runfiles.resolve_from_env("ANALYZER_BINARY")),
             "--profile",
             str(profile_path),
             "--limit",
@@ -584,7 +585,9 @@ def test_wall_critical_path_recovers_cross_thread_handoffs(
 def test_wall_critical_path_reports_unobserved_handoff(
     capsys: pytest.CaptureFixture[str],
 ):
-    profile_path = test_helpers.runfile("PROFILER_UNRESOLVED_CRITICAL_PATH_PROFILE")
+    profile_path = runfiles.resolve_from_env(
+        "PROFILER_UNRESOLVED_CRITICAL_PATH_PROFILE"
+    )
     profile = schema.load(profile_path)
 
     assert profile.complete is True
@@ -617,7 +620,7 @@ def test_wall_critical_path_reports_unobserved_handoff(
 
     analysis_result = subprocess.run(
         [
-            str(test_helpers.runfile("ANALYZER_BINARY")),
+            str(runfiles.resolve_from_env("ANALYZER_BINARY")),
             "--profile",
             str(profile_path),
         ],
@@ -636,7 +639,7 @@ def test_wall_critical_path_reports_unobserved_handoff(
 # PRF-047: Multi-threaded critical path. PRF-048: Critical-path fixture.
 def test_real_profile_reports_ambiguous_new_worker_handoff():
     profile = schema.load(
-        test_helpers.runfile("PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE")
+        runfiles.resolve_from_env("PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE")
     )
 
     analysis = wall_analyzer.analyze(profile)
@@ -669,7 +672,7 @@ def test_real_profile_reports_ambiguous_new_worker_handoff():
 # PRF-047: Multi-threaded critical path. PRF-048: Critical-path fixture.
 def test_real_profile_reports_worker_waiting_from_first_observation():
     profile = schema.load(
-        test_helpers.runfile("PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE")
+        runfiles.resolve_from_env("PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE")
     )
 
     analysis = wall_analyzer.analyze(profile)
@@ -900,7 +903,7 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
 # PRF-049: Event-driven coordination.
 def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
     profile_path = tmp_path / "profile.jsonl"
-    target = test_helpers.runfile("PROFILER_CONTINUOUS_SOURCE")
+    target = runfiles.resolve_from_env("PROFILER_CONTINUOUS_SOURCE")
     signal_sent = threading.Event()
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
@@ -957,7 +960,7 @@ def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
 # PRF-049: Event-driven coordination.
 def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     profile_path = tmp_path / "stopped-interrupt.jsonl"
-    target = test_helpers.runfile("PROFILER_INTERRUPT_SOURCE")
+    target = runfiles.resolve_from_env("PROFILER_INTERRUPT_SOURCE")
     signal_sent = threading.Event()
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)

@@ -96,4 +96,10 @@ toolchain(
     toolchain_type = "@rules_rust//extensions/pyo3:rust_toolchain_type",
 )
 
+bzl_library(
+    name = "validate_proposals",
+    srcs = ["validate_proposals.bzl"],
+    visibility = ["//visibility:public"],
+)
+
 check_build_file()

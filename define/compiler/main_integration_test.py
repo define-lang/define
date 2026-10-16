@@ -12,7 +12,7 @@ import os
 import subprocess
 from typing import TYPE_CHECKING
 
-from define.compiler import test_runfiles
+from tools import runfiles
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -32,7 +32,7 @@ _CONSTRUCTOR_SOURCE = (
 
 
 def _binary_path() -> Path:
-    return test_runfiles.resolve_from_env("MAIN_BINARY")
+    return runfiles.resolve_from_env("MAIN_BINARY")
 
 
 def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE) -> None:

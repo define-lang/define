@@ -1,18 +1,15 @@
-load("@bazel_skylib//rules:native_binary.bzl", "native_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:validate_proposals.bzl", "validate_proposals_test")
 
 filegroup(
     name = "proposals",
     srcs = glob(["0*.md"]),
 )
 
-native_test(
+validate_proposals_test(
     name = "validate_proposals_test",
     size = "small",
-    src = "//tools:validate_proposals",
-    out = "validate_proposals_test_runner",
-    args = ["$(rootpaths :proposals)"],
-    data = [":proposals"],
+    proposals = ":proposals",
 )
 
 check_build_file()

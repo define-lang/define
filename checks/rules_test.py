@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 import subprocess
 from pathlib import Path
 from typing import cast
 
 import yaml
-from python.runfiles import runfiles
+
+from tools import runfiles
 
 _RULES = Path("checks/rules")
 _RULE_TESTS = Path("checks/rule-tests")
@@ -19,16 +19,6 @@ def _ids_by_path(directory: Path) -> dict[Path, str]:
         document = cast("dict[str, object]", yaml.safe_load(path.read_text()))
         ids[path] = cast("str", document["id"])
     return ids
-
-
-def _ast_grep() -> str:
-    runfiles_resolver = runfiles.Runfiles.Create()
-    if runfiles_resolver is None:
-        raise RuntimeError("Bazel runfiles are unavailable")
-    resolved = runfiles_resolver.Rlocation(os.environ["AST_GREP"])
-    if resolved is None:
-        raise FileNotFoundError(os.environ["AST_GREP"])
-    return resolved
 
 
 def test_rule_ids_match_file_names():
@@ -65,7 +55,7 @@ def test_snapshots_match_invalid_cases():
 
 def test_rule_tests_pass():
     completed = subprocess.run(
-        [_ast_grep(), "test", "--color=never"],
+        [runfiles.resolve_from_env("AST_GREP"), "test", "--color=never"],
         capture_output=True,
         text=True,
         check=False,

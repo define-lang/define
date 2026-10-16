@@ -118,7 +118,7 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
         srcs = ["//tools/bzl:pyright_test_runner.py"] + srcs,
         main = "//tools/bzl:pyright_test_runner.py",
         args = [
-            "$(rootpath //:basedpyright)",
+            "$(rlocationpath //:basedpyright)",
             native.package_name(),
         ],
         data = [
@@ -127,6 +127,7 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
             "//typestubs:typestubs",
         ],
         deps = [":" + name + "_deps"] + [
+            "//tools:runfiles",
             "@pypi//types_protobuf",
             "@pypi//types_pyyaml",
         ],

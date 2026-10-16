@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import typing
@@ -9,9 +8,10 @@ from pathlib import Path
 from unittest import mock
 
 import click.testing
-from python.runfiles import runfiles
+from python.runfiles import runfiles as python_runfiles
 
 from tools import profile_orchestration as run_profile
+from tools import runfiles
 from tools.profiler import analyzer, perf_analyzer, perf_test_support, schema
 
 if typing.TYPE_CHECKING:
@@ -30,22 +30,10 @@ _CONSTRUCTOR_SOURCE = (
 )
 
 
-def _runfile(variable: str) -> Path:
-    # PRF-041: Realistic tests.
-    location = Path(os.environ[variable])
-    if location.exists():
-        return location
-    runfiles_resolver = runfiles.Runfiles.Create()
-    assert runfiles_resolver is not None
-    resolved = runfiles_resolver.Rlocation(str(location))
-    assert resolved is not None
-    return Path(resolved)
-
-
 def _capture(arguments: list[str]) -> click.testing.Result:
     # PRF-012: Orchestration boundary. PRF-041: Realistic tests.
-    compiler_path = _runfile("COMPILER_BINARY")
-    runfiles_resolver = runfiles.Runfiles.Create()
+    compiler_path = runfiles.resolve_from_env("COMPILER_BINARY")
+    runfiles_resolver = python_runfiles.Runfiles.Create()
     assert runfiles_resolver is not None
     target_environment = run_profile._target_environment()  # pyright: ignore[reportPrivateUsage]
     target_environment.update(runfiles_resolver.EnvVars())
@@ -71,7 +59,11 @@ def _capture(arguments: list[str]) -> click.testing.Result:
 def _analyze(profile_path: Path) -> str:
     # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
     completed = subprocess.run(
-        [str(_runfile("ANALYZER_BINARY")), "--profile", str(profile_path)],
+        [
+            str(runfiles.resolve_from_env("ANALYZER_BINARY")),
+            "--profile",
+            str(profile_path),
+        ],
         capture_output=True,
         text=True,
         check=False,

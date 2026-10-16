@@ -1,5 +1,8 @@
-load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 filegroup(
     name = "github_workflows",
@@ -8,43 +11,56 @@ filegroup(
 
 # Runs every rule, including those that ask the GitHub API, which a sandboxed
 # test cannot reach.
-native_binary(
+py_binary(
     name = "jactionlint_online",
-    src = "jactionlint_online.sh",
-    out = "jactionlint_online_runner",
+    srcs = ["jactionlint_online.py"],
     args = [
-        "$(rootpath @multitool//tools/jactionlint)",
-        "$(rootpath @multitool//tools/shellcheck)",
-        "$(rootpath @multitool//tools/ruff)",
+        "$(rlocationpath @multitool//tools/jactionlint)",
+        "$(rlocationpath @multitool//tools/shellcheck)",
+        "$(rlocationpath @multitool//tools/ruff)",
     ],
     data = [
         "@multitool//tools/jactionlint",
         "@multitool//tools/ruff",
         "@multitool//tools/shellcheck",
     ],
+    deps = ["//tools:runfiles"],
 )
 
 # The script checkers are pinned because jactionlint otherwise uses whatever
 # shellcheck and pyflakes happen to be on PATH.
-native_test(
+py_test(
     name = "jactionlint_test",
     size = "small",
-    src = "@multitool//tools/jactionlint",
-    out = "jactionlint_test_runner",
-    args = [
-        "--no-color",
-        "--config-file=$(rootpath jactionlint.yaml)",
-        "--no-online",
-        "--strict-exit",
-        "--shellcheck=$(rootpath @multitool//tools/shellcheck)",
-        "--ruff=$(rootpath @multitool//tools/ruff)",
-        "$(rootpaths :github_workflows)",
-    ],
+    srcs = ["jactionlint_test.py"],
     data = [
         "jactionlint.yaml",
         ":github_workflows",
+        "@multitool//tools/jactionlint",
         "@multitool//tools/ruff",
         "@multitool//tools/shellcheck",
+    ],
+    env = {
+        "GITHUB_WORKFLOWS": "$(rlocationpaths :github_workflows)",
+        "JACTIONLINT": "$(rlocationpath @multitool//tools/jactionlint)",
+        "JACTIONLINT_CONFIG": "$(rlocationpath jactionlint.yaml)",
+        "RUFF": "$(rlocationpath @multitool//tools/ruff)",
+        "SHELLCHECK": "$(rlocationpath @multitool//tools/shellcheck)",
+    },
+    deps = ["//tools:runfiles"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":jactionlint_online",
+        ":jactionlint_test",
     ],
 )
 

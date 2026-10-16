@@ -9,8 +9,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-RUNFILES_WORKSPACE = Path(__file__).absolute().parent.parent
-REPO_ROOT = Path(os.environ.get("BUILD_WORKSPACE_DIRECTORY", RUNFILES_WORKSPACE))
+from tools import runfiles
+
+REPO_ROOT = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 
 LARK_TARGETS = [
     "//define/compiler/parsing/lark:lark_standalone_gen",
@@ -23,6 +24,10 @@ LARK_FILES = [
 ]
 
 TEMPLATE_RENDERER_PACKAGE = "define/compiler/codegen/literal/python"
+
+# re2 makes only its py_library public, so its files are found by their path in
+# that library's runfiles, using re2's apparent repository name.
+RE2_PYTHON_PACKAGE = "re2/python"
 
 BUF_VALIDATE_SRC = (
     "external/protovalidate+/proto/protovalidate/buf/validate"
@@ -39,9 +44,8 @@ def _bazelisk() -> str:
     return path
 
 
-def sync_venv(uv_location: str):
+def sync_venv(uv_path: Path):
     """Synchronize the local venv with Bazel's Python interpreter."""
-    uv_path = (RUNFILES_WORKSPACE / uv_location).resolve()
     uv_environment = os.environ.copy()
     _ = uv_environment.pop("VIRTUAL_ENV", None)
     _ = subprocess.run(
@@ -157,12 +161,11 @@ def _copy_re2():
         check=True,
     )
     site_packages = Path(site_packages_result.stdout.strip())
-    re2_runfiles = RUNFILES_WORKSPACE.parent / "re2+" / "python"
-    re2_source = re2_runfiles / "re2.py"
+    re2_source = runfiles.resolve(f"{RE2_PYTHON_PACKAGE}/re2.py")
     _copy_file(re2_source, site_packages / "re2.py")
 
     extension_name = "_re2.pyd" if os.name == "nt" else "_re2.so"
-    extension_source = re2_runfiles / extension_name
+    extension_source = runfiles.resolve(f"{RE2_PYTHON_PACKAGE}/{extension_name}")
     _copy_file(extension_source, site_packages / extension_source.name)
     print((site_packages / "re2.py").relative_to(REPO_ROOT))
     print((site_packages / extension_source.name).relative_to(REPO_ROOT))
@@ -170,7 +173,8 @@ def _copy_re2():
 
 def main():
     """Build Bazel-generated files and copy them into the source tree."""
-    sync_venv(sys.argv[1])
+    uv_location, renderer_location = sys.argv[1:]
+    sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
     all_targets = [*LARK_TARGETS, *proto_targets]
     print(f"Building {len(all_targets)} targets...")
@@ -181,9 +185,9 @@ def main():
     _copy_lark_files()
     _copy_buf_validate()
     _copy_re2()
-    extension_name = "_templates.pyd" if os.name == "nt" else "_templates.so"
-    extension_path = Path(TEMPLATE_RENDERER_PACKAGE) / extension_name
-    _copy_file(RUNFILES_WORKSPACE / extension_path, REPO_ROOT / extension_path)
+    renderer_source = runfiles.resolve(renderer_location)
+    extension_path = Path(TEMPLATE_RENDERER_PACKAGE) / renderer_source.name
+    _copy_file(renderer_source, REPO_ROOT / extension_path)
     print(extension_path)
     print("Done.")
 

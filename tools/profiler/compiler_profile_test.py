@@ -1,24 +1,9 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import click.testing
-from python.runfiles import runfiles
 
+from tools import runfiles
 from tools.profiler import analyzer
-
-
-def _compiler_profile() -> Path:
-    location = os.environ["PROFILER_COMPILER_WALL_PROFILE"]
-    candidate = Path(location)
-    if candidate.exists():
-        return candidate
-    runfiles_resolver = runfiles.Runfiles.Create()
-    assert runfiles_resolver is not None
-    resolved = runfiles_resolver.Rlocation(location)
-    assert resolved is not None
-    return Path(resolved)
 
 
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
@@ -28,7 +13,7 @@ def test_real_compiler_profile_reports_stackless_critical_intervals():
         analyzer.main,
         [
             "--profile",
-            str(_compiler_profile()),
+            str(runfiles.resolve_from_env("PROFILER_COMPILER_WALL_PROFILE")),
             "--limit",
             "1000",
         ],

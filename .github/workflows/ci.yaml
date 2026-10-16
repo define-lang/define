@@ -124,6 +124,13 @@ jobs:
       - name: Check Python BUILD dependencies
         run: uv run tools/check_python_deps.py --check
 
+      # The ast-grep lint aspect only sees build targets' sources, so BUILD files
+      # need their own scan.
+      - name: Check BUILD files with ast-grep
+        run: >-
+          bazelisk run --noshow_progress @multitool//tools/ast-grep:cwd -- scan
+          --globs '**/BUILD.bazel'
+
       - name: Check for broken symlinks
         run: uv run tools/check_symlinks.py
 

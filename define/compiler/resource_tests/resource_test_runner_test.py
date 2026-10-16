@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler import test_runfiles
 from define.compiler.resource_tests import resource_test_runner
+from tools import runfiles
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,8 +28,8 @@ def _run(
     artifacts = tmp_path / "artifacts"
     measured = resource_test_runner.run(
         [sys.executable, "-c", program],
-        supervisor=test_runfiles.resolve_from_env("RESOURCE_TEST_RUNNER"),
-        limiter=test_runfiles.resolve_from_env("RESOURCE_LIMIT_RUNNER"),
+        supervisor=runfiles.resolve_from_env("RESOURCE_TEST_RUNNER"),
+        limiter=runfiles.resolve_from_env("RESOURCE_LIMIT_RUNNER"),
         directory=tmp_path,
         artifacts=artifacts,
         source=source,

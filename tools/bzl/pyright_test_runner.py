@@ -5,11 +5,13 @@ from __future__ import annotations
 import subprocess
 import sys
 
+from tools import runfiles
+
 
 def main():
     """Run basedpyright on the given arguments."""
     result = subprocess.run(
-        [sys.argv[1], *sys.argv[2:]],
+        [runfiles.resolve(sys.argv[1]), *sys.argv[2:]],
         check=False,
     )
     sys.exit(result.returncode)

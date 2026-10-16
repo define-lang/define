@@ -12,8 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from python.runfiles import runfiles
-
+from tools import runfiles
 from tools.generators import generate_large_define_source
 from tools.profiler import schema, wall_analyzer, wall_critical_path
 
@@ -26,16 +25,6 @@ _MAX_CAPTURE_ATTEMPTS = 10
 
 class _CaptureRejectedError(Exception):
     """The profiler rejected a completed fixture capture."""
-
-
-def _runfile(location: str) -> Path:
-    runfiles_resolver = runfiles.Runfiles.Create()
-    if runfiles_resolver is None:
-        raise RuntimeError("Bazel runfiles are unavailable")
-    resolved = runfiles_resolver.Rlocation(location)
-    if resolved is None:
-        raise FileNotFoundError(location)
-    return Path(resolved)
 
 
 def _wait_for_observations(
@@ -87,7 +76,7 @@ def _capture_command(  # noqa: PLR0913 - The optional capture controls are keywo
     mean_interval_seconds: float = 0.001,
 ) -> schema.RawProfile:
     profiler_command = [
-        str(_runfile("_main/tools/profiler/__main__")),
+        str(runfiles.resolve("_main/tools/profiler/__main__")),
         "--profile",
         str(profile_path),
         "--workload",
@@ -287,7 +276,7 @@ def _regenerate_compiler_profile(
                         'source_path=$1; shift; exec "$@" < "$source_path"',
                         "compiler-fixture",
                         str(source),
-                        str(_runfile("_main/define/compiler/main")),
+                        str(runfiles.resolve("_main/define/compiler/main")),
                         "compile",
                         "--out",
                         str(temporary_path / f"output-{attempt}"),

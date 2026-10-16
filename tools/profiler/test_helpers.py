@@ -7,12 +7,15 @@ import os
 import select
 import sys
 import time
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import msgspec
-from python.runfiles import runfiles
 
+from tools import runfiles
 from tools.profiler import schema
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class ProfilerEventReader(msgspec.Struct):
@@ -65,24 +68,12 @@ class ProfilerEventReader(msgspec.Struct):
             pass
 
 
-def runfile(variable: str) -> Path:
-    """Resolve a declared test runfile."""
-    candidate = Path(os.environ[variable])
-    if candidate.exists():
-        return candidate
-    runfiles_resolver = runfiles.Runfiles.Create()
-    assert runfiles_resolver is not None
-    resolved = runfiles_resolver.Rlocation(os.environ[variable])
-    assert resolved is not None
-    return Path(resolved)
-
-
 def target_command(
     source_variable: str,
     target_arguments: tuple[str, ...] = (),
 ) -> tuple[str, ...]:
     """Build a launched target command."""
-    source = runfile(source_variable)
+    source = runfiles.resolve_from_env(source_variable)
     return (
         "/bin/sh",
         "-c",
@@ -123,9 +114,9 @@ def profile_command(  # noqa: PLR0913 - The optional controls are named at each 
 ) -> list[str]:
     """Build a public profiler command."""
     # PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
-    source = runfile(source_variable)
+    source = runfiles.resolve_from_env(source_variable)
     command = [
-        str(runfile("PROFILER_BINARY")),
+        str(runfiles.resolve_from_env("PROFILER_BINARY")),
         "--profile",
         str(profile_path),
         "--workload",

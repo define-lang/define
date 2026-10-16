@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler import test_runfiles
 from define.compiler.resource_tests import resource_test_runner
+from tools import runfiles
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -50,7 +50,7 @@ def _measure(
 ) -> resource_test_runner.Measurement:
     directory.mkdir()
     command = [
-        str(test_runfiles.resolve_from_env("MAIN_BINARY")),
+        str(runfiles.resolve_from_env("MAIN_BINARY")),
         "compile",
         "--max-threads",
         str(workers),
@@ -63,8 +63,8 @@ def _measure(
     artifacts = directory / "resources"
     return resource_test_runner.run(
         command,
-        supervisor=test_runfiles.resolve_from_env("RESOURCE_TEST_RUNNER"),
-        limiter=test_runfiles.resolve_from_env("RESOURCE_LIMIT_RUNNER"),
+        supervisor=runfiles.resolve_from_env("RESOURCE_TEST_RUNNER"),
+        limiter=runfiles.resolve_from_env("RESOURCE_LIMIT_RUNNER"),
         directory=source.parent,
         artifacts=artifacts,
         source=stdin,
@@ -142,7 +142,7 @@ def _stderr(directory: Path) -> str:
 def test_retained_memory(case: MemoryCase, tmp_path: Path):
     directory = tmp_path / "compilation"
     measured = _measure(
-        test_runfiles.resolve_from_env(case.source_variable),
+        runfiles.resolve_from_env(case.source_variable),
         directory,
         filesystem=case.filesystem,
         workers=4,
@@ -292,7 +292,7 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
     expected_returncode = 1 if case.expect_diagnostics else 0
     control_directory = tmp_path / "control"
     control = _measure(
-        test_runfiles.resolve_from_env(case.control_variable),
+        runfiles.resolve_from_env(case.control_variable),
         control_directory,
         filesystem=case.filesystem,
         workers=1,
@@ -316,7 +316,7 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
     cpu_limit = math.floor(control.cpu_seconds * case.maximum_ratio) + 1
     directory = tmp_path / "adversarial"
     measured = _measure(
-        test_runfiles.resolve_from_env(case.source_variable),
+        runfiles.resolve_from_env(case.source_variable),
         directory,
         filesystem=case.filesystem,
         workers=1,

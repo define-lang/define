@@ -1,4 +1,4 @@
-"""Resolve Bazel runfiles for compiler tests."""
+"""Resolve Bazel runfiles."""
 
 from __future__ import annotations
 
@@ -8,12 +8,8 @@ from pathlib import Path
 from python.runfiles import runfiles
 
 
-def resolve_from_env(variable: str) -> Path:
-    """Resolve the runfile named by an environment variable."""
-    location = os.environ[variable]
-    candidate = Path(location)
-    if candidate.exists():
-        return candidate
+def resolve(location: str) -> Path:
+    """Resolve a runfile from its `$(rlocationpath)`."""
     runfiles_resolver = runfiles.Runfiles.Create()
     if runfiles_resolver is None:
         raise RuntimeError("Bazel runfiles are unavailable")
@@ -21,3 +17,8 @@ def resolve_from_env(variable: str) -> Path:
     if resolved is None:
         raise FileNotFoundError(location)
     return Path(resolved)
+
+
+def resolve_from_env(variable: str) -> Path:
+    """Resolve the runfile named by an environment variable."""
+    return resolve(os.environ[variable])

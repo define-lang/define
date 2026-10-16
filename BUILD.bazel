@@ -1,6 +1,5 @@
 # Root package
 
-load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("@npm//:basedpyright/package_json.bzl", basedpyright_bin = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
@@ -44,21 +43,9 @@ basedpyright_bin.basedpyright_langserver_binary(
 
 # --- Lock file management ---
 
-native_binary(
+alias(
     name = "update_lock",
-    src = "//tools:update_lock",
-    out = "update_lock_bin",
-    args = ["$(rootpath @multitool//tools/uv)"],
-    data = [
-        "pyproject.toml",
-        "uv.lock",
-        "@multitool//tools/uv",
-        "@re2//python:uv_metadata",
-    ],
-    tags = [
-        "local",
-        "requires-network",
-    ],
+    actual = "//tools:update_lock",
 )
 
 check_build_file()

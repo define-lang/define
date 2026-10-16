@@ -1,6 +1,5 @@
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
-load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
@@ -220,6 +219,7 @@ py_test(
     tags = ["local"],
     deps = [
         ":profile_orchestration",
+        ":runfiles",
         "//tools/profiler:analyzer",
         "//tools/profiler:perf_analyzer",
         "//tools/profiler:perf_test_support",
@@ -228,6 +228,13 @@ py_test(
         "@pypi//pytest",
         "@rules_python//python/runfiles",
     ],
+)
+
+py_library(
+    name = "runfiles",
+    srcs = ["runfiles.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 py_binary(
@@ -246,12 +253,16 @@ py_test(
 py_binary(
     name = "setup_local_dev",
     srcs = ["setup_local_dev.py"],
-    args = ["$(rootpath @multitool//tools/uv)"],
+    args = [
+        "$(rlocationpath @multitool//tools/uv)",
+        "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
+    ],
     data = [
         "//define/compiler/codegen/literal/python:renderer",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],
+    deps = [":runfiles"],
 )
 
 py_binary(
@@ -259,49 +270,73 @@ py_binary(
     srcs = ["sync_agent_permissions.py"],
 )
 
-native_test(
+py_test(
     name = "sync_agent_permissions_test",
     size = "small",
-    src = ":sync_agent_permissions",
-    out = "sync_agent_permissions_test_runner",
-    args = ["--check"],
+    srcs = ["sync_agent_permissions_test.py"],
     data = [
         "//:.claude/settings.json",
         "//:.codex/rules/default.rules",
         "//:.cursor/cli.json",
     ],
-)
-
-native_binary(
-    name = "update_lock",
-    src = "update_lock.sh",
-    out = "update_lock_runner",
-    visibility = ["//:__pkg__"],
-)
-
-native_test(
-    name = "uv_lock_test",
-    size = "small",
-    src = "uv_lock_test.sh",
-    out = "uv_lock_test_runner",
-    args = [
-        "$(rootpath @multitool//tools/uv)",
-        "$(rootpath @re2//python:uv_setup)",
+    env = {"CLAUDE_SETTINGS": "$(rlocationpath //:.claude/settings.json)"},
+    deps = [
+        ":runfiles",
+        ":sync_agent_permissions",
+        "@pypi//pytest",
     ],
+)
+
+py_binary(
+    name = "update_lock",
+    srcs = ["update_lock.py"],
+    args = ["$(rlocationpath @multitool//tools/uv)"],
     data = [
         "//:pyproject.toml",
         "//:uv.lock",
         "@multitool//tools/uv",
         "@re2//python:uv_metadata",
-        "@re2//python:uv_setup",
     ],
     tags = [
         "local",
         "requires-network",
     ],
+    visibility = ["//:__pkg__"],
+    deps = [":runfiles"],
 )
 
-py_binary(
+py_test(
+    name = "uv_lock_test",
+    size = "small",
+    srcs = ["uv_lock_test.py"],
+    data = [
+        "//:uv.lock",
+        "@multitool//tools/uv",
+        "@re2//python:uv_metadata",
+    ],
+    env = {
+        "PYPROJECT": "$(rlocationpath //:pyproject.toml)",
+        "RE2_UV_METADATA": "$(rlocationpaths @re2//python:uv_metadata)",
+        "UV": "$(rlocationpath @multitool//tools/uv)",
+        "UV_LOCK": "$(rlocationpath //:uv.lock)",
+    },
+    tags = [
+        "local",
+        "requires-network",
+    ],
+    deps = [":runfiles"],
+)
+
+exports_files(
+    ["validate_proposals.py"],
+    visibility = [
+        "//defcl/proposals:__pkg__",
+        "//define/proposals:__pkg__",
+        "//define/standard/proposals:__pkg__",
+    ],
+)
+
+py_library(
     name = "validate_proposals",
     srcs = ["validate_proposals.py"],
     visibility = [
@@ -310,6 +345,7 @@ py_binary(
         "//define/standard/proposals:__pkg__",
     ],
     deps = [
+        ":runfiles",
         "@pypi//msgspec",
     ],
 )
@@ -400,10 +436,14 @@ pyright_test(
         ":regenerate_codegen_testdata_test",
         ":run_profile",
         ":run_profile_test",
+        ":runfiles",
         ":serve_report",
         ":serve_report_test",
         ":setup_local_dev",
         ":sync_agent_permissions",
+        ":sync_agent_permissions_test",
+        ":update_lock",
+        ":uv_lock_test",
         ":validate_proposals",
     ],
 )

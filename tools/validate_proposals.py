@@ -5,9 +5,14 @@ from __future__ import annotations
 
 import re
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import msgspec
+
+from tools import runfiles
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 REQUIRED_HEADERS: list[tuple[str, ...] | str] = [
     ("Problems", "Problem"),
@@ -229,11 +234,14 @@ def validate_proposal_file(filepath: Path) -> list[str]:
 def main() -> int:
     """Run proposal validation and return exit code."""
     if len(sys.argv) < 2:
-        print("Usage: validate_proposals.py <file1> [file2 ...]", file=sys.stderr)
+        print(
+            "Usage: validate_proposals.py <rlocationpath1> [rlocationpath2 ...]",
+            file=sys.stderr,
+        )
         return 1
 
     all_errors: list[str] = []
-    proposal_files = [Path(f) for f in sys.argv[1:]]
+    proposal_files = [runfiles.resolve(location) for location in sys.argv[1:]]
 
     for filepath in proposal_files:
         if not filepath.exists():

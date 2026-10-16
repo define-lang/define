@@ -100,7 +100,7 @@ py_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":resource_test_runner",
-        "//define/compiler:test_runfiles",
+        "//tools:runfiles",
         "@pypi//pytest",
     ],
 )
@@ -138,7 +138,7 @@ py_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":resource_test_runner",
-        "//define/compiler:test_runfiles",
+        "//tools:runfiles",
         "@pypi//pytest",
     ],
 )

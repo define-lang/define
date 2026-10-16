@@ -52,8 +52,8 @@ py_test(
     },
     deps = [
         ":analyzer",
+        "//tools:runfiles",
         "@pypi//click",
-        "@rules_python//python/runfiles",
     ],
 )
 
@@ -190,6 +190,7 @@ py_test(
         ":wall_analyzer",
         ":wall_critical_path",
         ":wall_model",
+        "//tools:runfiles",
         "@pypi//click",
         "@pypi//pytest",
     ],
@@ -231,8 +232,8 @@ py_binary(
         ":schema",
         ":wall_analyzer",
         ":wall_critical_path",
+        "//tools:runfiles",
         "//tools/generators:generate_large_define_source",
-        "@rules_python//python/runfiles",
     ],
 )
 
@@ -288,8 +289,8 @@ py_library(
     srcs = ["test_helpers.py"],
     deps = [
         ":schema",
+        "//tools:runfiles",
         "@pypi//msgspec",
-        "@rules_python//python/runfiles",
     ],
 )
 
