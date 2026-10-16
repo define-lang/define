@@ -5,14 +5,19 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # The lockfile workflow starts CI on its commits.
+  workflow_dispatch:
 
 permissions: {}
 
-# Main keeps every run so each commit gets its own coverage upload.
+# Main keeps every run so each commit gets its own coverage upload. Grouping by
+# branch lets CI on a lockfile commit cancel CI on the Renovate commit before
+# it.
 concurrency:
   group:
-    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name ||
+    github.repository }}:${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 defaults:
   run:
@@ -23,6 +28,7 @@ jobs:
     name: Coverage
     if: >-
       ${{
+        github.event_name != 'workflow_dispatch' &&
         github.event.pull_request.user.login != 'renovate[bot]' &&
         github.event.pull_request.user.login != 'dependabot[bot]'
       }}
@@ -108,14 +114,8 @@ jobs:
           repository-cache: true
 
       # This must run before any other Bazel command, which would silently
-      # update a stale lockfile. Bot pull requests are skipped because the
-      # lockfile workflow fixes them with a commit that does not rerun CI.
+      # update a stale lockfile.
       - name: Check that MODULE.bazel.lock is up to date
-        if: >-
-          ${{
-            github.event.pull_request.user.login != 'renovate[bot]' &&
-            github.event.pull_request.user.login != 'dependabot[bot]'
-          }}
         run: bazelisk mod deps --noshow_progress --lockfile_mode=error
 
       - name: Format

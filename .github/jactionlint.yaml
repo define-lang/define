@@ -3,8 +3,8 @@ generated-files: report
 config-secrets: []
 config-variables: []
 rules:
-  # Matches minimumReleaseAge for GitHub Actions in renovate.json5, so Renovate
-  # never proposes a version that this rule rejects.
+  # Matches minimumReleaseAge in renovate.json5, so Renovate never proposes a
+  # version that this rule rejects.
   action-release-cooldown:
     days: 2
   agentic-actions:
@@ -14,6 +14,8 @@ rules:
   forbidden-uses:
     allow:
       - actions/checkout
+      - actions/download-artifact
+      - actions/upload-artifact
       - astral-sh/setup-uv
       - bazel-contrib/setup-bazel
       - bufbuild/buf-action

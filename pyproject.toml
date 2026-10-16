@@ -306,7 +306,6 @@ dev = [
     "lark",
     "mutmut",
     "pre-commit",
-    "pygithub",
     "pytest>=6",
     "pyyaml",
     "ruff",

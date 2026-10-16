@@ -1,7 +1,13 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
-  automerge: false,
+  automerge: true,
+  // Main has no required status checks, so GitHub's auto-merge would not wait
+  // for CI.
+  platformAutomerge: false,
+  // Gives the ecosystem time to find and pull malicious releases before they
+  // are automerged. Matches action-release-cooldown in .github/jactionlint.yaml.
+  minimumReleaseAge: "2 days",
   // The lockfile workflow commits to Renovate branches as this author. Renovate
   // must keep rebasing those branches so the lockfile is regenerated against
   // the latest main.
@@ -128,10 +134,15 @@
       groupName: "github actions",
     },
     {
-      matchManagers: ["github-actions"],
-      matchDepTypes: ["action", "workflow"],
-      // Matches action-release-cooldown in .github/jactionlint.yaml.
-      minimumReleaseAge: "2 days",
+      // These datasources give no release dates, so their updates would wait
+      // for minimumReleaseAge forever.
+      matchDatasources: [
+        "bazel",
+        "github-runners",
+        "custom.unicode",
+        "custom.rules_nodejs",
+      ],
+      minimumReleaseAgeBehaviour: "timestamp-optional",
     },
     {
       // The runners of the test matrix come from a custom manager.

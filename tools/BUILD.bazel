@@ -114,10 +114,6 @@ py_binary(
 py_binary(
     name = "git_commit_via_api",
     srcs = ["git_commit_via_api.py"],
-    deps = [
-        "@pypi//click",
-        "@pypi//pygithub",
-    ],
 )
 
 py_library(
