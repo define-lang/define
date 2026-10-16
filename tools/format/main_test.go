@@ -100,17 +100,21 @@ func assertSucceeded(t *testing.T, output string, exitCode int) {
 func TestAllFormatsEveryLanguage(t *testing.T) {
 	repository := newRepository(t, map[string]string{
 		"BUILD.bazel": "filegroup(name=\"all\")\n",
-		"a.json":      "{\"a\":1}\n",
-		"a.md":        "*  a\n",
-		"a.proto":     "syntax = \"proto3\";\n\npackage   a;\n",
-		"a.py":        "x  =  1\n",
-		"a.rs":        "fn  main(){}\n",
-		"a.yaml":      "a:   1\n",
+		// gofmt keeps a blank line at the start of a function body, but
+		// gofumpt removes it.
+		"a.go":    "package a\n\nfunc f() {\n\n\tf()\n}\n",
+		"a.json":  "{\"a\":1}\n",
+		"a.md":    "*  a\n",
+		"a.proto": "syntax = \"proto3\";\n\npackage   a;\n",
+		"a.py":    "x  =  1\n",
+		"a.rs":    "fn  main(){}\n",
+		"a.yaml":  "a:   1\n",
 	})
 	output, exitCode := runFormatIn(t, repository, repository, "--all")
 	assertSucceeded(t, output, exitCode)
 	assertFiles(t, repository, map[string]string{
 		"BUILD.bazel": "filegroup(name = \"all\")\n",
+		"a.go":        "package a\n\nfunc f() {\n\tf()\n}\n",
 		"a.json":      "{ \"a\": 1 }\n",
 		"a.md":        "- a\n",
 		"a.proto":     "syntax = \"proto3\";\n\npackage a;\n",
@@ -205,7 +209,10 @@ func TestFormatsFilesBeyondOneCommandLine(t *testing.T) {
 }
 
 func TestCheckSucceedsForFormattedFiles(t *testing.T) {
-	repository := newRepository(t, map[string]string{"a.py": "x = 1\n"})
+	repository := newRepository(t, map[string]string{
+		"a.go": "package a\n",
+		"a.py": "x = 1\n",
+	})
 	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
 	assertSucceeded(t, output, exitCode)
 }
@@ -226,6 +233,15 @@ func TestCheckAllSuggestsFormattingAllFiles(t *testing.T) {
 	if exitCode != 1 || !strings.HasSuffix(output, "Files are not formatted. Run `bazelisk run //:format -- --all` to format them.\n") {
 		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
 	}
+}
+
+func TestCheckReportsUnformattedGoFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{"a.go": "package  a\n"})
+	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
+	if exitCode != 1 || !strings.HasSuffix(output, "gofumpt: exit status 1\nFiles are not formatted. Run `bazelisk run //:format -- --all` to format them.\n") {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+	assertFiles(t, repository, map[string]string{"a.go": "package  a\n"})
 }
 
 func TestFormatFailsWhenAFormatterFails(t *testing.T) {

@@ -31,6 +31,7 @@ import (
 var (
 	bufRlocationPath        string
 	buildifierRlocationPath string
+	gofumptRlocationPath    string
 	prettierRlocationPath   string
 	ruffRlocationPath       string
 	rustfmtRlocationPath    string
@@ -72,6 +73,13 @@ var (
 		checkArguments: []string{"-mode=check", "-lint=warn"},
 		singleThreaded: true,
 	}
+	gofumpt = &formatter{
+		rlocationPath: gofumptRlocationPath,
+		fixArguments:  []string{"-w"},
+		// -l exits successfully even when files are unformatted, but -d
+		// does not.
+		checkArguments: []string{"-d"},
+	}
 	prettier = &formatter{
 		rlocationPath:  prettierRlocationPath,
 		fixArguments:   []string{"--write", "--log-level=warn"},
@@ -93,11 +101,12 @@ var (
 )
 
 // The formatters run in this order so that their output is deterministic.
-var formatters = []*formatter{buf, buildifier, prettier, ruff, rustfmt}
+var formatters = []*formatter{buf, buildifier, gofumpt, prettier, ruff, rustfmt}
 
 var formattersByExtension = map[string]*formatter{
 	".bazel": buildifier,
 	".bzl":   buildifier,
+	".go":    gofumpt,
 	".json":  prettier,
 	".json5": prettier,
 	".md":    prettier,

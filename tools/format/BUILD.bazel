@@ -8,6 +8,7 @@ go_binary(
         "//tools:prettier",
         "@multitool//tools/buf",
         "@multitool//tools/buildifier",
+        "@multitool//tools/gofumpt",
         "@multitool//tools/ruff",
         "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
     ],
@@ -15,6 +16,7 @@ go_binary(
     x_defs = {
         "bufRlocationPath": "$(rlocationpath @multitool//tools/buf)",
         "buildifierRlocationPath": "$(rlocationpath @multitool//tools/buildifier)",
+        "gofumptRlocationPath": "$(rlocationpath @multitool//tools/gofumpt)",
         "prettierRlocationPath": "$(rlocationpath //tools:prettier)",
         "ruffRlocationPath": "$(rlocationpath @multitool//tools/ruff)",
         "rustfmtRlocationPath": "$(rlocationpath @rules_rust//rust/toolchain:current_rustfmt_toolchain)",

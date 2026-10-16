@@ -127,6 +127,45 @@
       }
     ]
   },
+  "gofumpt": {
+    "binaries": [
+      {
+        "kind": "file",
+        "url": "https://github.com/mvdan/gofumpt/releases/download/v0.12.0/gofumpt_v0.12.0_linux_arm64",
+        "sha256": "4322f081241ab0618356aa5921a8c110e4c7acfc17175cc15dc57b2f4a4b652d",
+        "os": "linux",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "file",
+        "url": "https://github.com/mvdan/gofumpt/releases/download/v0.12.0/gofumpt_v0.12.0_linux_amd64",
+        "sha256": "3bc4fcad497439918f5f56d4987de4709a99da0a355e6bec13a7278532b01d38",
+        "os": "linux",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "file",
+        "url": "https://github.com/mvdan/gofumpt/releases/download/v0.12.0/gofumpt_v0.12.0_darwin_arm64",
+        "sha256": "1a3e325b956ed12c21031d9e13382bd51a4fabb57de8d40428819b9583c3cfb9",
+        "os": "macos",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "file",
+        "url": "https://github.com/mvdan/gofumpt/releases/download/v0.12.0/gofumpt_v0.12.0_darwin_amd64",
+        "sha256": "1d3626892a321aca96a891696eaecb8f68e69e90582c2b55672d5ca210fd5fa8",
+        "os": "macos",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "file",
+        "url": "https://github.com/mvdan/gofumpt/releases/download/v0.12.0/gofumpt_v0.12.0_windows_amd64.exe",
+        "sha256": "66bd679908b64864fc85417e7ea01148774b477364b9a02ab1c194333a55c997",
+        "os": "windows",
+        "cpu": "x86_64"
+      }
+    ]
+  },
   "jactionlint": {
     "binaries": [
       {
