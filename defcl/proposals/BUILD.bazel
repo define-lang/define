@@ -11,7 +11,7 @@ native_test(
     size = "small",
     src = "//tools:validate_proposals",
     out = "validate_proposals_test_runner",
-    args = ["$(locations :proposals)"],
+    args = ["$(rootpaths :proposals)"],
     data = [":proposals"],
 )
 

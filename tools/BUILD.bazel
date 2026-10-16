@@ -165,7 +165,7 @@ py_binary(
 genrule(
     name = "pyo3_config_file",
     outs = ["pyo3-build-config.txt"],
-    cmd = "$(location :pyo3_config) $@",
+    cmd = "$(execpath :pyo3_config) $@",
     tools = [":pyo3_config"],
     visibility = ["//visibility:public"],
 )
@@ -246,7 +246,7 @@ py_test(
 py_binary(
     name = "setup_local_dev",
     srcs = ["setup_local_dev.py"],
-    args = ["$(location @multitool//tools/uv)"],
+    args = ["$(rootpath @multitool//tools/uv)"],
     data = [
         "//define/compiler/codegen/literal/python:renderer",
         "@multitool//tools/uv",
@@ -285,8 +285,8 @@ native_test(
     src = "uv_lock_test.sh",
     out = "uv_lock_test_runner",
     args = [
-        "$(location @multitool//tools/uv)",
-        "$(location @re2//python:uv_setup)",
+        "$(rootpath @multitool//tools/uv)",
+        "$(rootpath @re2//python:uv_setup)",
     ],
     data = [
         "//:pyproject.toml",

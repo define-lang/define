@@ -118,7 +118,7 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
         srcs = ["//tools/bzl:pyright_test_runner.py"] + srcs,
         main = "//tools/bzl:pyright_test_runner.py",
         args = [
-            "$(location //:basedpyright)",
+            "$(rootpath //:basedpyright)",
             native.package_name(),
         ],
         data = [

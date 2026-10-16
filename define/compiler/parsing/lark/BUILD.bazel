@@ -17,7 +17,7 @@ genrule(
     name = "lark_standalone_gen",
     srcs = ["//define/compiler/parsing:grammar.lark"],
     outs = ["lark_standalone.py"],
-    cmd = "$(location //tools:generate_lark_standalone) $(location //define/compiler/parsing:grammar.lark) && mv lark_parser.py $@",
+    cmd = "$(execpath //tools:generate_lark_standalone) $(execpath //define/compiler/parsing:grammar.lark) && mv lark_parser.py $@",
     tools = ["//tools:generate_lark_standalone"],
 )
 

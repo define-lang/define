@@ -48,7 +48,7 @@ native_binary(
     name = "update_lock",
     src = "//tools:update_lock",
     out = "update_lock_bin",
-    args = ["$(location @multitool//tools/uv)"],
+    args = ["$(rootpath @multitool//tools/uv)"],
     data = [
         "pyproject.toml",
         "uv.lock",
