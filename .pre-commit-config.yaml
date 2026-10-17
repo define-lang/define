@@ -1,41 +1,55 @@
 exclude: ^vendored/
 
+# File-changing hooks need separate priorities so they cannot race on the same files.
+# Bazel hooks also need separate priorities because they share one server.
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  - repo: builtin
     hooks:
       - id: check-added-large-files
+        priority: 50
         # These generated fixtures need enough input to expose quadratic CPU growth.
         exclude: ^define/testdata/compiler_resources/([^/]+|reference_depth_updates(_control)?_project/lib/pkg0/m0)\.dfn$
       - id: check-case-conflict
+        priority: 50
       - id: check-illegal-windows-names
+        priority: 50
       - id: check-json
+        priority: 50
       - id: check-merge-conflict
+        priority: 50
       - id: check-toml
+        priority: 50
       - id: check-yaml
+        priority: 50
       - id: destroyed-symlinks
+        priority: 50
       - id: mixed-line-ending
+        priority: 0
         args: ["--fix=lf"]
         exclude: ".*carriage_return.*"
-      - id: name-tests-test
       - id: trailing-whitespace
+        priority: 10
         exclude: ".*trailing_space.*"
   - repo: local
     hooks:
       - id: ruff-check
+        priority: 20
         name: ruff check
         entry: uv run ruff check --fix
         language: system
         types: [python]
 
       - id: basedpyright
+        priority: 60
         name: basedpyright
         entry: tools/pyright-precommit.sh
         exclude: define/compiler/prototype
         language: system
         types: [python]
+        require_serial: true
 
       - id: bazel-checks
+        priority: 70
         name: bazel-based checks
         entry:
           bazelisk test --noshow_progress
@@ -48,6 +62,7 @@ repos:
         pass_filenames: false
 
       - id: check-all-symlinks
+        priority: 50
         name: check that no tracked symlink is broken
         # Checks every tracked symlink, because a change can remove the
         # target of a symlink that the change does not touch.
@@ -57,12 +72,16 @@ repos:
         pass_filenames: false
 
       - id: python-deps
+        priority: 30
         name: fix Python BUILD dependencies
         entry: uv run tools/check_python_deps.py
         language: system
         files: (^|/)(BUILD\.bazel|.*\.pyi?)$
+        # Different filename batches can update the same BUILD file.
+        require_serial: true
 
       - id: build-file-checks
+        priority: 90
         name: check that BUILD files call check_build_file
         entry:
           bazelisk run --noshow_progress @multitool//tools/ast-grep:cwd -- scan
@@ -71,6 +90,7 @@ repos:
         exclude: ^vendored/
 
       - id: rust-checks
+        priority: 80
         name: Rust lint checks
         entry:
           bazelisk test --noshow_progress
@@ -80,6 +100,7 @@ repos:
         pass_filenames: false
 
       - id: format
+        priority: 40
         name: reformat files
         entry: bazelisk run --noshow_progress //:format
         language: system
@@ -87,6 +108,7 @@ repos:
         require_serial: true
 
       - id: buf-plugin-build
+        priority: 50
         name: build buf plugin
         entry: bazelisk build --noshow_progress //defcl/buf
         language: system
@@ -96,5 +118,6 @@ repos:
     rev: v1.74.0
     hooks:
       - id: buf-lint
+        priority: 60
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         args: []
