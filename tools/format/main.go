@@ -27,18 +27,15 @@ import (
 )
 
 // Runfiles paths of the formatter binaries and plugins, set at link time.
+// dprintPluginRlocationPaths separates its paths with spaces.
 var (
-	bufRlocationPath                  string
-	buildifierRlocationPath           string
-	dprintMarkdownPluginRlocationPath string
-	dprintOxcPluginRlocationPath      string
-	dprintRlocationPath               string
-	dprintShellPluginRlocationPath    string
-	dprintTOMLPluginRlocationPath     string
-	dprintYAMLPluginRlocationPath     string
-	gofumptRlocationPath              string
-	ruffRlocationPath                 string
-	rustfmtRlocationPath              string
+	bufRlocationPath           string
+	buildifierRlocationPath    string
+	dprintPluginRlocationPaths string
+	dprintRlocationPath        string
+	gofumptRlocationPath       string
+	ruffRlocationPath          string
+	rustfmtRlocationPath       string
 )
 
 // Windows limits a command line to 32767 characters.
@@ -76,15 +73,9 @@ var (
 		rlocationPath: dprintRlocationPath,
 		// At the default log level, dprint reports every file it formats, and
 		// at lower log levels its check reports no diffs.
-		fixArguments:   []string{"fmt", "--log-level=warn"},
-		checkArguments: []string{"check"},
-		pluginRlocationPaths: []string{
-			dprintMarkdownPluginRlocationPath,
-			dprintOxcPluginRlocationPath,
-			dprintShellPluginRlocationPath,
-			dprintTOMLPluginRlocationPath,
-			dprintYAMLPluginRlocationPath,
-		},
+		fixArguments:         []string{"fmt", "--log-level=warn"},
+		checkArguments:       []string{"check"},
+		pluginRlocationPaths: strings.Fields(dprintPluginRlocationPaths),
 	}
 	gofumpt = &formatter{
 		rlocationPath: gofumptRlocationPath,

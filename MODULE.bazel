@@ -175,48 +175,9 @@ use_repo(multitool, "multitool")
 
 # --- dprint plugins ---
 
-http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
-
-# dprint only loads plugins whose file names end in .wasm.
-# renovate: depName=dprint/dprint-plugin-markdown
-http_file(
-    name = "dprint_plugin_markdown",
-    downloaded_file_path = "markdown.wasm",
-    sha256 = "5cebd0459bf1aa13fb027331720158d03e2a897b1d9f7b3bf93cac661ca4ddbd",
-    urls = ["https://plugins.dprint.dev/markdown-0.26.0.wasm"],
-)
-
-# renovate: depName=dprint/dprint-plugin-oxc
-http_file(
-    name = "dprint_plugin_oxc",
-    downloaded_file_path = "oxc.wasm",
-    sha256 = "37cc1ee2a0adba2cce54ea6cb5f23fd01a10570128e4e65eeef01b04562bfb35",
-    urls = ["https://plugins.dprint.dev/oxc-0.46.0.wasm"],
-)
-
-# renovate: depName=kachick/dprint-plugin-sh
-http_file(
-    name = "dprint_plugin_sh",
-    downloaded_file_path = "sh.wasm",
-    sha256 = "8564c9082c81ff4cf6c9090cfa20021003d7d402254877ebf5d7b0f487437476",
-    urls = ["https://plugins.dprint.dev/kachick/sh-0.1.2.wasm"],
-)
-
-# renovate: depName=dprint/dprint-plugin-toml
-http_file(
-    name = "dprint_plugin_toml",
-    downloaded_file_path = "toml.wasm",
-    sha256 = "776e088ed4255a51a80e3640e5fd20b15661147e86df3e99611aaa37e9c59852",
-    urls = ["https://plugins.dprint.dev/toml-0.9.0.wasm"],
-)
-
-# renovate: depName=g-plane/pretty_yaml
-http_file(
-    name = "dprint_plugin_yaml",
-    downloaded_file_path = "yaml.wasm",
-    sha256 = "40a2fdda7040317eb1b23520f3a00769a5571eedb049c4ca9175c1b9eeba01ae",
-    urls = ["https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm"],
-)
+dprint = use_extension("//tools/rules_dprint:extensions.bzl", "dprint")
+dprint.plugins(config = "//:dprint.jsonc")
+use_repo(dprint, "dprint_plugins")
 
 # --- NodeJS ---
 
