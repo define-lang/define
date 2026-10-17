@@ -1,4 +1,4 @@
-"""Sets up the local dev environment by copying Bazel-generated files into the source tree."""
+"""Sets up the local dev environment by copying Bazel-generated files into the source tree and configuring git."""
 
 from __future__ import annotations
 
@@ -40,6 +40,14 @@ def _bazelisk() -> str:
     path = shutil.which("bazelisk")
     if path is None:
         msg = "bazelisk not found on PATH"
+        raise FileNotFoundError(msg)
+    return path
+
+
+def _git() -> str:
+    path = shutil.which("git")
+    if path is None:
+        msg = "git not found on PATH"
         raise FileNotFoundError(msg)
     return path
 
@@ -171,8 +179,18 @@ def _copy_re2():
     print((site_packages / extension_source.name).relative_to(REPO_ROOT))
 
 
+def _configure_git_blame():
+    # git has no default file of revisions for blame to skip, so each clone
+    # names one.
+    _ = subprocess.run(
+        [_git(), "config", "blame.ignoreRevsFile", ".git-blame-ignore-revs"],
+        cwd=REPO_ROOT,
+        check=True,
+    )
+
+
 def main():
-    """Build Bazel-generated files and copy them into the source tree."""
+    """Build Bazel-generated files, copy them into the source tree, and configure git."""
     uv_location, renderer_location = sys.argv[1:]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
@@ -189,6 +207,7 @@ def main():
     extension_path = Path(TEMPLATE_RENDERER_PACKAGE) / renderer_source.name
     _copy_file(renderer_source, REPO_ROOT / extension_path)
     print(extension_path)
+    _configure_git_blame()
     print("Done.")
 
 
