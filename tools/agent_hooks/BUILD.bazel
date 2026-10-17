@@ -4,6 +4,24 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_binary(
+    name = "shell_command_checks",
+    srcs = ["shell_command_checks.py"],
+)
+
+py_test(
+    name = "shell_command_checks_test",
+    size = "small",
+    srcs = ["shell_command_checks_test.py"],
+    data = ["shell_command_checks.sh"],
+    env = {"PREFILTER": "$(rlocationpath shell_command_checks.sh)"},
+    deps = [
+        ":shell_command_checks",
+        "//tools:runfiles",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "turn_end_checks",
     srcs = ["turn_end_checks.py"],
 )
@@ -21,6 +39,8 @@ py_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":shell_command_checks",
+        ":shell_command_checks_test",
         ":turn_end_checks",
         ":turn_end_checks_test",
     ],

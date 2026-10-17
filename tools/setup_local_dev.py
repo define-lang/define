@@ -23,6 +23,10 @@ LARK_FILES = [
     "defcl/python/lark/lark_standalone.py",
 ]
 
+# Relative to the git directory. tools/agent_hooks/shell_command_checks.py reads
+# it by the same name.
+SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
+
 TEMPLATE_RENDERER_PACKAGE = "define/compiler/codegen/literal/python"
 
 # re2 makes only its py_library public, so its files are found by their path in
@@ -196,6 +200,19 @@ def _install_git_hooks():
     )
 
 
+def _record_successful_run():
+    # Agent hooks compare source times against this file to decide whether the
+    # generated files may be out of date. The git directory is per worktree.
+    stamp_path = subprocess.run(
+        [_git(), "rev-parse", "--git-path", SUCCESSFUL_RUN_STAMP],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (REPO_ROOT / stamp_path).touch()
+
+
 def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
     uv_location, renderer_location = sys.argv[1:]
@@ -216,6 +233,7 @@ def main():
     print(extension_path)
     _configure_git_blame()
     _install_git_hooks()
+    _record_successful_run()
     print("Done.")
 
 
