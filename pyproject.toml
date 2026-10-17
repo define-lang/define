@@ -5,14 +5,14 @@ description = "A programming language based in epistemology (the study of how kn
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.1,!=8.3.0,!=8.3.1",
-    # 3 is the first Python 3-only series
-    "lark-cython",
-    "msgspec",
-    # 6.31 is the first version with FieldDescriptor.is_repeated
-    "protobuf>=6.31",
-    # 1.1.2 is the first version to support protobuf v7
-    "protovalidate>=1.1.2",
+  "click>=8.1,!=8.3.0,!=8.3.1",
+  # 3 is the first Python 3-only series
+  "lark-cython",
+  "msgspec",
+  # 6.31 is the first version with FieldDescriptor.is_repeated
+  "protobuf>=6.31",
+  # 1.1.2 is the first version to support protobuf v7
+  "protovalidate>=1.1.2",
 ]
 
 [tool.ruff.lint]
@@ -79,29 +79,29 @@ extend-select = [
   "RUF052", # Flag local variables that are named as unused but then accessed.
   "RUF067", # Keep handwritten package initializers free of executable definitions.
   "RUF069", # Flag unreliable floating-point equality.
-  "W",  # pycodestyle warnings
-  "I",  # isort
-  "N",  # pep8-naming
-  "D",  # pydocstyle
+  "W", # pycodestyle warnings
+  "I", # isort
+  "N", # pep8-naming
+  "D", # pydocstyle
   "UP", # pyupgrade
-  "C4",  # flake8-comprehensions
-  "B",   # flake8-bugbear
+  "C4", # flake8-comprehensions
+  "B", # flake8-bugbear
   "BLE", # flake8-blind-except
   "FBT", # flake8-boolean-trap
-  "A",   # flake8-builtins
-  "S",   # flake8-bandit
+  "A", # flake8-builtins
+  "S", # flake8-bandit
   "LOG", # flake8-logging
-  "G",   # flake8-logging-format
+  "G", # flake8-logging-format
   "TCH", # flake8-type-checking
   "ICN", # flake8-import-conventions
   "SIM", # flake8-simplify
-  "PT",  # flake8-pytest-style
+  "PT", # flake8-pytest-style
   "YTT", # flake8-2020
   "PIE", # flake8-pie
   "RET", # flake8-return
   "ARG", # flake8-unused-arguments
   "DTZ", # flake8-datetimez
-  "RUF",  # Ruff-specific rules
+  "RUF", # Ruff-specific rules
 ]
 
 [tool.ruff.lint.isort]
@@ -125,76 +125,76 @@ parenthesize-tuple-in-subscript = true
 
 [tool.ruff.lint.extend-per-file-ignores]
 "define/compiler/codegen/literal/python/generator.py" = [
-    "PLC2701", # Bazel treats the private sibling renderer as external when linting one source.
+  "PLC2701", # Bazel treats the private sibling renderer as external when linting one source.
 ]
 "!{checks/**,tools/**,define/compiler/driver_fuzz_test.py}" = [
-    "PLR09", # Size limits apply to the vibe-coded sources above.
-    "PLW0717", # The same scope applies to the try-clause size limit.
+  "PLR09", # Size limits apply to the vibe-coded sources above.
+  "PLW0717", # The same scope applies to the try-clause size limit.
 ]
 "**/*.py" = [
-    "S603", # Allow subprocess calls without a shell.
+  "S603", # Allow subprocess calls without a shell.
 ]
 "tools/**/*.py" = [
-    "T201", # Command-line tools print their output.
+  "T201", # Command-line tools print their output.
 ]
 "tools/profiler/testdata/*_target.py" = [
-    "PTH", # Profiler targets are test data.
+  "PTH", # Profiler targets are test data.
 ]
 "define/compiler/**/*.py" = [
-    "S105", # Stop complaining about assigning things to "token"
+  "S105", # Stop complaining about assigning things to "token"
 ]
 "**/testdata/**/expected/**/*.py" = [
-    "A001", # Generated class names may intentionally match Python built-ins.
-    "D100", # Generated code doesn't need module docstrings.
-    "D101", # Generated code doesn't need class docstrings.
-    "D102", # Generated code doesn't need method docstrings.
-    "D103", # Generated code doesn't need function docstrings.
-    "D107", # Generated code doesn't need __init__ docstrings.
-    "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
-    "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
-    "FURB118", # Generated operation functions retain their source definitions.
-    "I001", # Import ordering depends on isort first-party config of the target project.
-    "I002", # Generated code does not inherit this project's required imports.
-    "N801", # Generated code may produce non-CapWords class names.
-    "RUF052", # Generated names preserve the source program's identifiers.
-    "RUF067", # Generated code is emitted into package `__init__.py` modules.
+  "A001", # Generated class names may intentionally match Python built-ins.
+  "D100", # Generated code doesn't need module docstrings.
+  "D101", # Generated code doesn't need class docstrings.
+  "D102", # Generated code doesn't need method docstrings.
+  "D103", # Generated code doesn't need function docstrings.
+  "D107", # Generated code doesn't need __init__ docstrings.
+  "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
+  "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
+  "FURB118", # Generated operation functions retain their source definitions.
+  "I001", # Import ordering depends on isort first-party config of the target project.
+  "I002", # Generated code does not inherit this project's required imports.
+  "N801", # Generated code may produce non-CapWords class names.
+  "RUF052", # Generated names preserve the source program's identifiers.
+  "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/testdata/**/expected_trace/**/*.py" = [
-    "A001", # Generated class names may intentionally match Python built-ins.
-    "D100", # Generated code doesn't need module docstrings.
-    "D101", # Generated code doesn't need class docstrings.
-    "D102", # Generated code doesn't need method docstrings.
-    "D103", # Generated code doesn't need function docstrings.
-    "D107", # Generated code doesn't need __init__ docstrings.
-    "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
-    "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
-    "FURB118", # Generated operation functions retain their source definitions.
-    "I001", # Import ordering depends on isort first-party config of the target project.
-    "I002", # Generated code does not inherit this project's required imports.
-    "N801", # Generated code may produce non-CapWords class names.
-    "RUF052", # Generated names preserve the source program's identifiers.
-    "RUF067", # Generated code is emitted into package `__init__.py` modules.
+  "A001", # Generated class names may intentionally match Python built-ins.
+  "D100", # Generated code doesn't need module docstrings.
+  "D101", # Generated code doesn't need class docstrings.
+  "D102", # Generated code doesn't need method docstrings.
+  "D103", # Generated code doesn't need function docstrings.
+  "D107", # Generated code doesn't need __init__ docstrings.
+  "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
+  "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
+  "FURB118", # Generated operation functions retain their source definitions.
+  "I001", # Import ordering depends on isort first-party config of the target project.
+  "I002", # Generated code does not inherit this project's required imports.
+  "N801", # Generated code may produce non-CapWords class names.
+  "RUF052", # Generated names preserve the source program's identifiers.
+  "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/*_test.py" = [
-    "PLR6301", # Test classes group related cases without using instance state.
-    "S101", # Allow assert statements.
-    "D100", # Don't require docstrings on test modules.
-    "D101", # Don't require docstrings on test classes.
-    "D102", # Don't require docstrings on test methods.
-    "D103", # Don't require docstrings on test functions.
-    "SLF001", # Tests may exercise private helpers.
+  "PLR6301", # Test classes group related cases without using instance state.
+  "S101", # Allow assert statements.
+  "D100", # Don't require docstrings on test modules.
+  "D101", # Don't require docstrings on test classes.
+  "D102", # Don't require docstrings on test methods.
+  "D103", # Don't require docstrings on test functions.
+  "SLF001", # Tests may exercise private helpers.
 ]
 "**/conftest.py" = [
-    "S101", # Allow assert statements.
+  "S101", # Allow assert statements.
 ]
 "**/test_helpers.py" = [
-    "S101", # Allow assert statements in test helpers.
+  "S101", # Allow assert statements in test helpers.
 ]
 "define/compiler/errors/parser_exceptions.py" = [
-    "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
+  "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
 ]
 "define/compiler/ast.py" = [
-    "A005", # Module intentionally named ast for AST definitions.
+  "A005", # Module intentionally named ast for AST definitions.
 ]
 [tool.ruff]
 extend-exclude = ["vendored"]
@@ -202,59 +202,59 @@ force-exclude = true
 
 [tool.ruff.format]
 exclude = [
-    "**/testdata/**/expected/**/*.py",
-    "**/testdata/**/expected_trace/**/*.py",
-    # Its code blocks show the generated code exactly as the code generator
-    # writes it.
-    "define/compiler/codegen/literal/python/generated_code_examples.md",
+  "**/testdata/**/expected/**/*.py",
+  "**/testdata/**/expected_trace/**/*.py",
+  # Its code blocks show the generated code exactly as the code generator
+  # writes it.
+  "define/compiler/codegen/literal/python/generated_code_examples.md",
 ]
 
 [tool.pytest.ini_options]
 addopts = "--tb=short --no-header -q"
 junit_logging = "all"
 norecursedirs = [
-    "bazel-*",
-    "experimental",
-    "mutants",
+  "bazel-*",
+  "experimental",
+  "mutants",
 ]
 
 [tool.mutmut]
 source_paths = [
-    "defcl/python/",
-    "define/compiler/",
-    "define/runtime/",
+  "defcl/python/",
+  "define/compiler/",
+  "define/runtime/",
 ]
 also_copy = [
-    "buf",
-    "defcl/testdata",
-    "define/config",
-    "define/reserved_words",
-    "define/testdata",
+  "buf",
+  "defcl/testdata",
+  "define/config",
+  "define/reserved_words",
+  "define/testdata",
 ]
 do_not_mutate = [
-    "*_test.py",
-    "*_pb2.py",
-    "**/conftest.py",
-    "**/test_helpers.py",
-    "**/testdata/**",
-    "defcl/python/lark/lark_standalone.py",
-    "define/compiler/parsing/lark/lark_standalone.py",
+  "*_test.py",
+  "*_pb2.py",
+  "**/conftest.py",
+  "**/test_helpers.py",
+  "**/testdata/**",
+  "defcl/python/lark/lark_standalone.py",
+  "define/compiler/parsing/lark/lark_standalone.py",
 ]
 pytest_add_cli_args_test_selection = [
-    "defcl/python",
-    "define/compiler",
-    "define/runtime",
+  "defcl/python",
+  "define/compiler",
+  "define/runtime",
 ]
 pytest_add_cli_args = [
-    # These tests execute subprocesses, which do not exercise mutmut's
-    # in-process mutated code and therefore provide no mutation coverage.
-    "--ignore=define/compiler/codegen/callee_codegen_independence_integration_test.py",
-    "--ignore=define/compiler/driver_fuzz_test.py",
-    "--ignore=define/compiler/driver_integration_test.py",
-    "--ignore=define/compiler/main_integration_test.py",
-    "--deselect=define/compiler/codegen/tracing_integration_test.py::test_generated_trace_matches_expected_artifacts",
-    "--deselect=define/compiler/codegen/tracing_integration_test.py::test_concurrent_runtime_respects_resolved_operation_dependencies",
-    "--deselect=define/compiler/codegen/generator_integration_test.py::test_expected_output_runs",
+  # These tests execute subprocesses, which do not exercise mutmut's
+  # in-process mutated code and therefore provide no mutation coverage.
+  "--ignore=define/compiler/codegen/callee_codegen_independence_integration_test.py",
+  "--ignore=define/compiler/driver_fuzz_test.py",
+  "--ignore=define/compiler/driver_integration_test.py",
+  "--ignore=define/compiler/main_integration_test.py",
+  "--deselect=define/compiler/codegen/tracing_integration_test.py::test_generated_trace_matches_expected_artifacts",
+  "--deselect=define/compiler/codegen/tracing_integration_test.py::test_concurrent_runtime_respects_resolved_operation_dependencies",
+  "--deselect=define/compiler/codegen/generator_integration_test.py::test_expected_output_runs",
 ]
 
 [tool.coverage.run]
@@ -268,14 +268,14 @@ google-re2 = { path = "vendored/re2/python", package = false }
 # Do not disable any rules here. Fix type errors in source code instead.
 stubPath = "typestubs"
 exclude = [
-    "experimental",
-    "vendored",
-    ".venv",
-    "**/.*.venv",
-    "bazel-*",
-    "**/*.pytest_main.py",
-    "defcl/python/lark",
-    "define/compiler/parsing/lark",
+  "experimental",
+  "vendored",
+  ".venv",
+  "**/.*.venv",
+  "bazel-*",
+  "**/*.pytest_main.py",
+  "defcl/python/lark",
+  "define/compiler/parsing/lark",
 ]
 
 [[tool.basedpyright.executionEnvironments]]
@@ -295,24 +295,24 @@ reportImplicitRelativeImport = false
 
 [dependency-groups]
 default = [
-    "define",
+  "define",
 ]
 dev = [
-    # Keep Bazel's dev venv broad enough for build/test tooling plus runtime deps.
-    "define",
-    "build",
-    "coverage",
-    "cython>=3.3.0,<3.4",
-    # Directly declared so uv uses the Bazel-provided virtual package.
-    "google-re2",
-    "hypothesis",
-    "lark",
-    "mutmut",
-    "pre-commit",
-    "pytest>=6",
-    "pyyaml",
-    "ruff",
-    "setuptools",
-    "types-protobuf",
-    "types-pyyaml",
+  # Keep Bazel's dev venv broad enough for build/test tooling plus runtime deps.
+  "define",
+  "build",
+  "coverage",
+  "cython>=3.3.0,<3.4",
+  # Directly declared so uv uses the Bazel-provided virtual package.
+  "google-re2",
+  "hypothesis",
+  "lark",
+  "mutmut",
+  "pre-commit",
+  "pytest>=6",
+  "pyyaml",
+  "ruff",
+  "setuptools",
+  "types-protobuf",
+  "types-pyyaml",
 ]

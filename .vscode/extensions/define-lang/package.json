@@ -1,11 +1,8 @@
 {
   "name": "define-lang",
   "displayName": "Define Language",
-  "description": "Minimal highlighting for Define",
   "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.0.0"
-  },
+  "description": "Minimal highlighting for Define",
   "contributes": {
     "languages": [
       {
@@ -28,5 +25,8 @@
         "path": "./syntaxes/define.tmLanguage.json"
       }
     ]
+  },
+  "engines": {
+    "vscode": "^1.0.0"
   }
 }
