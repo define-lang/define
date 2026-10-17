@@ -1,0 +1,29 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_binary(
+    name = "turn_end_checks",
+    srcs = ["turn_end_checks.py"],
+)
+
+py_test(
+    name = "turn_end_checks_test",
+    size = "small",
+    srcs = ["turn_end_checks_test.py"],
+    deps = [
+        ":turn_end_checks",
+        "@pypi//pytest",
+    ],
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":turn_end_checks",
+        ":turn_end_checks_test",
+    ],
+)
+
+check_build_file()

@@ -14,11 +14,6 @@ See [define/spec/spec.md] for the language specification.
   modules) into the source tree so that Python imports resolve outside of Bazel.
 - Re-run this script after changing `.proto` files or `.lark` grammar files.
 
-## Formatting
-
-- After making a change to any file, reformat by running
-  `bazelisk run --noshow_progress --ui_event_filters=-info //:format`
-
 ## Python Execution
 
 - If you have to run a local Python script, do it via `uv run`.
@@ -27,8 +22,6 @@ See [define/spec/spec.md] for the language specification.
 
 - Linting runs when you run bazelisk build or test. Always lint files after
   editing them.
-- Run `npx @bufbuild/buf lint` after making changes to .proto files in
-  `defcl/schema` or `define/config`.
 - Fix all linting errors that are reported.
 - Deterministic repository conventions are enforced by ast-grep rules in
   `checks/rules`. Every rule must have `valid` and `invalid` cases in
@@ -178,8 +171,6 @@ BUILD file generator.
   one build rule (`py_library`, `py_test`, `py_binary`, `go_library`, etc.).
 - **Keep targets atomic:** each target lists only its own source file in `srcs`
   and only its direct dependencies in `deps`.
-- After changing Python imports or targets, run
-  `uv run tools/check_python_deps.py <changed files>`.
 - Use `# keep` on a Python dependency only when it is required dynamically and
   cannot be inferred from imports.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
