@@ -2,3 +2,31 @@
 
 # Reformat JSON and TOML files with dprint
 cd989a3063c639803652e617734495c1733b1f5f
+
+# Reformat ci.yaml
+564db0d6e4102552ae5133ec9d9a50dac2c5a3c6
+
+# Fix formatting in automated requirement tests
+518a24e4c4113e37ffd23bb0e18a5508612043fc
+
+# Format the Lark type stubs
+1f9fbe38e6db4e419abb4b76245bc4d83e680dd6
+
+# Reformat the spec
+acfb91c9a6680f3d54435a3854e3340aff73b667
+
+# Fix spacing in Claude settings
+f4cc32403d6b041cba85ebc16b11027674e72596
+
+# Fix Markdown formatting in DLP 1
+52e1b0aa08e4db49d7c6785e27195263c4740cbf
+
+# Format Markdown files with Prettier
+bff8c128b7964096d5a8f3120f7ae5a379b355ea
+
+# Reformat parser tests
+f08fcc503ec5ab42fe16b43d4622ac9ec09f1f10
+1ce85c56ffc4faeb86ab14e9887a3cefe49bc715
+
+# Remove unnecessary indentation in the style guide
+baecbf55d2676f4abc953a02c29f699244851db4
