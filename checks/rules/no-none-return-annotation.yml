@@ -1,0 +1,14 @@
+id: no-none-return-annotation
+language: python
+severity: error
+message: Do not annotate a return type as `None` unless basedpyright requires it.
+note: "When basedpyright requires it, add `# ast-grep-ignore: no-none-return-annotation` on the line before the function."
+ignores:
+  - vendored/**
+rule:
+  pattern: None
+  inside:
+    kind: type
+    inside:
+      kind: function_definition
+      field: return_type

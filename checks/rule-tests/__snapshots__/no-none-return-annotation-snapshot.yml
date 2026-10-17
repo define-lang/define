@@ -1,0 +1,82 @@
+id: no-none-return-annotation
+snapshots:
+  "async def test_trace() -> None:\n    pass\n":
+    labels:
+    - source: None
+      style: primary
+      start: 26
+      end: 30
+    - source: |-
+        async def test_trace() -> None:
+            pass
+      style: secondary
+      start: 0
+      end: 40
+    - source: None
+      style: secondary
+      start: 26
+      end: 30
+  "class TestCreateParticle:\n    def test_short_form(self) -> None:\n        pass\n":
+    labels:
+    - source: None
+      style: primary
+      start: 59
+      end: 63
+    - source: |-
+        def test_short_form(self) -> None:
+                pass
+      style: secondary
+      start: 30
+      end: 77
+    - source: None
+      style: secondary
+      start: 59
+      end: 63
+  "class Validator:\n    def validate(self, program: Program) -> None:\n        self._check(program)\n":
+    labels:
+    - source: None
+      style: primary
+      start: 61
+      end: 65
+    - source: |-
+        def validate(self, program: Program) -> None:
+                self._check(program)
+      style: secondary
+      start: 21
+      end: 95
+    - source: None
+      style: secondary
+      start: 61
+      end: 65
+  "def _parse_source(source: str) -> None:\n    parse(source)\n":
+    labels:
+    - source: None
+      style: primary
+      start: 34
+      end: 38
+    - source: |-
+        def _parse_source(source: str) -> None:
+            parse(source)
+      style: secondary
+      start: 0
+      end: 57
+    - source: None
+      style: secondary
+      start: 34
+      end: 38
+  "def test_global_position(parse: Parse) -> None:\n    parse(\"define position</x>.\\n\")\n":
+    labels:
+    - source: None
+      style: primary
+      start: 42
+      end: 46
+    - source: |-
+        def test_global_position(parse: Parse) -> None:
+            parse("define position</x>.\n")
+      style: secondary
+      start: 0
+      end: 83
+    - source: None
+      style: secondary
+      start: 42
+      end: 46

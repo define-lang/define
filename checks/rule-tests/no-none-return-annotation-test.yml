@@ -1,14 +1,17 @@
-id: test-functions-no-none-return-annotation
+id: no-none-return-annotation
 valid:
   - |
     def test_global_position(parse: Parse):
         parse("define position</x>.\n")
   - |
-    def _parse_source(source: str) -> None:
+    def _parse_source(source: str):
         parse(source)
   - |
     def test_accepts_none(value: None):
         assert value is None
+  - |
+    def find_position(name: str) -> Position | None:
+        return positions.get(name)
 invalid:
   - |
     def test_global_position(parse: Parse) -> None:
@@ -20,3 +23,10 @@ invalid:
   - |
     async def test_trace() -> None:
         pass
+  - |
+    def _parse_source(source: str) -> None:
+        parse(source)
+  - |
+    class Validator:
+        def validate(self, program: Program) -> None:
+            self._check(program)

@@ -337,6 +337,8 @@ class Action(Quality):
         """The action's interface positions, in declaration order."""
         return tuple(self._interface_positions.values())
 
+    # basedpyright has no return type to infer from a body that only raises.
+    # ast-grep-ignore: no-none-return-annotation
     def run(self) -> None:
         """Execute this action's statements."""
         raise NotImplementedError

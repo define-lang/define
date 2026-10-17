@@ -72,8 +72,6 @@ See [define/spec/spec.md] for the language specification.
 - Do not use non-descriptive variable names like `ref`.
 - Prefer positive booleans. For example: `enable_feature=False` rather than
   `disable_feature=True`.
-- Do not add `-> None` return annotations unless a type checker explicitly
-  requires one.
 - Avoid redundant casts and assignment annotations when the type checker can
   infer the exact type.
 - Use a comprehension only when it has exactly one `for` clause, no assignment
