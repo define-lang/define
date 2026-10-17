@@ -12,8 +12,7 @@ bazelisk run --noshow_progress --ui_event_filters=-info //tools/profiler:regener
 Run the command after changing the raw-profile schema, capture semantics,
 critical-path analysis inputs, any corresponding `testdata/*_target.py` file,
 the compiler fixture workload, or the Python toolchain. Review the JSONL diff
-before accepting it, then run `//tools/profiler:profiler_test` and
-`//tools/profiler:compiler_profile_test`.
+before accepting it.
 
 Fixture targets must coordinate phases through file descriptors or FIFOs. Do not
 add elapsed-time deadlines or fixed CPU-time workloads. The regenerator samples

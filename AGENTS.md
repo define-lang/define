@@ -17,7 +17,8 @@ See [define/spec/spec.md] for the language specification.
 - Deterministic repository conventions are enforced by ast-grep rules in
   `checks/rules`. Every rule must have `valid` and `invalid` cases in
   `checks/rule-tests/<rule id>-test.yml`, checked by `//checks:rules_test`.
-  After adding or changing a rule or its cases, run `ast-grep test --update-all`
+  After adding or changing a rule or its cases, run
+  `bazelisk run --noshow_progress --ui_event_filters=-info @multitool//tools/ast-grep:cwd -- test --update-all`
   and review the changed snapshots in `checks/rule-tests/__snapshots__` to
   confirm each invalid case matches the intended code.
 - When a pyright check fails:

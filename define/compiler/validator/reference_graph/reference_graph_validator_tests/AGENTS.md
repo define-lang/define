@@ -2,5 +2,3 @@
 
 - Before adding, removing, renaming, or updating any test that parses or
   validates Define source, read and follow `define/testdata/AGENTS.md`.
-- Never filter diagnostics by type or file. Assert on the exact diagnostics
-  returned.

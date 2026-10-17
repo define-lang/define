@@ -2,16 +2,6 @@
 
 This directory contains a custom buf lint plugin written in Go.
 
-## Go Execution
-
-- Build the plugin with `go build -o buf-plugin-defcl .`
-- Run tests with `go test -v ./...`
-
-## Formatting
-
-- Format with
-  `bazelisk run --noshow_progress --ui_event_filters=-info //:format`
-
 ## Adding New Rules
 
 1. Define a `check.RuleSpec` variable with the rule ID prefixed with `DEFCL_`.
@@ -24,11 +14,6 @@ This directory contains a custom buf lint plugin written in Go.
 
 - Use `checktest.CheckTest` for testing rules.
 - Each rule should have at least one valid and one invalid test case.
-
-## Comments
-
-- Only add comments that explain why code was written. Never add comments saying
-  what code does.
 
 ## Dependencies
 

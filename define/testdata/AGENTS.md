@@ -40,5 +40,3 @@ define/testdata/reference_graph/chained_name/create_particle__invalid_local_name
   source as `#` comments instead of using a Python test docstring. Do not add
   those comments when comments, exact bytes, missing content, or exact source
   layout are part of the behavior under test.
-- Run `//define/testdata:testdata_test` after adding, removing, or renaming
-  convention-organized testdata.
