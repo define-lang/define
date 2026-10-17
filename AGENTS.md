@@ -29,8 +29,7 @@ See [define/spec/spec.md] for the language specification.
   After adding or changing a rule or its cases, run `ast-grep test --update-all`
   and review the changed snapshots in `checks/rule-tests/__snapshots__` to
   confirm each invalid case matches the intended code.
-- **Never disable pyright rules globally** in `pyproject.toml`. All basedpyright
-  rules must remain enabled. When a pyright check fails:
+- When a pyright check fails:
   - Fix the type error in source code (add type annotations, use `cast()`,
     etc.).
   - Always verify fixes against the **Bazel** `pyright_test` targets, not just
