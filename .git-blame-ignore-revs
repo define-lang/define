@@ -1,0 +1,4 @@
+# Commits that only reformat files, which git blame skips.
+
+# Reformat JSON and TOML files with dprint
+68d939b34ac2edbfeefbbf4033c06b7579a5fcd8
