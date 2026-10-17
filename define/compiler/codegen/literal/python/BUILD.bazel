@@ -229,6 +229,7 @@ py_library(
 rust_clippy_test(
     name = "clippy_test",
     size = "small",
+    tags = ["precommit"],
     targets = [":renderer_shared"],
 )
 

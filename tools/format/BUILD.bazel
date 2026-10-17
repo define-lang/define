@@ -13,6 +13,7 @@ go_binary(
         "@multitool//tools/ruff",
         "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
     ],
+    tags = ["precommit"],
     visibility = ["//:__pkg__"],
     x_defs = {
         "bufRlocationPath": "$(rlocationpath @multitool//tools/buf)",

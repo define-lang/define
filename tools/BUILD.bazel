@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -45,6 +46,16 @@ py_test(
         "@pypi//click",
         "@pypi//pytest",
     ],
+)
+
+# Pre-commit runs ast-grep from bazel-bin, so it needs a known path there.
+copy_file(
+    name = "ast_grep",
+    src = "@multitool//tools/ast-grep",
+    out = "ast-grep",
+    allow_symlink = True,
+    is_executable = True,
+    tags = ["precommit"],
 )
 
 py_library(
@@ -141,6 +152,18 @@ py_test(
         ":loop_coverage",
         "@pypi//pytest",
     ],
+)
+
+py_binary(
+    name = "precommit_bazel_checks",
+    srcs = ["precommit_bazel_checks.py"],
+)
+
+py_test(
+    name = "precommit_bazel_checks_test",
+    size = "small",
+    srcs = ["precommit_bazel_checks_test.py"],
+    deps = [":precommit_bazel_checks"],
 )
 
 # PRF-012: Orchestration boundary. PRF-014: CPU mode.
@@ -278,6 +301,7 @@ py_test(
         "//:.cursor/cli.json",
     ],
     env = {"CLAUDE_SETTINGS": "$(rlocationpath //:.claude/settings.json)"},
+    tags = ["precommit"],
     deps = [
         ":runfiles",
         ":sync_agent_permissions",
@@ -361,6 +385,8 @@ pyright_test(
         ":git_commit_via_api",
         ":loop_coverage",
         ":loop_coverage_test",
+        ":precommit_bazel_checks",
+        ":precommit_bazel_checks_test",
         ":profile_orchestration",
         ":pyo3_config",
         ":regenerate_codegen_testdata",

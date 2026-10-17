@@ -4,6 +4,8 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 go_binary(
     name = "buf",
     embed = [":buf_lib"],
+    # buf.yaml loads its lint plugin from bazel-bin.
+    tags = ["precommit"],
     visibility = ["//visibility:public"],
 )
 

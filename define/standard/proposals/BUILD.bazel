@@ -10,6 +10,7 @@ validate_proposals_test(
     name = "validate_proposals_test",
     size = "small",
     proposals = ":proposals",
+    tags = ["precommit"],
 )
 
 check_build_file()

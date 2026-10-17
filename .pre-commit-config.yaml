@@ -1,7 +1,6 @@
 exclude: ^vendored/
 
 # File-changing hooks need separate priorities so they cannot race on the same files.
-# Bazel hooks also need separate priorities because they share one server.
 repos:
   - repo: builtin
     hooks:
@@ -39,28 +38,6 @@ repos:
         language: system
         types: [python]
 
-      - id: basedpyright
-        priority: 60
-        name: basedpyright
-        entry: tools/pyright-precommit.sh
-        exclude: define/compiler/prototype
-        language: system
-        types: [python]
-        require_serial: true
-
-      - id: bazel-checks
-        priority: 70
-        name: bazel-based checks
-        entry:
-          bazelisk test --noshow_progress
-          //define/proposals:validate_proposals_test
-          //defcl/proposals:validate_proposals_test
-          //define/standard/proposals:validate_proposals_test
-          //tools:sync_agent_permissions_test
-        language: system
-        types_or: [markdown, json]
-        pass_filenames: false
-
       - id: check-all-symlinks
         priority: 50
         name: check that no tracked symlink is broken
@@ -80,39 +57,14 @@ repos:
         # Different filename batches can update the same BUILD file.
         require_serial: true
 
-      - id: build-file-checks
-        priority: 90
-        name: check that BUILD files call check_build_file
-        entry:
-          bazelisk run --noshow_progress @multitool//tools/ast-grep:cwd -- scan
-        language: system
-        files: (^|/)BUILD\.bazel$
-        exclude: ^vendored/
-
-      - id: rust-checks
-        priority: 80
-        name: Rust lint checks
-        entry:
-          bazelisk test --noshow_progress
-          //define/compiler/codegen/literal/python:clippy_test
-        language: system
-        files: (\.rs|\.j2|Cargo\.toml|Cargo\.lock|rust-toolchain\.toml)$
-        pass_filenames: false
-
-      - id: format
+      - id: bazel-checks
+        # This hook formats files, and it builds the plugin that buf-lint
+        # loads from bazel-bin.
         priority: 40
-        name: reformat files
-        entry: bazelisk run --noshow_progress //:format
+        name: Bazel checks and formatting
+        entry: uv run tools/precommit_bazel_checks.py
         language: system
-        pass_filenames: false
-        require_serial: true
-
-      - id: buf-plugin-build
-        priority: 50
-        name: build buf plugin
-        entry: bazelisk build --noshow_progress //defcl/buf
-        language: system
-        files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
+        always_run: true
         pass_filenames: false
   - repo: https://github.com/bufbuild/buf
     rev: v1.74.0
