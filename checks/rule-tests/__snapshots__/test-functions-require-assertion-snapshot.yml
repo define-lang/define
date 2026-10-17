@@ -1,10 +1,7 @@
 id: test-functions-require-assertion
 snapshots:
-  ? |
-    @decorator(pytest.raises(ValueError))
-    def test_value():
-        operation()
-  : labels:
+  "@decorator(pytest.raises(ValueError))\ndef test_value():\n    operation()\n":
+    labels:
     - source: |-
         def test_value():
             operation()
@@ -15,10 +12,8 @@ snapshots:
       style: secondary
       start: 42
       end: 52
-  ? |
-    async def test_value():
-        await operation()
-  : labels:
+  "async def test_value():\n    await operation()\n":
+    labels:
     - source: |-
         async def test_value():
             await operation()
@@ -29,11 +24,8 @@ snapshots:
       style: secondary
       start: 10
       end: 20
-  ? |
-    class TestValue:
-        def test_value(self):
-            pass
-  : labels:
+  "class TestValue:\n    def test_value(self):\n        pass\n":
+    labels:
     - source: |-
         def test_value(self):
                 pass
@@ -44,11 +36,8 @@ snapshots:
       style: secondary
       start: 25
       end: 35
-  ? |
-    def test_deprecated():
-        with pytest.deprecated_call():
-            operation()
-  : labels:
+  "def test_deprecated():\n    with pytest.deprecated_call():\n        operation()\n":
+    labels:
     - source: |-
         def test_deprecated():
             with pytest.deprecated_call():
@@ -60,12 +49,8 @@ snapshots:
       style: secondary
       start: 4
       end: 19
-  ? |
-    def test_value():
-        "assert value"
-        # assert value
-        operation()
-  : labels:
+  "def test_value():\n    \"assert value\"\n    # assert value\n    operation()\n":
+    labels:
     - source: |-
         def test_value():
             "assert value"
@@ -78,11 +63,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        assertion = True
-        assert_no_errors = helper
-  : labels:
+  "def test_value():\n    assertion = True\n    assert_no_errors = helper\n":
+    labels:
     - source: |-
         def test_value():
             assertion = True
@@ -94,10 +76,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        check = lambda: pytest.raises(ValueError, operation)
-  : labels:
+  "def test_value():\n    check = lambda: pytest.raises(ValueError, operation)\n":
+    labels:
     - source: |-
         def test_value():
             check = lambda: pytest.raises(ValueError, operation)
@@ -108,13 +88,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        class Helper:
-            def check(self):
-                assert value
-        operation()
-  : labels:
+  "def test_value():\n    class Helper:\n        def check(self):\n            assert value\n    operation()\n":
+    labels:
     - source: |-
         def test_value():
             class Helper:
@@ -128,12 +103,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        def helper():
-            assert value
-        operation()
-  : labels:
+  "def test_value():\n    def helper():\n        assert value\n    operation()\n":
+    labels:
     - source: |-
         def test_value():
             def helper():
@@ -146,10 +117,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        operation()
-  : labels:
+  "def test_value():\n    operation()\n":
+    labels:
     - source: |-
         def test_value():
             operation()
@@ -160,10 +129,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        operation(assert_no_errors)
-  : labels:
+  "def test_value():\n    operation(assert_no_errors)\n":
+    labels:
     - source: |-
         def test_value():
             operation(assert_no_errors)
@@ -174,10 +141,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_value():
-        pytest.skip("unavailable")
-  : labels:
+  "def test_value():\n    pytest.skip(\"unavailable\")\n":
+    labels:
     - source: |-
         def test_value():
             pytest.skip("unavailable")
@@ -188,11 +153,8 @@ snapshots:
       style: secondary
       start: 4
       end: 14
-  ? |
-    def test_warning():
-        with pytest.warns(UserWarning):
-            operation()
-  : labels:
+  "def test_warning():\n    with pytest.warns(UserWarning):\n        operation()\n":
+    labels:
     - source: |-
         def test_warning():
             with pytest.warns(UserWarning):

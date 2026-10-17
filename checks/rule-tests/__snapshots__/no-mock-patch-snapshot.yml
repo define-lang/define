@@ -1,24 +1,19 @@
 id: no-mock-patch
 snapshots:
-  ? |
-    @unittest.mock.patch("define.compiler.parser.Parser")
-    def test_parse(parser_class):
-        pass
-  : labels:
+  "@unittest.mock.patch(\"define.compiler.parser.Parser\")\ndef test_parse(parser_class):\n    pass\n":
+    labels:
     - source: unittest.mock.patch("define.compiler.parser.Parser")
       style: primary
       start: 1
       end: 53
-  ? |
-    mock.patch("define.compiler.parser.Parser")
-  : labels:
+  "mock.patch(\"define.compiler.parser.Parser\")\n":
+    labels:
     - source: mock.patch("define.compiler.parser.Parser")
       style: primary
       start: 0
       end: 43
-  ? |
-    patch("define.compiler.parser.Parser")
-  : labels:
+  "patch(\"define.compiler.parser.Parser\")\n":
+    labels:
     - source: patch("define.compiler.parser.Parser")
       style: primary
       start: 0

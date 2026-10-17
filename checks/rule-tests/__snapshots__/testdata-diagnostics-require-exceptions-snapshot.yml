@@ -1,11 +1,7 @@
 id: testdata-diagnostics-require-exceptions
 snapshots:
-  ? |
-    class TestCase:
-        def test_method(self, testdata_project_directory):
-            result = run(testdata_project_directory)
-            assert result.diagnostics == []
-  : labels:
+  "class TestCase:\n    def test_method(self, testdata_project_directory):\n        result = run(testdata_project_directory)\n        assert result.diagnostics == []\n":
+    labels:
     - source: |-
         def test_method(self, testdata_project_directory):
                 result = run(testdata_project_directory)
@@ -25,10 +21,8 @@ snapshots:
       style: secondary
       start: 42
       end: 68
-  ? |
-    def test_diagnostics_only(validate_testdata_structural):
-        assert validate_testdata_structural().all_diagnostics == []
-  : labels:
+  "def test_diagnostics_only(validate_testdata_structural):\n    assert validate_testdata_structural().all_diagnostics == []\n":
+    labels:
     - source: |-
         def test_diagnostics_only(validate_testdata_structural):
             assert validate_testdata_structural().all_diagnostics == []
@@ -47,10 +41,8 @@ snapshots:
       style: secondary
       start: 26
       end: 54
-  ? |
-    def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
-        assert validate_testdata_non_filesystem_with_reference_graph().diagnostics == []
-  : labels:
+  "def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):\n    assert validate_testdata_non_filesystem_with_reference_graph().diagnostics == []\n":
+    labels:
     - source: |-
         def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
             assert validate_testdata_non_filesystem_with_reference_graph().diagnostics == []

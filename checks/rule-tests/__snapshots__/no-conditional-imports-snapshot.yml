@@ -1,9 +1,7 @@
 id: no-conditional-imports
 snapshots:
-  ? |
-    if sys.platform == "linux":
-        import fcntl
-  : labels:
+  "if sys.platform == \"linux\":\n    import fcntl\n":
+    labels:
     - source: import fcntl
       style: primary
       start: 32
@@ -14,10 +12,8 @@ snapshots:
       style: secondary
       start: 0
       end: 44
-  ? |
-    if sys.version_info >= (3, 14):
-        from annotationlib import get_annotations
-  : labels:
+  "if sys.version_info >= (3, 14):\n    from annotationlib import get_annotations\n":
+    labels:
     - source: from annotationlib import get_annotations
       style: primary
       start: 36
@@ -28,12 +24,8 @@ snapshots:
       style: secondary
       start: 0
       end: 77
-  ? |
-    try:
-        import tomllib
-    except ImportError:
-        tomllib = None
-  : labels:
+  "try:\n    import tomllib\nexcept ImportError:\n    tomllib = None\n":
+    labels:
     - source: import tomllib
       style: primary
       start: 9
