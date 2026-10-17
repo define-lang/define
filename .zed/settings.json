@@ -1,0 +1,53 @@
+{
+  "languages": {
+    "Markdown": {
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    },
+    "JSON": {
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    },
+    "JSONC": {
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    },
+    "TOML": {
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    },
+    "YAML": {
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    },
+    "Shell Script": {
+      "formatter": {
+        "external": {
+          "command": "dprint",
+          "arguments": ["fmt", "--stdin", "{buffer_path}"]
+        }
+      }
+    }
+  }
+}
