@@ -365,11 +365,41 @@ py_library(
         {},
     )
 
-    assert check_python_deps.report_results(repository, results, check_only=False) == 1
+    assert check_python_deps.report_results(repository, results, check_only=False) == 0
     contents = build_file.read_text()
     assert '"@pypi//click",  # keep' in contents
     assert "//old:unused" not in contents
     assert 'name = "second"' in contents
+
+
+def test_report_results_check_only_fails_without_rewriting(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    package = tmp_path / "tools"
+    package.mkdir()
+    build_file = package / "BUILD.bazel"
+    original_contents = """py_library(
+    name = "first",
+    srcs = ["first.py"],
+    deps = ["//old:unused"],
+)
+"""
+    _ = build_file.write_text(original_contents)
+    first = check_python_deps.PythonTarget(
+        "//tools:first",
+        "py_library",
+        Path("tools/BUILD.bazel"),
+        (Path("tools/first.py"),),
+        frozenset({"//old:unused"}),
+    )
+    repository = check_python_deps.RepositoryAnalysis(tmp_path, (), {}, {}, {})
+    results = check_python_deps.AnalysisResults(
+        (check_python_deps.DependencyChanges(first, frozenset()),), {}
+    )
+
+    assert check_python_deps.report_results(repository, results, check_only=True) == 1
+    assert capsys.readouterr().out == "//tools:first\n  remove //old:unused\n"
+    assert build_file.read_text() == original_contents
 
 
 def test_repository_analysis_combines_imports_and_fixtures_of_test_sources(
@@ -574,7 +604,7 @@ pyright_test(name = "pyright_test", deps = [":third"])
     }
     assert change.missing == {"//tools/child:second"}
     assert change.unnecessary == {"//old:unused", "//tools:generated"}
-    assert check_python_deps.report_results(repository, results, check_only=False) == 1
+    assert check_python_deps.report_results(repository, results, check_only=False) == 0
     contents = (tools / "BUILD.bazel").read_text()
     assert '"//kept:dependency",  # keep' in contents
     assert '"//tools/child:second",' in contents

@@ -806,10 +806,11 @@ def report_results(
         for label in sorted(change.unnecessary):
             print(f"  remove {label}")
 
-    if not check_only:
-        _apply_changes(repository_analysis.repository, list(results.changes))
-        _ = print("\nUpdated BUILD.bazel files. Re-run the command to verify.")
-    return 1
+    if check_only:
+        return 1
+    _apply_changes(repository_analysis.repository, list(results.changes))
+    _ = print("\nUpdated BUILD.bazel files.")
+    return 0
 
 
 def main() -> int:
