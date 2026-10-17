@@ -308,7 +308,7 @@ dev = [
   "hypothesis",
   "lark",
   "mutmut",
-  "pre-commit",
+  "prek",
   "pytest>=6",
   "pyyaml",
   "ruff",
