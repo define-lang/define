@@ -152,15 +152,16 @@ def _copy_buf_validate():
             print(dest.relative_to(REPO_ROOT))
 
 
+def _venv_executable(name: str) -> Path:
+    if os.name == "nt":
+        return REPO_ROOT / ".venv" / "Scripts" / f"{name}.exe"
+    return REPO_ROOT / ".venv" / "bin" / name
+
+
 def _copy_re2():
-    venv_python = (
-        REPO_ROOT
-        / ".venv"
-        / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    )
     site_packages_result = subprocess.run(
         [
-            str(venv_python),
+            str(_venv_executable("python")),
             "-c",
             "import sysconfig; print(sysconfig.get_path('platlib'))",
         ],
@@ -189,6 +190,12 @@ def _configure_git_blame():
     )
 
 
+def _install_git_hooks():
+    _ = subprocess.run(
+        [str(_venv_executable("prek")), "install"], cwd=REPO_ROOT, check=True
+    )
+
+
 def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
     uv_location, renderer_location = sys.argv[1:]
@@ -208,6 +215,7 @@ def main():
     _copy_file(renderer_source, REPO_ROOT / extension_path)
     print(extension_path)
     _configure_git_blame()
+    _install_git_hooks()
     print("Done.")
 
 

@@ -214,7 +214,7 @@ BUILD file generator.
   a single `pypi` hub backed by the root `uv.lock`.
 - Dependencies are in the root `pyproject.toml`; build and test tooling
   dependencies are in its `dev` group.
-- To regenerate or update the uv lock file:
+- After changing dependencies in `pyproject.toml`, update the uv lock file:
   `bazelisk run --noshow_progress --ui_event_filters=-info //:update_lock`
 - Reference Python dependencies in BUILD files as `@pypi//package_name`.
 

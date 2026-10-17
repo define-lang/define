@@ -289,16 +289,7 @@ py_binary(
     name = "update_lock",
     srcs = ["update_lock.py"],
     args = ["$(rlocationpath @multitool//tools/uv)"],
-    data = [
-        "//:pyproject.toml",
-        "//:uv.lock",
-        "@multitool//tools/uv",
-        "@re2//python:uv_metadata",
-    ],
-    tags = [
-        "local",
-        "requires-network",
-    ],
+    data = ["@multitool//tools/uv"],
     visibility = ["//:__pkg__"],
     deps = [":runfiles"],
 )
