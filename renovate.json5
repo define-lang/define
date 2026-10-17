@@ -99,10 +99,13 @@
       datasourceTemplate: "github-release-attachments",
     },
     {
+      // dprint's plugin registry names a plugin's GitHub repository
+      // inconsistently, so a comment names it instead.
       customType: "regex",
-      managerFilePatterns: ["/^MODULE\\.bazel$/"],
+      managerFilePatterns: ["/^MODULE\\.bazel$/", "/^dprint\\.jsonc$/"],
       matchStrings: [
-        'http_file\\([^)]*?sha256 = "(?<currentDigest>[0-9a-f]{64})",\\s*urls = \\["https://github\\.com/(?<depName>[^/"]+/[^/"]+)/releases/download/(?<currentValue>[^/"]+)/[^"]+"\\],\\s*\\)',
+        '# renovate: depName=(?<depName>\\S+)\\s+http_file\\([^)]*?sha256 = "(?<currentDigest>[0-9a-f]{64})",\\s*urls = \\["https://plugins\\.dprint\\.dev/[^"]*-(?<currentValue>v?\\d[^/"-]*)\\.wasm"\\],\\s*\\)',
+        '// renovate: depName=(?<depName>\\S+)\\s+"https://plugins\\.dprint\\.dev/[^"]*-(?<currentValue>v?\\d[^/"-]*)\\.wasm@(?<currentDigest>[0-9a-f]{64})"',
       ],
       datasourceTemplate: "github-release-attachments",
     },

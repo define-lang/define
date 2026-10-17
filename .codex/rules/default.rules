@@ -166,11 +166,6 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["prettier"],
-    decision = "allow",
-)
-
-prefix_rule(
     pattern = ["npx", "@bufbuild/buf", "format"],
     decision = "allow",
 )

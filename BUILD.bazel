@@ -13,6 +13,11 @@ exports_files([
 ])
 
 exports_files(
+    ["dprint.jsonc"],
+    visibility = ["//tools/format:__pkg__"],
+)
+
+exports_files(
     ["uv.lock"],
     visibility = ["//tools:__pkg__"],
 )

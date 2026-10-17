@@ -1,6 +1,0 @@
-LICENSE
-pnpm-lock.yaml
-/tmp/
-tools/profiler/testdata/*.jsonl
-vendored/
-checks/rule-tests/__snapshots__/

@@ -12,12 +12,6 @@ importers:
         specifier: latest
         version: 1.40.2
 
-  tools:
-    devDependencies:
-      prettier:
-        specifier: latest
-        version: 3.9.10
-
 packages:
 
   basedpyright@1.40.2:
@@ -30,11 +24,6 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  prettier@3.9.10:
-    resolution: {integrity: sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==}
-    engines: {node: '>=14'}
-    hasBin: true
-
 snapshots:
 
   basedpyright@1.40.2:
@@ -43,5 +32,3 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
-
-  prettier@3.9.10: {}

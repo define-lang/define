@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -32,19 +31,18 @@ var (
 	bufRlocationPath                  string
 	buildifierRlocationPath           string
 	dprintMarkdownPluginRlocationPath string
+	dprintOxcPluginRlocationPath      string
 	dprintRlocationPath               string
+	dprintShellPluginRlocationPath    string
+	dprintTOMLPluginRlocationPath     string
+	dprintYAMLPluginRlocationPath     string
 	gofumptRlocationPath              string
-	prettierRlocationPath             string
 	ruffRlocationPath                 string
 	rustfmtRlocationPath              string
 )
 
 // Windows limits a command line to 32767 characters.
 const maxBatchCharacters = 30000
-
-// Measured on prettier, more processes than this stop reducing the wall time
-// because each one pays the formatter's startup cost.
-const maxSingleThreadedProcesses = 6
 
 // Files with these attributes in .gitattributes are not maintained in this
 // repository, so they keep their upstream formatting.
@@ -57,9 +55,6 @@ type formatter struct {
 	// pathFlag precedes each file for a formatter that does not take files
 	// as positional arguments.
 	pathFlag string
-	// A single-threaded formatter's files are split across several
-	// processes.
-	singleThreaded bool
 	// pluginRlocationPaths are the runfiles paths of plugins that the
 	// formatter takes after --plugins, followed by -- before the files.
 	pluginRlocationPaths []string
@@ -76,15 +71,20 @@ var (
 		rlocationPath:  buildifierRlocationPath,
 		fixArguments:   []string{"-mode=fix", "-lint=fix"},
 		checkArguments: []string{"-mode=check", "-lint=warn"},
-		singleThreaded: true,
 	}
 	dprint = &formatter{
 		rlocationPath: dprintRlocationPath,
 		// At the default log level, dprint reports every file it formats, and
 		// at lower log levels its check reports no diffs.
-		fixArguments:         []string{"fmt", "--log-level=warn"},
-		checkArguments:       []string{"check"},
-		pluginRlocationPaths: []string{dprintMarkdownPluginRlocationPath},
+		fixArguments:   []string{"fmt", "--log-level=warn"},
+		checkArguments: []string{"check"},
+		pluginRlocationPaths: []string{
+			dprintMarkdownPluginRlocationPath,
+			dprintOxcPluginRlocationPath,
+			dprintShellPluginRlocationPath,
+			dprintTOMLPluginRlocationPath,
+			dprintYAMLPluginRlocationPath,
+		},
 	}
 	gofumpt = &formatter{
 		rlocationPath: gofumptRlocationPath,
@@ -92,12 +92,6 @@ var (
 		// -l exits successfully even when files are unformatted, but -d
 		// does not.
 		checkArguments: []string{"-d"},
-	}
-	prettier = &formatter{
-		rlocationPath:  prettierRlocationPath,
-		fixArguments:   []string{"--write", "--log-level=warn"},
-		checkArguments: []string{"--check", "--log-level=warn"},
-		singleThreaded: true,
 	}
 	ruff = &formatter{
 		rlocationPath: ruffRlocationPath,
@@ -114,7 +108,7 @@ var (
 )
 
 // The formatters run in this order so that their output is deterministic.
-var formatters = []*formatter{buf, buildifier, dprint, gofumpt, prettier, ruff, rustfmt}
+var formatters = []*formatter{buf, buildifier, dprint, gofumpt, ruff, rustfmt}
 
 // Formatters rewrite whole files, so a file with several formatters is
 // formatted by one of them at a time, in order.
@@ -122,16 +116,19 @@ var formattersByExtension = map[string][]*formatter{
 	".bazel": {buildifier},
 	".bzl":   {buildifier},
 	".go":    {gofumpt},
-	".json":  {prettier},
-	".json5": {prettier},
+	".json":  {dprint},
+	".json5": {dprint},
+	".jsonc": {dprint},
 	// ruff formats the Python code blocks in Markdown files.
 	".md":    {dprint, ruff},
 	".proto": {buf},
 	".py":    {ruff},
 	".pyi":   {ruff},
 	".rs":    {rustfmt},
-	".yaml":  {prettier},
-	".yml":   {prettier},
+	".sh":    {dprint},
+	".toml":  {dprint},
+	".yaml":  {dprint},
+	".yml":   {dprint},
 }
 
 func formattersFor(path string) []*formatter {
@@ -204,11 +201,7 @@ func formatterCommands(allRunfiles *runfiles.Runfiles, workspace string, check b
 			}
 			arguments = append(arguments, "--")
 		}
-		processes := 1
-		if formatter.singleThreaded {
-			processes = min(runtime.NumCPU(), maxSingleThreadedProcesses)
-		}
-		for _, batch := range batches(formatter.pathFlag, files[formatter], processes) {
+		for _, batch := range batches(formatter.pathFlag, files[formatter]) {
 			command := exec.Command(tool, append(append([]string{}, arguments...), batch...)...)
 			command.Dir = workspace
 			command.Env = append(os.Environ(), allRunfiles.Env()...)
@@ -302,30 +295,27 @@ func ignoredFiles(checkAttrOutput []byte) map[string]bool {
 	return ignored
 }
 
-// batches deals files round-robin to the given number of processes and splits
-// each process's files into argument lists that fit on one command line.
-func batches(pathFlag string, files []string, processes int) [][]string {
+// batches splits files into argument lists that fit on one command line.
+func batches(pathFlag string, files []string) [][]string {
 	var result [][]string
-	// Dealing round-robin spreads each directory's files, which tend to be
-	// similar in size, across the processes.
-	for process := range min(processes, len(files)) {
-		var batch []string
-		characters := 0
-		for index := process; index < len(files); index += processes {
-			arguments := []string{files[index]}
-			if pathFlag != "" {
-				arguments = []string{pathFlag, files[index]}
-			}
-			// Each argument is followed by a space.
-			length := len(strings.Join(arguments, " ")) + 1
-			if len(batch) > 0 && characters+length > maxBatchCharacters {
-				result = append(result, batch)
-				batch = nil
-				characters = 0
-			}
-			batch = append(batch, arguments...)
-			characters += length
+	var batch []string
+	characters := 0
+	for _, file := range files {
+		arguments := []string{file}
+		if pathFlag != "" {
+			arguments = []string{pathFlag, file}
 		}
+		// Each argument is followed by a space.
+		length := len(strings.Join(arguments, " ")) + 1
+		if len(batch) > 0 && characters+length > maxBatchCharacters {
+			result = append(result, batch)
+			batch = nil
+			characters = 0
+		}
+		batch = append(batch, arguments...)
+		characters += length
+	}
+	if len(batch) > 0 {
 		result = append(result, batch)
 	}
 	return result

@@ -12,8 +12,11 @@ import (
 	"github.com/bazelbuild/rules_go/go/runfiles"
 )
 
-// The runfiles path of the format binary, set at link time.
-var formatRlocationPath string
+// Runfiles paths set at link time.
+var (
+	dprintConfigRlocationPath string
+	formatRlocationPath       string
+)
 
 func newRepository(t *testing.T, files map[string]string) string {
 	t.Helper()
@@ -22,6 +25,13 @@ func newRepository(t *testing.T, files map[string]string) string {
 	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
 	repository := t.TempDir()
 	writeFiles(t, repository, files)
+	// The workspace's dprint configuration gives each file type only one of
+	// the dprint plugins that can format it.
+	dprintConfig, err := os.ReadFile(rlocation(t, dprintConfigRlocationPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFiles(t, repository, map[string]string{"dprint.jsonc": string(dprintConfig)})
 	git(t, repository, "init", "--quiet")
 	git(t, repository, "add", ".")
 	git(t, repository, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--quiet", "--allow-empty", "--message=Initial")
@@ -52,11 +62,7 @@ func git(t *testing.T, repository string, arguments ...string) {
 
 func runFormat(t *testing.T, environment []string, arguments ...string) (string, int) {
 	t.Helper()
-	binary, err := runfiles.Rlocation(formatRlocationPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	command := exec.Command(binary, arguments...)
+	command := exec.Command(rlocation(t, formatRlocationPath), arguments...)
 	command.Env = append(os.Environ(), environment...)
 	// Coverage-instrumented binaries need a directory even when a test invokes
 	// them only to check their behavior.
@@ -70,6 +76,15 @@ func runFormat(t *testing.T, environment []string, arguments ...string) (string,
 		t.Fatal(err)
 	}
 	return string(output), 0
+}
+
+func rlocation(t *testing.T, rlocationPath string) string {
+	t.Helper()
+	path, err := runfiles.Rlocation(rlocationPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func runFormatIn(t *testing.T, workspace, workingDirectory string, arguments ...string) (string, int) {
@@ -107,10 +122,14 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 		// gofumpt removes it.
 		"a.go":    "package a\n\nfunc f() {\n\n\tf()\n}\n",
 		"a.json":  "{\"a\":1}\n",
+		"a.json5": "{a:1}\n",
+		"a.jsonc": "{\"a\":1 // b\n}\n",
 		"a.md":    "*  a\n",
 		"a.proto": "syntax = \"proto3\";\n\npackage   a;\n",
 		"a.py":    "x  =  1\n",
 		"a.rs":    "fn  main(){}\n",
+		"a.sh":    "echo   a\n",
+		"a.toml":  "a  =  1\n",
 		"a.yaml":  "a:   1\n",
 	})
 	output, exitCode := runFormatIn(t, repository, repository, "--all")
@@ -119,10 +138,14 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 		"BUILD.bazel": "filegroup(name = \"all\")\n",
 		"a.go":        "package a\n\nfunc f() {\n\tf()\n}\n",
 		"a.json":      "{ \"a\": 1 }\n",
+		"a.json5":     "{ a: 1 }\n",
+		"a.jsonc":     "{\n  \"a\": 1, // b\n}\n",
 		"a.md":        "- a\n",
 		"a.proto":     "syntax = \"proto3\";\n\npackage a;\n",
 		"a.py":        "x = 1\n",
 		"a.rs":        "fn main() {}\n",
+		"a.sh":        "echo a\n",
+		"a.toml":      "a = 1\n",
 		"a.yaml":      "a: 1\n",
 	})
 }
@@ -229,7 +252,11 @@ func TestCheckSucceedsForFormattedFiles(t *testing.T) {
 		"a.go": "package a\n",
 		"a.py": "x = 1\n",
 	})
-	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
+	// dprint reports each plugin it compiles into an empty cache, and a check
+	// runs at a log level that shows those reports, so this warms the cache.
+	output, exitCode := runFormatIn(t, repository, repository, "--all")
+	assertSucceeded(t, output, exitCode)
+	output, exitCode = runFormatIn(t, repository, repository, "--check", "--all")
 	assertSucceeded(t, output, exitCode)
 }
 

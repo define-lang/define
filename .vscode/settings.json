@@ -6,7 +6,7 @@
   },
   "[markdown]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "ruff.lint.enable": true,
   "bazel.executable": "bazelisk",

@@ -1,11 +1,7 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
-load("@npm//:defs.bzl", "npm_link_all_packages")
-load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
-
-npm_link_all_packages()
 
 py_binary(
     name = "analyze_coverage",
@@ -129,14 +125,6 @@ py_test(
         ":loop_coverage",
         "@pypi//pytest",
     ],
-)
-
-prettier_bin.prettier_binary(
-    name = "prettier",
-    env = {
-        "BAZEL_BINDIR": ".",
-    },
-    visibility = ["//:__subpackages__"],
 )
 
 # PRF-012: Orchestration boundary. PRF-014: CPU mode.

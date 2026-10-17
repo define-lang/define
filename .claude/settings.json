@@ -44,7 +44,6 @@
       "Bash(uv lock *)",
       "Bash(uv --help *)",
       "Bash(source .venv/bin/activate)",
-      "Bash(prettier *)",
       "Bash(npx @bufbuild/buf format *)",
       "Bash(npx @bufbuild/buf lint *)",
       "Bash(npx @bazel/buildifier *)",

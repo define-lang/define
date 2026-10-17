@@ -45,7 +45,6 @@
       "Shell(uv lock *)",
       "Shell(uv --help *)",
       "Shell(source .venv/bin/activate)",
-      "Shell(prettier *)",
       "Shell(npx @bufbuild/buf format *)",
       "Shell(npx @bufbuild/buf lint *)",
       "Shell(npx @bazel/buildifier *)",

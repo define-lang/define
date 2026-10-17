@@ -1,0 +1,35 @@
+{
+  "lineWidth": 80,
+  "markdown": {
+    "textWrap": "always",
+    "wrapCodeSpans": false,
+    "codeBlock.preserveIndentation": true,
+    "codeBlock.preserveBlankLines": true,
+  },
+  // The oxc plugin would otherwise also format the files the other plugins
+  // format.
+  "oxc": {
+    "associations": [
+      "**/*.json",
+      "**/*.json5",
+      "**/*.jsonc",
+      "!**/*.toml",
+      "!**/*.yaml",
+      "!**/*.yml",
+    ],
+  },
+  // //:format passes the plugins from MODULE.bazel instead, so these are only
+  // for editors. Keep their versions the same as those in MODULE.bazel.
+  "plugins": [
+    // renovate: depName=dprint/dprint-plugin-markdown
+    "https://plugins.dprint.dev/markdown-0.26.0.wasm@5cebd0459bf1aa13fb027331720158d03e2a897b1d9f7b3bf93cac661ca4ddbd",
+    // renovate: depName=dprint/dprint-plugin-oxc
+    "https://plugins.dprint.dev/oxc-0.46.0.wasm@37cc1ee2a0adba2cce54ea6cb5f23fd01a10570128e4e65eeef01b04562bfb35",
+    // renovate: depName=kachick/dprint-plugin-sh
+    "https://plugins.dprint.dev/kachick/sh-0.1.2.wasm@8564c9082c81ff4cf6c9090cfa20021003d7d402254877ebf5d7b0f487437476",
+    // renovate: depName=dprint/dprint-plugin-toml
+    "https://plugins.dprint.dev/toml-0.9.0.wasm@776e088ed4255a51a80e3640e5fd20b15661147e86df3e99611aaa37e9c59852",
+    // renovate: depName=g-plane/pretty_yaml
+    "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm@40a2fdda7040317eb1b23520f3a00769a5571eedb049c4ca9175c1b9eeba01ae",
+  ],
+}
