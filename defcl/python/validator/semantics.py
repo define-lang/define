@@ -20,7 +20,7 @@ def validate(
     tree: lark_standalone.Tree[lark_cython.Token],
     message_type: type[message.Message],
     path_name: str | os.PathLike[str] | None = None,
-) -> None:
+):
     """Validate a DCL parse tree against a protobuf message type.
 
     The tree must come from syntax.Parser and its field names must match
@@ -51,7 +51,7 @@ def _check_message(
     msg_tree: lark_standalone.Tree[lark_cython.Token],
     msg_desc: descriptor.Descriptor,
     path_name: str | os.PathLike[str] | None,
-) -> None:
+):
     """Check all fields within a message_value node."""
     for field_tree in msg_tree.children:
         field_tree = cast("lark_standalone.Tree[lark_cython.Token]", field_tree)
@@ -68,7 +68,7 @@ def _check_field(
     field_desc: descriptor.FieldDescriptor,
     value_tree: lark_standalone.Tree[lark_cython.Token],
     path_name: str | os.PathLike[str] | None,
-) -> None:
+):
     """Check a field's value against its descriptor, including repeated syntax."""
     child = value_tree.children[0]
 
@@ -98,7 +98,7 @@ def _check_value(
     field_desc: descriptor.FieldDescriptor,
     value_tree: lark_standalone.Tree[lark_cython.Token],
     path_name: str | os.PathLike[str] | None,
-) -> None:
+):
     """Check a single value against its field type."""
     child = value_tree.children[0]
     if isinstance(child, lark_cython.Token):

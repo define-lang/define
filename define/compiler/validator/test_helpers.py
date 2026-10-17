@@ -29,7 +29,7 @@ class _ValidationErrors(Protocol):
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]: ...
 
 
-def assert_no_errors(result: _ValidationErrors) -> None:
+def assert_no_errors(result: _ValidationErrors):
     """Assert that a validation result has no exceptions or diagnostics."""
     __tracebackhide__ = True
     exceptions = result.all_exceptions
@@ -44,7 +44,7 @@ def assert_no_errors(result: _ValidationErrors) -> None:
     )
 
 
-def write_project_config(tmp_path: Path, universe_name: str) -> None:
+def write_project_config(tmp_path: Path, universe_name: str):
     """Write a .define/project/config.defcl file under tmp_path."""
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -54,7 +54,7 @@ def write_project_config(tmp_path: Path, universe_name: str) -> None:
     )
 
 
-def write_local_deps_config(tmp_path: Path, deps: dict[str, str]) -> None:
+def write_local_deps_config(tmp_path: Path, deps: dict[str, str]):
     """Write a .define/deps/local.defcl file under tmp_path."""
     deps_dir = tmp_path / ".define" / "deps"
     deps_dir.mkdir(parents=True, exist_ok=True)

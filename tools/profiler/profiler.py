@@ -263,7 +263,7 @@ class _ProfileWriter(msgspec.Struct):
     profile_file: typing.TextIO
     frame_ids: dict[tuple[str, str, int], int] = msgspec.field(default_factory=dict)
 
-    def append_records(self, records: list[schema.ProfileRecord]) -> None:
+    def append_records(self, records: list[schema.ProfileRecord]):
         with _blocked_interruption_signals():
             for record in records:
                 _ = self.profile_file.write(
@@ -328,7 +328,7 @@ class _CaptureSession(msgspec.Struct):
     event_file_descriptor: int | None
 
 
-def _interrupt(signal_number: int, _current_frame: object) -> None:
+def _interrupt(signal_number: int, _current_frame: object):
     # PRF-024: Explicit failures.
     raise _CaptureInterrupted(signal_number)
 

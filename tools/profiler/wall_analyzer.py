@@ -87,7 +87,7 @@ class _SpanMetrics(msgspec.Struct):
     _wall_end_ns: int | None = None
     _thread_spans: dict[int, tuple[int, int]] = msgspec.field(default_factory=dict)
 
-    def add(self, thread_id: int, interval: wall_model.Interval) -> None:
+    def add(self, thread_id: int, interval: wall_model.Interval):
         self.sample_hits += 1
         added_ns, self._wall_end_ns = _wall_union_update(self._wall_end_ns, interval)
         self.wall_occupancy_ns += added_ns
@@ -110,7 +110,7 @@ class _IntervalMetrics(_SpanMetrics):
     thread_time_ns: int = 0
 
     @typing.override
-    def add(self, thread_id: int, interval: wall_model.Interval) -> None:
+    def add(self, thread_id: int, interval: wall_model.Interval):
         super().add(thread_id, interval)
         self.thread_time_ns += interval.duration_ns
 
@@ -120,7 +120,7 @@ class _OccupancyMetrics(msgspec.Struct):
     sample_hits: int = 0
     _wall_end_ns: int | None = None
 
-    def add(self, interval: wall_model.Interval) -> None:
+    def add(self, interval: wall_model.Interval):
         self.sample_hits += 1
         added_ns, self._wall_end_ns = _wall_union_update(self._wall_end_ns, interval)
         self.wall_occupancy_ns += added_ns
@@ -471,7 +471,7 @@ def _emit_report_header(profile: schema.RawProfile, analysis: Analysis):
     )
 
 
-def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> None:
+def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int):
     """Print stable continuous-wall attribution tables and diagnostics."""
     # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
     _emit_report_header(profile, analysis)

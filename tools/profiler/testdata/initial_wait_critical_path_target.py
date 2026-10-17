@@ -24,7 +24,7 @@ def _controlled_work(
 def _release_phases(
     control_stream: typing.BinaryIO,
     releases: tuple[threading.Event, ...],
-) -> None:
+):
     for release in releases:
         _ = control_stream.read(1)
         release.set()
@@ -36,7 +36,7 @@ def _waiting_worker(
     status_stream: typing.BinaryIO,
     result_queue: queue.Queue[int],
     finish: threading.Event,
-) -> None:
+):
     _ = start.wait()
     result_queue.put(_controlled_work(release, status_stream, b"2", 0))
     _ = finish.wait()

@@ -118,9 +118,7 @@ def command_to_pattern_parts(command: str) -> list[str]:
     return sanitized_parts
 
 
-def append_prefix_rule(
-    lines: list[str], pattern_parts: list[str], decision: str
-) -> None:
+def append_prefix_rule(lines: list[str], pattern_parts: list[str], decision: str):
     """Append a single Codex prefix_rule block."""
     lines.extend(
         [
@@ -165,7 +163,7 @@ def generate_codex_rules(permissions: dict[str, list[str]]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def sync_permissions(base_dir: Path) -> None:
+def sync_permissions(base_dir: Path):
     """Fully overwrite agent permissions from Claude settings.
 
     This function completely replaces .cursor/cli.json and
@@ -199,7 +197,7 @@ def report_text_diff(
     expected_content: str,
     actual_label: str,
     expected_label: str,
-) -> None:
+):
     """Print a unified diff for two text blobs."""
     actual_lines = actual_content.splitlines(keepends=True)
     expected_lines = expected_content.splitlines(keepends=True)
@@ -213,7 +211,7 @@ def report_text_diff(
     print("".join(diff))
 
 
-def check_permissions(base_dir: Path) -> None:
+def check_permissions(base_dir: Path):
     """Check that Cursor and Codex configs match expected content."""
     permissions = load_permissions(base_dir)
     expected_config = generate_cursor_config(permissions)
@@ -262,7 +260,7 @@ def check_permissions(base_dir: Path) -> None:
         sys.exit(1)
 
 
-def main() -> None:
+def main():
     """Run the sync or check process."""
     parser = argparse.ArgumentParser(
         description="Sync or check Cursor and Codex permissions from Claude settings"

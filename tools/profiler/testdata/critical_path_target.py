@@ -35,7 +35,7 @@ def _stage_one_worker(
     release: threading.Event,
     status_stream: typing.BinaryIO,
     finish: threading.Event,
-) -> None:
+):
     # PRF-048: Critical-path fixture.
     output_queue.put(_stage_one_work(release, status_stream))
     _ = finish.wait()
@@ -74,7 +74,7 @@ def _stage_two_worker(
     release: threading.Event,
     status_stream: typing.BinaryIO,
     finish: threading.Event,
-) -> None:
+):
     # PRF-048: Critical-path fixture.
     value = input_queue.get()
     stage_three_queue.put(_stage_two_work(value, release, status_stream))
@@ -87,14 +87,14 @@ def _stage_three_worker(
     release: threading.Event,
     status_stream: typing.BinaryIO,
     finish: threading.Event,
-) -> None:
+):
     # PRF-048: Critical-path fixture.
     value = input_queue.get()
     output_queue.put(_stage_three_work(value, release, status_stream))
     _ = finish.wait()
 
 
-def _off_path_work(finish: threading.Event) -> None:
+def _off_path_work(finish: threading.Event):
     # PRF-048: Critical-path fixture.
     value = 0
     while not finish.is_set():
@@ -104,7 +104,7 @@ def _off_path_work(finish: threading.Event) -> None:
 def _release_phases(
     control_stream: typing.BinaryIO,
     releases: tuple[threading.Event, ...],
-) -> None:
+):
     for release in releases:
         _ = control_stream.read(1)
         release.set()

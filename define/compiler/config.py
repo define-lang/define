@@ -190,7 +190,7 @@ class ConfigLoader:
             raise ConfigValidationError(path, messages) from e
         return result
 
-    def assert_is_project_root(self) -> None:
+    def assert_is_project_root(self):
         """Raise NotProjectRootError if the root is not a project root."""
         config_path = Path((self._root / CONFIG_PATH).as_posix_path())
         if not config_path.exists():

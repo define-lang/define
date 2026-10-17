@@ -257,7 +257,7 @@ def _wire_records(profile: schema.RawProfile) -> list[schema.ProfileRecord]:
     return records
 
 
-def _write_records(profile_path: Path, records: list[schema.ProfileRecord]) -> None:
+def _write_records(profile_path: Path, records: list[schema.ProfileRecord]):
     _ = profile_path.write_text(
         "".join(json.dumps(record) + "\n" for record in records),
         encoding="utf-8",

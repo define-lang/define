@@ -19,7 +19,7 @@ from define.compiler.parsing import parser
 _PARSER = parser.Parser()
 
 
-def _write_valid_position_project(project_root: Path, universe_name: str) -> None:
+def _write_valid_position_project(project_root: Path, universe_name: str):
     config_dir = project_root / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(

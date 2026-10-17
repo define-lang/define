@@ -35,7 +35,7 @@ def _binary_path() -> Path:
     return runfiles.resolve_from_env("MAIN_BINARY")
 
 
-def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE) -> None:
+def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     (config_dir / "config.defcl").write_text(

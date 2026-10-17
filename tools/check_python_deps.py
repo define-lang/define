@@ -588,7 +588,7 @@ def replace_deps(
     return rule_lines[:closing] + rendered + rule_lines[closing:]
 
 
-def _apply_changes(repository: Path, changes: list[DependencyChanges]) -> None:
+def _apply_changes(repository: Path, changes: list[DependencyChanges]):
     by_build_file: dict[Path, list[DependencyChanges]] = {}
     for change in changes:
         by_build_file.setdefault(change.target.build_file, []).append(change)

@@ -404,7 +404,7 @@ def _initial_profile(header: HeaderRecord) -> RawProfile:
     )
 
 
-def _derive_observation_data(profile: RawProfile) -> None:
+def _derive_observation_data(profile: RawProfile):
     counts: ObservationCounts = {
         "successful": 0,
         "discarded": 0,

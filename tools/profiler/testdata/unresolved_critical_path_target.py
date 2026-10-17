@@ -11,12 +11,12 @@ import typing
 def _release_finish(
     control_stream: typing.BinaryIO,
     finish: threading.Event,
-) -> None:
+):
     _ = control_stream.read(1)
     finish.set()
 
 
-def _wait_for_external_release(control_stream: typing.BinaryIO) -> None:
+def _wait_for_external_release(control_stream: typing.BinaryIO):
     _ = control_stream.read(1)
 
 

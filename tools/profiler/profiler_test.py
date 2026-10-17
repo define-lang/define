@@ -130,7 +130,7 @@ def test_main_profiles_relative_target(
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
     release_succeeded = threading.Event()
 
-    def release_target() -> None:
+    def release_target():
         if event_reader.wait_for(
             "successful-observation-persisted",
             1_001,
@@ -908,7 +908,7 @@ def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
 
-    def interrupt_capture() -> None:
+    def interrupt_capture():
         # The deployed profiler has no helper thread that can receive this signal.
         _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
         if event_reader.wait_for(
@@ -965,7 +965,7 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
 
-    def interrupt_stopped_capture() -> None:
+    def interrupt_stopped_capture():
         # The deployed profiler has no helper thread that can receive this signal.
         _ = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT})
         observed = event_reader.wait_for("successful-observation-persisted")

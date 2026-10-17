@@ -24,13 +24,13 @@ def _controlled_work(
 def _release_phases(
     control_stream: typing.BinaryIO,
     releases: tuple[threading.Event, ...],
-) -> None:
+):
     for release in releases:
         _ = control_stream.read(1)
         release.set()
 
 
-def _off_path_work(release: threading.Event, finish: threading.Event) -> None:
+def _off_path_work(release: threading.Event, finish: threading.Event):
     value = 0
     while not release.is_set():
         value += 1
@@ -42,7 +42,7 @@ def _critical_work(
     status_stream: typing.BinaryIO,
     result_queue: queue.Queue[int],
     finish: threading.Event,
-) -> None:
+):
     result_queue.put(_controlled_work(release, status_stream, b"2", 0))
     _ = finish.wait()
 

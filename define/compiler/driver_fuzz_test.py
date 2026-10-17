@@ -295,7 +295,7 @@ def _setup_project(
     root: Path,
     universe_name: str,
     local_deps: dict[str, str] | None = None,
-) -> None:
+):
     config_dir = root / ".define" / "project"
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config.defcl").write_text(
@@ -318,14 +318,14 @@ def _setup_project(
     (deps_dir / "local.defcl").write_text(content, encoding="utf-8")
 
 
-def _write_files(root: Path, files: dict[str, str]) -> None:
+def _write_files(root: Path, files: dict[str, str]):
     for rel_path, source in files.items():
         path = root / rel_path
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source, encoding="utf-8")
 
 
-def _reset_tmp_path(tmp_path: Path) -> None:
+def _reset_tmp_path(tmp_path: Path):
     for entry in tmp_path.iterdir():
         if entry.is_dir():
             shutil.rmtree(entry)
@@ -1773,7 +1773,7 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def _materialize_project_case(tmp_path: Path, project_case: ProjectCase) -> None:
+def _materialize_project_case(tmp_path: Path, project_case: ProjectCase):
     _reset_tmp_path(tmp_path)
     for root_case in project_case.roots:
         root_path = tmp_path / root_case.relative_path
@@ -1788,7 +1788,7 @@ def _materialize_project_case(tmp_path: Path, project_case: ProjectCase) -> None
 
 def _assert_results_are_clean(
     results: list[validation_result.FileValidationResult], source_hint: str
-) -> None:
+):
     for result in results:
         if result.diagnostics or result.exception is not None:
             pytest.fail(
@@ -1799,7 +1799,7 @@ def _assert_results_are_clean(
 
 def _assert_only_parser_syntax_exceptions(
     results: list[validation_result.FileValidationResult], source_hint: str
-) -> None:
+):
     allowed_exceptions = (
         parser_exceptions.DefineSyntaxError,
         exceptions.SourceFileNotFoundError,

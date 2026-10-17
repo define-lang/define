@@ -7,23 +7,23 @@ import sys
 import threading
 
 
-def _retired_worker(start: threading.Event, retire: threading.Event) -> None:
+def _retired_worker(start: threading.Event, retire: threading.Event):
     # PRF-031: Retired-thread fixture.
     _ = start.wait()
     _ = retire.wait()
 
 
-def _deep_wait_level_two(start: threading.Event, finish: threading.Event) -> None:
+def _deep_wait_level_two(start: threading.Event, finish: threading.Event):
     # PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
     _ = start.wait()
     _ = finish.wait()
 
 
-def _deep_wait_level_one(start: threading.Event, finish: threading.Event) -> None:
+def _deep_wait_level_one(start: threading.Event, finish: threading.Event):
     _deep_wait_level_two(start, finish)
 
 
-def _shallow_wait(start: threading.Event, finish: threading.Event) -> None:
+def _shallow_wait(start: threading.Event, finish: threading.Event):
     # PRF-030: Stack-depth fixture. PRF-033: Waiting-thread fixture.
     _ = start.wait()
     _ = finish.wait()
@@ -34,14 +34,14 @@ def _short_leaf(value: int) -> int:
     return value + 1
 
 
-def _high_call_frequency(start: threading.Event, finish: threading.Event) -> None:
+def _high_call_frequency(start: threading.Event, finish: threading.Event):
     _ = start.wait()
     value = 0
     while not finish.is_set():
         value = _short_leaf(value)
 
 
-def _low_call_frequency(start: threading.Event, finish: threading.Event) -> None:
+def _low_call_frequency(start: threading.Event, finish: threading.Event):
     _ = start.wait()
     value = 0
     while not finish.is_set():

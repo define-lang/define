@@ -50,7 +50,7 @@ def _coordinate(
     control_path: Path,
     event_file_descriptor: int,
     phases: bytes,
-) -> None:
+):
     buffered = b""
     with (
         status_path.open("rb", buffering=0) as status_stream,
@@ -222,7 +222,7 @@ def _regenerate_phased_profile(  # noqa: PLR0913 - The interval override is name
     validator: Callable[[schema.RawProfile], bool],
     *,
     mean_interval_seconds: float = 0.001,
-) -> None:
+):
     profile_path = testdata / f"{name}_profile.jsonl"
     source = testdata / f"{name}_target.py"
     last_capture_error: _CaptureRejectedError | None = None
@@ -249,7 +249,7 @@ def _regenerate_phased_profile(  # noqa: PLR0913 - The interval override is name
 def _regenerate_compiler_profile(
     testdata: Path,
     workspace: Path,
-) -> None:
+):
     temporary_root = workspace / "tmp"
     temporary_root.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=temporary_root) as temporary_directory:
@@ -299,7 +299,7 @@ def _regenerate_compiler_profile(
     )
 
 
-def main() -> None:
+def main():
     """Regenerate and validate every checked-in raw profile."""
     workspace = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
     testdata = workspace / "tools/profiler/testdata"

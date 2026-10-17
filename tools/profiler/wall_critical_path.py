@@ -814,7 +814,7 @@ def _stack_text(stack: tuple[int, ...], frames: dict[int, schema.Frame]) -> str:
 def _emit_segment(
     segment: CriticalPathSegment,
     frames: dict[int, schema.Frame],
-) -> None:
+):
     # PRF-020: Machine and human interfaces.
     # PRF-047: Multi-threaded critical path.
     if isinstance(segment, UncertainSegment):
@@ -844,7 +844,7 @@ def _emit_segment(
 def _emit_handoff(
     handoff: CriticalPathHandoff,
     frames: dict[int, schema.Frame],
-) -> None:
+):
     # PRF-020: Machine and human interfaces.
     # PRF-047: Multi-threaded critical path.
     if isinstance(handoff, ResolvedHandoff):
@@ -886,7 +886,7 @@ def emit_report(
     profile: schema.RawProfile,
     analysis: Analysis,
     limit: int,
-) -> None:
+):
     """Print the ordered sampled wall critical path and its attribution."""
     # PRF-020: Machine and human interfaces.
     # PRF-047: Multi-threaded critical path.

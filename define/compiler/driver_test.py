@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 _PARSER = parser.Parser()
 
 
-def _setup_project(tmp_path: Path, universe_name: str) -> None:
+def _setup_project(tmp_path: Path, universe_name: str):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     config_file = config_dir / "config.defcl"
