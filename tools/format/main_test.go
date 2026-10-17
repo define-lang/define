@@ -58,6 +58,9 @@ func runFormat(t *testing.T, environment []string, arguments ...string) (string,
 	}
 	command := exec.Command(binary, arguments...)
 	command.Env = append(os.Environ(), environment...)
+	// Coverage-instrumented binaries need a directory even when a test invokes
+	// them only to check their behavior.
+	command.Env = append(command.Env, "GOCOVERDIR="+t.TempDir())
 	output, err := command.CombinedOutput()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {

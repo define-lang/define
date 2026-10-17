@@ -30,8 +30,3 @@ rules:
     zizmor: true
   workflow-secret-scope:
     job-level: true
-ignores:
-  - rule: action-release-cooldown
-    uses: bazel-contrib/setup-bazel
-    reason:
-      0.19.1 merged before the cooldown existed; it is old enough on 2026-10-16
