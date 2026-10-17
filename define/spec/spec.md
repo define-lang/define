@@ -95,7 +95,7 @@ and non-filesystem contexts.
 ### Encoding
 
 - Define source code is written in UTF-8.
-- Define uses Unicode 17.0.0.
+- Define uses Unicode 18.0.0.
 - Byte-order marks are forbidden.
 - Invalid Unicode sequences are forbidden.
 
