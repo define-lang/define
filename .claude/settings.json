@@ -111,6 +111,18 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/tools/agent_hooks/turn_end_checks.py\"",
+            "timeout": 180
+          }
+        ],
+        "matcher": ".+"
+      }
     ]
   }
 }

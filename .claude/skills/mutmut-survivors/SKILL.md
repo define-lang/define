@@ -19,22 +19,20 @@ same time, because they share that state directory.
 
 ## Workflow
 
-1. Prepare the repo:
-   - `bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev`
-2. Start or resume mutation testing:
+1. Start or resume mutation testing:
    - broad run: `uv run mutmut run`
    - focused run: pass specific mutant names to `uv run mutmut run`
    - by default, prefer letting mutmut continue until there are no `not checked`
      mutants left
    - if you need a time budget for automation, wrap mutmut externally rather
      than looking for a mutmut timeout flag
-3. Inspect findings:
+2. Inspect findings:
    - `uv run mutmut results`
    - `uv run mutmut results --all true` for the full state
    - `uv run mutmut show MUTANT_NAME`
    - `uv run mutmut tests-for-mutant MUTANT_NAME`
-4. **Produce a survivors report** (see Report Generation below)
-5. Fix the gap:
+3. **Produce a survivors report** (see Report Generation below)
+4. Fix the gap:
    - prefer adding or improving tests
    - avoid changing production code unless the user explicitly asks for it
    - do not chase low-value survivors that only remove defensive built-in Python
@@ -43,11 +41,10 @@ same time, because they share that state directory.
    - use `uv run mutmut apply MUTANT_NAME` only when you need the exact mutant
      written into the working tree, because it dirties the working tree and adds
      cleanup work
-6. Verify:
+5. Verify:
    - run the most targeted pytest command that covers the new or changed tests
      first
    - rerun the specific mutant or focused mutmut pattern
-   - finish with `bazelisk run --noshow_progress //:format`
    - finish with `bazelisk test --noshow_progress //...`
 
 ## Report Generation

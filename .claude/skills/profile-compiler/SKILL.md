@@ -37,13 +37,6 @@ focused work, inspect the relevant generator's `--help` and choose options that
 exercise the requested code. Regenerate inputs and require no compiler
 diagnostics or profiling errors.
 
-Before using the profiling tools, prepare the workspace's local Python
-environment:
-
-```text
-bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev
-```
-
 Read both public tools' complete help before using them:
 
 ```text

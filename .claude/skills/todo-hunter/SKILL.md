@@ -125,8 +125,9 @@ so writes to shared Git metadata happen from the primary agent rather than
 requiring a subagent permission prompt. Committing is the user's decision and
 happens only at landing. Because the pre-commit hooks (ruff, basedpyright)
 therefore run at landing time rather than fix time, the fixer must leave a tree
-that will pass them; running `//:format` and the full Bazel suite (which lints
-via aspects and runs the `pyright_test` targets) covers this.
+that will pass them; the agent hooks' formatting when the fixer finishes and the
+full Bazel suite (which lints via aspects and runs the `pyright_test` targets)
+cover this.
 
 If the runtime cannot spawn background subagents (for example Codex), do the
 fixer work yourself: work through the approved TODOs one worktree at a time,

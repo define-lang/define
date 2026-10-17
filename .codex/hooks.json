@@ -22,6 +22,17 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$(git rev-parse --show-toplevel)/tools/agent_hooks/turn_end_checks.py\"",
+            "timeout": 180
+          }
+        ]
+      }
     ]
   }
 }
