@@ -10,10 +10,10 @@ from typing import cast
 if typing.TYPE_CHECKING:
     import http.client
 
-UNICODE_VERSION = "17.0.0"
-UNICODE_DATA_URL = "https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt"
+UNICODE_VERSION = "18.0.0"
+UNICODE_DATA_URL = "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
 DERIVED_CORE_PROPERTIES_URL = (
-    "https://www.unicode.org/Public/17.0.0/ucd/DerivedCoreProperties.txt"
+    "https://www.unicode.org/Public/18.0.0/ucd/DerivedCoreProperties.txt"
 )
 OUTPUT_PATH = (
     Path(__file__).resolve().parent.parent
