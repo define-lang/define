@@ -5,7 +5,8 @@ Clear out dead particles.
 Dead guarantees---ones the caller never interacts with.
 
 An implied position that is only referenced by a single action must be an
-interface position.
+interface position. In fact, I think multiple actions need to _write_ to the
+implied position for it to be valid, although I'm not yet certain of that.
 
 Useless trigger positions: never interacted with and there are other interface
 positions that _are_ interacted with. Especially important when there is only
