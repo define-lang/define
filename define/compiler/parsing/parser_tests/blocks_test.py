@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import global_typed_names
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
@@ -45,10 +45,21 @@ def test_block_with_blank_lines(native_parse: NativeParse):
         + "\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.typed_name.full_typed_name == "position<standard:/path>"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=7, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=3, column=5, end_line=5, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert requirement.typed_global_name.full_typed_name == "position<standard:/child>"
+    assert requirement.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=36
+    )
 
 
 def test_blank_line_between_constraint_requirement_and_close(native_parse: NativeParse):
@@ -60,10 +71,27 @@ def test_blank_line_between_constraint_requirement_and_close(native_parse: Nativ
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/path>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=5, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert (
+        requirement.typed_global_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/child>"
+    )
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
 
 
 def test_comment_line_between_constraint_requirement_and_close(
@@ -77,10 +105,27 @@ def test_comment_line_between_constraint_requirement_and_close(
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/path>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=5, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert (
+        requirement.typed_global_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/child>"
+    )
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
 
 
 def test_block_with_comment_inside(native_parse: NativeParse):
@@ -92,10 +137,21 @@ def test_block_with_comment_inside(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.typed_name.full_typed_name == "position<standard:/path>"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=3, column=5, end_line=5, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert requirement.typed_global_name.full_typed_name == "position<standard:/child>"
+    assert requirement.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=36
+    )
 
 
 def test_block_with_comment_after_open(native_parse: NativeParse):
@@ -106,10 +162,21 @@ def test_block_with_comment_after_open(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.typed_name.full_typed_name == "position<standard:/path>"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=4, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert requirement.typed_global_name.full_typed_name == "position<standard:/child>"
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
 
 
 def test_block_with_comment_after_close(native_parse: NativeParse):
@@ -120,10 +187,21 @@ def test_block_with_comment_after_close(native_parse: NativeParse):
         + "    }\n"
         + "} # comment\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.typed_name.full_typed_name == "position<standard:/path>"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=4, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert requirement.typed_global_name.full_typed_name == "position<standard:/child>"
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
 
 
 def test_block_with_full_fqun(native_parse: NativeParse):
@@ -134,10 +212,20 @@ def test_block_with_full_fqun(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<my_mv:example.com:my_lib:/some/path>",
-        "action</some/action>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<my_mv:example.com:my_lib:/some/path>"
+    )
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    typed_name = requirement.typed_global_name
+    assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
+    assert typed_name.full_typed_name == "action<my_mv:example.com:my_lib:/some/action>"
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=39
+    )
 
 
 def test_multiple_definitions_with_blocks(native_parse: NativeParse):
@@ -153,12 +241,38 @@ def test_multiple_definitions_with_blocks(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/first>",
-        "position</first_child>",
-        "position<standard:/second>",
-        "position</second_child>",
-    ]
+    [first, second] = program.definitions
+    assert isinstance(first, ast.PositionDefinition)
+    assert first.typed_name.full_typed_name == "position<standard:/first>"
+    assert first.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=1
+    )
+    assert first.constraints is not None
+    [first_requirement] = first.constraints.requirements
+    assert (
+        first_requirement.typed_global_name.full_typed_name
+        == "position<standard:/first_child>"
+    )
+    assert first_requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=42
+    )
+    assert isinstance(second, ast.PositionDefinition)
+    assert second.typed_name.full_typed_name == "position<standard:/second>"
+    assert second.location == ast.SourceLocation(
+        line=6, column=1, end_line=10, end_column=1
+    )
+    assert second.constraints is not None
+    [second_requirement] = second.constraints.requirements
+    assert (
+        second_requirement.typed_global_name.full_typed_name
+        == "position<standard:/second_child>"
+    )
+    assert second_requirement.location == ast.SourceLocation(
+        line=8, column=9, end_line=8, end_column=43
+    )
+    assert program.location == ast.SourceLocation(
+        line=1, column=1, end_line=10, end_column=1
+    )
 
 
 def test_mixed_block_and_terminator(native_parse: NativeParse):
@@ -170,11 +284,27 @@ def test_mixed_block_and_terminator(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<standard:/first>",
-        "position<standard:/second>",
-        "action</do_work>",
-    ]
+    [first, second] = program.definitions
+    assert isinstance(first, ast.PositionDefinition)
+    assert first.typed_name.full_typed_name == "position<standard:/first>"
+    assert first.constraints is None
+    assert first.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=47
+    )
+    assert isinstance(second, ast.PositionDefinition)
+    assert second.typed_name.full_typed_name == "position<standard:/second>"
+    assert second.location == ast.SourceLocation(
+        line=2, column=1, end_line=6, end_column=1
+    )
+    assert second.constraints is not None
+    [requirement] = second.constraints.requirements
+    assert requirement.typed_global_name.full_typed_name == "action<standard:/do_work>"
+    assert requirement.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=36
+    )
+    assert program.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=1
+    )
 
 
 def test_file_ending_after_block_open(parse: Parse):

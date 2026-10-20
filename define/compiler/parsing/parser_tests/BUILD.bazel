@@ -65,6 +65,8 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
+        "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:parser_exceptions",
         "//define/compiler/errors:source_map",
@@ -77,7 +79,6 @@ py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler/parsing/lark:lark_standalone",
         "@pypi//lark_cython",
     ],

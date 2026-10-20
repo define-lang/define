@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests import test_helpers
 
@@ -79,7 +80,24 @@ def test_encoding_in_constraints(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert test_helpers.global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/test>",
-        "encoding</utf8>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/test>"
+    )
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=35
+    )
+    typed_name = requirement.typed_global_name
+    assert typed_name.name_type == name_types.NameType.ENCODING
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=34
+    )
+    assert typed_name.name_content.fqun is None
+    assert typed_name.name_content.path.name == "/utf8"
+    assert typed_name.name_content.path.location == ast.SourceLocation(
+        line=3, column=29, end_line=3, end_column=33
+    )

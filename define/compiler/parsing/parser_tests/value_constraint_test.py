@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import global_typed_names
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
@@ -21,10 +21,28 @@ def test_value_constraint_short_name(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/item>",
-        "value</number/natural>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/item>"
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.value_constraint is not None
+    typed_name = definition.constraints.value_constraint
+    assert typed_name.name_type == name_types.NameType.VALUE
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=41
+    )
+    name_content = typed_name.name_content
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=26, end_line=3, end_column=40
+    )
+    assert name_content.fqun is None
+    assert name_content.path.name == "/number/natural"
+    assert name_content.path.location == ast.SourceLocation(
+        line=3, column=26, end_line=3, end_column=40
+    )
 
 
 def test_value_constraint_full_name(native_parse: NativeParse):
@@ -35,10 +53,32 @@ def test_value_constraint_full_name(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/item>",
-        "value<standard:/number/natural>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/item>"
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.value_constraint is not None
+    typed_name = definition.constraints.value_constraint
+    assert typed_name.name_type == name_types.NameType.VALUE
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=50
+    )
+    name_content = typed_name.name_content
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=26, end_line=3, end_column=49
+    )
+    assert name_content.fqun is not None
+    assert name_content.fqun.canonical == "standard"
+    assert name_content.fqun.location == ast.SourceLocation(
+        line=3, column=26, end_line=3, end_column=33
+    )
+    assert name_content.path.name == "/number/natural"
+    assert name_content.path.location == ast.SourceLocation(
+        line=3, column=35, end_line=3, end_column=49
+    )
 
 
 def test_value_constraint_requires_global_name(parse: Parse):

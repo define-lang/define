@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import global_typed_names
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
@@ -25,10 +25,30 @@ def test_typed_global_name_reference_short_position_name(native_parse: NativePar
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/root>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/root>"
+    )
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    typed_name = requirement.typed_global_name
+    assert typed_name.name_type == name_types.NameType.POSITION
+    assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
+    assert typed_name.full_typed_name == "position<mv:define-lang.org:parser:/child>"
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=35
+    )
+    name_content = typed_name.name_content
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=29, end_line=3, end_column=34
+    )
+    assert name_content.fqun is None
+    assert name_content.path.name == "/child"
+    assert name_content.path.location == ast.SourceLocation(
+        line=3, column=29, end_line=3, end_column=34
+    )
 
 
 def test_typed_global_name_reference_short_action_name(native_parse: NativeParse):
@@ -39,10 +59,30 @@ def test_typed_global_name_reference_short_action_name(native_parse: NativeParse
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/root>",
-        "action</do_work>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/root>"
+    )
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    typed_name = requirement.typed_global_name
+    assert typed_name.name_type == name_types.NameType.ACTION
+    assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
+    assert typed_name.full_typed_name == "action<mv:define-lang.org:parser:/do_work>"
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=35
+    )
+    name_content = typed_name.name_content
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=27, end_line=3, end_column=34
+    )
+    assert name_content.fqun is None
+    assert name_content.path.name == "/do_work"
+    assert name_content.path.location == ast.SourceLocation(
+        line=3, column=27, end_line=3, end_column=34
+    )
 
 
 def test_typed_global_name_reference_full_name(native_parse: NativeParse):
@@ -53,10 +93,34 @@ def test_typed_global_name_reference_full_name(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/root>",
-        "action<mv:define-lang.org:parser:/do_work>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/root>"
+    )
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    typed_name = requirement.typed_global_name
+    assert typed_name.name_type == name_types.NameType.ACTION
+    assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
+    assert typed_name.full_typed_name == "action<mv:define-lang.org:parser:/do_work>"
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=20, end_line=3, end_column=61
+    )
+    name_content = typed_name.name_content
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=27, end_line=3, end_column=60
+    )
+    assert name_content.fqun is not None
+    assert name_content.fqun.canonical == "mv:define-lang.org:parser"
+    assert name_content.fqun.location == ast.SourceLocation(
+        line=3, column=27, end_line=3, end_column=51
+    )
+    assert name_content.path.name == "/do_work"
+    assert name_content.path.location == ast.SourceLocation(
+        line=3, column=53, end_line=3, end_column=60
+    )
 
 
 def test_typed_global_name_reference_local_style_name_is_global_terminal(

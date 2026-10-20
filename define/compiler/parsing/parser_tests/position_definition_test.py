@@ -10,11 +10,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import (
-    get_tokens_by_type,
-    global_typed_names,
-)
+from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
@@ -24,7 +22,21 @@ def test_position_definition_parses(native_parse: NativeParse):
     program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert global_typed_names(program) == ["position<mv:define-lang.org:parser:/path>"]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/path>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=63
+    )
+    assert definition.typed_name.name_type == name_types.NameType.POSITION
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=62
+    )
+    assert definition.quality_implications == ()
+    assert definition.constraints is None
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(
@@ -105,10 +117,26 @@ def test_position_definition_with_constraint_block(native_parse: NativeParse):
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/path>",
-        "position</child>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/path>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=1
+    )
+    assert definition.quality_implications == ()
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=4, end_column=5
+    )
+    [requirement] = definition.constraints.requirements
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
+    assert requirement.typed_global_name.name_type == name_types.NameType.POSITION
+    assert requirement.typed_global_name.name_content.path.name == "/child"
 
 
 def test_position_definition_with_multiple_requirements(native_parse: NativeParse):
@@ -120,11 +148,30 @@ def test_position_definition_with_multiple_requirements(native_parse: NativePars
         + "    }\n"
         + "}\n"
     )
-    assert global_typed_names(program) == [
-        "position<mv:define-lang.org:parser:/path>",
-        "position</first>",
-        "action</second>",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert (
+        definition.typed_name.full_typed_name
+        == "position<mv:define-lang.org:parser:/path>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=1
+    )
+    assert definition.constraints is not None
+    assert definition.constraints.location == ast.SourceLocation(
+        line=2, column=5, end_line=5, end_column=5
+    )
+    [first, second] = definition.constraints.requirements
+    assert first.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=36
+    )
+    assert first.typed_global_name.name_type == name_types.NameType.POSITION
+    assert first.typed_global_name.name_content.path.name == "/first"
+    assert second.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=35
+    )
+    assert second.typed_global_name.name_type == name_types.NameType.ACTION
+    assert second.typed_global_name.name_content.path.name == "/second"
 
 
 def test_position_definition_block_requires_content(parse: Parse):
