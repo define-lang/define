@@ -371,16 +371,17 @@ def test_trigger_conditions_block_truncated_after_open(parse: Parse):
 
 
 def test_position_constraint_block_truncated_after_open_without_final_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {"
         )
     assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 40
-    assert exc_info.value.location.end_column == 40
+    assert exc_info.value.location.column == 42
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 42
 
 
 def test_local_position_block_truncated_after_open(parse: Parse):
