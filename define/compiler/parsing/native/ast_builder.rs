@@ -234,12 +234,12 @@ impl<'py, 'source> AstBuilder<'py, 'source> {
         }
     }
 
+    // `_start` makes the element's type the one that its tuple holds.
     pub fn push<Element: Node<'py>>(
         &mut self,
-        start: &TupleStart<Element>,
+        _start: &TupleStart<Element>,
         element: impl Into<Element>,
     ) {
-        debug_assert!(start.index <= self.tuple_elements.len());
         self.tuple_elements.push(element.into().into_object());
     }
 
