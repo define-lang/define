@@ -10,7 +10,7 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests import test_helpers
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
 def test_encoding_definition(parse: Parse):
@@ -71,16 +71,15 @@ def test_encoding_definition_disallows_local_context(parse: Parse):
     assert error.value.location.end_column == 27
 
 
-def test_encoding_in_constraints(parse: Parse):
-    tree = parse(
+def test_encoding_in_constraints(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/test> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the encoding</utf8>.\n"
         + "    }\n"
         + "}\n"
     )
-    assert test_helpers.get_tokens_by_type(tree, "ENCODING") == ["encoding"]
-    assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/test",
-        "/utf8",
+    assert test_helpers.global_typed_names(program) == [
+        "position<mv:define-lang.org:parser:/test>",
+        "encoding</utf8>",
     ]

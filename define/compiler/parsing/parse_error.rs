@@ -17,6 +17,15 @@ pub enum ParseError {
     Python(PyErr),
 }
 
+impl ParseError {
+    pub const fn not_yet_supported(position: Position, description: &'static str) -> Self {
+        Self::NotYetSupported {
+            position,
+            description,
+        }
+    }
+}
+
 impl From<PyErr> for ParseError {
     fn from(error: PyErr) -> Self {
         Self::Python(error)

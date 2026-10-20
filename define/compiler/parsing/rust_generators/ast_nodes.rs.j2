@@ -32,6 +32,7 @@ impl<'py> PythonArgument<'py> for {{ enum_type.name }} {
 {% endfor %}
 {%- for class in classes %}
 /// `{{ module_name }}.{{ class.name }}`.
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct {{ class.name }}<'py>(Bound<'py, PyAny>);
 
@@ -67,6 +68,7 @@ impl<'py> From<{{ class.name }}<'py>> for {{ ancestor }}<'py> {
 {%- for member in node_union.member_classes %}
 /// - `{{ member }}`
 {%- endfor %}
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct {{ node_union.name }}<'py>(Bound<'py, PyAny>);
 

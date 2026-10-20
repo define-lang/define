@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
+from define.compiler.parsing.parser_tests.test_helpers import global_typed_names
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
@@ -35,8 +35,8 @@ def test_empty_block_on_action(parse: Parse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_block_with_blank_lines(parse: Parse):
-    tree = parse(
+def test_block_with_blank_lines(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/path> {\n"
         + "\n"
         + "    it may only contain particles where {\n"
@@ -45,14 +45,14 @@ def test_block_with_blank_lines(parse: Parse):
         + "\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<standard:/path>",
+        "position</child>",
     ]
 
 
-def test_blank_line_between_constraint_requirement_and_close(parse: Parse):
-    tree = parse(
+def test_blank_line_between_constraint_requirement_and_close(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
@@ -60,16 +60,16 @@ def test_blank_line_between_constraint_requirement_and_close(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<mv:define-lang.org:parser:/path>",
+        "position</child>",
     ]
 
 
 def test_comment_line_between_constraint_requirement_and_close(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
-    tree = parse(
+    program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
@@ -77,14 +77,14 @@ def test_comment_line_between_constraint_requirement_and_close(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<mv:define-lang.org:parser:/path>",
+        "position</child>",
     ]
 
 
-def test_block_with_comment_inside(parse: Parse):
-    tree = parse(
+def test_block_with_comment_inside(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/path> {\n"
         + "    # comment\n"
         + "    it may only contain particles where {\n"
@@ -92,56 +92,56 @@ def test_block_with_comment_inside(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<standard:/path>",
+        "position</child>",
     ]
 
 
-def test_block_with_comment_after_open(parse: Parse):
-    tree = parse(
+def test_block_with_comment_after_open(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/path> { # comment\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<standard:/path>",
+        "position</child>",
     ]
 
 
-def test_block_with_comment_after_close(parse: Parse):
-    tree = parse(
+def test_block_with_comment_after_close(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "} # comment\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/path",
-        "/child",
+    assert global_typed_names(program) == [
+        "position<standard:/path>",
+        "position</child>",
     ]
 
 
-def test_block_with_full_fqun(parse: Parse):
-    tree = parse(
+def test_block_with_full_fqun(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<my_mv:example.com:my_lib:/some/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the action</some/action>.\n"
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "my_mv:example.com:my_lib:/some/path",
-        "/some/action",
+    assert global_typed_names(program) == [
+        "position<my_mv:example.com:my_lib:/some/path>",
+        "action</some/action>",
     ]
 
 
-def test_multiple_definitions_with_blocks(parse: Parse):
-    tree = parse(
+def test_multiple_definitions_with_blocks(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/first> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</first_child>.\n"
@@ -153,16 +153,16 @@ def test_multiple_definitions_with_blocks(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/first",
-        "/first_child",
-        "standard:/second",
-        "/second_child",
+    assert global_typed_names(program) == [
+        "position<standard:/first>",
+        "position</first_child>",
+        "position<standard:/second>",
+        "position</second_child>",
     ]
 
 
-def test_mixed_block_and_terminator(parse: Parse):
-    tree = parse(
+def test_mixed_block_and_terminator(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<standard:/first>.\n"
         + "define the potential position<standard:/second> {\n"
         + "    it may only contain particles where {\n"
@@ -170,10 +170,10 @@ def test_mixed_block_and_terminator(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "standard:/first",
-        "standard:/second",
-        "/do_work",
+    assert global_typed_names(program) == [
+        "position<standard:/first>",
+        "position<standard:/second>",
+        "action</do_work>",
     ]
 
 

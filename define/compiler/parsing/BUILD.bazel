@@ -153,6 +153,7 @@ pyo3_extension(
     name = "parser_extension",
     srcs = [
         "ast_builder.rs",
+        "lines.rs",
         "parse_error.rs",
         "parser.rs",
         "scanner.rs",

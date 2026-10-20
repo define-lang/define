@@ -7,38 +7,37 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
+from define.compiler.parsing.parser_tests.test_helpers import global_typed_names
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_value_constraint_short_name(parse: Parse):
-    tree = parse(
+def test_value_constraint_short_name(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the value</number/natural>.\n"
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/item",
-        "/number/natural",
+    assert global_typed_names(program) == [
+        "position<mv:define-lang.org:parser:/item>",
+        "value</number/natural>",
     ]
-    assert get_tokens_by_type(tree, "VALUE") == ["value"]
 
 
-def test_value_constraint_full_name(parse: Parse):
-    tree = parse(
+def test_value_constraint_full_name(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the value<standard:/number/natural>.\n"
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/item",
-        "standard:/number/natural",
+    assert global_typed_names(program) == [
+        "position<mv:define-lang.org:parser:/item>",
+        "value<standard:/number/natural>",
     ]
 
 
