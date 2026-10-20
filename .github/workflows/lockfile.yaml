@@ -60,16 +60,13 @@ jobs:
 
   commit-lockfile:
     name: Commit MODULE.bazel.lock
+    environment: lockfile
     needs: compute-lockfile
     if: ${{ needs.compute-lockfile.outputs.changed == 'true' }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
-      actions: write # Starts CI on the lockfile commit.
-      contents: write # Commits the updated lockfile to the Renovate branch.
-    env:
-      GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
+      contents: read
     steps:
       # The commit script comes from the default branch, which holds only
       # reviewed code, rather than from the Renovate branch.
@@ -85,11 +82,17 @@ jobs:
         with:
           name: lockfile
 
+      # App commits trigger PR CI without the approval required for GITHUB_TOKEN.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.LOCKFILE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.LOCKFILE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Commit lockfile
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: >-
           python3 trusted/tools/git_commit_via_api.py "Update MODULE.bazel.lock"
           MODULE.bazel.lock
-
-      # Commits made with GITHUB_TOKEN do not trigger CI on their own.
-      - name: Start CI
-        run: gh workflow run ci.yaml --ref "$GITHUB_REF_NAME"

@@ -1,7 +1,7 @@
 profile: pedantic
 generated-files: report
-config-secrets: []
-config-variables: []
+config-secrets: [LOCKFILE_APP_PRIVATE_KEY]
+config-variables: [LOCKFILE_APP_CLIENT_ID]
 rules:
   # Matches minimumReleaseAge in renovate.json5, so Renovate never proposes a
   # version that this rule rejects.
@@ -14,6 +14,7 @@ rules:
   forbidden-uses:
     allow:
       - actions/checkout
+      - actions/create-github-app-token
       - actions/download-artifact
       - actions/upload-artifact
       - astral-sh/setup-uv

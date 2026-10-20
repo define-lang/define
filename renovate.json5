@@ -8,10 +8,13 @@
   // Gives the ecosystem time to find and pull malicious releases before they
   // are automerged. Matches action-release-cooldown in .github/jactionlint.yaml.
   minimumReleaseAge: "2 days",
-  // The lockfile workflow commits to Renovate branches as this author. Renovate
+  // The lockfile workflow commits to Renovate branches as these authors. Renovate
   // must keep rebasing those branches so the lockfile is regenerated against
   // the latest main.
-  gitIgnoredAuthors: ["41898282+github-actions[bot]@users.noreply.github.com"],
+  gitIgnoredAuthors: [
+    "41898282+github-actions[bot]@users.noreply.github.com",
+    "345551910+define-lang-lockfile[bot]@users.noreply.github.com",
+  ],
   postUpdateOptions: ["gomodTidy"],
   lockFileMaintenance: {
     enabled: true,
