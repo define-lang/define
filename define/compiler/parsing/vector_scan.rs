@@ -45,7 +45,8 @@ pub struct NameContent {
     pub length: usize,
     /// The number of UTF-8 characters in the name content.
     pub character_count: usize,
-    pub is_ascii: bool,
+    /// Whether every byte of the name content is from ` ` through `~`.
+    pub is_printable_ascii: bool,
     /// Whether the name content has the shape of a global name: optional text
     /// without spaces that ends in `:`, then `/` and at least one more byte.
     pub is_global_name: bool,
@@ -77,7 +78,8 @@ pub fn name_content(source: &[u8]) -> NameContent {
 struct NameContentMasks {
     /// The `>` and line feed bytes, either of which ends name content.
     ends: u32,
-    non_ascii: u32,
+    /// The bytes that are not from ` ` through `~`.
+    unprintable: u32,
     /// The UTF-8 continuation bytes (`10xxxxxx`).
     continuation: u32,
     component_separators: u32,
@@ -88,7 +90,7 @@ struct NameContentMasks {
 impl NameContentMasks {
     const NONE: Self = Self {
         ends: 0,
-        non_ascii: 0,
+        unprintable: 0,
         continuation: 0,
         component_separators: 0,
         spaces: 0,
@@ -99,9 +101,7 @@ impl NameContentMasks {
     fn of(vector: u8x32) -> Self {
         Self {
             ends: mask(vector, NAME_CONTENT_END) | mask(vector, LINE_FEED),
-            // The bitmask of a vector is the high bit of each of its bytes,
-            // which is clear exactly for ASCII bytes.
-            non_ascii: vector.to_bitmask(),
+            unprintable: unprintable_mask(vector),
             continuation: continuation_byte_mask(vector),
             component_separators: mask(vector, COMPONENT_SEPARATOR),
             spaces: mask(vector, SPACE),
@@ -116,7 +116,7 @@ impl NameContentMasks {
         let shift = WIDTH - count;
         Self {
             ends: self.ends >> shift,
-            non_ascii: self.non_ascii >> shift,
+            unprintable: self.unprintable >> shift,
             continuation: self.continuation >> shift,
             component_separators: self.component_separators >> shift,
             spaces: self.spaces >> shift,
@@ -150,7 +150,7 @@ const fn name_content_in_vector(masks: NameContentMasks, length: usize) -> NameC
     NameContent {
         length,
         character_count: length - (masks.continuation & within).count_ones() as usize,
-        is_ascii: masks.non_ascii & within == 0,
+        is_printable_ascii: masks.unprintable & within == 0,
         is_global_name: path_starts.trailing_zeros() < (masks.spaces & within).trailing_zeros(),
         last_component_separator: if component_separators == 0 {
             None
@@ -207,7 +207,7 @@ fn long_name_content(source: &[u8]) -> NameContent {
 struct LongNameContentScan {
     /// The index in the name content of the next vector's first byte.
     offset: usize,
-    non_ascii_bytes: u32,
+    unprintable_bytes: u32,
     continuation_bytes: usize,
     /// One more than the index of the last `:`, or 0 if there is none yet,
     /// which fits in one register where an `Option<usize>` needs two.
@@ -223,7 +223,7 @@ impl LongNameContentScan {
     const fn new() -> Self {
         Self {
             offset: 0,
-            non_ascii_bytes: 0,
+            unprintable_bytes: 0,
             continuation_bytes: 0,
             last_component_separator_end: 0,
             shape: GlobalNameShape::Undecided,
@@ -237,7 +237,7 @@ impl LongNameContentScan {
     #[inline]
     fn add(&mut self, masks: NameContentMasks, length: usize, is_last: bool) {
         let within = low_bits(length);
-        self.non_ascii_bytes |= masks.non_ascii & within;
+        self.unprintable_bytes |= masks.unprintable & within;
         self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
         let component_separators = masks.component_separators & within;
         if component_separators != 0 {
@@ -287,7 +287,7 @@ impl LongNameContentScan {
         NameContent {
             length: total_length,
             character_count: total_length - self.continuation_bytes,
-            is_ascii: self.non_ascii_bytes == 0,
+            is_printable_ascii: self.unprintable_bytes == 0,
             is_global_name: self.shape == GlobalNameShape::Global,
             last_component_separator: self.last_component_separator_end.checked_sub(1),
         }
@@ -594,7 +594,7 @@ mod tests {
             eq(NameContent {
                 length: 14,
                 character_count: 14,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
             })
@@ -608,7 +608,7 @@ mod tests {
             eq(NameContent {
                 length: 23,
                 character_count: 23,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(18),
             })
@@ -622,7 +622,7 @@ mod tests {
             eq(NameContent {
                 length: 5,
                 character_count: 5,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: None,
             })
@@ -636,7 +636,7 @@ mod tests {
             eq(NameContent {
                 length: 6,
                 character_count: 6,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(3),
             })
@@ -650,7 +650,7 @@ mod tests {
             eq(NameContent {
                 length: 10,
                 character_count: 10,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(8),
             })
@@ -664,7 +664,7 @@ mod tests {
             eq(NameContent {
                 length: 3,
                 character_count: 3,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: None,
             })
@@ -678,7 +678,7 @@ mod tests {
             eq(NameContent {
                 length: 14,
                 character_count: 14,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
             })
@@ -692,9 +692,23 @@ mod tests {
             eq(NameContent {
                 length: 8,
                 character_count: 7,
-                is_ascii: false,
+                is_printable_ascii: false,
                 is_global_name: true,
                 last_component_separator: Some(5),
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_control_character() {
+        expect_that!(
+            name_content(b"standard:/a\x01b>.\n"),
+            eq(NameContent {
+                length: 13,
+                character_count: 13,
+                is_printable_ascii: false,
+                is_global_name: true,
+                last_component_separator: Some(8),
             })
         );
     }
@@ -706,7 +720,7 @@ mod tests {
             eq(NameContent {
                 length: 14,
                 character_count: 14,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
             })
@@ -720,7 +734,7 @@ mod tests {
             eq(NameContent {
                 length: 14,
                 character_count: 14,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
             })
@@ -736,7 +750,7 @@ mod tests {
             eq(NameContent {
                 length: 55,
                 character_count: 55,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(37),
             })
@@ -750,7 +764,7 @@ mod tests {
             eq(NameContent {
                 length: 33,
                 character_count: 33,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(30),
             })
@@ -764,7 +778,7 @@ mod tests {
             eq(NameContent {
                 length: 37,
                 character_count: 37,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(34),
             })
@@ -778,7 +792,7 @@ mod tests {
             eq(NameContent {
                 length: 36,
                 character_count: 36,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: None,
             })
@@ -792,7 +806,7 @@ mod tests {
             eq(NameContent {
                 length: 32,
                 character_count: 32,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(30),
             })
@@ -806,7 +820,7 @@ mod tests {
             eq(NameContent {
                 length: 35,
                 character_count: 35,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(33),
             })
@@ -820,7 +834,7 @@ mod tests {
             eq(NameContent {
                 length: 34,
                 character_count: 34,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(31),
             })
@@ -834,7 +848,7 @@ mod tests {
             eq(NameContent {
                 length: 38,
                 character_count: 38,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: Some(35),
             })
@@ -848,7 +862,7 @@ mod tests {
             eq(NameContent {
                 length: 37,
                 character_count: 36,
-                is_ascii: false,
+                is_printable_ascii: false,
                 is_global_name: true,
                 last_component_separator: Some(34),
             })
@@ -863,7 +877,7 @@ mod tests {
             eq(NameContent {
                 length: 64,
                 character_count: 64,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(60),
             })
@@ -878,7 +892,7 @@ mod tests {
             eq(NameContent {
                 length: 64,
                 character_count: 64,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(60),
             })
@@ -893,7 +907,7 @@ mod tests {
             eq(NameContent {
                 length: 68,
                 character_count: 68,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(65),
             })
@@ -908,7 +922,7 @@ mod tests {
             eq(NameContent {
                 length: 65,
                 character_count: 65,
-                is_ascii: true,
+                is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(62),
             })

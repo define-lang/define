@@ -14,42 +14,46 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_bom_at_start(parse: Parse):
+def test_bom_at_start(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        parse("\ufeffdefine the potential position<standard:/path>.\n")
+        native_parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.char == "\ufeff"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 1
 
 
-def test_crlf_line_endings(parse: Parse):
+def test_crlf_line_endings(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse("define the potential position<standard:/path>.\r\n")
+        native_parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 47
 
 
-def test_crlf_line_endings_in_comments(parse: Parse):
+def test_crlf_line_endings_in_comments(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse("# a comment\r\n")
+        native_parse("# a comment\r\n")
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 12
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 12
 
 
-def test_carriage_return_in_comment(parse: Parse):
+def test_carriage_return_in_comment(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse("# comment with\rcarriage return\n")
+        native_parse("# comment with\rcarriage return\n")
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 15
 
 
@@ -80,30 +84,41 @@ def test_surrogate_range_end_boundary(parse: Parse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_del_character(parse: Parse):
+def test_del_character(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential position<standard:/path>.\n\x7f\n")
+        native_parse("define the potential position<standard:/path>.\n\x7f\n")
     assert exc_info.value.char == "\x7f"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
-def test_invalid_character_error(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
-        parse("define the potential position<standard:/path>.\n☃\n")
-    assert exc_info.value.char == "☃"
+def test_non_ascii_character_at_top_level(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        native_parse("define the potential position<standard:/path>.\n☃\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
-def test_first_non_ascii_byte(parse: Parse):
+def test_control_character_after_syntax_error(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        native_parse("define the potential position<standard:/path>.\nx\x01\n")
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 2
+
+
+def test_first_non_ascii_byte(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential position<standard:/path>.\n\x80\n")
+        native_parse("define the potential position<standard:/path>.\n\x80\n")
     assert exc_info.value.char == "\x80"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 

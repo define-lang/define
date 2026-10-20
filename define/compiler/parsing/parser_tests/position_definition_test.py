@@ -70,12 +70,28 @@ def test_position_definition_space_instead_of_open_angle(native_parse: NativePar
     assert exc_info.value.location.end_column == 30
 
 
-def test_position_definition_with_control_character(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
+def test_position_definition_with_control_character(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential \x00position<mv:define-lang.org:parser:/path>.\n"
+        )
+    assert exc_info.value.char == "\x00"
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 22
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 22
+
+
+def test_position_definition_with_control_character_in_name(
+    native_parse_lark_wrong: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse_lark_wrong("define the potential position<standard:/a\x01b>.\n")
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 42
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 42
 
 
 def test_position_definition_with_empty_global_path(native_parse: NativeParse):

@@ -43,11 +43,12 @@ def test_empty_source_error_message(native_parse: NativeParse):
             - define the encoding_operation""")
 
 
-def test_error_message_without_path(parse: Parse):
+def test_error_message_without_path(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        parse("\ufeffdefine the potential position<standard:/path>.\n")
+        native_parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 1
     assert (
         _format(
@@ -61,11 +62,12 @@ def test_error_message_without_path(parse: Parse):
     )
 
 
-def test_char_error_message(parse: Parse):
+def test_char_error_message(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse("define the potential position<standard:/path>.\r\n")
+        native_parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 47
     assert _format(
         exc_info.value, "define the potential position<standard:/path>.\r\n"

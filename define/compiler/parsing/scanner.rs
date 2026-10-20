@@ -1,7 +1,7 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use vector_scan::LINE_FEED;
+use vector_scan::{LINE_FEED, SPACE};
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -128,6 +128,21 @@ impl<'source> Scanner<'source> {
         }
     }
 
+    /// The number of bytes at the start of the remaining text that match the
+    /// start of `expected`.
+    pub fn matching_prefix_length(&self, expected: &[u8]) -> usize {
+        self.rest
+            .iter()
+            .zip(expected)
+            .take_while(|&(byte, expected_byte)| byte == expected_byte)
+            .count()
+    }
+
+    /// The number of spaces at the start of the remaining text.
+    pub fn next_space_count(&self) -> usize {
+        self.rest.iter().take_while(|&&byte| byte == SPACE).count()
+    }
+
     pub fn next_bytes_are(&self, expected: &[u8]) -> bool {
         self.rest.starts_with(expected)
     }
@@ -204,7 +219,7 @@ impl<'source> Scanner<'source> {
         let (bytes, rest) = self.rest.split_at(scanned.length);
         let text = SourceText {
             bytes,
-            is_known_ascii: scanned.is_ascii,
+            is_known_ascii: scanned.is_printable_ascii,
         };
         self.rest = rest;
         self.position.column += scanned.character_count;

@@ -14,7 +14,7 @@ from define.compiler import ast
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_comment_before_statement(native_parse: NativeParse):
@@ -108,24 +108,26 @@ def test_non_ascii_comment_with_trailing_whitespace(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 54
 
 
-def test_control_character_in_comment(parse: Parse):
+def test_control_character_in_comment(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse(
+        native_parse(
             "# comment with\x01control char\n"
             + "define the potential position<standard:/path>.\n"
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.char == "\x01"
     assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 15
 
 
-def test_control_character_in_inline_comment(parse: Parse):
+def test_control_character_in_inline_comment(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential position<standard:/path>. # comment\x00\n")
+        native_parse("define the potential position<standard:/path>. # comment\x00\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.char == "\x00"
     assert exc_info.value.location.column == 57
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 57
 
 

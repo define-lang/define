@@ -1,4 +1,5 @@
 mod ast_builder;
+mod characters;
 mod lines;
 mod parse_error;
 mod scanner;
@@ -13,6 +14,7 @@ mod parser_diagnostics;
 mod syntax_errors;
 
 use ast_builder::{AstBuilder, FilePath, Node};
+use characters::TextKind;
 use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE, TERMINATOR};
 use parse_error::{ParseError, ParseResult};
 use parser_diagnostics::ParserDiagnostics;
@@ -124,6 +126,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn expected_global_definition(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after(DEFINE_THE_POTENTIAL_POSITION) {
+            return error;
+        }
         // The line has the words that begin a position definition, but with
         // more than one space between two of them.
         if let Some((spaces_start, spaces_end)) =
@@ -231,6 +236,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn missing_terminator_or_brace(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(0) {
+            return error;
+        }
         let missing = self.scanner.position;
         // The line ends where the `.` or ` {` belongs.
         if self.scanner.next_byte_is(LINE_FEED) {
@@ -291,8 +299,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
             LineInBlock::Statement { .. } => {
-                let start = self.scanner.position;
-                return Err(self.errors.missing_close_brace(start, self.end_of_line()));
+                return Err(self.statement_instead_of_close_brace());
             }
             // The source ends before the block's `}`.
             LineInBlock::EndOfSource => {
@@ -317,12 +324,54 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn invalid_potential_position_definition_block(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
+            return error;
+        }
         let start = self.scanner.position;
         if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
             return ParseError::not_yet_supported(start, "quality implication statements");
         }
         self.errors
             .invalid_potential_position_definition_block(start, self.end_of_line())
+    }
+
+    /// Returns the error for a statement at the scanner's position where a
+    /// block's `}` belongs.
+    #[cold]
+    #[inline(never)]
+    fn statement_instead_of_close_brace(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(0) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors.missing_close_brace(start, self.end_of_line())
+    }
+
+    /// Returns the error for a statement at the scanner's position in a
+    /// position constraint block that is not a position requirement
+    /// statement.
+    #[cold]
+    #[inline(never)]
+    fn invalid_position_constraint_block(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after(IT_HAS_THE) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .invalid_position_constraint_block(start, self.end_of_line())
+    }
+
+    /// Returns the error for the character `offset` bytes, which are ASCII,
+    /// past the scanner's position, where the syntax there went wrong, if no
+    /// syntax may have it.
+    fn disallowed_character_ahead(&self, offset: usize) -> Option<ParseError> {
+        characters::disallowed_character_ahead(&self.errors, &self.scanner, offset)
+    }
+
+    /// Returns the error for the character where the line at the scanner's
+    /// position stops matching `expected`, if no syntax may have it.
+    fn disallowed_character_after(&self, expected: &[u8]) -> Option<ParseError> {
+        self.disallowed_character_ahead(self.scanner.matching_prefix_length(expected))
     }
 
     /// Returns the position of the last character on the line before its line
@@ -401,9 +450,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         // The statement is not a position requirement statement.
         if !self.scanner.consume(IT_HAS_THE) {
-            return Err(self
-                .errors
-                .invalid_position_constraint_block(start, self.end_of_line()));
+            return Err(self.invalid_position_constraint_block());
         }
         let typed_name = self.parse_typed_global_name_reference(fqun)?;
         // There is no `.`.
@@ -449,6 +496,14 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn expected_constraint_name_type(&self) -> ParseError {
+        let matched = CONSTRAINT_NAME_TYPES
+            .iter()
+            .map(|&(keyword, _)| self.scanner.matching_prefix_length(keyword))
+            .max()
+            .unwrap_or(0);
+        if let Some(error) = self.disallowed_character_ahead(matched) {
+            return error;
+        }
         let start = self.scanner.position;
         // The error covers the word where the name type belongs, or the
         // character there if the word is empty.
@@ -549,6 +604,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn missing_open_angle_bracket(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(0) {
+            return error;
+        }
         let missing = self.scanner.position;
         let line = self.scanner.rest_of_line().bytes;
         let spaces = line.iter().take_while(|&&byte| byte == SPACE).count();
@@ -579,6 +637,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         if content.bytes.is_empty() {
             return self.errors.empty_name(start, start);
         }
+        if let Some(error) = characters::first_disallowed_character(
+            &self.errors,
+            start,
+            content.bytes,
+            TextKind::Name,
+        ) {
+            return error;
+        }
         // The name content runs to the end of the line without a `>`.
         if !self.scanner.next_byte_is(NAME_CONTENT_END) {
             return self.errors.missing_close_angle_bracket(
@@ -586,9 +652,6 @@ impl<'py, 'source> Parser<'py, 'source> {
                 end,
                 &String::from_utf8_lossy(content.bytes),
             );
-        }
-        if !content.is_known_ascii {
-            return ParseError::not_yet_supported(start, "non-ASCII names");
         }
         self.errors
             .invalid_global_name(start, end.previous_column())

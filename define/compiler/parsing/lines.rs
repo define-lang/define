@@ -1,6 +1,7 @@
 //! The structure of lines: indentation, comments, line ends, terminators, and
 //! the lines that open and close blocks.
 
+use crate::characters::{self, TextKind};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
@@ -70,6 +71,11 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     #[cold]
     #[inline(never)]
     fn missing_block_open(&self) -> ParseError {
+        if let Some(error) =
+            self.disallowed_character_ahead(self.scanner.matching_prefix_length(BLOCK_OPEN))
+        {
+            return error;
+        }
         let missing = self.scanner.position;
         // The line ends where the ` {` belongs.
         if self.scanner.next_byte_is(LINE_FEED) {
@@ -83,6 +89,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     #[cold]
     #[inline(never)]
     fn text_after_block_open(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
+            return error;
+        }
         let text = self.scanner.position;
         // The block closes on the line that opens it.
         if self.scanner.next_byte_is(CLOSE_BRACE) {
@@ -104,9 +113,27 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         let end = self.scanner.position;
         // Something other than a line feed or a comment follows the `}`.
         if !self.end_line_after_brace(end.previous_column(), end)? {
-            return Err(self.errors.missing_newline_after_close_brace(end, end));
+            return Err(self.text_after_block_close(end));
         }
         Ok(end)
+    }
+
+    /// Returns the error for text after the `}` that closes a block, where
+    /// `end`, the position after the `}`, is the scanner's position.
+    #[cold]
+    #[inline(never)]
+    fn text_after_block_close(&self, end: Position) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
+            return error;
+        }
+        self.errors.missing_newline_after_close_brace(end, end)
+    }
+
+    /// Returns the error for the character `offset` bytes, which are ASCII,
+    /// past the scanner's position, where the syntax there went wrong, if no
+    /// syntax may have it.
+    fn disallowed_character_ahead(&self, offset: usize) -> Option<ParseError> {
+        characters::disallowed_character_ahead(self.errors, self.scanner, offset)
     }
 
     /// Consumes any blank and comment lines, then the indentation of the next
@@ -193,6 +220,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     #[cold]
     #[inline(never)]
     pub fn missing_terminator(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(0) {
+            return error;
+        }
         let missing = self.scanner.position;
         // The line ends where the `.` belongs.
         if self.scanner.next_byte_is(LINE_FEED) {
@@ -216,6 +246,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         }
         // Something other than a comment follows the `.`.
         if !self.end_line_not_at_line_feed()? {
+            if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
+                return Err(error);
+            }
             return Err(self.errors.missing_newline_after_terminator(end, end));
         }
         Ok(())
@@ -332,23 +365,25 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         }
         let comment_start = self.scanner.position;
         let comment = self.scanner.consume_rest_of_line();
-        let Ok(characters) = str::from_utf8(comment.bytes) else {
-            return Err(ParseError::not_yet_supported(
-                comment_start,
-                "invalid UTF-8 in comments",
-            ));
-        };
         // TODO: Check comments for invisible characters here, instead of in
         // the Python check that runs before this parser. Every comment that is
-        // not printable ASCII comes here, so this loop sees every character
+        // not printable ASCII comes here, so this check sees every character
         // that could be invisible.
-        if characters.chars().any(char::is_control) {
-            return Err(ParseError::not_yet_supported(
-                comment_start,
-                "control characters in comments",
-            ));
+        // The comment has a character that comments do not allow.
+        if let Some(error) = characters::first_disallowed_character(
+            self.errors,
+            comment_start,
+            comment.bytes,
+            TextKind::Comment,
+        ) {
+            return Err(error);
         }
-        let content_length = characters.trim_end_matches(' ').len();
+        // The `#` is not a space, so `rposition` always finds a byte.
+        let content_length = comment
+            .bytes
+            .iter()
+            .rposition(|&byte| byte != SPACE)
+            .map_or(0, |index| index + 1);
         // The comment ends with spaces.
         if content_length < comment.bytes.len() {
             let trailing_whitespace = comment_start.after(comment.slice(..content_length));
