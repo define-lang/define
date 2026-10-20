@@ -116,7 +116,66 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         // The text does not begin a position definition, the only global
         // definition the parser supports so far.
-        Err(self.errors.expected_global_definition(start, start))
+        Err(self.expected_global_definition())
+    }
+
+    /// Returns the error for a line at the scanner's position that does not
+    /// begin a global definition.
+    #[cold]
+    #[inline(never)]
+    fn expected_global_definition(&self) -> ParseError {
+        // The line has the words that begin a position definition, but with
+        // more than one space between two of them.
+        if let Some((spaces_start, spaces_end)) =
+            self.extra_spaces_between_words(DEFINE_THE_POTENTIAL_POSITION)
+        {
+            return self.errors.extra_whitespace(spaces_start, spaces_end);
+        }
+        let start = self.scanner.position;
+        self.errors
+            .expected_global_definition(start, self.end_of_line())
+    }
+
+    /// Returns the first and last spaces of the first run of more than one
+    /// space at the scanner's position, if the line starts with `words`, ASCII
+    /// words separated by single spaces, once every such run is one space.
+    fn extra_spaces_between_words(&self, words: &[u8]) -> Option<(Position, Position)> {
+        let line = self.scanner.rest_of_line().bytes;
+        let mut offset = 0;
+        let mut first_run = None;
+        for &expected in words {
+            if expected == SPACE {
+                let run = line[offset..]
+                    .iter()
+                    .take_while(|&&byte| byte == SPACE)
+                    .count();
+                if run == 0 {
+                    return None;
+                }
+                if run > 1 && first_run.is_none() {
+                    first_run = Some((offset, offset + run - 1));
+                }
+                offset += run;
+            } else {
+                if line.get(offset) != Some(&expected) {
+                    return None;
+                }
+                offset += 1;
+            }
+        }
+        let (first, last) = first_run?;
+        // Every byte up to `offset` is ASCII, so each is one column.
+        let start = self.scanner.position;
+        Some((
+            Position {
+                line: start.line,
+                column: start.column + first,
+            },
+            Position {
+                line: start.line,
+                column: start.column + last,
+            },
+        ))
     }
 
     /// Parses the rest of a position definition after its `position`, given

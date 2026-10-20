@@ -48,12 +48,15 @@ def test_encoding_definition_disallows_block(parse: Parse):
     assert error.value.location.end_column == 47
 
 
-def test_encoding_definition_disallows_potential(parse: Parse):
+def test_encoding_definition_disallows_potential(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        _ = parse("define the potential encoding<mv:define-lang.org:parser:/utf8>.\n")
+        _ = native_parse(
+            "define the potential encoding<mv:define-lang.org:parser:/utf8>.\n"
+        )
     assert error.value.location.line == 1
     assert error.value.location.column == 1
-    assert error.value.location.end_column == 6
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 63
 
 
 def test_encoding_definition_disallows_local_context(parse: Parse):

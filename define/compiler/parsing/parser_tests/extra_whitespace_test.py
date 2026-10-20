@@ -34,30 +34,37 @@ def test_file_spaces_and_newlines_only(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_extra_space_after_define_in_position_definition(parse: Parse):
+def test_extra_space_after_define_in_position_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse("define  the potential position<mv:define-lang.org:parser:/path>.\n")
+        native_parse(
+            "define  the potential position<mv:define-lang.org:parser:/path>.\n"
+        )
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 7
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 8
 
 
-def test_extra_space_after_the_in_position_definition(parse: Parse):
+def test_extra_space_after_the_in_position_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse("define the  potential position<mv:define-lang.org:parser:/path>.\n")
+        native_parse(
+            "define the  potential position<mv:define-lang.org:parser:/path>.\n"
+        )
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 11
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 12
 
 
-def test_extra_space_after_potential_in_position_definition(
-    parse: Parse,
-):
+def test_extra_space_after_potential_in_position_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse("define the potential  position<mv:define-lang.org:parser:/path>.\n")
+        native_parse(
+            "define the potential  position<mv:define-lang.org:parser:/path>.\n"
+        )
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 21
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 22
 
 
 def test_extra_space_after_potential_in_action_definition(parse: Parse):
