@@ -59,7 +59,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         }
         let end = self.scanner.position;
         // Something other than a line feed or a comment follows the `{`.
-        if !self.end_line()? {
+        if !self.end_line_after_brace(end.previous_column(), end)? {
             return Err(self.text_after_block_open());
         }
         Ok(end)
@@ -103,7 +103,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         self.scanner.consume_bytes(1);
         let end = self.scanner.position;
         // Something other than a line feed or a comment follows the `}`.
-        if !self.end_line()? {
+        if !self.end_line_after_brace(end.previous_column(), end)? {
             return Err(self.errors.missing_newline_after_close_brace(end, end));
         }
         Ok(end)
@@ -268,24 +268,33 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         Ok(None)
     }
 
-    /// Consumes the rest of the line, including its line feed, if it is empty
-    /// or a comment, and returns whether it did. At the end of the source, the
-    /// line has no line feed.
+    /// Consumes the rest of the line after the brace at `brace`, where `end` is
+    /// the position after it, including its line feed, if it is empty or a
+    /// comment, and returns whether it did. At the end of the source, the line
+    /// has no line feed.
     ///
     /// ```ebnf
-    /// newline | comment
+    /// newline | " ", { " " }, comment
     /// ```
-    // Most statements end with a line feed right after them, which needs no
-    // vector scan, so only that check is inlined into callers.
+    // Most braces end their line, which needs no vector scan, so the vector
+    // scan is the only part not inlined into callers.
     #[inline(always)]
-    pub fn end_line(&mut self) -> ParseResult<bool> {
+    fn end_line_after_brace(&mut self, brace: Position, end: Position) -> ParseResult<bool> {
         if self.scanner.consume_line_feed() || self.scanner.is_at_end() {
             return Ok(true);
+        }
+        // A comment follows the brace without a space between them.
+        if self.scanner.next_byte_is(COMMENT_START) {
+            return Err(self
+                .errors
+                .missing_space_before_comment_after_brace(brace, end));
         }
         self.end_line_not_at_line_feed()
     }
 
-    /// Does what `end_line` does, where a line feed does not come next.
+    /// Consumes the rest of the line, including its line feed, if it is empty
+    /// or a comment, and returns whether it did. A line feed does not come
+    /// next.
     #[inline(never)]
     fn end_line_not_at_line_feed(&mut self) -> ParseResult<bool> {
         match self.scanner.scan_line_end() {

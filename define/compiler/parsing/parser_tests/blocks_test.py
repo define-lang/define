@@ -328,6 +328,40 @@ def test_missing_newline_after_block_open(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 48
 
 
+def test_comment_directly_after_block_open(native_parse_lark_wrong: NativeParse):
+    with pytest.raises(
+        parser_exceptions.MissingSpaceBeforeCommentAfterBrace
+    ) as exc_info:
+        native_parse_lark_wrong(
+            "define the potential position<mv:define-lang.org:parser:/path> {# note\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
+
+
+def test_comment_directly_after_block_close(native_parse_lark_wrong: NativeParse):
+    with pytest.raises(
+        parser_exceptions.MissingSpaceBeforeCommentAfterBrace
+    ) as exc_info:
+        native_parse_lark_wrong(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }# note\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 6
+
+
 def test_no_space_before_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
         native_parse("define the potential position<standard:/path>{\n")

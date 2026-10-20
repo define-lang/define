@@ -622,6 +622,14 @@ class MissingSpaceBeforeComment(DefineTokenError):
     )
 
 
+class MissingSpaceBeforeCommentAfterBrace(DefineTokenError):
+    """A comment directly after a { or }, without a space."""
+
+    message_format: ClassVar[str] = (
+        "'{{' or '}}' must have a space after it, before a comment."
+    )
+
+
 class MissingTerminator(DefineTokenError):
     """Forgot ."""
 
