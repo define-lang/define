@@ -229,18 +229,69 @@ impl AstDescription {
     }
 }
 
+/// An exception class that the parser can raise.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone)]
+struct ParserException {
+    name: String,
+    snake_case_name: String,
+    /// The names of the constructor's parameters after `location`, which are
+    /// all strings.
+    text_parameters: Vec<String>,
+}
+
+#[pymethods]
+impl ParserException {
+    #[new]
+    const fn new(name: String, snake_case_name: String, text_parameters: Vec<String>) -> Self {
+        Self {
+            name,
+            snake_case_name,
+            text_parameters,
+        }
+    }
+}
+
+/// Everything that the parser exceptions template renders.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone, Template)]
+#[template(path = "parser_exceptions.rs.j2", escape = "none")]
+struct ParserExceptionsDescription {
+    module_name: String,
+    exceptions: Vec<ParserException>,
+}
+
+#[pymethods]
+impl ParserExceptionsDescription {
+    #[new]
+    const fn new(module_name: String, exceptions: Vec<ParserException>) -> Self {
+        Self {
+            module_name,
+            exceptions,
+        }
+    }
+}
+
 #[pyfunction]
-fn render(description: AstDescription) -> PyResult<String> {
+fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
+    description
+        .render()
+        .map_err(|error| PyRuntimeError::new_err(error.to_string()))
+}
+
+#[pyfunction]
+fn render_parser_exceptions(description: ParserExceptionsDescription) -> PyResult<String> {
     description
         .render()
         .map_err(|error| PyRuntimeError::new_err(error.to_string()))
 }
 
 #[pymodule(gil_used = false)]
-mod ast_nodes_renderer {
+mod rust_renderer {
     #[pymodule_export]
     use super::{
         AstDescription, Constructor, EnumMember, FieldEnum, FieldType, NodeClass, NodeUnion,
-        Parameter, render,
+        Parameter, ParserException, ParserExceptionsDescription, render_ast_nodes,
+        render_parser_exceptions,
     };
 }

@@ -8,7 +8,7 @@ The generator works in four steps:
    alias's name.
 3. Describe each class: the AST classes it inherits from, and for each class
    that can be constructed, its constructor's parameters.
-4. Render the description as Rust with `ast_nodes_renderer`.
+4. Render the description as Rust with `rust_renderer`.
 
 Each constructor parameter's annotation becomes a `FieldType`:
 
@@ -29,7 +29,6 @@ from __future__ import annotations
 import enum
 import inspect
 import pathlib
-import re
 import sys
 import types
 import typing
@@ -37,20 +36,14 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.parsing.ast_nodes_generator import ast_nodes_renderer
+from define.compiler.parsing.rust_generators import rust_names, rust_renderer
 
-_WORD_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
-
-_SIMPLE_FIELD_TYPES: dict[object, ast_nodes_renderer.FieldType] = {
-    str: ast_nodes_renderer.FieldType.String(),
-    int: ast_nodes_renderer.FieldType.Integer(),
-    bool: ast_nodes_renderer.FieldType.Boolean(),
-    pathlib.PurePosixPath: ast_nodes_renderer.FieldType.FilePath(),
+_SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
+    str: rust_renderer.FieldType.String(),
+    int: rust_renderer.FieldType.Integer(),
+    bool: rust_renderer.FieldType.Boolean(),
+    pathlib.PurePosixPath: rust_renderer.FieldType.FilePath(),
 }
-
-
-def _snake_case_name(class_name: str) -> str:
-    return _WORD_BOUNDARY.sub("_", class_name).lower()
 
 
 def _rust_enum_variant_name(member_name: str) -> str:
@@ -138,7 +131,7 @@ def _ast_classes(module: types.ModuleType) -> list[type]:
     return classes
 
 
-def _describe(module: types.ModuleType) -> ast_nodes_renderer.AstDescription:
+def _describe(module: types.ModuleType) -> rust_renderer.AstDescription:
     classes = _ast_classes(module)
     field_types = _FieldTypes(classes)
     # Type aliases come first, so that a union written out in a field
@@ -147,7 +140,7 @@ def _describe(module: types.ModuleType) -> ast_nodes_renderer.AstDescription:
     node_classes = [
         _describe_class(cls, classes, field_types, module) for cls in classes
     ]
-    return ast_nodes_renderer.AstDescription(
+    return rust_renderer.AstDescription(
         module_name=module.__name__,
         classes=node_classes,
         unions=field_types.unions(),
@@ -160,14 +153,14 @@ def _describe_class(
     classes: list[type],
     field_types: _FieldTypes,
     module: types.ModuleType,
-) -> ast_nodes_renderer.NodeClass:
+) -> rust_renderer.NodeClass:
     ancestors = [base.__name__ for base in cls.__mro__[1:] if base in classes]
     constructor = None
     if not inspect.isabstract(cls) and not getattr(cls, "__parameters__", ()):
         constructor = _describe_constructor(cls, field_types, module)
-    return ast_nodes_renderer.NodeClass(
+    return rust_renderer.NodeClass(
         name=cls.__name__,
-        snake_case_name=_snake_case_name(cls.__name__),
+        snake_case_name=rust_names.snake_case_name(cls.__name__),
         ancestors=ancestors,
         constructor=constructor,
     )
@@ -175,10 +168,10 @@ def _describe_class(
 
 def _describe_constructor(
     cls: type, field_types: _FieldTypes, module: types.ModuleType
-) -> ast_nodes_renderer.Constructor:
+) -> rust_renderer.Constructor:
     signature_parameters = list(inspect.signature(cls).parameters.values())
     type_variable_values = _type_variable_values(cls, vars(module))
-    parameters: list[ast_nodes_renderer.Parameter] = []
+    parameters: list[rust_renderer.Parameter] = []
     for parameter in signature_parameters:
         if _is_derived(parameter):
             if typing.cast("object", parameter.default) is inspect.Parameter.empty:
@@ -192,7 +185,7 @@ def _describe_constructor(
         if isinstance(annotation, typing.TypeVar):
             annotation = type_variable_values[annotation]
         parameters.append(field_types.parameter(parameter.name, annotation))
-    return ast_nodes_renderer.Constructor(
+    return rust_renderer.Constructor(
         parameters=parameters,
         positional_count=_positional_count(signature_parameters),
     )
@@ -203,8 +196,8 @@ class _FieldTypes:
 
     def __init__(self, classes: list[type]):
         self._classes: list[type] = classes
-        self._unions: dict[frozenset[type], ast_nodes_renderer.NodeUnion] = {}
-        self._enums: dict[type, ast_nodes_renderer.FieldEnum] = {}
+        self._unions: dict[frozenset[type], rust_renderer.NodeUnion] = {}
+        self._enums: dict[type, rust_renderer.FieldEnum] = {}
 
     def register_type_aliases(self, module: types.ModuleType):
         """Name the union of AST classes that each type alias in `module` stands for after the alias."""
@@ -216,19 +209,19 @@ class _FieldTypes:
                     value.__name__,
                 )
 
-    def unions(self) -> list[ast_nodes_renderer.NodeUnion]:
+    def unions(self) -> list[rust_renderer.NodeUnion]:
         return list(self._unions.values())
 
-    def enums(self) -> list[ast_nodes_renderer.FieldEnum]:
+    def enums(self) -> list[rust_renderer.FieldEnum]:
         return list(self._enums.values())
 
-    def parameter(self, name: str, annotation: object) -> ast_nodes_renderer.Parameter:
+    def parameter(self, name: str, annotation: object) -> rust_renderer.Parameter:
         arguments = _type_arguments(annotation)
         if (
             typing.get_origin(annotation) is not types.UnionType
             or types.NoneType not in arguments
         ):
-            return ast_nodes_renderer.Parameter(
+            return rust_renderer.Parameter(
                 name=name, field_type=self._field_type(annotation), is_optional=False
             )
         value_types = [
@@ -238,19 +231,19 @@ class _FieldTypes:
             field_type = self._field_type(value_types[0])
         else:
             field_type = self._union_type(self._union_members(*value_types), None)
-        return ast_nodes_renderer.Parameter(
+        return rust_renderer.Parameter(
             name=name, field_type=field_type, is_optional=True
         )
 
-    def _field_type(self, annotation: object) -> ast_nodes_renderer.FieldType:
+    def _field_type(self, annotation: object) -> rust_renderer.FieldType:
         origin = typing.get_origin(annotation)
         arguments = _type_arguments(annotation)
         if isinstance(annotation, type) and annotation in self._classes:
-            return ast_nodes_renderer.FieldType.Node(name=annotation.__name__)
+            return rust_renderer.FieldType.Node(name=annotation.__name__)
         if annotation in _SIMPLE_FIELD_TYPES:
             return _SIMPLE_FIELD_TYPES[annotation]
         if isinstance(annotation, type) and issubclass(annotation, enum.Enum):
-            return ast_nodes_renderer.FieldType.Enum(name=self._enum(annotation).name)
+            return rust_renderer.FieldType.Enum(name=self._enum(annotation).name)
         if isinstance(annotation, typing.TypeAliasType):
             return self._union_type(
                 self._union_members(typing.cast("object", annotation.__value__)),
@@ -258,9 +251,9 @@ class _FieldTypes:
             )
         if origin is tuple and len(arguments) == 2 and arguments[1] is Ellipsis:
             element_type = self._field_type(arguments[0])
-            if not isinstance(element_type, ast_nodes_renderer.FieldType.Node):
+            if not isinstance(element_type, rust_renderer.FieldType.Node):
                 raise ValueError(f"unsupported tuple element type: {arguments[0]!r}")
-            return ast_nodes_renderer.FieldType.Tuple(element_name=element_type.name)
+            return rust_renderer.FieldType.Tuple(element_name=element_type.name)
         if origin is types.UnionType:
             return self._union_type(self._union_members(*arguments), None)
         raise ValueError(f"unsupported field type: {annotation!r}")
@@ -283,7 +276,7 @@ class _FieldTypes:
 
     def _union_type(
         self, members: list[type], alias_name: str | None
-    ) -> ast_nodes_renderer.FieldType.Node:
+    ) -> rust_renderer.FieldType.Node:
         """Return the union of `members`, registering it under `alias_name` the first time it is seen.
 
         A union without a type alias is named by joining its members' names
@@ -296,26 +289,26 @@ class _FieldTypes:
             for cls in self._classes:
                 if any(issubclass(cls, member) for member in members):
                     member_classes.append(cls.__name__)
-            self._unions[key] = ast_nodes_renderer.NodeUnion(
+            self._unions[key] = rust_renderer.NodeUnion(
                 name=name,
                 is_type_alias=alias_name is not None,
                 member_classes=member_classes,
             )
-        return ast_nodes_renderer.FieldType.Node(name=self._unions[key].name)
+        return rust_renderer.FieldType.Node(name=self._unions[key].name)
 
-    def _enum(self, enum_class: type[enum.Enum]) -> ast_nodes_renderer.FieldEnum:
+    def _enum(self, enum_class: type[enum.Enum]) -> rust_renderer.FieldEnum:
         if enum_class not in self._enums:
-            members: list[ast_nodes_renderer.EnumMember] = []
+            members: list[rust_renderer.EnumMember] = []
             for member in enum_class:
                 members.append(
-                    ast_nodes_renderer.EnumMember(
+                    rust_renderer.EnumMember(
                         python_name=member.name,
                         rust_name=_rust_enum_variant_name(member.name),
                     )
                 )
-            self._enums[enum_class] = ast_nodes_renderer.FieldEnum(
+            self._enums[enum_class] = rust_renderer.FieldEnum(
                 name=enum_class.__name__,
-                snake_case_name=_snake_case_name(enum_class.__name__),
+                snake_case_name=rust_names.snake_case_name(enum_class.__name__),
                 module_name=enum_class.__module__,
                 members=members,
             )
@@ -327,7 +320,7 @@ def main():
     (output_path,) = sys.argv[1:]
     description = _describe(ast)
     _ = pathlib.Path(output_path).write_text(
-        ast_nodes_renderer.render(description), encoding="utf-8"
+        rust_renderer.render_ast_nodes(description), encoding="utf-8"
     )
 
 

@@ -5,34 +5,52 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-py_library(
-    name = "ast_nodes_generator",
-    srcs = ["__init__.py"],
-)
-
 py_binary(
     name = "generate_ast_nodes",
     srcs = ["generate_ast_nodes.py"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":renderer_extension",
+        ":rust_names",
         "//define/compiler:ast",
         "@pypi//msgspec",
     ],
 )
 
+py_binary(
+    name = "generate_parser_exceptions",
+    srcs = ["generate_parser_exceptions.py"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
+    deps = [
+        ":renderer_extension",
+        ":rust_names",
+        "//define/compiler/errors:parser_exceptions",
+    ],
+)
+
 pyo3_extension(
     name = "renderer_extension",
-    srcs = ["ast_nodes_renderer.rs"],
+    srcs = ["rust_renderer.rs"],
     compile_data = [
         "askama.toml",
         "ast_nodes.rs.j2",
+        "parser_exceptions.rs.j2",
     ],
-    crate_root = "ast_nodes_renderer.rs",
+    crate_root = "rust_renderer.rs",
     lint_config = lint_config(),
-    module_name = "ast_nodes_renderer",
+    module_name = "rust_renderer",
     stubs = True,
     deps = ["@crates//:askama"],
+)
+
+py_library(
+    name = "rust_generators",
+    srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "rust_names",
+    srcs = ["rust_names.py"],
 )
 
 # --- Linting ---
@@ -49,8 +67,10 @@ rust_clippy_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":ast_nodes_generator",
         ":generate_ast_nodes",
+        ":generate_parser_exceptions",
+        ":rust_generators",
+        ":rust_names",
     ],
 )
 

@@ -1,0 +1,33 @@
+// Generated from `{{ module_name }}` by
+// //define/compiler/parsing/rust_generators:generate_parser_exceptions.
+
+#![allow(dead_code, reason = "the parser does not raise every exception yet")]
+
+use crate::ast::SourceLocation;
+use crate::ast_builder::Node;
+use pyo3::prelude::*;
+use pyo3::{PyTypeInfo, import_exception};
+{% for exception in exceptions %}
+import_exception!({{ module_name }}, {{ exception.name }});
+{%- endfor %}
+{% for exception in exceptions %}
+/// Returns a `{{ module_name }}.{{ exception.name }}` at `location`.
+pub fn {{ exception.snake_case_name }}(
+    location: SourceLocation<'_>,
+{%- for parameter in exception.text_parameters %}
+    {{ parameter }}: &str,
+{%- endfor %}
+) -> PyErr {
+    let location = location.into_object();
+    let py = location.py();
+    match {{ exception.name }}::type_object(py).call1((
+        location,
+{%- for parameter in exception.text_parameters %}
+        {{ parameter }},
+{%- endfor %}
+    )) {
+        Ok(error) => PyErr::from_value(error),
+        Err(error) => error,
+    }
+}
+{% endfor -%}

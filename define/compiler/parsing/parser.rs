@@ -3,6 +3,9 @@ mod ast_builder;
 // setup_local_dev copies it there.
 #[rustfmt::skip]
 mod ast;
+// Generated like ast.rs, so rustfmt skips it for the same reason.
+#[rustfmt::skip]
+mod parser_exceptions;
 
 use ast_builder::{AstBuilder, Node};
 use pyo3::exceptions::PyNotImplementedError;

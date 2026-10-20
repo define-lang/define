@@ -27,8 +27,12 @@ LARK_FILES = [
 # it by the same name.
 SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 
-# rust-analyzer reads generated Rust sources from the source tree.
-GENERATED_RUST_SOURCE = "define/compiler/parsing/ast.rs"
+# rust-analyzer reads generated Rust sources from the source tree. They are in
+# the order of their command-line arguments.
+GENERATED_RUST_SOURCES = [
+    "define/compiler/parsing/ast.rs",
+    "define/compiler/parsing/parser_exceptions.rs",
+]
 
 # Native extensions, by the package that each is copied into, in the order of
 # their command-line arguments.
@@ -223,7 +227,9 @@ def _record_successful_run():
 
 def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
-    uv_location, generated_rust_location, *native_extension_locations = sys.argv[1:]
+    uv_location, *locations = sys.argv[1:]
+    generated_rust_locations = locations[: len(GENERATED_RUST_SOURCES)]
+    native_extension_locations = locations[len(GENERATED_RUST_SOURCES) :]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
     all_targets = [*LARK_TARGETS, *proto_targets]
@@ -242,10 +248,11 @@ def main():
         extension_path = Path(package) / extension_source.name
         _copy_file(extension_source, REPO_ROOT / extension_path)
         print(extension_path)
-    _copy_file(
-        runfiles.resolve(generated_rust_location), REPO_ROOT / GENERATED_RUST_SOURCE
-    )
-    print(GENERATED_RUST_SOURCE)
+    for source, location in zip(
+        GENERATED_RUST_SOURCES, generated_rust_locations, strict=True
+    ):
+        _copy_file(runfiles.resolve(location), REPO_ROOT / source)
+        print(source)
     _configure_git_blame()
     _install_git_hooks()
     _record_successful_run()
