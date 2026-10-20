@@ -94,6 +94,17 @@ def test_letter_after_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 64
 
 
+def test_spaces_and_letter_after_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>.  x\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 64
+
+
 def test_non_ascii_character_after_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         native_parse(
@@ -114,13 +125,33 @@ def test_space_before_terminator(parse: Parse):
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
-def test_trailing_space_before_newline(parse: Parse):
+def test_trailing_space_before_newline(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("define the potential position<standard:/path>. \n")
+        native_parse("define the potential position<standard:/path>. \n")
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
     assert exc_info.value.location.end_column == 47
+
+
+def test_several_trailing_spaces_before_newline(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>.   \n"
+        )
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_column == 64
+
+
+def test_trailing_space_at_end_of_source(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse("define the potential position<mv:define-lang.org:parser:/path>. ")
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_column == 64
 
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(

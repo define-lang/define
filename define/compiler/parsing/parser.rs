@@ -15,14 +15,13 @@ use pyo3::prelude::*;
 use pyo3::types::PyString;
 use scanner::{Position, Scanner, SourceText};
 use syntax_errors::SyntaxErrors;
-use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
+use vector_scan::{COMMENT_START, COMPONENT_SEPARATOR, LINE_FEED, LineEnd, NAME_CONTENT_END};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
 const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
 const NAME_CONTENT_START: u8 = b'<';
 const TERMINATOR: u8 = b'.';
-const COMMENT_START: u8 = b'#';
 
 struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
@@ -39,19 +38,22 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Parses a program: one or more global definitions, with any number of
-    /// blank lines before, between, and after them.
+    /// blank lines and comments before, between, and after them.
     ///
     /// ```ebnf
-    /// program = { newline }, global_definition, { { newline }, global_definition }, { newline } ;
+    /// program = { line_end }, global_definition, { { line_end }, global_definition }, { line_end } ;
+    /// line_end = newline | comment ;
     /// ```
     fn parse_program(&mut self) -> ParseResult<ast::Program<'py>> {
         let definitions = self.ast.start_tuple::<ast::GlobalDefinition>();
         let mut start = None;
         let mut end = self.scanner.position;
         loop {
-            while self.scanner.consume_line_feed() {}
             if self.scanner.is_at_end() {
                 break;
+            }
+            if !self.start_line()? {
+                continue;
             }
             start.get_or_insert(self.scanner.position);
             let (definition, definition_end) = self.parse_definition()?;
@@ -88,10 +90,6 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_definition(&mut self) -> ParseResult<(ast::GlobalDefinition<'py>, Position)> {
         let start = self.scanner.position;
-        // Spaces can begin a comment.
-        if self.scanner.next_byte_is(COMMENT_START) || self.scanner.next_byte_is(SPACE) {
-            return Err(Self::not_yet_supported(start, "comments"));
-        }
         if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
             self.scanner.consume(DEFINE_THE_POTENTIAL);
             let typed_name_start = self.scanner.position;
@@ -136,8 +134,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((definition, end))
     }
 
-    /// Parses a terminator up to the line feed that ends it, which is left for
-    /// the caller, and returns the position after its `.`.
+    /// Parses a terminator through the end of its line, and returns the
+    /// position after its `.`.
     ///
     /// ```ebnf
     /// terminator = ".", ( newline | " ", { " " }, comment ) ;
@@ -162,21 +160,112 @@ impl<'py, 'source> Parser<'py, 'source> {
         if self.scanner.next_byte_is(COMMENT_START) {
             return Err(self.errors.missing_space_before_comment(terminator, end));
         }
-        // Something other than a line feed or a space follows the `.`. At the end
-        // of the source, parse_program reports the missing line feed instead.
-        if !self.scanner.is_at_end()
-            && !self.scanner.next_byte_is(LINE_FEED)
-            && !self.scanner.next_byte_is(SPACE)
-        {
+        // Something other than a line feed or a comment follows the `.`.
+        if !self.end_line()? {
             return Err(self.errors.missing_newline_after_terminator(end, end));
         }
-        if self.scanner.next_byte_is(SPACE) {
-            return Err(Self::not_yet_supported(
+        Ok(end)
+    }
+
+    /// Consumes the line if it is blank or a comment, and returns whether a
+    /// statement starts on it.
+    fn start_line(&mut self) -> ParseResult<bool> {
+        match self.scanner.scan_line_end() {
+            LineEnd::Ordinary { length } => {
+                self.consume_ordinary_line_end(length);
+                Ok(false)
+            }
+            LineEnd::Text {
+                leading_space_count: 0,
+            } => Ok(true),
+            LineEnd::Text { .. } => Err(Self::not_yet_supported(
                 self.scanner.position,
-                "anything but a line feed after a terminator's `.`",
+                "indentation",
+            )),
+            LineEnd::Unusual {
+                leading_space_count,
+            } => {
+                self.end_unusual_line(leading_space_count)?;
+                Ok(false)
+            }
+        }
+    }
+
+    /// Consumes the rest of the line, including its line feed, if it is empty
+    /// or a comment, and returns whether it did. At the end of the source, the
+    /// line has no line feed.
+    ///
+    /// ```ebnf
+    /// newline | comment
+    /// ```
+    fn end_line(&mut self) -> ParseResult<bool> {
+        // Most statements end with a line feed right after them, which needs no
+        // vector scan.
+        if self.scanner.consume_line_feed() || self.scanner.is_at_end() {
+            return Ok(true);
+        }
+        match self.scanner.scan_line_end() {
+            LineEnd::Ordinary { length } => {
+                self.consume_ordinary_line_end(length);
+                Ok(true)
+            }
+            LineEnd::Text { .. } => Ok(false),
+            LineEnd::Unusual {
+                leading_space_count,
+            } => {
+                self.end_unusual_line(leading_space_count)?;
+                Ok(true)
+            }
+        }
+    }
+
+    fn consume_ordinary_line_end(&mut self, length: usize) {
+        self.scanner.consume_bytes(length);
+        self.scanner.consume_line_feed();
+    }
+
+    /// Consumes the rest of a line, including its line feed, that
+    /// `vector_scan::line_end` finds unusual after `leading_space_count`
+    /// spaces.
+    #[cold]
+    #[inline(never)]
+    fn end_unusual_line(&mut self, leading_space_count: usize) -> ParseResult<()> {
+        let start = self.scanner.position;
+        self.scanner.consume_bytes(leading_space_count);
+        // The line ends with spaces.
+        if !self.scanner.next_byte_is(COMMENT_START) {
+            return Err(self.errors.trailing_whitespace_error(start, start, " "));
+        }
+        let comment_start = self.scanner.position;
+        let comment = self.scanner.consume_rest_of_line();
+        let Ok(characters) = str::from_utf8(comment.bytes) else {
+            return Err(Self::not_yet_supported(
+                comment_start,
+                "invalid UTF-8 in comments",
+            ));
+        };
+        // TODO: Check comments for invisible characters here, instead of in
+        // the Python check that runs before this parser. Every comment that is
+        // not printable ASCII comes here, so this loop sees every character
+        // that could be invisible.
+        if characters.chars().any(char::is_control) {
+            return Err(Self::not_yet_supported(
+                comment_start,
+                "control characters in comments",
             ));
         }
-        Ok(end)
+        let content_length = characters.trim_end_matches(' ').len();
+        // The comment ends with spaces.
+        if content_length < comment.bytes.len() {
+            let trailing_whitespace = comment_start.after(comment.slice(..content_length));
+            return Err(self.errors.trailing_whitespace_error(
+                trailing_whitespace,
+                trailing_whitespace,
+                " ",
+            ));
+        }
+        self.scanner.consume_line_feed();
+        Ok(())
     }
 
     /// Parses the `<`, fully qualified global name, and `>` that follow the name

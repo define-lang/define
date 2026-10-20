@@ -65,6 +65,7 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
+        "//define/compiler:ast",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:parser_exceptions",
         "//define/compiler/errors:source_map",

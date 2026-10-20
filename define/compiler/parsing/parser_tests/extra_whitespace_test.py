@@ -13,21 +13,21 @@ import pytest
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_file_all_spaces(parse: Parse):
+def test_file_all_spaces(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("   ")
+        native_parse("   ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 
 
-def test_file_spaces_and_newlines_only(parse: Parse):
+def test_file_spaces_and_newlines_only(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(" \n  \n ")
+        native_parse(" \n  \n ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1

@@ -144,6 +144,8 @@ class ControlCharacterError(DefineCharError):
     message_format: ClassVar[str] = "Control character ({escaped_char}) is not allowed."
 
 
+# TODO: Trailing whitespace is always spaces, so this should not take a `char`,
+# and the parser in parser.rs should not have to pass it " ".
 class TrailingWhitespaceError(DefineCharError):
     """Raised when trailing whitespace is found."""
 

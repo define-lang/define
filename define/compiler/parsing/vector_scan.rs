@@ -33,6 +33,7 @@ pub const COMPONENT_SEPARATOR: u8 = b':';
 pub const PATH_SEPARATOR: u8 = b'/';
 pub const SPACE: u8 = b' ';
 pub const LINE_FEED: u8 = b'\n';
+pub const COMMENT_START: u8 = b'#';
 
 const WIDTH: usize = 32;
 
@@ -290,6 +291,211 @@ impl LongNameContentScan {
             is_global_name: self.shape == GlobalNameShape::Global,
             last_component_separator: self.last_component_separator_end.checked_sub(1),
         }
+    }
+}
+
+/// What a scan of the rest of a line found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RestOfLine {
+    /// The length in bytes of the line's text, which ends before the first
+    /// line feed, or at the end of the source.
+    pub length: usize,
+    /// Whether every byte of the line's text is from ` ` through `~`.
+    pub is_printable_ascii: bool,
+}
+
+/// Scans the rest of the line at the start of `source`.
+#[must_use]
+pub fn rest_of_line(source: &[u8]) -> RestOfLine {
+    let (chunks, remainder) = source.as_chunks::<WIDTH>();
+    let mut unprintable = 0;
+    for (index, &chunk) in chunks.iter().enumerate() {
+        let vector = u8x32::new(chunk);
+        let line_feeds = mask(vector, LINE_FEED);
+        if line_feeds != 0 {
+            let length = line_feeds.trailing_zeros() as usize;
+            unprintable |= unprintable_mask(vector) & low_bits(length);
+            return RestOfLine {
+                length: index * WIDTH + length,
+                is_printable_ascii: unprintable == 0,
+            };
+        }
+        unprintable |= unprintable_mask(vector);
+    }
+    let offset = chunks.len() * WIDTH;
+    let (line_feeds, remainder_unprintable) = match source.last_chunk::<WIDTH>() {
+        // Loading the last 32 bytes of the source, which overlap bytes already
+        // scanned, is much faster than copying the remainder into a zeroed
+        // array.
+        Some(&last_chunk) if !remainder.is_empty() => {
+            let vector = u8x32::new(last_chunk);
+            let shift = WIDTH - remainder.len();
+            (
+                mask(vector, LINE_FEED) >> shift,
+                unprintable_mask(vector) >> shift,
+            )
+        }
+        // For a source shorter than one vector, a byte loop is faster than
+        // copying it into a zeroed array.
+        _ => {
+            let mut line_feeds = 0;
+            let mut unprintable = 0;
+            for (index, &byte) in remainder.iter().enumerate() {
+                line_feeds |= u32::from(byte == LINE_FEED) << index;
+                unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
+            }
+            (line_feeds, unprintable)
+        }
+    };
+    let length = if line_feeds == 0 {
+        remainder.len()
+    } else {
+        line_feeds.trailing_zeros() as usize
+    };
+    RestOfLine {
+        length: offset + length,
+        is_printable_ascii: unprintable == 0 && remainder_unprintable & low_bits(length) == 0,
+    }
+}
+
+/// Returns a mask of the bytes in `vector` that are not from ` ` through `~`.
+#[inline]
+fn unprintable_mask(vector: u8x32) -> u32 {
+    // Subtracting wraps, so the printable bytes are exactly those that become
+    // at most `~` - ` `.
+    let offset = vector - u8x32::splat(b' ');
+    !offset
+        .min(u8x32::splat(b'~' - b' '))
+        .simd_eq(offset)
+        .to_bitmask()
+}
+
+/// What a scan of the start of a line, or of the rest of a line after a
+/// statement, found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LineEnd {
+    /// Any number of spaces, then a line feed or the end of the source, or a
+    /// comment that is printable ASCII and does not end with a space. A line
+    /// feed or the end of the source follows `length` bytes, and no spaces
+    /// come right before a line feed or the end of the source.
+    Ordinary { length: usize },
+    /// Any number of spaces, then a byte other than a space, `#`, or a line
+    /// feed.
+    Text { leading_space_count: usize },
+    /// Any number of spaces, then anything else, which needs a slower look to
+    /// say what it is.
+    Unusual { leading_space_count: usize },
+}
+
+/// Scans the start of `source` for the end of a line.
+#[inline]
+#[must_use]
+pub fn line_end(source: &[u8]) -> LineEnd {
+    let Some(&chunk) = source.first_chunk::<WIDTH>() else {
+        return short_line_end(source);
+    };
+    line_end_in_vector(source, u8x32::new(chunk), WIDTH)
+}
+
+// A copy into a zeroed array happens only in the last 32 bytes of the source.
+#[cold]
+#[inline(never)]
+fn short_line_end(source: &[u8]) -> LineEnd {
+    line_end_in_vector(source, zero_padded(source), source.len())
+}
+
+/// Scans the start of `source`, whose first `length` bytes, at most 32, are
+/// in `vector`.
+#[inline]
+fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
+    let bytes = low_bits(length);
+    let spaces = mask(vector, SPACE) & bytes;
+    let leading_space_count = (!spaces).trailing_zeros() as usize;
+    if leading_space_count == length {
+        return match length {
+            0 => LineEnd::Ordinary { length: 0 },
+            WIDTH => line_end_after_space_vectors(source),
+            _ => LineEnd::Unusual {
+                leading_space_count,
+            },
+        };
+    }
+    match source[leading_space_count] {
+        LINE_FEED if leading_space_count == 0 => LineEnd::Ordinary { length: 0 },
+        LINE_FEED => LineEnd::Unusual {
+            leading_space_count,
+        },
+        COMMENT_START => {
+            let line_feeds = mask(vector, LINE_FEED) & bytes;
+            if line_feeds == 0 && length == WIDTH {
+                return long_line_end(source, leading_space_count);
+            }
+            let end = if line_feeds == 0 {
+                length
+            } else {
+                line_feeds.trailing_zeros() as usize
+            };
+            // The `#` comes before `end`, so `end` is at least 1.
+            if unprintable_mask(vector) & low_bits(end) != 0 || spaces & (1 << (end - 1)) != 0 {
+                return LineEnd::Unusual {
+                    leading_space_count,
+                };
+            }
+            LineEnd::Ordinary { length: end }
+        }
+        _ => LineEnd::Text {
+            leading_space_count,
+        },
+    }
+}
+
+/// Scans the start of `source`, whose first 32 bytes are spaces.
+#[cold]
+#[inline(never)]
+fn line_end_after_space_vectors(source: &[u8]) -> LineEnd {
+    let mut offset = WIDTH;
+    while let Some(&chunk) = source[offset..].first_chunk::<WIDTH>()
+        && mask(u8x32::new(chunk), SPACE) == u32::MAX
+    {
+        offset += WIDTH;
+    }
+    // The rest of `source` does not start with 32 spaces, so this does not
+    // come back here.
+    match line_end(&source[offset..]) {
+        // Spaces before a line feed or the end of the source are trailing
+        // whitespace.
+        LineEnd::Ordinary { length: 0 } => LineEnd::Unusual {
+            leading_space_count: offset,
+        },
+        LineEnd::Ordinary { length } => LineEnd::Ordinary {
+            length: offset + length,
+        },
+        LineEnd::Text {
+            leading_space_count,
+        } => LineEnd::Text {
+            leading_space_count: offset + leading_space_count,
+        },
+        LineEnd::Unusual {
+            leading_space_count,
+        } => LineEnd::Unusual {
+            leading_space_count: offset + leading_space_count,
+        },
+    }
+}
+
+/// Scans the start of `source`, `leading_space_count` spaces and then a comment
+/// that is longer than one vector with them.
+#[cold]
+#[inline(never)]
+fn long_line_end(source: &[u8], leading_space_count: usize) -> LineEnd {
+    let scanned = rest_of_line(source);
+    if !scanned.is_printable_ascii || source[scanned.length - 1] == SPACE {
+        return LineEnd::Unusual {
+            leading_space_count,
+        };
+    }
+    LineEnd::Ordinary {
+        length: scanned.length,
     }
 }
 
@@ -689,6 +895,359 @@ mod tests {
                 is_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(62),
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_line_feed() {
+        expect_that!(
+            line_end(b"\n# a comment\n"),
+            eq(LineEnd::Ordinary { length: 0 })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_end_of_source() {
+        expect_that!(line_end(b""), eq(LineEnd::Ordinary { length: 0 }));
+    }
+
+    #[gtest]
+    fn line_end_at_comment() {
+        expect_that!(
+            line_end(b"# a comment\ndefine the potential position<standard:/path>.\n"),
+            eq(LineEnd::Ordinary { length: 11 })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_after_spaces() {
+        expect_that!(
+            line_end(b"    # a comment\ndefine the potential position<standard:/path>.\n"),
+            eq(LineEnd::Ordinary { length: 15 })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_at_end_of_source() {
+        expect_that!(line_end(b" #"), eq(LineEnd::Ordinary { length: 2 }));
+    }
+
+    #[gtest]
+    fn line_end_at_comment_longer_than_one_vector() {
+        expect_that!(
+            line_end(b"  # A comment that is longer than one vector of bytes.\nx\n"),
+            eq(LineEnd::Ordinary { length: 54 })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_text() {
+        expect_that!(
+            line_end(b"define the potential position<standard:/path>.\n"),
+            eq(LineEnd::Text {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_text_after_spaces() {
+        expect_that!(
+            line_end(b"    it has the position</child>.\n"),
+            eq(LineEnd::Text {
+                leading_space_count: 4
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_text_after_spaces_at_end_of_source() {
+        expect_that!(
+            line_end(b"  x"),
+            eq(LineEnd::Text {
+                leading_space_count: 2
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_spaces_before_line_feed() {
+        expect_that!(
+            line_end(b"  \n# a comment\n"),
+            eq(LineEnd::Unusual {
+                leading_space_count: 2
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_spaces_at_end_of_source() {
+        expect_that!(
+            line_end(b"  "),
+            eq(LineEnd::Unusual {
+                leading_space_count: 2
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_ending_with_space() {
+        expect_that!(
+            line_end(b"# a comment \ndefine the potential position<standard:/path>.\n"),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_ending_with_space_at_end_of_source() {
+        expect_that!(
+            line_end(b"# "),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_with_control_character() {
+        expect_that!(
+            line_end(b"# a\tcomment\n"),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_non_ascii_comment() {
+        expect_that!(
+            line_end("# café\n".as_bytes()),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_longer_than_one_vector_ending_with_space() {
+        expect_that!(
+            line_end(b"# A comment that is longer than one vector of bytes. \nx\n"),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_longer_than_one_vector_with_non_ascii_character() {
+        expect_that!(
+            line_end("# A comment that is longer than one vector, ending in é\n".as_bytes()),
+            eq(LineEnd::Unusual {
+                leading_space_count: 0
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_longer_than_one_vector_after_spaces_ending_with_space() {
+        expect_that!(
+            line_end(b"   # A comment that is longer than one vector of bytes. \nx\n"),
+            eq(LineEnd::Unusual {
+                leading_space_count: 3
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_text_after_one_vector_of_spaces() {
+        let source = [&[b' '; 32][..], b"x\n"].concat();
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::Text {
+                leading_space_count: 32
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_text_after_more_than_two_vectors_of_spaces() {
+        let source = [&[b' '; 70][..], b"x\n"].concat();
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::Text {
+                leading_space_count: 70
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_comment_after_more_than_one_vector_of_spaces() {
+        let source = [&[b' '; 40][..], b"# a comment\nx\n"].concat();
+        expect_that!(line_end(&source), eq(LineEnd::Ordinary { length: 51 }));
+    }
+
+    #[gtest]
+    fn line_end_at_comment_after_exactly_two_vectors_of_spaces() {
+        let source = [
+            &[b' '; 64][..],
+            b"# a comment that is longer than one vector of bytes\n",
+        ]
+        .concat();
+        expect_that!(line_end(&source), eq(LineEnd::Ordinary { length: 115 }));
+    }
+
+    #[gtest]
+    fn line_end_at_two_vectors_of_spaces_before_line_feed() {
+        let source = [&[b' '; 64][..], b"\nx\n"].concat();
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::Unusual {
+                leading_space_count: 64
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_one_vector_of_spaces_at_end_of_source() {
+        expect_that!(
+            line_end(&[b' '; 32]),
+            eq(LineEnd::Unusual {
+                leading_space_count: 32
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_more_than_one_vector_of_spaces_at_end_of_source() {
+        expect_that!(
+            line_end(&[b' '; 40]),
+            eq(LineEnd::Unusual {
+                leading_space_count: 40
+            })
+        );
+    }
+
+    #[gtest]
+    fn line_end_at_more_than_one_vector_of_spaces_before_comment_ending_with_space() {
+        let source = [&[b' '; 40][..], b"# a comment \n"].concat();
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::Unusual {
+                leading_space_count: 40
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_ending_at_line_feed() {
+        expect_that!(
+            rest_of_line(b"# a comment\ndefine the potential position<standard:/path>.\n"),
+            eq(RestOfLine {
+                length: 11,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_at_end_of_source() {
+        expect_that!(
+            rest_of_line(b"# a comment"),
+            eq(RestOfLine {
+                length: 11,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_with_non_ascii_character() {
+        expect_that!(
+            rest_of_line("# café\n".as_bytes()),
+            eq(RestOfLine {
+                length: 7,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_longer_than_one_vector() {
+        expect_that!(
+            rest_of_line(b"# A comment that is longer than one vector of thirty-two bytes.\nx\n"),
+            eq(RestOfLine {
+                length: 63,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_longer_than_one_vector_at_end_of_source() {
+        expect_that!(
+            rest_of_line("# A comment that is longer than one vector, ending in é".as_bytes()),
+            eq(RestOfLine {
+                length: 56,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_of_exactly_two_vectors() {
+        let source = [&[b'#'; 64][..], b"\nx"].concat();
+        expect_that!(
+            rest_of_line(&source),
+            eq(RestOfLine {
+                length: 64,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_with_non_ascii_character_after_line_feed() {
+        expect_that!(
+            rest_of_line("# ascii\né\n".as_bytes()),
+            eq(RestOfLine {
+                length: 7,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_with_control_character() {
+        expect_that!(
+            rest_of_line(b"# a\tcomment\n"),
+            eq(RestOfLine {
+                length: 11,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_with_delete_character_longer_than_one_vector() {
+        expect_that!(
+            rest_of_line(b"# A comment longer than one vector of bytes, ending in \x7f\n"),
+            eq(RestOfLine {
+                length: 56,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn rest_of_line_with_delete_character_in_first_vector() {
+        expect_that!(
+            rest_of_line(b"# \x7f comment that is longer than one vector of bytes\n"),
+            eq(RestOfLine {
+                length: 51,
+                is_printable_ascii: false,
             })
         );
     }

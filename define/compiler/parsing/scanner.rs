@@ -130,6 +130,33 @@ impl<'source> Scanner<'source> {
         true
     }
 
+    // Without this, LLVM inlines the scan into only one of its call sites, and
+    // each statement's terminator pays for a call.
+    #[inline(always)]
+    pub fn scan_line_end(&self) -> vector_scan::LineEnd {
+        vector_scan::line_end(self.rest)
+    }
+
+    /// Consumes the next `count` bytes, which must be ASCII without a line
+    /// feed.
+    pub fn consume_bytes(&mut self, count: usize) {
+        self.rest = &self.rest[count..];
+        self.position.column += count;
+    }
+
+    /// Consumes and returns the rest of the line before its line feed.
+    pub fn consume_rest_of_line(&mut self) -> SourceText<'source> {
+        let scanned = vector_scan::rest_of_line(self.rest);
+        let (bytes, rest) = self.rest.split_at(scanned.length);
+        let text = SourceText {
+            bytes,
+            is_known_ascii: scanned.is_printable_ascii,
+        };
+        self.rest = rest;
+        self.position = self.position.after(text);
+        text
+    }
+
     pub fn consume_line_feed(&mut self) -> bool {
         let Some(rest) = self.rest.strip_prefix(&[LINE_FEED]) else {
             return false;
