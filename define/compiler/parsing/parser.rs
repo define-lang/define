@@ -147,7 +147,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         // them, so it leaves this tuple empty.
         let quality_implications = self.ast.empty_tuple();
         let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (constraints, end) = self.parse_potential_position_definition_block(&fqun)?;
+            let (constraints, end) =
+                self.parse_potential_position_definition_block(start, &fqun)?;
             (Some(constraints), end)
         } else {
             // There is no `.` or ` {`.
@@ -185,9 +186,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         ParseError::not_yet_supported(missing, "anything but a terminator or ` {` here")
     }
 
-    /// Parses the block of a potential position definition at the top level,
-    /// whose references take their default FQUN from `fqun`, and returns its
-    /// position constraint block with the position after its `}`.
+    /// Parses the block of a potential position definition at the top level
+    /// that begins at `start`, whose references take their default FQUN from
+    /// `fqun`, and returns its position constraint block with the position
+    /// after its `}`.
     ///
     /// ```ebnf
     /// potential_position_definition_block =
@@ -198,6 +200,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_potential_position_definition_block(
         &mut self,
+        start: Position,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
         let block_open_end = self.lines().parse_block_open()?;
@@ -225,14 +228,33 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let constraints =
             self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
-        let LineInBlock::Close = self.lines().next_line_in_block(0)? else {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "anything but `}` here",
-            ));
-        };
+        match self.lines().next_line_in_block(0)? {
+            LineInBlock::Close => {}
+            LineInBlock::Statement { .. } => {
+                return Err(ParseError::not_yet_supported(
+                    self.scanner.position,
+                    "anything but `}` here",
+                ));
+            }
+            // The source ends before the block's `}`.
+            LineInBlock::EndOfSource => {
+                return Err(self.missing_close_brace(start, block_open_end));
+            }
+        }
         let end = self.lines().parse_block_close()?;
         Ok((constraints, end))
+    }
+
+    /// Returns the error for a block that the source ends in, which a line from
+    /// `start` up to `block_open_end`, the position after its `{`, opens.
+    #[cold]
+    #[inline(never)]
+    fn missing_close_brace(&self, start: Position, block_open_end: Position) -> ParseError {
+        let open_brace = Position {
+            line: block_open_end.line,
+            column: block_open_end.column - 1,
+        };
+        self.errors.missing_close_brace(start, open_brace)
     }
 
     /// Returns the error for a statement in a potential position definition
@@ -295,11 +317,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             match self.lines().next_line_in_block(indentation)? {
                 LineInBlock::Statement { .. } => {}
                 LineInBlock::Close => break,
+                // The source ends before the block's `}`.
                 LineInBlock::EndOfSource => {
-                    return Err(ParseError::not_yet_supported(
-                        self.scanner.position,
-                        "a block without its `}`",
-                    ));
+                    return Err(self.missing_close_brace(start, block_open_end));
                 }
             }
         }

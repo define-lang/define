@@ -295,28 +295,48 @@ def test_action_and_it_does_block_missing_close_brace(parse: Parse):
     assert exc_info.value.location.end_column == 2
 
 
-def test_position_constraint_block_truncated_without_final_newline(parse: Parse):
+def test_position_constraint_block_truncated_without_final_newline(
+    native_parse: NativeParse,
+):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position<mv:define-lang.org:parser:/q>."
         )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 58
-    assert exc_info.value.location.end_column == 58
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 41
 
 
-def test_position_constraint_block_truncated_after_statement(parse: Parse):
+def test_position_constraint_block_truncated_after_statement(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position<mv:define-lang.org:parser:/q>.\n"
         )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 59
-    assert exc_info.value.location.end_column == 59
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 41
+
+
+def test_position_definition_block_truncated_after_constraint_block(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 64
 
 
 def test_action_statements_block_truncated_without_final_newline(parse: Parse):
