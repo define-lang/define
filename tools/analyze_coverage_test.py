@@ -560,7 +560,7 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
         + "end_of_record\n"
     )
 
-    actionable, panic_only = analyze_coverage.analyze_rust_regions(
+    actionable, panic_only, not_yet_supported = analyze_coverage.analyze_rust_regions(
         report_path, tmp_path
     )
 
@@ -581,11 +581,15 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
         ),
     ]
     assert panic_only == []
-    assert analyze_coverage.format_rust_regions(actionable, panic_only, tmp_path) == (
+    assert not_yet_supported == []
+    assert analyze_coverage.format_rust_regions(
+        actionable, panic_only, not_yet_supported, tmp_path
+    ) == (
         "Uncovered Rust code regions:\n"
         + f"{source_path}:2:10-2:11: b\n"
         + f"{source_path}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
-        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted."
+        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 not-yet-supported regions omitted."
     )
 
 
@@ -603,7 +607,7 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
         + "end_of_record\n"
     )
 
-    actionable, panic_only = analyze_coverage.analyze_rust_regions(
+    actionable, panic_only, not_yet_supported = analyze_coverage.analyze_rust_regions(
         report_path, tmp_path
     )
 
@@ -624,6 +628,7 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
             end_column=21,
         ),
     ]
+    assert not_yet_supported == []
 
 
 def test_analyze_report_leaves_rust_regions_out_of_branches(tmp_path: Path):
@@ -661,9 +666,82 @@ def test_cli_reports_rust_regions_before_branches(
     assert result.output == (
         "Uncovered Rust code regions:\n"
         + "example.rs:2:5-2:7: !a\n"
-        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted.\n"
+        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 not-yet-supported regions omitted.\n"
         + "No uncovered actionable branches.\n"
         + "0 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "
         + "0 explicit-exit-only branches omitted.\n"
     )
+
+
+def test_analyze_rust_regions_omits_regions_that_only_report_not_yet_supported(
+    tmp_path: Path,
+):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text(
+        "fn f(a: bool) -> ParseResult<()> {\n"
+        + "    if a {\n"
+        + "        return Ok(());\n"
+        + "    }\n"
+        + "    // A comment.\n"
+        + "    Err(ParseError::not_yet_supported(\n"
+        + '        position(), "text (in \\"parentheses)",\n'
+        + "    ))\n"
+        + "}\n"
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\n"
+        + "BRDA:2,0,region from 2:8 to 2:9,0\n"
+        + "BRDA:4,0,region from 4:5 to 4:6,0\n"
+        + "BRDA:6,0,region from 6:5 to 8:7,0\n"
+        + "BRDA:7,0,region from 7:9 to 7:46,0\n"
+        + "BRDA:9,0,region from 9:1 to 9:2,0\n"
+        + "end_of_record\n"
+    )
+
+    actionable, panic_only, not_yet_supported = analyze_coverage.analyze_rust_regions(
+        report_path, tmp_path
+    )
+
+    assert actionable == [
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=2,
+            start_column=8,
+            end_line=2,
+            end_column=9,
+        ),
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=9,
+            start_column=1,
+            end_line=9,
+            end_column=2,
+        ),
+    ]
+    assert panic_only == []
+    assert not_yet_supported == [
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=4,
+            start_column=5,
+            end_line=4,
+            end_column=6,
+        ),
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=6,
+            start_column=5,
+            end_line=8,
+            end_column=7,
+        ),
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=7,
+            start_column=9,
+            end_line=7,
+            end_column=46,
+        ),
+    ]

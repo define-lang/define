@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 _JUMP_DESCRIPTION = re.compile(r"jump to line (?P<line>\d+)")
-# How //tools/rust_coverage:collect_extension_coverage describes the code
+# How //tools/rust_coverage:collect_rust_coverage describes the code
 # region of each of its branch records.
 _RUST_REGION_DESCRIPTION = re.compile(
     r"region from (?P<start_line>\d+):(?P<start_column>\d+)"
@@ -28,6 +28,10 @@ _RUST_REGION_DESCRIPTION = re.compile(
 # Macros that end a Rust program, which a region consisting only of one of
 # them calls only for a defensive check.
 _RUST_PANIC_MACROS = ("panic!", "todo!", "unimplemented!", "unreachable!")
+# The call that makes the parser in define/compiler/parsing/native report
+# source it does not support yet, which code covers once the parser supports
+# that source.
+_RUST_NOT_YET_SUPPORTED_CALL = re.compile(r"(?<!fn )\bnot_yet_supported\(")
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -103,6 +107,32 @@ def _rust_region(branch: UncoveredBranch) -> UncoveredRegion | None:
     )
 
 
+def _matching_parenthesis_line(lines: Sequence[str], index: int, column: int) -> int:
+    """Return the index of the line with the `)` that closes the `(` before `column` of `lines[index]`."""
+    depth = 1
+    in_string = False
+    while True:
+        line = lines[index]
+        while column < len(line):
+            character = line[column]
+            if in_string:
+                if character == "\\":
+                    column += 1
+                elif character == '"':
+                    in_string = False
+            elif character == '"':
+                in_string = True
+            elif character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth == 0:
+                    return index
+            column += 1
+        index += 1
+        column = 0
+
+
 class SourceAnalysis:
     """Source text and syntax needed to describe and classify branches."""
 
@@ -141,6 +171,44 @@ class SourceAnalysis:
         """Return whether a code region only calls a macro that ends the program."""
         text = self.region_text(region).strip("{}; ")
         return text.startswith(_RUST_PANIC_MACROS)
+
+    def region_only_reports_not_yet_supported(self, region: UncoveredRegion) -> bool:
+        """Return whether a code region only reports source that is not supported yet.
+
+        That is a region in the statement of a `not_yet_supported` call, or a
+        `}` region that only leads to one.
+        """
+        statements = self._not_yet_supported_statements(region.source_file)
+        if self.region_text(region) == "}":
+            next_line = self._next_code_line(region.source_file, region.end_line)
+            return any(start_line == next_line for start_line, _ in statements)
+        return any(
+            start_line <= region.start_line and region.end_line <= end_line
+            for start_line, end_line in statements
+        )
+
+    def _not_yet_supported_statements(self, source_file: Path) -> list[tuple[int, int]]:
+        """Return the first and last lines of each statement that calls `not_yet_supported`."""
+        lines = self._lines(source_file)
+        statements: list[tuple[int, int]] = []
+        for index, line in enumerate(lines):
+            match = _RUST_NOT_YET_SUPPORTED_CALL.search(line)
+            if match is None:
+                continue
+            end_index = _matching_parenthesis_line(lines, index, match.end())
+            statements.append((index + 1, end_index + 1))
+        return statements
+
+    def _next_code_line(self, source_file: Path, line_number: int) -> int:
+        """Return the number of the first line after `line_number` that is not blank or a comment."""
+        lines = self._lines(source_file)
+        next_line = line_number + 1
+        while next_line <= len(lines):
+            text = lines[next_line - 1].strip()
+            if text and not text.startswith("//"):
+                break
+            next_line += 1
+        return next_line
 
     def resolve_path(self, source_file: Path) -> Path:
         """Resolve an LCOV or command-line source path."""
@@ -304,21 +372,24 @@ def analyze_rust_regions(
     report_path: Path,
     source_root: Path,
     source_paths: Sequence[Path] = (),
-) -> tuple[list[UncoveredRegion], list[UncoveredRegion]]:
-    """Classify uncovered Rust code regions as actionable or panic-only."""
+) -> tuple[list[UncoveredRegion], list[UncoveredRegion], list[UncoveredRegion]]:
+    """Classify uncovered Rust code regions as actionable, panic-only, or not-yet-supported."""
     source_analysis = SourceAnalysis(source_root)
     selection = _SourceSelection(source_analysis, source_paths)
     actionable: list[UncoveredRegion] = []
     panic_only: list[UncoveredRegion] = []
+    not_yet_supported: list[UncoveredRegion] = []
     for branch in parse_uncovered_branches(report_path):
         region = _rust_region(branch)
         if region is None or not selection.includes(region.source_file):
             continue
         if source_analysis.region_only_panics(region):
             panic_only.append(region)
+        elif source_analysis.region_only_reports_not_yet_supported(region):
+            not_yet_supported.append(region)
         else:
             actionable.append(region)
-    return actionable, panic_only
+    return actionable, panic_only, not_yet_supported
 
 
 class _SourceSelection:
@@ -349,6 +420,7 @@ class _SourceSelection:
 def format_rust_regions(
     actionable: Sequence[UncoveredRegion],
     panic_only: Sequence[UncoveredRegion],
+    not_yet_supported: Sequence[UncoveredRegion],
     source_root: Path,
 ) -> str:
     """Format uncovered Rust code regions with their source text."""
@@ -362,7 +434,8 @@ def format_rust_regions(
         )
     output_lines.append(
         f"{len(actionable)} uncovered Rust code regions reported; "
-        + f"{len(panic_only)} panic-only regions omitted."
+        + f"{len(panic_only)} panic-only regions omitted; "
+        + f"{len(not_yet_supported)} not-yet-supported regions omitted."
     )
     return "\n".join(output_lines)
 
@@ -448,7 +521,7 @@ def main(source_paths: tuple[Path, ...]):
     all files in Bazel's combined LCOV report are analyzed. Branches whose
     destination only raises a Python exception are omitted. Rust coverage has
     code regions instead of branches, which are reported first, apart from
-    regions that only panic.
+    regions that only panic or report source the parser does not support yet.
     """
     if build_working_directory := os.environ.get("BUILD_WORKING_DIRECTORY"):
         os.chdir(build_working_directory)
@@ -465,12 +538,17 @@ def main(source_paths: tuple[Path, ...]):
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
         )
-    actionable_regions, panic_only_regions = analyze_rust_regions(
-        report_path, source_root, source_paths
+    actionable_regions, panic_only_regions, not_yet_supported_regions = (
+        analyze_rust_regions(report_path, source_root, source_paths)
     )
-    if actionable_regions or panic_only_regions:
+    if actionable_regions or panic_only_regions or not_yet_supported_regions:
         click.echo(
-            format_rust_regions(actionable_regions, panic_only_regions, source_root)
+            format_rust_regions(
+                actionable_regions,
+                panic_only_regions,
+                not_yet_supported_regions,
+                source_root,
+            )
         )
     actionable, low_value, explicit_exit_only = analyze_report(
         report_path, source_root, source_paths

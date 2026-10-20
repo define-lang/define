@@ -1,5 +1,8 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
-exports_files(["rules_rust_pyo3_cc_runtime_linkage.patch"])
+exports_files([
+    "rules_rust_coverage_collector_flag.patch",
+    "rules_rust_pyo3_cc_runtime_linkage.patch",
+])
 
 check_build_file()
