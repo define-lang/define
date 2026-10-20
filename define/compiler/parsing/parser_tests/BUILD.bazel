@@ -9,11 +9,11 @@ py_library(
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/parsing:native_parser",
         "//define/compiler/parsing:parser",
         "//define/compiler/parsing:parser_comparison",
         "//define/compiler/parsing:test_helpers",
         "//define/compiler/parsing/lark:lark_standalone",
+        "//define/compiler/parsing/native:native_parser",
         "@pypi//lark_cython",
         "@pypi//pytest",
     ],

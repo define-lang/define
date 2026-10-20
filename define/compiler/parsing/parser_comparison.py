@@ -11,7 +11,8 @@ import typing
 import msgspec
 
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing import invisible_characters, native_parser, parser
+from define.compiler.parsing import invisible_characters, parser
+from define.compiler.parsing.native import native_parser
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence

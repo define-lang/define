@@ -14,7 +14,7 @@ import sys
 import typing
 
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.rust_generators import rust_names, rust_renderer
+from define.compiler.parsing.native.rust_generators import rust_names, rust_renderer
 
 
 def _exception_classes() -> list[type[parser_exceptions.DefineSyntaxError]]:

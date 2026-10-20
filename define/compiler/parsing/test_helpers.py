@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     from define.compiler import ast
-    from define.compiler.parsing import native_parser
+    from define.compiler.parsing.native import native_parser
 
 _PARSER = parser.Parser()
 

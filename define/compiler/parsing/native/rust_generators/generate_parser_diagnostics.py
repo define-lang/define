@@ -12,7 +12,7 @@ import pathlib
 import sys
 
 from define.compiler.errors import diagnostics
-from define.compiler.parsing.rust_generators import rust_names, rust_renderer
+from define.compiler.parsing.native.rust_generators import rust_names, rust_renderer
 
 _PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
     diagnostics.IncorrectIndentationDiagnostic,

@@ -5,7 +5,7 @@ message:
   Document the syntax that a parse function parses in an `ebnf` code block in
   its doc comment.
 files:
-  - define/compiler/parsing/parser.rs
+  - define/compiler/parsing/native/parser.rs
 rule:
   kind: function_item
   has:

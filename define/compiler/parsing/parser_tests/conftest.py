@@ -14,8 +14,8 @@ if TYPE_CHECKING:
     import lark_cython
 
     from define.compiler import ast
-    from define.compiler.parsing import native_parser
     from define.compiler.parsing.lark import lark_standalone
+    from define.compiler.parsing.native import native_parser
 
 _parser = parser.Parser()
 

@@ -36,7 +36,7 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.parsing.rust_generators import rust_names, rust_renderer
+from define.compiler.parsing.native.rust_generators import rust_names, rust_renderer
 
 _SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
     str: rust_renderer.FieldType.String(),
