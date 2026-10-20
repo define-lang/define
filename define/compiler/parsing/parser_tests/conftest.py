@@ -68,6 +68,12 @@ def parse() -> Parse:
 
 
 @pytest.fixture
+def native_parse_lark_wrong() -> NativeParse:
+    """Return a parse callable that uses the parser in parser.rs, for sources the Lark parser accepts by mistake."""
+    return parser_comparison.native_parse_where_lark_is_wrong
+
+
+@pytest.fixture
 def native_parse() -> NativeParse:
     """Return a parse callable that uses the parser in parser.rs and raises its exceptions."""
     return test_helpers.parse

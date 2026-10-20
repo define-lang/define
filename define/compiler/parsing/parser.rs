@@ -12,12 +12,13 @@ use pyo3::exceptions::PyNotImplementedError;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
 use std::slice::SliceIndex;
-use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END};
+use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
 const NAME_CONTENT_START: u8 = b'<';
 const TERMINATOR: u8 = b'.';
+const COMMENT_START: u8 = b'#';
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -104,8 +105,25 @@ impl<'source> Scanner<'source> {
         self.rest.is_empty()
     }
 
-    const fn is_at_line_feed(&self) -> bool {
-        matches!(self.rest.first(), Some(&LINE_FEED))
+    /// Whether the next byte is `expected`.
+    const fn next_byte_is(&self, expected: u8) -> bool {
+        matches!(self.rest.first(), Some(&byte) if byte == expected)
+    }
+
+    /// Returns the next character without consuming it, or `None` at the end
+    /// of the source or where the source is not valid UTF-8.
+    fn next_character(&self) -> Option<&'source str> {
+        let &first = self.rest.first()?;
+        // The length of a UTF-8 character follows from its first byte, so only
+        // that many bytes need validating.
+        let length = match first {
+            0x00..=0x7F => 1,
+            0xC2..=0xDF => 2,
+            0xE0..=0xEF => 3,
+            0xF0..=0xF4 => 4,
+            _ => return None,
+        };
+        std::str::from_utf8(self.rest.get(..length)?).ok()
     }
 
     /// Consumes `expected` if the remaining text starts with it. `expected`
@@ -228,12 +246,22 @@ impl<'py, 'source> Parser<'py, 'source> {
             self.ast.push(&definitions, definition);
             end = definition_end;
         }
+        // The program has no definitions.
         let Some(start) = start else {
             let location = self.ast.location(end, end)?;
             return Err(ParseError::Syntax(
                 parser_exceptions::expected_global_definition(location, ""),
             ));
         };
+        // The source does not end with a line feed. Only a line feed moves the
+        // scanner back to column 1, and the source is not empty.
+        if self.scanner.position.column != 1 {
+            let end_of_source = self.scanner.position;
+            let location = self.ast.location(end_of_source, end_of_source)?;
+            return Err(ParseError::Syntax(
+                parser_exceptions::missing_newline_at_eof(location, ""),
+            ));
+        }
         let definitions = self.ast.finish_tuple(definitions)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.program(location, definitions)?)
@@ -297,15 +325,18 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((definition, end))
     }
 
-    /// Parses a terminator and returns the position after its `.`.
+    /// Parses a terminator up to the line feed that ends it, which is left for
+    /// the caller, and returns the position after its `.`.
     ///
     /// ```ebnf
     /// terminator = ".", ( newline | " ", { " " }, comment ) ;
     /// ```
     fn parse_terminator(&mut self) -> ParseResult<Position> {
+        // There is no `.`.
         if !self.scanner.consume_byte(TERMINATOR) {
             let position = self.scanner.position;
-            if self.scanner.is_at_line_feed() {
+            // The line ends where the `.` belongs.
+            if self.scanner.next_byte_is(LINE_FEED) {
                 let location = self.ast.location(position, position)?;
                 return Err(ParseError::Syntax(
                     parser_exceptions::missing_terminator_or_brace(location, "\n"),
@@ -317,7 +348,36 @@ impl<'py, 'source> Parser<'py, 'source> {
             ));
         }
         let end = self.scanner.position;
-        if !self.scanner.consume_line_feed() {
+        // A comment follows the `.` without a space between them.
+        if self.scanner.next_byte_is(COMMENT_START) {
+            let location = self.ast.location(
+                end,
+                Position {
+                    line: end.line,
+                    column: end.column + 1,
+                },
+            )?;
+            return Err(ParseError::Syntax(
+                parser_exceptions::missing_space_before_comment(location, "#"),
+            ));
+        }
+        // Something other than a line feed or a space follows the `.`.
+        if !self.scanner.next_byte_is(LINE_FEED)
+            && !self.scanner.next_byte_is(SPACE)
+            && let Some(character) = self.scanner.next_character()
+        {
+            let location = self.ast.location(
+                end,
+                Position {
+                    line: end.line,
+                    column: end.column + 1,
+                },
+            )?;
+            return Err(ParseError::Syntax(
+                parser_exceptions::missing_newline_after_terminator(location, character),
+            ));
+        }
+        if self.scanner.next_byte_is(SPACE) {
             return Err(Self::not_yet_supported(
                 self.scanner.position,
                 "anything but a line feed after a terminator's `.`",
@@ -359,8 +419,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         };
         let (fqun, fqun_end) = self.parse_fqun(content.slice(..separator), start)?;
         let path_start = Position {
+            line: fqun_end.line,
             column: fqun_end.column + 1,
-            ..fqun_end
         };
         let path_location = self.ast.location(path_start, end)?;
         let path_name = self.ast.name(content.slice(separator + 1..))?;
@@ -405,8 +465,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             Some(name) => {
                 let (location, name, end) = self.fqun_component(name, component_start)?;
                 component_start = Position {
+                    line: end.line,
                     column: end.column + 1,
-                    ..end
                 };
                 Some(self.ast.multiverse(location, name)?)
             }
@@ -416,8 +476,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             Some(name) => {
                 let (location, name, end) = self.fqun_component(name, component_start)?;
                 component_start = Position {
+                    line: end.line,
                     column: end.column + 1,
-                    ..end
                 };
                 Some(self.ast.authority(location, name)?)
             }

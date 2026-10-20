@@ -32,12 +32,25 @@ def test_missing_terminator(native_parse: NativeParse):
     assert exc_info.value.location.column == 46
 
 
-def test_missing_newline_after_terminator(parse: Parse):
+def test_missing_newline_after_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
-        parse("define the potential position<standard:/path>.")
-    assert str(exc_info.value.token) == ""
+        native_parse("define the potential position<standard:/path>.")
+    assert exc_info.value.token == ""
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 46
+    assert exc_info.value.location.column == 47
+
+
+def test_missing_newline_after_last_definition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/first>.\n"
+            + "define the potential position<mv:define-lang.org:parser:/second>."
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 66
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 66
 
 
 def test_missing_newline_between_global_definitions(parse: Parse):
@@ -50,12 +63,50 @@ def test_missing_newline_between_global_definitions(parse: Parse):
     assert exc_info.value.location.column == 64
 
 
-def test_double_terminator(parse: Parse):
+def test_double_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>..\n"
+        )
     assert exc_info.value.token == "."
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
+
+
+def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse):
+    with pytest.raises(parser_exceptions.MissingSpaceBeforeComment) as exc_info:
+        native_parse_lark_wrong(
+            "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
+        )
+    assert exc_info.value.token == "#"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
+
+
+def test_letter_after_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>.x\n"
+        )
+    assert exc_info.value.token == "x"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
+
+
+def test_non_ascii_character_after_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>.é\n"
+        )
+    assert exc_info.value.token == "é"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
 
 
 def test_space_before_terminator(parse: Parse):

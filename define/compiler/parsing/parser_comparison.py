@@ -41,6 +41,20 @@ def native_parse(source: str, file_path: PurePosixPath | None = None) -> ast.Pro
     return native_parser.parse(source.encode(), file_path)
 
 
+def native_parse_where_lark_is_wrong(
+    source: str, file_path: PurePosixPath | None = None
+) -> ast.Program:
+    """Parse source with the parser in parser.rs, for a source the Lark parser accepts by mistake.
+
+    Raises:
+        ParsersDisagreeError: The Lark parser no longer accepts the source.
+    """
+    lark_result = _LARK_PARSER.parse_and_transform(source, file_path=file_path)
+    if lark_result.exception is not None or lark_result.diagnostics:
+        raise ParsersDisagreeError(f"the Lark parser no longer accepts {source!r}")
+    return native_parse(source, file_path)
+
+
 def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
     """Parse source with both parsers and return how they agreed.
 

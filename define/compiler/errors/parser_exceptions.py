@@ -612,6 +612,15 @@ class MissingPotentialPositionDefinitionContent(DefineTokenError):
     )
 
 
+class MissingSpaceBeforeComment(DefineTokenError):
+    """A comment directly after a statement terminator, without a space."""
+
+    message_format: ClassVar[str] = (
+        "A comment after a statement terminator must be separated from the '.' by"
+        + " a space."
+    )
+
+
 class MissingTerminator(DefineTokenError):
     """Forgot ."""
 
