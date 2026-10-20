@@ -240,8 +240,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the `.` or ` {` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the `.` or ` {` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_terminator_or_brace(missing, missing);
         }
         // A `{` follows the name without a space before it.

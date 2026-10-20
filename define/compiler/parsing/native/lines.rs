@@ -6,7 +6,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
-use vector_scan::{COMMENT_START, LINE_FEED, LineEnd, SPACE};
+use vector_scan::{COMMENT_START, LineEnd, SPACE};
 
 pub const OPEN_BRACE: u8 = b'{';
 const CLOSE_BRACE: u8 = b'}';
@@ -77,8 +77,8 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the ` {` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the ` {` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_open_brace(missing, missing);
         }
         ParseError::not_yet_supported(missing, "anything but ` {` here")
@@ -224,8 +224,8 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the `.` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the `.` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_terminator(missing, missing);
         }
         ParseError::not_yet_supported(missing, "anything but a terminator here")
