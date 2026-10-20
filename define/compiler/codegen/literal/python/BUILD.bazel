@@ -1,9 +1,9 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@crates//:defs.bzl", "lint_config")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
-load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
@@ -195,7 +195,6 @@ pyo3_extension(
     crate_root = "renderer.rs",
     lint_config = lint_config(),
     module_name = "_templates",
-    rustc_flags = ["-Clink-arg=-Qunused-arguments"],
     stubs = False,
     visibility = ["//tools:__pkg__"],
     deps = ["@crates//:askama"],

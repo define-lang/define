@@ -61,6 +61,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "pyo3",
+    srcs = ["pyo3.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
     name = "pyright",
     srcs = ["pyright.bzl"],
     visibility = ["//visibility:public"],

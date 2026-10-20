@@ -61,3 +61,16 @@ build --@aspect_rules_lint//lint:fail_on_violation
 
 # ast-grep linting
 build --aspects=//tools/bzl:linters.bzl%ast_grep
+
+# rustc links with clang++ from the hermetic LLVM toolchain, whose link flags
+# include --unwindlib=none, which clang++ does not use when linking a shared
+# library. Without this, rustc reports clang's unused-argument warning on every
+# link.
+build --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
+
+# Builds and tests use every instruction this machine supports, including the
+# vector instructions the parser's byte loops can compile to.
+# TODO: Decide how to build Rust code for distribution before shipping the
+# compiler: native code fails on CPUs without this machine's instructions, and
+# a cache shared between machines would hand native code to other CPUs.
+build --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=native

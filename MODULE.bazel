@@ -97,6 +97,17 @@ register_toolchains(
 )
 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+
+# pyo3_extension passes its extra arguments to both the Rust shared library and
+# the Python library it creates, so it cannot take cc_runtime_linkage, which only
+# the Rust shared library accepts. This patch forwards cc_runtime_linkage to the
+# Rust shared library alone.
+# TODO: Remove this patch once a rules_rs release includes
+# https://github.com/hermeticbuild/rules_rust/pull/89.
+rules_rust.patch(
+    patches = ["//tools/patches:rules_rust_pyo3_cc_runtime_linkage.patch"],
+    strip = 1,
+)
 use_repo(rules_rust, "rules_rust")
 
 rules_rust_pyo3 = use_extension("@rules_rs//rs:rules_rust_pyo3.bzl", "rules_rust_pyo3")
