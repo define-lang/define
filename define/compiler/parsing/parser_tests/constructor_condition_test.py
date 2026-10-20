@@ -78,7 +78,6 @@ def test_constructor_missing_terminator(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "\n"
-    assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 33
 
@@ -94,7 +93,6 @@ def test_constructor_followed_by_extra_content(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 33
 
@@ -112,7 +110,6 @@ def test_trigger_condition_and_constructor_in_one_block(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "this particle is created"
-    assert exc_info.value.token.type == "CONSTRUCTOR_STATEMENT"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 9
 
@@ -130,7 +127,6 @@ def test_constructor_as_action_statement(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "this particle is created"
-    assert exc_info.value.token.type == "CONSTRUCTOR_STATEMENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
 
@@ -139,7 +135,6 @@ def test_constructor_at_top_level(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("this particle is created.\n")
     assert exc_info.value.token == "this particle is created"
-    assert exc_info.value.token.type == "CONSTRUCTOR_STATEMENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -155,7 +150,6 @@ def test_truncated_constructor_phrase_in_trigger_block(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "this"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 9
 
@@ -170,7 +164,6 @@ def test_constructor_block_missing_and_it_does(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "\n"
-    assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 6
 

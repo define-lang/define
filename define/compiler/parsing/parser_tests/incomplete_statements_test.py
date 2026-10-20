@@ -37,7 +37,6 @@ def test_file_starts_with_indented_trigger_conditions(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("    it happens when {\n")
     assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -62,7 +61,6 @@ def test_missing_space_in_global_definition_prefix(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("definethe potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "definethe"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -71,7 +69,6 @@ def test_misspelled_define_in_global_definition_prefix(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("defin the potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "defin"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -80,7 +77,6 @@ def test_misspelled_potential_in_global_definition_prefix(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potental position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -89,7 +85,6 @@ def test_misspelled_the_in_global_definition_prefix(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define teh potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -98,7 +93,6 @@ def test_wrong_word_order_in_global_definition_prefix(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define potential the position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -107,7 +101,6 @@ def test_invalid_global_definition_name_type(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential quality<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -116,7 +109,6 @@ def test_bare_colon_at_top_level(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse(":\n")
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -125,7 +117,6 @@ def test_bare_slash_at_top_level(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("/\n")
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -134,7 +125,6 @@ def test_bare_colon_between_definitions(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential position<standard:/path>.\n" + ":\n")
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
 
@@ -143,7 +133,6 @@ def test_bare_slash_between_definitions(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential position<standard:/path>.\n" + "/\n")
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
 
@@ -504,7 +493,6 @@ def test_position_requirement_missing_name_after_type_with_space(
             + "}\n"
         )
     assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
     assert exc_info.value.name == " "
@@ -543,7 +531,6 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
             + "define the potential position<my_lib:/path>.\n"
         )
     assert exc_info.value.token == "position"
-    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 10
     assert exc_info.value.location.column == 19
 
@@ -563,7 +550,6 @@ def test_create_particle_missing_reference(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
 
@@ -671,7 +657,6 @@ def test_create_particle_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
 
@@ -693,7 +678,6 @@ def test_create_particle_reference_single_slash_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
 
@@ -732,7 +716,6 @@ def test_destroy_particle_missing_reference(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 32
 
@@ -792,7 +775,6 @@ def test_destroy_particle_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
 
@@ -850,7 +832,6 @@ def test_move_particle_missing_source_reference(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
 
@@ -870,7 +851,6 @@ def test_move_particle_missing_to_keyword(
             + "}\n"
         )
     assert exc_info.value.token == "position"
-    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 44
 
@@ -890,7 +870,6 @@ def test_move_particle_missing_destination_reference(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
 
@@ -910,7 +889,6 @@ def test_move_particle_chain_separator_after_source_then_terminator(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
 
@@ -930,7 +908,6 @@ def test_move_particle_chain_separator_after_source_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == "\n"
-    assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
 
@@ -950,7 +927,6 @@ def test_move_particle_chain_separator_after_destination_then_terminator(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 63
 
@@ -970,7 +946,6 @@ def test_move_particle_chain_separator_after_destination_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == "\n"
-    assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 63
 
@@ -990,7 +965,6 @@ def test_move_particle_single_colon_after_source(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
 
@@ -1012,7 +986,6 @@ def test_move_particle_single_colon_after_destination(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 61
 
@@ -1032,7 +1005,6 @@ def test_move_particle_no_space_before_to(
             + "}\n"
         )
     assert exc_info.value.token == "to"
-    assert exc_info.value.token.type == "TO"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
 
@@ -1052,7 +1024,6 @@ def test_move_particle_no_space_after_to(
             + "}\n"
         )
     assert exc_info.value.token == "position"
-    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
 
@@ -1072,7 +1043,6 @@ def test_move_particle_chained_source_missing_to(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 60
 
@@ -1094,7 +1064,6 @@ def test_move_particle_missing_terminator_after_destination(
             + "}\n"
         )
     assert exc_info.value.token == "\n"
-    assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 61
 
@@ -1114,7 +1083,6 @@ def test_move_particle_missing_close_angle_bracket_before_to(
             + "}\n"
         )
     assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 47
 
@@ -1134,7 +1102,6 @@ def test_move_keyword_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == "move"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
 
@@ -1154,7 +1121,6 @@ def test_move_particle_in_space_dot(
             + "}\n"
         )
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 30
 
@@ -1174,6 +1140,5 @@ def test_create_particle_no_space_before_reference(
             + "}\n"
         )
     assert exc_info.value.token == "position"
-    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29

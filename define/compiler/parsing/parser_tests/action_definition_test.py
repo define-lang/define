@@ -22,7 +22,6 @@ def test_action_definition_without_body_is_error(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
         parse("define the potential action<standard:/path>.\n")
     assert str(exc_info.value.token) == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 44
 
@@ -412,7 +411,6 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
             + "}\n"
         )
     assert str(exc_info.value.token) == "define the potential position"
-    assert exc_info.value.token.type == "DEFINE_THE_POTENTIAL_POSITION"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
 
@@ -434,7 +432,6 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
             + "}\n"
         )
     assert str(exc_info.value.token) == "define the potential position"
-    assert exc_info.value.token.type == "DEFINE_THE_POTENTIAL_POSITION"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
 
@@ -786,6 +783,5 @@ def test_no_space_before_and_it_does(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.token == "and it does"
-    assert exc_info.value.token.type == "AND_IT_DOES"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 6

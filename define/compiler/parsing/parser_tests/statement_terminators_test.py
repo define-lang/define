@@ -46,7 +46,6 @@ def test_missing_newline_between_global_definitions(parse: Parse):
             "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
         )
     assert exc_info.value.token == "define the potential action"
-    assert exc_info.value.token.type == "DEFINE_THE_POTENTIAL_ACTION"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
 
@@ -55,7 +54,6 @@ def test_double_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
     assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
 

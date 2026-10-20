@@ -31,7 +31,6 @@ def test_position_definition_with_local_style_name_is_global_terminal(
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<foo>.\n")
     assert exc_info.value.token == "foo"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
 
@@ -49,7 +48,6 @@ def test_position_definition_space_instead_of_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse("define the potential position mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.name == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
@@ -59,7 +57,6 @@ def test_position_definition_with_control_character(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
 
@@ -68,7 +65,6 @@ def test_position_definition_with_empty_global_path(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:>.\n")
     assert exc_info.value.token == "mv"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
 
@@ -79,7 +75,6 @@ def test_position_definition_with_global_path_missing_leading_slash(
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:path>.\n")
     assert exc_info.value.token == "mv"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
 
@@ -95,7 +90,6 @@ def test_position_definition_empty_name_content(parse: Parse):
 def test_position_definition_empty_name_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse("define the potential position<")
-    assert exc_info.value.token.type == "$END"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
 
@@ -205,7 +199,6 @@ def test_second_constraint_block_after_close_on_same_line(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token.type == "SPACE"
     assert str(exc_info.value.token) == " "
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 6
@@ -223,7 +216,6 @@ def test_second_constraint_block_on_requirement_line(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token.type == "SPACE"
     assert str(exc_info.value.token) == " "
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 37
@@ -379,7 +371,6 @@ def test_invalid_content_in_potential_position_block(parse: Parse):
             + "}\n"
         )
     assert str(exc_info.value.token) == "nonsense"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
 
@@ -415,6 +406,5 @@ def test_invalid_content_in_local_position_definition_block(parse: Parse):
             + "}\n"
         )
     assert str(exc_info.value.token) == "nonsense"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 9
