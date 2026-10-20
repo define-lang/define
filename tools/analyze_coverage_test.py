@@ -599,6 +599,7 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
     _ = report_path.write_text(
         f"SF:{source_path}\n"
         + "BRDA:2,0,region from 2:15 to 4:6,0\n"
+        + "BRDA:3,0,region from 3:9 to 3:21,0\n"
         + "end_of_record\n"
     )
 
@@ -614,7 +615,14 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
             start_column=15,
             end_line=4,
             end_column=6,
-        )
+        ),
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=3,
+            start_column=9,
+            end_line=3,
+            end_column=21,
+        ),
     ]
 
 

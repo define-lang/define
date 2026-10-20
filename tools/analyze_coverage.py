@@ -27,7 +27,7 @@ _RUST_REGION_DESCRIPTION = re.compile(
 )
 # Macros that end a Rust program, which a region consisting only of one of
 # them calls only for a defensive check.
-_RUST_PANIC_MACROS = ("panic!(", "todo!(", "unimplemented!(", "unreachable!(")
+_RUST_PANIC_MACROS = ("panic!", "todo!", "unimplemented!", "unreachable!")
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
