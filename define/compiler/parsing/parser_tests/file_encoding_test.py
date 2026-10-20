@@ -434,3 +434,150 @@ def test_direction_mark_before_comment_is_rejected(native_parse: NativeParse):
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 1
+
+
+def test_control_character_where_open_angle_bracket_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse("define the potential position\x01<standard:/path>.\n")
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 30
+
+
+def test_control_character_where_terminator_or_brace_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse("define the potential position<standard:/path>\x01\n")
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 46
+
+
+def test_control_character_after_block_open(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse("define the potential position<standard:/path> {\x01\n" + "}\n")
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 48
+
+
+def test_control_character_in_potential_position_definition_block_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may\x01\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 11
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 11
+
+
+def test_control_character_where_position_constraint_block_open_belongs(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where\x01\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 40
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 40
+
+
+def test_control_character_in_position_constraint_block_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has\x01\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 15
+
+
+def test_control_character_where_constraint_name_type_belongs(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the \x01position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 20
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 20
+
+
+def test_control_character_where_terminator_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>\x01\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 36
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 36
+
+
+def test_control_character_after_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\x01\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 6
+
+
+def test_control_character_where_block_close_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "    \x01\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 5

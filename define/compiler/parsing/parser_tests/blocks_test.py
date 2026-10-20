@@ -408,3 +408,18 @@ def test_position_constraint_invalid_type_keyword(native_parse: NativeParse):
     assert exc_info.value.location.column == 20
     assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 26
+
+
+def test_position_constraint_missing_type_keyword(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
+        native_parse(
+            "define the potential position<my_lib:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the <my_lib:/path>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 20
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 20
