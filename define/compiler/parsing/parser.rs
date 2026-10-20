@@ -17,7 +17,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyString;
 use scanner::{Position, Scanner, SourceText};
 use syntax_errors::SyntaxErrors;
-use vector_scan::{COMPONENT_SEPARATOR, NAME_CONTENT_END};
+use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END};
 
 const INDENTATION_WIDTH: usize = 4;
 
@@ -147,7 +147,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             let (constraints, end) = self.parse_potential_position_definition_block(&fqun)?;
             (Some(constraints), end)
         } else {
-            (None, self.lines().parse_terminator()?)
+            // There is no `.` or ` {`.
+            let Some(end) = self.lines().parse_terminator()? else {
+                return Err(self.missing_terminator_or_brace());
+            };
+            (None, end)
         };
         let location = self.ast.location(start, end)?;
         let definition = self.ast.position_definition(
@@ -157,6 +161,19 @@ impl<'py, 'source> Parser<'py, 'source> {
             constraints,
         )?;
         Ok((definition, end))
+    }
+
+    /// Returns the error for a definition whose `.` or ` {` is missing at the
+    /// scanner's position.
+    #[cold]
+    #[inline(never)]
+    fn missing_terminator_or_brace(&self) -> ParseError {
+        let missing = self.scanner.position;
+        // The line ends where the `.` or ` {` belongs.
+        if self.scanner.next_byte_is(LINE_FEED) {
+            return self.errors.missing_terminator_or_brace(missing, missing);
+        }
+        ParseError::not_yet_supported(missing, "anything but a terminator or ` {` here")
     }
 
     /// Parses the block of a potential position definition at the top level,
@@ -266,7 +283,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             ));
         }
         let typed_name = self.parse_typed_global_name_reference(fqun)?;
-        let end = self.lines().parse_terminator()?;
+        // There is no `.`.
+        let Some(end) = self.lines().parse_terminator()? else {
+            return Err(self.lines().missing_terminator());
+        };
         let location = self.ast.location(start, end)?;
         Ok(self
             .ast

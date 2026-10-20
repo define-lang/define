@@ -155,10 +155,10 @@ def test_trailing_space_at_end_of_source(native_parse: NativeParse):
 
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<my_lib:/hello/hello>.\n"
             + "define the potential position<my_lib:/sub/sub> {\n"
             + "    it may only contain particles where {\n"
@@ -168,4 +168,5 @@ def test_missing_terminator_after_typed_reference_in_position_constraint(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 41
+    assert exc_info.value.location.end_line == 4
     assert exc_info.value.location.end_column == 41

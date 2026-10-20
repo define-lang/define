@@ -80,7 +80,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     }
 
     /// Parses a terminator through the end of its line, and returns the
-    /// position after its `.`.
+    /// position after its `.`, or `None` if there is no `.`.
     ///
     /// ```ebnf
     /// terminator = ".", ( newline | " ", { " " }, comment ) ;
@@ -88,30 +88,29 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     // Only the `.` and the line feed that almost always follows it are inlined
     // into callers; everything else is in functions they share.
     #[inline(always)]
-    pub fn parse_terminator(&mut self) -> ParseResult<Position> {
+    pub fn parse_terminator(&mut self) -> ParseResult<Option<Position>> {
         let terminator = self.scanner.position;
-        // There is no `.`.
         if !self.scanner.consume_byte(TERMINATOR) {
-            return Err(self.missing_terminator(terminator));
+            return Ok(None);
         }
         let end = self.scanner.position;
         if !self.scanner.consume_line_feed() && !self.scanner.is_at_end() {
             self.end_terminator_line_not_at_line_feed(terminator, end)?;
         }
-        Ok(end)
+        Ok(Some(end))
     }
 
-    /// Returns the error for a terminator missing at `terminator`.
+    /// Returns the error for a statement whose terminator is missing at the
+    /// scanner's position.
     #[cold]
     #[inline(never)]
-    fn missing_terminator(&self, terminator: Position) -> ParseError {
+    pub fn missing_terminator(&self) -> ParseError {
+        let missing = self.scanner.position;
         // The line ends where the `.` belongs.
         if self.scanner.next_byte_is(LINE_FEED) {
-            return self
-                .errors
-                .missing_terminator_or_brace(terminator, terminator);
+            return self.errors.missing_terminator(missing, missing);
         }
-        ParseError::not_yet_supported(terminator, "anything but a terminator here")
+        ParseError::not_yet_supported(missing, "anything but a terminator here")
     }
 
     /// Parses the rest of the line after the `.` of the terminator at
