@@ -47,7 +47,6 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/parsing/lark:lark_standalone",
-        "@pypi//lark_cython",
     ],
 )
 

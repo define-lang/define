@@ -14,8 +14,6 @@ from define.compiler.errors import exceptions, source_map
 if TYPE_CHECKING:
     import pathlib
 
-    import lark_cython
-
     from define.compiler.parsing.lark import lark_standalone
 
 
@@ -63,20 +61,28 @@ class DefineSyntaxError(exceptions.DefineError):
 class DefineTokenError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected tokens."""
 
-    token: lark_cython.Token
+    token: str
 
-    def __init__(
-        self,
+    def __init__(self, location: ast.SourceLocation, token: str):
+        """Initialize with the unexpected token."""
+        super().__init__(location)
+        self.token = token
+
+    @classmethod
+    def from_lark_exception(
+        cls,
         exception: lark_standalone.UnexpectedToken,
         file_path: pathlib.PurePosixPath | None,
-    ):
-        """Initialize with the unexpected token."""
+        *details: str,
+    ) -> Self:
+        """Construct a token error from a Lark exception and the error's other fields."""
         # A token that ends a line, such as a newline, underlines no characters.
         width = len(exception.token.value.split("\n", 1)[0])
-        super().__init__(
-            _single_line_location(exception.line, exception.column, width, file_path)
+        return cls(
+            _single_line_location(exception.line, exception.column, width, file_path),
+            exception.token.value,
+            *details,
         )
-        self.token = exception.token
 
 
 class DefineCharError(DefineSyntaxError):
@@ -515,14 +521,9 @@ class MissingCloseAngleBracket(DefineTokenError):
     name: str
     message_format: ClassVar[str] = "Missing '>' on this name: {name}"
 
-    def __init__(
-        self,
-        exception: lark_standalone.UnexpectedToken,
-        file_path: pathlib.PurePosixPath | None,
-        name: str,
-    ):
+    def __init__(self, location: ast.SourceLocation, token: str, name: str):
         """Initialize with the parsed name token that missed '>'."""
-        super().__init__(exception, file_path)
+        super().__init__(location, token)
         self.name = name
 
 
@@ -562,14 +563,9 @@ class MissingOpenAngleBracket(DefineTokenError):
     name: str
     message_format: ClassVar[str] = "Missing '<' at the start of a name: {name}"
 
-    def __init__(
-        self,
-        exception: lark_standalone.UnexpectedToken,
-        file_path: pathlib.PurePosixPath | None,
-        name: str,
-    ):
+    def __init__(self, location: ast.SourceLocation, token: str, name: str):
         """Initialize with the parsed name token that missed '<'."""
-        super().__init__(exception, file_path)
+        super().__init__(location, token)
         self.name = name
 
 
