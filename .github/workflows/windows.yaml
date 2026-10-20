@@ -1,0 +1,62 @@
+name: Windows (experimental)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Windows support is informational. Preserve failures in logs
+  # without failing the check or adding any checks to pull requests.
+  # jactionlint ignore=continue-on-error
+  windows:
+    name: Windows build and tests (experimental)
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      # Codegen fixtures and a Python type stub are tracked symlinks. Windows
+      # Git must create real links rather than files containing their targets.
+      - name: Enable Git symlinks
+        continue-on-error: true
+        run: git config --global core.symlinks true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        continue-on-error: true
+        with:
+          persist-credentials: false
+
+      # target-cpu=native artifacts must only be restored on compatible CPUs.
+      - name: Identify CPU for the build cache
+        id: cpu
+        if: ${{ steps.checkout.outcome == 'success' }}
+        continue-on-error: true
+        run: python tools/cpu_fingerprint.py >> "$GITHUB_OUTPUT"
+
+      - name: Set up Bazel
+        id: bazel
+        if: ${{ steps.cpu.outcome == 'success' }}
+        continue-on-error: true
+        uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
+        with:
+          bazelisk-cache: true
+          disk-cache: windows-experimental-cpu-v1-${{ steps.cpu.outputs.fingerprint }}
+          repository-cache: true
+
+      - name: Test
+        if: ${{ steps.bazel.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 30
+        run: bazelisk test --noshow_progress //...
