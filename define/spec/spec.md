@@ -682,10 +682,10 @@ Proposals:
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 - [DLP 52: Literals](../proposals/00052-literals.md)
 
-A Define program's source consists of global definitions.
+A Define program's source consists of one or more global definitions.
 
 ```ebnf
-program = { global_definition } ;
+program = global_definition, { global_definition } ;
 global_definition =
     quality_definition
     | encoding_definition
