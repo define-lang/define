@@ -50,21 +50,23 @@ def test_position_definition_with_local_style_name_is_global_terminal(
     assert exc_info.value.location.end_column == 33
 
 
-def test_position_definition_missing_open_angle(parse: Parse):
+def test_position_definition_missing_open_angle(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential positionstandard:/path>.\n")
+        native_parse("define the potential positionstandard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 43
-    assert exc_info.value.name == "standard:/path"
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 30
 
 
-def test_position_definition_space_instead_of_open_angle(parse: Parse):
+def test_position_definition_space_instead_of_open_angle(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential position mv:define-lang.org:parser:/path>.\n")
-    assert exc_info.value.name == " "
+        native_parse(
+            "define the potential position mv:define-lang.org:parser:/path>.\n"
+        )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 30
 
 

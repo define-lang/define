@@ -561,13 +561,7 @@ class MissingNewlineAtEof(DefineTokenError):
 class MissingOpenAngleBracket(DefineTokenError):
     """A missing < on a name (could be just a raw "define the position", too)."""
 
-    name: str
-    message_format: ClassVar[str] = "Missing '<' at the start of a name: {name}"
-
-    def __init__(self, location: ast.SourceLocation, name: str):
-        """Initialize with the parsed name token that missed '<'."""
-        super().__init__(location)
-        self.name = name
+    message_format: ClassVar[str] = "Missing '<' at the start of a name."
 
 
 class MissingOpenBrace(DefineTokenError):

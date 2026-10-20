@@ -166,7 +166,6 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.name == "run"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 28
     assert exc_info.value.location.end_column == 30
@@ -450,7 +449,6 @@ def test_local_position_keyword_without_name_in_action_definition_block(
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 24
     assert exc_info.value.location.end_column == 24
-    assert exc_info.value.name == "\n"
 
 
 def test_local_position_keyword_without_name_in_action_statements_block(
@@ -470,21 +468,20 @@ def test_local_position_keyword_without_name_in_action_statements_block(
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 28
     assert exc_info.value.location.end_column == 28
-    assert exc_info.value.name == "\n"
 
 
-def test_global_position_keyword_without_name(parse: Parse):
+def test_global_position_keyword_without_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential position\n")
+        native_parse("define the potential position\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 30
-    assert exc_info.value.name == "\n"
 
 
-def test_position_requirement_missing_name(parse: Parse):
+def test_position_requirement_missing_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position\n"
@@ -493,13 +490,13 @@ def test_position_requirement_missing_name(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 28
-    assert exc_info.value.name == "\n"
 
 
-def test_position_requirement_missing_name_after_type(parse: Parse):
+def test_position_requirement_missing_name_after_type(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position.\n"
@@ -508,15 +505,15 @@ def test_position_requirement_missing_name_after_type(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 28
-    assert exc_info.value.name == "."
 
 
 def test_position_requirement_missing_name_after_type_with_space(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position .\n"
@@ -525,8 +522,8 @@ def test_position_requirement_missing_name_after_type_with_space(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 28
-    assert exc_info.value.name == " "
 
 
 def test_position_requirement_name_starts_and_then_newline(native_parse: NativeParse):

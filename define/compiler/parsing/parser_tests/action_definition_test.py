@@ -47,7 +47,6 @@ def test_action_definition_missing_open_angle(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 28
     assert exc_info.value.location.end_column == 41
-    assert exc_info.value.name == "standard:/path"
 
 
 def test_action_definition_empty_name_content(parse: Parse):

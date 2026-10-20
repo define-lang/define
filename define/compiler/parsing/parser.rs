@@ -446,11 +446,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         Option<ast::Fqun<'py>>,
         ast::GlobalPathName<'py>,
     )> {
+        // There is no `<`.
         if !self.scanner.consume_byte(NAME_CONTENT_START) {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "anything but `<` here",
-            ));
+            let missing = self.scanner.position;
+            return Err(self.errors.missing_open_angle_bracket(missing, missing));
         }
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_name_content();

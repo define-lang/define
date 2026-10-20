@@ -136,10 +136,10 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
 
 
 def test_extra_space_before_local_name_in_position_requirement_statement(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position  </child>.\n"
@@ -148,8 +148,8 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 28
-    assert exc_info.value.name == " "
 
 
 def test_extra_space_after_create_a_particle_in(parse: Parse):

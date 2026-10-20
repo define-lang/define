@@ -191,7 +191,7 @@ def raise_token_error(
     # and we expect a name and didn't get <.
     if e.accepts == {"LESSTHAN"}:
         raise parser_exceptions.MissingOpenAngleBracket.from_lark_exception(
-            e, file_path, e.token.value
+            e, file_path
         )
 
     # This is just <> or < with nothing after it, while expecting a name.

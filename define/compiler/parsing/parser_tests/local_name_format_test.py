@@ -237,7 +237,6 @@ def test_local_name_missing_open_angle(parse: Parse):
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 24
     assert exc_info.value.location.end_column == 29
-    assert exc_info.value.name == "my_pos"
 
 
 def test_local_name_empty(parse: Parse):

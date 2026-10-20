@@ -206,7 +206,6 @@ def test_implication_missing_open_angle_at_eol(parse: Parse):
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
     assert exc_info.value.location.end_column == 33
-    assert exc_info.value.name == "\n"
 
 
 def test_implication_missing_open_angle_with_terminator(parse: Parse):
@@ -222,7 +221,6 @@ def test_implication_missing_open_angle_with_terminator(parse: Parse):
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
     assert exc_info.value.location.end_column == 33
-    assert exc_info.value.name == "."
 
 
 def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
@@ -238,7 +236,6 @@ def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
     assert exc_info.value.location.end_column == 33
-    assert exc_info.value.name == " "
 
 
 def test_implication_empty_name(parse: Parse):
