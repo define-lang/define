@@ -1,7 +1,7 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use vector_scan::LINE_FEED;
+use vector_scan::{LINE_FEED, SPACE};
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -94,6 +94,19 @@ impl<'source> Scanner<'source> {
 
     pub const fn is_at_end(&self) -> bool {
         self.rest.is_empty()
+    }
+
+    /// The text before the next space or line feed, or the end of the source.
+    pub fn next_word(&self) -> SourceText<'source> {
+        let length = self
+            .rest
+            .iter()
+            .position(|&byte| byte == SPACE || byte == LINE_FEED)
+            .unwrap_or(self.rest.len());
+        SourceText {
+            bytes: &self.rest[..length],
+            is_known_ascii: false,
+        }
     }
 
     pub fn next_bytes_are(&self, expected: &[u8]) -> bool {

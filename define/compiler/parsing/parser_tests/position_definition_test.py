@@ -413,17 +413,18 @@ def test_empty_potential_position_block(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_invalid_content_in_potential_position_block(parse: Parse):
+def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialPositionDefinitionBlock
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<standard:/path> {\n"
             + "    nonsense here\n"
             + "}\n"
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 12
 
 

@@ -28,6 +28,7 @@ const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
 const NAME_CONTENT_START: u8 = b'<';
 const IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: &[u8] = b"it may only contain particles where";
 const IT_HAS_THE: &[u8] = b"it has the ";
+const IT_ALSO_ASSIGNS_THE: &[u8] = b"it also assigns the ";
 const CONSTRAINT_NAME_TYPES: [(&[u8], ast::NameType); 4] = [
     (b"position", ast::NameType::Position),
     (b"action", ast::NameType::Action),
@@ -218,11 +219,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         };
         let constraints_start = self.scanner.position;
+        // The block has something other than a position constraint block.
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
-            return Err(ParseError::not_yet_supported(
-                constraints_start,
-                "anything but a position constraint block here",
-            ));
+            return Err(self.invalid_potential_position_definition_block());
         }
         let constraints =
             self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
@@ -234,6 +233,24 @@ impl<'py, 'source> Parser<'py, 'source> {
         };
         let end = self.lines().parse_block_close()?;
         Ok((constraints, end))
+    }
+
+    /// Returns the error for a statement in a potential position definition
+    /// block, at the scanner's position, that does not belong there.
+    #[cold]
+    #[inline(never)]
+    fn invalid_potential_position_definition_block(&self) -> ParseError {
+        let start = self.scanner.position;
+        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
+            return ParseError::not_yet_supported(start, "quality implication statements");
+        }
+        let word = self.scanner.next_word();
+        let end = Position {
+            line: start.line,
+            column: start.after(word).column - 1,
+        };
+        self.errors
+            .invalid_potential_position_definition_block(start, end)
     }
 
     /// Parses the rest of a position constraint block after its
