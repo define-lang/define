@@ -123,6 +123,21 @@ py_library(
 )
 
 py_library(
+    name = "parser_comparison",
+    testonly = True,
+    srcs = ["parser_comparison.py"],
+    visibility = ["//define/compiler/parsing:__subpackages__"],
+    deps = [
+        ":invisible_characters",
+        ":native_parser",
+        ":parser",
+        "//define/compiler:ast",
+        "//define/compiler/errors:parser_exceptions",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "parser_error_classification",
     srcs = ["parser_error_classification.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -163,9 +178,8 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":invisible_characters",
-        ":native_parser",
         ":parser",
+        ":parser_comparison",
         "//define/compiler:ast",
     ],
 )
@@ -245,6 +259,7 @@ pyright_test(
         ":name_parser_test",
         ":native_parser",
         ":parser",
+        ":parser_comparison",
         ":parser_error_classification",
         ":parsing",
         ":test_helpers",

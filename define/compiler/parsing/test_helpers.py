@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.parsing import invisible_characters, native_parser, parser
+from define.compiler.parsing import parser, parser_comparison
 
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
@@ -18,6 +18,7 @@ def parse_and_transform(
     source: str, file_path: PurePosixPath | None = None
 ) -> ast.Program:
     """Parse and transform source into an AST Program."""
+    _ = parser_comparison.compare(source, file_path)
     result = _PARSER.parse_and_transform(source, file_path=file_path)
     assert result.diagnostics == []
     assert result.exception is None
@@ -27,6 +28,5 @@ def parse_and_transform(
 
 def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
     """Parse source into an AST Program with the parser in parser.rs."""
-    # TODO: Remove this call once parser.rs performs the invisible-character check.
-    invisible_characters.check(source, file_path)
-    return native_parser.parse(source.encode(), file_path)
+    _ = parser_comparison.compare(source, file_path)
+    return parser_comparison.native_parse(source, file_path)

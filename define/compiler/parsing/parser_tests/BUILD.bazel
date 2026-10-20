@@ -5,9 +5,11 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
     name = "conftest",
+    testonly = True,
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler/parsing:parser",
+        "//define/compiler/parsing:parser_comparison",
         "//define/compiler/parsing/lark:lark_standalone",
         "@pypi//lark_cython",
         "@pypi//pytest",

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
-from define.compiler.parsing import parser
+from define.compiler.parsing import parser, parser_comparison
 
 if TYPE_CHECKING:
     import pathlib
@@ -43,6 +43,7 @@ def parse() -> Parse:
     def _parse(
         source: str, file_path: pathlib.PurePosixPath | None = None
     ) -> lark_standalone.Tree[lark_cython.Token]:
+        _ = parser_comparison.compare(source, file_path)
         result = _parser.parse(source, file_path=file_path)
         assert result.diagnostics == []
         if result.exception is not None:
