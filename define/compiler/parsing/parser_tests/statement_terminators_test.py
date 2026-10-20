@@ -14,7 +14,7 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
 def test_valid_terminator(parse: Parse):
@@ -24,9 +24,9 @@ def test_valid_terminator(parse: Parse):
     ]
 
 
-def test_missing_terminator(parse: Parse):
+def test_missing_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<standard:/path>\n")
+        native_parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value.token) == "\n"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46

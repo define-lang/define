@@ -104,6 +104,10 @@ impl<'source> Scanner<'source> {
         self.rest.is_empty()
     }
 
+    const fn is_at_line_feed(&self) -> bool {
+        matches!(self.rest.first(), Some(&LINE_FEED))
+    }
+
     /// Consumes `expected` if the remaining text starts with it. `expected`
     /// must be ASCII without a line feed.
     fn consume(&mut self, expected: &[u8]) -> bool {
@@ -300,8 +304,15 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_terminator(&mut self) -> ParseResult<Position> {
         if !self.scanner.consume_byte(TERMINATOR) {
+            let position = self.scanner.position;
+            if self.scanner.is_at_line_feed() {
+                let location = self.ast.location(position, position)?;
+                return Err(ParseError::Syntax(
+                    parser_exceptions::missing_terminator_or_brace(location, "\n"),
+                ));
+            }
             return Err(Self::not_yet_supported(
-                self.scanner.position,
+                position,
                 "anything but a terminator here",
             ));
         }

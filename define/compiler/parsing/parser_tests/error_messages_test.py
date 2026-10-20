@@ -74,9 +74,9 @@ def test_char_error_message(parse: Parse):
         Carriage return character (\\r) is not allowed.""")
 
 
-def test_token_error_message(parse: Parse):
+def test_token_error_message(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<standard:/path>\n")
+        native_parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
     assert _format(
