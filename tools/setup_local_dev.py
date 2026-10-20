@@ -31,7 +31,7 @@ SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 # the order of their command-line arguments.
 GENERATED_RUST_SOURCES = [
     "define/compiler/parsing/ast.rs",
-    "define/compiler/parsing/parser_exceptions.rs",
+    "define/compiler/parsing/syntax_errors.rs",
 ]
 
 # Native extensions, by the package that each is copied into, in the order of

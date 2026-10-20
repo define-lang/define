@@ -3,7 +3,7 @@
 *_pb2.pyi
 **/lark/lark_standalone.py
 /define/compiler/parsing/ast.rs
-/define/compiler/parsing/parser_exceptions.rs
+/define/compiler/parsing/syntax_errors.rs
 /buf/
 
 # Made by /mutmut-survivors

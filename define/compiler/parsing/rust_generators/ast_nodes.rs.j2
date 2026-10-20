@@ -93,6 +93,50 @@ impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
 }
 {%- endfor %}
 {% endfor %}
+{%- for class in classes %}
+{%- if class.has_standalone_constructor %}
+{%- if let Some(constructor) = class.constructor %}
+impl<'py> {{ class.name }}<'py> {
+    /// Constructs a `{{ module_name }}.{{ class.name }}` without an `AstBuilder`.
+    /// It makes an ordinary Python call, which is slower than the vectorcall
+    /// that the `AstBuilder` method makes.
+    pub fn new(
+        py: Python<'py>,
+{%- for parameter in constructor.parameters %}
+        {{ parameter.name }}: {{ parameter.rust_type() }},
+{%- endfor %}
+    ) -> PyResult<Self> {
+        let classes = AstClasses::get(py)?;
+        let positional = PyTuple::new(
+            py,
+            [
+{%- for parameter in constructor.positional_parameters() %}
+                {{ parameter.name }}.as_argument(py, classes),
+{%- endfor %}
+            ],
+        )?;
+{%- if constructor.keyword_parameters().is_empty() %}
+        classes
+            .{{ class.snake_case_name }}
+            .bind(py)
+            .call1(positional)
+            .map(Self)
+{%- else %}
+        let keywords = pyo3::types::PyDict::new(py);
+{%- for parameter in constructor.keyword_parameters() %}
+        keywords.set_item("{{ parameter.name }}", {{ parameter.name }}.as_argument(py, classes))?;
+{%- endfor %}
+        classes
+            .{{ class.snake_case_name }}
+            .bind(py)
+            .call(positional, Some(&keywords))
+            .map(Self)
+{%- endif %}
+    }
+}
+{% endif %}
+{%- endif %}
+{%- endfor %}
 /// The classes in `{{ module_name }}` that have constructors, and the members of
 /// the enums that they take.
 pub struct AstClasses {

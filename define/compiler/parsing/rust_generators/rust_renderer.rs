@@ -96,6 +96,10 @@ impl Constructor {
 }
 
 impl Constructor {
+    fn positional_parameters(&self) -> &[Parameter] {
+        &self.parameters[..self.positional_count]
+    }
+
     fn keyword_parameters(&self) -> &[Parameter] {
         &self.parameters[self.positional_count..]
     }
@@ -111,6 +115,8 @@ struct NodeClass {
     ancestors: Vec<String>,
     /// `None` for abstract and generic classes, which are never constructed.
     constructor: Option<Constructor>,
+    /// Whether the class also gets a constructor that needs no `AstBuilder`.
+    has_standalone_constructor: bool,
 }
 
 #[pymethods]
@@ -121,12 +127,14 @@ impl NodeClass {
         snake_case_name: String,
         ancestors: Vec<String>,
         constructor: Option<Constructor>,
+        has_standalone_constructor: bool,
     ) -> Self {
         Self {
             name,
             snake_case_name,
             ancestors,
             constructor,
+            has_standalone_constructor,
         }
     }
 }
@@ -252,17 +260,17 @@ impl ParserException {
     }
 }
 
-/// Everything that the parser exceptions template renders.
+/// Everything that the syntax errors template renders.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone, Template)]
-#[template(path = "parser_exceptions.rs.j2", escape = "none")]
-struct ParserExceptionsDescription {
+#[template(path = "syntax_errors.rs.j2", escape = "none")]
+struct SyntaxErrorsDescription {
     module_name: String,
     exceptions: Vec<ParserException>,
 }
 
 #[pymethods]
-impl ParserExceptionsDescription {
+impl SyntaxErrorsDescription {
     #[new]
     const fn new(module_name: String, exceptions: Vec<ParserException>) -> Self {
         Self {
@@ -280,7 +288,7 @@ fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn render_parser_exceptions(description: ParserExceptionsDescription) -> PyResult<String> {
+fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String> {
     description
         .render()
         .map_err(|error| PyRuntimeError::new_err(error.to_string()))
@@ -291,7 +299,7 @@ mod rust_renderer {
     #[pymodule_export]
     use super::{
         AstDescription, Constructor, EnumMember, FieldEnum, FieldType, NodeClass, NodeUnion,
-        Parameter, ParserException, ParserExceptionsDescription, render_ast_nodes,
-        render_parser_exceptions,
+        Parameter, ParserException, SyntaxErrorsDescription, render_ast_nodes,
+        render_syntax_errors,
     };
 }

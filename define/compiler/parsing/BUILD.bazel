@@ -149,24 +149,15 @@ py_library(
     ],
 )
 
-genrule(
-    name = "parser_exceptions",
-    outs = ["parser_exceptions.rs"],
-    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_parser_exceptions) $@ && $(execpath @rules_rust//rust/toolchain:current_rustfmt_toolchain) --edition 2024 $@",
-    tools = [
-        "//define/compiler/parsing/rust_generators:generate_parser_exceptions",
-        "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
-    ],
-    visibility = ["//tools:__pkg__"],
-)
-
 pyo3_extension(
     name = "parser_extension",
     srcs = [
         "ast_builder.rs",
+        "parse_error.rs",
         "parser.rs",
+        "scanner.rs",
         ":ast",
-        ":parser_exceptions",
+        ":syntax_errors",
     ],
     crate_root = "parser.rs",
     lint_config = lint_config(),
@@ -182,6 +173,17 @@ pyo3_extension(
 py_library(
     name = "parsing",
     srcs = ["__init__.py"],
+)
+
+genrule(
+    name = "syntax_errors",
+    outs = ["syntax_errors.rs"],
+    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_syntax_errors) $@ && $(execpath @rules_rust//rust/toolchain:current_rustfmt_toolchain) --edition 2024 $@",
+    tools = [
+        "//define/compiler/parsing/rust_generators:generate_syntax_errors",
+        "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
+    ],
+    visibility = ["//tools:__pkg__"],
 )
 
 py_library(

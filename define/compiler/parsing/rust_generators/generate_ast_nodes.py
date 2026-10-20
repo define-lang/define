@@ -163,6 +163,8 @@ def _describe_class(
         snake_case_name=rust_names.snake_case_name(cls.__name__),
         ancestors=ancestors,
         constructor=constructor,
+        # Syntax errors build a SourceLocation without an AstBuilder.
+        has_standalone_constructor=cls is ast.SourceLocation,
     )
 
 

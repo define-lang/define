@@ -1,0 +1,68 @@
+// Generated from `{{ module_name }}` by
+// //define/compiler/parsing/rust_generators:generate_syntax_errors.
+
+#![allow(dead_code, reason = "the parser does not raise every exception yet")]
+
+use crate::ast::SourceLocation;
+use crate::ast_builder::{FilePath, Node};
+use crate::parse_error::ParseError;
+use crate::scanner::Position;
+use pyo3::prelude::*;
+use pyo3::types::PyInt;
+use pyo3::{PyTypeInfo, import_exception};
+{% for exception in exceptions %}
+import_exception!({{ module_name }}, {{ exception.name }});
+{%- endfor %}
+
+/// Creates the syntax errors of one parse, as exceptions from
+/// `{{ module_name }}`.
+pub struct SyntaxErrors<'py> {
+    py: Python<'py>,
+    file_path: Option<FilePath<'py>>,
+}
+
+impl<'py> SyntaxErrors<'py> {
+    pub const fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> Self {
+        Self { py, file_path }
+    }
+
+    fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
+        SourceLocation::new(
+            self.py,
+            PyInt::new(self.py, start.line),
+            PyInt::new(self.py, start.column),
+            PyInt::new(self.py, end.line),
+            PyInt::new(self.py, end.column),
+            self.file_path.clone(),
+        )
+    }
+
+    /// Returns `error` as a syntax error, or the exception that Python raised
+    /// while creating it.
+    fn syntax_error(error: PyResult<Bound<'py, PyAny>>) -> ParseError {
+        match error {
+            Ok(error) => ParseError::Syntax(PyErr::from_value(error)),
+            Err(error) => ParseError::Python(error),
+        }
+    }
+{% for exception in exceptions %}
+    /// Returns a `{{ module_name }}.{{ exception.name }}` from `start` to `end`.
+    pub fn {{ exception.snake_case_name }}(
+        &self,
+        start: Position,
+        end: Position,
+{%- for parameter in exception.text_parameters %}
+        {{ parameter }}: &str,
+{%- endfor %}
+    ) -> ParseError {
+        Self::syntax_error(self.location(start, end).and_then(|location| {
+            {{ exception.name }}::type_object(self.py).call1((
+                location.into_object(),
+{%- for parameter in exception.text_parameters %}
+                {{ parameter }},
+{%- endfor %}
+            ))
+        }))
+    }
+{% endfor -%}
+}

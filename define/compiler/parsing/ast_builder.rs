@@ -1,5 +1,11 @@
+// TODO: Remove the cycle between this module and the generated `ast`, which
+// uses this module's traits and implements its node constructors on
+// `AstBuilder`, while this module uses `ast`'s `AstClasses` and
+// `SourceLocation`. Moving the traits and argument types that `ast` needs into
+// their own module, or generating the node constructors outside `ast`, would
+// remove it.
 use crate::ast::{AstClasses, SourceLocation};
-use crate::{Position, SourceText};
+use crate::scanner::{Position, SourceText};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyInt, PyNone, PyString, PyTuple, PyType};
@@ -72,6 +78,12 @@ impl<'py> PythonArgument<'py> for Bound<'py, PyInt> {
 #[derive(Clone)]
 pub struct FilePath<'py>(Bound<'py, PyAny>);
 
+impl<'py> FilePath<'py> {
+    pub const fn new(path: Bound<'py, PyAny>) -> Self {
+        Self(path)
+    }
+}
+
 impl<'py> PythonArgument<'py> for FilePath<'py> {
     fn as_argument<'a>(&'a self, _: Python<'py>, _: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
     where
@@ -120,11 +132,11 @@ pub struct AstBuilder<'py, 'source> {
 }
 
 impl<'py, 'source> AstBuilder<'py, 'source> {
-    pub fn new(py: Python<'py>, file_path: Option<Bound<'py, PyAny>>) -> PyResult<Self> {
+    pub fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> PyResult<Self> {
         Ok(Self {
             py,
             classes: AstClasses::get(py)?,
-            file_path: file_path.map(FilePath),
+            file_path,
             names: FxHashMap::default(),
             line_numbers: Vec::new(),
             tuple_elements: Vec::new(),

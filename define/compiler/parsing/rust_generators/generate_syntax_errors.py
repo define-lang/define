@@ -1,9 +1,9 @@
-"""Writes the parser's Rust constructors for the exceptions in `define.compiler.errors.parser_exceptions`.
+"""Writes the parser's Rust `SyntaxErrors`, which creates the exceptions in `define.compiler.errors.parser_exceptions`.
 
 Each exception class that the parser can raise, which is every subclass of
-`DefineSyntaxError` that is not itself a base class, gets a Rust function that
-takes its constructor's parameters: a `SourceLocation`, then any number of
-strings.
+`DefineSyntaxError` that is not itself a base class, gets a `SyntaxErrors`
+method that takes the start and end positions of its location, then the rest
+of its constructor's parameters, which are all strings.
 """
 
 from __future__ import annotations
@@ -52,14 +52,14 @@ def _describe_exception(cls: type) -> rust_renderer.ParserException:
 
 
 def main():
-    """Write the Rust constructors to the path given as the only argument."""
+    """Write the Rust syntax errors to the path given as the only argument."""
     (output_path,) = sys.argv[1:]
-    description = rust_renderer.ParserExceptionsDescription(
+    description = rust_renderer.SyntaxErrorsDescription(
         module_name=parser_exceptions.__name__,
         exceptions=[_describe_exception(cls) for cls in _exception_classes()],
     )
     _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_parser_exceptions(description), encoding="utf-8"
+        rust_renderer.render_syntax_errors(description), encoding="utf-8"
     )
 
 

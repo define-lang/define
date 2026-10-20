@@ -18,8 +18,8 @@ py_binary(
 )
 
 py_binary(
-    name = "generate_parser_exceptions",
-    srcs = ["generate_parser_exceptions.py"],
+    name = "generate_syntax_errors",
+    srcs = ["generate_syntax_errors.py"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":renderer_extension",
@@ -34,7 +34,7 @@ pyo3_extension(
     compile_data = [
         "askama.toml",
         "ast_nodes.rs.j2",
-        "parser_exceptions.rs.j2",
+        "syntax_errors.rs.j2",
     ],
     crate_root = "rust_renderer.rs",
     lint_config = lint_config(),
@@ -68,7 +68,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":generate_ast_nodes",
-        ":generate_parser_exceptions",
+        ":generate_syntax_errors",
         ":rust_generators",
         ":rust_names",
     ],

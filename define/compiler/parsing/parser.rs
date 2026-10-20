@@ -1,17 +1,20 @@
 mod ast_builder;
+mod parse_error;
+mod scanner;
 // rustfmt runs on the source tree, which has ast.rs only after
 // setup_local_dev copies it there.
 #[rustfmt::skip]
 mod ast;
 // Generated like ast.rs, so rustfmt skips it for the same reason.
 #[rustfmt::skip]
-mod parser_exceptions;
+mod syntax_errors;
 
-use ast_builder::{AstBuilder, Node};
-use pyo3::exceptions::PyNotImplementedError;
+use ast_builder::{AstBuilder, FilePath, Node};
+use parse_error::{ParseError, ParseResult};
 use pyo3::prelude::*;
 use pyo3::types::PyString;
-use std::slice::SliceIndex;
+use scanner::{Position, Scanner, SourceText};
+use syntax_errors::SyntaxErrors;
 use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
@@ -21,190 +24,10 @@ const NAME_CONTENT_START: u8 = b'<';
 const TERMINATOR: u8 = b'.';
 const COMMENT_START: u8 = b'#';
 
-/// Text from the source, which is UTF-8 if the source is valid, but
-/// usually is just ASCII.
-#[derive(Clone, Copy)]
-struct SourceText<'source> {
-    bytes: &'source [u8],
-    /// False when the text may contain non-ASCII bytes.
-    is_known_ascii: bool,
-}
-
-impl<'source> SourceText<'source> {
-    fn character_count(self) -> usize {
-        if self.is_known_ascii {
-            self.bytes.len()
-        } else {
-            vector_scan::character_count(self.bytes)
-        }
-    }
-
-    /// Returns the text in the byte `range`, which must start and end on
-    /// character boundaries.
-    fn slice(self, range: impl SliceIndex<[u8], Output = [u8]>) -> Self {
-        Self {
-            bytes: &self.bytes[range],
-            is_known_ascii: self.is_known_ascii,
-        }
-    }
-
-    /// Splits the text at each occurrence of the ASCII `separator`.
-    fn split(self, separator: u8) -> impl Iterator<Item = Self> {
-        self.bytes
-            .split(move |&byte| byte == separator)
-            .map(move |bytes| Self {
-                bytes,
-                is_known_ascii: self.is_known_ascii,
-            })
-    }
-}
-
-/// A point in the source, as a 1-based line and a 1-based column counted in
-/// characters.
-#[derive(Clone, Copy)]
-struct Position {
-    line: usize,
-    column: usize,
-}
-
-impl Position {
-    /// Returns the position after `text`, which must not contain a line feed.
-    fn after(self, text: SourceText) -> Self {
-        Self {
-            line: self.line,
-            column: self.column + text.character_count(),
-        }
-    }
-
-    // Keywords and punctuation are ASCII by construction, so they need no
-    // `SourceText` (otherwise we would have to construct one pointlessly).
-    /// Returns the position after the ASCII `text`, which must not contain a
-    /// line feed.
-    const fn after_ascii(self, text: &[u8]) -> Self {
-        Self {
-            line: self.line,
-            column: self.column + text.len(),
-        }
-    }
-}
-
-struct Scanner<'source> {
-    /// The source that has not been consumed yet.
-    rest: &'source [u8],
-    position: Position,
-}
-
-impl<'source> Scanner<'source> {
-    const fn new(source: &'source [u8]) -> Self {
-        Self {
-            rest: source,
-            position: Position { line: 1, column: 1 },
-        }
-    }
-
-    const fn is_at_end(&self) -> bool {
-        self.rest.is_empty()
-    }
-
-    fn next_bytes_are(&self, expected: &[u8]) -> bool {
-        self.rest.starts_with(expected)
-    }
-
-    /// Whether the next byte is `expected`.
-    const fn next_byte_is(&self, expected: u8) -> bool {
-        matches!(self.rest.first(), Some(&byte) if byte == expected)
-    }
-
-    /// Consumes `expected` if the remaining text starts with it. `expected`
-    /// must be ASCII without a line feed.
-    fn consume(&mut self, expected: &[u8]) -> bool {
-        let Some(rest) = self.rest.strip_prefix(expected) else {
-            return false;
-        };
-        self.rest = rest;
-        self.position = self.position.after_ascii(expected);
-        true
-    }
-
-    /// Consumes `expected` if it is the next byte. `expected` must be ASCII and
-    /// not a line feed.
-    fn consume_byte(&mut self, expected: u8) -> bool {
-        let Some((&byte, rest)) = self.rest.split_first() else {
-            return false;
-        };
-        if byte != expected {
-            return false;
-        }
-        self.rest = rest;
-        self.position.column += 1;
-        true
-    }
-
-    fn consume_line_feed(&mut self) -> bool {
-        let Some(rest) = self.rest.strip_prefix(&[LINE_FEED]) else {
-            return false;
-        };
-        self.rest = rest;
-        self.position = Position {
-            line: self.position.line + 1,
-            column: 1,
-        };
-        true
-    }
-
-    /// Consumes the name content before the first `>` or line feed, or all of
-    /// the remaining text if it contains neither, and returns it with what the
-    /// scan found in it.
-    fn consume_name_content(&mut self) -> (SourceText<'source>, vector_scan::NameContent) {
-        let scanned = vector_scan::name_content(self.rest);
-        let (bytes, rest) = self.rest.split_at(scanned.length);
-        let text = SourceText {
-            bytes,
-            is_known_ascii: scanned.is_ascii,
-        };
-        self.rest = rest;
-        self.position.column += scanned.character_count;
-        (text, scanned)
-    }
-}
-
-enum ParseError {
-    /// Source that the parser does not handle yet.
-    NotYetSupported {
-        position: Position,
-        description: &'static str,
-    },
-    /// A syntax error in the source, as an exception from `parser_exceptions`.
-    Syntax(PyErr),
-    /// An exception that Python raised while the parser built the AST.
-    Python(PyErr),
-}
-
-impl From<PyErr> for ParseError {
-    fn from(error: PyErr) -> Self {
-        Self::Python(error)
-    }
-}
-
-impl From<ParseError> for PyErr {
-    fn from(error: ParseError) -> Self {
-        match error {
-            ParseError::NotYetSupported {
-                position: Position { line, column },
-                description,
-            } => PyNotImplementedError::new_err(format!(
-                "line {line}, column {column}: the parser does not support {description} yet"
-            )),
-            ParseError::Syntax(error) | ParseError::Python(error) => error,
-        }
-    }
-}
-
-type ParseResult<T> = Result<T, ParseError>;
-
 struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
     ast: AstBuilder<'py, 'source>,
+    errors: SyntaxErrors<'py>,
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
@@ -237,19 +60,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         // The program has no definitions.
         let Some(start) = start else {
-            let location = self.ast.location(end, end)?;
-            return Err(ParseError::Syntax(
-                parser_exceptions::expected_global_definition(location),
-            ));
+            return Err(self.errors.expected_global_definition(end, end));
         };
         // The source does not end with a line feed. Only a line feed moves the
         // scanner back to column 1, and the source is not empty.
         if self.scanner.position.column != 1 {
             let end_of_source = self.scanner.position;
-            let location = self.ast.location(end_of_source, end_of_source)?;
-            return Err(ParseError::Syntax(
-                parser_exceptions::missing_newline_at_eof(location),
-            ));
+            return Err(self
+                .errors
+                .missing_newline_at_eof(end_of_source, end_of_source));
         }
         let definitions = self.ast.finish_tuple(definitions)?;
         let location = self.ast.location(start, end)?;
@@ -282,16 +101,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         // The text does not begin a position definition, the only global
         // definition the parser supports so far.
-        let location = self.ast.location(
-            start,
-            Position {
-                line: start.line,
-                column: start.column + 1,
-            },
-        )?;
-        Err(ParseError::Syntax(
-            parser_exceptions::expected_global_definition(location),
-        ))
+        Err(self
+            .errors
+            .expected_global_definition(start, start.next_column()))
     }
 
     /// Parses the rest of a position definition after its `position`, given
@@ -338,10 +150,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             let position = self.scanner.position;
             // The line ends where the `.` belongs.
             if self.scanner.next_byte_is(LINE_FEED) {
-                let location = self.ast.location(position, position)?;
-                return Err(ParseError::Syntax(
-                    parser_exceptions::missing_terminator_or_brace(location),
-                ));
+                return Err(self.errors.missing_terminator_or_brace(position, position));
             }
             return Err(Self::not_yet_supported(
                 position,
@@ -351,16 +160,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         let end = self.scanner.position;
         // A comment follows the `.` without a space between them.
         if self.scanner.next_byte_is(COMMENT_START) {
-            let location = self.ast.location(
-                end,
-                Position {
-                    line: end.line,
-                    column: end.column + 1,
-                },
-            )?;
-            return Err(ParseError::Syntax(
-                parser_exceptions::missing_space_before_comment(location),
-            ));
+            return Err(self
+                .errors
+                .missing_space_before_comment(end, end.next_column()));
         }
         // Something other than a line feed or a space follows the `.`. At the end
         // of the source, parse_program reports the missing line feed instead.
@@ -368,16 +170,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             && !self.scanner.next_byte_is(LINE_FEED)
             && !self.scanner.next_byte_is(SPACE)
         {
-            let location = self.ast.location(
-                end,
-                Position {
-                    line: end.line,
-                    column: end.column + 1,
-                },
-            )?;
-            return Err(ParseError::Syntax(
-                parser_exceptions::missing_newline_after_terminator(location),
-            ));
+            return Err(self
+                .errors
+                .missing_newline_after_terminator(end, end.next_column()));
         }
         if self.scanner.next_byte_is(SPACE) {
             return Err(Self::not_yet_supported(
@@ -420,10 +215,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             ));
         };
         let (fqun, fqun_end) = self.parse_fqun(content.slice(..separator), start)?;
-        let path_start = Position {
-            line: fqun_end.line,
-            column: fqun_end.column + 1,
-        };
+        let path_start = fqun_end.next_column();
         let path_location = self.ast.location(path_start, end)?;
         let path_name = self.ast.name(content.slice(separator + 1..))?;
         let path = self.ast.global_path_name(path_location, path_name)?;
@@ -466,10 +258,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let multiverse = match multiverse {
             Some(name) => {
                 let (location, name, end) = self.fqun_component(name, component_start)?;
-                component_start = Position {
-                    line: end.line,
-                    column: end.column + 1,
-                };
+                component_start = end.next_column();
                 Some(self.ast.multiverse(location, name)?)
             }
             None => None,
@@ -477,10 +266,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let authority = match authority {
             Some(name) => {
                 let (location, name, end) = self.fqun_component(name, component_start)?;
-                component_start = Position {
-                    line: end.line,
-                    column: end.column + 1,
-                };
+                component_start = end.next_column();
                 Some(self.ast.authority(location, name)?)
             }
             None => None,
@@ -514,9 +300,11 @@ fn parse<'py>(
     source: &[u8],
     file_path: Option<Bound<'py, PyAny>>,
 ) -> PyResult<Bound<'py, PyAny>> {
+    let file_path = file_path.map(FilePath::new);
     let program = Parser {
         scanner: Scanner::new(source),
-        ast: AstBuilder::new(py, file_path)?,
+        ast: AstBuilder::new(py, file_path.clone())?,
+        errors: SyntaxErrors::new(py, file_path),
     }
     .parse_program()?;
     Ok(program.into_object())

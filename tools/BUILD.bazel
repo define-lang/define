@@ -277,15 +277,15 @@ py_binary(
     args = [
         "$(rlocationpath @multitool//tools/uv)",
         "$(rlocationpath //define/compiler/parsing:ast)",
-        "$(rlocationpath //define/compiler/parsing:parser_exceptions)",
+        "$(rlocationpath //define/compiler/parsing:syntax_errors)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
         "$(rlocationpath //define/compiler/parsing:parser_extension)",
     ],
     data = [
         "//define/compiler/codegen/literal/python:renderer",
         "//define/compiler/parsing:ast",
-        "//define/compiler/parsing:parser_exceptions",
         "//define/compiler/parsing:parser_extension",
+        "//define/compiler/parsing:syntax_errors",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],
