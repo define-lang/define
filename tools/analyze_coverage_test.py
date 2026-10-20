@@ -546,3 +546,116 @@ def test_workspace_root_falls_back_to_runfiles_workspace(
         analyze_coverage.workspace_root()
         == Path(analyze_coverage.__file__).resolve().parent.parent
     )
+
+
+def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text("fn f(a: bool, b: bool) -> bool {\n    a || b\n}\n")
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\n"
+        + "BRDA:2,0,region from 2:5 to 2:6,4\n"
+        + "BRDA:2,0,region from 2:10 to 2:11,0\n"
+        + "BRDA:1,0,region from 1:1 to 3:2,0\n"
+        + "end_of_record\n"
+    )
+
+    actionable, panic_only = analyze_coverage.analyze_rust_regions(
+        report_path, tmp_path
+    )
+
+    assert actionable == [
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=2,
+            start_column=10,
+            end_line=2,
+            end_column=11,
+        ),
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=1,
+            start_column=1,
+            end_line=3,
+            end_column=2,
+        ),
+    ]
+    assert panic_only == []
+    assert analyze_coverage.format_rust_regions(actionable, panic_only, tmp_path) == (
+        "Uncovered Rust code regions:\n"
+        + f"{source_path}:2:10-2:11: b\n"
+        + f"{source_path}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
+        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted."
+    )
+
+
+def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text(
+        "fn f(a: usize) {\n    if a < 32 {\n"
+        + '        unreachable!("a is at least 32");\n    }\n}\n'
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\n"
+        + "BRDA:2,0,region from 2:15 to 4:6,0\n"
+        + "end_of_record\n"
+    )
+
+    actionable, panic_only = analyze_coverage.analyze_rust_regions(
+        report_path, tmp_path
+    )
+
+    assert actionable == []
+    assert panic_only == [
+        analyze_coverage.UncoveredRegion(
+            source_file=source_path,
+            start_line=2,
+            start_column=15,
+            end_line=4,
+            end_column=6,
+        )
+    ]
+
+
+def test_analyze_report_leaves_rust_regions_out_of_branches(tmp_path: Path):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text("fn f() {}\n")
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\nBRDA:1,0,region from 1:8 to 1:10,0\nend_of_record\n"
+    )
+
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
+        report_path, tmp_path
+    )
+
+    assert actionable == []
+    assert low_value == []
+    assert explicit_exit_only == []
+
+
+def test_cli_reports_rust_regions_before_branches(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _ = (tmp_path / "example.rs").write_text("fn f(a: bool) -> bool {\n    !a\n}\n")
+    report_path = tmp_path / "bazel-out/_coverage/_coverage_report.dat"
+    report_path.parent.mkdir(parents=True)
+    _ = report_path.write_text(
+        "SF:example.rs\nBRDA:2,0,region from 2:5 to 2:7,0\nend_of_record\n"
+    )
+    monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+
+    result = click.testing.CliRunner().invoke(analyze_coverage.main)
+
+    assert result.exit_code == 0
+    assert result.output == (
+        "Uncovered Rust code regions:\n"
+        + "example.rs:2:5-2:7: !a\n"
+        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted.\n"
+        + "No uncovered actionable branches.\n"
+        + "0 actionable uncovered branches reported; "
+        + "0 low-value final-case non-match branches reported; "
+        + "0 explicit-exit-only branches omitted.\n"
+    )

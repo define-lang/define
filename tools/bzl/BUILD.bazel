@@ -84,6 +84,15 @@ proto_lang_toolchain(
     toolchain_type = "@protobuf//bazel/private:python_toolchain_type",
 )
 
+alias(
+    name = "rust_coverage_collector",
+    actual = select({
+        ":coverage_enabled": "//tools/rust_coverage:collect_extension_coverage",
+        "//conditions:default": "//:pyproject.toml",
+    }),
+    visibility = ["//visibility:public"],
+)
+
 rust_pyo3_toolchain(
     name = "rust_pyo3",
     pyo3 = "@crates//:pyo3",

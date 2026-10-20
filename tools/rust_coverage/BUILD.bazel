@@ -1,0 +1,33 @@
+load("@crates//:defs.bzl", "lint_config")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+rust_binary(
+    name = "collect_extension_coverage",
+    srcs = ["collect_extension_coverage.rs"],
+    data = [
+        "@llvm//tools:llvm-cov",
+        "@llvm//tools:llvm-profdata",
+    ],
+    lint_config = lint_config(),
+    rustc_env = {
+        "LLVM_COV": "$(rlocationpath @llvm//tools:llvm-cov)",
+        "LLVM_PROFDATA": "$(rlocationpath @llvm//tools:llvm-profdata)",
+    },
+    visibility = ["//tools/bzl:__pkg__"],
+    deps = [
+        "@crates//:serde_json",
+        "@rules_rust//rust/runfiles",
+    ],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = ["precommit"],
+    targets = [":collect_extension_coverage"],
+)
+
+check_build_file()

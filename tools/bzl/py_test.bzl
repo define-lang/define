@@ -22,9 +22,20 @@ def py_test(name, **kwargs):
         "//tools/bzl:loop_coverage_pytest_dependency",
     ]
 
-    data = kwargs.pop("data", []) + ["//:pyproject.toml"]
+    # py_pytest_test eagerly converts data to a list too, so the coverage
+    # collector for Rust extensions comes through an alias. Outside coverage it
+    # resolves to pyproject.toml, which every test already has.
+    data = kwargs.pop("data", []) + [
+        "//:pyproject.toml",
+        "//tools/bzl:rust_coverage_collector",
+    ]
     env = kwargs.pop("env", {})
     coverage_env = dict(env)
+
+    # Bazel's coverage runner runs CC_CODE_COVERAGE_SCRIPT after a test only
+    # when both of these are set, which it does not do for Python tests.
+    coverage_env["GENERATE_LLVM_LCOV"] = "1"
+    coverage_env["CC_CODE_COVERAGE_SCRIPT"] = "$(execpath //tools/bzl:rust_coverage_collector)"
     pytest_plugins = coverage_env.get("PYTEST_PLUGINS")
     if pytest_plugins:
         coverage_env["PYTEST_PLUGINS"] = pytest_plugins + ",tools.loop_coverage"

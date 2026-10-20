@@ -1,4 +1,8 @@
-"""Report uncovered LCOV branches that do not only raise an exception."""
+"""Report uncovered LCOV branches that do not only raise an exception.
+
+The coverage of Rust code has code regions instead of branches, which it
+reports apart from the branches.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +19,15 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 _JUMP_DESCRIPTION = re.compile(r"jump to line (?P<line>\d+)")
+# How //tools/rust_coverage:collect_extension_coverage describes the code
+# region of each of its branch records.
+_RUST_REGION_DESCRIPTION = re.compile(
+    r"region from (?P<start_line>\d+):(?P<start_column>\d+)"
+    + r" to (?P<end_line>\d+):(?P<end_column>\d+)"
+)
+# Macros that end a Rust program, which a region consisting only of one of
+# them calls only for a defensive check.
+_RUST_PANIC_MACROS = ("panic!(", "todo!(", "unimplemented!(", "unreachable!(")
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -62,6 +75,34 @@ def parse_uncovered_branches(report_path: Path) -> list[UncoveredBranch]:
     return branches
 
 
+class UncoveredRegion(msgspec.Struct, frozen=True):
+    """A code region of a Rust source file that never ran.
+
+    Lines and columns are 1-based, columns count bytes, and the end column is
+    the column after the region.
+    """
+
+    source_file: Path
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+
+
+def _rust_region(branch: UncoveredBranch) -> UncoveredRegion | None:
+    """Return the code region that a branch record of Rust coverage stands for."""
+    match = _RUST_REGION_DESCRIPTION.fullmatch(branch.description)
+    if match is None:
+        return None
+    return UncoveredRegion(
+        source_file=branch.source_file,
+        start_line=int(match.group("start_line")),
+        start_column=int(match.group("start_column")),
+        end_line=int(match.group("end_line")),
+        end_column=int(match.group("end_column")),
+    )
+
+
 class SourceAnalysis:
     """Source text and syntax needed to describe and classify branches."""
 
@@ -87,6 +128,19 @@ class SourceAnalysis:
     def line(self, source_file: Path, line_number: int) -> str:
         """Return one stripped source line."""
         return self._lines(source_file)[line_number - 1].strip()
+
+    def region_text(self, region: UncoveredRegion) -> str:
+        """Return the source text of a code region, with its lines joined by spaces."""
+        lines = self._lines(region.source_file)[region.start_line - 1 : region.end_line]
+        encoded = [line.encode() for line in lines]
+        encoded[-1] = encoded[-1][: region.end_column - 1]
+        encoded[0] = encoded[0][region.start_column - 1 :]
+        return " ".join(line.decode(errors="replace").strip() for line in encoded)
+
+    def region_only_panics(self, region: UncoveredRegion) -> bool:
+        """Return whether a code region only calls a macro that ends the program."""
+        text = self.region_text(region).strip("{}; ")
+        return text.startswith(_RUST_PANIC_MACROS)
 
     def resolve_path(self, source_file: Path) -> Path:
         """Resolve an LCOV or command-line source path."""
@@ -228,25 +282,15 @@ def analyze_report(
     """Classify actionable, low-value, and explicit-exit-only branches."""
     source_analysis = SourceAnalysis(source_root)
     uncovered = parse_uncovered_branches(report_path)
-    selected_source_files: set[Path] = set()
-    selected_source_directories: set[Path] = set()
-    for source_path in source_paths:
-        resolved_path = source_analysis.resolve_path(source_path)
-        if resolved_path.is_dir():
-            selected_source_directories.add(resolved_path)
-        else:
-            selected_source_files.add(resolved_path)
+    selection = _SourceSelection(source_analysis, source_paths)
     actionable: list[UncoveredBranch] = []
     low_value: list[UncoveredBranch] = []
     explicit_exit_only: list[UncoveredBranch] = []
     for branch in uncovered:
-        if selected_source_files or selected_source_directories:
-            branch_source_path = source_analysis.resolve_path(branch.source_file)
-            if (
-                branch_source_path not in selected_source_files
-                and selected_source_directories.isdisjoint(branch_source_path.parents)
-            ):
-                continue
+        if _rust_region(branch) is not None or not selection.includes(
+            branch.source_file
+        ):
+            continue
         if source_analysis.branch_is_explicit_exit(branch):
             explicit_exit_only.append(branch)
         elif source_analysis.branch_is_final_case_nonmatch(branch):
@@ -254,6 +298,73 @@ def analyze_report(
         else:
             actionable.append(branch)
     return actionable, low_value, explicit_exit_only
+
+
+def analyze_rust_regions(
+    report_path: Path,
+    source_root: Path,
+    source_paths: Sequence[Path] = (),
+) -> tuple[list[UncoveredRegion], list[UncoveredRegion]]:
+    """Classify uncovered Rust code regions as actionable or panic-only."""
+    source_analysis = SourceAnalysis(source_root)
+    selection = _SourceSelection(source_analysis, source_paths)
+    actionable: list[UncoveredRegion] = []
+    panic_only: list[UncoveredRegion] = []
+    for branch in parse_uncovered_branches(report_path):
+        region = _rust_region(branch)
+        if region is None or not selection.includes(region.source_file):
+            continue
+        if source_analysis.region_only_panics(region):
+            panic_only.append(region)
+        else:
+            actionable.append(region)
+    return actionable, panic_only
+
+
+class _SourceSelection:
+    """The source files that command-line paths select."""
+
+    def __init__(self, source_analysis: SourceAnalysis, source_paths: Sequence[Path]):
+        """Select the files and directories in `source_paths`, or every file if it is empty."""
+        self._source_analysis: SourceAnalysis = source_analysis
+        self._files: set[Path] = set()
+        self._directories: set[Path] = set()
+        for source_path in source_paths:
+            resolved_path = source_analysis.resolve_path(source_path)
+            if resolved_path.is_dir():
+                self._directories.add(resolved_path)
+            else:
+                self._files.add(resolved_path)
+
+    def includes(self, source_file: Path) -> bool:
+        """Return whether the selection includes `source_file`."""
+        if not self._files and not self._directories:
+            return True
+        resolved_path = self._source_analysis.resolve_path(source_file)
+        return resolved_path in self._files or not self._directories.isdisjoint(
+            resolved_path.parents
+        )
+
+
+def format_rust_regions(
+    actionable: Sequence[UncoveredRegion],
+    panic_only: Sequence[UncoveredRegion],
+    source_root: Path,
+) -> str:
+    """Format uncovered Rust code regions with their source text."""
+    source_analysis = SourceAnalysis(source_root)
+    output_lines = ["Uncovered Rust code regions:"]
+    for region in actionable:
+        output_lines.append(
+            f"{region.source_file}:{region.start_line}:{region.start_column}-"
+            + f"{region.end_line}:{region.end_column}: "
+            + source_analysis.region_text(region)
+        )
+    output_lines.append(
+        f"{len(actionable)} uncovered Rust code regions reported; "
+        + f"{len(panic_only)} panic-only regions omitted."
+    )
+    return "\n".join(output_lines)
 
 
 def format_report(
@@ -335,7 +446,9 @@ def main(source_paths: tuple[Path, ...]):
     SOURCE_PATHS are files or directories relative to the workspace root.
     Directories include source files at every depth. When no paths are given,
     all files in Bazel's combined LCOV report are analyzed. Branches whose
-    destination only raises a Python exception are omitted.
+    destination only raises a Python exception are omitted. Rust coverage has
+    code regions instead of branches, which are reported first, apart from
+    regions that only panic.
     """
     if build_working_directory := os.environ.get("BUILD_WORKING_DIRECTORY"):
         os.chdir(build_working_directory)
@@ -351,6 +464,13 @@ def main(source_paths: tuple[Path, ...]):
         raise click.ClickException(
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
+        )
+    actionable_regions, panic_only_regions = analyze_rust_regions(
+        report_path, source_root, source_paths
+    )
+    if actionable_regions or panic_only_regions:
+        click.echo(
+            format_rust_regions(actionable_regions, panic_only_regions, source_root)
         )
     actionable, low_value, explicit_exit_only = analyze_report(
         report_path, source_root, source_paths

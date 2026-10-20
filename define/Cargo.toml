@@ -19,6 +19,7 @@ wide.workspace = true
 [dev-dependencies]
 googletest.workspace = true
 pyo3-introspection = "=0.30.1"
+serde_json.workspace = true
 
 [lints]
 workspace = true
