@@ -17,13 +17,14 @@ if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_empty_block_on_position(parse: Parse):
+def test_empty_block_on_position(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
-        parse("define the potential position<standard:/path> {\n}\n")
+        native_parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
@@ -307,29 +308,32 @@ def test_mixed_block_and_terminator(native_parse: NativeParse):
     )
 
 
-def test_file_ending_after_block_open(parse: Parse):
+def test_file_ending_after_block_open(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
-        parse("define the potential position<standard:/path> {\n")
+        native_parse("define the potential position<standard:/path> {\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 48
 
 
-def test_missing_newline_after_block_open(parse: Parse):
+def test_missing_newline_after_block_open(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
-        parse("define the potential position<standard:/path> {}\n")
+        native_parse("define the potential position<standard:/path> {}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 48
 
 
-def test_no_space_before_brace(parse: Parse):
+def test_no_space_before_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
-        parse("define the potential position<standard:/path>{\n")
+        native_parse("define the potential position<standard:/path>{\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 46
 
 

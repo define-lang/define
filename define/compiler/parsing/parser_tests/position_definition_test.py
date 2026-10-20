@@ -174,13 +174,16 @@ def test_position_definition_with_multiple_requirements(native_parse: NativePars
     assert second.typed_global_name.name_content.path.name == "/second"
 
 
-def test_position_definition_block_requires_content(parse: Parse):
+def test_position_definition_block_requires_content(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n}\n"
+        )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
@@ -399,13 +402,14 @@ def test_action_statements_block_with_multiple_local_block_positions(
     ]
 
 
-def test_empty_potential_position_block(parse: Parse):
+def test_empty_potential_position_block(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
-        parse("define the potential position<standard:/path> {\n}\n")
+        native_parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 

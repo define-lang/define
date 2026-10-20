@@ -5,10 +5,12 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
-use vector_scan::{COMMENT_START, LINE_FEED, LineEnd};
+use vector_scan::{COMMENT_START, LINE_FEED, LineEnd, SPACE};
 
-pub const BLOCK_OPEN: &[u8] = b" {";
-const BLOCK_CLOSE: u8 = b'}';
+pub const OPEN_BRACE: u8 = b'{';
+const CLOSE_BRACE: u8 = b'}';
+/// What the grammar's `block_open` starts with.
+pub const BLOCK_OPEN: &[u8] = &[SPACE, OPEN_BRACE];
 const TERMINATOR: u8 = b'.';
 /// How much deeper than the statement that opens a block each line in the
 /// block is indented.
@@ -20,12 +22,14 @@ pub struct Lines<'parser, 'py, 'source> {
     diagnostics: &'parser mut ParserDiagnostics<'py>,
 }
 
-/// A line in a block that is not blank or a comment.
+/// What comes next in a block, after any blank and comment lines.
 pub enum LineInBlock {
-    /// The block's `}`, which comes next.
+    /// The block's `}`.
     Close,
     /// A statement, after `indentation` spaces.
     Statement { indentation: usize },
+    /// The end of the source, before the block's `}`.
+    EndOfSource,
 }
 
 impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
@@ -41,21 +45,40 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         }
     }
 
-    /// Parses the ` {` that opens a block, through the end of its line.
+    /// Parses the ` {` that opens a block, through the end of its line, and
+    /// returns the position after the `{`.
     ///
     /// ```ebnf
     /// block_open = " ", "{", newline ;
     /// ```
     #[inline]
-    pub fn parse_block_open(&mut self) -> ParseResult<()> {
+    pub fn parse_block_open(&mut self) -> ParseResult<Position> {
         let start = self.scanner.position;
-        if !self.scanner.consume(BLOCK_OPEN) || !self.end_line()? {
+        if !self.scanner.consume(BLOCK_OPEN) {
             return Err(ParseError::not_yet_supported(
                 start,
                 "anything but ` {` here",
             ));
         }
-        Ok(())
+        let end = self.scanner.position;
+        // Something other than a line feed or a comment follows the `{`.
+        if !self.end_line()? {
+            return Err(self.text_after_block_open());
+        }
+        Ok(end)
+    }
+
+    /// Returns the error for text after the `{` that opens a block, which the
+    /// scanner is at.
+    #[cold]
+    #[inline(never)]
+    fn text_after_block_open(&self) -> ParseError {
+        let text = self.scanner.position;
+        // The block closes on the line that opens it.
+        if self.scanner.next_byte_is(CLOSE_BRACE) {
+            return self.errors.empty_block(text, text);
+        }
+        ParseError::not_yet_supported(text, "anything but a line end after `{`")
     }
 
     /// Parses the `}` that closes a block, which `next_line_in_block` found
@@ -77,23 +100,20 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
 
     /// Consumes any blank and comment lines, then the indentation of the next
     /// line in the block opened by a statement indented `opener_indentation`
-    /// spaces, and returns what that line is. Adds a diagnostic for each line
+    /// spaces, and returns what comes next. Adds a diagnostic for each line
     /// that is not indented as deep as the block requires.
     #[inline]
     pub fn next_line_in_block(&mut self, opener_indentation: usize) -> ParseResult<LineInBlock> {
         let contents_indentation = opener_indentation + INDENTATION_WIDTH;
         loop {
             if self.scanner.is_at_end() {
-                return Err(ParseError::not_yet_supported(
-                    self.scanner.position,
-                    "a block without its `}`",
-                ));
+                return Ok(LineInBlock::EndOfSource);
             }
             let line_start = self.scanner.position;
             let Some(indentation) = self.start_line(contents_indentation)? else {
                 continue;
             };
-            if self.scanner.next_byte_is(BLOCK_CLOSE) {
+            if self.scanner.next_byte_is(CLOSE_BRACE) {
                 self.check_indentation(line_start, opener_indentation, indentation)?;
                 return Ok(LineInBlock::Close);
             }

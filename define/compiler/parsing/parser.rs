@@ -13,7 +13,7 @@ mod parser_diagnostics;
 mod syntax_errors;
 
 use ast_builder::{AstBuilder, FilePath, Node};
-use lines::{BLOCK_OPEN, LineInBlock, Lines};
+use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE};
 use parse_error::{ParseError, ParseResult};
 use parser_diagnostics::ParserDiagnostics;
 use pyo3::prelude::*;
@@ -175,6 +175,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         if self.scanner.next_byte_is(LINE_FEED) {
             return self.errors.missing_terminator_or_brace(missing, missing);
         }
+        // A `{` follows the name without a space before it.
+        if self.scanner.next_byte_is(OPEN_BRACE) {
+            return self
+                .errors
+                .missing_whitespace_before_brace(missing, missing);
+        }
         ParseError::not_yet_supported(missing, "anything but a terminator or ` {` here")
     }
 
@@ -193,12 +199,23 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
-        self.lines().parse_block_open()?;
-        let LineInBlock::Statement { indentation } = self.lines().next_line_in_block(0)? else {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "position definition blocks without a position constraint block",
-            ));
+        let block_open_end = self.lines().parse_block_open()?;
+        let indentation = match self.lines().next_line_in_block(0)? {
+            LineInBlock::Statement { indentation } => indentation,
+            // The block is empty.
+            LineInBlock::Close => {
+                let close = self.scanner.position;
+                return Err(self
+                    .errors
+                    .missing_potential_position_definition_content(close, close));
+            }
+            // The source ends where the block's content belongs.
+            LineInBlock::EndOfSource => {
+                return Err(self.errors.missing_potential_position_definition_content(
+                    block_open_end,
+                    block_open_end,
+                ));
+            }
         };
         let constraints_start = self.scanner.position;
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
@@ -240,7 +257,17 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.lines().parse_block_open()?;
         let requirements = self.ast.start_tuple::<ast::PositionRequirementStatement>();
         let mut has_requirement = false;
-        while let LineInBlock::Statement { .. } = self.lines().next_line_in_block(indentation)? {
+        loop {
+            match self.lines().next_line_in_block(indentation)? {
+                LineInBlock::Statement { .. } => {}
+                LineInBlock::Close => break,
+                LineInBlock::EndOfSource => {
+                    return Err(ParseError::not_yet_supported(
+                        self.scanner.position,
+                        "a block without its `}`",
+                    ));
+                }
+            }
             let requirement = self.parse_position_requirement_statement(fqun)?;
             self.ast.push(&requirements, requirement);
             has_requirement = true;
