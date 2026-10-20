@@ -16,6 +16,7 @@ use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
+const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
 const NAME_CONTENT_START: u8 = b'<';
 const TERMINATOR: u8 = b'.';
 const COMMENT_START: u8 = b'#';
@@ -103,6 +104,10 @@ impl<'source> Scanner<'source> {
 
     const fn is_at_end(&self) -> bool {
         self.rest.is_empty()
+    }
+
+    fn next_bytes_are(&self, expected: &[u8]) -> bool {
+        self.rest.starts_with(expected)
     }
 
     /// Whether the next byte is `expected`.
@@ -264,16 +269,28 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_definition(&mut self) -> ParseResult<(ast::GlobalDefinition<'py>, Position)> {
         let start = self.scanner.position;
-        if self.scanner.consume(DEFINE_THE_POTENTIAL) {
-            let typed_name_start = self.scanner.position;
-            if self.scanner.consume(POSITION) {
-                let (definition, end) = self.parse_position_definition(start, typed_name_start)?;
-                return Ok((definition.into(), end));
-            }
+        // Spaces can begin a comment.
+        if self.scanner.next_byte_is(COMMENT_START) || self.scanner.next_byte_is(SPACE) {
+            return Err(Self::not_yet_supported(start, "comments"));
         }
-        Err(Self::not_yet_supported(
+        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
+            self.scanner.consume(DEFINE_THE_POTENTIAL);
+            let typed_name_start = self.scanner.position;
+            self.scanner.consume(POSITION);
+            let (definition, end) = self.parse_position_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
+        // The text does not begin a position definition, the only global
+        // definition the parser supports so far.
+        let location = self.ast.location(
             start,
-            "definitions other than position definitions",
+            Position {
+                line: start.line,
+                column: start.column + 1,
+            },
+        )?;
+        Err(ParseError::Syntax(
+            parser_exceptions::expected_global_definition(location),
         ))
     }
 

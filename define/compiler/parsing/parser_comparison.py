@@ -68,6 +68,13 @@ def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
         native_program = native_parse(source, file_path)
     except NotImplementedError:
         return Agreement.NOT_YET_SUPPORTED
+    except parser_exceptions.ExpectedGlobalDefinition:
+        # TODO: Remove this once the parser in parser.rs supports every kind of
+        # global definition. Until then, it reports every other kind as
+        # ExpectedGlobalDefinition.
+        if lark_accepts:
+            return Agreement.NOT_YET_SUPPORTED
+        return Agreement.BOTH_REJECTED
     except parser_exceptions.DefineSyntaxError as error:
         if lark_accepts:
             raise ParsersDisagreeError(

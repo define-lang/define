@@ -105,33 +105,33 @@ def test_invalid_global_definition_name_type(parse: Parse):
     assert exc_info.value.location.end_column == 7
 
 
-def test_bare_colon_at_top_level(parse: Parse):
+def test_bare_colon_at_top_level(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse(":\n")
+        native_parse(":\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 2
 
 
-def test_bare_slash_at_top_level(parse: Parse):
+def test_bare_slash_at_top_level(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("/\n")
+        native_parse("/\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 2
 
 
-def test_bare_colon_between_definitions(parse: Parse):
+def test_bare_colon_between_definitions(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("define the potential position<standard:/path>.\n" + ":\n")
+        native_parse("define the potential position<standard:/path>.\n" + ":\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 2
 
 
-def test_bare_slash_between_definitions(parse: Parse):
+def test_bare_slash_between_definitions(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("define the potential position<standard:/path>.\n" + "/\n")
+        native_parse("define the potential position<standard:/path>.\n" + "/\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 2
