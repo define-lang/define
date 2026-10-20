@@ -35,7 +35,7 @@ def test_mismatched_universe(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 54
+    assert diags[0].location.end_column == 53
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -68,7 +68,7 @@ def test_mismatched_multiverse(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 60
+    assert diags[0].location.end_column == 59
 
 
 def test_none_skips_check(
@@ -91,7 +91,7 @@ def test_standard_universe_matching(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 39
+    assert diags[0].location.end_column == 38
 
 
 def test_authority_with_path(

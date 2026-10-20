@@ -93,7 +93,7 @@ def check(source: str, file_path: pathlib.PurePosixPath | None):
         line=line,
         column=column,
         end_line=line,
-        end_column=column + 1,
+        end_column=column,
         file_path=file_path,
     )
     char_class = parser_error_classification.classify_invalid_char(char)

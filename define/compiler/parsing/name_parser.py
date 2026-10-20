@@ -212,12 +212,17 @@ def _position_for_offsets(
     end_offset: int,
     file_path: PurePosixPath | None = None,
 ) -> ast.SourceLocation:
+    """Return the location of ``token``'s text from ``start_offset`` up to ``end_offset``.
+
+    The offsets are the bounds of a slice of the token's text. An empty slice's
+    location covers the character at ``start_offset``.
+    """
     line = _line(token)
     base_column = _column(token)
     return ast.SourceLocation(
         line=line,
         column=base_column + start_offset,
         end_line=line,
-        end_column=base_column + end_offset,
+        end_column=base_column + max(end_offset - 1, start_offset),
         file_path=file_path,
     )

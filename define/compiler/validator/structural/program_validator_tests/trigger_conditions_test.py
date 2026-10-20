@@ -82,7 +82,7 @@ def test_invalid_local_name_format(
     assert diags[0].location.line == 3
     assert diags[0].location.column == 13
     assert diags[0].location.end_line == 3
-    assert diags[0].location.end_column == 26
+    assert diags[0].location.end_column == 25
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "BAD"
@@ -90,5 +90,5 @@ def test_invalid_local_name_format(
     assert diags[1].location.line == 3
     assert diags[1].location.column == 22
     assert diags[1].location.end_line == 3
-    assert diags[1].location.end_column == 23
+    assert diags[1].location.end_column == 22
     assert diags[1].location.file_path is None

@@ -98,7 +98,7 @@ def test_cross_file_duplicate_definition_reports_path_mismatch(
     assert diags[0].location.line == 2
     assert diags[0].location.column == 70
     assert diags[0].location.end_line == 2
-    assert diags[0].location.end_column == 75
+    assert diags[0].location.end_column == 74
     assert diags[0].location.file_path == PurePosixPath("other.dfn")
 
 

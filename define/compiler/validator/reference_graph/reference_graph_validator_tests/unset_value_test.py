@@ -1862,7 +1862,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
-    assert all_diags[0].location.end_column == 46
+    assert all_diags[0].location.end_column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name

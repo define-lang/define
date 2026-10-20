@@ -147,7 +147,7 @@ def test_local_name_with_space(parse: Parse):
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_local_name_with_space_after_valid_characters(parse: Parse):
@@ -165,7 +165,7 @@ def test_local_name_with_space_after_valid_characters(parse: Parse):
     assert exc_info.value.name == "test"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_create_position_ref_starting_with_space(parse: Parse):
@@ -183,7 +183,7 @@ def test_create_position_ref_starting_with_space(parse: Parse):
     assert exc_info.value.token == " "
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 39
-    assert exc_info.value.location.end_column == 40
+    assert exc_info.value.location.end_column == 39
 
 
 def test_local_name_first_char_colon(parse: Parse):
@@ -201,7 +201,7 @@ def test_local_name_first_char_colon(parse: Parse):
     assert exc_info.value.char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_local_name_first_char_slash(parse: Parse):
@@ -219,7 +219,7 @@ def test_local_name_first_char_slash(parse: Parse):
     assert exc_info.value.char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_local_name_missing_open_angle(parse: Parse):
@@ -236,7 +236,7 @@ def test_local_name_missing_open_angle(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
     assert exc_info.value.name == "my_pos"
 
 
@@ -254,7 +254,7 @@ def test_local_name_empty(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_local_name_with_angle_bracket(parse: Parse):
@@ -300,7 +300,7 @@ def test_local_name_dot_then_slash(parse: Parse):
     assert exc_info.value.char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_local_name_brace_then_slash(parse: Parse):
@@ -318,7 +318,7 @@ def test_local_name_brace_then_slash(parse: Parse):
     assert exc_info.value.char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_local_name_angle_bracket_then_slash(parse: Parse):
@@ -336,7 +336,7 @@ def test_local_name_angle_bracket_then_slash(parse: Parse):
     assert exc_info.value.char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_local_name_angle_bracket_then_colon(parse: Parse):
@@ -354,7 +354,7 @@ def test_local_name_angle_bracket_then_colon(parse: Parse):
     assert exc_info.value.char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_local_name_with_slash(parse: Parse):
@@ -371,7 +371,7 @@ def test_local_name_with_slash(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 27
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.end_column == 30
 
 
 def test_local_name_with_colon(parse: Parse):
@@ -389,7 +389,7 @@ def test_local_name_with_colon(parse: Parse):
     assert exc_info.value.char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 27
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_local_name_with_global_short_form(parse: Parse):
@@ -407,7 +407,7 @@ def test_local_name_with_global_short_form(parse: Parse):
     assert exc_info.value.char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_local_name_with_global_long_form(parse: Parse):
@@ -424,7 +424,7 @@ def test_local_name_with_global_long_form(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 27
-    assert exc_info.value.location.end_column == 65
+    assert exc_info.value.location.end_column == 64
 
 
 def test_local_name_with_hyphen(parse: Parse):

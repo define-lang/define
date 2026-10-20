@@ -70,7 +70,7 @@ class TestCreateParticle:
         assert diags[0].location.line == 5
         assert diags[0].location.column == 30
         assert diags[0].location.end_line == 5
-        assert diags[0].location.end_column == 63
+        assert diags[0].location.end_column == 62
         assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_invalid_local_name_char(
@@ -340,20 +340,20 @@ class TestMoveParticle:
         assert diags[0].location.line == 7
         assert diags[0].location.column == 30
         assert diags[0].location.end_line == 7
-        assert diags[0].location.end_column == 47
+        assert diags[0].location.end_column == 46
         assert diags[0].location.file_path is None
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].local_name == "act_other"
         assert diags[1].location.line == 7
         assert diags[1].location.column == 30
         assert diags[1].location.end_line == 7
-        assert diags[1].location.end_column == 47
+        assert diags[1].location.end_column == 46
         assert diags[1].location.file_path is None
         assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[2].location.line == 7
         assert diags[2].location.column == 30
         assert diags[2].location.end_line == 7
-        assert diags[2].location.end_column == 47
+        assert diags[2].location.end_column == 46
         assert diags[2].location.file_path is None
 
     def test_chain_ending_with_action_in_from(
@@ -458,7 +458,7 @@ class TestMoveParticle:
         assert all_diags[0].location.line == 13
         assert all_diags[0].location.column == 63
         assert all_diags[0].location.end_line == 13
-        assert all_diags[0].location.end_column == 80
+        assert all_diags[0].location.end_column == 79
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_not_in_constraints(

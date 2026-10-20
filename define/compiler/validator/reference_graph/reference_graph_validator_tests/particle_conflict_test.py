@@ -29,12 +29,12 @@ def test_constructor_duplicate_local_position(
     assert diags[0].populated_at.line == 6
     assert diags[0].populated_at.column == 30
     assert diags[0].populated_at.end_line == 6
-    assert diags[0].populated_at.end_column == 45
+    assert diags[0].populated_at.end_column == 44
     assert diags[0].populated_at.file_path is None
     assert diags[0].location.line == 7
     assert diags[0].location.column == 30
     assert diags[0].location.end_line == 7
-    assert diags[0].location.end_column == 45
+    assert diags[0].location.end_column == 44
     assert diags[0].location.file_path is None
 
 

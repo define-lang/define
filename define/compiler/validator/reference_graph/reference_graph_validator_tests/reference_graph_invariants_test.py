@@ -23,7 +23,7 @@ def test_multiple_pending_depth_updates_do_not_hide_cycle(
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 20
     assert diagnostic.location.end_line == 3
-    assert diagnostic.location.end_column == 32
+    assert diagnostic.location.end_column == 31
     assert diagnostic.location.file_path == PurePosixPath("c.dfn")
     assert diagnostic.cycle == [
         "position<mv:define-lang.org:reference_graph_depth:/a>",
@@ -45,7 +45,7 @@ def test_rejected_cycle_restores_depths_for_later_edge(
     assert first_diagnostic.location.line == 3
     assert first_diagnostic.location.column == 20
     assert first_diagnostic.location.end_line == 3
-    assert first_diagnostic.location.end_column == 35
+    assert first_diagnostic.location.end_column == 34
     assert first_diagnostic.location.file_path == PurePosixPath("b.dfn")
     assert first_diagnostic.cycle == [
         "position<mv:define-lang.org:reference_graph_rollback:/test>",
@@ -59,7 +59,7 @@ def test_rejected_cycle_restores_depths_for_later_edge(
     assert second_diagnostic.location.line == 4
     assert second_diagnostic.location.column == 20
     assert second_diagnostic.location.end_line == 4
-    assert second_diagnostic.location.end_column == 32
+    assert second_diagnostic.location.end_column == 31
     assert second_diagnostic.location.file_path == PurePosixPath("b.dfn")
     assert second_diagnostic.cycle == [
         "position<mv:define-lang.org:reference_graph_rollback:/c>",
@@ -81,11 +81,11 @@ def test_visited_reference_does_not_skip_independent_definition(
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
-    assert diagnostic.location.end_column == 44
+    assert diagnostic.location.end_column == 43
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.position_name == "position<work>"
     assert diagnostic.populated_at.line == 12
     assert diagnostic.populated_at.column == 30
     assert diagnostic.populated_at.end_line == 12
-    assert diagnostic.populated_at.end_column == 44
+    assert diagnostic.populated_at.end_column == 43
     assert diagnostic.populated_at.file_path == PurePosixPath("test.dfn")

@@ -23,7 +23,7 @@ def test_action_definition_without_body_is_error(parse: Parse):
         parse("define the potential action<standard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_column == 45
+    assert exc_info.value.location.end_column == 44
 
 
 def test_action_definition_with_body_parses(parse: Parse):
@@ -46,7 +46,7 @@ def test_action_definition_missing_open_angle(parse: Parse):
         parse("define the potential actionstandard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 42
+    assert exc_info.value.location.end_column == 41
     assert exc_info.value.name == "standard:/path"
 
 
@@ -55,7 +55,7 @@ def test_action_definition_empty_name_content(parse: Parse):
         parse("define the potential action<>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_action_with_empty_inner_blocks(parse: Parse):
@@ -392,7 +392,7 @@ def test_action_block_missing_trigger_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_global_position_definition_not_allowed_in_action_definition_block(
@@ -412,7 +412,7 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 34
+    assert exc_info.value.location.end_column == 33
 
 
 def test_global_position_definition_not_allowed_in_action_statements_block(
@@ -433,7 +433,7 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 38
+    assert exc_info.value.location.end_column == 37
 
 
 def test_action_block_missing_action_statements_block(parse: Parse):
@@ -479,7 +479,7 @@ def test_action_block_extra_space_before_brace(parse: Parse):
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 61
-    assert exc_info.value.location.end_column == 62
+    assert exc_info.value.location.end_column == 61
 
 
 def test_action_block_no_newline_after_open_brace(parse: Parse):
@@ -487,7 +487,7 @@ def test_action_block_no_newline_after_open_brace(parse: Parse):
         parse("define the potential action<mv:define-lang.org:parser:/path> {}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_column == 64
+    assert exc_info.value.location.end_column == 63
 
 
 def test_action_block_missing_newline_after_outer_open_brace(parse: Parse):
@@ -501,7 +501,7 @@ def test_action_block_missing_newline_after_outer_open_brace(parse: Parse):
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_column == 64
+    assert exc_info.value.location.end_column == 63
 
 
 def test_action_block_missing_newline_after_inner_close(parse: Parse):
@@ -516,7 +516,7 @@ def test_action_block_missing_newline_after_inner_close(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_trigger_and_action_on_wrong_line(parse: Parse):
@@ -552,7 +552,7 @@ def test_local_position_after_trigger_and_action(parse: Parse):
         )
     assert exc_info.value.location.line == 7
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 24
+    assert exc_info.value.location.end_column == 23
 
 
 def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse):
@@ -572,7 +572,7 @@ def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse):
         )
     assert exc_info.value.location.line == 7
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 20
+    assert exc_info.value.location.end_column == 19
 
 
 def test_missing_close_brace_followed_by_global_definition(parse: Parse):
@@ -588,7 +588,7 @@ def test_missing_close_brace_followed_by_global_definition(parse: Parse):
         )
     assert exc_info.value.location.line == 7
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_action_statements_block_invalid_statement(parse: Parse):
@@ -605,7 +605,7 @@ def test_action_statements_block_invalid_statement(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 17
+    assert exc_info.value.location.end_column == 16
 
 
 def test_action_statements_block_with_create_particle_local_position(
@@ -785,4 +785,4 @@ def test_no_space_before_and_it_does(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_column == 17
+    assert exc_info.value.location.end_column == 16

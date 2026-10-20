@@ -179,7 +179,7 @@ class TestGlobalPathName:
 class TestSourceLocationFromDefinitionName:
     def test_position_spans_keyword_through_close(self):
         name_content = ast.DefinitionGlobalNameContent(
-            location=ast.SourceLocation(line=1, column=31, end_line=1, end_column=45),
+            location=ast.SourceLocation(line=1, column=31, end_line=1, end_column=44),
             fqun=_make_fqun("my_lib", authority="my.domain.com"),
             path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
@@ -187,12 +187,12 @@ class TestSourceLocationFromDefinitionName:
             name_content, name_types.NameType.POSITION
         )
         assert result == ast.SourceLocation(
-            line=1, column=22, end_line=1, end_column=46
+            line=1, column=22, end_line=1, end_column=45
         )
 
     def test_action_spans_keyword_through_close(self):
         name_content = ast.DefinitionGlobalNameContent(
-            location=ast.SourceLocation(line=1, column=29, end_line=1, end_column=43),
+            location=ast.SourceLocation(line=1, column=29, end_line=1, end_column=42),
             fqun=_make_fqun("my_lib", authority="my.domain.com"),
             path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
@@ -200,7 +200,7 @@ class TestSourceLocationFromDefinitionName:
             name_content, name_types.NameType.ACTION
         )
         assert result == ast.SourceLocation(
-            line=1, column=22, end_line=1, end_column=44
+            line=1, column=22, end_line=1, end_column=43
         )
 
     def test_local_position_spans_keyword_through_close(self):
@@ -208,14 +208,14 @@ class TestSourceLocationFromDefinitionName:
         name_content = ast.LocalNameContent(
             name="x",
             location=ast.SourceLocation(
-                line=2, column=21, end_line=2, end_column=22, file_path=path
+                line=2, column=21, end_line=2, end_column=21, file_path=path
             ),
         )
         result = ast.SourceLocation.from_definition_name(
             name_content, name_types.NameType.POSITION
         )
         assert result == ast.SourceLocation(
-            line=2, column=12, end_line=2, end_column=23, file_path=path
+            line=2, column=12, end_line=2, end_column=22, file_path=path
         )
 
 
@@ -916,5 +916,5 @@ class TestLiteralContentCharacterLocation:
         location = literal.content_character_location(index)
         assert location.line == 6
         assert location.end_line == 6
-        assert location.end_column == location.column + 1
+        assert location.end_column == location.column
         assert literal_line[location.column - 1] == source_character

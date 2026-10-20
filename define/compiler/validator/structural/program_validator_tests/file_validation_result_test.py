@@ -133,7 +133,7 @@ def test_name_parser_error_at_reference_populates_exception(
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
     assert result.exception.location.line == 3
     assert result.exception.location.column == 29
-    assert result.exception.location.end_column == 51
+    assert result.exception.location.end_column == 50
     assert result.exception.location.file_path == PurePosixPath("test.dfn")
 
 

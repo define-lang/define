@@ -22,7 +22,7 @@ def test_file_all_spaces(parse: Parse):
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_file_spaces_and_newlines_only(parse: Parse):
@@ -31,7 +31,7 @@ def test_file_spaces_and_newlines_only(parse: Parse):
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_extra_space_after_define_in_position_definition(parse: Parse):
@@ -39,7 +39,7 @@ def test_extra_space_after_define_in_position_definition(parse: Parse):
         parse("define  the potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_extra_space_after_the_in_position_definition(parse: Parse):
@@ -47,7 +47,7 @@ def test_extra_space_after_the_in_position_definition(parse: Parse):
         parse("define the  potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_extra_space_after_potential_in_position_definition(
@@ -57,7 +57,7 @@ def test_extra_space_after_potential_in_position_definition(
         parse("define the potential  position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_extra_space_after_potential_in_action_definition(parse: Parse):
@@ -65,7 +65,7 @@ def test_extra_space_after_potential_in_action_definition(parse: Parse):
         parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_extra_space_in_local_position_definition_in_action_block(
@@ -84,7 +84,7 @@ def test_extra_space_in_local_position_definition_in_action_block(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 11
+    assert exc_info.value.location.end_column == 10
 
 
 def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
@@ -100,7 +100,7 @@ def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
@@ -116,7 +116,7 @@ def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 7
-    assert exc_info.value.location.end_column == 8
+    assert exc_info.value.location.end_column == 7
 
 
 def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
@@ -132,7 +132,7 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 18
-    assert exc_info.value.location.end_column == 19
+    assert exc_info.value.location.end_column == 18
 
 
 def test_extra_space_before_local_name_in_position_requirement_statement(
@@ -148,7 +148,7 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 29
+    assert exc_info.value.location.end_column == 28
     assert exc_info.value.name == " "
 
 
@@ -166,7 +166,7 @@ def test_extra_space_after_create_a_particle_in(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.end_column == 30
 
 
 def test_extra_space_before_to_in_move_statement(parse: Parse):
@@ -183,7 +183,7 @@ def test_extra_space_before_to_in_move_statement(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_column == 45
+    assert exc_info.value.location.end_column == 44
 
 
 def test_extra_space_after_to_in_move_statement(parse: Parse):
@@ -200,7 +200,7 @@ def test_extra_space_after_to_in_move_statement(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 48
+    assert exc_info.value.location.end_column == 47
 
 
 def test_extra_space_after_the_in_trigger_condition(parse: Parse):
@@ -216,4 +216,4 @@ def test_extra_space_after_the_in_trigger_condition(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 13
-    assert exc_info.value.location.end_column == 14
+    assert exc_info.value.location.end_column == 13

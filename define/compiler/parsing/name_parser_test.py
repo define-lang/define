@@ -43,10 +43,10 @@ def test_parse_global_name_definition_standard_form():
 
     assert name.path.name == "/root/path"
     assert name.path.location.column == 14
-    assert name.path.location.end_column == 24
+    assert name.path.location.end_column == 23
     assert fqun.universe.name == "standard"
     assert fqun.universe.location.column == 5
-    assert fqun.universe.location.end_column == 13
+    assert fqun.universe.location.end_column == 12
     assert fqun.authority is None
     assert fqun.multiverse is None
 
@@ -63,14 +63,14 @@ def test_parse_global_name_definition_three_part_fqun():
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
     assert fqun.multiverse.location.column == 1
-    assert fqun.multiverse.location.end_column == 3
+    assert fqun.multiverse.location.end_column == 2
     assert fqun.authority is not None
     assert fqun.authority.name == "define-lang.org"
     assert fqun.authority.location.column == 4
-    assert fqun.authority.location.end_column == 19
+    assert fqun.authority.location.end_column == 18
     assert fqun.universe.name == "runtime"
     assert fqun.universe.location.column == 20
-    assert fqun.universe.location.end_column == 27
+    assert fqun.universe.location.end_column == 26
     assert name.path.name == "/do/work"
 
 
@@ -86,10 +86,10 @@ def test_parse_global_name_definition_two_part_fqun():
     assert fqun.authority is not None
     assert fqun.authority.name == "my.domain.com"
     assert fqun.authority.location.column == 5
-    assert fqun.authority.location.end_column == 18
+    assert fqun.authority.location.end_column == 17
     assert fqun.universe.name == "my_lib"
     assert fqun.universe.location.column == 19
-    assert fqun.universe.location.end_column == 25
+    assert fqun.universe.location.end_column == 24
     assert fqun.multiverse is None
     assert name.path.name == "/some/path"
 
@@ -131,17 +131,17 @@ def test_parse_global_name_reference_full_form():
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
     assert fqun.multiverse.location.column == 4
-    assert fqun.multiverse.location.end_column == 6
+    assert fqun.multiverse.location.end_column == 5
     assert fqun.authority is not None
     assert fqun.authority.name == "acme.dev"
     assert fqun.authority.location.column == 7
-    assert fqun.authority.location.end_column == 15
+    assert fqun.authority.location.end_column == 14
     assert fqun.universe.name == "tooling"
     assert fqun.universe.location.column == 16
-    assert fqun.universe.location.end_column == 23
+    assert fqun.universe.location.end_column == 22
     assert name.path.name == "/action/run"
     assert name.path.location.column == 24
-    assert name.path.location.end_column == 35
+    assert name.path.location.end_column == 34
 
 
 def test_parse_global_name_reference_full_form_authority_with_path():
@@ -175,7 +175,7 @@ def test_global_name_definition_rejects_bare_slash():
         name_parser.parse_global_name_definition(token)
     assert error.value.location.line == 1
     assert error.value.location.column == 10
-    assert error.value.location.end_column == 11
+    assert error.value.location.end_column == 10
 
 
 def test_global_name_definition_requires_fqun():
@@ -186,7 +186,7 @@ def test_global_name_definition_requires_fqun():
         name_parser.parse_global_name_definition(token)
     assert error.value.location.line == 1
     assert error.value.location.column == 30
-    assert error.value.location.end_column == 40
+    assert error.value.location.end_column == 39
 
 
 def test_global_name_definition_rejects_too_many_fqun_parts():
@@ -206,7 +206,7 @@ def test_global_name_reference_rejects_too_many_fqun_parts():
         name_parser.parse_global_name_reference(token, file_path)
     assert error.value.location.line == 5
     assert error.value.location.column == 52
-    assert error.value.location.end_column == 83
+    assert error.value.location.end_column == 82
     assert error.value.location.file_path == file_path
 
 

@@ -158,7 +158,7 @@ def _character_location(
         line=line,
         column=column,
         end_line=line,
-        end_column=column + 1,
+        end_column=column,
         file_path=file_path,
     )
 
@@ -280,7 +280,7 @@ def _validate_authority_path_segment(
                 line=line,
                 column=column - 1,
                 end_line=line,
-                end_column=column,
+                end_column=column - 1,
                 file_path=file_path,
             ),
             authority=authority_name,

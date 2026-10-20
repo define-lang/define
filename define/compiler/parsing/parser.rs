@@ -101,9 +101,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         // The text does not begin a position definition, the only global
         // definition the parser supports so far.
-        Err(self
-            .errors
-            .expected_global_definition(start, start.next_column()))
+        Err(self.errors.expected_global_definition(start, start))
     }
 
     /// Parses the rest of a position definition after its `position`, given
@@ -145,24 +143,24 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// terminator = ".", ( newline | " ", { " " }, comment ) ;
     /// ```
     fn parse_terminator(&mut self) -> ParseResult<Position> {
+        let terminator = self.scanner.position;
         // There is no `.`.
         if !self.scanner.consume_byte(TERMINATOR) {
-            let position = self.scanner.position;
             // The line ends where the `.` belongs.
             if self.scanner.next_byte_is(LINE_FEED) {
-                return Err(self.errors.missing_terminator_or_brace(position, position));
+                return Err(self
+                    .errors
+                    .missing_terminator_or_brace(terminator, terminator));
             }
             return Err(Self::not_yet_supported(
-                position,
+                terminator,
                 "anything but a terminator here",
             ));
         }
         let end = self.scanner.position;
         // A comment follows the `.` without a space between them.
         if self.scanner.next_byte_is(COMMENT_START) {
-            return Err(self
-                .errors
-                .missing_space_before_comment(end, end.next_column()));
+            return Err(self.errors.missing_space_before_comment(terminator, end));
         }
         // Something other than a line feed or a space follows the `.`. At the end
         // of the source, parse_program reports the missing line feed instead.
@@ -170,9 +168,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             && !self.scanner.next_byte_is(LINE_FEED)
             && !self.scanner.next_byte_is(SPACE)
         {
-            return Err(self
-                .errors
-                .missing_newline_after_terminator(end, end.next_column()));
+            return Err(self.errors.missing_newline_after_terminator(end, end));
         }
         if self.scanner.next_byte_is(SPACE) {
             return Err(Self::not_yet_supported(

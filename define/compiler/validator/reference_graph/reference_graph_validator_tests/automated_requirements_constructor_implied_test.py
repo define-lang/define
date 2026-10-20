@@ -46,7 +46,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.end_line == 10
-    assert diag.location.end_column == 43
+    assert diag.location.end_column == 42
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -431,7 +431,7 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
     assert diag.location.line == 7
     assert diag.location.column == 30
     assert diag.location.end_line == 7
-    assert diag.location.end_column == 96
+    assert diag.location.end_column == 95
     assert diag.location.file_path == PurePosixPath("p.dfn")
     assert diag.action_name == _IMPLIED_ACTION
     assert diag.required_empty is False

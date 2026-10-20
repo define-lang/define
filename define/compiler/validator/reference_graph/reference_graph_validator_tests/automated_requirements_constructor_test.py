@@ -241,7 +241,7 @@ def test_constructor_empty_violation_via_create_in_implied(
     assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.end_line == 13
-    assert diag.location.end_column == 43
+    assert diag.location.end_column == 42
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,

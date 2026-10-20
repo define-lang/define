@@ -241,14 +241,14 @@ def test_sub_root_is_current_universe(
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 29
     assert all_diags[0].location.end_line == 3
-    assert all_diags[0].location.end_column == 40
+    assert all_diags[0].location.end_column == 39
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[1].file_path == "target.dfn"
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 29
     assert all_diags[1].location.end_line == 4
-    assert all_diags[1].location.end_column == 36
+    assert all_diags[1].location.end_column == 35
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[2], diagnostics.PathMismatchDiagnostic)
     assert all_diags[2].expected_path == "/lib/target"
@@ -256,7 +256,7 @@ def test_sub_root_is_current_universe(
     assert all_diags[2].location.line == 1
     assert all_diags[2].location.column == 62
     assert all_diags[2].location.end_line == 1
-    assert all_diags[2].location.end_column == 69
+    assert all_diags[2].location.end_column == 68
     assert all_diags[2].location.file_path == PurePosixPath("lib/target.dfn")
 
 

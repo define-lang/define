@@ -32,7 +32,7 @@ def test_action_local_position_requires_missing_global(
     assert diags[0].location.line == 7
     assert diags[0].location.column == 37
     assert diags[0].location.end_line == 7
-    assert diags[0].location.end_column == 42
+    assert diags[0].location.end_column == 41
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -48,7 +48,7 @@ def test_same_fqun_constraint_reference_in_global_position_must_use_short_form(
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].location.end_line == 3
-    assert diags[0].location.end_column == 58
+    assert diags[0].location.end_column == 57
     assert diags[0].location.file_path is None
 
 
@@ -64,14 +64,14 @@ def test_same_fqun_constraint_reference_in_move_must_use_short_form(
     assert diags[0].location.line == 8
     assert diags[0].location.column == 37
     assert diags[0].location.end_line == 8
-    assert diags[0].location.end_column == 66
+    assert diags[0].location.end_column == 65
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[1].fqun == "mv:define-lang.org:test_files"
     assert diags[1].location.line == 12
     assert diags[1].location.column == 80
     assert diags[1].location.end_line == 12
-    assert diags[1].location.end_column == 109
+    assert diags[1].location.end_column == 108
     assert diags[1].location.file_path is None
 
 

@@ -59,7 +59,7 @@ def test_missing_newline_between_global_definitions(parse: Parse):
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_column == 91
+    assert exc_info.value.location.end_column == 90
 
 
 def test_double_terminator(native_parse: NativeParse):
@@ -69,7 +69,7 @@ def test_double_terminator(native_parse: NativeParse):
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_column == 65
+    assert exc_info.value.location.end_column == 64
 
 
 def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse):
@@ -78,9 +78,9 @@ def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse)
             "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
         )
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
+    assert exc_info.value.location.column == 63
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 65
+    assert exc_info.value.location.end_column == 64
 
 
 def test_letter_after_terminator(native_parse: NativeParse):
@@ -91,7 +91,7 @@ def test_letter_after_terminator(native_parse: NativeParse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 65
+    assert exc_info.value.location.end_column == 64
 
 
 def test_non_ascii_character_after_terminator(native_parse: NativeParse):
@@ -102,7 +102,7 @@ def test_non_ascii_character_after_terminator(native_parse: NativeParse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 65
+    assert exc_info.value.location.end_column == 64
 
 
 def test_space_before_terminator(parse: Parse):
@@ -120,7 +120,7 @@ def test_trailing_space_before_newline(parse: Parse):
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 48
+    assert exc_info.value.location.end_column == 47
 
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(

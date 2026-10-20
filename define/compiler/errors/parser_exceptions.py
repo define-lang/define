@@ -20,11 +20,12 @@ if TYPE_CHECKING:
 def _single_line_location(
     line: int, column: int, width: int, file_path: pathlib.PurePosixPath | None
 ) -> ast.SourceLocation:
+    # A location with no width covers the character where something is missing.
     return ast.SourceLocation(
         line=line,
         column=column,
         end_line=line,
-        end_column=column + width,
+        end_column=column + max(width, 1) - 1,
         file_path=file_path,
     )
 

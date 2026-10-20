@@ -231,7 +231,7 @@ class TestInvalidIndentation:
         assert diag.location.line == 1
         assert diag.location.column == 1
         assert diag.location.end_line == 1
-        assert diag.location.end_column == 5
+        assert diag.location.end_column == 4
         assert diag.expected_indent == 0
         assert diag.actual_indent == 4
 

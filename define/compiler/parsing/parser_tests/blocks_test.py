@@ -24,7 +24,7 @@ def test_empty_block_on_position(parse: Parse):
         parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_empty_block_on_action(parse: Parse):
@@ -32,7 +32,7 @@ def test_empty_block_on_action(parse: Parse):
         parse("define the potential action<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_block_with_blank_lines(parse: Parse):
@@ -192,7 +192,7 @@ def test_missing_newline_after_block_open(parse: Parse):
         parse("define the potential position<standard:/path> {}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
-    assert exc_info.value.location.end_column == 49
+    assert exc_info.value.location.end_column == 48
 
 
 def test_no_space_before_brace(parse: Parse):
@@ -200,7 +200,7 @@ def test_no_space_before_brace(parse: Parse):
         parse("define the potential position<standard:/path>{\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 47
+    assert exc_info.value.location.end_column == 46
 
 
 def test_missing_terminator_still_works(native_parse: NativeParse):
@@ -238,4 +238,4 @@ def test_position_constraint_invalid_type_keyword(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 20
-    assert exc_info.value.location.end_column == 40
+    assert exc_info.value.location.end_column == 39

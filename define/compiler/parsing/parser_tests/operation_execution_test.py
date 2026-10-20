@@ -110,7 +110,7 @@ def test_requires_statement(parse: Parse):
         parse(_OPERATION_PREFIX + _OPERATION_SUFFIX)
     assert error.value.location.line == 3
     assert error.value.location.column == 5
-    assert error.value.location.end_column == 6
+    assert error.value.location.end_column == 5
 
 
 def test_disallows_action_statement(parse: Parse):
@@ -122,7 +122,7 @@ def test_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_disallows_action_statement_after_first_statement(parse: Parse):
@@ -135,7 +135,7 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_encoding_operation_requires_terminator(parse: Parse):
@@ -171,7 +171,7 @@ def test_operation_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 31
-    assert error.value.location.end_column == 36
+    assert error.value.location.end_column == 35
 
 
 def test_operation_requires_open_angle_bracket(parse: Parse):
@@ -183,7 +183,7 @@ def test_operation_requires_open_angle_bracket(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 30
-    assert error.value.location.end_column == 31
+    assert error.value.location.end_column == 30
 
 
 def test_operation_name_type_cannot_be_position(parse: Parse):
@@ -195,7 +195,7 @@ def test_operation_name_type_cannot_be_position(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_operation_name_type_cannot_be_action(parse: Parse):
@@ -207,7 +207,7 @@ def test_operation_name_type_cannot_be_action(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 27
+    assert error.value.location.end_column == 26
 
 
 def test_arguments_block_requires_argument(parse: Parse):
@@ -220,7 +220,7 @@ def test_arguments_block_requires_argument(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 10
+    assert error.value.location.end_column == 9
 
 
 def test_argument_requires_terminator(parse: Parse):
@@ -248,7 +248,7 @@ def test_argument_requires_local_view_name(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 23
-    assert error.value.location.end_column == 24
+    assert error.value.location.end_column == 23
     assert error.value.char == "/"
 
 
@@ -263,7 +263,7 @@ def test_argument_requires_view_name_type(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 18
-    assert error.value.location.end_column == 26
+    assert error.value.location.end_column == 25
 
 
 def test_argument_requires_looking_at(parse: Parse):
@@ -277,7 +277,7 @@ def test_argument_requires_looking_at(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 26
-    assert error.value.location.end_column == 34
+    assert error.value.location.end_column == 33
 
 
 def test_operation_missing_space_after_execute_the(parse: Parse):
@@ -289,7 +289,7 @@ def test_operation_missing_space_after_execute_the(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 20
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_operation_extra_space_after_execute_the(parse: Parse):
@@ -301,7 +301,7 @@ def test_operation_extra_space_after_execute_the(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 22
+    assert error.value.location.end_column == 21
 
 
 def test_argument_missing_space_after_with(parse: Parse):
@@ -315,7 +315,7 @@ def test_argument_missing_space_after_with(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 17
-    assert error.value.location.end_column == 21
+    assert error.value.location.end_column == 20
 
 
 def test_argument_extra_space_after_with(parse: Parse):
@@ -329,7 +329,7 @@ def test_argument_extra_space_after_with(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 18
-    assert error.value.location.end_column == 19
+    assert error.value.location.end_column == 18
 
 
 def test_argument_missing_space_before_looking_at(parse: Parse):
@@ -343,7 +343,7 @@ def test_argument_missing_space_before_looking_at(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 25
-    assert error.value.location.end_column == 35
+    assert error.value.location.end_column == 34
 
 
 def test_argument_extra_space_before_looking_at(parse: Parse):
@@ -357,7 +357,7 @@ def test_argument_extra_space_before_looking_at(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 26
-    assert error.value.location.end_column == 27
+    assert error.value.location.end_column == 26
 
 
 def test_argument_missing_space_after_looking_at(parse: Parse):
@@ -371,7 +371,7 @@ def test_argument_missing_space_after_looking_at(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 36
-    assert error.value.location.end_column == 40
+    assert error.value.location.end_column == 39
 
 
 def test_argument_extra_space_after_looking_at(parse: Parse):
@@ -385,7 +385,7 @@ def test_argument_extra_space_after_looking_at(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 37
-    assert error.value.location.end_column == 38
+    assert error.value.location.end_column == 37
 
 
 def test_argument_view_cannot_be_chained(parse: Parse):
@@ -399,7 +399,7 @@ def test_argument_view_cannot_be_chained(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 44
-    assert error.value.location.end_column == 46
+    assert error.value.location.end_column == 45
 
 
 def test_argument_cannot_look_at_value(parse: Parse):
@@ -413,4 +413,4 @@ def test_argument_cannot_look_at_value(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 37
-    assert error.value.location.end_column == 42
+    assert error.value.location.end_column == 41

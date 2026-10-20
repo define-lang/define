@@ -282,7 +282,7 @@ def test_callee_guarantee_below_position_caller_emptied_does_not_make_it_error(
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 17
-    assert all_diags[0].location.end_column == 76
+    assert all_diags[0].location.end_column == 75
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<holder>::position</box>"
     assert all_diags[0].required_empty is False
@@ -311,7 +311,7 @@ def test_callee_guarantee_below_position_caller_emptied_does_not_make_it_error(
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.end_line == 18
-    assert all_diags[1].location.end_column == 65
+    assert all_diags[1].location.end_column == 64
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<holder>::position</box>"
     assert action_graph(result.reference_graph_result) == [
@@ -490,7 +490,7 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 20
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -518,13 +518,13 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[1].location.line == 22
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 22
-    assert all_diags[1].location.end_column == 72
+    assert all_diags[1].location.end_column == 71
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
     assert all_diags[1].populated_at.line == 11
     assert all_diags[1].populated_at.column == 47
     assert all_diags[1].populated_at.end_line == 11
-    assert all_diags[1].populated_at.end_column == 58
+    assert all_diags[1].populated_at.end_column == 57
     assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
@@ -544,7 +544,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -573,7 +573,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 15
-    assert all_diags[1].location.end_column == 82
+    assert all_diags[1].location.end_column == 81
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is False
@@ -605,7 +605,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[2].location.line == 15
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 15
-    assert all_diags[2].location.end_column == 82
+    assert all_diags[2].location.end_column == 81
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[2].required_empty is False
@@ -634,7 +634,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[3].location.line == 15
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.end_line == 15
-    assert all_diags[3].location.end_column == 82
+    assert all_diags[3].location.end_column == 81
     assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[3].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[3].required_empty is False
@@ -675,7 +675,7 @@ def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     assert all_diags[0].location.line == 29
     assert all_diags[0].location.column == 51
     assert all_diags[0].location.end_line == 29
-    assert all_diags[0].location.end_column == 112
+    assert all_diags[0].location.end_column == 111
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -717,7 +717,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -747,7 +747,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13
-    assert all_diags[1].location.end_column == 82
+    assert all_diags[1].location.end_column == 81
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
@@ -792,7 +792,7 @@ def test_swap_propagates_prior_error_state_from_origin_to_destination(
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
-    assert all_diags[0].location.end_column == 49
+    assert all_diags[0].location.end_column == 48
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<empty_src>"
     assert all_diags[0].is_action_interface_position is False
@@ -801,14 +801,14 @@ def test_swap_propagates_prior_error_state_from_origin_to_destination(
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 53
     assert all_diags[1].location.end_line == 18
-    assert all_diags[1].location.end_column == 95
+    assert all_diags[1].location.end_column == 94
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<a>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 17
     assert all_diags[1].occupied_at.column == 30
     assert all_diags[1].occupied_at.end_line == 17
-    assert all_diags[1].occupied_at.end_column == 72
+    assert all_diags[1].occupied_at.end_column == 71
     assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
@@ -826,7 +826,7 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.end_line == 9
-    assert all_diags[0].location.end_column == 41
+    assert all_diags[0].location.end_column == 40
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</impl>"
     assert all_diags[0].position_name == "position<box>"
@@ -836,7 +836,7 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.end_line == 14
-    assert all_diags[1].location.end_column == 84
+    assert all_diags[1].location.end_column == 83
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[1].position_name
@@ -847,14 +847,14 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[2].location.line == 2
     assert all_diags[2].location.column == 25
     assert all_diags[2].location.end_line == 2
-    assert all_diags[2].location.end_column == 38
+    assert all_diags[2].location.end_column == 37
     assert all_diags[2].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[2].implied_action_name == "action</impl>"
     assert isinstance(all_diags[3], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[3].location.line == 8
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.end_line == 8
-    assert all_diags[3].location.end_column == 70
+    assert all_diags[3].location.end_column == 69
     assert all_diags[3].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[3].position_name == "action</impl>::position<q>::position</c>"
     assert all_diags[3].parent_position_name == "action</impl>::position<q>"
@@ -862,14 +862,14 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[4].location.line == 3
     assert all_diags[4].location.column == 25
     assert all_diags[4].location.end_line == 3
-    assert all_diags[4].location.end_column == 26
+    assert all_diags[4].location.end_column == 25
     assert all_diags[4].location.file_path == PurePosixPath("impl.dfn")
     assert all_diags[4].position_name == "position<q>"
     assert isinstance(all_diags[5], diagnostics.DeadChildPositionDiagnostic)
     assert all_diags[5].location.line == 5
     assert all_diags[5].location.column == 24
     assert all_diags[5].location.end_line == 5
-    assert all_diags[5].location.end_column == 36
+    assert all_diags[5].location.end_column == 35
     assert all_diags[5].location.file_path == PurePosixPath("impl.dfn")
     assert all_diags[5].constraint_name == "position</c>"
     assert all_diags[5].position_name == "position<q>"

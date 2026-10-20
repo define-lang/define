@@ -23,16 +23,16 @@ def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
 def _slice(source: str, location: ast.SourceLocation) -> str:
     """Return the exact substring of ``source`` covered by ``location``.
 
-    Locations use 1-based ``line``/``column`` and an exclusive ``end_column``,
-    matching what lark's lexer produces.
+    Locations use 1-based ``line``/``column``, and ``end_column`` is the column
+    of the last character covered.
     """
     lines = source.split("\n")
     if location.line == location.end_line:
-        return lines[location.line - 1][location.column - 1 : location.end_column - 1]
+        return lines[location.line - 1][location.column - 1 : location.end_column]
     parts = [lines[location.line - 1][location.column - 1 :]]
     for line_idx in range(location.line, location.end_line - 1):
         parts.append(lines[line_idx])
-    parts.append(lines[location.end_line - 1][: location.end_column - 1])
+    parts.append(lines[location.end_line - 1][: location.end_column])
     return "\n".join(parts)
 
 
@@ -179,7 +179,7 @@ def test_universe_fields():
     fqun = _require_fqun(definition.typed_name.name_content)
     assert fqun.universe.name == "standard"
     assert fqun.universe.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=39
+        line=1, column=31, end_line=1, end_column=38
     )
     assert _slice(_SIMPLE_POSITION, fqun.universe.location) == "standard"
 
@@ -189,7 +189,7 @@ def test_multiverse_fields():
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "my_mv"
     assert fqun.multiverse.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=36
+        line=1, column=31, end_line=1, end_column=35
     )
     assert _slice(_FULL_FQUN_POSITION, fqun.multiverse.location) == "my_mv"
 
@@ -199,7 +199,7 @@ def test_authority_fields():
     assert fqun.authority is not None
     assert fqun.authority.name == "example.com"
     assert fqun.authority.location == ast.SourceLocation(
-        line=1, column=37, end_line=1, end_column=48
+        line=1, column=37, end_line=1, end_column=47
     )
     assert _slice(_FULL_FQUN_POSITION, fqun.authority.location) == "example.com"
 
@@ -211,7 +211,7 @@ def test_authority_with_path_fields():
     assert fqun.authority is not None
     assert fqun.authority.name == "example.com/org/repo"
     assert fqun.authority.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=51
+        line=1, column=31, end_line=1, end_column=50
     )
     assert (
         _slice(_AUTHORITY_PATH_FQUN_POSITION, fqun.authority.location)
@@ -223,7 +223,7 @@ def test_global_path_name_fields():
     path = _only_position(_SIMPLE_POSITION).typed_name.name_content.path
     assert path.name == "/path"
     assert path.location == ast.SourceLocation(
-        line=1, column=40, end_line=1, end_column=45
+        line=1, column=40, end_line=1, end_column=44
     )
     assert _slice(_SIMPLE_POSITION, path.location) == "/path"
 
@@ -234,7 +234,7 @@ def test_local_name_content_fields():
     )
     assert name_content.name == "run"
     assert name_content.location == ast.SourceLocation(
-        line=3, column=25, end_line=3, end_column=28
+        line=3, column=25, end_line=3, end_column=27
     )
     assert _slice(_FULL_ACTION, name_content.location) == "run"
 
@@ -248,7 +248,7 @@ def test_fqun_universe_only_fields():
     assert fqun.authority is None
     assert fqun.universe.name == "standard"
     assert fqun.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=39
+        line=1, column=31, end_line=1, end_column=38
     )
     assert _slice(_SIMPLE_POSITION, fqun.location) == "standard"
 
@@ -262,7 +262,7 @@ def test_fqun_authority_universe_fields():
     assert fqun.authority.name == "example.com"
     assert fqun.universe.name == "my_lib"
     assert fqun.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=49
+        line=1, column=31, end_line=1, end_column=48
     )
     assert _slice(_AUTHORITY_FQUN_POSITION, fqun.location) == "example.com:my_lib"
 
@@ -275,7 +275,7 @@ def test_fqun_full_fields():
     assert fqun.authority.name == "example.com"
     assert fqun.universe.name == "my_lib"
     assert fqun.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=55
+        line=1, column=31, end_line=1, end_column=54
     )
     assert _slice(_FULL_FQUN_POSITION, fqun.location) == "my_mv:example.com:my_lib"
 
@@ -288,7 +288,7 @@ def test_global_typed_name_in_definition_fields():
     assert typed_name.name_type == name_types.NameType.POSITION
     assert isinstance(typed_name.name_content, ast.DefinitionGlobalNameContent)
     assert typed_name.location == ast.SourceLocation(
-        line=1, column=22, end_line=1, end_column=46
+        line=1, column=22, end_line=1, end_column=45
     )
     assert _slice(_SIMPLE_POSITION, typed_name.location) == "position<standard:/path>"
 
@@ -298,7 +298,7 @@ def test_definition_global_name_content_fields():
     assert isinstance(name_content.fqun, ast.Fqun)
     assert isinstance(name_content.path, ast.GlobalPathName)
     assert name_content.location == ast.SourceLocation(
-        line=1, column=31, end_line=1, end_column=45
+        line=1, column=31, end_line=1, end_column=44
     )
     assert _slice(_SIMPLE_POSITION, name_content.location) == "standard:/path"
 
@@ -310,7 +310,7 @@ def test_reference_global_name_content_without_fqun_fields():
     assert name_content.fqun is None
     assert name_content.path.name == "/child"
     assert name_content.location == ast.SourceLocation(
-        line=4, column=29, end_line=4, end_column=35
+        line=4, column=29, end_line=4, end_column=34
     )
     assert _slice(_FULL_POSITION, name_content.location) == "/child"
 
@@ -324,7 +324,7 @@ def test_reference_global_name_content_with_fqun_fields():
     assert _require_fqun(name_content).universe.name == "parser"
     assert name_content.path.name == "/run"
     assert name_content.location == ast.SourceLocation(
-        line=6, column=39, end_line=6, end_column=69
+        line=6, column=39, end_line=6, end_column=68
     )
     assert (
         _slice(_FULL_FQUN_CREATE, name_content.location)
@@ -340,7 +340,7 @@ def test_global_typed_name_reference_fields():
     assert isinstance(typed_name.name_content, ast.ReferenceGlobalNameContent)
     assert typed_name.enclosing_fqun.canonical == "standard"
     assert typed_name.location == ast.SourceLocation(
-        line=4, column=20, end_line=4, end_column=36
+        line=4, column=20, end_line=4, end_column=35
     )
     assert _slice(_FULL_POSITION, typed_name.location) == "position</child>"
 
@@ -350,7 +350,7 @@ def test_local_typed_name_reference_fields():
     assert typed_name.name_type == name_types.NameType.POSITION
     assert isinstance(typed_name.name_content, ast.LocalNameContent)
     assert typed_name.location == ast.SourceLocation(
-        line=3, column=16, end_line=3, end_column=29
+        line=3, column=16, end_line=3, end_column=28
     )
     assert _slice(_FULL_ACTION, typed_name.location) == "position<run>"
 
@@ -365,7 +365,7 @@ def test_position_reference_single_fields():
     assert len(reference.typed_names) == 1
     assert isinstance(reference.typed_names[0], ast.LocalTypedNameReference)
     assert reference.location == ast.SourceLocation(
-        line=8, column=30, end_line=8, end_column=43
+        line=8, column=30, end_line=8, end_column=42
     )
     assert _slice(_FULL_ACTION, reference.location) == "position<run>"
 
@@ -379,7 +379,7 @@ def test_position_reference_chained_local_fields():
         isinstance(name, ast.LocalTypedNameReference) for name in reference.typed_names
     )
     assert reference.location == ast.SourceLocation(
-        line=6, column=30, end_line=6, end_column=74
+        line=6, column=30, end_line=6, end_column=73
     )
     assert (
         _slice(_LOCAL_CHAIN_CREATE, reference.location)
@@ -396,7 +396,7 @@ def test_position_reference_chained_global_fields():
         isinstance(name, ast.GlobalTypedNameReference) for name in reference.typed_names
     )
     assert reference.location == ast.SourceLocation(
-        line=6, column=30, end_line=6, end_column=68
+        line=6, column=30, end_line=6, end_column=67
     )
     assert (
         _slice(_GLOBAL_CHAIN_CREATE, reference.location)
@@ -412,7 +412,7 @@ def test_create_particle_statement_fields():
     assert isinstance(stmt, ast.CreateParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
-        line=8, column=9, end_line=8, end_column=44
+        line=8, column=9, end_line=8, end_column=43
     )
     assert _slice(_FULL_ACTION, stmt.location) == "create a particle in position<run>."
 
@@ -429,7 +429,7 @@ def test_move_particle_statement_fields():
     assert isinstance(target_name, ast.LocalTypedNameReference)
     assert target_name.name_content.name == "dest"
     assert stmt.location == ast.SourceLocation(
-        line=9, column=9, end_line=9, end_column=62
+        line=9, column=9, end_line=9, end_column=61
     )
     assert (
         _slice(_FULL_ACTION, stmt.location)
@@ -442,7 +442,7 @@ def test_destroy_particle_statement_fields():
     assert isinstance(stmt, ast.DestroyParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
-        line=10, column=9, end_line=10, end_column=47
+        line=10, column=9, end_line=10, end_column=46
     )
     assert (
         _slice(_FULL_ACTION, stmt.location) == "destroy the particle in position<run>."
@@ -458,7 +458,7 @@ def test_position_presence_statement_fields():
     assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
     assert condition.typed_name.name_content.name == "run"
     assert condition.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=42
+        line=6, column=9, end_line=6, end_column=41
     )
     assert (
         _slice(_FULL_ACTION, condition.location) == "the position<run> has a particle."
@@ -469,7 +469,7 @@ def test_constructor_condition_statement_fields():
     condition = _only_action(_CONSTRUCTOR_ACTION).trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
     assert condition.location == ast.SourceLocation(
-        line=3, column=9, end_line=3, end_column=34
+        line=3, column=9, end_line=3, end_column=33
     )
     assert (
         _slice(_CONSTRUCTOR_ACTION, condition.location) == "this particle is created."
@@ -480,7 +480,7 @@ def test_destructor_condition_statement_fields():
     condition = _only_action(_DESTRUCTOR_ACTION).trigger_conditions.condition
     assert isinstance(condition, ast.DestructorConditionStatement)
     assert condition.location == ast.SourceLocation(
-        line=3, column=9, end_line=3, end_column=42
+        line=3, column=9, end_line=3, end_column=41
     )
     assert (
         _slice(_DESTRUCTOR_ACTION, condition.location)
@@ -492,7 +492,7 @@ def test_trigger_conditions_block_fields():
     block = _only_action(_FULL_ACTION).trigger_conditions
     assert isinstance(block.condition, ast.PositionPresenceStatement)
     assert block.location == ast.SourceLocation(
-        line=5, column=5, end_line=7, end_column=6
+        line=5, column=5, end_line=7, end_column=5
     )
     # fmt: off
     assert _slice(_FULL_ACTION, block.location) == (
@@ -516,7 +516,7 @@ def test_position_constraint_block_fields():
         for requirement in block.requirements
     )
     assert block.location == ast.SourceLocation(
-        line=3, column=5, end_line=7, end_column=6
+        line=3, column=5, end_line=7, end_column=5
     )
     assert _slice(_FULL_POSITION, block.location) == (
         "it may only contain particles where {\n"
@@ -541,7 +541,7 @@ def test_position_requirement_statement_fields():
     requirement = definition.constraints.requirements[0]
     assert isinstance(requirement.typed_global_name, ast.GlobalTypedNameReference)
     assert requirement.location == ast.SourceLocation(
-        line=4, column=9, end_line=4, end_column=37
+        line=4, column=9, end_line=4, end_column=36
     )
     assert (
         _slice(_FULL_POSITION, requirement.location) == "it has the position</child>."
@@ -552,7 +552,7 @@ def test_quality_implication_statement_fields():
     implication = _only_position(_FULL_POSITION).quality_implications[0]
     assert isinstance(implication.typed_global_name, ast.GlobalTypedNameReference)
     assert implication.location == ast.SourceLocation(
-        line=2, column=5, end_line=2, end_column=38
+        line=2, column=5, end_line=2, end_column=37
     )
     assert (
         _slice(_FULL_POSITION, implication.location)
@@ -567,7 +567,7 @@ def test_action_statements_block_fields():
     assert isinstance(block.statements[1], ast.MoveParticleStatement)
     assert isinstance(block.statements[2], ast.DestroyParticleStatement)
     assert block.location == ast.SourceLocation(
-        line=7, column=7, end_line=11, end_column=6
+        line=7, column=7, end_line=11, end_column=5
     )
     assert _slice(_FULL_ACTION, block.location) == (
         "and it does {\n"
@@ -582,7 +582,7 @@ def test_action_statements_block_empty_fields():
     block = _only_action(_DESTRUCTOR_ACTION).action_statements
     assert block.statements == ()
     assert block.location == ast.SourceLocation(
-        line=4, column=7, end_line=5, end_column=6
+        line=4, column=7, end_line=5, end_column=5
     )
     # fmt: off
     assert _slice(_DESTRUCTOR_ACTION, block.location) == (
@@ -601,7 +601,7 @@ def test_local_position_definition_without_constraints_fields():
     assert local_def.typed_name.name_content.name == "run"
     assert local_def.constraints is None
     assert local_def.location == ast.SourceLocation(
-        line=3, column=5, end_line=3, end_column=30
+        line=3, column=5, end_line=3, end_column=29
     )
     assert _slice(_FULL_ACTION, local_def.location) == "define the position<run>."
 
@@ -612,7 +612,7 @@ def test_local_position_definition_with_constraints_fields():
     assert local_def.typed_name.name_content.name == "my_pos"
     assert isinstance(local_def.constraints, ast.PositionConstraintBlock)
     assert local_def.location == ast.SourceLocation(
-        line=2, column=5, end_line=6, end_column=6
+        line=2, column=5, end_line=6, end_column=5
     )
     assert _slice(_LOCAL_CONSTRAINED_ACTION, local_def.location) == (
         "define the position<my_pos> {\n"
@@ -638,7 +638,7 @@ def test_value_definition_fields():
     assert isinstance(name, ast.DefinitionGlobalNameContent)
     assert name.source_name == "mv:example.com:example:/number/natural"
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=1, end_column=len(source)
+        line=1, column=1, end_line=1, end_column=len(source) - 1
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
     assert (
@@ -674,7 +674,7 @@ def test_encoding_definition_fields():
     assert isinstance(name, ast.DefinitionGlobalNameContent)
     assert name.source_name == "mv:example.com:example:/number/natural"
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=1, end_column=len(source)
+        line=1, column=1, end_line=1, end_column=len(source) - 1
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
     assert (
@@ -704,7 +704,7 @@ def test_position_definition_bare_fields():
     assert definition.quality_implications == ()
     assert definition.constraints is None
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=1, end_column=47
+        line=1, column=1, end_line=1, end_column=46
     )
     assert (
         _slice(_SIMPLE_POSITION, definition.location)
@@ -721,7 +721,7 @@ def test_position_definition_full_fields():
     )
     assert isinstance(definition.constraints, ast.PositionConstraintBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=8, end_column=2
+        line=1, column=1, end_line=8, end_column=1
     )
     assert _slice(_FULL_POSITION, definition.location) == (
         "define the potential position<standard:/path> {\n"
@@ -744,7 +744,7 @@ def test_action_definition_minimal_fields():
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
     assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=6, end_column=2
+        line=1, column=1, end_line=6, end_column=1
     )
     assert _slice(_DESTRUCTOR_ACTION, definition.location) == (
         "define the potential action<standard:/path> {\n"
@@ -771,7 +771,7 @@ def test_action_definition_full_fields():
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
     assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=12, end_column=2
+        line=1, column=1, end_line=12, end_column=1
     )
     assert _slice(_FULL_ACTION, definition.location) == (
         "define the potential action<standard:/path> {\n"
@@ -797,7 +797,7 @@ def test_program_fields():
     assert len(program.definitions) == 1
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert program.location == ast.SourceLocation(
-        line=1, column=1, end_line=1, end_column=47
+        line=1, column=1, end_line=1, end_column=46
     )
     assert (
         _slice(_SIMPLE_POSITION, program.location)
@@ -811,7 +811,7 @@ def test_program_multiple_definitions_fields():
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.PositionDefinition)
     assert program.location == ast.SourceLocation(
-        line=1, column=1, end_line=10, end_column=2
+        line=1, column=1, end_line=10, end_column=1
     )
     assert _slice(_TWO_DEFINITIONS, program.location) == (
         "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
@@ -871,7 +871,7 @@ def test_value_setting_statement_fields():
     assert isinstance(statement.source, ast.PositionReference)
     assert statement.source.source_chained_name == "position<src>"
     assert statement.location == ast.SourceLocation(
-        line=5, column=9, end_line=5, end_column=58
+        line=5, column=9, end_line=5, end_column=57
     )
     assert (
         _slice(source, statement.location)
@@ -903,7 +903,7 @@ def test_value_setting_statement_chained_positions():
         == "position<mv:define-lang.org:parser:/src>::position<value>"
     )
     assert statement.location == ast.SourceLocation(
-        line=5, column=9, end_line=5, end_column=131
+        line=5, column=9, end_line=5, end_column=130
     )
     assert _slice(source, statement.location) == source.splitlines()[4].strip()
     assert (
@@ -933,7 +933,7 @@ def test_potential_literal_definition_fields():
         == "mv:example.com:example:/decimal"
     )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=3, end_column=2
+        line=1, column=1, end_line=3, end_column=1
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
     assert (
@@ -999,7 +999,7 @@ def test_value_setting_literal_fields():
         == "literal<mv:define-lang.org:parser:/text>"
     )
     assert literal.location == ast.SourceLocation(
-        line=5, column=44, end_line=5, end_column=89
+        line=5, column=44, end_line=5, end_column=88
     )
     assert (
         _slice(source, literal.location)
@@ -1030,7 +1030,7 @@ def test_value_setting_literal_empty_and_explicit_fqun():
         == "mv:define-lang.org:parser"
     )
     assert literal.location == ast.SourceLocation(
-        line=5, column=44, end_line=5, end_column=81
+        line=5, column=44, end_line=5, end_column=80
     )
     assert _slice(source, literal.location) == 'literal<mv:example.com:other:/text>""'
     assert _slice(source, statement.location) == source.splitlines()[4].strip()
@@ -1115,7 +1115,7 @@ def test_operation_definition_fields():
         definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
     )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=23, end_column=2
+        line=1, column=1, end_line=23, end_column=1
     )
     assert _slice(_FULL_OPERATION, definition.location) == _FULL_OPERATION.rstrip("\n")
     assert (
@@ -1141,7 +1141,7 @@ def test_operation_definition_without_views_fields():
     assert definition.views == ()
     assert len(definition.operation_statements) == 1
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=5, end_column=2
+        line=1, column=1, end_line=5, end_column=1
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
 
@@ -1157,7 +1157,7 @@ def test_view_definition_fields():
     assert view.is_input
     assert not view.is_output
     assert view.location == ast.SourceLocation(
-        line=2, column=5, end_line=8, end_column=6
+        line=2, column=5, end_line=8, end_column=5
     )
     assert _slice(_FULL_OPERATION, view.location) == (
         "define the view<left> {\n"
@@ -1169,7 +1169,7 @@ def test_view_definition_fields():
         "    }"
     )
     assert view.constraints.location == ast.SourceLocation(
-        line=4, column=9, end_line=7, end_column=10
+        line=4, column=9, end_line=7, end_column=9
     )
     assert [
         requirement.typed_global_name.full_typed_name
@@ -1183,7 +1183,7 @@ def test_view_definition_fields():
         encoding_requirement.typed_global_name.name_type == name_types.NameType.ENCODING
     )
     assert encoding_requirement.location == ast.SourceLocation(
-        line=6, column=13, end_line=6, end_column=52
+        line=6, column=13, end_line=6, end_column=51
     )
     assert (
         _slice(_FULL_OPERATION, encoding_requirement.location)
@@ -1216,12 +1216,12 @@ def test_view_direction_fields():
     assert read_and_written.is_input
     assert read_and_written.is_output
     assert read_and_written.location == ast.SourceLocation(
-        line=2, column=5, end_line=8, end_column=6
+        line=2, column=5, end_line=8, end_column=5
     )
     assert not written.is_input
     assert written.is_output
     assert written.location == ast.SourceLocation(
-        line=9, column=5, end_line=14, end_column=6
+        line=9, column=5, end_line=14, end_column=5
     )
 
 
@@ -1237,7 +1237,7 @@ def test_operation_execution_statement_without_arguments_fields():
     )
     assert _slice(_FULL_OPERATION, statement.operation.location) == "operation</other>"
     assert statement.location == ast.SourceLocation(
-        line=16, column=9, end_line=16, end_column=39
+        line=16, column=9, end_line=16, end_column=38
     )
     assert (
         _slice(_FULL_OPERATION, statement.location) == "execute the operation</other>."
@@ -1250,7 +1250,7 @@ def test_operation_execution_statement_with_arguments_fields():
     assert statement.operation.full_typed_name == "operation<standard:/sum>"
     assert len(statement.arguments) == 2
     assert statement.location == ast.SourceLocation(
-        line=17, column=9, end_line=20, end_column=10
+        line=17, column=9, end_line=20, end_column=9
     )
     assert _slice(_FULL_OPERATION, statement.location) == (
         "execute the operation<standard:/sum> {\n"
@@ -1275,7 +1275,7 @@ def test_operation_argument_statement_view_fields():
     assert _slice(_FULL_OPERATION, looking_at.location) == "view<left>"
     assert _slice(_FULL_OPERATION, looking_at.name_content.location) == "left"
     assert argument.location == ast.SourceLocation(
-        line=18, column=13, end_line=18, end_column=48
+        line=18, column=13, end_line=18, end_column=47
     )
     assert (
         _slice(_FULL_OPERATION, argument.location)
@@ -1302,7 +1302,7 @@ def test_operation_argument_statement_position_fields():
     assert looking_at.source_chained_name == "position<p>::position<child>"
     assert _slice(source, looking_at.location) == "position<p>::position<child>"
     assert argument.location == ast.SourceLocation(
-        line=4, column=13, end_line=4, end_column=66
+        line=4, column=13, end_line=4, end_column=65
     )
     assert (
         _slice(source, argument.location)
@@ -1324,7 +1324,7 @@ def test_operation_argument_statement_literal_fields():
     )
     assert _slice(_FULL_OPERATION, literal.location) == 'literal</number>"12"'
     assert argument.location == ast.SourceLocation(
-        line=19, column=13, end_line=19, end_column=58
+        line=19, column=13, end_line=19, end_column=57
     )
     assert (
         _slice(_FULL_OPERATION, argument.location)
@@ -1336,7 +1336,7 @@ def test_encoding_operation_execution_statement_fields():
     statement = _only_operation(_FULL_OPERATION).operation_statements[2]
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
-        line=21, column=9, end_line=21, end_column=40
+        line=21, column=9, end_line=21, end_column=39
     )
     assert (
         _slice(_FULL_OPERATION, statement.location) == "execute the encoding operation."
@@ -1412,7 +1412,7 @@ def test_encoding_operation_definition_fields():
         == "encoding_operation<mv:example.com:example:/add_decimal>"
     )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=15, end_column=2
+        line=1, column=1, end_line=15, end_column=1
     )
     assert _slice(
         _FULL_ENCODING_OPERATION, definition.location
@@ -1439,7 +1439,7 @@ def test_encoding_operation_definition_without_views_fields():
     assert definition.views == ()
     assert len(definition.operation_statements) == 1
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=5, end_column=2
+        line=1, column=1, end_line=5, end_column=1
     )
     assert _slice(source, definition.location) == source.rstrip("\n")
 
@@ -1460,7 +1460,7 @@ def test_encoding_operation_execution_without_arguments_fields():
         == "encoding_operation</other>"
     )
     assert statement.location == ast.SourceLocation(
-        line=9, column=9, end_line=9, end_column=48
+        line=9, column=9, end_line=9, end_column=47
     )
     assert (
         _slice(_FULL_ENCODING_OPERATION, statement.location)
@@ -1475,7 +1475,7 @@ def test_encoding_operation_execution_with_arguments_fields():
     assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
     assert statement.operation.full_typed_name == "encoding_operation<standard:/sum>"
     assert statement.location == ast.SourceLocation(
-        line=10, column=9, end_line=12, end_column=10
+        line=10, column=9, end_line=12, end_column=9
     )
     assert _slice(_FULL_ENCODING_OPERATION, statement.location) == (
         "execute the encoding_operation<standard:/sum> {\n"
@@ -1489,7 +1489,7 @@ def test_encoding_operation_execution_with_arguments_fields():
     assert looking_at.name_type == name_types.NameType.VIEW
     assert looking_at.source_typed_name == "view<left>"
     assert argument.location == ast.SourceLocation(
-        line=11, column=13, end_line=11, end_column=48
+        line=11, column=13, end_line=11, end_column=47
     )
     assert (
         _slice(_FULL_ENCODING_OPERATION, argument.location)
@@ -1502,7 +1502,7 @@ def test_computer_operation_execution_statement_fields():
     statement = definition.operation_statements[2]
     assert isinstance(statement, ast.ComputerOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
-        line=13, column=9, end_line=13, end_column=40
+        line=13, column=9, end_line=13, end_column=39
     )
     assert (
         _slice(_FULL_ENCODING_OPERATION, statement.location)
@@ -1537,7 +1537,7 @@ def test_action_operation_execution_statement_without_arguments_fields():
         == "operation<mv:example.com:example:/clear>"
     )
     assert statement.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=39
+        line=6, column=9, end_line=6, end_column=38
     )
     assert (
         _slice(_OPERATION_EXECUTING_ACTION, statement.location)
@@ -1551,7 +1551,7 @@ def test_action_operation_execution_statement_with_arguments_fields():
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.full_typed_name == "operation<standard:/add>"
     assert statement.location == ast.SourceLocation(
-        line=7, column=9, end_line=10, end_column=10
+        line=7, column=9, end_line=10, end_column=9
     )
     assert _slice(_OPERATION_EXECUTING_ACTION, statement.location) == (
         "execute the operation<standard:/add> {\n"

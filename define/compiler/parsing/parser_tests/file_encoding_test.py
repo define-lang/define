@@ -23,7 +23,7 @@ def test_bom_at_start(parse: Parse):
     assert exc_info.value.char == "\ufeff"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_crlf_line_endings(parse: Parse):
@@ -32,7 +32,7 @@ def test_crlf_line_endings(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 48
+    assert exc_info.value.location.end_column == 47
 
 
 def test_crlf_line_endings_in_comments(parse: Parse):
@@ -41,7 +41,7 @@ def test_crlf_line_endings_in_comments(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 12
-    assert exc_info.value.location.end_column == 13
+    assert exc_info.value.location.end_column == 12
 
 
 def test_carriage_return_in_comment(parse: Parse):
@@ -50,7 +50,7 @@ def test_carriage_return_in_comment(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 15
-    assert exc_info.value.location.end_column == 16
+    assert exc_info.value.location.end_column == 15
 
 
 def test_surrogate_character(parse: Parse):
@@ -59,7 +59,7 @@ def test_surrogate_character(parse: Parse):
     assert exc_info.value.char == "\udcff"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_surrogate_range_start_boundary(parse: Parse):
@@ -68,7 +68,7 @@ def test_surrogate_range_start_boundary(parse: Parse):
     assert exc_info.value.char == "\ud800"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_surrogate_range_end_boundary(parse: Parse):
@@ -77,7 +77,7 @@ def test_surrogate_range_end_boundary(parse: Parse):
     assert exc_info.value.char == "\udfff"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_del_character(parse: Parse):
@@ -86,7 +86,7 @@ def test_del_character(parse: Parse):
     assert exc_info.value.char == "\x7f"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_invalid_character_error(parse: Parse):
@@ -95,7 +95,7 @@ def test_invalid_character_error(parse: Parse):
     assert exc_info.value.char == "☃"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_first_non_ascii_byte(parse: Parse):
@@ -104,7 +104,7 @@ def test_first_non_ascii_byte(parse: Parse):
     assert exc_info.value.char == "\x80"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_comment_with_zero_width_joiner_in_grapheme_cluster(parse: Parse):
@@ -127,7 +127,7 @@ def test_comment_with_bidi_isolates_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 29
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_zero_width_space_in_comment_is_rejected(parse: Parse):
@@ -140,7 +140,7 @@ def test_zero_width_space_in_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 5
+    assert exc_info.value.location.end_column == 4
 
 
 def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
@@ -159,7 +159,7 @@ def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 59
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 60
+    assert exc_info.value.location.end_column == 59
 
 
 def test_byte_order_mark_inside_comment_is_rejected(parse: Parse):
@@ -172,7 +172,7 @@ def test_byte_order_mark_inside_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 5
+    assert exc_info.value.location.end_column == 4
 
 
 def test_c1_control_character_in_comment_is_rejected(parse: Parse):
@@ -185,7 +185,7 @@ def test_c1_control_character_in_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 5
+    assert exc_info.value.location.end_column == 4
 
 
 def test_zero_width_joiner_before_space_in_comment_is_rejected(parse: Parse):
@@ -198,7 +198,7 @@ def test_zero_width_joiner_before_space_in_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 5
+    assert exc_info.value.location.end_column == 4
 
 
 def test_tag_character_after_letter_in_comment_is_rejected(parse: Parse):
@@ -211,7 +211,7 @@ def test_tag_character_after_letter_in_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 5
+    assert exc_info.value.location.end_column == 4
 
 
 def test_comment_with_emoji_zwj_sequence(parse: Parse):
@@ -250,7 +250,7 @@ def test_direction_mark_in_literal_content_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 59
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 60
+    assert exc_info.value.location.end_column == 59
 
 
 def test_direction_mark_in_local_name_is_rejected(parse: Parse):
@@ -264,7 +264,7 @@ def test_direction_mark_in_local_name_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_direction_mark_in_global_name_is_rejected(parse: Parse):
@@ -274,7 +274,7 @@ def test_direction_mark_in_global_name_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 59
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 60
+    assert exc_info.value.location.end_column == 59
 
 
 def test_direction_mark_before_comment_is_rejected(parse: Parse):
@@ -284,4 +284,4 @@ def test_direction_mark_before_comment_is_rejected(parse: Parse):
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1

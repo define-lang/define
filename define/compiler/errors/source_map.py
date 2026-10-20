@@ -56,16 +56,11 @@ def _format_location_with_source_line(
         code = source_line
         indentation = 0
     start = location.column - 1 - indentation
-    # TODO: Treat end_column as the column of the last character in the span,
-    # so that a span from column 63 to column 64 underlines two characters.
-    # Today this underlines as if end_column were the column after the last
-    # character. Check the locations of each error when changing this: some may
-    # already be set for the new rendering, some may need to change with it,
-    # and some may be wrong today.
     # A span that continues onto later lines is underlined to the end of its
     # first line, so that the context stays one line long.
     if location.end_line == location.line:
-        end = location.end_column - 1 - indentation
+        # end_column is the column of the span's last character.
+        end = location.end_column - indentation
     else:
         end = len(code)
     if escape_invisible_characters:

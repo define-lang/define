@@ -816,7 +816,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
-    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.end_column == 62
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -881,7 +881,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.end_column == 62
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -946,7 +946,7 @@ def test_caller_skips_destructor_requirement_on_position_its_callee_left_in_erro
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 9
-    assert all_diags[0].location.end_column == 67
+    assert all_diags[0].location.end_column == 66
     assert all_diags[0].location.file_path == PurePosixPath("fill_1.dfn")
     assert all_diags[0].position_name == "position</child_1>::position</needed>"
     assert all_diags[0].is_action_interface_position is False
@@ -964,7 +964,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.end_column == 62
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -1151,7 +1151,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 22
-    assert all_diags[0].location.end_column == 78
+    assert all_diags[0].location.end_column == 77
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -1272,7 +1272,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 78
+    assert all_diags[0].location.end_column == 77
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
@@ -1327,7 +1327,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
     assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 20
     assert all_diags[1].location.end_line == 3
-    assert all_diags[1].location.end_column == 30
+    assert all_diags[1].location.end_column == 29
     assert all_diags[1].location.file_path == PurePosixPath("node.dfn")
     assert all_diags[1].cycle == [_D, "position<my.domain.com:my_lib:/node>", _D]
     assert action_graph(result.reference_graph_result) == [

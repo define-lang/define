@@ -57,7 +57,7 @@ def test_child_operation_with_unfilled_required_parent(
         assert diagnostic.location.line == 13
         assert diagnostic.location.column == 30
         assert diagnostic.location.end_line == 13
-        assert diagnostic.location.end_column == 82
+        assert diagnostic.location.end_column == 81
         assert diagnostic.action_name == _OTHER
         assert_propagation_chain(
             diagnostic,
@@ -255,7 +255,7 @@ def test_caller_violates_occupied_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -306,7 +306,7 @@ def test_caller_violates_empty_requirement(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
@@ -410,7 +410,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 43
+    assert all_diags[0].location.end_column == 42
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>"
     assert all_diags[0].is_action_interface_position is False
@@ -419,21 +419,21 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[1].location.line == 19
     assert all_diags[1].location.column == 47
     assert all_diags[1].location.end_line == 19
-    assert all_diags[1].location.end_column == 89
+    assert all_diags[1].location.end_column == 88
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<a>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 18
     assert all_diags[1].occupied_at.column == 47
     assert all_diags[1].occupied_at.end_line == 18
-    assert all_diags[1].occupied_at.end_column == 89
+    assert all_diags[1].occupied_at.end_column == 88
     assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[2], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[2].required_value is False
     assert all_diags[2].location.line == 20
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 20
-    assert all_diags[2].location.end_column == 82
+    assert all_diags[2].location.end_column == 81
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
     assert all_diags[2].required_empty is False
@@ -669,7 +669,7 @@ def test_empty_child_of_locally_created_parent_is_a_local_violation(
     assert diag.location.line == 7
     assert diag.location.column == 33
     assert diag.location.end_line == 7
-    assert diag.location.end_column == 68
+    assert diag.location.end_column == 67
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == "position</parent>::position</child>"
 

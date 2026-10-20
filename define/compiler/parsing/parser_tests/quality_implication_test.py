@@ -221,7 +221,7 @@ def test_implication_missing_open_angle_with_terminator(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_column == 34
+    assert exc_info.value.location.end_column == 33
     assert exc_info.value.name == "."
 
 
@@ -237,7 +237,7 @@ def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_column == 34
+    assert exc_info.value.location.end_column == 33
     assert exc_info.value.name == " "
 
 
@@ -253,7 +253,7 @@ def test_implication_empty_name(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 34
-    assert exc_info.value.location.end_column == 35
+    assert exc_info.value.location.end_column == 34
 
 
 def test_implication_newline_inside_name(parse: Parse):
@@ -314,7 +314,7 @@ def test_implication_missing_newline_after_terminator(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 45
-    assert exc_info.value.location.end_column == 46
+    assert exc_info.value.location.end_column == 45
 
 
 def test_implication_missing_space_after_keyword(parse: Parse):
@@ -329,7 +329,7 @@ def test_implication_missing_space_after_keyword(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_column == 31
 
 
 def test_implication_extra_space_after_keyword(parse: Parse):
@@ -344,7 +344,7 @@ def test_implication_extra_space_after_keyword(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_column == 26
+    assert exc_info.value.location.end_column == 25
 
 
 def test_implication_local_name_where_global_required(parse: Parse):
@@ -359,7 +359,7 @@ def test_implication_local_name_where_global_required(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 34
-    assert exc_info.value.location.end_column == 37
+    assert exc_info.value.location.end_column == 36
 
 
 def test_implication_chained_name_not_allowed(parse: Parse):
@@ -374,7 +374,7 @@ def test_implication_chained_name_not_allowed(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 37
-    assert exc_info.value.location.end_column == 39
+    assert exc_info.value.location.end_column == 38
 
 
 # --- Block-level placement errors ---
@@ -392,7 +392,7 @@ def test_implication_after_constraint_block_in_potential_position(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 24
+    assert exc_info.value.location.end_column == 23
 
 
 def test_implication_after_local_position_in_action_block(parse: Parse):
@@ -409,7 +409,7 @@ def test_implication_after_local_position_in_action_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 24
+    assert exc_info.value.location.end_column == 23
 
 
 def test_implication_after_trigger_conditions_block_in_action(parse: Parse):
@@ -426,7 +426,7 @@ def test_implication_after_trigger_conditions_block_in_action(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_implication_inside_position_constraint_block(parse: Parse):
@@ -441,7 +441,7 @@ def test_implication_inside_position_constraint_block(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_implication_inside_action_statements_block(parse: Parse):
@@ -458,7 +458,7 @@ def test_implication_inside_action_statements_block(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_implication_inside_trigger_conditions_block(parse: Parse):
@@ -474,7 +474,7 @@ def test_implication_inside_trigger_conditions_block(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_implication_inside_local_position_definition_constraint_block(
@@ -496,7 +496,7 @@ def test_implication_inside_local_position_definition_constraint_block(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 13
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_column == 31
 
 
 def test_implication_at_global_scope(parse: Parse):
@@ -507,7 +507,7 @@ def test_implication_at_global_scope(parse: Parse):
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 20
+    assert exc_info.value.location.end_column == 19
 
 
 # --- Block content errors ---
@@ -524,7 +524,7 @@ def test_implication_only_in_potential_position_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_implication_only_in_action_definition_block(parse: Parse):
@@ -536,4 +536,4 @@ def test_implication_only_in_action_definition_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1

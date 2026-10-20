@@ -274,13 +274,13 @@ def test_constructor_filled_position_blocks_caller_create(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 66
+    assert all_diags[0].location.end_column == 65
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<source>::position</implied>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
-    assert all_diags[0].populated_at.end_column == 48
+    assert all_diags[0].populated_at.end_column == 47
     assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 

@@ -41,7 +41,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
-    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is False
@@ -229,7 +229,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 23
-    assert all_diags[0].location.end_column == 83
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is False
@@ -298,7 +298,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 83
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is False
@@ -368,7 +368,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15
-    assert diagnostic.location.end_column == 74
+    assert diagnostic.location.end_column == 73
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.action_name == _OUTER
     assert diagnostic.required_empty is False
@@ -422,7 +422,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15
-    assert diagnostic.location.end_column == 83
+    assert diagnostic.location.end_column == 82
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.action_name == _MIDDLE
     assert diagnostic.required_empty is False

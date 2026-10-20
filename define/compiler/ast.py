@@ -38,7 +38,12 @@ class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
 
 
 class SourceLocation(msgspec.Struct, frozen=True):
-    """Represents a location in source code."""
+    """Represents a location in source code.
+
+    Lines and columns are 1-based, and columns count characters.
+    ``end_line`` and ``end_column`` are the position of the last character
+    that the location covers.
+    """
 
     line: int
     column: int
@@ -80,7 +85,8 @@ class SourceLocation(msgspec.Struct, frozen=True):
             if end.end_line is None or end.end_column is None:
                 raise ValueError(f"token {end!r} has no end_line/end_column")
             end_line = end.end_line
-            end_column = end.end_column
+            # A token's end_column is the column after its last character.
+            end_column = end.end_column - 1
         return cls(
             line=start_line,
             column=start_column,
@@ -811,13 +817,13 @@ class Literal(ASTNode):
         # ", \, and newlines can only appear in content through two-character
         # escapes, so each one before ``index`` adds one source column.
         escaped_count = sum(1 for char in self.content[:index] if char in '"\\\n')
-        # The Potential Literal reference ends at the opening quote.
-        column = self.potential_literal.location.end_column + 1 + index + escaped_count
+        # The Potential Literal reference ends just before the opening quote.
+        column = self.potential_literal.location.end_column + 2 + index + escaped_count
         return SourceLocation(
             line=self.location.line,
             column=column,
             end_line=self.location.line,
-            end_column=column + 1,
+            end_column=column,
             file_path=self.location.file_path,
         )
 

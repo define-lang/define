@@ -94,7 +94,7 @@ def test_constructor_followed_by_extra_content(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_column == 34
+    assert exc_info.value.location.end_column == 33
 
 
 def test_trigger_condition_and_constructor_in_one_block(parse: Parse):
@@ -111,7 +111,7 @@ def test_trigger_condition_and_constructor_in_one_block(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 33
+    assert exc_info.value.location.end_column == 32
 
 
 def test_constructor_as_action_statement(parse: Parse):
@@ -128,7 +128,7 @@ def test_constructor_as_action_statement(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 33
+    assert exc_info.value.location.end_column == 32
 
 
 def test_constructor_at_top_level(parse: Parse):
@@ -136,7 +136,7 @@ def test_constructor_at_top_level(parse: Parse):
         parse("this particle is created.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 25
+    assert exc_info.value.location.end_column == 24
 
 
 def test_truncated_constructor_phrase_in_trigger_block(parse: Parse):
@@ -151,7 +151,7 @@ def test_truncated_constructor_phrase_in_trigger_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 13
+    assert exc_info.value.location.end_column == 12
 
 
 def test_constructor_block_missing_and_it_does(parse: Parse):

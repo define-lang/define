@@ -35,7 +35,7 @@ def test_path_mismatch_error(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 52
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 63
+    assert diags[0].location.end_column == 62
     assert diags[0].location.file_path == PurePosixPath("foo/bar.dfn")
 
 

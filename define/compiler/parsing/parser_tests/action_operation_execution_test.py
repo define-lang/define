@@ -100,7 +100,7 @@ def test_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 6
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 39
+    assert error.value.location.end_column == 38
 
 
 def test_operation_execution_requires_terminator_or_block(parse: Parse):
@@ -116,7 +116,7 @@ def test_operation_name_type_cannot_be_position(parse: Parse):
         parse(_ACTION_PREFIX + "        execute the position</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_operation_missing_space_after_execute_the(parse: Parse):
@@ -124,7 +124,7 @@ def test_operation_missing_space_after_execute_the(parse: Parse):
         parse(_ACTION_PREFIX + "        execute theoperation</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 20
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_arguments_block_requires_argument(parse: Parse):
@@ -137,7 +137,7 @@ def test_arguments_block_requires_argument(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 10
+    assert error.value.location.end_column == 9
 
 
 def test_arguments_block_disallows_action_statement(parse: Parse):
@@ -151,7 +151,7 @@ def test_arguments_block_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 13
-    assert error.value.location.end_column == 33
+    assert error.value.location.end_column == 32
 
 
 def test_arguments_block_disallows_action_statement_after_first_argument(
@@ -168,7 +168,7 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
         )
     assert error.value.location.line == 8
     assert error.value.location.column == 13
-    assert error.value.location.end_column == 33
+    assert error.value.location.end_column == 32
 
 
 def test_argument_cannot_look_at_value(parse: Parse):
@@ -182,4 +182,4 @@ def test_argument_cannot_look_at_value(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 37
-    assert error.value.location.end_column == 42
+    assert error.value.location.end_column == 41

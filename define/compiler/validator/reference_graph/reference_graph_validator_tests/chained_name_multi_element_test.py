@@ -90,7 +90,7 @@ class TestCreateParticle:
         assert all_diags[0].location.line == 16
         assert all_diags[0].location.column == 63
         assert all_diags[0].location.end_line == 16
-        assert all_diags[0].location.end_column == 80
+        assert all_diags[0].location.end_column == 79
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_element_inside_action_not_found(

@@ -186,7 +186,7 @@ def test_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 1
     assert error.value.location.column == 31
-    assert error.value.location.end_column == 34
+    assert error.value.location.end_column == 33
 
 
 def test_requires_block(parse: Parse):
@@ -194,7 +194,7 @@ def test_requires_block(parse: Parse):
         parse("define the encoding_operation<mv:define-lang.org:parser:/add>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 62
-    assert error.value.location.end_column == 63
+    assert error.value.location.end_column == 62
 
 
 def test_requires_operation_statements_block(parse: Parse):
@@ -202,7 +202,7 @@ def test_requires_operation_statements_block(parse: Parse):
         parse("define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n")
     assert error.value.location.line == 2
     assert error.value.location.column == 1
-    assert error.value.location.end_column == 2
+    assert error.value.location.end_column == 1
 
 
 def test_disallows_local_position_definition(parse: Parse):
@@ -217,7 +217,7 @@ def test_disallows_local_position_definition(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 5
-    assert error.value.location.end_column == 24
+    assert error.value.location.end_column == 23
 
 
 def test_requires_statement(parse: Parse):
@@ -227,7 +227,7 @@ def test_requires_statement(parse: Parse):
         parse(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
     assert error.value.location.line == 3
     assert error.value.location.column == 5
-    assert error.value.location.end_column == 6
+    assert error.value.location.end_column == 5
 
 
 def test_disallows_action_statement(parse: Parse):
@@ -241,7 +241,7 @@ def test_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_disallows_action_statement_after_first_statement(parse: Parse):
@@ -256,7 +256,7 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_disallows_encoding_operation_statement(parse: Parse):
@@ -270,7 +270,7 @@ def test_disallows_encoding_operation_statement(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 39
+    assert error.value.location.end_column == 38
 
 
 def test_disallows_value_operation_execution(parse: Parse):
@@ -282,7 +282,7 @@ def test_disallows_value_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 30
+    assert error.value.location.end_column == 29
 
 
 def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
@@ -294,7 +294,7 @@ def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 29
+    assert error.value.location.end_column == 28
 
 
 def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
@@ -306,7 +306,7 @@ def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 22
+    assert error.value.location.end_column == 21
 
 
 def test_computer_operation_requires_terminator(parse: Parse):
@@ -342,7 +342,7 @@ def test_encoding_operation_execution_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 40
-    assert error.value.location.end_column == 45
+    assert error.value.location.end_column == 44
 
 
 def test_arguments_block_requires_argument(parse: Parse):
@@ -355,7 +355,7 @@ def test_arguments_block_requires_argument(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 10
+    assert error.value.location.end_column == 9
 
 
 def test_value_operation_disallows_computer_operation(parse: Parse):
@@ -369,7 +369,7 @@ def test_value_operation_disallows_computer_operation(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 39
+    assert error.value.location.end_column == 38
 
 
 def test_value_operation_disallows_encoding_operation_execution(parse: Parse):
@@ -383,7 +383,7 @@ def test_value_operation_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 39
+    assert error.value.location.end_column == 38
 
 
 def test_action_disallows_encoding_operation_execution(parse: Parse):
@@ -399,7 +399,7 @@ def test_action_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 21
-    assert error.value.location.end_column == 39
+    assert error.value.location.end_column == 38
 
 
 def test_disallows_local_context(parse: Parse):
@@ -419,7 +419,7 @@ def test_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 38
+    assert error.value.location.end_column == 37
 
 
 def test_computer_operation_is_not_a_global_definition(parse: Parse):
@@ -427,4 +427,4 @@ def test_computer_operation_is_not_a_global_definition(parse: Parse):
         parse("execute the computer operation.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
-    assert error.value.location.end_column == 31
+    assert error.value.location.end_column == 30

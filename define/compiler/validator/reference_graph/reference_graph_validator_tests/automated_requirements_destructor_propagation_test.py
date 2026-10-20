@@ -90,7 +90,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 72
+    assert all_diags[0].location.end_column == 71
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _MID
@@ -151,7 +151,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 72
+    assert all_diags[0].location.end_column == 71
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _MID
@@ -212,7 +212,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 72
+    assert all_diags[0].location.end_column == 71
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _MID
@@ -273,7 +273,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 72
+    assert all_diags[0].location.end_column == 71
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _MID
@@ -345,7 +345,7 @@ def test_requirement_destructor_gets_from_its_callee_names_destructor(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 43
+    assert all_diags[0].location.end_column == 42
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR

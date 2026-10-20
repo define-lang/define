@@ -73,7 +73,7 @@ def test_chained_name_is_parse_error(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 27
 
 
 def test_global_name_is_parse_error(parse: Parse):
@@ -88,7 +88,7 @@ def test_global_name_is_parse_error(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 22
-    assert exc_info.value.location.end_column == 23
+    assert exc_info.value.location.end_column == 22
     assert exc_info.value.char == "/"
 
 
@@ -103,7 +103,7 @@ def test_trigger_block_same_line_no_space(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 22
-    assert exc_info.value.location.end_column == 23
+    assert exc_info.value.location.end_column == 22
 
 
 def test_trigger_block_same_line_with_space(parse: Parse):
@@ -117,7 +117,7 @@ def test_trigger_block_same_line_with_space(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 22
-    assert exc_info.value.location.end_column == 23
+    assert exc_info.value.location.end_column == 22
 
 
 def test_trigger_block_closing_brace_same_line(parse: Parse):
@@ -130,7 +130,7 @@ def test_trigger_block_closing_brace_same_line(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 22
-    assert exc_info.value.location.end_column == 23
+    assert exc_info.value.location.end_column == 22
 
 
 def test_empty_trigger_block_is_error(parse: Parse):
@@ -144,7 +144,7 @@ def test_empty_trigger_block_is_error(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.end_column == 5
 
 
 def test_invalid_content_in_trigger_block(parse: Parse):
@@ -160,7 +160,7 @@ def test_invalid_content_in_trigger_block(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 17
+    assert exc_info.value.location.end_column == 16
 
 
 def test_missing_terminator_after_trigger_condition(parse: Parse):
@@ -192,7 +192,7 @@ def test_missing_space_before_has_a_particle(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 40
+    assert exc_info.value.location.end_column == 39
 
 
 def test_missing_has_a_particle(parse: Parse):
@@ -208,4 +208,4 @@ def test_missing_has_a_particle(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26

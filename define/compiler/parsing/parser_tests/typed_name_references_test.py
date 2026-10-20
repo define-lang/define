@@ -72,4 +72,4 @@ def test_typed_global_name_reference_local_style_name_is_global_terminal(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_column == 31

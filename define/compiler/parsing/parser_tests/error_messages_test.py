@@ -48,7 +48,7 @@ def test_error_message_without_path(parse: Parse):
         parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
     assert (
         _format(
             exc_info.value, "\ufeffdefine the potential position<standard:/path>.\n"
@@ -66,7 +66,7 @@ def test_char_error_message(parse: Parse):
         parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 48
+    assert exc_info.value.location.end_column == 47
     assert _format(
         exc_info.value, "define the potential position<standard:/path>.\r\n"
     ) == textwrap.dedent("""\

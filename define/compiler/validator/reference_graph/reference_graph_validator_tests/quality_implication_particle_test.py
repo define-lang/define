@@ -105,7 +105,7 @@ def test_child_of_locally_created_implied_particle_is_known_empty(
     assert diag.location.line == 7
     assert diag.location.column == 33
     assert diag.location.end_line == 7
-    assert diag.location.end_column == 68
+    assert diag.location.end_column == 67
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == "position</parent>::position</child>"
 
@@ -242,7 +242,7 @@ def test_two_different_implier_constructors_conflict(
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.end_line == 11
-    assert diag.location.end_column == 43
+    assert diag.location.end_column == 42
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -304,7 +304,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.end_line == 11
-    assert diag.location.end_column == 43
+    assert diag.location.end_column == 42
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -347,6 +347,6 @@ def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
     assert diag.location.line == 13
     assert diag.location.column == 33
     assert diag.location.end_line == 13
-    assert diag.location.end_column == 69
+    assert diag.location.end_column == 68
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == "position<source>::position</emptier>"

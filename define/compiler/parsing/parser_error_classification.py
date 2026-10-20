@@ -549,7 +549,7 @@ def make_invalid_encoding_error(
             line=line,
             column=column,
             end_line=line,
-            end_column=column + 1,
+            end_column=column,
             file_path=path,
         ),
         bad_byte,

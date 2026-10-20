@@ -110,7 +110,8 @@ def _make_diagnostic(
             line=line_number,
             column=1,
             end_line=line_number,
-            end_column=actual + 1,
+            # With no indentation, the location covers the first character.
+            end_column=max(actual, 1),
             file_path=file_path,
         ),
         expected_indent=expected,

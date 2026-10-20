@@ -213,7 +213,8 @@ impl<'py, 'source> AstBuilder<'py, 'source> {
             line,
             PyInt::new(self.py, start.column),
             end_line,
-            PyInt::new(self.py, end.column),
+            // `end` is the position after the last character.
+            PyInt::new(self.py, end.column - 1),
             self.file_path.clone(),
         )
     }

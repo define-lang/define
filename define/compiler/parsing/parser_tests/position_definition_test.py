@@ -32,7 +32,7 @@ def test_position_definition_with_local_style_name_is_global_terminal(
         parse("define the potential position<foo>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 34
+    assert exc_info.value.location.end_column == 33
 
 
 def test_position_definition_missing_open_angle(parse: Parse):
@@ -40,7 +40,7 @@ def test_position_definition_missing_open_angle(parse: Parse):
         parse("define the potential positionstandard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 44
+    assert exc_info.value.location.end_column == 43
     assert exc_info.value.name == "standard:/path"
 
 
@@ -50,7 +50,7 @@ def test_position_definition_space_instead_of_open_angle(parse: Parse):
     assert exc_info.value.name == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.end_column == 30
 
 
 def test_position_definition_with_control_character(parse: Parse):
@@ -58,7 +58,7 @@ def test_position_definition_with_control_character(parse: Parse):
         parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_position_definition_with_empty_global_path(parse: Parse):
@@ -66,7 +66,7 @@ def test_position_definition_with_empty_global_path(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 33
+    assert exc_info.value.location.end_column == 32
 
 
 def test_position_definition_with_global_path_missing_leading_slash(
@@ -76,7 +76,7 @@ def test_position_definition_with_global_path_missing_leading_slash(
         parse("define the potential position<mv:define-lang.org:parser:path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 33
+    assert exc_info.value.location.end_column == 32
 
 
 def test_position_definition_empty_name_content(parse: Parse):
@@ -84,7 +84,7 @@ def test_position_definition_empty_name_content(parse: Parse):
         parse("define the potential position<>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_column == 31
 
 
 def test_position_definition_empty_name_at_eof(parse: Parse):
@@ -134,7 +134,7 @@ def test_position_definition_block_requires_content(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_position_constraint_block_requires_requirements(parse: Parse):
@@ -147,7 +147,7 @@ def test_position_constraint_block_requires_requirements(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.end_column == 5
 
 
 def test_position_constraint_block_with_invalid_statement_then_more_definitions(
@@ -165,7 +165,7 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 10
+    assert exc_info.value.location.end_column == 9
 
 
 def test_position_definition_rejects_multiple_constraint_blocks(
@@ -184,7 +184,7 @@ def test_position_definition_rejects_multiple_constraint_blocks(
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 40
+    assert exc_info.value.location.end_column == 39
 
 
 def test_second_constraint_block_after_close_on_same_line(
@@ -202,7 +202,7 @@ def test_second_constraint_block_after_close_on_same_line(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_second_constraint_block_on_requirement_line(
@@ -219,7 +219,7 @@ def test_second_constraint_block_on_requirement_line(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 37
-    assert exc_info.value.location.end_column == 38
+    assert exc_info.value.location.end_column == 37
 
 
 def test_action_definition_block_with_mixed_local_position_forms(
@@ -359,7 +359,7 @@ def test_empty_potential_position_block(parse: Parse):
         parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_invalid_content_in_potential_position_block(parse: Parse):
@@ -373,7 +373,7 @@ def test_invalid_content_in_potential_position_block(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 13
+    assert exc_info.value.location.end_column == 12
 
 
 def test_empty_local_position_definition_block(parse: Parse):
@@ -390,7 +390,7 @@ def test_empty_local_position_definition_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.end_column == 5
 
 
 def test_invalid_content_in_local_position_definition_block(parse: Parse):
@@ -408,4 +408,4 @@ def test_invalid_content_in_local_position_definition_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 17
+    assert exc_info.value.location.end_column == 16

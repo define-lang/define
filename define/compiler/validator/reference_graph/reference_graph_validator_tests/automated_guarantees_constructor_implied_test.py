@@ -128,7 +128,7 @@ def test_cross_universe_constraint_triggers_constructor(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 121
+    assert all_diags[0].location.end_column == 120
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -137,19 +137,19 @@ def test_cross_universe_constraint_triggers_constructor(
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
-    assert all_diags[0].populated_at.end_column == 42
+    assert all_diags[0].populated_at.end_column == 41
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/construct_a.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13
-    assert all_diags[1].location.end_column == 82
+    assert all_diags[1].location.end_column == 81
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
     assert all_diags[1].populated_at.line == 6
     assert all_diags[1].populated_at.column == 30
     assert all_diags[1].populated_at.end_line == 6
-    assert all_diags[1].populated_at.end_column == 42
+    assert all_diags[1].populated_at.end_column == 41
     assert all_diags[1].populated_at.file_path == PurePosixPath("lib/construct_b.dfn")
 
 
@@ -164,7 +164,7 @@ def test_constructor_applies_after_non_constructor_action_in_constraints(
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
-    assert all_diags[0].location.end_column == 78
+    assert all_diags[0].location.end_column == 77
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name == "position<box>::position</target>::position</bar>"
@@ -172,7 +172,7 @@ def test_constructor_applies_after_non_constructor_action_in_constraints(
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
-    assert all_diags[0].populated_at.end_column == 44
+    assert all_diags[0].populated_at.end_column == 43
     assert all_diags[0].populated_at.file_path == PurePosixPath("construct_bar.dfn")
 
 
@@ -187,11 +187,11 @@ def test_constrained_constructor_assigns_implied_in_parent(
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 8
-    assert all_diags[0].location.end_column == 56
+    assert all_diags[0].location.end_column == 55
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</p>::position</r>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
-    assert all_diags[0].populated_at.end_column == 42
+    assert all_diags[0].populated_at.end_column == 41
     assert all_diags[0].populated_at.file_path == PurePosixPath("construct_q.dfn")

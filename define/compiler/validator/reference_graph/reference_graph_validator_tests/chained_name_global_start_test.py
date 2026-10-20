@@ -33,7 +33,7 @@ class TestUnnecessarySelfReference:
         assert diags[0].location.line == 8
         assert diags[0].location.column == 33
         assert diags[0].location.end_line == 8
-        assert diags[0].location.end_column == 87
+        assert diags[0].location.end_column == 86
         assert diags[0].location.file_path is None
 
     def test_self_reference_in_chain(
@@ -144,7 +144,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 48
         assert all_diags[0].location.end_line == 6
-        assert all_diags[0].location.end_column == 64
+        assert all_diags[0].location.end_column == 63
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_valid_chain_past_implied_position(

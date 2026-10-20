@@ -30,7 +30,7 @@ def test_unmatched_close_brace(parse: Parse):
         parse("}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_file_starts_with_indented_trigger_conditions(parse: Parse):
@@ -38,7 +38,7 @@ def test_file_starts_with_indented_trigger_conditions(parse: Parse):
         parse("    it happens when {\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_file_all_newlines(parse: Parse):
@@ -54,7 +54,7 @@ def test_define_the_potential_incomplete_global_prefix(parse: Parse):
         parse("define the potential\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_missing_space_in_global_definition_prefix(parse: Parse):
@@ -62,7 +62,7 @@ def test_missing_space_in_global_definition_prefix(parse: Parse):
         parse("definethe potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 10
+    assert exc_info.value.location.end_column == 9
 
 
 def test_misspelled_define_in_global_definition_prefix(parse: Parse):
@@ -70,7 +70,7 @@ def test_misspelled_define_in_global_definition_prefix(parse: Parse):
         parse("defin the potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.end_column == 5
 
 
 def test_misspelled_potential_in_global_definition_prefix(parse: Parse):
@@ -78,7 +78,7 @@ def test_misspelled_potential_in_global_definition_prefix(parse: Parse):
         parse("define the potental position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_misspelled_the_in_global_definition_prefix(parse: Parse):
@@ -86,7 +86,7 @@ def test_misspelled_the_in_global_definition_prefix(parse: Parse):
         parse("define teh potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_wrong_word_order_in_global_definition_prefix(parse: Parse):
@@ -94,7 +94,7 @@ def test_wrong_word_order_in_global_definition_prefix(parse: Parse):
         parse("define potential the position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_invalid_global_definition_name_type(parse: Parse):
@@ -102,7 +102,7 @@ def test_invalid_global_definition_name_type(parse: Parse):
         parse("define the potential quality<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 7
+    assert exc_info.value.location.end_column == 6
 
 
 def test_bare_colon_at_top_level(native_parse: NativeParse):
@@ -110,7 +110,7 @@ def test_bare_colon_at_top_level(native_parse: NativeParse):
         native_parse(":\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_bare_slash_at_top_level(native_parse: NativeParse):
@@ -118,7 +118,7 @@ def test_bare_slash_at_top_level(native_parse: NativeParse):
         native_parse("/\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_bare_colon_between_definitions(native_parse: NativeParse):
@@ -126,7 +126,7 @@ def test_bare_colon_between_definitions(native_parse: NativeParse):
         native_parse("define the potential position<standard:/path>.\n" + ":\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_bare_slash_between_definitions(native_parse: NativeParse):
@@ -134,7 +134,7 @@ def test_bare_slash_between_definitions(native_parse: NativeParse):
         native_parse("define the potential position<standard:/path>.\n" + "/\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_close_angle_colon_in_action_statements_block(parse: Parse):
@@ -151,7 +151,7 @@ def test_close_angle_colon_in_action_statements_block(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 10
+    assert exc_info.value.location.end_column == 9
 
 
 def test_missing_open_angle_with_close_angle_colon(parse: Parse):
@@ -169,7 +169,7 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse):
     assert exc_info.value.name == "run"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.end_column == 30
 
 
 def test_global_position_block_open_without_content(parse: Parse):
@@ -208,7 +208,7 @@ def test_position_block_missing_required_clause(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_position_required_clause_missing_open_brace(parse: Parse):
@@ -230,7 +230,7 @@ def test_action_block_missing_trigger_clause(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 2
+    assert exc_info.value.location.end_column == 1
 
 
 def test_action_trigger_clause_missing_open_brace(parse: Parse):
@@ -478,7 +478,7 @@ def test_position_requirement_missing_name_after_type(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 29
+    assert exc_info.value.location.end_column == 28
     assert exc_info.value.name == "."
 
 
@@ -495,7 +495,7 @@ def test_position_requirement_missing_name_after_type_with_space(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 29
+    assert exc_info.value.location.end_column == 28
     assert exc_info.value.name == " "
 
 
@@ -533,7 +533,7 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
         )
     assert exc_info.value.location.line == 10
     assert exc_info.value.location.column == 19
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 26
 
 
 def test_create_particle_missing_reference(
@@ -552,7 +552,7 @@ def test_create_particle_missing_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_value_cannot_start_position_reference(parse: Parse):
@@ -568,7 +568,7 @@ def test_value_cannot_start_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 30
-    assert error.value.location.end_column == 35
+    assert error.value.location.end_column == 34
 
 
 def test_value_cannot_be_in_chained_position_reference(parse: Parse):
@@ -584,7 +584,7 @@ def test_value_cannot_be_in_chained_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 46
-    assert error.value.location.end_column == 51
+    assert error.value.location.end_column == 50
 
 
 def test_value_cannot_be_local_position_reference(parse: Parse):
@@ -600,7 +600,7 @@ def test_value_cannot_be_local_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 30
-    assert error.value.location.end_column == 35
+    assert error.value.location.end_column == 34
 
 
 def test_create_particle_reference_missing_name_after_chain_separator(
@@ -619,7 +619,7 @@ def test_create_particle_reference_missing_name_after_chain_separator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
-    assert exc_info.value.location.end_column == 46
+    assert exc_info.value.location.end_column == 45
 
 
 def test_create_particle_reference_chain_separator_then_newline(
@@ -659,7 +659,7 @@ def test_create_particle_reference_single_colon_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
-    assert exc_info.value.location.end_column == 44
+    assert exc_info.value.location.end_column == 43
 
 
 def test_create_particle_reference_single_slash_then_newline(
@@ -680,7 +680,7 @@ def test_create_particle_reference_single_slash_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
-    assert exc_info.value.location.end_column == 44
+    assert exc_info.value.location.end_column == 43
 
 
 def test_double_colon_in_create_reference_parses_as_global_name(
@@ -718,7 +718,7 @@ def test_destroy_particle_missing_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 32
-    assert exc_info.value.location.end_column == 33
+    assert exc_info.value.location.end_column == 32
 
 
 def test_destroy_particle_reference_missing_name_after_chain_separator(
@@ -737,7 +737,7 @@ def test_destroy_particle_reference_missing_name_after_chain_separator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 48
-    assert exc_info.value.location.end_column == 49
+    assert exc_info.value.location.end_column == 48
 
 
 def test_destroy_particle_reference_chain_separator_then_newline(
@@ -777,7 +777,7 @@ def test_destroy_particle_reference_single_colon_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 47
+    assert exc_info.value.location.end_column == 46
 
 
 def test_double_colon_in_destroy_reference_parses_as_global_name(
@@ -815,7 +815,7 @@ def test_name_chain_invalid_item(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
-    assert exc_info.value.location.end_column == 46
+    assert exc_info.value.location.end_column == 45
 
 
 def test_move_particle_missing_source_reference(
@@ -834,7 +834,7 @@ def test_move_particle_missing_source_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_column == 29
 
 
 def test_move_particle_missing_to_keyword(
@@ -853,7 +853,7 @@ def test_move_particle_missing_to_keyword(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_column == 52
+    assert exc_info.value.location.end_column == 51
 
 
 def test_move_particle_missing_destination_reference(
@@ -872,7 +872,7 @@ def test_move_particle_missing_destination_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 47
+    assert exc_info.value.location.end_column == 46
 
 
 def test_move_particle_chain_separator_after_source_then_terminator(
@@ -891,7 +891,7 @@ def test_move_particle_chain_separator_after_source_then_terminator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
-    assert exc_info.value.location.end_column == 46
+    assert exc_info.value.location.end_column == 45
 
 
 def test_move_particle_chain_separator_after_source_then_newline(
@@ -929,7 +929,7 @@ def test_move_particle_chain_separator_after_destination_then_terminator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_column == 64
+    assert exc_info.value.location.end_column == 63
 
 
 def test_move_particle_chain_separator_after_destination_then_newline(
@@ -967,7 +967,7 @@ def test_move_particle_single_colon_after_source(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
-    assert exc_info.value.location.end_column == 44
+    assert exc_info.value.location.end_column == 43
 
 
 def test_move_particle_single_colon_after_destination(
@@ -988,7 +988,7 @@ def test_move_particle_single_colon_after_destination(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 61
-    assert exc_info.value.location.end_column == 62
+    assert exc_info.value.location.end_column == 61
 
 
 def test_move_particle_no_space_before_to(
@@ -1007,7 +1007,7 @@ def test_move_particle_no_space_before_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
-    assert exc_info.value.location.end_column == 45
+    assert exc_info.value.location.end_column == 44
 
 
 def test_move_particle_no_space_after_to(
@@ -1026,7 +1026,7 @@ def test_move_particle_no_space_after_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 54
+    assert exc_info.value.location.end_column == 53
 
 
 def test_move_particle_chained_source_missing_to(
@@ -1045,7 +1045,7 @@ def test_move_particle_chained_source_missing_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 60
-    assert exc_info.value.location.end_column == 61
+    assert exc_info.value.location.end_column == 60
 
 
 def test_move_particle_missing_terminator_after_destination(
@@ -1085,7 +1085,7 @@ def test_move_particle_missing_close_angle_bracket_before_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 48
+    assert exc_info.value.location.end_column == 47
 
 
 def test_move_keyword_then_newline(
@@ -1104,7 +1104,7 @@ def test_move_keyword_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 13
+    assert exc_info.value.location.end_column == 12
 
 
 def test_move_particle_in_space_dot(
@@ -1123,7 +1123,7 @@ def test_move_particle_in_space_dot(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.end_column == 30
 
 
 def test_create_particle_no_space_before_reference(
@@ -1142,4 +1142,4 @@ def test_create_particle_no_space_before_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 37
+    assert exc_info.value.location.end_column == 36

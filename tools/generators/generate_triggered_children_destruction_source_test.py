@@ -71,7 +71,7 @@ def test_error_program_reports_its_one_error(tmp_path: Path):
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
-    assert diagnostic.location.end_column == 66
+    assert diagnostic.location.end_column == 65
     assert diagnostic.position_name == "position<scratch>::position</detail>"
     assert diagnostic.parent_position_name == "position<scratch>"
 
@@ -91,25 +91,25 @@ def test_in_destructor_contracted_program_reports_each_child_required_empty_and_
     assert first.location.line == 75
     assert first.location.column == 30
     assert first.location.end_line == 75
-    assert first.location.end_column == 50
+    assert first.location.end_column == 49
     assert first.position_name == "position</kept>::position</child_1_0>"
     assert isinstance(second, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
     assert second.location.line == 77
     assert second.location.column == 30
     assert second.location.end_line == 77
-    assert second.location.end_column == 50
+    assert second.location.end_column == 49
     assert second.position_name == "position</kept>::position</child_1_1>"
     assert isinstance(third, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert third.location.line == 91
     assert third.location.column == 30
     assert third.location.end_line == 91
-    assert third.location.end_column == 77
+    assert third.location.end_column == 76
     assert third.position_name == "position</kept>::position</child_1_0>"
     assert isinstance(fourth, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert fourth.location.line == 91
     assert fourth.location.column == 30
     assert fourth.location.end_line == 91
-    assert fourth.location.end_column == 77
+    assert fourth.location.end_column == 76
     assert fourth.position_name == "position</kept>::position</child_1_1>"
 
 

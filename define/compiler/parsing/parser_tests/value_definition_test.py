@@ -30,7 +30,7 @@ def test_value_definition_requires_global_name(parse: Parse):
         _ = parse("define the potential value<rational>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 28
-    assert error.value.location.end_column == 36
+    assert error.value.location.end_column == 35
 
 
 def test_value_definition_requires_terminator(parse: Parse):
@@ -46,4 +46,4 @@ def test_value_definition_disallows_block(parse: Parse):
         _ = parse("define the potential value<standard:/number/natural> {\n}\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 53
-    assert error.value.location.end_column == 55
+    assert error.value.location.end_column == 54

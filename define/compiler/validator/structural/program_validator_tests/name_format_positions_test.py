@@ -27,7 +27,7 @@ def test_authority_domain_leading_dot_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 34
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 35
+    assert diags[0].location.end_column == 34
     assert diags[0].location.file_path is None
 
 
@@ -44,7 +44,7 @@ def test_authority_domain_trailing_dot_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 49
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 50
+    assert diags[0].location.end_column == 49
     assert diags[0].location.file_path is None
 
 
@@ -61,7 +61,7 @@ def test_authority_domain_trailing_hyphen_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 49
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 50
+    assert diags[0].location.end_column == 49
     assert diags[0].location.file_path is None
 
 
@@ -78,7 +78,7 @@ def test_authority_domain_uppercase_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 34
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 35
+    assert diags[0].location.end_column == 34
     assert diags[0].location.file_path is None
 
 
@@ -95,7 +95,7 @@ def test_global_name_path_hyphen_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 93
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 94
+    assert diags[0].location.end_column == 93
     assert diags[0].location.file_path is None
 
 
@@ -112,7 +112,7 @@ def test_global_name_path_special_character_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 93
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 94
+    assert diags[0].location.end_column == 93
     assert diags[0].location.file_path is None
 
 
@@ -129,7 +129,7 @@ def test_global_name_path_uppercase_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 89
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 90
+    assert diags[0].location.end_column == 89
     assert diags[0].location.file_path is None
 
 
@@ -146,7 +146,7 @@ def test_later_path_segment_leading_digit_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 83
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 84
+    assert diags[0].location.end_column == 83
     assert diags[0].location.file_path is None
 
 
@@ -163,14 +163,14 @@ def test_local_name_leading_digit_position(
     assert diags[0].location.line == 6
     assert diags[0].location.column == 29
     assert diags[0].location.end_line == 6
-    assert diags[0].location.end_column == 30
+    assert diags[0].location.end_column == 29
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[1].position_name == "position<1bad>"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 29
     assert diags[1].location.end_line == 6
-    assert diags[1].location.end_column == 33
+    assert diags[1].location.end_column == 32
     assert diags[1].location.file_path is None
 
 
@@ -186,7 +186,7 @@ def test_local_name_special_character_position(
     assert diags[0].location.line == 6
     assert diags[0].location.column == 29
     assert diags[0].location.end_line == 6
-    assert diags[0].location.end_column == 35
+    assert diags[0].location.end_column == 34
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "my@pos"
@@ -194,7 +194,7 @@ def test_local_name_special_character_position(
     assert diags[1].location.line == 6
     assert diags[1].location.column == 31
     assert diags[1].location.end_line == 6
-    assert diags[1].location.end_column == 32
+    assert diags[1].location.end_column == 31
     assert diags[1].location.file_path is None
 
 
@@ -211,14 +211,14 @@ def test_local_name_uppercase_position(
     assert diags[0].location.line == 6
     assert diags[0].location.column == 29
     assert diags[0].location.end_line == 6
-    assert diags[0].location.end_column == 30
+    assert diags[0].location.end_column == 29
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[1].position_name == "position<BadName>"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 29
     assert diags[1].location.end_line == 6
-    assert diags[1].location.end_column == 36
+    assert diags[1].location.end_column == 35
     assert diags[1].location.file_path is None
 
 
@@ -235,7 +235,7 @@ def test_multiverse_trailing_underscore_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 33
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 34
+    assert diags[0].location.end_column == 33
     assert diags[0].location.file_path is None
 
 
@@ -252,7 +252,7 @@ def test_multiverse_uppercase_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 32
+    assert diags[0].location.end_column == 31
     assert diags[0].location.file_path is None
 
 
@@ -269,7 +269,7 @@ def test_path_segment_uppercase_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 83
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 84
+    assert diags[0].location.end_column == 83
     assert diags[0].location.file_path is None
 
 
@@ -292,7 +292,7 @@ def test_path_trailing_slash_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 97
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 98
+    assert diags[0].location.end_column == 97
     assert diags[0].location.file_path is None
 
 
@@ -309,7 +309,7 @@ def test_universe_trailing_underscore_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 60
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 61
+    assert diags[0].location.end_column == 60
     assert diags[0].location.file_path is None
 
 
@@ -326,7 +326,7 @@ def test_universe_uppercase_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 47
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 48
+    assert diags[0].location.end_column == 47
     assert diags[0].location.file_path is None
 
 
@@ -345,7 +345,7 @@ def test_multiverse_name_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 32
+    assert diags[0].location.end_column == 31
 
 
 def test_multiverse_name_too_short(
@@ -383,7 +383,7 @@ def test_authority_domain_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 34
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 35
+    assert diags[0].location.end_column == 34
 
 
 def test_authority_domain_too_short(
@@ -422,7 +422,7 @@ def test_authority_path_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 48
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 49
+    assert diags[0].location.end_column == 48
 
 
 def test_authority_path_empty_segment(
@@ -455,7 +455,7 @@ def test_universe_name_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 48
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 49
+    assert diags[0].location.end_column == 48
 
 
 def test_universe_name_too_short(
@@ -488,7 +488,7 @@ def test_path_segment_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 53
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 54
+    assert diags[0].location.end_column == 53
 
 
 def test_global_name_path_empty_segment(

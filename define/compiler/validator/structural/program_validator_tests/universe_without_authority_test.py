@@ -41,7 +41,7 @@ def test_non_standard_without_authority_error(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 42
+    assert diags[0].location.end_column == 41
     assert diags[0].location.file_path is None
 
 

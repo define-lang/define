@@ -92,7 +92,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
-    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.end_column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -158,7 +158,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
-    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.end_column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -214,7 +214,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     assert all_diags[1].location.line == 9
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.end_line == 9
-    assert all_diags[1].location.end_column == 48
+    assert all_diags[1].location.end_column == 47
     assert all_diags[1].location.file_path == PurePosixPath("fill_1.dfn")
     assert all_diags[1].position_name == "position<spare>"
 
@@ -231,7 +231,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 14
-    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.end_column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -297,7 +297,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15
-    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.end_column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -363,7 +363,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 18
-    assert diagnostic.location.end_column == 63
+    assert diagnostic.location.end_column == 62
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -429,7 +429,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 19
-    assert diagnostic.location.end_column == 79
+    assert diagnostic.location.end_column == 78
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -495,7 +495,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 22
-    assert diagnostic.location.end_column == 79
+    assert diagnostic.location.end_column == 78
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -569,7 +569,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 27
     assert diagnostic.location.end_line == 3
-    assert diagnostic.location.end_column == 35
+    assert diagnostic.location.end_column == 34
     assert diagnostic.location.file_path == PurePosixPath("child_2.dfn")
     assert diagnostic.file_path == "missing.dfn"
     assert _destroyed_positions(result) == [
@@ -590,7 +590,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 20
-    assert diagnostic.location.end_column == 63
+    assert diagnostic.location.end_column == 62
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -656,7 +656,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 16
-    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.end_column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         diagnostic.position_name
@@ -722,7 +722,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     assert untriggered.location.line == 7
     assert untriggered.location.column == 28
     assert untriggered.location.end_line == 7
-    assert untriggered.location.end_column == 43
+    assert untriggered.location.end_column == 42
     assert untriggered.location.file_path == PurePosixPath("cleanup.dfn")
     assert untriggered.constraint_name == "action</fill_1>"
     assert untriggered.position_name == "position<dependency>"
@@ -731,7 +731,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     assert circular.location.line == 3
     assert circular.location.column == 20
     assert circular.location.end_line == 3
-    assert circular.location.end_column == 36
+    assert circular.location.end_column == 35
     assert circular.location.file_path == PurePosixPath("child_2.dfn")
     assert circular.cycle == [
         _CLEANUP,

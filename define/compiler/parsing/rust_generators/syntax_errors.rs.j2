@@ -26,6 +26,8 @@ impl<'py> SyntaxErrors<'py> {
         Self { py, file_path }
     }
 
+    /// Returns the location from `start` through `end`, the position of its last
+    /// character.
     fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
         SourceLocation::new(
             self.py,
@@ -46,7 +48,8 @@ impl<'py> SyntaxErrors<'py> {
         }
     }
 {% for exception in exceptions %}
-    /// Returns a `{{ module_name }}.{{ exception.name }}` from `start` to `end`.
+    /// Returns a `{{ module_name }}.{{ exception.name }}` from `start` through
+    /// `end`, the position of its last character.
     pub fn {{ exception.snake_case_name }}(
         &self,
         start: Position,

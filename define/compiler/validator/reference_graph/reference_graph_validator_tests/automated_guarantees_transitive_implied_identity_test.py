@@ -45,7 +45,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 69
     assert all_diags[0].location.end_line == 27
-    assert all_diags[0].location.end_column == 88
+    assert all_diags[0].location.end_column == 87
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position<box>::position</implied_b>"
     assert all_diags[0].target_position == "position<fail_dest>"
@@ -84,7 +84,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 87
     assert all_diags[0].location.end_line == 26
-    assert all_diags[0].location.end_column == 106
+    assert all_diags[0].location.end_column == 105
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].source_position
@@ -126,7 +126,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 87
     assert all_diags[0].location.end_line == 25
-    assert all_diags[0].location.end_column == 106
+    assert all_diags[0].location.end_column == 105
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].source_position

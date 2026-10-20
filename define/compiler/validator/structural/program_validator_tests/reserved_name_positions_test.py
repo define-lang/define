@@ -30,14 +30,14 @@ def test_case_insensitive_reserved_universe_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 51
+    assert diags[0].location.end_column == 50
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].reserved_name == "STANDARD"
     assert diags[1].location.line == 1
     assert diags[1].location.column == 50
     assert diags[1].location.end_line == 1
-    assert diags[1].location.end_column == 58
+    assert diags[1].location.end_column == 57
     assert diags[1].location.file_path is None
 
 
@@ -53,7 +53,7 @@ def test_common_word_reserved_universe_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 55
+    assert diags[0].location.end_column == 54
     assert diags[0].location.file_path is None
 
 
@@ -69,7 +69,7 @@ def test_define_reserved_universe_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 56
+    assert diags[0].location.end_column == 55
     assert diags[0].location.file_path is None
 
 
@@ -86,7 +86,7 @@ def test_dotless_authority_with_multiverse_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 34
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 39
+    assert diags[0].location.end_column == 38
     assert diags[0].location.file_path is None
 
 
@@ -102,7 +102,7 @@ def test_reserved_package_repository_multiverse_position(
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 34
+    assert diags[0].location.end_column == 33
     assert diags[0].location.file_path is None
 
 

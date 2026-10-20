@@ -242,7 +242,7 @@ def test_unused_implication_in_constructor_error(
     assert diags[0].location.line == 2
     assert diags[0].location.column == 25
     assert diags[0].location.end_line == 2
-    assert diags[0].location.end_column == 58
+    assert diags[0].location.end_column == 57
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 

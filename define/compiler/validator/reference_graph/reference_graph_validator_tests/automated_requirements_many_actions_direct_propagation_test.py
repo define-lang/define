@@ -234,7 +234,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert parent_marker_diagnostic.location.line == 33
     assert parent_marker_diagnostic.location.column == 30
     assert parent_marker_diagnostic.location.end_line == 33
-    assert parent_marker_diagnostic.location.end_column == 93
+    assert parent_marker_diagnostic.location.end_column == 92
     assert parent_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         parent_marker_diagnostic.position_name
@@ -270,11 +270,11 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         },
     )
     assert parent_marker_diagnostic.propagation_chain[0].location.end_line == 7
-    assert parent_marker_diagnostic.propagation_chain[0].location.end_column == 54
+    assert parent_marker_diagnostic.propagation_chain[0].location.end_column == 53
     assert parent_marker_diagnostic.propagation_chain[1].location.end_line == 33
-    assert parent_marker_diagnostic.propagation_chain[1].location.end_column == 93
+    assert parent_marker_diagnostic.propagation_chain[1].location.end_column == 92
     assert parent_marker_diagnostic.propagation_chain[2].location.end_line == 16
-    assert parent_marker_diagnostic.propagation_chain[2].location.end_column == 97
+    assert parent_marker_diagnostic.propagation_chain[2].location.end_column == 96
 
     child_marker_diagnostic = all_diags[1]
     assert isinstance(
@@ -285,7 +285,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert child_marker_diagnostic.location.line == 33
     assert child_marker_diagnostic.location.column == 30
     assert child_marker_diagnostic.location.end_line == 33
-    assert child_marker_diagnostic.location.end_column == 93
+    assert child_marker_diagnostic.location.end_column == 92
     assert child_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         child_marker_diagnostic.position_name
@@ -321,11 +321,11 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         },
     )
     assert child_marker_diagnostic.propagation_chain[0].location.end_line == 7
-    assert child_marker_diagnostic.propagation_chain[0].location.end_column == 53
+    assert child_marker_diagnostic.propagation_chain[0].location.end_column == 52
     assert child_marker_diagnostic.propagation_chain[1].location.end_line == 33
-    assert child_marker_diagnostic.propagation_chain[1].location.end_column == 93
+    assert child_marker_diagnostic.propagation_chain[1].location.end_column == 92
     assert child_marker_diagnostic.propagation_chain[2].location.end_line == 17
-    assert child_marker_diagnostic.propagation_chain[2].location.end_column == 114
+    assert child_marker_diagnostic.propagation_chain[2].location.end_column == 113
 
     item_diagnostic = all_diags[2]
     assert isinstance(
@@ -335,7 +335,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert item_diagnostic.location.line == 33
     assert item_diagnostic.location.column == 30
     assert item_diagnostic.location.end_line == 33
-    assert item_diagnostic.location.end_column == 93
+    assert item_diagnostic.location.end_column == 92
     assert item_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
         item_diagnostic.position_name
@@ -371,11 +371,11 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         },
     )
     assert item_diagnostic.propagation_chain[0].location.end_line == 7
-    assert item_diagnostic.propagation_chain[0].location.end_column == 45
+    assert item_diagnostic.propagation_chain[0].location.end_column == 44
     assert item_diagnostic.propagation_chain[1].location.end_line == 33
-    assert item_diagnostic.propagation_chain[1].location.end_column == 93
+    assert item_diagnostic.propagation_chain[1].location.end_column == 92
     assert item_diagnostic.propagation_chain[2].location.end_line == 18
-    assert item_diagnostic.propagation_chain[2].location.end_column == 83
+    assert item_diagnostic.propagation_chain[2].location.end_column == 82
     assert action_graph(result.reference_graph_result) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
