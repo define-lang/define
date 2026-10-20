@@ -11,7 +11,7 @@ pub const OPEN_BRACE: u8 = b'{';
 const CLOSE_BRACE: u8 = b'}';
 /// What the grammar's `block_open` starts with.
 pub const BLOCK_OPEN: &[u8] = &[SPACE, OPEN_BRACE];
-const TERMINATOR: u8 = b'.';
+pub const TERMINATOR: u8 = b'.';
 /// How much deeper than the statement that opens a block each line in the
 /// block is indented.
 const INDENTATION_WIDTH: usize = 4;
@@ -102,8 +102,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     pub fn parse_block_close(&mut self) -> ParseResult<Position> {
         self.scanner.consume_bytes(1);
         let end = self.scanner.position;
+        // Something other than a line feed or a comment follows the `}`.
         if !self.end_line()? {
-            return Err(ParseError::not_yet_supported(end, "anything after `}`"));
+            return Err(self.errors.missing_newline_after_close_brace(end, end));
         }
         Ok(end)
     }

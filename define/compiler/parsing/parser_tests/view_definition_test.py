@@ -11,7 +11,7 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
 _OPERATION_PREFIX = "define the operation<mv:define-lang.org:parser:/add> {\n"
@@ -377,10 +377,10 @@ def test_disallows_quality_implication(parse: Parse):
 
 
 def test_disallows_direction_statement_after_potential_position_constraint_block(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/p> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the value</number>.\n"
@@ -390,7 +390,8 @@ def test_disallows_direction_statement_after_potential_position_constraint_block
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 5
-    assert error.value.location.end_column == 14
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 15
 
 
 def test_disallows_direction_statement_after_local_position_constraint_block(

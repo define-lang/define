@@ -76,6 +76,15 @@ impl Position {
             column: self.column + 1,
         }
     }
+
+    /// Returns the position one column earlier on the same line, which must
+    /// not be the first column.
+    pub const fn previous_column(self) -> Self {
+        Self {
+            line: self.line,
+            column: self.column - 1,
+        }
+    }
 }
 
 pub struct Scanner<'source> {
@@ -94,6 +103,20 @@ impl<'source> Scanner<'source> {
 
     pub const fn is_at_end(&self) -> bool {
         self.rest.is_empty()
+    }
+
+    /// The text before the first of the bytes in `ends`, or before the end of
+    /// the source.
+    pub fn text_before_any(&self, ends: &[u8]) -> SourceText<'source> {
+        let length = self
+            .rest
+            .iter()
+            .position(|byte| ends.contains(byte))
+            .unwrap_or(self.rest.len());
+        SourceText {
+            bytes: &self.rest[..length],
+            is_known_ascii: false,
+        }
     }
 
     /// The rest of the line before its line feed.

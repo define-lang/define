@@ -360,9 +360,9 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
     assert exc_info.value.location.end_column == 6
 
 
-def test_position_constraint_invalid_type_keyword(parse: Parse):
+def test_position_constraint_invalid_type_keyword(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the osition<my_lib:/path>.\n"
@@ -372,4 +372,5 @@ def test_position_constraint_invalid_type_keyword(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 20
-    assert exc_info.value.location.end_column == 39
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 26

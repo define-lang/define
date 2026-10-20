@@ -13,14 +13,14 @@ mod parser_diagnostics;
 mod syntax_errors;
 
 use ast_builder::{AstBuilder, FilePath, Node};
-use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE};
+use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE, TERMINATOR};
 use parse_error::{ParseError, ParseResult};
 use parser_diagnostics::ParserDiagnostics;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
 use scanner::{Position, Scanner, SourceText};
 use syntax_errors::SyntaxErrors;
-use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END};
+use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
@@ -230,11 +230,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
         match self.lines().next_line_in_block(0)? {
             LineInBlock::Close => {}
+            // A statement is where the block's `}` belongs.
             LineInBlock::Statement { .. } => {
-                return Err(ParseError::not_yet_supported(
-                    self.scanner.position,
-                    "anything but `}` here",
-                ));
+                let start = self.scanner.position;
+                return Err(self.errors.missing_close_brace(start, self.end_of_line()));
             }
             // The source ends before the block's `}`.
             LineInBlock::EndOfSource => {
@@ -250,11 +249,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn missing_close_brace(&self, start: Position, block_open_end: Position) -> ParseError {
-        let open_brace = Position {
-            line: block_open_end.line,
-            column: block_open_end.column - 1,
-        };
-        self.errors.missing_close_brace(start, open_brace)
+        self.errors
+            .missing_close_brace(start, block_open_end.previous_column())
     }
 
     /// Returns the error for a statement in a potential position definition
@@ -266,13 +262,17 @@ impl<'py, 'source> Parser<'py, 'source> {
         if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
             return ParseError::not_yet_supported(start, "quality implication statements");
         }
-        let statement = self.scanner.rest_of_line();
-        let end = Position {
-            line: start.line,
-            column: start.after(statement).column - 1,
-        };
         self.errors
-            .invalid_potential_position_definition_block(start, end)
+            .invalid_potential_position_definition_block(start, self.end_of_line())
+    }
+
+    /// Returns the position of the last character on the line before its line
+    /// feed, which must not be empty from the scanner's position.
+    fn end_of_line(&self) -> Position {
+        self.scanner
+            .position
+            .after(self.scanner.rest_of_line())
+            .previous_column()
     }
 
     /// Parses the rest of a position constraint block after its
@@ -340,11 +340,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::PositionRequirementStatement<'py>> {
         let start = self.scanner.position;
+        // The statement is not a position requirement statement.
         if !self.scanner.consume(IT_HAS_THE) {
-            return Err(ParseError::not_yet_supported(
-                start,
-                "anything but a position requirement statement here",
-            ));
+            return Err(self
+                .errors
+                .invalid_position_constraint_block(start, self.end_of_line()));
         }
         let typed_name = self.parse_typed_global_name_reference(fqun)?;
         // There is no `.`.
@@ -368,11 +368,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::GlobalTypedNameReference<'py>> {
         let start = self.scanner.position;
+        // The name type is not one a position requirement statement allows.
         let Some(&(_, name_type)) = CONSTRAINT_NAME_TYPES
             .iter()
             .find(|&&(keyword, _)| self.scanner.consume(keyword))
         else {
-            return Err(ParseError::not_yet_supported(start, "this name type"));
+            return Err(self.expected_constraint_name_type());
         };
         let (location, name_fqun, path) = self.parse_global_name_content()?;
         let name_content = self
@@ -382,6 +383,25 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .ast
             .global_typed_name_reference(location, fqun.clone(), name_type, name_content)?)
+    }
+
+    /// Returns the error for a name type, at the scanner's position, that a
+    /// position requirement statement does not allow.
+    #[cold]
+    #[inline(never)]
+    fn expected_constraint_name_type(&self) -> ParseError {
+        let start = self.scanner.position;
+        // The error covers the word where the name type belongs, or the
+        // character there if the word is empty.
+        let word =
+            self.scanner
+                .text_before_any(&[NAME_CONTENT_START, SPACE, TERMINATOR, LINE_FEED]);
+        let end = if word.bytes.is_empty() {
+            start
+        } else {
+            start.after(word).previous_column()
+        };
+        self.errors.expected_constraint_name_type(start, end)
     }
 
     /// Parses the `<`, fully qualified global name, and `>` that follow the name

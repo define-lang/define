@@ -202,10 +202,10 @@ def test_position_constraint_block_requires_requirements(native_parse: NativePar
 
 
 def test_position_constraint_block_with_invalid_statement_then_more_definitions(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<my_lib:/path>.\n"
             + "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -216,14 +216,15 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 9
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 41
 
 
 def test_position_definition_rejects_multiple_constraint_blocks(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
@@ -235,14 +236,13 @@ def test_position_definition_rejects_multiple_constraint_blocks(
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 39
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 41
 
 
-def test_second_constraint_block_after_close_on_same_line(
-    parse: Parse,
-):
+def test_second_constraint_block_after_close_on_same_line(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
@@ -253,14 +253,13 @@ def test_second_constraint_block_after_close_on_same_line(
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_line == 4
     assert exc_info.value.location.end_column == 6
 
 
-def test_second_constraint_block_on_requirement_line(
-    parse: Parse,
-):
+def test_second_constraint_block_on_requirement_line(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.    it may only contain particles where {\n"
@@ -270,6 +269,7 @@ def test_second_constraint_block_on_requirement_line(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 37
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 37
 
 

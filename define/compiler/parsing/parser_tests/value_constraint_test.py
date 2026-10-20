@@ -95,9 +95,9 @@ def test_value_constraint_requires_global_name(parse: Parse):
     assert error.value.location.end_column == 33
 
 
-def test_constraint_name_type_error_includes_value(parse: Parse):
+def test_constraint_name_type_error_includes_value(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
-        _ = parse(
+        _ = native_parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the thing</number>.\n"
@@ -106,4 +106,5 @@ def test_constraint_name_type_error_includes_value(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 20
-    assert error.value.location.end_column == 25
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 24
