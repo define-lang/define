@@ -113,8 +113,11 @@ py_test(
     name = "generate_invisible_characters_test",
     size = "small",
     srcs = ["generate_invisible_characters_test.py"],
+    data = ["//define/compiler/parsing/native:characters/invisible_ranges.rs"],
+    env = {"INVISIBLE_RANGES": "$(rlocationpath //define/compiler/parsing/native:characters/invisible_ranges.rs)"},
     deps = [
         ":generate_invisible_characters",
+        ":runfiles",
         "//define/compiler/parsing:invisible_characters_data",
     ],
 )

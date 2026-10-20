@@ -385,8 +385,12 @@ pub enum LineEnd {
     /// feed.
     Text { leading_space_count: usize },
     /// Any number of spaces, then anything else, which needs a slower look to
-    /// say what it is.
-    Unusual { leading_space_count: usize },
+    /// say what it is. A line feed or the end of the source follows `length`
+    /// bytes.
+    Unusual {
+        leading_space_count: usize,
+        length: usize,
+    },
 }
 
 /// Scans the start of `source` for the end of a line.
@@ -422,6 +426,7 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
             WIDTH => line_end_after_space_vectors(source),
             _ => LineEnd::Unusual {
                 leading_space_count,
+                length: leading_space_count,
             },
         };
     }
@@ -432,6 +437,7 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
         },
         LINE_FEED => LineEnd::Unusual {
             leading_space_count,
+            length: leading_space_count,
         },
         COMMENT_START => {
             let line_feeds = mask(vector, LINE_FEED) & bytes;
@@ -447,6 +453,7 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
             if unprintable_mask(vector) & low_bits(end) != 0 || spaces & (1 << (end - 1)) != 0 {
                 return LineEnd::Unusual {
                     leading_space_count,
+                    length: end,
                 };
             }
             LineEnd::EndOrAsciiComment {
@@ -477,6 +484,7 @@ fn line_end_after_space_vectors(source: &[u8]) -> LineEnd {
         // whitespace.
         LineEnd::EndOrAsciiComment { length: 0, .. } => LineEnd::Unusual {
             leading_space_count: offset,
+            length: offset,
         },
         LineEnd::EndOrAsciiComment {
             length,
@@ -492,8 +500,10 @@ fn line_end_after_space_vectors(source: &[u8]) -> LineEnd {
         },
         LineEnd::Unusual {
             leading_space_count,
+            length,
         } => LineEnd::Unusual {
             leading_space_count: offset + leading_space_count,
+            length: offset + length,
         },
     }
 }
@@ -507,6 +517,7 @@ fn long_line_end(source: &[u8], leading_space_count: usize) -> LineEnd {
     if !scanned.is_printable_ascii || source[scanned.length - 1] == SPACE {
         return LineEnd::Unusual {
             leading_space_count,
+            length: scanned.length,
         };
     }
     LineEnd::EndOrAsciiComment {
@@ -1030,7 +1041,8 @@ mod tests {
         expect_that!(
             line_end(b"  \n# a comment\n"),
             eq(LineEnd::Unusual {
-                leading_space_count: 2
+                leading_space_count: 2,
+                length: 2
             })
         );
     }
@@ -1040,7 +1052,8 @@ mod tests {
         expect_that!(
             line_end(b"  "),
             eq(LineEnd::Unusual {
-                leading_space_count: 2
+                leading_space_count: 2,
+                length: 2
             })
         );
     }
@@ -1050,7 +1063,8 @@ mod tests {
         expect_that!(
             line_end(b"# a comment \ndefine the potential position<standard:/path>.\n"),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 12
             })
         );
     }
@@ -1060,7 +1074,8 @@ mod tests {
         expect_that!(
             line_end(b"# "),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 2
             })
         );
     }
@@ -1070,7 +1085,8 @@ mod tests {
         expect_that!(
             line_end(b"# a\tcomment\n"),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 11
             })
         );
     }
@@ -1080,7 +1096,8 @@ mod tests {
         expect_that!(
             line_end("# café\n".as_bytes()),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 7
             })
         );
     }
@@ -1090,7 +1107,8 @@ mod tests {
         expect_that!(
             line_end(b"# A comment that is longer than one vector of bytes. \nx\n"),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 53
             })
         );
     }
@@ -1100,7 +1118,8 @@ mod tests {
         expect_that!(
             line_end("# A comment that is longer than one vector, ending in é\n".as_bytes()),
             eq(LineEnd::Unusual {
-                leading_space_count: 0
+                leading_space_count: 0,
+                length: 56
             })
         );
     }
@@ -1110,7 +1129,8 @@ mod tests {
         expect_that!(
             line_end(b"   # A comment that is longer than one vector of bytes. \nx\n"),
             eq(LineEnd::Unusual {
-                leading_space_count: 3
+                leading_space_count: 3,
+                length: 56
             })
         );
     }
@@ -1171,7 +1191,8 @@ mod tests {
         expect_that!(
             line_end(&source),
             eq(LineEnd::Unusual {
-                leading_space_count: 64
+                leading_space_count: 64,
+                length: 64
             })
         );
     }
@@ -1181,7 +1202,8 @@ mod tests {
         expect_that!(
             line_end(&[b' '; 32]),
             eq(LineEnd::Unusual {
-                leading_space_count: 32
+                leading_space_count: 32,
+                length: 32
             })
         );
     }
@@ -1191,7 +1213,8 @@ mod tests {
         expect_that!(
             line_end(&[b' '; 40]),
             eq(LineEnd::Unusual {
-                leading_space_count: 40
+                leading_space_count: 40,
+                length: 40
             })
         );
     }
@@ -1202,7 +1225,8 @@ mod tests {
         expect_that!(
             line_end(&source),
             eq(LineEnd::Unusual {
-                leading_space_count: 40
+                leading_space_count: 40,
+                length: 52
             })
         );
     }

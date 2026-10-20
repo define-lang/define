@@ -118,10 +118,11 @@ The only invisible characters allowed in Define source code files are:
 - Space (`U+0020`)
 - Line feed (`U+000A`)
 - Variation selectors 15 and 16 (`U+FE0E` and `U+FE0F`), when the character
-  before them is visible.
+  before them is visible and in the same comment, name, or literal content.
 - Zero width non-joiner and zero width joiner (`U+200C` and `U+200D`), when the
-  character after them is visible and the character before them is visible or is
-  `U+FE0E` or `U+FE0F`.
+  character after them is visible, the character before them is visible or is
+  `U+FE0E` or `U+FE0F`, and both are in the same comment, name, or literal
+  content.
 - Left-to-right mark, right-to-left mark, and Arabic letter mark (`U+200E`,
   `U+200F`, and `U+061C`), in comments only.
 
@@ -729,8 +730,8 @@ exactly four spaces longer than the leading whitespace of the statement that
 opened that block. For nested blocks, this rule applies recursively.
 
 ```ebnf
-block_open = " ", "{", newline ;
-block_close = "}", newline ;
+block_open = " ", "{", ( newline | " ", { " " }, comment ) ;
+block_close = "}", ( newline | " ", { " " }, comment ) ;
 ```
 
 ### Non-Filesystem Contexts

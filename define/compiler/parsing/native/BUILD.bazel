@@ -5,6 +5,8 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+exports_files(["characters/invisible_ranges.rs"])
+
 genrule(
     name = "ast",
     outs = ["ast.rs"],
@@ -49,6 +51,7 @@ pyo3_extension(
     srcs = [
         "ast_builder.rs",
         "characters.rs",
+        "characters/invisible_ranges.rs",
         "lines.rs",
         "parse_error.rs",
         "parser.rs",

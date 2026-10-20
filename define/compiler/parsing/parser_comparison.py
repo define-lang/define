@@ -11,7 +11,7 @@ import typing
 import msgspec
 
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing import invisible_characters, parser
+from define.compiler.parsing import parser
 from define.compiler.parsing.native import native_parser
 
 if typing.TYPE_CHECKING:
@@ -38,13 +38,9 @@ def native_parse(
     source: str, file_path: PurePosixPath | None = None
 ) -> native_parser.ParseResult:
     """Parse source into an AST Program with the parser in parser.rs."""
-    # TODO: Remove this check once parser.rs performs the invisible-character
-    # check.
-    try:
-        invisible_characters.check(source, file_path)
-    except parser_exceptions.DefineSyntaxError as error:
-        return native_parser.ParseResult(None, [], error)
-    return native_parser.parse(source.encode(), file_path)
+    # A lone surrogate in source becomes invalid UTF-8, as it would be in a
+    # file, instead of failing to encode.
+    return native_parser.parse(source.encode(errors="surrogatepass"), file_path)
 
 
 def native_parse_where_lark_is_wrong(

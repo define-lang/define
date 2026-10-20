@@ -191,10 +191,14 @@ impl<'source> Scanner<'source> {
         self.position.column += count;
     }
 
-    /// Consumes and returns the rest of the line before its line feed.
-    pub fn consume_rest_of_line(&mut self) -> SourceText<'source> {
-        let text = self.rest_of_line();
-        self.rest = &self.rest[text.bytes.len()..];
+    /// Consumes and returns the next `length` bytes, which have no line feed.
+    pub fn consume_text(&mut self, length: usize) -> SourceText<'source> {
+        let (bytes, rest) = self.rest.split_at(length);
+        let text = SourceText {
+            bytes,
+            is_known_ascii: false,
+        };
+        self.rest = rest;
         self.position = self.position.after(text);
         text
     }

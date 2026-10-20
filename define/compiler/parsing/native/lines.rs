@@ -289,8 +289,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             // The only unusual line that does not end in an error is a comment.
             LineEnd::Unusual {
                 leading_space_count,
+                length,
             } => {
-                self.end_unusual_line(leading_space_count)?;
+                self.end_unusual_line(leading_space_count, length)?;
                 self.check_indentation(
                     line_start,
                     expected_comment_indentation,
@@ -338,8 +339,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             LineEnd::Text { .. } => Ok(false),
             LineEnd::Unusual {
                 leading_space_count,
+                length,
             } => {
-                self.end_unusual_line(leading_space_count)?;
+                self.end_unusual_line(leading_space_count, length)?;
                 Ok(true)
             }
         }
@@ -351,12 +353,13 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         self.scanner.consume_line_feed();
     }
 
-    /// Consumes the rest of a line, including its line feed, that
-    /// `vector_scan::line_end` finds unusual after `leading_space_count`
+    /// Consumes the rest of a line, `length` bytes and then its line feed,
+    /// that `vector_scan::line_end` finds unusual after `leading_space_count`
     /// spaces.
-    #[cold]
+    // A comment that is not printable ASCII comes here, which is common in
+    // code written in languages other than English, so this is not cold.
     #[inline(never)]
-    fn end_unusual_line(&mut self, leading_space_count: usize) -> ParseResult<()> {
+    fn end_unusual_line(&mut self, leading_space_count: usize, length: usize) -> ParseResult<()> {
         let start = self.scanner.position;
         self.scanner.consume_bytes(leading_space_count);
         // The line ends with spaces.
@@ -364,11 +367,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return Err(self.errors.trailing_whitespace_error(start, start, " "));
         }
         let comment_start = self.scanner.position;
-        let comment = self.scanner.consume_rest_of_line();
-        // TODO: Check comments for invisible characters here, instead of in
-        // the Python check that runs before this parser. Every comment that is
-        // not printable ASCII comes here, so this check sees every character
-        // that could be invisible.
+        let comment = self.scanner.consume_text(length - leading_space_count);
         // The comment has a character that comments do not allow.
         if let Some(error) = characters::first_disallowed_character(
             self.errors,
