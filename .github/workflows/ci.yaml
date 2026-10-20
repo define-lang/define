@@ -39,11 +39,19 @@ jobs:
         with:
           persist-credentials: false
 
+      # target-cpu=native produces CPU-specific Rust code. Runners with the same
+      # OS can have different CPUs, so even fallback cache restores must match
+      # the CPU model and features to avoid illegal-instruction crashes.
+      - &cpu-cache
+        name: Identify CPU for the build cache
+        id: cpu
+        run: python3 tools/cpu_fingerprint.py >> "$GITHUB_OUTPUT"
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}-coverage
+          disk-cache: ${{ github.workflow }}-coverage-cpu-v1-${{ steps.cpu.outputs.fingerprint }}
           repository-cache: true
 
       - name: Coverage
@@ -75,11 +83,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - *cpu-cache
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}-${{ matrix.os }}
+          disk-cache: ${{ github.workflow }}-${{ matrix.os }}-cpu-v1-${{ steps.cpu.outputs.fingerprint }}
           repository-cache: true
 
       - name: Test
@@ -103,11 +113,13 @@ jobs:
         with:
           python-version: 3.14t
 
+      - *cpu-cache
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
         with:
           bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}
+          disk-cache: ${{ github.workflow }}-lint-cpu-v1-${{ steps.cpu.outputs.fingerprint }}
           repository-cache: true
 
       # This must run before any other Bazel command, which would silently
