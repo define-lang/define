@@ -155,6 +155,15 @@ def _has_keyword(call: ast.Call, attribute: str) -> bool:
     return any(keyword.arg == attribute for keyword in call.keywords)
 
 
+def _is_true(call: ast.Call, attribute: str) -> bool:
+    return any(
+        keyword.arg == attribute
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value is True
+        for keyword in call.keywords
+    )
+
+
 def _has_tag(call: ast.Call, tag: str) -> bool:
     return tag in _string_list(call, "tags")
 
@@ -232,13 +241,17 @@ def _py_proto_dependency(call: ast.Call, package: Path) -> str | None:
     return dependency
 
 
-def _scan_build_file(
-    build_file: Path, repository: Path
-) -> tuple[list[PythonTarget], list[PyrightTarget], dict[str, Path], dict[str, str]]:
-    targets: list[PythonTarget] = []
-    pyright_targets: list[PyrightTarget] = []
-    proto_sources: dict[str, Path] = {}
-    py_proto_deps: dict[str, str] = {}
+class _BuildFileTargets(msgspec.Struct):
+    """The targets found in the BUILD files scanned so far."""
+
+    targets: list[PythonTarget] = msgspec.field(default_factory=list)
+    pyright_targets: list[PyrightTarget] = msgspec.field(default_factory=list)
+    proto_sources: dict[str, Path] = msgspec.field(default_factory=dict)
+    py_proto_deps: dict[str, str] = msgspec.field(default_factory=dict)
+    extension_module_owners: dict[str, str] = msgspec.field(default_factory=dict)
+
+
+def _scan_build_file(build_file: Path, repository: Path, found: _BuildFileTargets):
     relative_build_file = build_file.relative_to(repository)
     package = relative_build_file.parent
     contents = build_file.read_text(encoding="utf-8")
@@ -258,13 +271,13 @@ def _scan_build_file(
         if rule_class == "proto_library":
             sources = _string_list(call, "srcs")
             if len(sources) == 1:
-                proto_sources[label] = package / sources[0]
+                found.proto_sources[label] = package / sources[0]
         elif rule_class == "py_proto_library":
             dependency = _py_proto_dependency(call, package)
             if dependency is not None:
-                py_proto_deps[label] = dependency
+                found.py_proto_deps[label] = dependency
         elif rule_class == "pyright_test" and not _has_keyword(call, "srcs"):
-            pyright_targets.append(
+            found.pyright_targets.append(
                 PyrightTarget(
                     label=label,
                     build_file=relative_build_file,
@@ -274,48 +287,66 @@ def _scan_build_file(
                 )
             )
         elif rule_class in PYTHON_RULE_CLASSES:
-            targets.append(
+            found.targets.append(
                 _python_target(call, label, rule_class, relative_build_file, lines)
             )
-    return targets, pyright_targets, proto_sources, py_proto_deps
+        # An extension that generates its own stub is imported directly. One
+        # without a stub is imported through a py_library that holds a
+        # hand-written stub, which owns the module instead.
+        elif rule_class == "pyo3_extension" and _is_true(call, "stubs"):
+            extension_module = _string_value(call, "module_name")
+            if extension_module is None:
+                raise ValueError(f"{label} must set module_name")
+            found.extension_module_owners[
+                ".".join((*package.parts, extension_module))
+            ] = label
+
+
+def _bazel_ignored_directories(repository: Path) -> list[Path]:
+    """Return the directories that `.bazelignore` hides from Bazel."""
+    ignore_file = repository / ".bazelignore"
+    if not ignore_file.exists():
+        return []
+    directories: list[Path] = []
+    for line in ignore_file.read_text(encoding="utf-8").splitlines():
+        entry = line.strip()
+        if entry and not entry.startswith("#"):
+            directories.append(Path(entry))
+    return directories
 
 
 def _load_targets(
     repository: Path,
 ) -> tuple[list[PythonTarget], list[PyrightTarget], dict[str, str]]:
-    targets: list[PythonTarget] = []
-    pyright_targets: list[PyrightTarget] = []
-    proto_sources: dict[str, Path] = {}
-    py_proto_deps: dict[str, str] = {}
+    found = _BuildFileTargets()
+    ignored_directories = _bazel_ignored_directories(repository)
     for build_file in repository.rglob("BUILD.bazel"):
         relative_build_file = build_file.relative_to(repository)
         if (
             relative_build_file.parts[0] == "vendored"
             or "node_modules" in relative_build_file.parts
+            or any(
+                relative_build_file.is_relative_to(directory)
+                for directory in ignored_directories
+            )
         ):
             continue
-        found_targets, found_pyright, found_proto, found_py_proto = _scan_build_file(
-            build_file, repository
-        )
-        targets.extend(found_targets)
-        pyright_targets.extend(found_pyright)
-        proto_sources.update(found_proto)
-        py_proto_deps.update(found_py_proto)
+        _scan_build_file(build_file, repository, found)
 
-    module_owners: dict[str, str] = {}
-    for target in targets:
+    module_owners = dict(found.extension_module_owners)
+    for target in found.targets:
         for source in target.sources:
             if source.name != "pyright_test_runner.py":
                 module_owners[module_name(source)] = target.label
-    for target in targets:
+    for target in found.targets:
         for source in target.sources:
             if source.parent == Path("tools"):
                 module_owners[source.stem] = target.label
-    for label, proto_dep in py_proto_deps.items():
-        source = proto_sources.get(proto_dep)
+    for label, proto_dep in found.py_proto_deps.items():
+        source = found.proto_sources.get(proto_dep)
         if source is not None:
             module_owners[module_name(source.with_suffix("")) + "_pb2"] = label
-    return targets, pyright_targets, module_owners
+    return found.targets, found.pyright_targets, module_owners
 
 
 def module_name(source: Path) -> str:

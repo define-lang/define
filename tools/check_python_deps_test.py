@@ -222,6 +222,53 @@ def test_repository_resolves_relative_and_absolute_py_proto_dependencies(
     }
 
 
+def test_repository_resolves_extensions_that_generate_stubs(tmp_path: Path):
+    package = tmp_path / "define" / "example"
+    package.mkdir(parents=True)
+    _ = (package / "BUILD.bazel").write_text(
+        'pyo3_extension(name = "generated", module_name = "native", stubs = True)\n'
+        + 'pyo3_extension(name = "hand_written", module_name = "other", stubs = False)\n'
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert repository.module_owners == {
+        "define.example.native": "//define/example:generated",
+    }
+
+
+def test_repository_rejects_stub_generating_extension_without_module_name(
+    tmp_path: Path,
+):
+    package = tmp_path / "define" / "example"
+    package.mkdir(parents=True)
+    _ = (package / "BUILD.bazel").write_text(
+        'pyo3_extension(name = "generated", stubs = True)\n'
+    )
+
+    with pytest.raises(ValueError, match="//define/example:generated"):
+        _ = check_python_deps.load_repository(tmp_path)
+
+
+def test_repository_skips_directories_in_bazelignore(tmp_path: Path):
+    _ = (tmp_path / ".bazelignore").write_text("# Worktrees\n\nworktrees\n")
+    ignored = tmp_path / "worktrees" / "define"
+    ignored.mkdir(parents=True)
+    _ = (ignored / "BUILD.bazel").write_text(
+        'py_library(name = "many", srcs = ["a.py", "b.py"])\n'
+    )
+    package = tmp_path / "define"
+    package.mkdir()
+    _ = (package / "BUILD.bazel").write_text(
+        'py_library(name = "single", srcs = ["single.py"])\n'
+    )
+    _ = (package / "single.py").write_text("")
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert repository.module_owners == {"define.single": "//define:single"}
+
+
 def test_repository_ignores_proto_rules_without_one_matching_source(tmp_path: Path):
     package = tmp_path / "define" / "config"
     package.mkdir(parents=True)
