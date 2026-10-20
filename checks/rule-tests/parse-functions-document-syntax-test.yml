@@ -1,0 +1,36 @@
+id: parse-functions-document-syntax
+valid:
+  - |
+    /// Parses a terminator.
+    ///
+    /// ```ebnf
+    /// terminator = ".", newline ;
+    /// ```
+    fn parse_terminator() {}
+  - |
+    /// Parses a terminator.
+    ///
+    /// ```ebnf
+    /// terminator = ".", newline ;
+    /// ```
+    #[inline]
+    fn parse_terminator() {}
+  - |
+    fn consume_byte() {}
+  - |
+    #[pyfunction]
+    fn parse() {}
+invalid:
+  - |
+    fn parse_terminator() {}
+  - |
+    /// Parses a terminator.
+    fn parse_terminator() {}
+  - |
+    /// ```ebnf
+    /// terminator = ".", newline ;
+    /// ```
+    fn consume_terminator() {}
+
+    /// Parses a terminator.
+    fn parse_terminator() {}

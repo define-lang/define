@@ -276,10 +276,14 @@ py_binary(
     srcs = ["setup_local_dev.py"],
     args = [
         "$(rlocationpath @multitool//tools/uv)",
+        "$(rlocationpath //define/compiler/parsing:ast)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
+        "$(rlocationpath //define/compiler/parsing:parser_extension)",
     ],
     data = [
         "//define/compiler/codegen/literal/python:renderer",
+        "//define/compiler/parsing:ast",
+        "//define/compiler/parsing:parser_extension",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],

@@ -1,0 +1,180 @@
+// Generated from `{{ module_name }}` by
+// //define/compiler/parsing/ast_nodes_generator:generate_ast_nodes.
+
+#![allow(dead_code, reason = "the parser does not construct every AST class")]
+#![allow(
+    clippy::needless_pass_by_value,
+    reason = "constructor arguments become part of the new node"
+)]
+
+use crate::ast_builder::{AstBuilder, FilePath, Node, NodeTuple, PythonArgument};
+use pyo3::Borrowed;
+use pyo3::prelude::*;
+use pyo3::sync::PyOnceLock;
+use pyo3::types::{PyInt, PyString, PyTuple, PyType};
+{% for enum_type in enums %}
+/// `{{ enum_type.module_name }}.{{ enum_type.name }}`.
+#[derive(Clone, Copy)]
+pub enum {{ enum_type.name }} {
+{%- for member in enum_type.members %}
+    {{ member.rust_name }},
+{%- endfor %}
+}
+
+impl<'py> PythonArgument<'py> for {{ enum_type.name }} {
+    fn as_argument<'a>(&'a self, py: Python<'py>, classes: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
+    where
+        'py: 'a,
+    {
+        classes.{{ enum_type.snake_case_name }}_members[*self as usize].bind_borrowed(py)
+    }
+}
+{% endfor %}
+{%- for class in classes %}
+/// `{{ module_name }}.{{ class.name }}`.
+#[repr(transparent)]
+pub struct {{ class.name }}<'py>(Bound<'py, PyAny>);
+
+impl<'py> Node<'py> for {{ class.name }}<'py> {
+    fn into_object(self) -> Bound<'py, PyAny> {
+        self.0
+    }
+}
+
+impl<'py> PythonArgument<'py> for {{ class.name }}<'py> {
+    fn as_argument<'a>(&'a self, _: Python<'py>, _: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
+    where
+        'py: 'a,
+    {
+        self.0.as_borrowed()
+    }
+}
+{%- for ancestor in class.ancestors %}
+
+impl<'py> From<{{ class.name }}<'py>> for {{ ancestor }}<'py> {
+    fn from(node: {{ class.name }}<'py>) -> Self {
+        Self(node.0)
+    }
+}
+{%- endfor %}
+{% endfor %}
+{%- for node_union in unions %}
+{%- if node_union.is_type_alias %}
+/// `{{ module_name }}.{{ node_union.name }}`, which is one of:
+{%- else %}
+/// One of:
+{%- endif %}
+{%- for member in node_union.member_classes %}
+/// - `{{ member }}`
+{%- endfor %}
+#[repr(transparent)]
+pub struct {{ node_union.name }}<'py>(Bound<'py, PyAny>);
+
+impl<'py> Node<'py> for {{ node_union.name }}<'py> {
+    fn into_object(self) -> Bound<'py, PyAny> {
+        self.0
+    }
+}
+
+impl<'py> PythonArgument<'py> for {{ node_union.name }}<'py> {
+    fn as_argument<'a>(&'a self, _: Python<'py>, _: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
+    where
+        'py: 'a,
+    {
+        self.0.as_borrowed()
+    }
+}
+{%- for member in node_union.member_classes %}
+
+impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
+    fn from(node: {{ member }}<'py>) -> Self {
+        Self(node.0)
+    }
+}
+{%- endfor %}
+{% endfor %}
+/// The classes in `{{ module_name }}` that have constructors, and the members of
+/// the enums that they take.
+pub struct AstClasses {
+{%- for class in classes %}
+{%- if let Some(constructor) = class.constructor %}
+    {{ class.snake_case_name }}: Py<PyType>,
+{%- if !constructor.keyword_parameters().is_empty() %}
+    {{ class.snake_case_name }}_keyword_names: Py<PyTuple>,
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- for enum_type in enums %}
+    {{ enum_type.snake_case_name }}_members: [Py<PyAny>; {{ enum_type.members.len() }}],
+{%- endfor %}
+}
+
+static AST_CLASSES: PyOnceLock<AstClasses> = PyOnceLock::new();
+
+impl AstClasses {
+    pub fn get(py: Python<'_>) -> PyResult<&'static Self> {
+        AST_CLASSES.get_or_try_init(py, || Self::load(py))
+    }
+
+    fn load(py: Python<'_>) -> PyResult<Self> {
+        let module = py.import("{{ module_name }}")?;
+{%- for enum_type in enums %}
+        let {{ enum_type.snake_case_name }} = py.import("{{ enum_type.module_name }}")?.getattr("{{ enum_type.name }}")?;
+{%- endfor %}
+        Ok(Self {
+{%- for class in classes %}
+{%- if let Some(constructor) = class.constructor %}
+            {{ class.snake_case_name }}: module.getattr("{{ class.name }}")?.cast_into::<PyType>()?.unbind(),
+{%- if !constructor.keyword_parameters().is_empty() %}
+            {{ class.snake_case_name }}_keyword_names: PyTuple::new(
+                py,
+                [
+{%- for parameter in constructor.keyword_parameters() %}
+                    PyString::intern(py, "{{ parameter.name }}"),
+{%- endfor %}
+                ],
+            )?
+            .unbind(),
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- for enum_type in enums %}
+            {{ enum_type.snake_case_name }}_members: [
+{%- for member in enum_type.members %}
+                {{ enum_type.snake_case_name }}.getattr("{{ member.python_name }}")?.unbind(),
+{%- endfor %}
+            ],
+{%- endfor %}
+        })
+    }
+}
+
+impl<'py> AstBuilder<'py, '_> {
+{%- for class in classes %}
+{%- if let Some(constructor) = class.constructor %}
+    pub fn {{ class.snake_case_name }}(
+        &self,
+{%- for parameter in constructor.parameters %}
+        {{ parameter.name }}: {{ parameter.rust_type() }},
+{%- endfor %}
+    ) -> PyResult<{{ class.name }}<'py>> {
+        let py = self.py();
+        let classes = self.classes();
+        self.construct(
+            &classes.{{ class.snake_case_name }},
+            [
+{%- for parameter in constructor.parameters %}
+                {{ parameter.name }}.as_argument(py, classes),
+{%- endfor %}
+            ],
+{%- if constructor.keyword_parameters().is_empty() %}
+            None,
+{%- else %}
+            Some(&classes.{{ class.snake_case_name }}_keyword_names),
+{%- endif %}
+        )
+        .map({{ class.name }})
+    }
+{% endif %}
+{%- endfor %}
+}

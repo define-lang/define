@@ -1,0 +1,22 @@
+id: parse-functions-document-syntax
+language: rust
+severity: error
+message:
+  Document the syntax that a parse function parses in an `ebnf` code block in
+  its doc comment.
+files:
+  - define/compiler/parsing/parser.rs
+rule:
+  kind: function_item
+  has:
+    field: name
+    regex: ^parse_
+  not:
+    follows:
+      kind: line_comment
+      regex: "^/// ```ebnf\\s*$"
+      stopBy:
+        not:
+          any:
+            - kind: line_comment
+            - kind: attribute_item

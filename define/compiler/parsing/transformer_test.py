@@ -173,7 +173,10 @@ def _only_position(source: str) -> ast.PositionDefinition:
 
 
 def test_universe_fields():
-    fqun = _require_fqun(_only_position(_SIMPLE_POSITION).typed_name.name_content)
+    program = test_helpers.parse(_SIMPLE_POSITION)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    fqun = _require_fqun(definition.typed_name.name_content)
     assert fqun.universe.name == "standard"
     assert fqun.universe.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=39

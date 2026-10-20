@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import abc
 import sys
+
+# Code that reads the constructor signature of an AST class, such as the
+# parser's AST node generator, resolves the field annotations at runtime.
+from pathlib import PurePosixPath  # noqa: TC003
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -21,9 +25,12 @@ from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
-    from pathlib import PurePosixPath
-
     import lark_cython
+
+
+# Marks a field whose value is computed from the other fields, so that
+# constructors do not need to pass it.
+type Derived[T] = T
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -411,7 +418,7 @@ class TypedName(ASTNode, Generic[NameContentT_co], kw_only=True):  # noqa: UP046
 
     name_type: name_types.NameType
     name_content: Final[NameContentT_co]
-    _source_typed_name: str = ""
+    _source_typed_name: Derived[str] = ""
 
     def __post_init__(self):
         """Build the interned source-form typed name."""
@@ -446,7 +453,7 @@ class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
     """Represents a typed global name reference."""
 
     enclosing_fqun: Fqun
-    _full_typed_name: str = ""
+    _full_typed_name: Derived[str] = ""
 
     def __post_init__(self):
         """Build the interned canonical typed name."""
@@ -534,8 +541,8 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
     # A covariant type in a mutable field is safe here only because nothing
     # writes it through a chained name of a wider kind: only this class's
     # property and the construction of a concrete kind set it.
-    _canonical_chained_name_tuple: ChainedNameTupleT_co | None = None
-    _canonical_chained_name: str | None = None
+    _canonical_chained_name_tuple: Derived[ChainedNameTupleT_co | None] = None
+    _canonical_chained_name: Derived[str | None] = None
 
     def __post_init__(self):
         """Require at least one typed name."""
@@ -876,7 +883,7 @@ class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
     requirements: tuple[PositionRequirementStatement, ...]
-    as_set: frozenset[str] = frozenset()
+    as_set: Derived[frozenset[str]] = frozenset()
 
     def __post_init__(self):
         """Build the set of canonical required names."""
@@ -974,10 +981,10 @@ class ActionDefinition(QualityDefinition):
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
     # Computed properties
-    interface_positions_by_name: dict[str, LocalPositionDefinition] = msgspec.field(
-        default_factory=dict
+    interface_positions_by_name: Derived[dict[str, LocalPositionDefinition]] = (
+        msgspec.field(default_factory=dict)
     )
-    trigger_position: LocalPositionDefinition | None = None
+    trigger_position: Derived[LocalPositionDefinition | None] = None
 
     @classmethod
     def from_name(
@@ -1089,7 +1096,7 @@ class Fqun(ASTNode):
     multiverse: Multiverse | None
     authority: Authority | None
     universe: Universe
-    canonical: str = ""
+    canonical: Derived[str] = ""
 
     def __post_init__(self):
         """Build the interned canonical FQUN."""

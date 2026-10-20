@@ -1,9 +1,23 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@crates//:defs.bzl", "lint_config")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rust_library", "rust_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 exports_files(["grammar.lark"])
+
+genrule(
+    name = "ast",
+    outs = ["ast.rs"],
+    cmd = "$(execpath //define/compiler/parsing/ast_nodes_generator:generate_ast_nodes) $@ && $(execpath @rules_rust//rust/toolchain:current_rustfmt_toolchain) --edition 2024 $@",
+    tools = [
+        "//define/compiler/parsing/ast_nodes_generator:generate_ast_nodes",
+        "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
+    ],
+    visibility = ["//tools:__pkg__"],
+)
 
 py_library(
     name = "indentation_validator",
@@ -79,6 +93,15 @@ py_test(
 )
 
 py_library(
+    name = "native_parser",
+    srcs = ["native_parser.pyi"],
+    deps = [
+        ":parser_extension",  # keep: supplies the native implementation of this stub
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "parser",
     srcs = ["parser.py"],
     visibility = [
@@ -111,6 +134,24 @@ py_library(
     ],
 )
 
+pyo3_extension(
+    name = "parser_extension",
+    srcs = [
+        "ast_builder.rs",
+        "parser.rs",
+        ":ast",
+    ],
+    crate_root = "parser.rs",
+    lint_config = lint_config(),
+    module_name = "native_parser",
+    stubs = False,
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":vector_scan",
+        "@crates//:rustc-hash",
+    ],
+)
+
 py_library(
     name = "parsing",
     srcs = ["__init__.py"],
@@ -122,6 +163,8 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":invisible_characters",
+        ":native_parser",
         ":parser",
         "//define/compiler:ast",
     ],
@@ -157,6 +200,37 @@ py_test(
     ],
 )
 
+# The parser's vector code is a separate crate so that it stays apart from the
+# code people read to work on the parser, and so that a rust_test can link it.
+# A rust_test cannot link the PyO3 extension, which does not link libpython.
+rust_library(
+    name = "vector_scan",
+    srcs = ["vector_scan.rs"],
+    lint_config = lint_config(),
+    deps = ["@crates//:wide"],
+)
+
+rust_test(
+    name = "vector_scan_test",
+    size = "small",
+    crate = ":vector_scan",
+    lint_config = lint_config(),
+    deps = ["@crates//:googletest"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = ["precommit"],
+    targets = [
+        ":parser_extension_shared",
+        ":vector_scan",
+        ":vector_scan_test",
+    ],
+)
+
 # --- Type-checking ---
 
 pyright_test(
@@ -169,6 +243,7 @@ pyright_test(
         ":invisible_characters_test",
         ":name_parser",
         ":name_parser_test",
+        ":native_parser",
         ":parser",
         ":parser_error_classification",
         ":parsing",

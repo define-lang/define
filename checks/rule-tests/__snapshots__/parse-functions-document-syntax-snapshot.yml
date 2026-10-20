@@ -1,0 +1,32 @@
+id: parse-functions-document-syntax
+snapshots:
+  "/// Parses a terminator.\nfn parse_terminator() {}\n":
+    labels:
+    - source: fn parse_terminator() {}
+      style: primary
+      start: 25
+      end: 49
+    - source: parse_terminator
+      style: secondary
+      start: 28
+      end: 44
+  "/// ```ebnf\n/// terminator = \".\", newline ;\n/// ```\nfn consume_terminator() {}\n\n/// Parses a terminator.\nfn parse_terminator() {}\n":
+    labels:
+    - source: fn parse_terminator() {}
+      style: primary
+      start: 105
+      end: 129
+    - source: parse_terminator
+      style: secondary
+      start: 108
+      end: 124
+  "fn parse_terminator() {}\n":
+    labels:
+    - source: fn parse_terminator() {}
+      style: primary
+      start: 0
+      end: 24
+    - source: parse_terminator
+      style: secondary
+      start: 3
+      end: 19

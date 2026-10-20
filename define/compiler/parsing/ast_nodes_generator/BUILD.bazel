@@ -1,0 +1,57 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("@crates//:defs.bzl", "lint_config")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "ast_nodes_generator",
+    srcs = ["__init__.py"],
+)
+
+py_binary(
+    name = "generate_ast_nodes",
+    srcs = ["generate_ast_nodes.py"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
+    deps = [
+        ":renderer_extension",
+        "//define/compiler:ast",
+        "@pypi//msgspec",
+    ],
+)
+
+pyo3_extension(
+    name = "renderer_extension",
+    srcs = ["ast_nodes_renderer.rs"],
+    compile_data = [
+        "askama.toml",
+        "ast_nodes.rs.j2",
+    ],
+    crate_root = "ast_nodes_renderer.rs",
+    lint_config = lint_config(),
+    module_name = "ast_nodes_renderer",
+    stubs = True,
+    deps = ["@crates//:askama"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = ["precommit"],
+    targets = [":renderer_extension_shared"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":ast_nodes_generator",
+        ":generate_ast_nodes",
+    ],
+)
+
+check_build_file()

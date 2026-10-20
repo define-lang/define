@@ -2,6 +2,7 @@
 *_pb2.py
 *_pb2.pyi
 **/lark/lark_standalone.py
+/define/compiler/parsing/ast.rs
 /buf/
 
 # Made by /mutmut-survivors
@@ -10,6 +11,10 @@
 /.claude/settings.local.json
 /.todo-worktrees/
 /.claude/worktrees
+
+# Made by @rules_rust//tools/rust_analyzer:gen_rust_project
+/.rules_rust_analyzer/
+/rust-project.json
 
 # Bazel
 /bazel-*

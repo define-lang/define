@@ -27,7 +27,15 @@ LARK_FILES = [
 # it by the same name.
 SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 
-TEMPLATE_RENDERER_PACKAGE = "define/compiler/codegen/literal/python"
+# rust-analyzer reads generated Rust sources from the source tree.
+GENERATED_RUST_SOURCE = "define/compiler/parsing/ast.rs"
+
+# Native extensions, by the package that each is copied into, in the order of
+# their command-line arguments.
+NATIVE_EXTENSION_PACKAGES = [
+    "define/compiler/codegen/literal/python",
+    "define/compiler/parsing",
+]
 
 # re2 makes only its py_library public, so its files are found by their path in
 # that library's runfiles, using re2's apparent repository name.
@@ -215,7 +223,7 @@ def _record_successful_run():
 
 def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
-    uv_location, renderer_location = sys.argv[1:]
+    uv_location, generated_rust_location, *native_extension_locations = sys.argv[1:]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
     all_targets = [*LARK_TARGETS, *proto_targets]
@@ -227,10 +235,17 @@ def main():
     _copy_lark_files()
     _copy_buf_validate()
     _copy_re2()
-    renderer_source = runfiles.resolve(renderer_location)
-    extension_path = Path(TEMPLATE_RENDERER_PACKAGE) / renderer_source.name
-    _copy_file(renderer_source, REPO_ROOT / extension_path)
-    print(extension_path)
+    for package, location in zip(
+        NATIVE_EXTENSION_PACKAGES, native_extension_locations, strict=True
+    ):
+        extension_source = runfiles.resolve(location)
+        extension_path = Path(package) / extension_source.name
+        _copy_file(extension_source, REPO_ROOT / extension_path)
+        print(extension_path)
+    _copy_file(
+        runfiles.resolve(generated_rust_location), REPO_ROOT / GENERATED_RUST_SOURCE
+    )
+    print(GENERATED_RUST_SOURCE)
     _configure_git_blame()
     _install_git_hooks()
     _record_successful_run()

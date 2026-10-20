@@ -25,9 +25,10 @@ def _native_extensions_collector_aspect_impl(target, ctx):
 
     # rules_py puts py_binary and py_test dependencies on a hidden sibling venv
     # target, so following only deps would miss protobuf libraries below them.
-    venv = getattr(ctx.rule.attr, "venv", None)
-    if venv and _NativeExtensionsInfo in venv:
-        transitive_native_extensions.append(venv[_NativeExtensionsInfo].transitive_native_extensions)
+    # The venv attribute has a transition, which makes it a list.
+    for venv in getattr(ctx.rule.attr, "venv", []):
+        if _NativeExtensionsInfo in venv:
+            transitive_native_extensions.append(venv[_NativeExtensionsInfo].transitive_native_extensions)
     return [_NativeExtensionsInfo(
         transitive_native_extensions = depset(transitive = transitive_native_extensions),
     )]
