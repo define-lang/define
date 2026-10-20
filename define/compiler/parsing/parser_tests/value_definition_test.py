@@ -28,22 +28,22 @@ def test_value_definition(parse: Parse):
 def test_value_definition_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
         _ = parse("define the potential value<rational>.\n")
-    assert error.value.token == "rational"
     assert error.value.location.line == 1
     assert error.value.location.column == 28
+    assert error.value.location.end_column == 36
 
 
 def test_value_definition_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
         _ = parse("define the potential value<standard:/number/natural>\n")
-    assert error.value.token == "\n"
     assert error.value.location.line == 1
     assert error.value.location.column == 53
+    assert error.value.location.end_column == 53
 
 
 def test_value_definition_disallows_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
         _ = parse("define the potential value<standard:/number/natural> {\n}\n")
-    assert error.value.token == " {"
     assert error.value.location.line == 1
     assert error.value.location.column == 53
+    assert error.value.location.end_column == 55

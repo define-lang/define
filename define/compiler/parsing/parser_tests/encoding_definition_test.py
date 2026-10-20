@@ -26,25 +26,25 @@ def test_encoding_definition(parse: Parse):
 def test_encoding_definition_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
         _ = parse("define the encoding<rational>.\n")
-    assert error.value.token == "rational"
     assert error.value.location.line == 1
     assert error.value.location.column == 21
+    assert error.value.location.end_column == 29
 
 
 def test_encoding_definition_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
         _ = parse("define the encoding<standard:/number/natural>\n")
-    assert error.value.token == "\n"
     assert error.value.location.line == 1
     assert error.value.location.column == 46
+    assert error.value.location.end_column == 46
 
 
 def test_encoding_definition_disallows_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
         _ = parse("define the encoding<standard:/number/natural> {\n}\n")
-    assert error.value.token == " {"
     assert error.value.location.line == 1
     assert error.value.location.column == 46
+    assert error.value.location.end_column == 48
 
 
 def test_encoding_definition_disallows_potential(parse: Parse):
@@ -52,6 +52,7 @@ def test_encoding_definition_disallows_potential(parse: Parse):
         _ = parse("define the potential encoding<mv:define-lang.org:parser:/utf8>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
+    assert error.value.location.end_column == 7
 
 
 def test_encoding_definition_disallows_local_context(parse: Parse):
@@ -67,7 +68,7 @@ def test_encoding_definition_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.token == "define the encoding"
+    assert error.value.location.end_column == 28
 
 
 def test_encoding_in_constraints(parse: Parse):

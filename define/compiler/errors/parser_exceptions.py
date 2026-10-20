@@ -61,13 +61,6 @@ class DefineSyntaxError(exceptions.DefineError):
 class DefineTokenError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected tokens."""
 
-    token: str
-
-    def __init__(self, location: ast.SourceLocation, token: str):
-        """Initialize with the unexpected token."""
-        super().__init__(location)
-        self.token = token
-
     @classmethod
     def from_lark_exception(
         cls,
@@ -80,7 +73,6 @@ class DefineTokenError(DefineSyntaxError):
         width = len(exception.token.value.split("\n", 1)[0])
         return cls(
             _single_line_location(exception.line, exception.column, width, file_path),
-            exception.token.value,
             *details,
         )
 
@@ -381,9 +373,15 @@ class InvalidMoveStatementSyntax(DefineTokenError):
 class InvalidName(DefineTokenError):
     """Wrote something invalid where either a local or global name is accepted."""
 
+    token: str
     message_format: ClassVar[str] = (
         "'{token}' is not valid inside of a local or global name."
     )
+
+    def __init__(self, location: ast.SourceLocation, token: str):
+        """Initialize with the text that is not valid in a name."""
+        super().__init__(location)
+        self.token = token
 
 
 class InvalidOperationArgumentsBlock(DefineTokenError):
@@ -521,9 +519,9 @@ class MissingCloseAngleBracket(DefineTokenError):
     name: str
     message_format: ClassVar[str] = "Missing '>' on this name: {name}"
 
-    def __init__(self, location: ast.SourceLocation, token: str, name: str):
+    def __init__(self, location: ast.SourceLocation, name: str):
         """Initialize with the parsed name token that missed '>'."""
-        super().__init__(location, token)
+        super().__init__(location)
         self.name = name
 
 
@@ -563,9 +561,9 @@ class MissingOpenAngleBracket(DefineTokenError):
     name: str
     message_format: ClassVar[str] = "Missing '<' at the start of a name: {name}"
 
-    def __init__(self, location: ast.SourceLocation, token: str, name: str):
+    def __init__(self, location: ast.SourceLocation, name: str):
         """Initialize with the parsed name token that missed '<'."""
-        super().__init__(location, token)
+        super().__init__(location)
         self.name = name
 
 

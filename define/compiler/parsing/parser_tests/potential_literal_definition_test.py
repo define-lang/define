@@ -48,7 +48,7 @@ def test_requires_global_name(parse: Parse):
         _ = parse("define the potential literal<decimal> {\n}\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 30
-    assert error.value.token == "decimal"
+    assert error.value.location.end_column == 37
 
 
 def test_requires_block(parse: Parse):
@@ -56,7 +56,7 @@ def test_requires_block(parse: Parse):
         _ = parse("define the potential literal<mv:define-lang.org:parser:/decimal>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 65
-    assert error.value.token == "."
+    assert error.value.location.end_column == 66
 
 
 def test_requires_encoding_constraint(parse: Parse):
@@ -69,7 +69,7 @@ def test_requires_encoding_constraint(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 1
-    assert error.value.token == "}"
+    assert error.value.location.end_column == 2
 
 
 def test_requires_encoding_type(parse: Parse):
@@ -83,7 +83,7 @@ def test_requires_encoding_type(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 16
-    assert error.value.token == "value"
+    assert error.value.location.end_column == 21
 
 
 def test_encoding_requires_global_name(parse: Parse):
@@ -95,7 +95,7 @@ def test_encoding_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 25
-    assert error.value.token == "decimal"
+    assert error.value.location.end_column == 32
 
 
 def test_encoding_requires_terminator(parse: Parse):
@@ -107,7 +107,7 @@ def test_encoding_requires_terminator(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 34
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 34
 
 
 def test_disallows_multiple_encodings(parse: Parse):
@@ -120,7 +120,7 @@ def test_disallows_multiple_encodings(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 5
-    assert error.value.token == "it has the"
+    assert error.value.location.end_column == 15
 
 
 def test_disallows_local_context(parse: Parse):
@@ -138,7 +138,7 @@ def test_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.token == "define the potential literal"
+    assert error.value.location.end_column == 37
 
 
 def test_disallows_particle_constraint(parse: Parse):
@@ -152,7 +152,7 @@ def test_disallows_particle_constraint(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 20
-    assert error.value.token == "literal"
+    assert error.value.location.end_column == 27
 
 
 def test_disallows_quality_implication(parse: Parse):
@@ -164,4 +164,4 @@ def test_disallows_quality_implication(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 25
-    assert error.value.token == "literal"
+    assert error.value.location.end_column == 32

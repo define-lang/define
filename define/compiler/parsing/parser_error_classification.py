@@ -209,7 +209,9 @@ def raise_token_error(
         raise parser_exceptions.InvalidGlobalName.from_lark_exception(e, file_path)
 
     if e.accepts == {"LOCAL_NAME_CONTENT", "GLOBAL_NAME_CONTENT"}:
-        raise parser_exceptions.InvalidName.from_lark_exception(e, file_path)
+        raise parser_exceptions.InvalidName.from_lark_exception(
+            e, file_path, e.token.value
+        )
 
     if e.accepts == {"MORETHAN"}:
         # Literal content makes ':' lexable even when it occurs in a local name.

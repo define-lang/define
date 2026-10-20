@@ -227,7 +227,7 @@ def test_missing_to(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 40
-    assert error.value.token == "."
+    assert error.value.location.end_column == 41
 
 
 def test_missing_source(parse: Parse):
@@ -239,7 +239,7 @@ def test_missing_source(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 44
-    assert error.value.token == "."
+    assert error.value.location.end_column == 45
 
 
 def test_missing_target(parse: Parse):
@@ -247,7 +247,7 @@ def test_missing_target(parse: Parse):
         parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
     assert error.value.location.line == 5
     assert error.value.location.column == 26
-    assert error.value.token == "."
+    assert error.value.location.end_column == 27
 
 
 def test_missing_terminator(parse: Parse):
@@ -259,7 +259,7 @@ def test_missing_terminator(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 57
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 57
 
 
 def test_value_setting_outside_action(parse: Parse):
@@ -267,7 +267,7 @@ def test_value_setting_outside_action(parse: Parse):
         parse("set the value of position<dest> to position<src>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
-    assert error.value.token == "set the value of"
+    assert error.value.location.end_column == 17
 
 
 def test_missing_to_at_eof(parse: Parse):
@@ -275,7 +275,7 @@ def test_missing_to_at_eof(parse: Parse):
         parse(_ACTION_PREFIX + "        set the value of position<dest>")
     assert error.value.location.line == 5
     assert error.value.location.column == 39
-    assert error.value.token == ""
+    assert error.value.location.end_column == 39
 
 
 def test_missing_to_after_chained_target(parse: Parse):
@@ -287,7 +287,7 @@ def test_missing_to_after_chained_target(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 57
-    assert error.value.token == "."
+    assert error.value.location.end_column == 58
 
 
 def test_missing_to_during_transformation(p: parser.Parser):
@@ -302,7 +302,7 @@ def test_missing_to_during_transformation(p: parser.Parser):
     )
     assert result.exception.location.line == 6
     assert result.exception.location.column == 39
-    assert result.exception.token == ""
+    assert result.exception.location.end_column == 39
 
 
 def test_missing_move_to_after_value_setting(p: parser.Parser):
@@ -316,4 +316,4 @@ def test_missing_move_to_after_value_setting(p: parser.Parser):
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.location.line == 6
     assert result.exception.location.column == 43
-    assert result.exception.token == "."
+    assert result.exception.location.end_column == 44

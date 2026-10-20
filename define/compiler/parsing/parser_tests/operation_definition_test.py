@@ -115,7 +115,7 @@ def test_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 1
     assert error.value.location.column == 22
-    assert error.value.token == "add"
+    assert error.value.location.end_column == 25
 
 
 def test_requires_block(parse: Parse):
@@ -123,7 +123,7 @@ def test_requires_block(parse: Parse):
         parse("define the operation<mv:define-lang.org:parser:/add>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 53
-    assert error.value.token == "."
+    assert error.value.location.end_column == 54
 
 
 def test_requires_operation_statements_block(parse: Parse):
@@ -131,7 +131,7 @@ def test_requires_operation_statements_block(parse: Parse):
         parse("define the operation<mv:define-lang.org:parser:/add> {\n}\n")
     assert error.value.location.line == 2
     assert error.value.location.column == 1
-    assert error.value.token == "}"
+    assert error.value.location.end_column == 2
 
 
 def test_requires_operation_statements_block_after_views(parse: Parse):
@@ -148,7 +148,7 @@ def test_requires_operation_statements_block_after_views(parse: Parse):
         )
     assert error.value.location.line == 8
     assert error.value.location.column == 1
-    assert error.value.token == "}"
+    assert error.value.location.end_column == 2
 
 
 def test_disallows_local_position_definition(parse: Parse):
@@ -163,7 +163,7 @@ def test_disallows_local_position_definition(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 5
-    assert error.value.token == "define the position"
+    assert error.value.location.end_column == 24
 
 
 def test_disallows_view_after_operation_statements_block(parse: Parse):
@@ -183,7 +183,7 @@ def test_disallows_view_after_operation_statements_block(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 5
-    assert error.value.token == "define the view"
+    assert error.value.location.end_column == 20
 
 
 def test_disallows_second_operation_statements_block(parse: Parse):
@@ -200,7 +200,7 @@ def test_disallows_second_operation_statements_block(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 5
-    assert error.value.token == "it does"
+    assert error.value.location.end_column == 12
 
 
 def test_missing_close_brace_at_eof(parse: Parse):
@@ -213,7 +213,7 @@ def test_missing_close_brace_at_eof(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 6
-    assert error.value.token == ""
+    assert error.value.location.end_column == 6
 
 
 def test_operation_statements_block_extra_whitespace(parse: Parse):
@@ -227,7 +227,7 @@ def test_operation_statements_block_extra_whitespace(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 12
-    assert error.value.token == " "
+    assert error.value.location.end_column == 13
 
 
 def test_disallows_local_context(parse: Parse):
@@ -247,4 +247,4 @@ def test_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.token == "define the operation"
+    assert error.value.location.end_column == 29

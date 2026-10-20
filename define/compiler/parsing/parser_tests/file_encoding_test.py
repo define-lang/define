@@ -23,6 +23,7 @@ def test_bom_at_start(parse: Parse):
     assert exc_info.value.char == "\ufeff"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_crlf_line_endings(parse: Parse):
@@ -31,6 +32,7 @@ def test_crlf_line_endings(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_column == 48
 
 
 def test_crlf_line_endings_in_comments(parse: Parse):
@@ -39,6 +41,7 @@ def test_crlf_line_endings_in_comments(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 12
+    assert exc_info.value.location.end_column == 13
 
 
 def test_carriage_return_in_comment(parse: Parse):
@@ -47,6 +50,7 @@ def test_carriage_return_in_comment(parse: Parse):
     assert exc_info.value.char == "\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_column == 16
 
 
 def test_surrogate_character(parse: Parse):
@@ -55,6 +59,7 @@ def test_surrogate_character(parse: Parse):
     assert exc_info.value.char == "\udcff"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_surrogate_range_start_boundary(parse: Parse):
@@ -63,6 +68,7 @@ def test_surrogate_range_start_boundary(parse: Parse):
     assert exc_info.value.char == "\ud800"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_surrogate_range_end_boundary(parse: Parse):
@@ -71,6 +77,7 @@ def test_surrogate_range_end_boundary(parse: Parse):
     assert exc_info.value.char == "\udfff"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_del_character(parse: Parse):
@@ -79,6 +86,7 @@ def test_del_character(parse: Parse):
     assert exc_info.value.char == "\x7f"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_invalid_character_error(parse: Parse):
@@ -87,6 +95,7 @@ def test_invalid_character_error(parse: Parse):
     assert exc_info.value.char == "☃"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_first_non_ascii_byte(parse: Parse):
@@ -95,6 +104,7 @@ def test_first_non_ascii_byte(parse: Parse):
     assert exc_info.value.char == "\x80"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_comment_with_zero_width_joiner_in_grapheme_cluster(parse: Parse):

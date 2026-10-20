@@ -51,9 +51,9 @@ def test_value_constraint_requires_global_name(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.token == "rational"
     assert error.value.location.line == 3
     assert error.value.location.column == 26
+    assert error.value.location.end_column == 34
 
 
 def test_constraint_name_type_error_includes_value(parse: Parse):
@@ -65,6 +65,6 @@ def test_constraint_name_type_error_includes_value(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.token == "thing<"
     assert error.value.location.line == 3
     assert error.value.location.column == 20
+    assert error.value.location.end_column == 26

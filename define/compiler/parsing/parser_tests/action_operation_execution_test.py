@@ -100,7 +100,7 @@ def test_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 6
     assert error.value.location.column == 9
-    assert error.value.token == "execute the encoding operation"
+    assert error.value.location.end_column == 39
 
 
 def test_operation_execution_requires_terminator_or_block(parse: Parse):
@@ -108,7 +108,7 @@ def test_operation_execution_requires_terminator_or_block(parse: Parse):
         parse(_ACTION_PREFIX + "        execute the operation</add>\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 36
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 36
 
 
 def test_operation_name_type_cannot_be_position(parse: Parse):
@@ -116,7 +116,7 @@ def test_operation_name_type_cannot_be_position(parse: Parse):
         parse(_ACTION_PREFIX + "        execute the position</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 21
-    assert error.value.token == "position"
+    assert error.value.location.end_column == 29
 
 
 def test_operation_missing_space_after_execute_the(parse: Parse):
@@ -124,7 +124,7 @@ def test_operation_missing_space_after_execute_the(parse: Parse):
         parse(_ACTION_PREFIX + "        execute theoperation</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 20
-    assert error.value.token == "operation"
+    assert error.value.location.end_column == 29
 
 
 def test_arguments_block_requires_argument(parse: Parse):
@@ -137,7 +137,7 @@ def test_arguments_block_requires_argument(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 9
-    assert error.value.token == "}"
+    assert error.value.location.end_column == 10
 
 
 def test_arguments_block_disallows_action_statement(parse: Parse):
@@ -151,7 +151,7 @@ def test_arguments_block_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 13
-    assert error.value.token == "create a particle in"
+    assert error.value.location.end_column == 33
 
 
 def test_arguments_block_disallows_action_statement_after_first_argument(
@@ -168,7 +168,7 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
         )
     assert error.value.location.line == 8
     assert error.value.location.column == 13
-    assert error.value.token == "create a particle in"
+    assert error.value.location.end_column == 33
 
 
 def test_argument_cannot_look_at_value(parse: Parse):
@@ -182,4 +182,4 @@ def test_argument_cannot_look_at_value(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 37
-    assert error.value.token == "value"
+    assert error.value.location.end_column == 42

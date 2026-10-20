@@ -110,22 +110,6 @@ impl<'source> Scanner<'source> {
         matches!(self.rest.first(), Some(&byte) if byte == expected)
     }
 
-    /// Returns the next character without consuming it, or `None` at the end
-    /// of the source or where the source is not valid UTF-8.
-    fn next_character(&self) -> Option<&'source str> {
-        let &first = self.rest.first()?;
-        // The length of a UTF-8 character follows from its first byte, so only
-        // that many bytes need validating.
-        let length = match first {
-            0x00..=0x7F => 1,
-            0xC2..=0xDF => 2,
-            0xE0..=0xEF => 3,
-            0xF0..=0xF4 => 4,
-            _ => return None,
-        };
-        std::str::from_utf8(self.rest.get(..length)?).ok()
-    }
-
     /// Consumes `expected` if the remaining text starts with it. `expected`
     /// must be ASCII without a line feed.
     fn consume(&mut self, expected: &[u8]) -> bool {
@@ -250,7 +234,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let Some(start) = start else {
             let location = self.ast.location(end, end)?;
             return Err(ParseError::Syntax(
-                parser_exceptions::expected_global_definition(location, ""),
+                parser_exceptions::expected_global_definition(location),
             ));
         };
         // The source does not end with a line feed. Only a line feed moves the
@@ -259,7 +243,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             let end_of_source = self.scanner.position;
             let location = self.ast.location(end_of_source, end_of_source)?;
             return Err(ParseError::Syntax(
-                parser_exceptions::missing_newline_at_eof(location, ""),
+                parser_exceptions::missing_newline_at_eof(location),
             ));
         }
         let definitions = self.ast.finish_tuple(definitions)?;
@@ -339,7 +323,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             if self.scanner.next_byte_is(LINE_FEED) {
                 let location = self.ast.location(position, position)?;
                 return Err(ParseError::Syntax(
-                    parser_exceptions::missing_terminator_or_brace(location, "\n"),
+                    parser_exceptions::missing_terminator_or_brace(location),
                 ));
             }
             return Err(Self::not_yet_supported(
@@ -358,13 +342,14 @@ impl<'py, 'source> Parser<'py, 'source> {
                 },
             )?;
             return Err(ParseError::Syntax(
-                parser_exceptions::missing_space_before_comment(location, "#"),
+                parser_exceptions::missing_space_before_comment(location),
             ));
         }
-        // Something other than a line feed or a space follows the `.`.
-        if !self.scanner.next_byte_is(LINE_FEED)
+        // Something other than a line feed or a space follows the `.`. At the end
+        // of the source, parse_program reports the missing line feed instead.
+        if !self.scanner.is_at_end()
+            && !self.scanner.next_byte_is(LINE_FEED)
             && !self.scanner.next_byte_is(SPACE)
-            && let Some(character) = self.scanner.next_character()
         {
             let location = self.ast.location(
                 end,
@@ -374,7 +359,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 },
             )?;
             return Err(ParseError::Syntax(
-                parser_exceptions::missing_newline_after_terminator(location, character),
+                parser_exceptions::missing_newline_after_terminator(location),
             ));
         }
         if self.scanner.next_byte_is(SPACE) {

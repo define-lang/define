@@ -22,17 +22,17 @@ def test_empty_block_on_position(parse: Parse):
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
         parse("define the potential position<standard:/path> {\n}\n")
-    assert str(exc_info.value.token) == "}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_empty_block_on_action(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
         parse("define the potential action<standard:/path> {\n}\n")
-    assert str(exc_info.value.token) == "}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_block_with_blank_lines(parse: Parse):
@@ -184,6 +184,7 @@ def test_file_ending_after_block_open(parse: Parse):
         parse("define the potential position<standard:/path> {\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_column == 48
 
 
 def test_missing_newline_after_block_open(parse: Parse):
@@ -191,14 +192,15 @@ def test_missing_newline_after_block_open(parse: Parse):
         parse("define the potential position<standard:/path> {}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_column == 49
 
 
 def test_no_space_before_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
         parse("define the potential position<standard:/path>{\n")
-    assert str(exc_info.value.token) == "{"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_column == 47
 
 
 def test_missing_terminator_still_works(native_parse: NativeParse):
@@ -206,6 +208,7 @@ def test_missing_terminator_still_works(native_parse: NativeParse):
         native_parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_column == 46
 
 
 def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
@@ -220,6 +223,7 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_column == 6
 
 
 def test_position_constraint_invalid_type_keyword(parse: Parse):
@@ -232,6 +236,6 @@ def test_position_constraint_invalid_type_keyword(parse: Parse):
             + "}\n"
             + "define the potential position<my_lib:/path>.\n"
         )
-    assert str(exc_info.value.token) == "osition<my_lib:/path"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 20
+    assert exc_info.value.location.end_column == 40

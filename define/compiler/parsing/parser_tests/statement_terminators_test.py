@@ -27,17 +27,17 @@ def test_valid_terminator(parse: Parse):
 def test_missing_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         native_parse("define the potential position<standard:/path>\n")
-    assert str(exc_info.value.token) == "\n"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_column == 46
 
 
 def test_missing_newline_after_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         native_parse("define the potential position<standard:/path>.")
-    assert exc_info.value.token == ""
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_column == 47
 
 
 def test_missing_newline_after_last_definition(native_parse: NativeParse):
@@ -46,7 +46,6 @@ def test_missing_newline_after_last_definition(native_parse: NativeParse):
             "define the potential position<mv:define-lang.org:parser:/first>.\n"
             + "define the potential position<mv:define-lang.org:parser:/second>."
         )
-    assert exc_info.value.token == ""
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 66
     assert exc_info.value.location.end_line == 2
@@ -58,9 +57,9 @@ def test_missing_newline_between_global_definitions(parse: Parse):
         parse(
             "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
         )
-    assert exc_info.value.token == "define the potential action"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_column == 91
 
 
 def test_double_terminator(native_parse: NativeParse):
@@ -68,9 +67,9 @@ def test_double_terminator(native_parse: NativeParse):
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path>..\n"
         )
-    assert exc_info.value.token == "."
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
+    assert exc_info.value.location.end_column == 65
 
 
 def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse):
@@ -78,7 +77,6 @@ def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse)
         native_parse_lark_wrong(
             "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
         )
-    assert exc_info.value.token == "#"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
@@ -90,7 +88,6 @@ def test_letter_after_terminator(native_parse: NativeParse):
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path>.x\n"
         )
-    assert exc_info.value.token == "x"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
@@ -102,7 +99,6 @@ def test_non_ascii_character_after_terminator(native_parse: NativeParse):
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path>.é\n"
         )
-    assert exc_info.value.token == "é"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
@@ -112,9 +108,9 @@ def test_non_ascii_character_after_terminator(native_parse: NativeParse):
 def test_space_before_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
-    assert str(exc_info.value.token) == "\n"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 67
+    assert exc_info.value.location.end_column == 67
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
@@ -124,6 +120,7 @@ def test_trailing_space_before_newline(parse: Parse):
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_column == 48
 
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(
@@ -138,6 +135,6 @@ def test_missing_terminator_after_typed_reference_in_position_constraint(
             + "    }\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "\n"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 41
+    assert exc_info.value.location.end_column == 41

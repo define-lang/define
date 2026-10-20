@@ -203,9 +203,9 @@ def test_implication_missing_open_angle_at_eol(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "\n"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
+    assert exc_info.value.location.end_column == 33
     assert exc_info.value.name == "\n"
 
 
@@ -219,9 +219,9 @@ def test_implication_missing_open_angle_with_terminator(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "."
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
+    assert exc_info.value.location.end_column == 34
     assert exc_info.value.name == "."
 
 
@@ -235,9 +235,9 @@ def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " "
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 33
+    assert exc_info.value.location.end_column == 34
     assert exc_info.value.name == " "
 
 
@@ -251,9 +251,9 @@ def test_implication_empty_name(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == ">"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 34
+    assert exc_info.value.location.end_column == 35
 
 
 def test_implication_newline_inside_name(parse: Parse):
@@ -267,9 +267,9 @@ def test_implication_newline_inside_name(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "\n"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 34
+    assert exc_info.value.location.end_column == 34
 
 
 def test_implication_missing_close_angle(parse: Parse):
@@ -284,6 +284,7 @@ def test_implication_missing_close_angle(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 44
+    assert exc_info.value.location.end_column == 44
 
 
 def test_implication_missing_terminator(parse: Parse):
@@ -298,6 +299,7 @@ def test_implication_missing_terminator(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 44
+    assert exc_info.value.location.end_column == 44
 
 
 def test_implication_missing_newline_after_terminator(parse: Parse):
@@ -310,9 +312,9 @@ def test_implication_missing_newline_after_terminator(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " "
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_column == 46
 
 
 def test_implication_missing_space_after_keyword(parse: Parse):
@@ -325,9 +327,9 @@ def test_implication_missing_space_after_keyword(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "position"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 24
+    assert exc_info.value.location.end_column == 32
 
 
 def test_implication_extra_space_after_keyword(parse: Parse):
@@ -342,6 +344,7 @@ def test_implication_extra_space_after_keyword(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 25
+    assert exc_info.value.location.end_column == 26
 
 
 def test_implication_local_name_where_global_required(parse: Parse):
@@ -354,9 +357,9 @@ def test_implication_local_name_where_global_required(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "foo"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 34
+    assert exc_info.value.location.end_column == 37
 
 
 def test_implication_chained_name_not_allowed(parse: Parse):
@@ -371,6 +374,7 @@ def test_implication_chained_name_not_allowed(parse: Parse):
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 37
+    assert exc_info.value.location.end_column == 39
 
 
 # --- Block-level placement errors ---
@@ -386,9 +390,9 @@ def test_implication_after_constraint_block_in_potential_position(parse: Parse):
             + "    it also assigns the position</required>.\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_column == 24
 
 
 def test_implication_after_local_position_in_action_block(parse: Parse):
@@ -403,9 +407,9 @@ def test_implication_after_local_position_in_action_block(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_column == 24
 
 
 def test_implication_after_trigger_conditions_block_in_action(parse: Parse):
@@ -420,9 +424,9 @@ def test_implication_after_trigger_conditions_block_in_action(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
+    assert exc_info.value.location.end_column == 28
 
 
 def test_implication_inside_position_constraint_block(parse: Parse):
@@ -435,9 +439,9 @@ def test_implication_inside_position_constraint_block(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
+    assert exc_info.value.location.end_column == 28
 
 
 def test_implication_inside_action_statements_block(parse: Parse):
@@ -452,9 +456,9 @@ def test_implication_inside_action_statements_block(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
+    assert exc_info.value.location.end_column == 28
 
 
 def test_implication_inside_trigger_conditions_block(parse: Parse):
@@ -468,9 +472,9 @@ def test_implication_inside_trigger_conditions_block(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
+    assert exc_info.value.location.end_column == 28
 
 
 def test_implication_inside_local_position_definition_constraint_block(
@@ -490,9 +494,9 @@ def test_implication_inside_local_position_definition_constraint_block(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 13
+    assert exc_info.value.location.end_column == 32
 
 
 def test_implication_at_global_scope(parse: Parse):
@@ -501,9 +505,9 @@ def test_implication_at_global_scope(parse: Parse):
             "it also assigns the position</required>.\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )
-    assert exc_info.value.token == "it also assigns the"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 20
 
 
 # --- Block content errors ---
@@ -518,9 +522,9 @@ def test_implication_only_in_potential_position_block(parse: Parse):
             + "    it also assigns the position</required>.\n"
             + "}\n"
         )
-    assert exc_info.value.token == "}"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2
 
 
 def test_implication_only_in_action_definition_block(parse: Parse):
@@ -530,6 +534,6 @@ def test_implication_only_in_action_definition_block(parse: Parse):
             + "    it also assigns the position</required>.\n"
             + "}\n"
         )
-    assert exc_info.value.token == "}"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_column == 2

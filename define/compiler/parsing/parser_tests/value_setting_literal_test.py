@@ -105,7 +105,7 @@ def test_literal_newline(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 60
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 60
 
 
 def test_literal_target_is_invalid(parse: Parse):
@@ -117,7 +117,7 @@ def test_literal_target_is_invalid(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 26
-    assert error.value.token == "literal"
+    assert error.value.location.end_column == 33
 
 
 def test_literal_missing_global_name(parse: Parse):
@@ -129,7 +129,7 @@ def test_literal_missing_global_name(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 52
-    assert error.value.token == "text"
+    assert error.value.location.end_column == 56
 
 
 def test_literal_empty_name(parse: Parse):
@@ -141,7 +141,7 @@ def test_literal_empty_name(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 52
-    assert error.value.token == ">"
+    assert error.value.location.end_column == 53
 
 
 def test_literal_missing_open_angle_bracket(parse: Parse):
@@ -153,7 +153,7 @@ def test_literal_missing_open_angle_bracket(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 51
-    assert error.value.token == "/text"
+    assert error.value.location.end_column == 56
 
 
 def test_literal_missing_close_angle_bracket(parse: Parse):
@@ -165,7 +165,7 @@ def test_literal_missing_close_angle_bracket(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 63
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 63
     assert error.value.name == '/text"abc".'
 
 
@@ -178,7 +178,7 @@ def test_literal_missing_open_quote(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 58
-    assert error.value.token == "."
+    assert error.value.location.end_column == 59
 
 
 def test_literal_unquoted_content(parse: Parse):
@@ -190,7 +190,7 @@ def test_literal_unquoted_content(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 57
-    assert error.value.token == "5."
+    assert error.value.location.end_column == 59
 
 
 def test_literal_missing_close_quote(parse: Parse):
@@ -202,7 +202,7 @@ def test_literal_missing_close_quote(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 63
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 63
 
 
 def test_literal_content_starting_with_slash(parse: Parse):
@@ -223,7 +223,7 @@ def test_literal_cannot_be_child_of_position(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 62
-    assert error.value.token == "literal"
+    assert error.value.location.end_column == 69
 
 
 def test_literal_cannot_start_position_reference(parse: Parse):
@@ -235,7 +235,7 @@ def test_literal_cannot_start_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 61
-    assert error.value.token == "::"
+    assert error.value.location.end_column == 63
 
 
 def test_literal_missing_terminator(parse: Parse):
@@ -247,7 +247,7 @@ def test_literal_missing_terminator(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 61
-    assert error.value.token == "\n"
+    assert error.value.location.end_column == 61
 
 
 def test_literal_old_syntax_is_invalid(parse: Parse):
@@ -259,4 +259,4 @@ def test_literal_old_syntax_is_invalid(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 62
-    assert error.value.token == "."
+    assert error.value.location.end_column == 63
