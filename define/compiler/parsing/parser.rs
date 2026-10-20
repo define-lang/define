@@ -244,10 +244,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
             return ParseError::not_yet_supported(start, "quality implication statements");
         }
-        let word = self.scanner.next_word();
+        let statement = self.scanner.rest_of_line();
         let end = Position {
             line: start.line,
-            column: start.after(word).column - 1,
+            column: start.after(statement).column - 1,
         };
         self.errors
             .invalid_potential_position_definition_block(start, end)

@@ -425,7 +425,7 @@ def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 5
     assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 12
+    assert exc_info.value.location.end_column == 17
 
 
 def test_empty_local_position_definition_block(parse: Parse):

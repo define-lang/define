@@ -1,7 +1,7 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use vector_scan::{LINE_FEED, SPACE};
+use vector_scan::LINE_FEED;
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -96,16 +96,12 @@ impl<'source> Scanner<'source> {
         self.rest.is_empty()
     }
 
-    /// The text before the next space or line feed, or the end of the source.
-    pub fn next_word(&self) -> SourceText<'source> {
-        let length = self
-            .rest
-            .iter()
-            .position(|&byte| byte == SPACE || byte == LINE_FEED)
-            .unwrap_or(self.rest.len());
+    /// The rest of the line before its line feed.
+    pub fn rest_of_line(&self) -> SourceText<'source> {
+        let scanned = vector_scan::rest_of_line(self.rest);
         SourceText {
-            bytes: &self.rest[..length],
-            is_known_ascii: false,
+            bytes: &self.rest[..scanned.length],
+            is_known_ascii: scanned.is_printable_ascii,
         }
     }
 
@@ -159,13 +155,8 @@ impl<'source> Scanner<'source> {
 
     /// Consumes and returns the rest of the line before its line feed.
     pub fn consume_rest_of_line(&mut self) -> SourceText<'source> {
-        let scanned = vector_scan::rest_of_line(self.rest);
-        let (bytes, rest) = self.rest.split_at(scanned.length);
-        let text = SourceText {
-            bytes,
-            is_known_ascii: scanned.is_printable_ascii,
-        };
-        self.rest = rest;
+        let text = self.rest_of_line();
+        self.rest = &self.rest[text.bytes.len()..];
         self.position = self.position.after(text);
         text
     }
