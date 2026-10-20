@@ -136,6 +136,12 @@
   ],
   packageRules: [
     {
+      // Lockfile maintenance has no release timestamp, so requiring one leaves
+      // renovate/stability-days pending forever.
+      matchUpdateTypes: ["lockFileMaintenance"],
+      minimumReleaseAge: null,
+    },
+    {
       matchManagers: ["bazel-module"],
       groupName: "bazel modules",
     },
