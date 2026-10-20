@@ -740,22 +740,6 @@ struct PythonParseResult {
     exception: Option<Py<PyAny>>,
 }
 
-#[pymethods]
-impl PythonParseResult {
-    #[new]
-    const fn new(
-        program: Option<Py<PyAny>>,
-        diagnostics: Py<PyList>,
-        exception: Option<Py<PyAny>>,
-    ) -> Self {
-        Self {
-            program,
-            diagnostics,
-            exception,
-        }
-    }
-}
-
 /// Parses UTF-8 Define source code into an `ast.Program`.
 #[pyfunction]
 fn parse<'py>(
