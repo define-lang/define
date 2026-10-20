@@ -81,6 +81,7 @@ def test_token_error_message(native_parse: NativeParse):
         native_parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 46
     assert _format(
         exc_info.value, "define the potential position<standard:/path>\n"
@@ -118,9 +119,9 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
         Missing '>' on this name: local_name.""")
 
 
-def test_invisible_character_error_message(parse: Parse):
+def test_invisible_character_error_message(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
+        native_parse(
             "# a\u200bb\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )

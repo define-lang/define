@@ -507,8 +507,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     )> {
         // There is no `<`.
         if !self.scanner.consume_byte(NAME_CONTENT_START) {
-            let missing = self.scanner.position;
-            return Err(self.errors.missing_open_angle_bracket(missing, missing));
+            return Err(self.missing_open_angle_bracket());
         }
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_name_content();
@@ -543,6 +542,27 @@ impl<'py, 'source> Parser<'py, 'source> {
         let path = self.ast.global_path_name(path_location, path_name)?;
         let location = self.ast.location(start, end)?;
         Ok((location, fqun, path))
+    }
+
+    /// Returns the error for a name whose `<` is missing at the scanner's
+    /// position.
+    #[cold]
+    #[inline(never)]
+    fn missing_open_angle_bracket(&self) -> ParseError {
+        let missing = self.scanner.position;
+        let line = self.scanner.rest_of_line().bytes;
+        let spaces = line.iter().take_while(|&&byte| byte == SPACE).count();
+        // Spaces come between the name type and the `<`.
+        if spaces > 0 && line.get(spaces) == Some(&NAME_CONTENT_START) {
+            let last_space = Position {
+                line: missing.line,
+                column: missing.column + spaces - 1,
+            };
+            return self
+                .errors
+                .space_before_open_angle_bracket(missing, last_space);
+        }
+        self.errors.missing_open_angle_bracket(missing, missing)
     }
 
     /// Returns the error for name `content` from `start` up to `end`, which the

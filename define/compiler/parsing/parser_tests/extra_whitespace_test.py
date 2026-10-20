@@ -145,7 +145,7 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
 def test_extra_space_before_local_name_in_position_requirement_statement(
     native_parse: NativeParse,
 ):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+    with pytest.raises(parser_exceptions.SpaceBeforeOpenAngleBracket) as exc_info:
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -156,7 +156,18 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
     assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 28
+    assert exc_info.value.location.end_column == 29
+
+
+def test_space_before_name_in_position_definition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.SpaceBeforeOpenAngleBracket) as exc_info:
+        native_parse(
+            "define the potential position <mv:define-lang.org:parser:/path>.\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 30
 
 
 def test_extra_space_after_create_a_particle_in(parse: Parse):

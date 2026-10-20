@@ -674,6 +674,14 @@ class MissingWhitespaceBeforeBrace(DefineTokenError):
     message_format: ClassVar[str] = "Missing a space before '{{'"
 
 
+class SpaceBeforeOpenAngleBracket(DefineTokenError):
+    """Put spaces between a name type and the < of its name."""
+
+    message_format: ClassVar[str] = (
+        "A name type and the '<' that starts the name cannot have spaces between them."
+    )
+
+
 class QualityImplicationInWrongLocation(DefineTokenError):
     """Wrote an 'it also assigns the' statement somewhere it isn't allowed."""
 
