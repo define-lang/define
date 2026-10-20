@@ -271,10 +271,27 @@ impl<'py, 'source> Parser<'py, 'source> {
         indentation: usize,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::PositionConstraintBlock<'py>> {
-        self.lines().parse_block_open()?;
+        let block_open_end = self.lines().parse_block_open()?;
+        match self.lines().next_line_in_block(indentation)? {
+            LineInBlock::Statement { .. } => {}
+            // The block is empty.
+            LineInBlock::Close => {
+                let close = self.scanner.position;
+                return Err(self
+                    .errors
+                    .missing_position_constraint_content(close, close));
+            }
+            // The source ends where the block's content belongs.
+            LineInBlock::EndOfSource => {
+                return Err(self
+                    .errors
+                    .missing_position_constraint_content(block_open_end, block_open_end));
+            }
+        }
         let requirements = self.ast.start_tuple::<ast::PositionRequirementStatement>();
-        let mut has_requirement = false;
         loop {
+            let requirement = self.parse_position_requirement_statement(fqun)?;
+            self.ast.push(&requirements, requirement);
             match self.lines().next_line_in_block(indentation)? {
                 LineInBlock::Statement { .. } => {}
                 LineInBlock::Close => break,
@@ -285,15 +302,6 @@ impl<'py, 'source> Parser<'py, 'source> {
                     ));
                 }
             }
-            let requirement = self.parse_position_requirement_statement(fqun)?;
-            self.ast.push(&requirements, requirement);
-            has_requirement = true;
-        }
-        if !has_requirement {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "position constraint blocks without requirements",
-            ));
         }
         let end = self.lines().parse_block_close()?;
         let requirements = self.ast.finish_tuple(requirements)?;

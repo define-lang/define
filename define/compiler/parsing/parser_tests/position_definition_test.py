@@ -187,9 +187,9 @@ def test_position_definition_block_requires_content(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_position_constraint_block_requires_requirements(parse: Parse):
+def test_position_constraint_block_requires_requirements(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "    }\n"
@@ -197,6 +197,7 @@ def test_position_constraint_block_requires_requirements(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 5
 
 
