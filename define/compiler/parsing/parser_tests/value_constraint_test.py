@@ -10,7 +10,7 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_value_constraint_short_name(native_parse: NativeParse):
@@ -81,9 +81,9 @@ def test_value_constraint_full_name(native_parse: NativeParse):
     )
 
 
-def test_value_constraint_requires_global_name(parse: Parse):
+def test_value_constraint_requires_global_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = parse(
+        _ = native_parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the value<rational>.\n"
@@ -92,6 +92,7 @@ def test_value_constraint_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 26
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 33
 
 

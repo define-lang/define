@@ -116,11 +116,14 @@ def test_non_ascii_character_after_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_space_before_terminator(parse: Parse):
+def test_space_before_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
+        native_parse(
+            "define the potential position<mv:my.domain.com:my_lib:/some_name .\n"
+        )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 67
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 67
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 

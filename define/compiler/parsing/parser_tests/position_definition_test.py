@@ -40,12 +40,13 @@ def test_position_definition_parses(native_parse: NativeParse):
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<foo>.\n")
+        native_parse("define the potential position<foo>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 33
 
 
@@ -75,38 +76,62 @@ def test_position_definition_with_control_character(parse: Parse):
     assert exc_info.value.location.end_column == 6
 
 
-def test_position_definition_with_empty_global_path(parse: Parse):
+def test_position_definition_with_empty_global_path(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:>.\n")
+        native_parse("define the potential position<mv:define-lang.org:parser:>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 56
+
+
+def test_position_definition_without_fqun(native_parse: NativeParse):
+    with pytest.raises(
+        parser_exceptions.DefinitionGlobalNameContentRequiresFqun
+    ) as exc_info:
+        native_parse("define the potential position</path>.\n")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 35
+
+
+def test_position_definition_with_too_many_fqun_components(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as exc_info:
+        native_parse("define the potential position<a:b:c:d:/path>.\n")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 37
 
 
 def test_position_definition_with_global_path_missing_leading_slash(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:path>.\n")
+        native_parse("define the potential position<mv:define-lang.org:parser:path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 32
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 60
 
 
-def test_position_definition_empty_name_content(parse: Parse):
+def test_position_definition_empty_name_content(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse("define the potential position<>.\n")
+        native_parse("define the potential position<>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 31
 
 
-def test_position_definition_empty_name_at_eof(parse: Parse):
+def test_position_definition_empty_name_at_eof(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse("define the potential position<")
+        native_parse("define the potential position<")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 31
 
 
 def test_position_definition_with_constraint_block(native_parse: NativeParse):

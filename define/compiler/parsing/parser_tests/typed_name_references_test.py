@@ -14,7 +14,7 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_typed_global_name_reference_short_position_name(native_parse: NativeParse):
@@ -124,10 +124,10 @@ def test_typed_global_name_reference_full_name(native_parse: NativeParse):
 
 
 def test_typed_global_name_reference_local_style_name_is_global_terminal(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/root> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position<foo>.\n"
@@ -136,4 +136,5 @@ def test_typed_global_name_reference_local_style_name_is_global_terminal(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 31

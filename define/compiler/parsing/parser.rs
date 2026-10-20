@@ -415,12 +415,15 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn parse_global_name_definition_content(
         &mut self,
     ) -> ParseResult<(ast::DefinitionGlobalNameContent<'py>, ast::Fqun<'py>)> {
+        let content_start = self.scanner.position.next_column();
         let (location, fqun, path) = self.parse_global_name_content()?;
+        // The name has no FQUN.
         let Some(fqun) = fqun else {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "global names without a FQUN in definitions",
-            ));
+            // The scanner is after the `>`.
+            let content_end = self.scanner.position.previous_column().previous_column();
+            return Err(self
+                .errors
+                .definition_global_name_content_requires_fqun(content_start, content_end));
         };
         let name_content = self
             .ast
@@ -452,12 +455,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_name_content();
         let end = self.scanner.position;
-        if !content.is_known_ascii {
-            return Err(ParseError::not_yet_supported(start, "non-ASCII names"));
+        // The name content is not a global name that ends with `>`.
+        if !content.is_known_ascii
+            || !scanned.is_global_name
+            || !self.scanner.next_byte_is(NAME_CONTENT_END)
+        {
+            return Err(self.invalid_global_name_content(content, start, end));
         }
-        if !scanned.is_global_name || !self.scanner.consume_byte(NAME_CONTENT_END) {
-            return Err(ParseError::not_yet_supported(start, "this global name"));
-        }
+        self.scanner.consume_bytes(1);
         let (fqun, path_start, path_text) = match scanned.last_component_separator {
             None => (None, start, content),
             Some(0) => {
@@ -482,6 +487,35 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((location, fqun, path))
     }
 
+    /// Returns the error for name `content` from `start` up to `end`, which the
+    /// scanner is at, that is not a global name followed by `>`.
+    #[cold]
+    #[inline(never)]
+    fn invalid_global_name_content(
+        &self,
+        content: SourceText<'source>,
+        start: Position,
+        end: Position,
+    ) -> ParseError {
+        // There is no name between the `<` and where the `>` belongs.
+        if content.bytes.is_empty() {
+            return self.errors.empty_name(start, start);
+        }
+        // The name content runs to the end of the line without a `>`.
+        if !self.scanner.next_byte_is(NAME_CONTENT_END) {
+            return self.errors.missing_close_angle_bracket(
+                end,
+                end,
+                &String::from_utf8_lossy(content.bytes),
+            );
+        }
+        if !content.is_known_ascii {
+            return ParseError::not_yet_supported(start, "non-ASCII names");
+        }
+        self.errors
+            .invalid_global_name(start, end.previous_column())
+    }
+
     /// Parses the FQUN `text`, without its final `:`, that begins at `start`,
     /// and returns it with the position after it.
     ///
@@ -504,11 +538,10 @@ impl<'py, 'source> Parser<'py, 'source> {
                 (Some(multiverse), Some(authority), Some(universe), None) => {
                     (Some(multiverse), Some(authority), universe)
                 }
+                // The FQUN has more than three components.
                 _ => {
-                    return Err(ParseError::not_yet_supported(
-                        start,
-                        "FQUNs with more than three components",
-                    ));
+                    let end = start.after(text).previous_column();
+                    return Err(self.errors.global_name_invalid_fqun_format(start, end));
                 }
             };
         let mut component_start = start;

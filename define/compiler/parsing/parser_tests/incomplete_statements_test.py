@@ -193,12 +193,13 @@ def test_global_action_block_open_without_content(parse: Parse):
     assert exc_info.value.location.end_column == 63
 
 
-def test_global_position_truncated_in_global_name_no_newline(parse: Parse):
+def test_global_position_truncated_in_global_name_no_newline(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/target.")
+        native_parse("define the potential position<mv:define-lang.org:parser:/target.")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_column == 31
+    assert exc_info.value.location.column == 65
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
     assert exc_info.value.name == "mv:define-lang.org:parser:/target."
 
 
@@ -528,9 +529,9 @@ def test_position_requirement_missing_name_after_type_with_space(
     assert exc_info.value.name == " "
 
 
-def test_position_requirement_name_starts_and_then_newline(parse: Parse):
+def test_position_requirement_name_starts_and_then_newline(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position<\n"
@@ -540,6 +541,7 @@ def test_position_requirement_name_starts_and_then_newline(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 29
 
 
