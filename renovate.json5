@@ -2,6 +2,9 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
   automerge: true,
+  // Main changes frequently; rebasing on every commit can prevent otherwise
+  // passing PRs from ever reaching automerge.
+  rebaseWhen: "conflicted",
   // Main has no required status checks, so GitHub's auto-merge would not wait
   // for CI.
   platformAutomerge: false,
@@ -9,8 +12,8 @@
   // are automerged. Matches action-release-cooldown in .github/jactionlint.yaml.
   minimumReleaseAge: "2 days",
   // The lockfile workflow commits to Renovate branches as these authors. Renovate
-  // must keep rebasing those branches so the lockfile is regenerated against
-  // the latest main.
+  // must still be able to rebase those branches when conflicts require it,
+  // so the lockfile can be regenerated against the latest main.
   gitIgnoredAuthors: [
     "41898282+github-actions[bot]@users.noreply.github.com",
     "345551910+define-lang-lockfile[bot]@users.noreply.github.com",
