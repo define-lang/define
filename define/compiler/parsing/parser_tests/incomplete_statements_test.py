@@ -333,14 +333,17 @@ def test_action_statements_block_truncated_without_final_newline(parse: Parse):
     assert exc_info.value.location.end_column == 43
 
 
-def test_block_truncated_after_open_brace_without_final_newline(parse: Parse):
+def test_block_truncated_after_open_brace_without_final_newline(
+    native_parse: NativeParse,
+):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path> {")
+        native_parse("define the potential position<mv:define-lang.org:parser:/path> {")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_column == 63
+    assert exc_info.value.location.column == 65
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 65
 
 
 def test_action_truncated_before_trigger_block_without_final_newline(parse: Parse):
