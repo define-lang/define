@@ -215,16 +215,17 @@ def test_position_block_missing_required_clause(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_position_required_clause_missing_open_brace(parse: Parse):
+def test_position_required_clause_missing_open_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "it may only contain particles where\n"
+            + "    it may only contain particles where\n"
             + "}\n"
         )
     assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 36
-    assert exc_info.value.location.end_column == 36
+    assert exc_info.value.location.column == 40
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 40
 
 
 def test_action_block_missing_trigger_clause(parse: Parse):

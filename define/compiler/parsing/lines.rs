@@ -53,12 +53,9 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     /// ```
     #[inline]
     pub fn parse_block_open(&mut self) -> ParseResult<Position> {
-        let start = self.scanner.position;
+        // There is no ` {`.
         if !self.scanner.consume(BLOCK_OPEN) {
-            return Err(ParseError::not_yet_supported(
-                start,
-                "anything but ` {` here",
-            ));
+            return Err(self.missing_block_open());
         }
         let end = self.scanner.position;
         // Something other than a line feed or a comment follows the `{`.
@@ -66,6 +63,19 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return Err(self.text_after_block_open());
         }
         Ok(end)
+    }
+
+    /// Returns the error for a block whose ` {` is missing at the scanner's
+    /// position.
+    #[cold]
+    #[inline(never)]
+    fn missing_block_open(&self) -> ParseError {
+        let missing = self.scanner.position;
+        // The line ends where the ` {` belongs.
+        if self.scanner.next_byte_is(LINE_FEED) {
+            return self.errors.missing_open_brace(missing, missing);
+        }
+        ParseError::not_yet_supported(missing, "anything but ` {` here")
     }
 
     /// Returns the error for text after the `{` that opens a block, which the
