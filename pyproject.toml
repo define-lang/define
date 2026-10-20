@@ -212,7 +212,10 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = "--tb=short --no-header -q"
 junit_logging = "all"
+# Setting norecursedirs replaces pytest's defaults, so this restores the
+# default that skips hidden directories, which include Git worktrees.
 norecursedirs = [
+  ".*",
   "bazel-*",
   "experimental",
   "mutants",
