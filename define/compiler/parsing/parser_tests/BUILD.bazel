@@ -8,8 +8,10 @@ py_library(
     testonly = True,
     srcs = ["conftest.py"],
     deps = [
+        "//define/compiler:ast",
         "//define/compiler/parsing:parser",
         "//define/compiler/parsing:parser_comparison",
+        "//define/compiler/parsing:test_helpers",
         "//define/compiler/parsing/lark:lark_standalone",
         "@pypi//lark_cython",
         "@pypi//pytest",

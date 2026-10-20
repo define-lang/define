@@ -17,16 +17,16 @@ import pytest
 from define.compiler.errors import parser_exceptions, source_map
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
 def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
     return error.format(source_map.SourceMap({}, in_memory_source=source))
 
 
-def test_empty_source_error_message(parse: Parse):
+def test_empty_source_error_message(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("")
+        native_parse("")
     assert _format(exc_info.value, "") == textwrap.dedent("""\
         line 1, column 1
 

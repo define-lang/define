@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
-from define.compiler.parsing import parser, parser_comparison
+from define.compiler.parsing import parser, parser_comparison, test_helpers
 
 if TYPE_CHECKING:
     import pathlib
 
     import lark_cython
 
+    from define.compiler import ast
     from define.compiler.parsing.lark import lark_standalone
 
 _parser = parser.Parser()
@@ -27,6 +28,18 @@ class Parse(Protocol):
         file_path: pathlib.PurePosixPath | None = ...,
     ) -> lark_standalone.Tree[lark_cython.Token]:
         """Parse source and return the parse tree."""
+        ...
+
+
+class NativeParse(Protocol):
+    """Callable that parses source with the parser in parser.rs and returns the program."""
+
+    def __call__(
+        self,
+        source: str,
+        file_path: pathlib.PurePosixPath | None = ...,
+    ) -> ast.Program:
+        """Parse source and return the program."""
         ...
 
 
@@ -52,3 +65,9 @@ def parse() -> Parse:
         return result.tree
 
     return _parse
+
+
+@pytest.fixture
+def native_parse() -> NativeParse:
+    """Return a parse callable that uses the parser in parser.rs and raises its exceptions."""
+    return test_helpers.parse

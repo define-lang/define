@@ -14,12 +14,12 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_empty_file(parse: Parse):
+def test_empty_file(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("")
+        native_parse("")
     assert exc_info.value.token == ""
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1

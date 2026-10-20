@@ -163,6 +163,8 @@ enum ParseError {
         position: Position,
         description: &'static str,
     },
+    /// A syntax error in the source, as an exception from `parser_exceptions`.
+    Syntax(PyErr),
     /// An exception that Python raised while the parser built the AST.
     Python(PyErr),
 }
@@ -182,7 +184,7 @@ impl From<ParseError> for PyErr {
             } => PyNotImplementedError::new_err(format!(
                 "line {line}, column {column}: the parser does not support {description} yet"
             )),
-            ParseError::Python(error) => error,
+            ParseError::Syntax(error) | ParseError::Python(error) => error,
         }
     }
 }
@@ -223,7 +225,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             end = definition_end;
         }
         let Some(start) = start else {
-            return Err(Self::not_yet_supported(end, "source without definitions"));
+            let location = self.ast.location(end, end)?;
+            return Err(ParseError::Syntax(
+                parser_exceptions::expected_global_definition(location, ""),
+            ));
         };
         let definitions = self.ast.finish_tuple(definitions)?;
         let location = self.ast.location(start, end)?;
