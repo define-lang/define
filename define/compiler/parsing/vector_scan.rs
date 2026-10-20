@@ -374,11 +374,13 @@ fn unprintable_mask(vector: u8x32) -> u32 {
 /// statement, found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LineEnd {
-    /// Any number of spaces, then a line feed or the end of the source, or a
-    /// comment that is printable ASCII and does not end with a space. A line
-    /// feed or the end of the source follows `length` bytes, and no spaces
-    /// come right before a line feed or the end of the source.
-    Ordinary { length: usize },
+    /// A line feed or the end of the source, or any number of spaces and then
+    /// a comment that is printable ASCII and does not end with a space. A line
+    /// feed or the end of the source follows `length` bytes.
+    EndOrAsciiComment {
+        length: usize,
+        leading_space_count: usize,
+    },
     /// Any number of spaces, then a byte other than a space, `#`, or a line
     /// feed.
     Text { leading_space_count: usize },
@@ -413,7 +415,10 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
     let leading_space_count = (!spaces).trailing_zeros() as usize;
     if leading_space_count == length {
         return match length {
-            0 => LineEnd::Ordinary { length: 0 },
+            0 => LineEnd::EndOrAsciiComment {
+                length: 0,
+                leading_space_count: 0,
+            },
             WIDTH => line_end_after_space_vectors(source),
             _ => LineEnd::Unusual {
                 leading_space_count,
@@ -421,7 +426,10 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
         };
     }
     match source[leading_space_count] {
-        LINE_FEED if leading_space_count == 0 => LineEnd::Ordinary { length: 0 },
+        LINE_FEED if leading_space_count == 0 => LineEnd::EndOrAsciiComment {
+            length: 0,
+            leading_space_count: 0,
+        },
         LINE_FEED => LineEnd::Unusual {
             leading_space_count,
         },
@@ -441,7 +449,10 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
                     leading_space_count,
                 };
             }
-            LineEnd::Ordinary { length: end }
+            LineEnd::EndOrAsciiComment {
+                length: end,
+                leading_space_count,
+            }
         }
         _ => LineEnd::Text {
             leading_space_count,
@@ -464,11 +475,15 @@ fn line_end_after_space_vectors(source: &[u8]) -> LineEnd {
     match line_end(&source[offset..]) {
         // Spaces before a line feed or the end of the source are trailing
         // whitespace.
-        LineEnd::Ordinary { length: 0 } => LineEnd::Unusual {
+        LineEnd::EndOrAsciiComment { length: 0, .. } => LineEnd::Unusual {
             leading_space_count: offset,
         },
-        LineEnd::Ordinary { length } => LineEnd::Ordinary {
+        LineEnd::EndOrAsciiComment {
+            length,
+            leading_space_count,
+        } => LineEnd::EndOrAsciiComment {
             length: offset + length,
+            leading_space_count: offset + leading_space_count,
         },
         LineEnd::Text {
             leading_space_count,
@@ -494,8 +509,9 @@ fn long_line_end(source: &[u8], leading_space_count: usize) -> LineEnd {
             leading_space_count,
         };
     }
-    LineEnd::Ordinary {
+    LineEnd::EndOrAsciiComment {
         length: scanned.length,
+        leading_space_count,
     }
 }
 
@@ -903,20 +919,32 @@ mod tests {
     fn line_end_at_line_feed() {
         expect_that!(
             line_end(b"\n# a comment\n"),
-            eq(LineEnd::Ordinary { length: 0 })
+            eq(LineEnd::EndOrAsciiComment {
+                length: 0,
+                leading_space_count: 0
+            })
         );
     }
 
     #[gtest]
     fn line_end_at_end_of_source() {
-        expect_that!(line_end(b""), eq(LineEnd::Ordinary { length: 0 }));
+        expect_that!(
+            line_end(b""),
+            eq(LineEnd::EndOrAsciiComment {
+                length: 0,
+                leading_space_count: 0
+            })
+        );
     }
 
     #[gtest]
     fn line_end_at_comment() {
         expect_that!(
             line_end(b"# a comment\ndefine the potential position<standard:/path>.\n"),
-            eq(LineEnd::Ordinary { length: 11 })
+            eq(LineEnd::EndOrAsciiComment {
+                length: 11,
+                leading_space_count: 0
+            })
         );
     }
 
@@ -924,20 +952,32 @@ mod tests {
     fn line_end_at_comment_after_spaces() {
         expect_that!(
             line_end(b"    # a comment\ndefine the potential position<standard:/path>.\n"),
-            eq(LineEnd::Ordinary { length: 15 })
+            eq(LineEnd::EndOrAsciiComment {
+                length: 15,
+                leading_space_count: 4
+            })
         );
     }
 
     #[gtest]
     fn line_end_at_comment_at_end_of_source() {
-        expect_that!(line_end(b" #"), eq(LineEnd::Ordinary { length: 2 }));
+        expect_that!(
+            line_end(b" #"),
+            eq(LineEnd::EndOrAsciiComment {
+                length: 2,
+                leading_space_count: 1
+            })
+        );
     }
 
     #[gtest]
     fn line_end_at_comment_longer_than_one_vector() {
         expect_that!(
             line_end(b"  # A comment that is longer than one vector of bytes.\nx\n"),
-            eq(LineEnd::Ordinary { length: 54 })
+            eq(LineEnd::EndOrAsciiComment {
+                length: 54,
+                leading_space_count: 2
+            })
         );
     }
 
@@ -1086,7 +1126,13 @@ mod tests {
     #[gtest]
     fn line_end_at_comment_after_more_than_one_vector_of_spaces() {
         let source = [&[b' '; 40][..], b"# a comment\nx\n"].concat();
-        expect_that!(line_end(&source), eq(LineEnd::Ordinary { length: 51 }));
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::EndOrAsciiComment {
+                length: 51,
+                leading_space_count: 40
+            })
+        );
     }
 
     #[gtest]
@@ -1096,7 +1142,13 @@ mod tests {
             b"# a comment that is longer than one vector of bytes\n",
         ]
         .concat();
-        expect_that!(line_end(&source), eq(LineEnd::Ordinary { length: 115 }));
+        expect_that!(
+            line_end(&source),
+            eq(LineEnd::EndOrAsciiComment {
+                length: 115,
+                leading_space_count: 64
+            })
+        );
     }
 
     #[gtest]

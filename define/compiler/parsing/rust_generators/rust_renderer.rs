@@ -280,6 +280,48 @@ impl SyntaxErrorsDescription {
     }
 }
 
+/// A diagnostic class that the parser can report.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone)]
+struct ParserDiagnostic {
+    name: String,
+    snake_case_name: String,
+    /// The names of the fields after `location`, which are all integers.
+    integer_fields: Vec<String>,
+}
+
+#[pymethods]
+impl ParserDiagnostic {
+    #[new]
+    const fn new(name: String, snake_case_name: String, integer_fields: Vec<String>) -> Self {
+        Self {
+            name,
+            snake_case_name,
+            integer_fields,
+        }
+    }
+}
+
+/// Everything that the parser diagnostics template renders.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone, Template)]
+#[template(path = "parser_diagnostics.rs.j2", escape = "none")]
+struct ParserDiagnosticsDescription {
+    module_name: String,
+    diagnostics: Vec<ParserDiagnostic>,
+}
+
+#[pymethods]
+impl ParserDiagnosticsDescription {
+    #[new]
+    const fn new(module_name: String, diagnostics: Vec<ParserDiagnostic>) -> Self {
+        Self {
+            module_name,
+            diagnostics,
+        }
+    }
+}
+
 #[pyfunction]
 fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
     description
@@ -294,12 +336,19 @@ fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String
         .map_err(|error| PyRuntimeError::new_err(error.to_string()))
 }
 
+#[pyfunction]
+fn render_parser_diagnostics(description: ParserDiagnosticsDescription) -> PyResult<String> {
+    description
+        .render()
+        .map_err(|error| PyRuntimeError::new_err(error.to_string()))
+}
+
 #[pymodule(gil_used = false)]
 mod rust_renderer {
     #[pymodule_export]
     use super::{
         AstDescription, Constructor, EnumMember, FieldEnum, FieldType, NodeClass, NodeUnion,
-        Parameter, ParserException, SyntaxErrorsDescription, render_ast_nodes,
-        render_syntax_errors,
+        Parameter, ParserDiagnostic, ParserDiagnosticsDescription, ParserException,
+        SyntaxErrorsDescription, render_ast_nodes, render_parser_diagnostics, render_syntax_errors,
     };
 }

@@ -2,6 +2,7 @@
 //! the lines that open and close blocks.
 
 use crate::parse_error::{ParseError, ParseResult};
+use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use vector_scan::{COMMENT_START, LINE_FEED, LineEnd};
@@ -9,18 +10,35 @@ use vector_scan::{COMMENT_START, LINE_FEED, LineEnd};
 pub const BLOCK_OPEN: &[u8] = b" {";
 const BLOCK_CLOSE: u8 = b'}';
 const TERMINATOR: u8 = b'.';
+/// How much deeper than the statement that opens a block each line in the
+/// block is indented.
+const INDENTATION_WIDTH: usize = 4;
 
 pub struct Lines<'parser, 'py, 'source> {
     scanner: &'parser mut Scanner<'source>,
     errors: &'parser SyntaxErrors<'py>,
+    diagnostics: &'parser mut ParserDiagnostics<'py>,
+}
+
+/// A line in a block that is not blank or a comment.
+pub enum LineInBlock {
+    /// The block's `}`, which comes next.
+    Close,
+    /// A statement, after `indentation` spaces.
+    Statement { indentation: usize },
 }
 
 impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     pub const fn new(
         scanner: &'parser mut Scanner<'source>,
         errors: &'parser SyntaxErrors<'py>,
+        diagnostics: &'parser mut ParserDiagnostics<'py>,
     ) -> Self {
-        Self { scanner, errors }
+        Self {
+            scanner,
+            errors,
+            diagnostics,
+        }
     }
 
     /// Parses the ` {` that opens a block, through the end of its line.
@@ -40,21 +58,16 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         Ok(())
     }
 
-    /// Parses the `}` that closes a block, after its indentation, through the
-    /// end of its line, and returns the position after the `}`.
+    /// Parses the `}` that closes a block, which `next_line_in_block` found
+    /// next, through the end of its line, and returns the position after the
+    /// `}`.
     ///
     /// ```ebnf
     /// block_close = "}", newline ;
     /// ```
     #[inline]
     pub fn parse_block_close(&mut self) -> ParseResult<Position> {
-        let start = self.scanner.position;
-        if !self.scanner.consume_byte(BLOCK_CLOSE) {
-            return Err(ParseError::not_yet_supported(
-                start,
-                "anything but `}` here",
-            ));
-        }
+        self.scanner.consume_bytes(1);
         let end = self.scanner.position;
         if !self.end_line()? {
             return Err(ParseError::not_yet_supported(end, "anything after `}`"));
@@ -63,9 +76,12 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     }
 
     /// Consumes any blank and comment lines, then the indentation of the next
-    /// line in a block, and returns the indentation's width.
+    /// line in the block opened by a statement indented `opener_indentation`
+    /// spaces, and returns what that line is. Adds a diagnostic for each line
+    /// that is not indented as deep as the block requires.
     #[inline]
-    pub fn next_line_in_block(&mut self) -> ParseResult<usize> {
+    pub fn next_line_in_block(&mut self, opener_indentation: usize) -> ParseResult<LineInBlock> {
+        let contents_indentation = opener_indentation + INDENTATION_WIDTH;
         loop {
             if self.scanner.is_at_end() {
                 return Err(ParseError::not_yet_supported(
@@ -73,10 +89,51 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
                     "a block without its `}`",
                 ));
             }
-            if let Some(indentation) = self.start_line()? {
-                return Ok(indentation);
+            let line_start = self.scanner.position;
+            let Some(indentation) = self.start_line(contents_indentation)? else {
+                continue;
+            };
+            if self.scanner.next_byte_is(BLOCK_CLOSE) {
+                self.check_indentation(line_start, opener_indentation, indentation)?;
+                return Ok(LineInBlock::Close);
             }
+            self.check_indentation(line_start, contents_indentation, indentation)?;
+            return Ok(LineInBlock::Statement { indentation });
         }
+    }
+
+    /// Adds a diagnostic if the line at `line_start` is indented `actual`
+    /// spaces instead of `expected`.
+    #[inline(always)]
+    fn check_indentation(
+        &mut self,
+        line_start: Position,
+        expected: usize,
+        actual: usize,
+    ) -> ParseResult<()> {
+        if actual != expected {
+            self.incorrect_indentation(line_start, expected, actual)?;
+        }
+        Ok(())
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn incorrect_indentation(
+        &mut self,
+        line_start: Position,
+        expected: usize,
+        actual: usize,
+    ) -> ParseResult<()> {
+        // The location covers the indentation, or the first character if there
+        // is none.
+        let end = Position {
+            line: line_start.line,
+            column: actual.max(1),
+        };
+        Ok(self
+            .diagnostics
+            .incorrect_indentation_diagnostic(line_start, end, expected, actual)?)
     }
 
     /// Parses a terminator through the end of its line, and returns the
@@ -133,29 +190,51 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         Ok(())
     }
 
-    /// Consumes the line if it is blank or a comment, and returns `None`.
-    /// Otherwise consumes the line's indentation and returns its width.
+    /// Consumes the line if it is blank or a comment, adding a diagnostic for
+    /// a comment that is not indented `expected_comment_indentation` spaces,
+    /// and returns `None`. Otherwise consumes the line's indentation and
+    /// returns its width.
     // Every line starts with this scan, so it is inlined into each caller.
     #[inline(always)]
-    pub fn start_line(&mut self) -> ParseResult<Option<usize>> {
+    pub fn start_line(
+        &mut self,
+        expected_comment_indentation: usize,
+    ) -> ParseResult<Option<usize>> {
+        let line_start = self.scanner.position;
         match self.scanner.scan_line_end() {
-            LineEnd::Ordinary { length } => {
-                self.consume_ordinary_line_end(length);
-                Ok(None)
+            LineEnd::EndOrAsciiComment { length: 0, .. } => {
+                self.scanner.consume_line_feed();
+            }
+            LineEnd::EndOrAsciiComment {
+                length,
+                leading_space_count,
+            } => {
+                self.consume_end_or_ascii_comment(length);
+                self.check_indentation(
+                    line_start,
+                    expected_comment_indentation,
+                    leading_space_count,
+                )?;
             }
             LineEnd::Text {
                 leading_space_count,
             } => {
                 self.scanner.consume_bytes(leading_space_count);
-                Ok(Some(leading_space_count))
+                return Ok(Some(leading_space_count));
             }
+            // The only unusual line that does not end in an error is a comment.
             LineEnd::Unusual {
                 leading_space_count,
             } => {
                 self.end_unusual_line(leading_space_count)?;
-                Ok(None)
+                self.check_indentation(
+                    line_start,
+                    expected_comment_indentation,
+                    leading_space_count,
+                )?;
             }
         }
+        Ok(None)
     }
 
     /// Consumes the rest of the line, including its line feed, if it is empty
@@ -179,8 +258,8 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     #[inline(never)]
     fn end_line_not_at_line_feed(&mut self) -> ParseResult<bool> {
         match self.scanner.scan_line_end() {
-            LineEnd::Ordinary { length } => {
-                self.consume_ordinary_line_end(length);
+            LineEnd::EndOrAsciiComment { length, .. } => {
+                self.consume_end_or_ascii_comment(length);
                 Ok(true)
             }
             LineEnd::Text { .. } => Ok(false),
@@ -194,7 +273,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     }
 
     #[inline]
-    fn consume_ordinary_line_end(&mut self, length: usize) {
+    fn consume_end_or_ascii_comment(&mut self, length: usize) {
         self.scanner.consume_bytes(length);
         self.scanner.consume_line_feed();
     }

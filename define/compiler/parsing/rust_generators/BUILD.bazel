@@ -18,6 +18,17 @@ py_binary(
 )
 
 py_binary(
+    name = "generate_parser_diagnostics",
+    srcs = ["generate_parser_diagnostics.py"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
+    deps = [
+        ":renderer_extension",
+        ":rust_names",
+        "//define/compiler/errors:diagnostics",
+    ],
+)
+
+py_binary(
     name = "generate_syntax_errors",
     srcs = ["generate_syntax_errors.py"],
     visibility = ["//define/compiler/parsing:__pkg__"],
@@ -34,6 +45,7 @@ pyo3_extension(
     compile_data = [
         "askama.toml",
         "ast_nodes.rs.j2",
+        "parser_diagnostics.rs.j2",
         "syntax_errors.rs.j2",
     ],
     crate_root = "rust_renderer.rs",
@@ -68,6 +80,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":generate_ast_nodes",
+        ":generate_parser_diagnostics",
         ":generate_syntax_errors",
         ":rust_generators",
         ":rust_names",

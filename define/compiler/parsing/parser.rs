@@ -6,20 +6,21 @@ mod scanner;
 // setup_local_dev copies it there.
 #[rustfmt::skip]
 mod ast;
-// Generated like ast.rs, so rustfmt skips it for the same reason.
+// Generated like ast.rs, so rustfmt skips them for the same reason.
+#[rustfmt::skip]
+mod parser_diagnostics;
 #[rustfmt::skip]
 mod syntax_errors;
 
 use ast_builder::{AstBuilder, FilePath, Node};
-use lines::{BLOCK_OPEN, Lines};
+use lines::{BLOCK_OPEN, LineInBlock, Lines};
 use parse_error::{ParseError, ParseResult};
+use parser_diagnostics::ParserDiagnostics;
 use pyo3::prelude::*;
-use pyo3::types::PyString;
+use pyo3::types::{PyList, PyString};
 use scanner::{Position, Scanner, SourceText};
 use syntax_errors::SyntaxErrors;
 use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END};
-
-const INDENTATION_WIDTH: usize = 4;
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
@@ -38,11 +39,12 @@ struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
     ast: AstBuilder<'py, 'source>,
     errors: SyntaxErrors<'py>,
+    diagnostics: ParserDiagnostics<'py>,
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
     fn lines(&mut self) -> Lines<'_, 'py, 'source> {
-        Lines::new(&mut self.scanner, &self.errors)
+        Lines::new(&mut self.scanner, &self.errors, &mut self.diagnostics)
     }
 
     /// Parses a program: one or more global definitions, with any number of
@@ -60,7 +62,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             if self.scanner.is_at_end() {
                 break;
             }
-            let Some(indentation) = self.lines().start_line()? else {
+            let Some(indentation) = self.lines().start_line(0)? else {
                 continue;
             };
             if indentation > 0 {
@@ -192,12 +194,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
         self.lines().parse_block_open()?;
-        if self.lines().next_line_in_block()? != INDENTATION_WIDTH {
+        let LineInBlock::Statement { indentation } = self.lines().next_line_in_block(0)? else {
             return Err(ParseError::not_yet_supported(
                 self.scanner.position,
-                "this indentation",
+                "position definition blocks without a position constraint block",
             ));
-        }
+        };
         let constraints_start = self.scanner.position;
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
             return Err(ParseError::not_yet_supported(
@@ -206,20 +208,20 @@ impl<'py, 'source> Parser<'py, 'source> {
             ));
         }
         let constraints =
-            self.parse_position_constraint_block(constraints_start, INDENTATION_WIDTH, fqun)?;
-        if self.lines().next_line_in_block()? != 0 {
+            self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
+        let LineInBlock::Close = self.lines().next_line_in_block(0)? else {
             return Err(ParseError::not_yet_supported(
                 self.scanner.position,
                 "anything but `}` here",
             ));
-        }
+        };
         let end = self.lines().parse_block_close()?;
         Ok((constraints, end))
     }
 
     /// Parses the rest of a position constraint block after its
     /// `it may only contain particles where`, given the position of its start
-    /// and its indentation.
+    /// and the indentation of its line.
     ///
     /// ```ebnf
     /// position_constraint_block =
@@ -238,17 +240,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.lines().parse_block_open()?;
         let requirements = self.ast.start_tuple::<ast::PositionRequirementStatement>();
         let mut has_requirement = false;
-        loop {
-            let line_indentation = self.lines().next_line_in_block()?;
-            if line_indentation == indentation {
-                break;
-            }
-            if line_indentation != indentation + INDENTATION_WIDTH {
-                return Err(ParseError::not_yet_supported(
-                    self.scanner.position,
-                    "this indentation",
-                ));
-            }
+        while let LineInBlock::Statement { .. } = self.lines().next_line_in_block(indentation)? {
             let requirement = self.parse_position_requirement_statement(fqun)?;
             self.ast.push(&requirements, requirement);
             has_requirement = true;
@@ -466,24 +458,66 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 }
 
+/// The result of parsing Define source code.
+#[pyclass(
+    frozen,
+    get_all,
+    name = "ParseResult",
+    module = "define.compiler.parsing.native_parser"
+)]
+struct PythonParseResult {
+    /// The `ast.Program`, unless the parse ended in `exception`.
+    program: Option<Py<PyAny>>,
+    /// The diagnostics that the parse found, in source order.
+    diagnostics: Py<PyList>,
+    /// The `parser_exceptions.DefineSyntaxError` that ended the parse, if any.
+    exception: Option<Py<PyAny>>,
+}
+
+#[pymethods]
+impl PythonParseResult {
+    #[new]
+    const fn new(
+        program: Option<Py<PyAny>>,
+        diagnostics: Py<PyList>,
+        exception: Option<Py<PyAny>>,
+    ) -> Self {
+        Self {
+            program,
+            diagnostics,
+            exception,
+        }
+    }
+}
+
 /// Parses UTF-8 Define source code into an `ast.Program`.
 #[pyfunction]
 fn parse<'py>(
     py: Python<'py>,
     source: &[u8],
     file_path: Option<Bound<'py, PyAny>>,
-) -> PyResult<Bound<'py, PyAny>> {
+) -> PyResult<PythonParseResult> {
     let file_path = file_path.map(FilePath::new);
-    let program = Parser {
+    let mut parser = Parser {
         scanner: Scanner::new(source),
         ast: AstBuilder::new(py, file_path.clone())?,
-        errors: SyntaxErrors::new(py, file_path),
-    }
-    .parse_program()?;
-    Ok(program.into_object())
+        errors: SyntaxErrors::new(py, file_path.clone()),
+        diagnostics: ParserDiagnostics::new(py, file_path),
+    };
+    let (program, exception) = match parser.parse_program() {
+        Ok(program) => (Some(program.into_object().unbind()), None),
+        Err(ParseError::Syntax(error)) => (None, Some(error.into_value(py).into_any())),
+        Err(error) => return Err(error.into()),
+    };
+    Ok(PythonParseResult {
+        program,
+        diagnostics: parser.diagnostics.into_list()?.unbind(),
+        exception,
+    })
 }
 
 #[pymodule(gil_used = false)]
 fn native_parser(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<PythonParseResult>()?;
     module.add_function(wrap_pyfunction!(parse, module)?)
 }

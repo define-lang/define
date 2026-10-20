@@ -1,0 +1,95 @@
+// Generated from `{{ module_name }}` by
+// //define/compiler/parsing/rust_generators:generate_parser_diagnostics.
+
+use crate::ast::SourceLocation;
+use crate::ast_builder::{FilePath, Node};
+use crate::scanner::Position;
+use pyo3::prelude::*;
+use pyo3::sync::PyOnceLock;
+use pyo3::types::{PyInt, PyList, PyType};
+
+/// Collects the diagnostics of one parse, as instances of classes from
+/// `{{ module_name }}`.
+pub struct ParserDiagnostics<'py> {
+    py: Python<'py>,
+    file_path: Option<FilePath<'py>>,
+    diagnostics: Vec<Bound<'py, PyAny>>,
+}
+
+impl<'py> ParserDiagnostics<'py> {
+    pub const fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> Self {
+        Self {
+            py,
+            file_path,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    /// Returns the diagnostics in the order they were added.
+    pub fn into_list(self) -> PyResult<Bound<'py, PyList>> {
+        PyList::new(self.py, self.diagnostics)
+    }
+
+    /// Returns the location from `start` through `end`, the position of its last
+    /// character.
+    fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
+        SourceLocation::new(
+            self.py,
+            PyInt::new(self.py, start.line),
+            PyInt::new(self.py, start.column),
+            PyInt::new(self.py, end.line),
+            PyInt::new(self.py, end.column),
+            self.file_path.clone(),
+        )
+    }
+{% for diagnostic in diagnostics %}
+    /// Adds a `{{ module_name }}.{{ diagnostic.name }}` from `start` through
+    /// `end`, the position of its last character.
+    pub fn {{ diagnostic.snake_case_name }}(
+        &mut self,
+        start: Position,
+        end: Position,
+{%- for field in diagnostic.integer_fields %}
+        {{ field }}: usize,
+{%- endfor %}
+    ) -> PyResult<()> {
+        let location = self.location(start, end)?;
+        let diagnostic = DiagnosticClasses::get(self.py)?
+            .{{ diagnostic.snake_case_name }}
+            .bind(self.py)
+            .call1((
+                location.into_object(),
+{%- for field in diagnostic.integer_fields %}
+                PyInt::new(self.py, {{ field }}),
+{%- endfor %}
+            ))?;
+        self.diagnostics.push(diagnostic);
+        Ok(())
+    }
+{% endfor -%}
+}
+
+/// The classes in `{{ module_name }}` that the parser reports.
+struct DiagnosticClasses {
+{%- for diagnostic in diagnostics %}
+    {{ diagnostic.snake_case_name }}: Py<PyType>,
+{%- endfor %}
+}
+
+static DIAGNOSTIC_CLASSES: PyOnceLock<DiagnosticClasses> = PyOnceLock::new();
+
+impl DiagnosticClasses {
+    fn get(py: Python<'_>) -> PyResult<&'static Self> {
+        DIAGNOSTIC_CLASSES.get_or_try_init(py, || {
+            let module = py.import("{{ module_name }}")?;
+            Ok(Self {
+{%- for diagnostic in diagnostics %}
+                {{ diagnostic.snake_case_name }}: module
+                    .getattr("{{ diagnostic.name }}")?
+                    .cast_into::<PyType>()?
+                    .unbind(),
+{%- endfor %}
+            })
+        })
+    }
+}

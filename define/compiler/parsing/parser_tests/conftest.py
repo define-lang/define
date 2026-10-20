@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import lark_cython
 
     from define.compiler import ast
+    from define.compiler.parsing import native_parser
     from define.compiler.parsing.lark import lark_standalone
 
 _parser = parser.Parser()
@@ -40,6 +41,18 @@ class NativeParse(Protocol):
         file_path: pathlib.PurePosixPath | None = ...,
     ) -> ast.Program:
         """Parse source and return the program."""
+        ...
+
+
+class NativeParseWithDiagnostics(Protocol):
+    """Callable that parses source with the parser in parser.rs and returns its result."""
+
+    def __call__(
+        self,
+        source: str,
+        file_path: pathlib.PurePosixPath | None = ...,
+    ) -> native_parser.ParseResult:
+        """Parse source and return the result."""
         ...
 
 
@@ -70,7 +83,13 @@ def parse() -> Parse:
 @pytest.fixture
 def native_parse_lark_wrong() -> NativeParse:
     """Return a parse callable that uses the parser in parser.rs, for sources the Lark parser accepts by mistake."""
-    return parser_comparison.native_parse_where_lark_is_wrong
+    return test_helpers.parse_where_lark_is_wrong
+
+
+@pytest.fixture
+def native_parse_with_diagnostics() -> NativeParseWithDiagnostics:
+    """Return a parse callable that uses the parser in parser.rs and returns its whole result."""
+    return test_helpers.parse_with_diagnostics
 
 
 @pytest.fixture

@@ -277,6 +277,7 @@ py_binary(
     args = [
         "$(rlocationpath @multitool//tools/uv)",
         "$(rlocationpath //define/compiler/parsing:ast)",
+        "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
         "$(rlocationpath //define/compiler/parsing:syntax_errors)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
         "$(rlocationpath //define/compiler/parsing:parser_extension)",
@@ -284,6 +285,7 @@ py_binary(
     data = [
         "//define/compiler/codegen/literal/python:renderer",
         "//define/compiler/parsing:ast",
+        "//define/compiler/parsing:parser_diagnostics",
         "//define/compiler/parsing:parser_extension",
         "//define/compiler/parsing:syntax_errors",
         "@multitool//tools/uv",

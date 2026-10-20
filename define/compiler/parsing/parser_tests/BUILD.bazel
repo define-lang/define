@@ -9,6 +9,7 @@ py_library(
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/parsing:native_parser",
         "//define/compiler/parsing:parser",
         "//define/compiler/parsing:parser_comparison",
         "//define/compiler/parsing:test_helpers",
@@ -43,6 +44,7 @@ py_test(
         "extra_whitespace_test.py",
         "file_encoding_test.py",
         "incomplete_statements_test.py",
+        "indentation_test.py",
         "local_name_format_test.py",
         "move_particle_test.py",
         "multiple_definitions_test.py",

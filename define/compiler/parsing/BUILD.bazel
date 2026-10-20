@@ -95,9 +95,12 @@ py_test(
 py_library(
     name = "native_parser",
     srcs = ["native_parser.pyi"],
+    visibility = ["//define/compiler/parsing:__subpackages__"],
     deps = [
         ":parser_extension",  # keep: supplies the native implementation of this stub
         "//define/compiler:ast",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_exceptions",
     ],
 )
 
@@ -131,10 +134,20 @@ py_library(
         ":invisible_characters",
         ":native_parser",
         ":parser",
-        "//define/compiler:ast",
         "//define/compiler/errors:parser_exceptions",
         "@pypi//msgspec",
     ],
+)
+
+genrule(
+    name = "parser_diagnostics",
+    outs = ["parser_diagnostics.rs"],
+    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_parser_diagnostics) $@ && $(execpath @rules_rust//rust/toolchain:current_rustfmt_toolchain) --edition 2024 $@",
+    tools = [
+        "//define/compiler/parsing/rust_generators:generate_parser_diagnostics",
+        "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
+    ],
+    visibility = ["//tools:__pkg__"],
 )
 
 py_library(
@@ -158,6 +171,7 @@ pyo3_extension(
         "parser.rs",
         "scanner.rs",
         ":ast",
+        ":parser_diagnostics",
         ":syntax_errors",
     ],
     crate_root = "parser.rs",
@@ -193,6 +207,7 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":native_parser",
         ":parser",
         ":parser_comparison",
         "//define/compiler:ast",

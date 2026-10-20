@@ -14,9 +14,8 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing import invisible_characters, native_parser, parser
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import PurePosixPath
-
-    from define.compiler import ast
 
 _LARK_PARSER = parser.Parser()
 
@@ -34,16 +33,22 @@ class ParsersDisagreeError(AssertionError):
     """Raised when the two parsers disagree about a source."""
 
 
-def native_parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
+def native_parse(
+    source: str, file_path: PurePosixPath | None = None
+) -> native_parser.ParseResult:
     """Parse source into an AST Program with the parser in parser.rs."""
-    # TODO: Remove this call once parser.rs performs the invisible-character check.
-    invisible_characters.check(source, file_path)
+    # TODO: Remove this check once parser.rs performs the invisible-character
+    # check.
+    try:
+        invisible_characters.check(source, file_path)
+    except parser_exceptions.DefineSyntaxError as error:
+        return native_parser.ParseResult(None, [], error)
     return native_parser.parse(source.encode(), file_path)
 
 
 def native_parse_where_lark_is_wrong(
     source: str, file_path: PurePosixPath | None = None
-) -> ast.Program:
+) -> native_parser.ParseResult:
     """Parse source with the parser in parser.rs, for a source the Lark parser accepts by mistake.
 
     Raises:
@@ -60,22 +65,23 @@ def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
 
     Raises:
         ParsersDisagreeError: One parser accepts the source and the other rejects
-            it, or both accept it and produce different programs.
+            it, or both accept it and produce different programs or diagnostics.
     """
     lark_result = _LARK_PARSER.parse_and_transform(source, file_path=file_path)
-    lark_accepts = lark_result.exception is None and lark_result.diagnostics == []
+    lark_accepts = lark_result.exception is None
     try:
-        native_program = native_parse(source, file_path)
+        native_result = native_parse(source, file_path)
     except NotImplementedError:
         return Agreement.NOT_YET_SUPPORTED
-    except parser_exceptions.ExpectedGlobalDefinition:
+    error = native_result.exception
+    if isinstance(error, parser_exceptions.ExpectedGlobalDefinition):
         # TODO: Remove this once the parser in parser.rs supports every kind of
         # global definition. Until then, it reports every other kind as
         # ExpectedGlobalDefinition.
         if lark_accepts:
             return Agreement.NOT_YET_SUPPORTED
         return Agreement.BOTH_REJECTED
-    except parser_exceptions.DefineSyntaxError as error:
+    if error is not None:
         if lark_accepts:
             raise ParsersDisagreeError(
                 f"only the Lark parser accepts {source!r}: {error}"
@@ -83,13 +89,14 @@ def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
         return Agreement.BOTH_REJECTED
     if not lark_accepts:
         raise ParsersDisagreeError(
-            f"only the parser in parser.rs accepts {source!r}: "
-            + f"{lark_result.exception or lark_result.diagnostics}"
+            f"only the parser in parser.rs accepts {source!r}: {lark_result.exception}"
         )
-    differences = _differences(lark_result.program, native_program, "program")
+    differences = _differences(
+        lark_result.program, native_result.program, "program"
+    ) + _differences(lark_result.diagnostics, native_result.diagnostics, "diagnostics")
     if differences:
         raise ParsersDisagreeError(
-            f"the parsers produce different programs for {source!r}:\n"
+            f"the parsers produce different results for {source!r}:\n"
             + "\n".join(differences)
         )
     return Agreement.SAME_PROGRAM
@@ -114,9 +121,9 @@ def _differences(lark_value: object, native_value: object, path: str) -> list[st
                 )
             )
         return differences
-    if isinstance(lark_value, tuple) and isinstance(native_value, tuple):
-        lark_items = typing.cast("tuple[object, ...]", lark_value)
-        native_items = typing.cast("tuple[object, ...]", native_value)
+    if isinstance(lark_value, tuple | list) and isinstance(native_value, tuple | list):
+        lark_items = typing.cast("Sequence[object]", lark_value)
+        native_items = typing.cast("Sequence[object]", native_value)
         if len(lark_items) != len(native_items):
             return [f"{path}: {len(lark_items)} items != {len(native_items)} items"]
         differences = []
