@@ -1,3 +1,6 @@
+# Define source must use LF line endings, and some test files contain carriage
+# returns on purpose, so git never converts line endings, even on Windows.
+* -text
 vendored/** linguist-vendored
 checks/rule-tests/__snapshots__/** linguist-generated
 pnpm-lock.yaml linguist-generated
