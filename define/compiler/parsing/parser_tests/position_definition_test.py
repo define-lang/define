@@ -6,6 +6,7 @@ Follow parser test authoring rules in parser_tests/AGENTS.md.
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 import pytest
@@ -37,6 +38,21 @@ def test_position_definition_parses(native_parse: NativeParse):
     )
     assert definition.quality_implications == ()
     assert definition.constraints is None
+
+
+def test_position_definition_locations_have_file_path(native_parse: NativeParse):
+    file_path = PurePosixPath("library/positions.def")
+    program = native_parse(
+        "define the potential position<standard:/path>.\n", file_path
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=46, file_path=file_path
+    )
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=45, file_path=file_path
+    )
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(

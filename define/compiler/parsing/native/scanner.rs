@@ -147,6 +147,11 @@ impl<'source> Scanner<'source> {
         self.rest.starts_with(expected)
     }
 
+    /// Whether the scanner is at a line feed or the end of the source.
+    pub const fn is_at_line_end(&self) -> bool {
+        matches!(self.rest.first(), None | Some(&LINE_FEED))
+    }
+
     /// Whether the next byte is `expected`.
     pub const fn next_byte_is(&self, expected: u8) -> bool {
         matches!(self.rest.first(), Some(&byte) if byte == expected)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import click.testing
@@ -438,6 +439,7 @@ def test_cli_filters_to_multiple_workspace_relative_files(
 ):
     _write_cli_coverage_report(tmp_path)
     monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv("RUST_GENERATED_SOURCES", "")
     monkeypatch.setenv("BUILD_WORKING_DIRECTORY", str(tmp_path))
 
     result = click.testing.CliRunner().invoke(
@@ -462,6 +464,7 @@ def test_cli_analyzes_all_files_without_arguments(
 ):
     _write_cli_coverage_report(tmp_path)
     monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv("RUST_GENERATED_SOURCES", "")
     monkeypatch.delenv("BUILD_WORKING_DIRECTORY", raising=False)
     monkeypatch.chdir(tmp_path)
 
@@ -501,6 +504,7 @@ def test_cli_includes_files_transitively_under_directory(
         + "end_of_record\n"
     )
     monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv("RUST_GENERATED_SOURCES", "")
 
     result = click.testing.CliRunner().invoke(analyze_coverage.main, ["package"])
 
@@ -560,32 +564,36 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
         + "end_of_record\n"
     )
 
-    actionable, panic_only = analyze_coverage.analyze_rust_regions(
-        report_path, tmp_path
-    )
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
 
-    assert actionable == [
-        analyze_coverage.UncoveredRegion(
-            source_file=source_path,
-            start_line=2,
-            start_column=10,
-            end_line=2,
-            end_column=11,
-        ),
-        analyze_coverage.UncoveredRegion(
-            source_file=source_path,
-            start_line=1,
-            start_column=1,
-            end_line=3,
-            end_column=2,
-        ),
-    ]
-    assert panic_only == []
-    assert analyze_coverage.format_rust_regions(actionable, panic_only, tmp_path) == (
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=2,
+                start_column=10,
+                end_line=2,
+                end_column=11,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=1,
+                start_column=1,
+                end_line=3,
+                end_column=2,
+            ),
+        ],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[],
+    )
+    assert analyze_coverage.format_rust_regions(regions, tmp_path) == (
         "Uncovered Rust code regions:\n"
         + f"{source_path}:2:10-2:11: b\n"
         + f"{source_path}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
-        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted."
+        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 not-yet-supported regions omitted; "
+        + "0 Python-exception-only regions omitted."
     )
 
 
@@ -599,23 +607,33 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
     _ = report_path.write_text(
         f"SF:{source_path}\n"
         + "BRDA:2,0,region from 2:15 to 4:6,0\n"
+        + "BRDA:3,0,region from 3:9 to 3:21,0\n"
         + "end_of_record\n"
     )
 
-    actionable, panic_only = analyze_coverage.analyze_rust_regions(
-        report_path, tmp_path
-    )
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
 
-    assert actionable == []
-    assert panic_only == [
-        analyze_coverage.UncoveredRegion(
-            source_file=source_path,
-            start_line=2,
-            start_column=15,
-            end_line=4,
-            end_column=6,
-        )
-    ]
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[],
+        panic_only=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=2,
+                start_column=15,
+                end_line=4,
+                end_column=6,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=3,
+                start_column=9,
+                end_line=3,
+                end_column=21,
+            ),
+        ],
+        not_yet_supported=[],
+        python_exception_only=[],
+    )
 
 
 def test_analyze_report_leaves_rust_regions_out_of_branches(tmp_path: Path):
@@ -646,6 +664,7 @@ def test_cli_reports_rust_regions_before_branches(
         "SF:example.rs\nBRDA:2,0,region from 2:5 to 2:7,0\nend_of_record\n"
     )
     monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv("RUST_GENERATED_SOURCES", "")
 
     result = click.testing.CliRunner().invoke(analyze_coverage.main)
 
@@ -653,7 +672,198 @@ def test_cli_reports_rust_regions_before_branches(
     assert result.output == (
         "Uncovered Rust code regions:\n"
         + "example.rs:2:5-2:7: !a\n"
-        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted.\n"
+        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 not-yet-supported regions omitted; "
+        + "0 Python-exception-only regions omitted.\n"
+        + "No uncovered actionable branches.\n"
+        + "0 actionable uncovered branches reported; "
+        + "0 low-value final-case non-match branches reported; "
+        + "0 explicit-exit-only branches omitted.\n"
+    )
+
+
+def test_analyze_rust_regions_omits_regions_that_only_report_not_yet_supported(
+    tmp_path: Path,
+):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text(
+        "fn f(a: bool) -> ParseResult<()> {\n"
+        + "    if a {\n"
+        + "        return Ok(());\n"
+        + "    }\n"
+        + "    // A comment.\n"
+        + "    Err(ParseError::not_yet_supported(\n"
+        + '        position(), "text (in \\"parentheses)",\n'
+        + "    ))\n"
+        + "}\n"
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\n"
+        + "BRDA:2,0,region from 2:8 to 2:9,0\n"
+        + "BRDA:4,0,region from 4:5 to 4:6,0\n"
+        + "BRDA:6,0,region from 6:5 to 8:7,0\n"
+        + "BRDA:7,0,region from 7:9 to 7:46,0\n"
+        + "BRDA:9,0,region from 9:1 to 9:2,0\n"
+        + "end_of_record\n"
+    )
+
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
+
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=2,
+                start_column=8,
+                end_line=2,
+                end_column=9,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=9,
+                start_column=1,
+                end_line=9,
+                end_column=2,
+            ),
+        ],
+        panic_only=[],
+        not_yet_supported=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=4,
+                start_column=5,
+                end_line=4,
+                end_column=6,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=6,
+                start_column=5,
+                end_line=8,
+                end_column=7,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=7,
+                start_column=9,
+                end_line=7,
+                end_column=46,
+            ),
+        ],
+        python_exception_only=[],
+    )
+
+
+def _question_mark_region(source_file: Path, line: int, column: int):
+    return analyze_coverage.UncoveredRegion(
+        source_file=source_file,
+        start_line=line,
+        start_column=column,
+        end_line=line,
+        end_column=column + 1,
+    )
+
+
+def test_analyze_rust_regions_omits_question_marks_that_only_pass_on_python_exceptions(
+    tmp_path: Path,
+):
+    crate_path = tmp_path / "crate"
+    crate_path.mkdir()
+    _ = (crate_path / "lib.rs").write_text(
+        "fn python() -> PyResult<u8> {\n"
+        + "    Ok(1)\n"
+        + "}\n"
+        + "fn syntax() -> ParseResult<u8> {\n"
+        + "    Ok(2)\n"
+        + "}\n"
+        + "fn parse(ast: &AstBuilder, first: Option<u8>) -> ParseResult<u8> {\n"
+        + "    let a = python()?;\n"
+        + "    let b = syntax()?;\n"
+        + "    let c = ast.location()?;\n"
+        + "    let d = first?;\n"
+        + "    Ok(a + b + c + d)\n"
+        + "}\n"
+        + "fn build(object: &Bound<PyAny>) -> PyResult<u8> {\n"
+        + '    object.getattr("name")?.extract()\n'
+        + "}\n"
+    )
+    generated_path = tmp_path / "bazel-bin" / "generated.rs"
+    generated_path.parent.mkdir()
+    _ = generated_path.write_text(
+        "impl AstBuilder {\n"
+        + "    pub fn location(&self) -> PyResult<u8> {\n"
+        + "        Ok(3)\n"
+        + "    }\n"
+        + "}\n"
+    )
+    source_file = Path("crate/lib.rs")
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_file}\n"
+        + "BRDA:8,0,region from 8:21 to 8:22,0\n"
+        + "BRDA:9,0,region from 9:21 to 9:22,0\n"
+        + "BRDA:10,0,region from 10:27 to 10:28,0\n"
+        + "BRDA:11,0,region from 11:18 to 11:19,0\n"
+        + "BRDA:15,0,region from 15:27 to 15:28,0\n"
+        + "end_of_record\n"
+    )
+
+    regions = analyze_coverage.analyze_rust_regions(
+        report_path,
+        tmp_path,
+        {
+            Path("crate/generated.rs"): generated_path,
+            Path("other_crate/generated.rs"): generated_path,
+        },
+    )
+
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[
+            _question_mark_region(source_file, 9, 21),
+            _question_mark_region(source_file, 11, 18),
+        ],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[
+            _question_mark_region(source_file, 8, 21),
+            _question_mark_region(source_file, 10, 27),
+            _question_mark_region(source_file, 15, 27),
+        ],
+    )
+
+
+def test_cli_reads_generated_rust_sources_from_runfiles(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    crate_path = tmp_path / "define/compiler/parsing/native"
+    crate_path.mkdir(parents=True)
+    _ = (crate_path / "lib.rs").write_text(
+        "fn parse(ast: &mut AstBuilder) -> ParseResult<u8> {\n"
+        + "    ast.position_definition()?;\n"
+        + "}\n"
+    )
+    report_path = tmp_path / "bazel-out/_coverage/_coverage_report.dat"
+    report_path.parent.mkdir(parents=True)
+    _ = report_path.write_text(
+        "SF:define/compiler/parsing/native/lib.rs\n"
+        + "BRDA:2,0,region from 2:30 to 2:31,0\n"
+        + "end_of_record\n"
+    )
+    monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
+    monkeypatch.setenv(
+        "RUST_GENERATED_SOURCES", os.environ["ANALYZE_COVERAGE_TEST_GENERATED_SOURCES"]
+    )
+
+    result = click.testing.CliRunner().invoke(analyze_coverage.main)
+
+    assert result.exit_code == 0
+    assert result.output == (
+        "Uncovered Rust code regions:\n"
+        + "0 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 not-yet-supported regions omitted; "
+        + "1 Python-exception-only regions omitted.\n"
         + "No uncovered actionable branches.\n"
         + "0 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "

@@ -7,7 +7,21 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_binary(
     name = "analyze_coverage",
     srcs = ["analyze_coverage.py"],
+    data = [
+        "//define/compiler/parsing/native:ast",
+        "//define/compiler/parsing/native:parser_diagnostics",
+        "//define/compiler/parsing/native:syntax_errors",
+    ],
+    env = {
+        "RUST_GENERATED_SOURCES": " ".join([
+            "$(rlocationpath //define/compiler/parsing/native:ast)",
+            "$(rlocationpath //define/compiler/parsing/native:parser_diagnostics)",
+            "$(rlocationpath //define/compiler/parsing/native:syntax_errors)",
+        ]),
+    },
     deps = [
+        ":runfiles",
+        ":rust_source",
         "@pypi//click",
         "@pypi//msgspec",
     ],
@@ -17,6 +31,16 @@ py_test(
     name = "analyze_coverage_test",
     size = "small",
     srcs = ["analyze_coverage_test.py"],
+    data = [
+        "//define/compiler/parsing/native:ast",
+        "//define/compiler/parsing/native:parser_diagnostics",
+    ],
+    env = {
+        "ANALYZE_COVERAGE_TEST_GENERATED_SOURCES": " ".join([
+            "$(rlocationpath //define/compiler/parsing/native:ast)",
+            "$(rlocationpath //define/compiler/parsing/native:parser_diagnostics)",
+        ]),
+    },
     deps = [
         ":analyze_coverage",
         "@pypi//click",
@@ -279,6 +303,21 @@ py_library(
     deps = ["@rules_python//python/runfiles"],
 )
 
+py_library(
+    name = "rust_source",
+    srcs = ["rust_source.py"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_test(
+    name = "rust_source_test",
+    size = "small",
+    srcs = ["rust_source_test.py"],
+    deps = [
+        ":rust_source",
+    ],
+)
+
 py_binary(
     name = "serve_report",
     srcs = ["serve_report.py"],
@@ -425,6 +464,8 @@ pyright_test(
         ":run_profile",
         ":run_profile_test",
         ":runfiles",
+        ":rust_source",
+        ":rust_source_test",
         ":serve_report",
         ":serve_report_test",
         ":setup_local_dev",

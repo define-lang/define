@@ -1188,3 +1188,46 @@ def test_create_particle_no_space_before_reference(
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
     assert exc_info.value.location.end_column == 36
+
+
+def test_file_ending_where_open_angle_bracket_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        native_parse("define the potential position")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 30
+
+
+def test_file_ending_where_terminator_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>"
+        )
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 36
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 36
+
+
+def test_file_ending_where_terminator_or_brace_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
+        native_parse("define the potential position<standard:/path>")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 46
+
+
+def test_file_ending_where_open_brace_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where"
+        )
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 40
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 40

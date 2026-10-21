@@ -6,7 +6,8 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
-use vector_scan::{COMMENT_START, LINE_FEED, LineEnd, SPACE};
+use pyo3::PyResult;
+use vector_scan::{COMMENT_START, LineEnd, SPACE};
 
 pub const OPEN_BRACE: u8 = b'{';
 const CLOSE_BRACE: u8 = b'}';
@@ -77,8 +78,8 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the ` {` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the ` {` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_open_brace(missing, missing);
         }
         ParseError::not_yet_supported(missing, "anything but ` {` here")
@@ -168,7 +169,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         line_start: Position,
         expected: usize,
         actual: usize,
-    ) -> ParseResult<()> {
+    ) -> PyResult<()> {
         if actual != expected {
             self.incorrect_indentation(line_start, expected, actual)?;
         }
@@ -182,16 +183,15 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         line_start: Position,
         expected: usize,
         actual: usize,
-    ) -> ParseResult<()> {
+    ) -> PyResult<()> {
         // The location covers the indentation, or the first character if there
         // is none.
         let end = Position {
             line: line_start.line,
             column: actual.max(1),
         };
-        Ok(self
-            .diagnostics
-            .incorrect_indentation_diagnostic(line_start, end, expected, actual)?)
+        self.diagnostics
+            .incorrect_indentation_diagnostic(line_start, end, expected, actual)
     }
 
     /// Parses a terminator through the end of its line, and returns the
@@ -224,8 +224,8 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the `.` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the `.` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_terminator(missing, missing);
         }
         ParseError::not_yet_supported(missing, "anything but a terminator here")

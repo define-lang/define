@@ -67,6 +67,37 @@ def test_extra_space_after_potential_in_position_definition(native_parse: Native
     assert exc_info.value.location.end_column == 22
 
 
+def test_extra_space_before_missing_space_in_position_definition(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        native_parse(
+            "define  thepotential position<mv:define-lang.org:parser:/path>.\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 7
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 8
+
+
+def test_spaces_after_define_at_end_of_line(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        native_parse("define  \n")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 8
+
+
+def test_space_after_define_at_end_of_line(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        native_parse("define \n")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 7
+
+
 def test_extra_space_after_potential_in_action_definition(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")

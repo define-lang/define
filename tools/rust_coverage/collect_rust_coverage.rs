@@ -1,11 +1,12 @@
-//! Collects the coverage of the Rust extensions that a Python test loads.
+//! Collects the coverage of the Rust code that a test runs, in a Rust test
+//! binary or in the Rust extensions that a Python test loads.
 //!
 //! Bazel runs this after a test under `bazel coverage`, as the test's
-//! `CC_CODE_COVERAGE_SCRIPT`. An extension built for coverage writes an LLVM
-//! profile into `COVERAGE_DIR` when the test's Python process exits. This
-//! merges the profiles and writes LCOV for every instrumented extension in the
-//! test's runfiles into `COVERAGE_DIR`, where Bazel's LCOV merger combines it
-//! with the test's Python coverage.
+//! `CC_CODE_COVERAGE_SCRIPT`. Rust code built for coverage writes an LLVM
+//! profile into `COVERAGE_DIR` when the test's process exits. This merges the
+//! profiles and writes LCOV for the test binary and every extension in the
+//! test's runfiles that is instrumented into `COVERAGE_DIR`, where Bazel's LCOV
+//! merger combines it with any Python coverage of the test.
 //!
 //! Stable Rust has no branch coverage, so the LCOV also has a branch record for
 //! each code region that LLVM counts, such as each arm of an `if` and each side
@@ -32,17 +33,17 @@ const EXTERNAL_SOURCES: &str = ".*external/.+";
 fn main() -> Result<(), Box<dyn Error>> {
     let coverage_dir = PathBuf::from(env::var("COVERAGE_DIR")?);
     let profiles = files_with_extension(&coverage_dir, "profraw")?;
-    // The test loaded no instrumented extension.
+    // The test ran no instrumented Rust code.
     if profiles.is_empty() {
         return Ok(());
     }
-    let runfiles = runfiles::Runfiles::create()?;
-    let llvm_profdata = runfiles::rlocation!(runfiles, env!("LLVM_PROFDATA"))
-        .ok_or("llvm-profdata is not in the runfiles")?;
-    let llvm_cov = runfiles::rlocation!(runfiles, env!("LLVM_COV"))
-        .ok_or("llvm-cov is not in the runfiles")?;
+    // rules_rust sets these for a Rust test, and //tools/bzl:py_test.bzl for
+    // a Python test.
+    let runfiles_dir = PathBuf::from(env::var("RUNFILES_DIR")?);
+    let llvm_profdata = tool_path(&runfiles_dir, "RUST_LLVM_PROFDATA")?;
+    let llvm_cov = tool_path(&runfiles_dir, "RUST_LLVM_COV")?;
 
-    let profile = coverage_dir.join("rust_extensions.profdata");
+    let profile = coverage_dir.join("rust_coverage.profdata");
     run(Command::new(llvm_profdata)
         .arg("merge")
         .arg("--sparse")
@@ -50,17 +51,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         .arg("--output")
         .arg(&profile))?;
 
-    let workspace_runfiles =
-        PathBuf::from(env::var("RUNFILES_DIR")?).join(env::var("TEST_WORKSPACE")?);
-    let mut extensions = Vec::new();
-    find_instrumented_extensions(&workspace_runfiles, &mut extensions)?;
-    extensions.sort();
-    extensions.dedup();
-    let lines = export(&llvm_cov, &profile, &extensions, "lcov")?;
-    fs::write(coverage_dir.join("rust_extensions.dat"), lines)?;
-    let regions = export(&llvm_cov, &profile, &extensions, "text")?;
+    let workspace_runfiles = runfiles_dir.join(env::var("TEST_WORKSPACE")?);
+    let mut binaries = Vec::new();
+    let test_binary = workspace_runfiles.join(env::var("TEST_BINARY")?);
+    if is_instrumented(&test_binary)? {
+        binaries.push(fs::canonicalize(&test_binary)?);
+    }
+    find_instrumented_extensions(&workspace_runfiles, &mut binaries)?;
+    binaries.sort();
+    binaries.dedup();
+    let lines = export(&llvm_cov, &profile, &binaries, "lcov")?;
+    fs::write(coverage_dir.join("rust_coverage.dat"), lines)?;
+    let regions = export(&llvm_cov, &profile, &binaries, "text")?;
     fs::write(
-        coverage_dir.join("rust_extension_regions.dat"),
+        coverage_dir.join("rust_coverage_regions.dat"),
         regions_as_lcov_branches(&serde_json::from_slice(&regions)?)?,
     )?;
     // Bazel's LCOV merger reads every file in `COVERAGE_DIR`, and it cannot
@@ -69,16 +73,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Returns `llvm-cov`'s export of the coverage of `extensions` from `profile`,
+/// Returns the path of the tool in the environment variable `variable`, which
+/// is relative to the execution root that Bazel runs this in, or else to
+/// `runfiles_dir`, as in rules_rust's own coverage collector.
+fn tool_path(runfiles_dir: &Path, variable: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let path = PathBuf::from(env::var(variable)?);
+    if path.exists() {
+        return Ok(path);
+    }
+    Ok(runfiles_dir.join(path))
+}
+
+/// Returns `llvm-cov`'s export of the coverage of `binaries` from `profile`,
 /// in `format`.
 fn export(
     llvm_cov: &Path,
     profile: &Path,
-    extensions: &[PathBuf],
+    binaries: &[PathBuf],
     format: &str,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
-    let Some((first, rest)) = extensions.split_first() else {
-        return Err("no instrumented extension is in the test's runfiles".into());
+    let Some((first, rest)) = binaries.split_first() else {
+        return Err("the test has no instrumented binary or extension".into());
     };
     let mut command = Command::new(llvm_cov);
     command
@@ -88,10 +103,12 @@ fn export(
         .arg(profile)
         .arg(format!("-ignore-filename-regex={EXTERNAL_SOURCES}"))
         .arg(first);
-    for extension in rest {
-        command.arg("-object").arg(extension);
+    for binary in rest {
+        command.arg("-object").arg(binary);
     }
-    let output = command.output()?;
+    let output = command
+        .output()
+        .map_err(|error| format!("{}: {error}", llvm_cov.display()))?;
     if !output.status.success() {
         return Err(format!(
             "llvm-cov export failed:\n{}",
@@ -195,22 +212,26 @@ fn find_instrumented_extensions(
         let metadata = fs::metadata(&path)?;
         if metadata.is_dir() {
             find_instrumented_extensions(&path, extensions)?;
-        } else if path.extension().is_some_and(|found| found == "so") {
-            let contents = fs::read(&path)?;
-            if contents
-                .windows(COVERAGE_MAP_SECTION.len())
-                .any(|window| window == COVERAGE_MAP_SECTION)
-            {
-                extensions.push(fs::canonicalize(&path)?);
-            }
+        } else if path.extension().is_some_and(|found| found == "so") && is_instrumented(&path)? {
+            extensions.push(fs::canonicalize(&path)?);
         }
     }
     Ok(())
 }
 
+/// Whether the binary at `path` is instrumented for coverage.
+fn is_instrumented(path: &Path) -> Result<bool, Box<dyn Error>> {
+    let contents = fs::read(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    Ok(contents
+        .windows(COVERAGE_MAP_SECTION.len())
+        .any(|window| window == COVERAGE_MAP_SECTION))
+}
+
 /// Runs `command` and returns an error if it fails.
 fn run(command: &mut Command) -> Result<(), Box<dyn Error>> {
-    let status = command.status()?;
+    let status = command
+        .status()
+        .map_err(|error| format!("{command:?}: {error}"))?;
     if !status.success() {
         return Err(format!("{command:?} failed with {status}").into());
     }

@@ -87,7 +87,25 @@ proto_lang_toolchain(
 alias(
     name = "rust_coverage_collector",
     actual = select({
-        ":coverage_enabled": "//tools/rust_coverage:collect_extension_coverage",
+        ":coverage_enabled": "//tools/rust_coverage:collect_rust_coverage",
+        "//conditions:default": "//:pyproject.toml",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "rust_coverage_llvm_cov",
+    actual = select({
+        ":coverage_enabled": "@llvm//tools:llvm-cov",
+        "//conditions:default": "//:pyproject.toml",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "rust_coverage_llvm_profdata",
+    actual = select({
+        ":coverage_enabled": "@llvm//tools:llvm-profdata",
         "//conditions:default": "//:pyproject.toml",
     }),
     visibility = ["//visibility:public"],

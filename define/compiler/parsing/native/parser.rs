@@ -129,58 +129,51 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.disallowed_character_after(DEFINE_THE_POTENTIAL_POSITION) {
             return error;
         }
-        // The line has the words that begin a position definition, but with
-        // more than one space between two of them.
-        if let Some((spaces_start, spaces_end)) =
-            self.extra_spaces_between_words(DEFINE_THE_POTENTIAL_POSITION)
-        {
-            return self.errors.extra_whitespace(spaces_start, spaces_end);
+        // The line begins like a position definition, but with extra spaces
+        // between two of its words.
+        if let Some(error) = self.extra_spaces_between_words(DEFINE_THE_POTENTIAL_POSITION) {
+            return error;
         }
         let start = self.scanner.position;
         self.errors
             .expected_global_definition(start, self.end_of_line())
     }
 
-    /// Returns the first and last spaces of the first run of more than one
-    /// space at the scanner's position, if the line starts with `words`, ASCII
-    /// words separated by single spaces, once every such run is one space.
-    fn extra_spaces_between_words(&self, words: &[u8]) -> Option<(Position, Position)> {
+    /// Returns the error for the spaces where the line at the scanner's
+    /// position, which does not start with `words`, ASCII words separated by
+    /// single spaces, stops matching them, if they are extra spaces before a
+    /// word.
+    fn extra_spaces_between_words(&self, words: &[u8]) -> Option<ParseError> {
         let line = self.scanner.rest_of_line().bytes;
-        let mut offset = 0;
-        let mut first_run = None;
-        for &expected in words {
-            if expected == SPACE {
-                let run = line[offset..]
-                    .iter()
-                    .take_while(|&&byte| byte == SPACE)
-                    .count();
-                if run == 0 {
-                    return None;
-                }
-                if run > 1 && first_run.is_none() {
-                    first_run = Some((offset, offset + run - 1));
-                }
-                offset += run;
-            } else {
-                if line.get(offset) != Some(&expected) {
-                    return None;
-                }
-                offset += 1;
-            }
+        let matching = line
+            .iter()
+            .zip(words)
+            .take_while(|(byte, expected)| byte == expected)
+            .count();
+        if matching == 0 || words[matching - 1] != SPACE {
+            return None;
         }
-        let (first, last) = first_run?;
-        // Every byte up to `offset` is ASCII, so each is one column.
+        let first = matching - 1;
+        let spaces = line[first..]
+            .iter()
+            .take_while(|&&byte| byte == SPACE)
+            .count();
+        // Spaces that end the line are where an unfinished line stops, and
+        // one space is the separator before a different word.
+        if spaces == 1 || first + spaces == line.len() {
+            return None;
+        }
+        // Every byte through the spaces is ASCII, so each is one column.
         let start = self.scanner.position;
-        Some((
-            Position {
-                line: start.line,
-                column: start.column + first,
-            },
-            Position {
-                line: start.line,
-                column: start.column + last,
-            },
-        ))
+        let spaces_start = Position {
+            line: start.line,
+            column: start.column + first,
+        };
+        let spaces_end = Position {
+            line: start.line,
+            column: start.column + first + spaces - 1,
+        };
+        Some(self.errors.extra_whitespace(spaces_start, spaces_end))
     }
 
     /// Parses the rest of a position definition after its `position`, given
@@ -240,8 +233,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line ends where the `.` or ` {` belongs.
-        if self.scanner.next_byte_is(LINE_FEED) {
+        // The line or the source ends where the `.` or ` {` belongs.
+        if self.scanner.is_at_line_end() {
             return self.errors.missing_terminator_or_brace(missing, missing);
         }
         // A `{` follows the name without a space before it.
