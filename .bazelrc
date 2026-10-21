@@ -14,6 +14,11 @@ common:windows --enable_runfiles
 # requires the same rights as runfiles directories.
 startup:windows --windows_enable_symlinks
 
+# Build for Windows from Linux.
+build:windows_cross --platforms=//tools/platforms:windows_x86_64_msvc
+build:windows_cross --host_platform=//tools/platforms:local_linux_for_windows_cross
+common:windows_cross --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
+
 # Show full command lines on failure
 build --verbose_failures
 

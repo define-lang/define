@@ -1,4 +1,20 @@
+load("@aspect_rules_py_uv_host//:defs.bzl", "CURRENT_PLATFORM_LIBC", "CURRENT_PLATFORM_VERSION")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+# The host that --config=windows_cross builds tools on. Bazel carries the
+# Windows platform's Python package flags into tools built for the execution
+# platform, which would then use Windows wheels, so this sets them back to the
+# values aspect_rules_py detects on the host.
+# TODO: Remove this platform once aspect_rules_py fixes
+# https://github.com/aspect-build/rules_py/issues/1574.
+platform(
+    name = "local_linux_for_windows_cross",
+    flags = [
+        "--@aspect_rules_py//uv/private/constraints/platform:platform_libc=" + CURRENT_PLATFORM_LIBC,
+        "--@aspect_rules_py//uv/private/constraints/platform:platform_version=" + CURRENT_PLATFORM_VERSION,
+    ],
+    parents = ["@platforms//host"],
+)
 
 # Bazel's detected Windows host platform has no Windows ABI constraint, which no
 # Rust toolchain matches. Define builds for Windows with the native MSVC ABI.
@@ -6,6 +22,18 @@ platform(
     name = "local_windows_msvc",
     constraint_values = ["@llvm//constraints/windows/abi:msvc"],
     parents = ["@platforms//host"],
+)
+
+# The platform that --config=windows_cross builds for from Linux. Python
+# packages for Windows come from the wheels for its MSVC runtime, which wheel
+# tags give no version for.
+platform(
+    name = "windows_x86_64_msvc",
+    flags = [
+        "--@aspect_rules_py//uv/private/constraints/platform:platform_libc=msvc",
+        "--@aspect_rules_py//uv/private/constraints/platform:platform_version=0.0",
+    ],
+    parents = ["@llvm//platforms:windows_x86_64_msvc"],
 )
 
 check_build_file()

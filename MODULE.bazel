@@ -78,6 +78,13 @@ use_repo(interpreters, "python_interpreters")
 
 register_toolchains("@python_interpreters//:all")
 
+# The libc and its version that aspect_rules_py detects on the host, which
+# //tools/platforms:local_linux_for_windows_cross gives tools it builds.
+# TODO: Remove this once aspect_rules_py fixes
+# https://github.com/aspect-build/rules_py/issues/1574.
+rules_py_host = use_extension("@aspect_rules_py//uv/private/host:extension.bzl", "host_platform")
+use_repo(rules_py_host, "aspect_rules_py_uv_host")
+
 # --- Python pip dependencies (via aspect_rules_py uv) ---
 
 pypi = use_extension("@aspect_rules_py//uv:extensions.bzl", "uv")
