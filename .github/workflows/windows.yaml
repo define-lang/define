@@ -58,14 +58,8 @@ jobs:
           disk-cache: windows-experimental-cpu-v1-${{ steps.cpu.outputs.fingerprint }}
           repository-cache: true
 
-      # The hermetic MSVC toolchain downloads the Microsoft Visual C++ runtime
-      # and Windows SDK, whose licenses must be accepted explicitly.
       - name: Test
         if: ${{ steps.bazel.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 30
-        run: >-
-          bazelisk test --noshow_progress
-          --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
-          --repo_env=BAZEL_WINDOWS_SDK_EULA=1
-          //...
+        run: bazelisk test --noshow_progress //...

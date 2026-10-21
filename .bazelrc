@@ -1,6 +1,10 @@
 # Build for Windows with the native MSVC ABI.
 common --enable_platform_specific_config
 common:windows --host_platform=//tools/platforms:local_windows_msvc
+# The hermetic MSVC toolchain downloads Microsoft's Visual C++ runtime, which
+# it fetches only after this confirms the right to use it under
+# https://visualstudio.microsoft.com/license-terms.
+common:windows --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
 
 # Show full command lines on failure
 build --verbose_failures
