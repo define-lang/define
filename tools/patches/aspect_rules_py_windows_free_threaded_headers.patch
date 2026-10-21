@@ -1,0 +1,34 @@
+diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
+index 196b891..54bb16d 100644
+--- a/py/private/interpreter/repository.bzl
++++ b/py/private/interpreter/repository.bzl
+@@ -103,6 +103,13 @@ def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, a
+ 
+     library_targets = ""
+     header_interface_deps = []
++
++    # Windows CPython ships one pyconfig.h for regular and free-threaded
++    # builds, so extensions must define Py_GIL_DISABLED themselves to compile
++    # for the free-threaded ABI. Other platforms' free-threaded pyconfig.h
++    # defines it.
++    # https://docs.python.org/3/howto/free-threading-extensions.html#identifying-the-free-threaded-build-in-c
++    header_defines = ["Py_GIL_DISABLED"] if is_windows and "t" in abi_flags else []
+     abi3_header_target = ""
+     headers_abi3_attr = ""
+     libs_attr = ""
+@@ -237,6 +244,7 @@ filegroup(
+ {abi3_header_target}cc_library(
+     name = "python_headers",
+     hdrs = [":includes"],
++    defines = {header_defines},
+     includes = {include_dirs},
+     visibility = ["//visibility:private"],
+     deps = {header_interface_deps},
+@@ -264,6 +272,7 @@ py_cc_toolchain(
+ """.format(
+         abi_flags = abi_flags,
+         abi3_header_target = abi3_header_target,
++        header_defines = repr(header_defines),
+         header_interface_deps = repr(header_interface_deps),
+         headers_abi3_attr = headers_abi3_attr,
+         include_dirs = repr(include_dirs),

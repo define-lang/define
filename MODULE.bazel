@@ -36,9 +36,15 @@ local_path_override(
 )
 
 # TODO: Upgrade to an aspect_rules_py release with PR #1538 and remove this override.
+# Windows free-threaded CPython's headers need Py_GIL_DISABLED defined for
+# extensions to compile for the interpreter's ABI, which this patch adds.
+# TODO: Remove the patch once an aspect_rules_py release includes
+# https://github.com/aspect-build/rules_py/pull/1611.
 git_override(
     module_name = "aspect_rules_py",
     commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
+    patch_strip = 1,
+    patches = ["//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch"],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 

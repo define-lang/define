@@ -1,6 +1,7 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
+    "aspect_rules_py_windows_free_threaded_headers.patch",
     "llvm_msvc_legacy_stdio_definitions.patch",
     "llvm_windows_exec_sdk_case_overlays.patch",
     "rules_rust_coverage_collector_flag.patch",
