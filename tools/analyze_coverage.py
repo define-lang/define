@@ -40,6 +40,9 @@ _RUST_PYTHON_EXCEPTION_ARM = re.compile(
     r"^\s*(?:Err\()?ParseError::Python\((?P<error>\w+)\)\)?\s*=>\s*"
     + r"(?:return\s+)?(?:Err\()?(?P=error)\)?,?\s*$"
 )
+# Coverage puts the code that this attribute generates, such as the methods of
+# a complex enum's base class, on the attribute's line.
+_RUST_PYCLASS_ATTRIBUTE = "#[pyclass"
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -174,6 +177,11 @@ class SourceAnalysis:
         encoded[-1] = encoded[-1][: region.end_column - 1]
         encoded[0] = encoded[0][region.start_column - 1 :]
         return " ".join(line.decode(errors="replace").strip() for line in encoded)
+
+    def region_is_pyclass_attribute(self, region: UncoveredRegion) -> bool:
+        """Return whether a code region is on the line of a `#[pyclass]` attribute."""
+        line = self._lines(region.source_file)[region.start_line - 1]
+        return line.lstrip().startswith(_RUST_PYCLASS_ATTRIBUTE)
 
     def region_only_panics(self, region: UncoveredRegion) -> bool:
         """Return whether a code region only calls a macro that ends the program."""
@@ -380,6 +388,8 @@ class RustRegions(msgspec.Struct, frozen=True):
     """Uncovered Rust code regions, by whether covering them is worthwhile."""
 
     actionable: list[UncoveredRegion]
+    pyclass_generated: list[UncoveredRegion]
+    """Regions of code that a `#[pyclass]` attribute generates."""
     panic_only: list[UncoveredRegion]
     not_yet_supported: list[UncoveredRegion]
     python_exception_only: list[UncoveredRegion]
@@ -401,13 +411,19 @@ def analyze_rust_regions(
     python_exceptions = _RustPythonExceptions(source_root, generated_sources)
     selection = _SourceSelection(source_analysis, source_paths)
     regions = RustRegions(
-        actionable=[], panic_only=[], not_yet_supported=[], python_exception_only=[]
+        actionable=[],
+        pyclass_generated=[],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[],
     )
     for branch in parse_uncovered_branches(report_path):
         region = _rust_region(branch)
         if region is None or not selection.includes(region.source_file):
             continue
-        if source_analysis.region_only_panics(region):
+        if source_analysis.region_is_pyclass_attribute(region):
+            regions.pyclass_generated.append(region)
+        elif source_analysis.region_only_panics(region):
             regions.panic_only.append(region)
         elif source_analysis.region_only_reports_not_yet_supported(region):
             regions.not_yet_supported.append(region)
@@ -532,6 +548,7 @@ def format_rust_regions(regions: RustRegions, source_root: Path) -> str:
         )
     output_lines.append(
         f"{len(regions.actionable)} uncovered Rust code regions reported; "
+        + f"{len(regions.pyclass_generated)} pyclass-generated regions omitted; "
         + f"{len(regions.panic_only)} panic-only regions omitted; "
         + f"{len(regions.not_yet_supported)} not-yet-supported regions omitted; "
         + f"{len(regions.python_exception_only)} Python-exception-only regions omitted."
@@ -649,6 +666,7 @@ def main(source_paths: tuple[Path, ...]):
     )
     if (
         regions.actionable
+        or regions.pyclass_generated
         or regions.panic_only
         or regions.not_yet_supported
         or regions.python_exception_only

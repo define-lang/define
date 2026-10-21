@@ -583,6 +583,7 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
                 end_column=2,
             ),
         ],
+        pyclass_generated=[],
         panic_only=[],
         not_yet_supported=[],
         python_exception_only=[],
@@ -591,7 +592,8 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
         "Uncovered Rust code regions:\n"
         + f"{source_path}:2:10-2:11: b\n"
         + f"{source_path}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
-        + "2 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "2 uncovered Rust code regions reported; "
+        + "0 pyclass-generated regions omitted; 0 panic-only regions omitted; "
         + "0 not-yet-supported regions omitted; "
         + "0 Python-exception-only regions omitted."
     )
@@ -615,6 +617,7 @@ def test_analyze_rust_regions_omits_region_that_only_panics(tmp_path: Path):
 
     assert regions == analyze_coverage.RustRegions(
         actionable=[],
+        pyclass_generated=[],
         panic_only=[
             analyze_coverage.UncoveredRegion(
                 source_file=source_path,
@@ -672,13 +675,58 @@ def test_cli_reports_rust_regions_before_branches(
     assert result.output == (
         "Uncovered Rust code regions:\n"
         + "example.rs:2:5-2:7: !a\n"
-        + "1 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "1 uncovered Rust code regions reported; "
+        + "0 pyclass-generated regions omitted; 0 panic-only regions omitted; "
         + "0 not-yet-supported regions omitted; "
         + "0 Python-exception-only regions omitted.\n"
         + "No uncovered actionable branches.\n"
         + "0 actionable uncovered branches reported; "
         + "0 low-value final-case non-match branches reported; "
         + "0 explicit-exit-only branches omitted.\n"
+    )
+
+
+def test_analyze_rust_regions_omits_regions_on_a_pyclass_attribute(tmp_path: Path):
+    source_path = tmp_path / "example.rs"
+    _ = source_path.write_text(
+        "#[pyclass(frozen)]\n"
+        + "enum Statement {\n"
+        + "    Create { position: String },\n"
+        + "}\n"
+        + "fn f() {}\n"
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_path}\n"
+        + "BRDA:1,0,region from 1:18 to 1:19,0\n"
+        + "BRDA:5,0,region from 5:1 to 5:10,0\n"
+        + "end_of_record\n"
+    )
+
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
+
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=5,
+                start_column=1,
+                end_line=5,
+                end_column=10,
+            ),
+        ],
+        pyclass_generated=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_path,
+                start_line=1,
+                start_column=18,
+                end_line=1,
+                end_column=19,
+            ),
+        ],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[],
     )
 
 
@@ -727,6 +775,7 @@ def test_analyze_rust_regions_omits_regions_that_only_report_not_yet_supported(
                 end_column=2,
             ),
         ],
+        pyclass_generated=[],
         panic_only=[],
         not_yet_supported=[
             analyze_coverage.UncoveredRegion(
@@ -823,6 +872,7 @@ def test_analyze_rust_regions_omits_question_marks_that_only_pass_on_python_exce
             _question_mark_region(source_file, 9, 21),
             _question_mark_region(source_file, 11, 18),
         ],
+        pyclass_generated=[],
         panic_only=[],
         not_yet_supported=[],
         python_exception_only=[
@@ -886,6 +936,7 @@ def test_analyze_rust_regions_omits_code_that_only_converts_python_exceptions(
                 end_column=40,
             ),
         ],
+        pyclass_generated=[],
         panic_only=[],
         not_yet_supported=[],
         python_exception_only=[
@@ -956,7 +1007,8 @@ def test_cli_reads_generated_rust_sources_from_runfiles(
     assert result.exit_code == 0
     assert result.output == (
         "Uncovered Rust code regions:\n"
-        + "0 uncovered Rust code regions reported; 0 panic-only regions omitted; "
+        + "0 uncovered Rust code regions reported; "
+        + "0 pyclass-generated regions omitted; 0 panic-only regions omitted; "
         + "0 not-yet-supported regions omitted; "
         + "1 Python-exception-only regions omitted.\n"
         + "No uncovered actionable branches.\n"
