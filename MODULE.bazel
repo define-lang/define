@@ -14,7 +14,7 @@ bazel_dep(name = "rules_go", version = "0.64.2")
 bazel_dep(name = "gazelle", version = "0.54.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "rules_rs", version = "0.1.0")
-bazel_dep(name = "llvm", version = "0.8.24")
+bazel_dep(name = "llvm", version = "0.8.25")
 bazel_dep(name = "protobuf", version = "36.2")
 bazel_dep(name = "protovalidate", version = "1.2.2")
 bazel_dep(name = "re2", version = "2025-11-05")
@@ -44,19 +44,20 @@ git_override(
 
 # The MSVC toolchain's case-insensitive SDK overlays need a tool that a Windows
 # execution platform can only build with that same toolchain, so building on
-# Windows with MSVC fails with a dependency cycle. Windows filesystems are
-# already case-insensitive, so the first patch omits the overlays there. The
-# libc crate links the MSVC runtime's legacy_stdio_definitions.lib, which the
-# second patch exposes to links.
-# TODO: Remove these patches once an llvm release fixes
-# https://github.com/hermeticbuild/rules_rs/issues/271 and exposes
-# legacy_stdio_definitions.lib.
+# Windows with MSVC fails with a dependency cycle. The overlay patch is
+# https://github.com/hermeticbuild/hermetic-llvm/pull/853, which omits the
+# overlays on Windows execution platforms.
+# TODO: Remove the overlay patch once an llvm release after 0.8.25 includes it.
+# The libc crate links the MSVC runtime's legacy_stdio_definitions.lib, which
+# the other patch exposes to links.
+# TODO: Remove the legacy_stdio_definitions.lib patch once an llvm release
+# exposes that library.
 single_version_override(
     module_name = "llvm",
     patch_strip = 1,
     patches = [
         "//tools/patches:llvm_msvc_legacy_stdio_definitions.patch",
-        "//tools/patches:llvm_msvc_windows_exec_case_overlays.patch",
+        "//tools/patches:llvm_windows_exec_sdk_case_overlays.patch",
     ],
 )
 

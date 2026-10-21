@@ -2,7 +2,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
     "llvm_msvc_legacy_stdio_definitions.patch",
-    "llvm_msvc_windows_exec_case_overlays.patch",
+    "llvm_windows_exec_sdk_case_overlays.patch",
     "rules_rust_msvc_lld_link.patch",
     "rules_rust_pyo3_cc_runtime_linkage.patch",
     "rules_rust_pyo3_interface_library.patch",
