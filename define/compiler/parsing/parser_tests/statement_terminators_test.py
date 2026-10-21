@@ -10,18 +10,23 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
-def test_valid_terminator(parse: Parse):
-    tree = parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path"
-    ]
+def test_valid_terminator(native_parse: NativeParse):
+    program = native_parse(
+        "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=63
+    )
+    assert definition.constraints is None
 
 
 def test_missing_terminator(native_parse: NativeParse):

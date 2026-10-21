@@ -162,7 +162,7 @@ def _only_action(source: str) -> ast.ActionDefinition:
 
 
 def _only_position(source: str) -> ast.PositionDefinition:
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
     return definition
@@ -785,7 +785,7 @@ def test_action_definition_full_fields():
 
 
 def test_program_fields():
-    program = test_helpers.parse_and_transform(_SIMPLE_POSITION)
+    program = test_helpers.parse(_SIMPLE_POSITION)
     assert len(program.definitions) == 1
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert program.location == ast.SourceLocation(
@@ -798,7 +798,7 @@ def test_program_fields():
 
 
 def test_program_multiple_definitions_fields():
-    program = test_helpers.parse_and_transform(_TWO_DEFINITIONS)
+    program = test_helpers.parse(_TWO_DEFINITIONS)
     assert len(program.definitions) == 2
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.PositionDefinition)
@@ -824,7 +824,7 @@ def test_program_multiple_definitions_fields():
 
 
 def test_enclosing_fqun_dispatched_per_definition():
-    program = test_helpers.parse_and_transform(_TWO_DEFINITIONS)
+    program = test_helpers.parse(_TWO_DEFINITIONS)
     first = program.definitions[0]
     second = program.definitions[1]
     assert isinstance(first, ast.PositionDefinition)

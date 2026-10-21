@@ -10,7 +10,7 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests import test_helpers
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 
 def test_potential_literal_definition(parse: Parse):
@@ -141,9 +141,9 @@ def test_disallows_local_context(parse: Parse):
     assert error.value.location.end_column == 36
 
 
-def test_disallows_particle_constraint(parse: Parse):
+def test_disallows_particle_constraint(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
-        _ = parse(
+        _ = native_parse(
             "define the potential position<mv:define-lang.org:parser:/test> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the literal</decimal>.\n"
@@ -152,6 +152,7 @@ def test_disallows_particle_constraint(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 20
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 26
 
 
