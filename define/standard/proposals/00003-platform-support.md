@@ -294,10 +294,19 @@ likely).
 
 ### Naming
 
-In case it wasn't obvious from the section above, we name things according to
-the component that the standard library is providing guarantees about. Kernels
-have names (Linux, XNU, NT), runtime libraries have names (glibc, libSystem,
-win32 or "the Windows API"), etc.
+In case it wasn't obvious from the section above, we name things first by the OS
+name (when the OS is relevant) and then by the component of the OS that is
+providing the guarantee. In Linux, the name of the OS actually is the name of
+the kernel, so we don't write `/os/linux/linux`, we just write `/os/linux`.
+
+Windows is named `windows`, macOS, iOS, tvOS, etc. are named `darwin`.
+
+Darwin's libSystem is named `libsystem` (so `/os/darwin/libsystem`). On Windows
+we name the specific API that is providing the guarantee, so `/os/windows/win32`
+for the Win32 API, `/os/windows/winrt` for WinRT, `/os/windows/ucrt` for the
+Universal C Runtime, and `/os/windows/nt` for the NT kernel-mode API. In Linux
+we name the libc when that's what is providing the guarantee, like
+`/os/linux/glibc` or `/os/linux/musl`.
 
 ### Selecting Compile-Time and Runtime Behavior
 
@@ -317,33 +326,103 @@ the effectiveness and safety of doing this in a concurrent environment).
 
 ### Variables for Platform Targeting
 
-We will need to be able to target platforms (at runtime and compile time) using
-at least the following components:
+We will need to be able to target platforms (at runtime and compile time). We
+provide a set of standard configuration variables for this (though exactly how
+these are implemented is left up to a later proposal as part of the compiler).
 
-- `kernel`
-- `kernel_version`
-- `runtime`
-- `runtime_version`
-- `hardware`
+#### `os`
 
-However, we may choose to have even more targeting capability to get more
-granular on specific platforms. The `hardware` category in particular may have
-various detailed fields depending on the hardware. We don't have a
-`hardware_version` field because it is not usually meaningful.
+`os` names the actual top-level OS in use, which would be `windows`, `linux`,
+`darwin`, `freebsd`, `wasi`, etc. Prefer all-lowercase names that would be
+representable as idiomatic Define names.
 
-`runtime_version` is whatever version the guarantor uses for its promises. For
-example, macOS uses its OS version for the promises, not the actual `libSystem`
-version. For Android it's the Android API level. For Windows it's the Windows
-version (8, 10 update 1607, 11, etc.).
+#### `os_version`
 
-We will need comparison mechanisms for all the versioning systems. Software
-mostly uses numeric major.minor.patch versioning, which we could write a
-comparison action for. For hardware it is more complex and instead of
-comparisons there may just need to be sets of numbers you check against for
-features (or, as noted in the Problems, runtime checks in some cases for the
-existence of those features). Some comparison functions may just be a list of
-identifiers with timestamps, similar to how Renovate looks at various version
-registries today.
+`os_version` names the official version of that OS.
+
+- **Linux**: The official kernel version number, like `7.1.8`.
+- **Windows**: the official build numbers, like `10.0.26300` for Windows 11
+  26H2.
+- **Darwin**: The actual Darwin version number, like `20` for macOS 11 and
+  iOS 14.
+- **WASI**: `0.1` for Preview 1, `0.2` for Preview 2, etc.
+
+In general, we can sometimes rely on these specifying the _minimum possible_
+available functionality for an operating system. However, there can be many
+kernel customizations on various platforms. For example, Red Hat often patches
+in future functionality from later kernels into its builds, so we definitely
+can't rely on these version numbers specifying the _maximum_ capability, and
+sometimes even the _minimum_ capabilities we are looking for could be patched
+out or configured differently on a given kernel.
+
+Our feature-flagging system (described below) is the most reliable system for
+targeting, but developers can still use OS versions as crude targeting systems
+that will catch most baseline functionality.
+
+#### `hardware`
+
+The overall target hardware family that we are compiling to. If we are compiling
+to multiple types of hardware (a CPU, a GPU, an ASIC, etc.) then this is the
+type of the CPU (or whatever is receiving the first machine-code instructions of
+the program).
+
+For current common CPUs, this would be `x86_64` (the vendor-neutral name of that
+platform from the ABI document) or `aarch64` (the name ARM uses for its
+architecture).
+
+WASM targets would also be here, `wasm32` and `wasm64`.
+
+#### Runtimes and other variables
+
+Certain OSes would then have their own custom additional variables. For example,
+Linux would have `linux_runtime` (`glibc`, `musl`, etc.) and
+`linux_runtime_version` (the numeric version of glibc, musl, etc.).
+
+Darwin would have `darwin_platform` which would be `ios`, `macos`, etc. And
+`darwin_platform_version` which would use the public-facing version numbers for
+those platforms.
+
+Android would have `android_api_level` which is the number that provides the
+guarantees on Android (the Android API Level).
+
+Windows may need `windows_edition` (`server` vs `client`) in some cases.
+
+These are defined based on what information we need in order to know what part
+of the system is providing a guarantee. For example, macOS uses its OS version
+for its promises, not the actual `libSystem` version. For Android it's the
+Android API level. For Windows it's most often the Windows version and so we
+don't need a separate variable, but sometimes we might need to say something
+like `ucrt_version` if we need to separate out versions of UCRT within a Windows
+version.
+
+#### Hardware-specific variables
+
+Hardware can have numerous ways of targeting it. It may be model names, it may
+be chip families, it may be instruction-set availability, etc. These could get
+their own variables when we need to target them at compile time. Otherwise, many
+hardware features would be detected as needed at runtime, and they would always
+have individual configuration flags in the code.
+
+#### Explicitly missing values
+
+Sometimes you are explicitly targeting "no operating system," (you're targeting
+a bare-metal microcontroller, for example) or some other form of "this
+explicitly doesn't exist." In that case, we use the value `none`.
+
+When you simply aren't being specific about which platform matters, simply don't
+specify the `os`, `os_version`, `hardware`, etc.
+
+### Comparing Versions
+
+We will need comparison mechanisms for all the versioning systems for the
+runtimes, kernels, OSes, etc. Software mostly uses numeric major.minor.patch
+versioning, which we could write a comparison action for.
+
+For hardware it is more complex and instead of comparisons there may just need
+to be sets of numbers you check against for features (or, as discussed above,
+just runtime checks for the existence of those features). Some comparison
+functions may just be a list of identifiers with timestamps, similar to how
+Renovate looks at various version registries today.
 
 ### Feature Flags
 
