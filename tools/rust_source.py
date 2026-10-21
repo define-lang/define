@@ -35,13 +35,16 @@ class RustFunction(msgspec.Struct, frozen=True):
 
     name: str
     impl_type: str | None
+    parameter_types: tuple[str, ...]
+    """The type of each parameter, or the whole parameter for `self`."""
     returns_python_result: bool
 
 
 class _FunctionBody(msgspec.Struct, frozen=True):
-    """The offsets of the `{` and `}` of a function's body."""
+    """The offsets of a function's `fn`, and of the `{` and `}` of its body."""
 
     function: RustFunction
+    declaration_start: int
     start: int
     end: int
 
@@ -65,12 +68,15 @@ class RustSource:
             self._line_starts.append(self._line_starts[-1] + len(line))
         self.functions: list[RustFunction] = []
         self._bodies: list[_FunctionBody] = []
-        for function, signature_end in _declared_functions(self._code):
+        for function, declaration_start, signature_end in _declared_functions(
+            self._code
+        ):
             self.functions.append(function)
             if self._code[signature_end] == "{":
                 self._bodies.append(
                     _FunctionBody(
                         function=function,
+                        declaration_start=declaration_start,
                         start=signature_end,
                         end=_closing(self._code, signature_end),
                     )
@@ -81,6 +87,10 @@ class RustSource:
         line_start = self._line_starts[line - 1]
         line_text = self._text[line_start : self._line_starts[line]]
         return line_start + len(line_text.encode()[: byte_column - 1].decode())
+
+    def code_line(self, line: int) -> str:
+        """Return the 1-based line, with its comments and literals replaced by spaces."""
+        return self._code[self._line_starts[line - 1] : self._line_starts[line]]
 
     def enclosing_function(self, offset: int) -> RustFunction | None:
         """Return the innermost function whose body has `offset`, unless `offset` is in a closure."""
@@ -93,6 +103,17 @@ class RustSource:
         if enclosing is None or self._is_in_closure(enclosing.start, offset):
             return None
         return enclosing.function
+
+    def declaring_function(self, offset: int) -> RustFunction | None:
+        """Return the innermost function whose declaration, from its `fn` through its body, has `offset`."""
+        declaring = None
+        for body in self._bodies:
+            if body.declaration_start <= offset <= body.end and (
+                declaring is None
+                or declaring.declaration_start < body.declaration_start
+            ):
+                declaring = body
+        return None if declaring is None else declaring.function
 
     def _is_in_closure(self, body_start: int, offset: int) -> bool:
         """Return whether `offset` is in a closure in the function body that starts at `body_start`."""
@@ -248,13 +269,17 @@ def _impls(code: str) -> list[tuple[str, int, int]]:
     return impls
 
 
-def _declared_functions(code: str) -> list[tuple[RustFunction, int]]:
-    """Return each function declared in `code`, which has no comments or literals, with the offset after its signature."""
+def _declared_functions(code: str) -> list[tuple[RustFunction, int, int]]:
+    """Return each function declared in `code`, which has no comments or literals, with the offsets of its `fn` and after its signature."""
     impls = _impls(code)
-    functions: list[tuple[RustFunction, int]] = []
+    functions: list[tuple[RustFunction, int, int]] = []
     for match in _FUNCTION.finditer(code):
         signature_end = _first_at_depth_zero(code, match.end(), "{;")
         signature = code[match.end() : signature_end]
+        parameters_start = _first_at_depth_zero(signature, 0, "(")
+        parameters = signature[
+            parameters_start + 1 : _closing(signature, parameters_start)
+        ]
         arrow = _first_arrow_at_depth_zero(signature)
         return_type = "" if arrow is None else signature[arrow + 2 :]
         where = _WHERE.search(return_type)
@@ -267,10 +292,34 @@ def _declared_functions(code: str) -> list[tuple[RustFunction, int]]:
         function = RustFunction(
             name=match.group("name"),
             impl_type=impl_type,
+            parameter_types=_parameter_types(parameters),
             returns_python_result=return_type.strip().startswith(_PYTHON_RESULT),
         )
-        functions.append((function, signature_end))
+        functions.append((function, match.start(), signature_end))
     return functions
+
+
+def _parameter_types(parameters: str) -> tuple[str, ...]:
+    """Return the type of each of the comma-separated `parameters`, or the whole parameter for `self`."""
+    types: list[str] = []
+    depth = 0
+    start = 0
+    index = 0
+    while index <= len(parameters):
+        if parameters.startswith("->", index):
+            index += 2
+            continue
+        if index == len(parameters) or (depth == 0 and parameters[index] == ","):
+            parameter = parameters[start:index].strip()
+            if parameter:
+                types.append(parameter.split(":", 1)[-1].strip())
+            start = index + 1
+        elif parameters[index] in "([<":
+            depth += 1
+        elif parameters[index] in ")]>":
+            depth -= 1
+        index += 1
+    return tuple(types)
 
 
 def _first_at_depth_zero(code: str, start: int, targets: str) -> int:

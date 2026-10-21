@@ -42,19 +42,34 @@ def test_functions_have_their_impl_type_and_whether_they_return_py_result():
 
     assert source.functions == [
         rust_source.RustFunction(
-            name="location", impl_type="AstBuilder", returns_python_result=True
+            name="location",
+            impl_type="AstBuilder",
+            parameter_types=("&self",),
+            returns_python_result=True,
         ),
         rust_source.RustFunction(
-            name="as_argument", impl_type="Bound", returns_python_result=False
+            name="as_argument",
+            impl_type="Bound",
+            parameter_types=("&self", "impl Fn(u8) -> PyResult<u8>"),
+            returns_python_result=False,
         ),
         rust_source.RustFunction(
-            name="into_object", impl_type=None, returns_python_result=True
+            name="into_object",
+            impl_type=None,
+            parameter_types=("self",),
+            returns_python_result=True,
         ),
         rust_source.RustFunction(
-            name="split", impl_type=None, returns_python_result=False
+            name="split",
+            impl_type=None,
+            parameter_types=("&str",),
+            returns_python_result=False,
         ),
         rust_source.RustFunction(
-            name="generic", impl_type=None, returns_python_result=True
+            name="generic",
+            impl_type=None,
+            parameter_types=("T",),
+            returns_python_result=True,
         ),
     ]
 
@@ -76,7 +91,10 @@ def test_comments_and_literals_do_not_declare_functions():
 
     assert source.functions == [
         rust_source.RustFunction(
-            name="real", impl_type=None, returns_python_result=True
+            name="real",
+            impl_type=None,
+            parameter_types=("&'a str",),
+            returns_python_result=True,
         )
     ]
 
@@ -95,12 +113,12 @@ def test_enclosing_function_is_the_innermost_function_with_the_offset():
     assert source.enclosing_function(
         _question_mark_offset(source, text, "python()?")
     ) == rust_source.RustFunction(
-        name="inner", impl_type=None, returns_python_result=True
+        name="inner", impl_type=None, parameter_types=(), returns_python_result=True
     )
     assert source.enclosing_function(
         _question_mark_offset(source, text, "parse()?")
     ) == rust_source.RustFunction(
-        name="outer", impl_type=None, returns_python_result=False
+        name="outer", impl_type=None, parameter_types=(), returns_python_result=False
     )
     assert source.enclosing_function(0) is None
 
@@ -131,7 +149,7 @@ def test_enclosing_function_is_none_in_a_closure():
         is None
     )
     outer = rust_source.RustFunction(
-        name="outer", impl_type=None, returns_python_result=True
+        name="outer", impl_type=None, parameter_types=(), returns_python_result=True
     )
     assert (
         source.enclosing_function(_question_mark_offset(source, text, "error))?"))
@@ -231,3 +249,32 @@ def test_offset_counts_byte_columns():
 
     assert source.offset(1, 6) == 4
     assert source.offset(2, 1) == 5
+
+
+def test_declaring_function_has_the_signature_and_body_of_a_function():
+    text = (
+        "impl From<PyErr> for ParseError {\n"
+        + "    fn from(error: PyErr) -> Self {\n"
+        + "        Self::Python(error)\n"
+        + "    }\n"
+        + "}\n"
+    )
+    source = rust_source.RustSource(text)
+    function = rust_source.RustFunction(
+        name="from",
+        impl_type="ParseError",
+        parameter_types=("PyErr",),
+        returns_python_result=False,
+    )
+
+    assert source.declaring_function(source.offset(2, 5)) == function
+    assert source.declaring_function(source.offset(3, 9)) == function
+    assert source.declaring_function(source.offset(4, 5)) == function
+    assert source.declaring_function(source.offset(1, 1)) is None
+
+
+def test_code_line_has_no_comments_or_literals():
+    source = rust_source.RustSource('let a = "text"; // comment\nlet b = 1;\n')
+
+    assert source.code_line(1) == "let a =       ;           \n"
+    assert source.code_line(2) == "let b = 1;\n"

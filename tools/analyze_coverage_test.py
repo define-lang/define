@@ -833,6 +833,101 @@ def test_analyze_rust_regions_omits_question_marks_that_only_pass_on_python_exce
     )
 
 
+def test_analyze_rust_regions_omits_code_that_only_converts_python_exceptions(
+    tmp_path: Path,
+):
+    crate_path = tmp_path / "crate"
+    crate_path.mkdir()
+    _ = (crate_path / "lib.rs").write_text(
+        "impl From<PyErr> for ParseError {\n"
+        + "    fn from(error: PyErr) -> Self {\n"
+        + "        Self::Python(error)\n"
+        + "    }\n"
+        + "}\n"
+        + "fn parse(result: ParseResult<u8>) -> PyResult<u8> {\n"
+        + "    match result {\n"
+        + "        Ok(value) => Ok(value),\n"
+        + "        Err(ParseError::Syntax(error)) => Err(error),\n"
+        + "        Err(ParseError::Python(error)) => return Err(error),\n"
+        + "    }\n"
+        + "}\n"
+        + "fn log(error: PyErr, message: &str) {}\n"
+    )
+    source_file = Path("crate/lib.rs")
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_file}\n"
+        + "BRDA:2,0,region from 2:5 to 2:34,0\n"
+        + "BRDA:3,0,region from 3:9 to 3:28,0\n"
+        + "BRDA:4,0,region from 4:5 to 4:6,0\n"
+        + "BRDA:9,0,region from 9:32 to 9:37,0\n"
+        + "BRDA:10,0,region from 10:32 to 10:37,0\n"
+        + "BRDA:10,0,region from 10:42 to 10:59,0\n"
+        + "BRDA:13,0,region from 13:1 to 13:40,0\n"
+        + "end_of_record\n"
+    )
+
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
+
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=9,
+                start_column=32,
+                end_line=9,
+                end_column=37,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=13,
+                start_column=1,
+                end_line=13,
+                end_column=40,
+            ),
+        ],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=2,
+                start_column=5,
+                end_line=2,
+                end_column=34,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=3,
+                start_column=9,
+                end_line=3,
+                end_column=28,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=4,
+                start_column=5,
+                end_line=4,
+                end_column=6,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=10,
+                start_column=32,
+                end_line=10,
+                end_column=37,
+            ),
+            analyze_coverage.UncoveredRegion(
+                source_file=source_file,
+                start_line=10,
+                start_column=42,
+                end_line=10,
+                end_column=59,
+            ),
+        ],
+    )
+
+
 def test_cli_reads_generated_rust_sources_from_runfiles(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

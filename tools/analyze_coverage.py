@@ -34,6 +34,12 @@ _RUST_PANIC_MACROS = ("panic!", "todo!", "unimplemented!", "unreachable!")
 # source it does not support yet, which code covers once the parser supports
 # that source.
 _RUST_NOT_YET_SUPPORTED_CALL = re.compile(r"(?<!fn )\bnot_yet_supported\(")
+# A match arm that only passes on an exception that Python raised while the
+# parser built the AST.
+_RUST_PYTHON_EXCEPTION_ARM = re.compile(
+    r"^\s*(?:Err\()?ParseError::Python\((?P<error>\w+)\)\)?\s*=>\s*"
+    + r"(?:return\s+)?(?:Err\()?(?P=error)\)?,?\s*$"
+)
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -377,7 +383,7 @@ class RustRegions(msgspec.Struct, frozen=True):
     panic_only: list[UncoveredRegion]
     not_yet_supported: list[UncoveredRegion]
     python_exception_only: list[UncoveredRegion]
-    """`?` regions that only pass on an exception that Python raised."""
+    """Regions that only pass on or convert an exception that Python raised."""
 
 
 def analyze_rust_regions(
@@ -392,7 +398,7 @@ def analyze_rust_regions(
     file to where the file is.
     """
     source_analysis = SourceAnalysis(source_root)
-    question_marks = _RustQuestionMarks(source_root, generated_sources)
+    python_exceptions = _RustPythonExceptions(source_root, generated_sources)
     selection = _SourceSelection(source_analysis, source_paths)
     regions = RustRegions(
         actionable=[], panic_only=[], not_yet_supported=[], python_exception_only=[]
@@ -405,17 +411,17 @@ def analyze_rust_regions(
             regions.panic_only.append(region)
         elif source_analysis.region_only_reports_not_yet_supported(region):
             regions.not_yet_supported.append(region)
-        elif source_analysis.region_text(
-            region
-        ) == "?" and question_marks.only_passes_on_python_exception(region):
+        elif python_exceptions.region_only_handles_python_exception(
+            region, source_analysis.region_text(region)
+        ):
             regions.python_exception_only.append(region)
         else:
             regions.actionable.append(region)
     return regions
 
 
-class _RustQuestionMarks:
-    """What the `?` operators in Rust source files pass on."""
+class _RustPythonExceptions:
+    """Which code in Rust source files only handles exceptions that Python raised."""
 
     def __init__(self, source_root: Path, generated_sources: Mapping[Path, Path]):
         """Read sources under `source_root`, and generated sources from `generated_sources`."""
@@ -424,7 +430,27 @@ class _RustQuestionMarks:
         self._sources: dict[Path, rust_source.RustSource] = {}
         self._crates: dict[Path, rust_source.RustCrate] = {}
 
-    def only_passes_on_python_exception(self, region: UncoveredRegion) -> bool:
+    def region_only_handles_python_exception(
+        self, region: UncoveredRegion, text: str
+    ) -> bool:
+        """Return whether `region`, whose source text is `text`, only passes on or converts an exception that Python raised."""
+        if text == "?":
+            return self._question_mark_only_passes_on_python_exception(region)
+        source = self._source(region.source_file)
+        function = source.declaring_function(
+            source.offset(region.start_line, region.start_column)
+        )
+        if function is not None and function.parameter_types == ("PyErr",):
+            return True
+        return (
+            region.start_line == region.end_line
+            and _RUST_PYTHON_EXCEPTION_ARM.match(source.code_line(region.start_line))
+            is not None
+        )
+
+    def _question_mark_only_passes_on_python_exception(
+        self, region: UncoveredRegion
+    ) -> bool:
         """Return whether the `?` that is `region` can only pass on an exception that Python raised."""
         source = self._source(region.source_file)
         offset = source.offset(region.start_line, region.start_column)

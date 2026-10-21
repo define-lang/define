@@ -18,6 +18,7 @@ use characters::TextKind;
 use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE, TERMINATOR};
 use parse_error::{ParseError, ParseResult};
 use parser_diagnostics::ParserDiagnostics;
+use pyo3::exceptions::PyNotImplementedError;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
 use scanner::{Position, Scanner, SourceText};
@@ -750,7 +751,15 @@ fn parse<'py>(
     let (program, exception) = match parser.parse_program() {
         Ok(program) => (Some(program.into_object().unbind()), None),
         Err(ParseError::Syntax(error)) => (None, Some(error.into_value(py).into_any())),
-        Err(error) => return Err(error.into()),
+        Err(ParseError::NotYetSupported {
+            position: Position { line, column },
+            description,
+        }) => {
+            return Err(PyNotImplementedError::new_err(format!(
+                "line {line}, column {column}: the parser does not support {description} yet"
+            )));
+        }
+        Err(ParseError::Python(error)) => return Err(error),
     };
     Ok(PythonParseResult {
         program,
