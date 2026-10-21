@@ -1,0 +1,47 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_binary(
+    name = "create_windows_vm",
+    srcs = ["create_windows_vm.py"],
+    data = [
+        "autounattend.xml",
+        "extend_evaluation.ps1",
+        "first_logon.ps1",
+    ],
+    env = {
+        "AUTOUNATTEND": "$(rlocationpath autounattend.xml)",
+        "EXTEND_EVALUATION": "$(rlocationpath extend_evaluation.ps1)",
+        "FIRST_LOGON": "$(rlocationpath first_logon.ps1)",
+    },
+    deps = [
+        "//tools:runfiles",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "create_windows_vm_test",
+    size = "small",
+    srcs = ["create_windows_vm_test.py"],
+    data = ["autounattend.xml"],
+    env = {"AUTOUNATTEND": "$(rlocationpath autounattend.xml)"},
+    deps = [
+        ":create_windows_vm",
+        "//tools:runfiles",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":create_windows_vm",
+        ":create_windows_vm_test",
+    ],
+)
+
+check_build_file()

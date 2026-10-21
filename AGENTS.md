@@ -181,6 +181,8 @@ BUILD file generator.
   outputs only when the generated output is intentionally changing, and review
   the resulting output diff before accepting it:
   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:regenerate_codegen_testdata`
+- To build and test on Windows from a Linux host, use the local Windows VM. See
+  [tools/windows_vm/README.md](tools/windows_vm/README.md) for how to use it.
 
 ### Coverage
 
