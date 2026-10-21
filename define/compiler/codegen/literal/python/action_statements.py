@@ -13,7 +13,7 @@ from define.compiler.codegen.literal.python import (
     naming,
     operation_labels,
     position_expression,
-    template_context,
+    renderer,
     value_types,
 )
 from define.compiler.validator import codegen_input
@@ -27,14 +27,12 @@ if TYPE_CHECKING:
 class GeneratedActionStatements(msgspec.Struct):
     """Generated statements and the imports and contract classes they require."""
 
-    statements: list[template_context.ActionStatementContext]
+    statements: list[renderer.ActionStatement]
     imports: set[str]
-    contract_definitions: list[template_context.DestructionContractDefinition]
+    contract_definitions: list[renderer.DestructionContractDefinition]
     # One method for each contracted position where Destructors run for what
     # the action left.
-    guaranteed_particle_destructors: list[
-        template_context.GuaranteedParticleDestructorsContext
-    ]
+    guaranteed_particle_destructors: list[renderer.GuaranteedParticleDestructors]
 
 
 @final
@@ -154,7 +152,7 @@ class ActionStatementsGenerator:
             self._class_names,
             trace_operations=self._trace_operations,
         )
-        contract_definitions: list[template_context.DestructionContractDefinition] = []
+        contract_definitions: list[renderer.DestructionContractDefinition] = []
         names = naming.LocalNameAllocator()
         # Collect imports before allocating local names: Python locals shadow
         # imported module names throughout the method, even before assignment.
@@ -165,7 +163,7 @@ class ActionStatementsGenerator:
         )
         imports = self._collect_imports(contracts, work)
         names.reserve_module_first_names(imports)
-        statements: list[template_context.ActionStatementContext] = []
+        statements: list[renderer.ActionStatement] = []
         for statement in self._action_input.steps:
             match statement:
                 case ast.LocalPositionDefinition():
@@ -173,7 +171,7 @@ class ActionStatementsGenerator:
                     name = names.allocate(source_name)
                     local_position_names[source_name] = name
                     statements.append(
-                        template_context.LocalPositionContext(
+                        renderer.ActionStatement.LocalPosition(
                             name=name,
                             local_typed_name=statement.typed_name.source_typed_name,
                             constraints=self._converter.constraints_to_class_references(
@@ -190,21 +188,21 @@ class ActionStatementsGenerator:
                     )
                 case ast.CreateParticleStatement():
                     statements.append(
-                        template_context.CreateParticleContext(
+                        renderer.ActionStatement.CreateParticle(
                             position=positions.build(statement.target_position),
                             operation_label=self._operation_label(
-                                template_context.StatementKind.CREATE_PARTICLE,
+                                operation_labels.ParticleOperation.CREATE,
                                 statement.target_position,
                             ),
                         )
                     )
                 case ast.MoveParticleStatement():
                     statements.append(
-                        template_context.MoveParticleContext(
+                        renderer.ActionStatement.MoveParticle(
                             position=positions.build(statement.source_position),
                             to_position=positions.build(statement.target_position),
                             operation_label=self._operation_label(
-                                template_context.StatementKind.MOVE_PARTICLE,
+                                operation_labels.ParticleOperation.MOVE,
                                 statement.source_position,
                                 statement.target_position,
                             ),
@@ -213,7 +211,7 @@ class ActionStatementsGenerator:
                 case codegen_input.LiteralValueSetting():
                     value = value_types.python_literal(statement.value)
                     statements.append(
-                        template_context.SetValueContext(
+                        renderer.ActionStatement.SetValue(
                             position=positions.build(
                                 statement.target_position,
                                 value_type=value_types.python_value_type(
@@ -229,7 +227,7 @@ class ActionStatementsGenerator:
                 case codegen_input.PositionValueSetting():
                     value_type = value_types.python_value_type(statement.value_type)
                     statements.append(
-                        template_context.SetValueFromContext(
+                        renderer.ActionStatement.SetValueFrom(
                             position=positions.build(
                                 statement.target_position, value_type=value_type
                             ),
@@ -237,7 +235,7 @@ class ActionStatementsGenerator:
                                 statement.source_position, value_type=value_type
                             ),
                             operation_label=self._operation_label(
-                                template_context.StatementKind.SET_VALUE_FROM,
+                                operation_labels.ParticleOperation.SET_VALUE,
                                 statement.target_position,
                                 statement.source_position,
                             ),
@@ -253,15 +251,15 @@ class ActionStatementsGenerator:
                         self._execute_operation(statement, positions, names)
                     )
         guaranteed_particle_destructors: list[
-            template_context.GuaranteedParticleDestructorsContext
+            renderer.GuaranteedParticleDestructors
         ] = []
         for guaranteed in self._action_input.guaranteed_particle_destructors:
-            method_statements: list[template_context.ActionStatementContext] = []
+            method_statements: list[renderer.ActionStatement] = []
             # The method takes the particle the action left in the position,
             # so everything in it is reached from that particle.
             for destructor in guaranteed.destructors:
                 method_statements.append(
-                    template_context.RunActionContext(
+                    renderer.ActionStatement.RunAction(
                         position=positions.build(
                             ast.ActionReference(
                                 location=destructor.location,
@@ -278,7 +276,7 @@ class ActionStatementsGenerator:
                     )
                 )
             guaranteed_particle_destructors.append(
-                template_context.GuaranteedParticleDestructorsContext(
+                renderer.GuaranteedParticleDestructors(
                     method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
                         guaranteed.position_in_action
                     ),
@@ -298,7 +296,7 @@ class ActionStatementsGenerator:
         positions: position_expression.PositionExpressionBuilder,
         contract_names: dict[destruction_contract.DestructionContract, str],
         work: known_destruction_work.KnownDestructionWorkGenerator,
-    ) -> list[template_context.ActionStatementContext]:
+    ) -> list[renderer.ActionStatement]:
         # TODO: Investigate running each particle's Destructors, completing each
         # child's destruction, then destroying the particle. This could avoid
         # keeping independent sibling particles alive until all Destructors finish,
@@ -307,20 +305,14 @@ class ActionStatementsGenerator:
         statements = work.destructor_statements(
             destruction.contribution.work, from_contract_particle=False
         )
-        for context_type, prefix in (
-            (
-                template_context.RunContractDestructorsContext,
-                naming.RUN_DESTRUCTORS_PREFIX,
-            ),
-            (template_context.DestroyContractChildrenContext, naming.DESTROY_PREFIX),
-        ):
+        for prefix in (naming.RUN_DESTRUCTORS_PREFIX, naming.DESTROY_PREFIX):
             for caller_contract in destruction.contribution.destruction_contracts:
                 name = contract_names[caller_contract]
                 position = (
                     caller_contract.destruction_fact.destroyed_position_in_destroyer
                 )
                 statements.append(
-                    context_type(
+                    renderer.ActionStatement.ContractContribution(
                         position=positions.build(position),
                         contract_method=prefix + name,
                     )
@@ -340,19 +332,19 @@ class ActionStatementsGenerator:
         positions: position_expression.PositionExpressionBuilder,
         contracts: destruction_contracts.DestructionContractsGenerator,
     ) -> tuple[
-        template_context.RunActionContext,
-        template_context.DestructionContractDefinition | None,
+        renderer.ActionStatement.RunAction,
+        renderer.DestructionContractDefinition | None,
     ]:
         contract = contracts.generate(execution)
         argument = (
-            template_context.DestructionContractArgument(
+            renderer.DestructionContractArgument(
                 class_name=contract.class_name,
                 forwarded_methods=contract.forwarded_methods,
             )
             if contract is not None
             else None
         )
-        return template_context.RunActionContext(
+        return renderer.ActionStatement.RunAction(
             position=positions.build(execution.action), destruction_contract=argument
         ), contract
 
@@ -361,9 +353,9 @@ class ActionStatementsGenerator:
         execution: codegen_input.ActionOperationExecution,
         positions: position_expression.PositionExpressionBuilder,
         names: naming.LocalNameAllocator,
-    ) -> template_context.ExecuteOperationContext:
-        arguments: list[template_context.PositionExpr | str] = []
-        outputs: list[template_context.PositionExpr] = []
+    ) -> renderer.ActionStatement.ExecuteOperation:
+        arguments: list[renderer.PositionExpression | str] = []
+        outputs: list[renderer.PositionExpression] = []
         output_view_names: list[str] = []
         for argument in execution.arguments:
             looking_at = argument.looking_at
@@ -387,7 +379,7 @@ class ActionStatementsGenerator:
         if len(outputs) > 1:
             for view_name in output_view_names:
                 result_names.append(names.allocate(view_name))
-        return template_context.ExecuteOperationContext(
+        return renderer.ActionStatement.ExecuteOperation(
             function=self._converter.function_reference(execution.encoding_operation),
             arguments=arguments,
             outputs=outputs,
@@ -397,14 +389,14 @@ class ActionStatementsGenerator:
 
     def _operation_label(
         self,
-        kind: template_context.StatementKind,
+        operation: operation_labels.ParticleOperation,
         position: ast.PositionReference,
         destination: ast.PositionReference | None = None,
     ) -> str | None:
         if self._trace_operations:
             return operation_labels.operation_label(
                 self._action_input.definition.typed_name,
-                kind,
+                operation,
                 position,
                 destination,
             )

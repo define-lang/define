@@ -8,7 +8,7 @@ from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     known_destruction_work,
     naming,
-    template_context,
+    renderer,
 )
 
 if TYPE_CHECKING:
@@ -61,32 +61,24 @@ class DestructionContractsGenerator:
     def generate(
         self,
         execution: codegen_input.ActionExecution,
-    ) -> template_context.DestructionContractDefinition | None:
+    ) -> renderer.DestructionContractDefinition | None:
         """Generate the contribution class needed by an action execution."""
         connections = execution.destruction_connections
         callee_names = self._converter.destruction_method_names(
             connection.callee_destruction_contract for connection in connections
         )
-        methods: list[template_context.DestructionContractMethod] = []
+        methods: list[renderer.DestructionContractMethod] = []
         forwarded_methods: list[str] = []
         for connection in connections:
             name = callee_names[connection.callee_destruction_contract]
             forwarding = self._forwarded_contributions(connection)
-            for kind in (
-                template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS,
-                template_context.StatementKind.DESTROY_CONTRACT_CHILDREN,
-            ):
-                prefix = (
-                    naming.RUN_DESTRUCTORS_PREFIX
-                    if kind == template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS
-                    else naming.DESTROY_PREFIX
-                )
-                forwarded: list[template_context.ForwardedContribution] = []
+            for prefix in (naming.RUN_DESTRUCTORS_PREFIX, naming.DESTROY_PREFIX):
+                forwarded: list[renderer.ForwardedContribution] = []
                 for caller_name, relative in forwarding:
                     method_name = prefix + caller_name
                     forwarded_methods.append(method_name)
                     forwarded.append(
-                        template_context.ForwardedContribution(
+                        renderer.ForwardedContribution(
                             method_name=method_name,
                             position=(
                                 self._positions.build(
@@ -101,7 +93,7 @@ class DestructionContractsGenerator:
                 statements = []
                 contribution = connection.contribution
                 if contribution is not None:
-                    if kind == template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS:
+                    if prefix == naming.RUN_DESTRUCTORS_PREFIX:
                         statements = self._work.destructor_statements(
                             contribution.work, from_contract_particle=True
                         )
@@ -113,7 +105,7 @@ class DestructionContractsGenerator:
                         )
                 if forwarded or statements:
                     methods.append(
-                        template_context.DestructionContractMethod(
+                        renderer.DestructionContractMethod(
                             name=prefix + name,
                             forwarded=forwarded,
                             statements=statements,
@@ -123,14 +115,14 @@ class DestructionContractsGenerator:
             return None
         callee = execution.action.get_last_action()
         callee_class = self._converter.class_reference(callee)
-        base = naming.ClassReference(
+        base = renderer.ClassReference(
             class_name=self._converter.destruction_contract_class_name(
                 callee.name_content.path.relative_path
             ),
             module_name=callee_class.module_name,
         )
         class_name = self._class_names.allocate(base.class_name)
-        return template_context.DestructionContractDefinition(
+        return renderer.DestructionContractDefinition(
             class_name=class_name,
             base=base,
             forwarded_methods=forwarded_methods,

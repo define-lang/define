@@ -7,37 +7,13 @@ load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "_templates",
-    srcs = ["_templates.pyi"],
-    deps = [
-        ":action_context",
-        ":naming",
-        ":renderer",  # keep: supplies the native implementation of this stub
-        ":template_context",
-    ],
-)
-
-py_library(
-    name = "action_context",
-    srcs = ["action_context.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":naming",
-        ":template_context",
-        ":value_types",
-        "@pypi//msgspec",
-    ],
-)
-
-py_library(
     name = "action_definition",
     srcs = ["action_definition.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
-        ":action_context",
         ":action_statements",
         ":naming",
-        ":template_context",
+        ":renderer",
         ":value_types",
         "//define/compiler/validator:codegen_input",
     ],
@@ -53,7 +29,7 @@ py_library(
         ":naming",
         ":operation_labels",
         ":position_expression",
-        ":template_context",
+        ":renderer",
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
@@ -69,7 +45,7 @@ py_library(
         ":known_destruction_work",
         ":naming",
         ":position_expression",
-        ":template_context",
+        ":renderer",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
@@ -82,7 +58,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
-        ":template_context",
+        ":renderer",
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler:constants",
@@ -96,12 +72,12 @@ py_library(
     srcs = ["generator.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
-        ":_templates",
-        ":action_context",
         ":action_definition",
         ":encoding_operation_definition",
         ":naming",
         ":position_definition",
+        ":renderer",
+        ":value_types",
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:codegen_input",
@@ -116,7 +92,7 @@ py_library(
         ":naming",
         ":operation_labels",
         ":position_expression",
-        ":template_context",
+        ":renderer",
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
@@ -127,13 +103,13 @@ py_library(
     srcs = ["naming.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":renderer",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
-        "@pypi//msgspec",
     ],
 )
 
@@ -152,7 +128,6 @@ py_library(
     name = "operation_labels",
     srcs = ["operation_labels.py"],
     deps = [
-        ":template_context",
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
@@ -165,7 +140,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
-        ":template_context",
+        ":renderer",
         ":value_types",
         "//define/compiler:ast",
     ],
@@ -176,7 +151,7 @@ py_library(
     srcs = ["position_expression.py"],
     deps = [
         ":naming",
-        ":template_context",
+        ":renderer",
         "//define/compiler:ast",
         "//define/compiler:name_types",
     ],
@@ -190,26 +165,25 @@ py_library(
 
 pyo3_extension(
     name = "renderer",
-    srcs = ["renderer.rs"],
+    srcs = [
+        "renderer.rs",
+        "template_context.rs",
+    ],
     compile_data = glob(["*.j2"]) + ["askama.toml"],
     crate_root = "renderer.rs",
     lint_config = lint_config(),
-    module_name = "_templates",
-    stubs = False,
+    module_name = "renderer",
+    stubs = True,
     visibility = ["//tools:__pkg__"],
     deps = ["@crates//:askama"],
 )
 
-py_library(
-    name = "template_context",
-    srcs = ["template_context.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":naming",
-        ":value_types",
-        "//define/compiler:name_types",
-        "@pypi//msgspec",
-    ],
+# The generated stub, which tools:setup_local_dev copies into the source tree.
+filegroup(
+    name = "renderer_stub",
+    srcs = [":renderer"],
+    output_group = "pyo3_type_stubs",
+    visibility = ["//tools:__pkg__"],
 )
 
 py_library(
@@ -237,8 +211,6 @@ rust_clippy_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":_templates",
-        ":action_context",
         ":action_definition",
         ":action_statements",
         ":destruction_contracts",
@@ -251,7 +223,6 @@ pyright_test(
         ":position_definition",
         ":position_expression",
         ":python",
-        ":template_context",
         ":value_types",
     ],
 )

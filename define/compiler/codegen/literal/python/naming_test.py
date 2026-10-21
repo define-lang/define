@@ -104,11 +104,9 @@ def test_function_reference_in_standard_universe():
         ),
         location=_LOCATION,
     )
-    assert converter.function_reference(
-        encoding_operation_name
-    ) == naming.FunctionReference(
-        module_name="standard.number.natural.ascii", function_name="add"
-    )
+    function = converter.function_reference(encoding_operation_name)
+    assert function.function_name == "add"
+    assert function.module_name == "standard.number.natural.ascii"
 
 
 def test_module_name_escapes_keyword_component():
@@ -158,20 +156,16 @@ def _encoding_operation_name(path: str) -> ast.GlobalTypedNameInDefinition:
 
 def test_function_reference_is_in_parent_module():
     converter = naming.NameConverter()
-    assert converter.function_reference(
-        _encoding_operation_name("/number/add")
-    ) == naming.FunctionReference(
-        function_name="add", module_name="local.my_domain_com.my_lib.number"
-    )
+    function = converter.function_reference(_encoding_operation_name("/number/add"))
+    assert function.function_name == "add"
+    assert function.module_name == "local.my_domain_com.my_lib.number"
 
 
 def test_function_reference_at_universe_root():
     converter = naming.NameConverter()
-    assert converter.function_reference(
-        _encoding_operation_name("/add")
-    ) == naming.FunctionReference(
-        function_name="add", module_name="local.my_domain_com.my_lib"
-    )
+    function = converter.function_reference(_encoding_operation_name("/add"))
+    assert function.function_name == "add"
+    assert function.module_name == "local.my_domain_com.my_lib"
 
 
 def test_function_name_escapes_keyword():

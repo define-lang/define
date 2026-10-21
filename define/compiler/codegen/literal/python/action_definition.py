@@ -5,10 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, final
 
 from define.compiler.codegen.literal.python import (
-    action_context,
     action_statements,
     naming,
-    template_context,
+    renderer,
     value_types,
 )
 
@@ -37,13 +36,13 @@ class ActionDefinitionGenerator:
         )
         self._trace_operations = trace_operations
 
-    def generate(self) -> action_context.ActionDefinitionContext:
+    def generate(self) -> renderer.ActionDefinition:
         """Build the template context for this action."""
         definition = self._action_input.definition
-        interfaces: list[template_context.InterfacePositionContext] = []
+        interfaces: list[renderer.InterfacePosition] = []
         for position in definition.interface_positions:
             interfaces.append(
-                template_context.InterfacePositionContext(
+                renderer.InterfacePosition(
                     typed_name=position.typed_name.source_typed_name,
                     constraints=self._converter.constraints_to_class_references(
                         position.constraints
@@ -72,13 +71,13 @@ class ActionDefinitionGenerator:
             contract_methods.extend(
                 (naming.RUN_DESTRUCTORS_PREFIX + name, naming.DESTROY_PREFIX + name)
             )
-        return action_context.ActionDefinitionContext(
+        return renderer.ActionDefinition(
             class_name=self._converter.class_name(definition.typed_name),
             module_name=module_name,
             statements=generated.statements,
             interface_positions=interfaces,
             implied_qualities=implied_qualities,
-            imports=sorted(generated.imports),
+            imports=generated.imports,
             contract_class_name=(
                 self._converter.destruction_contract_class_name(
                     definition.typed_name.name_content.path.relative_path

@@ -6,7 +6,7 @@ publish.workspace = true
 rust-version.workspace = true
 
 [lib]
-name = "_templates"
+name = "renderer"
 path = "compiler/codegen/literal/python/renderer.rs"
 crate-type = ["cdylib"]
 

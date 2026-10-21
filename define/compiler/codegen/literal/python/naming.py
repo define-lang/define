@@ -7,9 +7,8 @@ import keyword
 import typing
 from pathlib import Path
 
-import msgspec
-
 from define.compiler import ast, constants, name_types
+from define.compiler.codegen.literal.python import renderer
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -142,20 +141,6 @@ def _with_occurrence(name: str, occurrence: int) -> str:
     return name
 
 
-class ClassReference(msgspec.Struct):
-    """A reference to a generated class, including its module location."""
-
-    class_name: str
-    module_name: str
-
-
-class FunctionReference(msgspec.Struct):
-    """A reference to a Python function, including its module location."""
-
-    function_name: str
-    module_name: str
-
-
 def _authority_to_module_segment(name: str) -> str:
     """Convert an authority name segment to a valid Python module segment."""
     return name.translate(_AUTHORITY_CHAR_TABLE)
@@ -209,7 +194,7 @@ class NameConverter:
     """
 
     _class_names: dict[tuple[define_path.DefinePath, str], str]
-    _class_references: dict[str, ClassReference]
+    _class_references: dict[str, renderer.ClassReference]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
     # Keyed by the FQUN and path segments of the package that holds the names.
@@ -242,11 +227,11 @@ class NameConverter:
     def function_reference(
         self,
         typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    ) -> FunctionReference:
+    ) -> renderer.FunctionReference:
         """Build a reference to a generated function, which lives in the module of its path's parent."""
         fqun = self._fqun(typed_global_name)
         parent_segments = typed_global_name.name_content.path.relative_path.parts[:-1]
-        return FunctionReference(
+        return renderer.FunctionReference(
             function_name=self._function_name(typed_global_name),
             module_name=".".join(self._module_name_parts(fqun, parent_segments)),
         )
@@ -382,7 +367,7 @@ class NameConverter:
     def constraints_to_class_references(
         self,
         constraints: ast.PositionConstraintBlock | None,
-    ) -> list[ClassReference]:
+    ) -> list[renderer.ClassReference]:
         """Extract references to the position and action classes that a position constraint block requires."""
         if constraints is None:
             return []
@@ -397,7 +382,7 @@ class NameConverter:
     def implied_qualities_to_class_references(
         self,
         quality_implications: tuple[ast.QualityImplicationStatement, ...],
-    ) -> list[ClassReference]:
+    ) -> list[renderer.ClassReference]:
         """Extract class references from a list of quality implication statements."""
         return [
             self.class_reference(implication.typed_global_name)
@@ -407,7 +392,7 @@ class NameConverter:
     def class_reference(
         self,
         typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    ) -> ClassReference:
+    ) -> renderer.ClassReference:
         """Build a reference to one generated global class."""
         canonical_name = typed_global_name.full_typed_name
         existing = self._class_references.get(canonical_name)
@@ -420,7 +405,9 @@ class NameConverter:
                 self._fqun(typed_global_name), name_content.path.relative_path.parts
             )
         )
-        class_reference = ClassReference(class_name=cls_name, module_name=module_name)
+        class_reference = renderer.ClassReference(
+            class_name=cls_name, module_name=module_name
+        )
         self._class_references[canonical_name] = class_reference
         return class_reference
 

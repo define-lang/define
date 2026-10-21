@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, final
 
 from define.compiler import ast, name_types
-from define.compiler.codegen.literal.python import template_context
+from define.compiler.codegen.literal.python import renderer
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -34,7 +34,7 @@ class PositionExpressionBuilder:
         *,
         from_contract_particle: bool = False,
         value_type: str | None = None,
-    ) -> template_context.PositionExpr:
+    ) -> renderer.PositionExpression:
         """Build an expression that accesses a Position or Action Reference.
 
         ``value_type`` is the Python type of the referenced position's value,
@@ -46,10 +46,8 @@ class PositionExpressionBuilder:
         if isinstance(first, ast.LocalTypedNameReference):
             if first.source_typed_name in self._interface_position_names:
                 local_position_name = None
-                chain_elements: list[template_context.ChainElement] = [
-                    template_context.InterfacePositionChainElement(
-                        previous_name_type=name_types.NameType.ACTION,
-                        name_type=first.name_type,
+                chain_elements: list[renderer.ChainElement] = [
+                    renderer.ChainElement.PositionFromAction(
                         typed_name=first.source_typed_name,
                         value_type=value_type if last_index == 0 else None,
                     )
@@ -62,32 +60,41 @@ class PositionExpressionBuilder:
         else:
             local_position_name = None
             chain_elements = [
-                template_context.GlobalQualityChainElement(
-                    previous_name_type=None,
-                    name_type=first.name_type,
-                    class_reference=self._converter.class_reference(first),
+                _global_quality_element(
+                    None, first.name_type, self._converter.class_reference(first)
                 )
             ]
         for i, elem in enumerate(typed_names[1:]):
             prev = typed_names[i]
             if isinstance(elem, ast.GlobalTypedNameReference):
-                chain_element: template_context.ChainElement = (
-                    template_context.GlobalQualityChainElement(
-                        previous_name_type=prev.name_type,
-                        name_type=elem.name_type,
-                        class_reference=self._converter.class_reference(elem),
-                    )
+                chain_element = _global_quality_element(
+                    prev.name_type,
+                    elem.name_type,
+                    self._converter.class_reference(elem),
                 )
             else:
-                chain_element = template_context.InterfacePositionChainElement(
-                    previous_name_type=prev.name_type,
-                    name_type=elem.name_type,
+                chain_element = renderer.ChainElement.PositionFromAction(
                     typed_name=elem.full_typed_name,
                     value_type=value_type if i + 1 == last_index else None,
                 )
             chain_elements.append(chain_element)
-        return template_context.PositionExpr(
+        return renderer.PositionExpression(
             local_position_name=local_position_name,
             chain_elements=chain_elements,
             from_contract_particle=from_contract_particle,
         )
+
+
+def _global_quality_element(
+    previous_name_type: name_types.NameType | None,
+    name_type: name_types.NameType,
+    class_reference: renderer.ClassReference,
+) -> renderer.ChainElement:
+    """Return the chain element for a global quality, given the name type of what comes before it, if anything does."""
+    if previous_name_type is None:
+        if name_type == name_types.NameType.ACTION:
+            return renderer.ChainElement.ImpliedAction(class_reference=class_reference)
+        return renderer.ChainElement.ImpliedPosition(class_reference=class_reference)
+    if name_type == name_types.NameType.ACTION:
+        return renderer.ChainElement.ActionFromPosition(class_reference=class_reference)
+    return renderer.ChainElement.PositionFromPosition(class_reference=class_reference)

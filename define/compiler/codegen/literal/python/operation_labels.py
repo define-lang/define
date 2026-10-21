@@ -2,25 +2,28 @@
 
 from __future__ import annotations
 
+import enum
 from typing import TYPE_CHECKING
 
-from define.compiler.codegen.literal.python import template_context, value_types
+from define.compiler.codegen.literal.python import value_types
 from define.compiler.validator import codegen_input
 
 if TYPE_CHECKING:
     from define.compiler import ast
 
-_OPERATION_NAMES = {
-    template_context.StatementKind.CREATE_PARTICLE: "create",
-    template_context.StatementKind.MOVE_PARTICLE: "move",
-    template_context.StatementKind.DESTROY_PARTICLE: "destroy",
-    template_context.StatementKind.SET_VALUE_FROM: "set_value",
-}
+
+class ParticleOperation(enum.Enum):
+    """An operation on a particle that a trace label names."""
+
+    CREATE = "create"
+    MOVE = "move"
+    DESTROY = "destroy"
+    SET_VALUE = "set_value"
 
 
 def operation_label(
     action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    kind: template_context.StatementKind,
+    operation: ParticleOperation,
     position: ast.PositionReference,
     destination: ast.PositionReference | None = None,
 ) -> str:
@@ -28,7 +31,7 @@ def operation_label(
     arguments = _trace_position_name(position)
     if destination is not None:
         arguments += ", " + _trace_position_name(destination)
-    return _label(action, _OPERATION_NAMES[kind], arguments)
+    return _label(action, operation.value, arguments)
 
 
 def literal_value_operation_label(

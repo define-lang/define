@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, final
 from define.compiler.codegen.literal.python import (
     naming,
     operation_labels,
-    template_context,
+    renderer,
 )
 
 if TYPE_CHECKING:
@@ -55,14 +55,14 @@ class KnownDestructionWorkGenerator:
         work: destruction_contract.KnownDestructionWork,
         *,
         from_contract_particle: bool,
-    ) -> list[template_context.ActionStatementContext]:
+    ) -> list[renderer.ActionStatement]:
         """Return the statements that run the Destructors ``work`` runs, in an action's body or, with ``from_contract_particle``, in a Destruction Contract method."""
-        statements: list[template_context.ActionStatementContext] = []
+        statements: list[renderer.ActionStatement] = []
         for destructor in work.destructors:
             # Destructors preserve caller-provided contracted particles, so
             # their invocations have no incoming destruction contributions.
             statements.append(
-                template_context.RunActionContext(
+                renderer.ActionStatement.RunAction(
                     position=self._positions.build(
                         destructor, from_contract_particle=from_contract_particle
                     )
@@ -81,9 +81,9 @@ class KnownDestructionWorkGenerator:
         reference: destruction_contract.RunGuaranteedParticleDestructors,
         *,
         from_contract_particle: bool,
-    ) -> template_context.RunGuaranteedParticleDestructorsContext:
+    ) -> renderer.ActionStatement.RunGuaranteedParticleDestructors:
         """Return the statement that calls the method ``reference`` names, in an action's body or, with ``from_contract_particle``, in a method that takes a particle."""
-        return template_context.RunGuaranteedParticleDestructorsContext(
+        return renderer.ActionStatement.RunGuaranteedParticleDestructors(
             action=self._converter.class_reference(reference.action),
             method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
                 reference.position_in_action
@@ -99,19 +99,19 @@ class KnownDestructionWorkGenerator:
         destroying_action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         *,
         from_contract_particle: bool,
-    ) -> list[template_context.ActionStatementContext]:
+    ) -> list[renderer.ActionStatement]:
         """Return the statements that destroy the particles ``work`` destroys, in an action's body or, with ``from_contract_particle``, in a Destruction Contract method."""
-        statements: list[template_context.ActionStatementContext] = []
+        statements: list[renderer.ActionStatement] = []
         for destroyed in work.positions:
             label = None
             if self._trace_operations:
                 label = operation_labels.operation_label(
                     destroying_action,
-                    template_context.StatementKind.DESTROY_PARTICLE,
+                    operation_labels.ParticleOperation.DESTROY,
                     destroyed.position_in_destroyer,
                 )
             statements.append(
-                template_context.DestroyParticleContext(
+                renderer.ActionStatement.DestroyParticle(
                     position=self._positions.build(
                         destroyed.position,
                         from_contract_particle=from_contract_particle,

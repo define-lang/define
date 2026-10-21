@@ -2,6 +2,7 @@
 *_pb2.py
 *_pb2.pyi
 **/lark/lark_standalone.py
+/define/compiler/codegen/literal/python/renderer.pyi
 /define/compiler/parsing/native/ast.rs
 /define/compiler/parsing/native/parser_diagnostics.rs
 /define/compiler/parsing/native/syntax_errors.rs

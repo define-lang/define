@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.codegen.literal.python import (
-    template_context,
+    renderer,
     value_types,
 )
 
@@ -31,7 +31,7 @@ class PositionDefinitionGenerator:
         self._definition = definition
         self._converter = converter
 
-    def generate(self) -> template_context.PositionDefinitionContext:
+    def generate(self) -> renderer.PositionDefinition:
         """Generate template context for the position definition."""
         name_content = self._definition.typed_name.name_content
         constraints = self._converter.constraints_to_class_references(
@@ -42,8 +42,15 @@ class PositionDefinitionGenerator:
         )
         class_name = self._converter.class_name(self._definition.typed_name)
         module_name = self._converter.module_name(name_content)
+        imports = {class_reference.module_name for class_reference in constraints}
+        imports.update(
+            class_reference.module_name for class_reference in implied_qualities
+        )
+        # Classes in the definition's own module are referenced by their bare
+        # names, and a module cannot import itself while it is still loading.
+        imports.discard(module_name)
 
-        return template_context.PositionDefinitionContext(
+        return renderer.PositionDefinition(
             class_name=class_name,
             module_name=module_name,
             constraints=constraints,
@@ -51,4 +58,5 @@ class PositionDefinitionGenerator:
             value_type=value_types.constrained_python_value_type(
                 self._definition.constraints
             ),
+            imports=imports,
         )

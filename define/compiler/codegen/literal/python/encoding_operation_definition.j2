@@ -1,49 +1,49 @@
 {% macro expression(statement, module_name) -%}
     {%- match statement -%}
-        {%- when EncodingOperationStatement::BinaryOperation with (statement) -%}
-{{ statement.left }} {% match statement.operator -%}
-            {%- when BinaryOperator::Add -%}
+        {%- when EncodingOperationStatement::BinaryOperation { operator, left, right, .. } -%}
+{{ left }} {% match operator -%}
+            {%- when BinaryOperator::Add {} -%}
 +
-            {%- when BinaryOperator::Subtract -%}
+            {%- when BinaryOperator::Subtract {} -%}
 -
-            {%- when BinaryOperator::Multiply -%}
+            {%- when BinaryOperator::Multiply {} -%}
 *
-            {%- when BinaryOperator::And -%}
+            {%- when BinaryOperator::And {} -%}
 and
-            {%- when BinaryOperator::Or -%}
+            {%- when BinaryOperator::Or {} -%}
 or
-            {%- when BinaryOperator::ExclusiveOr -%}
+            {%- when BinaryOperator::ExclusiveOr {} -%}
 ^
-            {%- when BinaryOperator::BitwiseAnd -%}
+            {%- when BinaryOperator::BitwiseAnd {} -%}
 &
-            {%- when BinaryOperator::BitwiseOr -%}
+            {%- when BinaryOperator::BitwiseOr {} -%}
 |
-            {%- when BinaryOperator::Equal -%}
+            {%- when BinaryOperator::Equal {} -%}
 ==
-            {%- when BinaryOperator::LessThan -%}
+            {%- when BinaryOperator::LessThan {} -%}
 <
-            {%- when BinaryOperator::LessThanOrEqual -%}
+            {%- when BinaryOperator::LessThanOrEqual {} -%}
 <=
-            {%- when BinaryOperator::GreaterThanOrEqual -%}
+            {%- when BinaryOperator::GreaterThanOrEqual {} -%}
 >=
-            {%- endmatch %} {{ statement.right }}
-        {%- when EncodingOperationStatement::PrefixOperation with (statement) -%}
-            {%- match statement.operator -%}
-                {%- when PrefixOperator::Negate -%}
+            {%- endmatch %} {{ right }}
+        {%- when EncodingOperationStatement::PrefixOperation { operator, operand, .. } -%}
+            {%- match operator -%}
+                {%- when PrefixOperator::Negate {} -%}
 -
-                {%- when PrefixOperator::Not -%}
+                {%- when PrefixOperator::Not {} -%}
 not{{ " " }}
             {%- endmatch -%}
-{{ statement.operand }}
-        {%- when EncodingOperationStatement::ExpressionOperation with (statement) -%}
-            {%- match statement.operator -%}
-                {%- when ExpressionOperator::SaturatingSubtract -%}
-{{ statement.operands[0] }} - {{ statement.operands[1] }} if {{ statement.operands[0] }} > {{ statement.operands[1] }} else 0
-                {%- when ExpressionOperator::SaturatingDecrement -%}
-{{ statement.operands[0] }} - 1 if {{ statement.operands[0] }} > 0 else 0
+{{ operand }}
+        {%- when EncodingOperationStatement::ExpressionOperation { operator, operands, .. } -%}
+            {%- match operator -%}
+                {%- when ExpressionOperator::SaturatingSubtract {} -%}
+{{ operands[0] }} - {{ operands[1] }} if {{ operands[0] }} > {{ operands[1] }} else 0
+                {%- when ExpressionOperator::SaturatingDecrement {} -%}
+{{ operands[0] }} - 1 if {{ operands[0] }} > 0 else 0
             {%- endmatch -%}
-        {%- when EncodingOperationStatement::Call with (statement) -%}
-{{ statement.function.name_in_module(module_name) }}({{ statement.arguments|join(", ") }})
+        {%- when EncodingOperationStatement::Call { function, arguments, .. } -%}
+{{ function.name_in_module(module_name) }}({{ arguments|join(", ") }})
     {%- endmatch -%}
 {%- endmacro -%}
 def {{ self.function_name }}(
@@ -66,14 +66,12 @@ def {{ self.function_name }}(
     return {{ expression(statement, module_name) }}
     {%- else %}
         {%- match statement %}
-            {%- when EncodingOperationStatement::BinaryOperation with (binary_operation) %}
-    {{ binary_operation.result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::PrefixOperation with (prefix_operation) %}
-    {{ prefix_operation.result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::ExpressionOperation with (expression_operation) %}
-    {{ expression_operation.result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::Call with (call) %}
-    {% if !call.results.is_empty() %}{{ call.results|join(", ") }} = {% endif -%}
+            {%- when EncodingOperationStatement::BinaryOperation { result, .. }
+                | EncodingOperationStatement::PrefixOperation { result, .. }
+                | EncodingOperationStatement::ExpressionOperation { result, .. } %}
+    {{ result }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::Call { results, .. } %}
+    {% if !results.is_empty() %}{{ results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}
         {%- endmatch %}
     {%- endif %}

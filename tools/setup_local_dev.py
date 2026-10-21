@@ -35,6 +35,13 @@ GENERATED_RUST_SOURCES = [
     "define/compiler/parsing/native/syntax_errors.rs",
 ]
 
+# Type checkers and editors read the stubs of native extensions whose stubs
+# Bazel generates from the source tree. They are in the order of their
+# command-line arguments.
+GENERATED_PYTHON_STUBS = [
+    "define/compiler/codegen/literal/python/renderer.pyi",
+]
+
 # Native extensions, by the package that each is copied into, in the order of
 # their command-line arguments.
 NATIVE_EXTENSION_PACKAGES = [
@@ -230,7 +237,13 @@ def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
     uv_location, *locations = sys.argv[1:]
     generated_rust_locations = locations[: len(GENERATED_RUST_SOURCES)]
-    native_extension_locations = locations[len(GENERATED_RUST_SOURCES) :]
+    generated_stub_locations = locations[
+        len(GENERATED_RUST_SOURCES) : len(GENERATED_RUST_SOURCES)
+        + len(GENERATED_PYTHON_STUBS)
+    ]
+    native_extension_locations = locations[
+        len(GENERATED_RUST_SOURCES) + len(GENERATED_PYTHON_STUBS) :
+    ]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
     all_targets = [*LARK_TARGETS, *proto_targets]
@@ -254,6 +267,11 @@ def main():
     ):
         _copy_file(runfiles.resolve(location), REPO_ROOT / source)
         print(source)
+    for stub, location in zip(
+        GENERATED_PYTHON_STUBS, generated_stub_locations, strict=True
+    ):
+        _copy_file(runfiles.resolve(location), REPO_ROOT / stub)
+        print(stub)
     _configure_git_blame()
     _install_git_hooks()
     _record_successful_run()

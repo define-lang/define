@@ -339,11 +339,13 @@ py_binary(
         "$(rlocationpath //define/compiler/parsing/native:ast)",
         "$(rlocationpath //define/compiler/parsing/native:parser_diagnostics)",
         "$(rlocationpath //define/compiler/parsing/native:syntax_errors)",
+        "$(rlocationpath //define/compiler/codegen/literal/python:renderer_stub)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
         "$(rlocationpath //define/compiler/parsing/native:parser_extension)",
     ],
     data = [
         "//define/compiler/codegen/literal/python:renderer",
+        "//define/compiler/codegen/literal/python:renderer_stub",
         "//define/compiler/parsing/native:ast",
         "//define/compiler/parsing/native:parser_diagnostics",
         "//define/compiler/parsing/native:parser_extension",
