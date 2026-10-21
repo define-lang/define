@@ -1,0 +1,52 @@
+# An Encoding Operation executes an Encoding Operation whose global name differs only in the last segment of its path, so its generated function calls a function in its own module.
+define the encoding_operation<my.domain.com:my_lib:/increment> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/natural/ascii/add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/successor> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</increment> {
+            with view<number> looking at view<number>.
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<output>.
+        create a particle in position<output>.
+    }
+}
