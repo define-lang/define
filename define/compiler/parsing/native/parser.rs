@@ -566,11 +566,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.scanner.consume_bytes(1);
         let (fqun, path_start, path_text) = match scanned.last_component_separator {
             None => (None, start, content),
+            // The name has a `:` but nothing before it.
             Some(0) => {
-                return Err(ParseError::not_yet_supported(
-                    start,
-                    "global names that start with `:`",
-                ));
+                return Err(self
+                    .errors
+                    .invalid_global_name(start, end.previous_column()));
             }
             Some(separator) => {
                 let (fqun, fqun_end) = self.parse_fqun(content.slice(..separator), start)?;

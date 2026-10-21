@@ -149,6 +149,15 @@ def test_position_definition_with_invisible_character_in_invalid_name(
     assert exc_info.value.location.end_column == 32
 
 
+def test_position_definition_with_empty_fqun(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
+        native_parse("define the potential position<:/path>.\n")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 36
+
+
 def test_position_definition_with_local_style_name_is_global_terminal(
     native_parse: NativeParse,
 ):
