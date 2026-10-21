@@ -1,3 +1,7 @@
+# Avoid sizing the initial JVM heap from host RAM: 256 MiB is sufficient to
+# start regular full-suite runs, and the heap can grow as needed.
+startup --host_jvm_args=-Xms256m
+
 # Build for Windows with the native MSVC ABI.
 common --enable_platform_specific_config
 common:windows --host_platform=//tools/platforms:local_windows_msvc
