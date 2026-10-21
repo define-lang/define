@@ -8,10 +8,12 @@ SSH logins with the current user's key.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import os
 import platform
 import secrets
 import shutil
+import ssl
 import string
 import subprocess
 import sys
@@ -25,9 +27,6 @@ from pathlib import Path
 import click
 
 from tools import runfiles
-
-if typing.TYPE_CHECKING:
-    import http.client
 
 DOMAIN_NAME = "define-windows"
 
@@ -55,6 +54,10 @@ _VIRTIO_WIN_URL = (
 _VIRTIO_WIN_SHA256 = "303f7ae40dad495d6ae474fdc571df58958a4dbc5c37a522d80f9a203867949d"
 
 _DOWNLOAD_CHUNK_BYTES = 1024 * 1024
+# A read that receives nothing for this long fails, so that a stalled connection
+# resumes instead of waiting forever.
+_DOWNLOAD_TIMEOUT_SECONDS = 60
+_DOWNLOAD_ATTEMPTS = 5
 
 # libvirt runs passt for the virtual machine's network.
 # virt-install attaches the CDs in this order: the Windows ISO, then each
@@ -180,10 +183,31 @@ def _copy_with_progress(
                 + f"({downloaded_bytes * 100 // total_bytes}%)"
             )
             next_report = downloaded_bytes * 10 // total_bytes + 1
+    # http.client ends a read early without an error when the server closes
+    # the connection before sending every byte.
+    if downloaded_bytes != total_bytes:
+        raise http.client.IncompleteRead(b"", total_bytes - downloaded_bytes)
 
 
 def download(url: str, path: Path):
-    """Download a file, resuming a download that an earlier run left unfinished."""
+    """Download a file, resuming a download that was interrupted earlier."""
+    for attempt in range(1, _DOWNLOAD_ATTEMPTS + 1):
+        try:
+            _download_once(url, path)
+        except (
+            ConnectionError,
+            TimeoutError,
+            http.client.IncompleteRead,
+            ssl.SSLEOFError,
+        ) as error:
+            if attempt == _DOWNLOAD_ATTEMPTS:
+                raise
+            click.echo(f"  The connection failed ({error!r}). Resuming...")
+        else:
+            return
+
+
+def _download_once(url: str, path: Path):
     partial_path = path.with_name(path.name + ".partial")
     etag_path = path.with_name(path.name + ".etag")
     request = urllib.request.Request(url)  # noqa: S310 - Callers pass fixed HTTPS URLs.
@@ -197,7 +221,9 @@ def download(url: str, path: Path):
     try:
         response = typing.cast(
             "http.client.HTTPResponse",
-            urllib.request.urlopen(request),  # noqa: S310 - Callers pass fixed HTTPS URLs.
+            urllib.request.urlopen(  # noqa: S310 - Callers pass fixed HTTPS URLs.
+                request, timeout=_DOWNLOAD_TIMEOUT_SECONDS
+            ),
         )
     except urllib.error.HTTPError as error:
         # The earlier run downloaded every byte but stopped before renaming.
@@ -333,14 +359,15 @@ installs any missing packages with sudo, which asks for your password.
 Elsewhere, install libvirt with its QEMU/KVM driver, qemu-img, virt-install,
 passt, and xorriso. On Debian and Ubuntu, your user must also be in the kvm group.
 
-The VM shares the host's CPUs rather than reserving them, and its memory is
-used only while it runs. The disk image starts small and grows as Windows
-writes to it, up to --disk-gib.
+The VM shares the host's CPUs rather than reserving them. While it runs, it
+holds all of its memory, because Windows soon writes to all of it; shut it
+down to give the memory back. The disk image starts small and grows as
+Windows writes to it, up to --disk-gib.
 
 The command downloads the Windows Server 2025 Evaluation ISO (8 GB) and
 the virtio drivers for Windows, and reuses them on later runs. The
-evaluation needs no product key and expires after 180 days. To extend it,
-see tools/windows_vm/README.md.
+evaluation needs no product key and expires after 180 days. The VM extends
+it once by itself, so it lasts about a year; see tools/windows_vm/README.md.
 
 \b
 Files, with $XDG_CACHE_HOME and $XDG_DATA_HOME in place of ~/.cache and
@@ -390,7 +417,7 @@ To recreate the VM, remove the old one first:
 )
 @click.option("--vcpus", type=int, default=8, show_default=True, help="Virtual CPUs.")
 @click.option(
-    "--memory-gib", type=int, default=16, show_default=True, help="Memory in GiB."
+    "--memory-gib", type=int, default=8, show_default=True, help="Memory in GiB."
 )
 @click.option(
     "--disk-gib",
@@ -462,55 +489,60 @@ def main(
         "Installing Windows. This takes about an hour. To watch it, open "
         + f"{DOMAIN_NAME} in virt-manager under its QEMU/KVM User session."
     )
-    _ = subprocess.run(
-        [
-            commands["virt-install"],
-            "--connect",
-            _LIBVIRT_URI,
-            "--name",
-            DOMAIN_NAME,
-            # Debian 12's osinfo database predates Windows Server 2025, and
-            # libvirt gives both versions the same virtual hardware.
-            "--osinfo",
-            "win2k22",
-            "--vcpus",
-            str(vcpus),
-            "--cpu",
-            "host-passthrough",
-            "--memory",
-            str(memory_gib * 1024),
-            # Under UEFI, Windows media waits for a key press before booting
-            # from CD, which stalls an unattended install. BIOS boots from CD
-            # without one while the disk is still empty.
-            "--boot",
-            "firmware=bios",
-            "--disk",
-            f"path={_DISK_PATH},format=qcow2,bus=virtio,discard=unmap,cache=none,"
-            + "io=native",
-            "--disk",
-            f"path={virtio_iso},device=cdrom",
-            "--disk",
-            f"path={unattend_iso},device=cdrom",
-            "--cdrom",
-            str(windows_iso),
-            "--network",
-            # Only this host can reach the VM's SSH server, over IPv4 or IPv6.
-            f"passt,model=virtio,portForward0=127.0.0.1:{ssh_port}:22,"
-            + "portForward1.address=::1,portForward1.proto=tcp,"
-            + f"portForward1.range0.start={ssh_port},portForward1.range0.to=22",
-            "--noautoconsole",
-            "--wait",
-            "-1",
-        ],
-        check=True,
-    )
+    virt_install_arguments = [
+        commands["virt-install"],
+        "--connect",
+        _LIBVIRT_URI,
+        "--name",
+        DOMAIN_NAME,
+        # Debian 12's osinfo database predates Windows Server 2025, and
+        # libvirt gives both versions the same virtual hardware. virt-install
+        # gives this version BIOS firmware. Under UEFI, Windows media waits
+        # for a key press before booting from CD, which stalls an unattended
+        # install, but BIOS boots from CD without one while the disk is
+        # still empty. libvirt cannot select BIOS by name on Fedora, which
+        # has no firmware descriptor for it.
+        "--osinfo",
+        "win2k22",
+        "--vcpus",
+        str(vcpus),
+        "--cpu",
+        "host-passthrough",
+        "--memory",
+        str(memory_gib * 1024),
+        "--disk",
+        f"path={_DISK_PATH},format=qcow2,bus=virtio,discard=unmap,cache=none,"
+        + "io=native",
+        "--disk",
+        f"path={virtio_iso},device=cdrom",
+        "--disk",
+        f"path={unattend_iso},device=cdrom",
+        "--cdrom",
+        str(windows_iso),
+        "--network",
+        # Only this host can reach the VM's SSH server, over IPv4 or IPv6.
+        f"passt,model=virtio,portForward0=127.0.0.1:{ssh_port}:22,"
+        + "portForward1.address=::1,portForward1.proto=tcp,"
+        + f"portForward1.range0.start={ssh_port},portForward1.range0.to=22",
+        "--noautoconsole",
+        "--wait",
+        "-1",
+    ]
+    try:
+        _ = subprocess.run(virt_install_arguments, check=True)
+    except subprocess.CalledProcessError:
+        # Without a VM that uses it, the new disk would only block the next run.
+        if DOMAIN_NAME not in _virsh(commands, "list", "--all", "--name").split():
+            _DISK_PATH.unlink()
+        raise
     # Windows shuts down when its first logon setup succeeds.
     _wait_for_shutoff(commands)
     _eject_install_media(commands)
     unattend_iso.unlink()
     _ = _virsh(commands, "start", DOMAIN_NAME)
     click.echo(
-        f"Windows is ready. Connect with `ssh -p {ssh_port} Administrator@localhost`. "
+        "Windows is starting. In about a minute, connect with "
+        + f"`ssh -p {ssh_port} Administrator@localhost`. "
         + f"The console password is in {password_path}."
     )
 

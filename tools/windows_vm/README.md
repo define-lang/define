@@ -47,8 +47,8 @@ another 180 days by itself when it starts, or during its daily check at 03:00
 UTC, once fewer than 14 days remain. Extending it restarts Windows, so SSH
 becomes available only after that check.
 
-Windows allows only a limited number of extensions. To see how many remain and
-when the evaluation expires, run:
+Windows Server 2025 allows only one extension, so the VM lasts about a year. To
+see how many extensions remain and when the evaluation expires, run:
 
 ```sh
 ssh -p 2222 Administrator@localhost 'cscript //nologo C:\Windows\System32\slmgr.vbs /dlv'

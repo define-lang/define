@@ -131,6 +131,9 @@ _ETAG = '"current"'
 
 class _RangeHandler(http.server.BaseHTTPRequestHandler):
     requested_ranges: typing.ClassVar[list[str | None]] = []
+    # The first response stops after this many bytes, as if the connection
+    # dropped.
+    first_response_bytes: typing.ClassVar[int | None] = None
 
     def do_GET(self):
         requested_range = self.headers.get("Range")
@@ -147,7 +150,9 @@ class _RangeHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("ETag", _ETAG)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        _ = self.wfile.write(body)
+        sent_bytes = type(self).first_response_bytes
+        type(self).first_response_bytes = None
+        _ = self.wfile.write(body if sent_bytes is None else body[:sent_bytes])
 
     @typing.override
     def log_message(self, format: str, *args: object):
@@ -155,9 +160,12 @@ class _RangeHandler(http.server.BaseHTTPRequestHandler):
 
 
 def _download_from_server(
-    path: Path, capsys: pytest.CaptureFixture[str]
+    path: Path,
+    capsys: pytest.CaptureFixture[str],
+    first_response_bytes: int | None = None,
 ) -> tuple[list[str | None], str]:
     _RangeHandler.requested_ranges = []
+    _RangeHandler.first_response_bytes = first_response_bytes
     with http.server.ThreadingHTTPServer(("127.0.0.1", 0), _RangeHandler) as server:
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
@@ -231,3 +239,32 @@ def test_download_finishes_completely_downloaded_file(
     assert path.read_bytes() == _CONTENT
     assert sorted(tmp_path.iterdir()) == [path]
     assert output == ""
+
+
+def test_download_resumes_after_connection_drops(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    path = tmp_path / "file.iso"
+
+    requested_ranges, output = _download_from_server(
+        path, capsys, first_response_bytes=3 * 1024 * 1024
+    )
+
+    assert requested_ranges == [None, "bytes=3145728-"]
+    assert path.read_bytes() == _CONTENT
+    assert sorted(tmp_path.iterdir()) == [path]
+    assert output == (
+        "  0.0 of 0.0 GB (10%)\n"
+        + "  0.0 of 0.0 GB (20%)\n"
+        + "  0.0 of 0.0 GB (30%)\n"
+        + "  The connection failed (IncompleteRead(0 bytes read, 7340032 more "
+        + "expected)). Resuming...\n"
+        + "  Resuming at 0.0 GB\n"
+        + "  0.0 of 0.0 GB (40%)\n"
+        + "  0.0 of 0.0 GB (50%)\n"
+        + "  0.0 of 0.0 GB (60%)\n"
+        + "  0.0 of 0.0 GB (70%)\n"
+        + "  0.0 of 0.0 GB (80%)\n"
+        + "  0.0 of 0.0 GB (90%)\n"
+        + "  0.0 of 0.0 GB (100%)\n"
+    )
