@@ -6,6 +6,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
+use pyo3::PyResult;
 use vector_scan::{COMMENT_START, LineEnd, SPACE};
 
 pub const OPEN_BRACE: u8 = b'{';
@@ -168,7 +169,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         line_start: Position,
         expected: usize,
         actual: usize,
-    ) -> ParseResult<()> {
+    ) -> PyResult<()> {
         if actual != expected {
             self.incorrect_indentation(line_start, expected, actual)?;
         }
@@ -182,16 +183,15 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         line_start: Position,
         expected: usize,
         actual: usize,
-    ) -> ParseResult<()> {
+    ) -> PyResult<()> {
         // The location covers the indentation, or the first character if there
         // is none.
         let end = Position {
             line: line_start.line,
             column: actual.max(1),
         };
-        Ok(self
-            .diagnostics
-            .incorrect_indentation_diagnostic(line_start, end, expected, actual)?)
+        self.diagnostics
+            .incorrect_indentation_diagnostic(line_start, end, expected, actual)
     }
 
     /// Parses a terminator through the end of its line, and returns the

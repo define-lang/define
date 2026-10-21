@@ -15,8 +15,10 @@ from typing import TYPE_CHECKING, cast
 import click
 import msgspec
 
+from tools import runfiles, rust_source
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 _JUMP_DESCRIPTION = re.compile(r"jump to line (?P<line>\d+)")
 # How //tools/rust_coverage:collect_rust_coverage describes the code
@@ -368,28 +370,103 @@ def analyze_report(
     return actionable, low_value, explicit_exit_only
 
 
+class RustRegions(msgspec.Struct, frozen=True):
+    """Uncovered Rust code regions, by whether covering them is worthwhile."""
+
+    actionable: list[UncoveredRegion]
+    panic_only: list[UncoveredRegion]
+    not_yet_supported: list[UncoveredRegion]
+    python_exception_only: list[UncoveredRegion]
+    """`?` regions that only pass on an exception that Python raised."""
+
+
 def analyze_rust_regions(
     report_path: Path,
     source_root: Path,
+    generated_sources: Mapping[Path, Path],
     source_paths: Sequence[Path] = (),
-) -> tuple[list[UncoveredRegion], list[UncoveredRegion], list[UncoveredRegion]]:
-    """Classify uncovered Rust code regions as actionable, panic-only, or not-yet-supported."""
+) -> RustRegions:
+    """Classify uncovered Rust code regions.
+
+    `generated_sources` maps the workspace path of each generated Rust source
+    file to where the file is.
+    """
     source_analysis = SourceAnalysis(source_root)
+    question_marks = _RustQuestionMarks(source_root, generated_sources)
     selection = _SourceSelection(source_analysis, source_paths)
-    actionable: list[UncoveredRegion] = []
-    panic_only: list[UncoveredRegion] = []
-    not_yet_supported: list[UncoveredRegion] = []
+    regions = RustRegions(
+        actionable=[], panic_only=[], not_yet_supported=[], python_exception_only=[]
+    )
     for branch in parse_uncovered_branches(report_path):
         region = _rust_region(branch)
         if region is None or not selection.includes(region.source_file):
             continue
         if source_analysis.region_only_panics(region):
-            panic_only.append(region)
+            regions.panic_only.append(region)
         elif source_analysis.region_only_reports_not_yet_supported(region):
-            not_yet_supported.append(region)
+            regions.not_yet_supported.append(region)
+        elif source_analysis.region_text(
+            region
+        ) == "?" and question_marks.only_passes_on_python_exception(region):
+            regions.python_exception_only.append(region)
         else:
-            actionable.append(region)
-    return actionable, panic_only, not_yet_supported
+            regions.actionable.append(region)
+    return regions
+
+
+class _RustQuestionMarks:
+    """What the `?` operators in Rust source files pass on."""
+
+    def __init__(self, source_root: Path, generated_sources: Mapping[Path, Path]):
+        """Read sources under `source_root`, and generated sources from `generated_sources`."""
+        self._source_root: Path = source_root
+        self._generated_sources: Mapping[Path, Path] = generated_sources
+        self._sources: dict[Path, rust_source.RustSource] = {}
+        self._crates: dict[Path, rust_source.RustCrate] = {}
+
+    def only_passes_on_python_exception(self, region: UncoveredRegion) -> bool:
+        """Return whether the `?` that is `region` can only pass on an exception that Python raised."""
+        source = self._source(region.source_file)
+        offset = source.offset(region.start_line, region.start_column)
+        function = source.enclosing_function(offset)
+        callee = source.callee_before(offset)
+        if function is None or callee is None:
+            return False
+        returns_python_result = self._crate(
+            region.source_file.parent
+        ).returns_python_result(callee)
+        if returns_python_result is not None:
+            return returns_python_result
+        # A function from outside the crate, such as a PyO3 method, can only
+        # fail with a Python exception where its error becomes a `PyErr`.
+        return function.returns_python_result
+
+    def _source(self, source_file: Path) -> rust_source.RustSource:
+        source = self._sources.get(source_file)
+        if source is None:
+            path = self._generated_sources.get(
+                source_file, self._source_root / source_file
+            )
+            source = rust_source.RustSource(path.read_text())
+            self._sources[source_file] = source
+        return source
+
+    def _crate(self, directory: Path) -> rust_source.RustCrate:
+        """Return the crate of the Rust source files directly in `directory`."""
+        crate = self._crates.get(directory)
+        if crate is None:
+            source_files = {
+                path.relative_to(self._source_root)
+                for path in (self._source_root / directory).glob("*.rs")
+            }
+            for generated_source in self._generated_sources:
+                if generated_source.parent == directory:
+                    source_files.add(generated_source)
+            crate = rust_source.RustCrate(
+                self._source(source_file) for source_file in sorted(source_files)
+            )
+            self._crates[directory] = crate
+        return crate
 
 
 class _SourceSelection:
@@ -417,25 +494,21 @@ class _SourceSelection:
         )
 
 
-def format_rust_regions(
-    actionable: Sequence[UncoveredRegion],
-    panic_only: Sequence[UncoveredRegion],
-    not_yet_supported: Sequence[UncoveredRegion],
-    source_root: Path,
-) -> str:
-    """Format uncovered Rust code regions with their source text."""
+def format_rust_regions(regions: RustRegions, source_root: Path) -> str:
+    """Format the actionable uncovered Rust code regions with their source text."""
     source_analysis = SourceAnalysis(source_root)
     output_lines = ["Uncovered Rust code regions:"]
-    for region in actionable:
+    for region in regions.actionable:
         output_lines.append(
             f"{region.source_file}:{region.start_line}:{region.start_column}-"
             + f"{region.end_line}:{region.end_column}: "
             + source_analysis.region_text(region)
         )
     output_lines.append(
-        f"{len(actionable)} uncovered Rust code regions reported; "
-        + f"{len(panic_only)} panic-only regions omitted; "
-        + f"{len(not_yet_supported)} not-yet-supported regions omitted."
+        f"{len(regions.actionable)} uncovered Rust code regions reported; "
+        + f"{len(regions.panic_only)} panic-only regions omitted; "
+        + f"{len(regions.not_yet_supported)} not-yet-supported regions omitted; "
+        + f"{len(regions.python_exception_only)} Python-exception-only regions omitted."
     )
     return "\n".join(output_lines)
 
@@ -521,7 +594,8 @@ def main(source_paths: tuple[Path, ...]):
     all files in Bazel's combined LCOV report are analyzed. Branches whose
     destination only raises a Python exception are omitted. Rust coverage has
     code regions instead of branches, which are reported first, apart from
-    regions that only panic or report source the parser does not support yet.
+    regions that only panic, report source the parser does not support yet,
+    or pass on an exception that Python raised.
     """
     if build_working_directory := os.environ.get("BUILD_WORKING_DIRECTORY"):
         os.chdir(build_working_directory)
@@ -538,18 +612,22 @@ def main(source_paths: tuple[Path, ...]):
             "coverage report not found; run Bazel coverage with "
             + "--combined_report=lcov first"
         )
-    actionable_regions, panic_only_regions, not_yet_supported_regions = (
-        analyze_rust_regions(report_path, source_root, source_paths)
+    # Bazel gives the generated Rust sources as runfiles, since they are not in
+    # the workspace.
+    generated_sources: dict[Path, Path] = {}
+    for location in os.environ["RUST_GENERATED_SOURCES"].split():
+        workspace_path = Path(*Path(location).parts[1:])
+        generated_sources[workspace_path] = runfiles.resolve(location)
+    regions = analyze_rust_regions(
+        report_path, source_root, generated_sources, source_paths
     )
-    if actionable_regions or panic_only_regions or not_yet_supported_regions:
-        click.echo(
-            format_rust_regions(
-                actionable_regions,
-                panic_only_regions,
-                not_yet_supported_regions,
-                source_root,
-            )
-        )
+    if (
+        regions.actionable
+        or regions.panic_only
+        or regions.not_yet_supported
+        or regions.python_exception_only
+    ):
+        click.echo(format_rust_regions(regions, source_root))
     actionable, low_value, explicit_exit_only = analyze_report(
         report_path, source_root, source_paths
     )
