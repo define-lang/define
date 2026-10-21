@@ -28,9 +28,12 @@ jobs:
     steps:
       # Codegen fixtures and a Python type stub are tracked symlinks. Windows
       # Git must create real links rather than files containing their targets.
-      - name: Enable Git symlinks
+      # Byte-limit fixtures exceed Windows' traditional full-path limit.
+      - name: Configure Git for Windows
         continue-on-error: true
-        run: git config --global core.symlinks true
+        run: |
+          git config --global core.symlinks true
+          git config --global core.longpaths true
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         id: checkout
