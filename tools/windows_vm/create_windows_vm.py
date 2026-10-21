@@ -386,7 +386,7 @@ To recreate the VM, remove the old one first:
 @click.option(
     "--disk-gib",
     type=int,
-    default=80,
+    default=200,
     show_default=True,
     help="Maximum disk size in GiB. The disk image grows only as Windows fills it.",
 )
