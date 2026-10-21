@@ -5,6 +5,10 @@ common:windows --host_platform=//tools/platforms:local_windows_msvc
 # it fetches only after this confirms the right to use it under
 # https://visualstudio.microsoft.com/license-terms.
 common:windows --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
+# Windows Bazel gives programs only a runfiles manifest by default, and
+# aspect_rules_py's virtualenvs and our tests need a runfiles directory. Creating
+# its symlinks requires Windows Developer Mode or administrator rights.
+common:windows --enable_runfiles
 
 # Show full command lines on failure
 build --verbose_failures
