@@ -51,7 +51,7 @@ git_override(
 # The libc crate links the MSVC runtime's legacy_stdio_definitions.lib, which
 # the other patch exposes to links.
 # TODO: Remove the legacy_stdio_definitions.lib patch once an llvm release
-# exposes that library.
+# includes https://github.com/hermeticbuild/hermetic-llvm/pull/864.
 single_version_override(
     module_name = "llvm",
     patch_strip = 1,
@@ -140,7 +140,8 @@ rules_rust.patch(
 
 # On Windows, Python's import library is a cc_import interface library, which
 # the PyO3 toolchain does not search when it looks for Python libraries.
-# TODO: Remove this patch once a rules_rs release includes a fix for this.
+# TODO: Remove this patch once a rules_rs release includes
+# https://github.com/bazelbuild/rules_rust/pull/4341.
 rules_rust.patch(
     patches = ["//tools/patches:rules_rust_pyo3_interface_library.patch"],
     strip = 1,
