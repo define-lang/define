@@ -67,21 +67,26 @@ def test_termination_records_exit_status_when_target_has_already_exited():
 
 def test_generated_dataclass_constructor_uses_class_name(tmp_path: Path):
     profile_path = tmp_path / "dataclass-profile.jsonl"
+    exit_gate = tmp_path / "exit-gate"
     target_source = """\
 import dataclasses
-import time
+import pathlib
+import sys
 
 Constructor = dataclasses.make_dataclass(
     "Sampled",
     [(f"field_{index}", int) for index in range(100)],
 )
 arguments = tuple(range(100))
-end = time.monotonic() + 0.6
-while time.monotonic() < end:
-    Constructor(*arguments)
+exit_gate = pathlib.Path(sys.argv[1])
+while not exit_gate.exists():
+    for _ in range(1_000):
+        Constructor(*arguments)
 """
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
 
-    result = subprocess.run(
+    profile_process = subprocess.Popen(
         [
             str(runfiles.resolve_from_env("PROFILER_BINARY")),
             "--profile",
@@ -92,18 +97,33 @@ while time.monotonic() < end:
             str(tmp_path),
             "--mean-interval-seconds",
             "0.0005",
+            "--event-fd",
+            str(event_write_file_descriptor),
             "--",
             sys.executable,
             "-c",
             target_source,
+            str(exit_gate),
         ],
-        check=False,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
+        pass_fds=(event_write_file_descriptor,),
     )
+    os.close(event_write_file_descriptor)
+    observations_persisted = event_reader.wait_for(
+        "successful-observation-persisted",
+        200,
+        timeout_seconds=30,
+    )
+    exit_gate.touch()
+    event_reader.read_until_closed()
+    _, profile_stderr = profile_process.communicate()
+    os.close(event_read_file_descriptor)
 
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert observations_persisted
+    assert profile_process.returncode == 0
+    assert profile_stderr == ""
     profile = schema.load(profile_path)
     observations = [
         observation
