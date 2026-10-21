@@ -1,0 +1,11 @@
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+# Bazel's detected Windows host platform has no Windows ABI constraint, which no
+# Rust toolchain matches. Define builds for Windows with the native MSVC ABI.
+platform(
+    name = "local_windows_msvc",
+    constraint_values = ["@llvm//constraints/windows/abi:msvc"],
+    parents = ["@platforms//host"],
+)
+
+check_build_file()
