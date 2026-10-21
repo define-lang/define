@@ -37,15 +37,9 @@ class PositionDefinitionGenerator:
         constraints = self._converter.constraints_to_class_references(
             self._definition.constraints,
         )
-        implied_qualities = self._converter.implied_qualities_to_class_references(
-            self._definition.quality_implications,
-        )
         class_name = self._converter.class_name(self._definition.typed_name)
         module_name = self._converter.module_name(name_content)
         imports = {class_reference.module_name for class_reference in constraints}
-        imports.update(
-            class_reference.module_name for class_reference in implied_qualities
-        )
         # Classes in the definition's own module are referenced by their bare
         # names, and a module cannot import itself while it is still loading.
         imports.discard(module_name)
@@ -54,7 +48,6 @@ class PositionDefinitionGenerator:
             class_name=class_name,
             module_name=module_name,
             constraints=constraints,
-            implied_qualities=implied_qualities,
             value_type=value_types.constrained_python_value_type(
                 self._definition.constraints
             ),

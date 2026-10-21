@@ -158,8 +158,12 @@ def test_disallows_particle_constraint(parse: Parse):
 def test_disallows_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
         _ = parse(
-            "define the potential position<mv:define-lang.org:parser:/test> {\n"
+            "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it also assigns the literal</decimal>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "    }\n"
             + "}\n"
         )
     assert error.value.location.line == 2

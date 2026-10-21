@@ -52,7 +52,6 @@ _AUTHORITY_PATH_FQUN_POSITION = (
 
 _FULL_POSITION = (
     "define the potential position<standard:/path> {\n"
-    + "    it also assigns the position</a>.\n"
     + "    it may only contain particles where {\n"
     + "        it has the position</child>.\n"
     + "        it has the action</other>.\n"
@@ -310,7 +309,7 @@ def test_reference_global_name_content_without_fqun_fields():
     assert name_content.fqun is None
     assert name_content.path.name == "/child"
     assert name_content.location == ast.SourceLocation(
-        line=4, column=29, end_line=4, end_column=34
+        line=3, column=29, end_line=3, end_column=34
     )
     assert _slice(_FULL_POSITION, name_content.location) == "/child"
 
@@ -340,7 +339,7 @@ def test_global_typed_name_reference_fields():
     assert isinstance(typed_name.name_content, ast.ReferenceGlobalNameContent)
     assert typed_name.enclosing_fqun.canonical == "standard"
     assert typed_name.location == ast.SourceLocation(
-        line=4, column=20, end_line=4, end_column=35
+        line=3, column=20, end_line=3, end_column=35
     )
     assert _slice(_FULL_POSITION, typed_name.location) == "position</child>"
 
@@ -516,7 +515,7 @@ def test_position_constraint_block_fields():
         for requirement in block.requirements
     )
     assert block.location == ast.SourceLocation(
-        line=3, column=5, end_line=7, end_column=5
+        line=2, column=5, end_line=6, end_column=5
     )
     assert _slice(_FULL_POSITION, block.location) == (
         "it may only contain particles where {\n"
@@ -541,7 +540,7 @@ def test_position_requirement_statement_fields():
     requirement = definition.constraints.requirements[0]
     assert isinstance(requirement.typed_global_name, ast.GlobalTypedNameReference)
     assert requirement.location == ast.SourceLocation(
-        line=4, column=9, end_line=4, end_column=36
+        line=3, column=9, end_line=3, end_column=36
     )
     assert (
         _slice(_FULL_POSITION, requirement.location) == "it has the position</child>."
@@ -549,13 +548,13 @@ def test_position_requirement_statement_fields():
 
 
 def test_quality_implication_statement_fields():
-    implication = _only_position(_FULL_POSITION).quality_implications[0]
+    implication = _only_action(_FULL_ACTION).quality_implications[0]
     assert isinstance(implication.typed_global_name, ast.GlobalTypedNameReference)
     assert implication.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=37
     )
     assert (
-        _slice(_FULL_POSITION, implication.location)
+        _slice(_FULL_ACTION, implication.location)
         == "it also assigns the position</a>."
     )
 
@@ -632,7 +631,6 @@ def test_value_definition_fields():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ValueDefinition)
-    assert definition.quality_implications == ()
     assert definition.typed_name.name_type == name_types.NameType.VALUE
     name = definition.typed_name.name_content
     assert isinstance(name, ast.DefinitionGlobalNameContent)
@@ -701,7 +699,6 @@ def test_encoding_definition_between_other_definitions():
 def test_position_definition_bare_fields():
     definition = _only_position(_SIMPLE_POSITION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
-    assert definition.quality_implications == ()
     assert definition.constraints is None
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=1, end_column=46
@@ -715,17 +712,12 @@ def test_position_definition_bare_fields():
 def test_position_definition_full_fields():
     definition = _only_position(_FULL_POSITION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
-    assert len(definition.quality_implications) == 1
-    assert isinstance(
-        definition.quality_implications[0], ast.QualityImplicationStatement
-    )
     assert isinstance(definition.constraints, ast.PositionConstraintBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=8, end_column=1
+        line=1, column=1, end_line=7, end_column=1
     )
     assert _slice(_FULL_POSITION, definition.location) == (
         "define the potential position<standard:/path> {\n"
-        "    it also assigns the position</a>.\n"
         "    it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"

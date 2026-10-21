@@ -956,8 +956,7 @@ Potential positions are defined with `define the potential` followed by a space
 and a global position name.
 
 The syntax inside the block (called a Potential Position Definition Block) is
-the same as for a local position, except that it may begin with one or more
-Quality Implication Statements.
+the same as for a local position.
 
 ```ebnf
 fully_qualified_global_position_name = "position", "<", fully_qualified_global_name, ">" ;
@@ -965,7 +964,6 @@ position_definition = "define the potential", " ", fully_qualified_global_positi
 position_definition_end = terminator | potential_position_definition_block ;
 potential_position_definition_block =
     block_open,
-    { quality_implication_statement },
     position_constraint_block,
     block_close ;
 ```

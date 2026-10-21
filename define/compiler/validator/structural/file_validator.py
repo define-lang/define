@@ -366,14 +366,12 @@ class DefinitionStructuralValidator:
         self,
         definition: ast.PositionDefinition,
     ):
-        self._validate_quality_implications(definition.quality_implications)
         if definition.constraints:
             self._validate_position_requirements(
                 definition.constraints.requirements,
                 multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
             )
         self._check_unreferenced_positions()
-        self._check_unused_quality_implications()
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
         if isinstance(definition, ast.ValueOperationDefinition):

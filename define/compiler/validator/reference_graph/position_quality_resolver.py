@@ -145,21 +145,16 @@ class PositionQualityResolver:
     ) -> frozenset[str]:
         """Return the names of the implied qualities and everything they transitively imply."""
         names: set[str] = set()
-        pending = list(implied_qualities)
-        while pending:
-            quality = pending.pop()
-            if quality.full_typed_name in names:
-                continue
+        for quality in implied_qualities:
             names.add(quality.full_typed_name)
-            if quality.name_type == name_types.NameType.ACTION:
-                # Implied actions are validated first, so their contracts
-                # already hold their transitive implications. A rejected
-                # circular reference leaves no contract; it is reported elsewhere.
-                contract = self._validation_state.get_contract_or_none(quality)
-                if contract is not None:
-                    names.update(contract.implied_quality_names)
+            if quality.name_type != name_types.NameType.ACTION:
                 continue
-            pending.extend(self._implications_for(quality))
+            # Implied actions are validated first, so their contracts
+            # already hold their transitive implications. A rejected
+            # circular reference leaves no contract; it is reported elsewhere.
+            contract = self._validation_state.get_contract_or_none(quality)
+            if contract is not None:
+                names.update(contract.implied_quality_names)
         # A rejected circular implication can lead back to this action, which
         # must not count as implying itself.
         names.discard(self._definition.typed_name.full_typed_name)
@@ -168,13 +163,13 @@ class PositionQualityResolver:
     def _implications_for(
         self, quality: ast.GlobalTypedNameReference
     ) -> tuple[ast.GlobalTypedNameReference, ...]:
-        # Encodings are not qualities, so they imply nothing.
-        if quality.name_type == name_types.NameType.ENCODING:
+        # Only action definitions contain Quality Implication Statements.
+        if quality.name_type != name_types.NameType.ACTION:
             return ()
         definition_result = self._definition_results.get(quality)
         if definition_result is None:
             return ()
-        definition = typing.cast("ast.QualityDefinition", definition_result.definition)
+        definition = typing.cast("ast.ActionDefinition", definition_result.definition)
         return tuple(
             implication.typed_global_name
             for implication in definition.quality_implications

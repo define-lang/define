@@ -31,7 +31,6 @@ const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
 const NAME_CONTENT_START: u8 = b'<';
 const IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: &[u8] = b"it may only contain particles where";
 const IT_HAS_THE: &[u8] = b"it has the ";
-const IT_ALSO_ASSIGNS_THE: &[u8] = b"it also assigns the ";
 const CONSTRAINT_NAME_TYPES: [(&[u8], ast::NameType); 4] = [
     (b"position", ast::NameType::Position),
     (b"action", ast::NameType::Action),
@@ -200,10 +199,6 @@ impl<'py, 'source> Parser<'py, 'source> {
             ast::NameType::Position,
             name_content,
         )?;
-        // TODO: Remove quality implication statements from potential position
-        // definitions in the grammar and the AST. The parser will not support
-        // them, so it leaves this tuple empty.
-        let quality_implications = self.ast.empty_tuple();
         let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
             let (constraints, end) =
                 self.parse_potential_position_definition_block(start, &fqun)?;
@@ -216,12 +211,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             (None, end)
         };
         let location = self.ast.location(start, end)?;
-        let definition = self.ast.position_definition(
-            location,
-            typed_name,
-            quality_implications,
-            constraints,
-        )?;
+        let definition = self
+            .ast
+            .position_definition(location, typed_name, constraints)?;
         Ok((definition, end))
     }
 
@@ -255,7 +247,6 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// potential_position_definition_block =
     ///     block_open,
-    ///     { quality_implication_statement },
     ///     position_constraint_block,
     ///     block_close ;
     /// ```
@@ -322,9 +313,6 @@ impl<'py, 'source> Parser<'py, 'source> {
             return error;
         }
         let start = self.scanner.position;
-        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
-            return ParseError::not_yet_supported(start, "quality implication statements");
-        }
         self.errors
             .invalid_potential_position_definition_block(start, self.end_of_line())
     }

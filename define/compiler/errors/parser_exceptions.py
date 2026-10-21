@@ -686,8 +686,8 @@ class QualityImplicationInWrongLocation(DefineTokenError):
     """Wrote an 'it also assigns the' statement somewhere it isn't allowed."""
 
     message_format: ClassVar[str] = (
-        "'it also assigns the' statements may appear only at the top of a"
-        " global definition block."
+        "'it also assigns the' statements may appear only at the top of an"
+        " action definition block."
     )
 
 

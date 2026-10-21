@@ -19,95 +19,41 @@ if TYPE_CHECKING:
 # --- Successful parses ---
 
 
-def test_implication_in_potential_position_before_constraint_block(
-    parse: Parse,
-):
-    tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it also assigns the position</required>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/required",
-        "/implied",
-    ]
-
-
-def test_multiple_implications_in_potential_position(parse: Parse):
-    tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it also assigns the position</first>.\n"
-        + "    it also assigns the action</second>.\n"
-        + "    it also assigns the position</third>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/first",
-        "/second",
-        "/third",
-        "/implied",
-    ]
-
-
-def test_implication_with_position_name_type(parse: Parse):
-    tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it also assigns the position</required>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/required",
-        "/implied",
-    ]
-
-
 def test_implication_with_action_name_type(parse: Parse):
     tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the action</required>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
+        "mv:define-lang.org:parser:/act",
         "/required",
-        "/implied",
     ]
 
 
 def test_implication_with_various_fqun_forms(parse: Parse):
     tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the position<mv:example.com:my_lib:/full>.\n"
         + "    it also assigns the position<example.com:my_lib:/short_mv>.\n"
         + "    it also assigns the position<standard:/std>.\n"
         + "    it also assigns the position</local>.\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
+        "mv:define-lang.org:parser:/act",
         "mv:example.com:my_lib:/full",
         "example.com:my_lib:/short_mv",
         "standard:/std",
         "/local",
-        "/implied",
     ]
 
 
@@ -170,23 +116,23 @@ def test_multiple_implications_in_action_before_multiple_local_positions(
 
 def test_implication_with_comments_and_blank_lines(parse: Parse):
     tree = parse(
-        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    # leading comment\n"
         + "    it also assigns the position</first>.\n"
         + "\n"
         + "    # between implications\n"
         + "    it also assigns the action</second>.\n"
         + "\n"
-        + "    it may only contain particles where {\n"
-        + "        it has the position</implied>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
+        "mv:define-lang.org:parser:/act",
         "/first",
         "/second",
-        "/implied",
     ]
 
 
@@ -196,10 +142,11 @@ def test_implication_with_comments_and_blank_lines(parse: Parse):
 def test_implication_missing_open_angle_at_eol(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -211,10 +158,11 @@ def test_implication_missing_open_angle_at_eol(parse: Parse):
 def test_implication_missing_open_angle_with_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -226,10 +174,11 @@ def test_implication_missing_open_angle_with_terminator(parse: Parse):
 def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position .\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -241,10 +190,11 @@ def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
 def test_implication_empty_name(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -256,11 +206,12 @@ def test_implication_empty_name(parse: Parse):
 def test_implication_newline_inside_name(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<\n"
             + "        /required>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -272,10 +223,11 @@ def test_implication_newline_inside_name(parse: Parse):
 def test_implication_missing_close_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -287,10 +239,11 @@ def test_implication_missing_close_angle(parse: Parse):
 def test_implication_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required>\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -302,10 +255,11 @@ def test_implication_missing_terminator(parse: Parse):
 def test_implication_missing_newline_after_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required>.    it also assigns the position</other>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -317,10 +271,11 @@ def test_implication_missing_newline_after_terminator(parse: Parse):
 def test_implication_missing_space_after_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns theposition</required>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -332,10 +287,11 @@ def test_implication_missing_space_after_keyword(parse: Parse):
 def test_implication_extra_space_after_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the  position</required>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -347,10 +303,11 @@ def test_implication_extra_space_after_keyword(parse: Parse):
 def test_implication_local_name_where_global_required(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<foo>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -362,10 +319,11 @@ def test_implication_local_name_where_global_required(parse: Parse):
 def test_implication_chained_name_not_allowed(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</a>::position</b>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
             + "    }\n"
             + "}\n"
         )
@@ -508,20 +466,6 @@ def test_implication_at_global_scope(parse: Parse):
 
 
 # --- Block content errors ---
-
-
-def test_implication_only_in_potential_position_block(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it also assigns the position</required>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 1
 
 
 def test_implication_only_in_action_definition_block(parse: Parse):

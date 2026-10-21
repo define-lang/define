@@ -252,11 +252,4 @@ impl<'py, 'source> AstBuilder<'py, 'source> {
             element: PhantomData,
         })
     }
-
-    pub fn empty_tuple<Element>(&self) -> NodeTuple<'py, Element> {
-        NodeTuple {
-            tuple: PyTuple::empty(self.py),
-            element: PhantomData,
-        }
-    }
 }

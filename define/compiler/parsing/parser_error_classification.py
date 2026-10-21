@@ -52,12 +52,14 @@ def _stripped_context(source: str, line: int, column: int) -> str:
     return error_line[column:].strip()
 
 
-def _is_in_view_definition(e: lark_standalone.UnexpectedToken) -> bool:
+def _is_in_definition_started_by(
+    e: lark_standalone.UnexpectedToken, keyword_token_type: str
+) -> bool:
     interactive_parser = typing.cast(
         "lark_standalone.InteractiveParser", e.interactive_parser
     )
     for item in interactive_parser.parser_state.value_stack:
-        if isinstance(item, lark_cython.Token) and item.type == "DEFINE_THE_VIEW":
+        if isinstance(item, lark_cython.Token) and item.type == keyword_token_type:
             return True
     return False
 
@@ -292,7 +294,7 @@ def raise_token_error(
         if e.token.type in {
             "IT_IS_READ",
             "IT_IS_WRITTEN",
-        } and _is_in_view_definition(e):
+        } and _is_in_definition_started_by(e, "DEFINE_THE_VIEW"):
             raise parser_exceptions.InvalidViewDirectionStatementOrder.from_lark_exception(
                 e, file_path
             )
@@ -474,10 +476,10 @@ def raise_token_error(
         )
 
     # We are in a potential position definition block (global, not local).
-    # This must come before the local position definition block check below,
-    # because IT_ALSO_ASSIGNS_THE (quality implications are only allowed in a
-    # potential position block) distinguishes the potential block from local.
-    if "IT_ALSO_ASSIGNS_THE" in e.accepts:
+    if (
+        "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts
+        and _is_in_definition_started_by(e, "DEFINE_THE_POTENTIAL_POSITION")
+    ):
         if _ends_block(e.token):
             raise parser_exceptions.MissingPotentialPositionDefinitionContent.from_lark_exception(
                 e, file_path
@@ -493,7 +495,10 @@ def raise_token_error(
         )
 
     # We are after the View Direction Statements of a view definition block.
-    if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts and _is_in_view_definition(e):
+    if (
+        "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts
+        and _is_in_definition_started_by(e, "DEFINE_THE_VIEW")
+    ):
         if e.token.type in {"IT_IS_READ", "IT_IS_WRITTEN"}:
             raise parser_exceptions.InvalidViewDirectionStatementOrder.from_lark_exception(
                 e, file_path
@@ -514,17 +519,10 @@ def raise_token_error(
 
     # We are in a position constraint block.
     if "IT_HAS_THE" in e.accepts:
-        interactive_parser = typing.cast(
-            "lark_standalone.InteractiveParser", e.interactive_parser
-        )
-        for item in interactive_parser.parser_state.value_stack:
-            if (
-                isinstance(item, lark_cython.Token)
-                and item.type == "DEFINE_THE_POTENTIAL_LITERAL"
-            ):
-                raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock.from_lark_exception(
-                    e, file_path
-                )
+        if _is_in_definition_started_by(e, "DEFINE_THE_POTENTIAL_LITERAL"):
+            raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock.from_lark_exception(
+                e, file_path
+            )
         if _ends_block(e.token):
             raise parser_exceptions.MissingPositionConstraintContent.from_lark_exception(
                 e, file_path

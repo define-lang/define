@@ -237,7 +237,7 @@ class _DefinitionGenerator:
                 body=renderer.render_position(position),
                 imports=position.imports,
                 typing_names=_typing_names(
-                    classvar=bool(position.constraints or position.implied_qualities),
+                    classvar=bool(position.constraints),
                     never=position.value_type == value_types.NO_VALUE,
                     override=False,
                 ),

@@ -68,13 +68,7 @@ class _ActionDefinitionBlockData(msgspec.Struct, frozen=True):
     block_close: lark_cython.Token
 
 
-class _PotentialPositionBlockData(msgspec.Struct, frozen=True):
-    quality_implications: tuple[ast.QualityImplicationStatement, ...]
-    constraints: ast.PositionConstraintBlock | None
-    block_close: lark_cython.Token
-
-
-class _LocalPositionBlockData(msgspec.Struct, frozen=True):
+class _PositionDefinitionBlockData(msgspec.Struct, frozen=True):
     constraints: ast.PositionConstraintBlock
     block_close: lark_cython.Token
 
@@ -455,7 +449,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         items: list[
             lark_cython.Token
             | ast.DefinitionGlobalNameContent
-            | _PotentialPositionBlockData
+            | _PositionDefinitionBlockData
         ],
     ) -> ast.PositionDefinition:
         """Transform a position definition.
@@ -465,16 +459,14 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         if len(items) > 2:
-            block_data = cast("_PotentialPositionBlockData", items[2])
+            block_data = cast("_PositionDefinitionBlockData", items[2])
             return ast.PositionDefinition.from_name(
                 name=name,
-                quality_implications=block_data.quality_implications,
                 constraints=block_data.constraints,
                 location=self._location(start=keyword, end=block_data.block_close),
             )
         return ast.PositionDefinition.from_name(
             name=name,
-            quality_implications=(),
             constraints=None,
             location=self._location_for_bare_definition(start=keyword, name=name),
         )
@@ -544,7 +536,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     @_strip_discard
     def local_position_definition(
         self,
-        items: list[lark_cython.Token | ast.LocalNameContent | _LocalPositionBlockData],
+        items: list[
+            lark_cython.Token | ast.LocalNameContent | _PositionDefinitionBlockData
+        ],
     ) -> ast.LocalPositionDefinition:
         """Transform a local position definition.
 
@@ -553,7 +547,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         keyword = cast("lark_cython.Token", items[0])
         local_name = cast("ast.LocalNameContent", items[1])
         if len(items) > 2:
-            block_data = cast("_LocalPositionBlockData", items[2])
+            block_data = cast("_PositionDefinitionBlockData", items[2])
             return ast.LocalPositionDefinition.from_name(
                 local_name=local_name,
                 constraints=block_data.constraints,
@@ -567,43 +561,16 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
 
     @staticmethod
     @_strip_discard_static
-    def local_position_definition_block(
+    def position_definition_block(
         items: list[lark_cython.Token | ast.PositionConstraintBlock],
-    ) -> _LocalPositionBlockData:
+    ) -> _PositionDefinitionBlockData:
         """Bundle the inner constraint block with the outer ``}`` token.
 
         items: [position_constraint_block, CLOSE_BRACE token].
         """
-        return _LocalPositionBlockData(
+        return _PositionDefinitionBlockData(
             constraints=cast("ast.PositionConstraintBlock", items[0]),
             block_close=cast("lark_cython.Token", items[1]),
-        )
-
-    @staticmethod
-    @_strip_discard_static
-    def potential_position_definition_block(
-        items: list[
-            lark_cython.Token
-            | ast.QualityImplicationStatement
-            | ast.PositionConstraintBlock
-        ],
-    ) -> _PotentialPositionBlockData:
-        """Bundle the block's contents with the outer ``}`` token.
-
-        items: [*quality_implications, position_constraint_block, CLOSE_BRACE token].
-        """
-        close_brace = cast("lark_cython.Token", items[-1])
-        quality_implications: list[ast.QualityImplicationStatement] = []
-        constraints: ast.PositionConstraintBlock | None = None
-        for item in items[:-1]:
-            if isinstance(item, ast.QualityImplicationStatement):
-                quality_implications.append(item)
-            else:
-                constraints = cast("ast.PositionConstraintBlock", item)
-        return _PotentialPositionBlockData(
-            quality_implications=tuple(quality_implications),
-            constraints=constraints,
-            block_close=close_brace,
         )
 
     @_strip_discard

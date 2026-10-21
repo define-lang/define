@@ -147,8 +147,6 @@ class GlobalDefinition(ASTNode):
 class QualityDefinition(GlobalDefinition):
     """Base class for quality definitions."""
 
-    quality_implications: tuple[QualityImplicationStatement, ...]
-
 
 class EncodingDefinition(GlobalDefinition):
     """Represents an encoding definition."""
@@ -278,7 +276,6 @@ class ValueDefinition(QualityDefinition):
                     name, name_types.NameType.VALUE
                 ),
             ),
-            quality_implications=(),
             location=location,
         )
 
@@ -294,7 +291,6 @@ class PositionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_implications: tuple[QualityImplicationStatement, ...] = (),
         constraints: PositionConstraintBlock | None = None,
     ) -> Self:
         """Initialize with a global name, wrapping it in a typed definition name."""
@@ -306,7 +302,6 @@ class PositionDefinition(QualityDefinition):
                     name, name_types.NameType.POSITION
                 ),
             ),
-            quality_implications=quality_implications,
             location=location,
             constraints=constraints,
         )
@@ -983,6 +978,7 @@ class ActionStatementsBlock(ASTNode):
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
+    quality_implications: tuple[QualityImplicationStatement, ...]
     interface_positions: tuple[LocalPositionDefinition, ...]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock

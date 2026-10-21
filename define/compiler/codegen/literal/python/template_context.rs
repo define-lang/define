@@ -76,7 +76,6 @@ pub struct PositionDefinition {
     class_name: String,
     module_name: String,
     constraints: Vec<ClassReference>,
-    implied_qualities: Vec<ClassReference>,
     value_type: String,
     /// The modules, other than its own, that the definition uses.
     imports: HashSet<String>,
@@ -89,7 +88,6 @@ impl PositionDefinition {
         class_name: String,
         module_name: String,
         constraints: Vec<ClassReference>,
-        implied_qualities: Vec<ClassReference>,
         value_type: String,
         imports: HashSet<String>,
     ) -> Self {
@@ -97,7 +95,6 @@ impl PositionDefinition {
             class_name,
             module_name,
             constraints,
-            implied_qualities,
             value_type,
             imports,
         }

@@ -36,7 +36,6 @@ def test_position_definition_parses(native_parse: NativeParse):
     assert definition.typed_name.location == ast.SourceLocation(
         line=1, column=22, end_line=1, end_column=62
     )
-    assert definition.quality_implications == ()
     assert definition.constraints is None
 
 
@@ -185,7 +184,6 @@ def test_position_definition_with_constraint_block(native_parse: NativeParse):
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
-    assert definition.quality_implications == ()
     assert definition.constraints is not None
     assert definition.constraints.location == ast.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
@@ -486,6 +484,24 @@ def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
     assert exc_info.value.location.column == 5
     assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 17
+
+
+def test_quality_implication_in_potential_position_block(native_parse: NativeParse):
+    with pytest.raises(
+        parser_exceptions.InvalidPotentialPositionDefinitionBlock
+    ) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it also assigns the position</required>.\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 44
 
 
 def test_empty_local_position_definition_block(parse: Parse):
