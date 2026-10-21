@@ -62,4 +62,5 @@ jobs:
         if: ${{ steps.bazel.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 30
-        run: bazelisk test --noshow_progress //...
+        # Report every Windows failure in one run instead of only the first.
+        run: bazelisk test --noshow_progress --keep_going //...

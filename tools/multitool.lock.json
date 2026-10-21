@@ -85,6 +85,14 @@
         "sha256": "1a8d6778176f8d6dfc9182342109a44a8dfafb73f91f5d297276f25960589483",
         "os": "macos",
         "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.74.0/buf-Windows-x86_64.zip",
+        "file": "buf/bin/buf.exe",
+        "sha256": "b0e26af2a4bef62724f6a58114a6027e3a19bdf98033b2107995bc243d7c8c97",
+        "os": "windows",
+        "cpu": "x86_64"
       }
     ]
   },
@@ -251,6 +259,14 @@
         "sha256": "74efa76b1c200a2b7778c28e9aa0c3ba1c843863006a2f8916f252f8c048d42b",
         "os": "macos",
         "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.2.0/jactionlint_2.2.0_windows_amd64.zip",
+        "file": "jactionlint.exe",
+        "sha256": "97300770d2bea28110736e34edfc9a21d80840090af64dc4b6116b6467f537a4",
+        "os": "windows",
+        "cpu": "x86_64"
       }
     ]
   },
@@ -374,6 +390,14 @@
         "file": "shellcheck-v0.11.0/shellcheck",
         "sha256": "c2c15e08df0e8fbc374c335b230a7ee958c313fa5714817a59aa59f1aa594f51",
         "os": "macos",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip",
+        "file": "shellcheck.exe",
+        "sha256": "8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e",
+        "os": "windows",
         "cpu": "x86_64"
       }
     ]
