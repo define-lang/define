@@ -423,3 +423,95 @@ def test_position_constraint_missing_type_keyword(native_parse: NativeParse):
     assert exc_info.value.location.column == 20
     assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 20
+
+
+def test_whitespace_line_at_start_of_potential_position_definition_block(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    \n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 1
+
+
+def test_whitespace_line_after_position_constraint_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "    \n"
+            + "}\n"
+        )
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 1
+
+
+def test_whitespace_line_at_start_of_position_constraint_block(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        \n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 1
+
+
+def test_whitespace_line_after_position_requirement_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "        \n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == " "
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 1
+
+
+def test_control_character_after_potential_position_definition_block_close(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential position<standard:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\x01\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 2
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 2
