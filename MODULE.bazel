@@ -222,6 +222,16 @@ go_deps.gazelle_override(
     ],
     path = "github.com/bufbuild/protocompile",
 )
+
+# On Windows, checktest marks a FilePaths entry in a subdirectory as an import,
+# so rules that skip imports never check it.
+# TODO: Remove this patch once a bufplugin release includes
+# https://github.com/bufbuild/bufplugin-go/pull/34.
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//tools/patches:bufplugin_checktest_windows_file_paths.patch"],
+    path = "buf.build/go/bufplugin",
+)
 use_repo(go_deps, "build_buf_go_bufplugin", "org_golang_google_protobuf")
 
 # --- Buf toolchain ---
