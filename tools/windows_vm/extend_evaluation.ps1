@@ -1,8 +1,9 @@
 # Extends the Windows Server evaluation shortly before it expires, so that
 # Windows never starts shutting itself down every hour. Its scheduled task runs
 # it as SYSTEM at every startup, because the VM is usually shut down, and daily,
-# for a VM that stays running. It starts sshd only when Windows will not
-# restart, so that no SSH session starts work that a restart would interrupt.
+# for a VM that stays running. It starts sshd and then the guest agent only
+# when Windows will not restart, so that no SSH session starts work that a
+# restart would interrupt.
 
 $ErrorActionPreference = 'Stop'
 
@@ -27,3 +28,5 @@ if ($daysRemaining -lt 14) {
 }
 [IO.File]::WriteAllText($banner, $bannerText)
 Start-Service -Name sshd
+# The host waits for the guest agent to know when SSH is ready.
+Start-Service -Name QEMU-GA

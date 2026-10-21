@@ -16,29 +16,52 @@ exists.** Check first:
 virsh --connect qemu:///session list --all
 ```
 
-If `define-windows` is listed, use it:
-
-1. If its state is `shut off`, start it:
-
-   ```sh
-   virsh --connect qemu:///session start define-windows
-   ```
-
-2. Run PowerShell commands in it over SSH. The repository is in `C:\src\define`:
-
-   ```sh
-   ssh -p 2222 Administrator@localhost 'cd C:\src\define; bazelisk test //...'
-   ```
-
-3. Shut it down when you are done, so that it stops using the host's memory:
-
-   ```sh
-   virsh --connect qemu:///session shutdown define-windows
-   ```
-
 If `define-windows` is not listed, the VM does not exist yet. Agents should ask
 the user before creating it, because creating it downloads 8 GB and takes about
 an hour.
+
+If `define-windows` is listed, use it:
+
+1. Copy your checkout's current state into the VM. This starts the VM if it is
+   shut off and waits until SSH is ready:
+
+   ```sh
+   bazelisk run //tools/windows_vm:sync_windows_vm
+   ```
+
+   It copies everything git would commit, including uncommitted and untracked
+   files, into `C:\src\<name>`, where `<name>` is the name of your checkout's
+   directory, such as `C:\src\define4` for `~/projects/define4`. Run it again
+   after each change you want to test. Its `--help` explains the details.
+
+2. Run PowerShell 7 commands in your directory over SSH:
+
+   ```sh
+   ssh -p 2222 Administrator@localhost 'cd C:\src\define4; bazelisk build //...'
+   ```
+
+## Sharing the VM
+
+Several agents may use the VM at once, so:
+
+- **Work only in your checkout's own directory.** Never change another
+  checkout's directory. Bazel keeps a separate server and output tree for each
+  directory, so builds in different directories do not interfere.
+- **Do not shut the VM down or restart it.** Another agent may be building in
+  it. Only the user shuts it down.
+- **Memory is shared.** The VM has 8 GB by default, and each Bazel server in it
+  takes 1 to 3 GB while builds run, so run only a few builds at once. When a
+  build fails because the VM ran out of memory, stop idle Bazel servers in your
+  own directory with `bazelisk shutdown`.
+
+## Shutting the VM Down
+
+To give the host back the VM's memory, shut it down through the QEMU guest
+agent, which works even when Windows' display is off:
+
+```sh
+virsh --connect qemu:///session shutdown --mode agent define-windows
+```
 
 ## The Evaluation Period
 

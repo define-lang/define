@@ -44,6 +44,9 @@ Get-ChildItem C:\Windows\Panther -Filter unattend*.xml -Recurse | Remove-Item
 $virtioDrive = (Get-Volume | Where-Object FileSystemLabel -Like 'virtio-win*').DriveLetter
 Invoke-Installer msiexec.exe @('/i', "${virtioDrive}:\virtio-win-gt-x64.msi", '/qn', '/norestart')
 Invoke-Installer msiexec.exe @('/i', "${virtioDrive}:\guest-agent\qemu-ga-x86_64.msi", '/qn', '/norestart')
+# extend_evaluation.ps1 starts the guest agent after sshd, so that the host can
+# wait for the agent to know when SSH is ready.
+Set-Service -Name QEMU-GA -StartupType Manual
 
 # GitHub's Windows runners have PowerShell 7, so SSH sessions use it too.
 $powerShellInstaller = Save-Download (Get-LatestReleaseAsset PowerShell/PowerShell '^PowerShell-[0-9.]+-win-x64\.msi$') powershell.msi
@@ -93,6 +96,8 @@ $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
 [Environment]::SetEnvironmentVariable('Path', "$machinePath;C:\tools", 'Machine')
 
 Copy-Item (Join-Path $PSScriptRoot extend_evaluation.ps1) C:\tools\extend_evaluation.ps1
+# Files copied from a CD are read-only, which would block updating the script.
+Set-ItemProperty -Path C:\tools\extend_evaluation.ps1 -Name IsReadOnly -Value $false
 $extendEvaluation = New-ScheduledTaskAction -Execute powershell.exe -Argument '-NoProfile -ExecutionPolicy Bypass -File C:\tools\extend_evaluation.ps1'
 $extendEvaluationTriggers = @(
     New-ScheduledTaskTrigger -AtStartup
@@ -100,8 +105,6 @@ $extendEvaluationTriggers = @(
 )
 $system = New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -TaskName 'Extend Windows Server evaluation' -Action $extendEvaluation -Trigger $extendEvaluationTriggers -Principal $system | Out-Null
-
-Invoke-Checked $git @('clone', 'https://github.com/define-lang/define.git', 'C:\src\define')
 
 Stop-Transcript
 Stop-Computer -Force

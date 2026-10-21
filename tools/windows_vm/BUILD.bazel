@@ -1,4 +1,4 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -17,6 +17,7 @@ py_binary(
         "FIRST_LOGON": "$(rlocationpath first_logon.ps1)",
     },
     deps = [
+        ":vm",
         "//tools:runfiles",
         "@pypi//click",
     ],
@@ -36,11 +37,36 @@ py_test(
     ],
 )
 
+py_binary(
+    name = "sync_windows_vm",
+    srcs = ["sync_windows_vm.py"],
+    deps = [
+        ":vm",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "sync_windows_vm_test",
+    size = "small",
+    srcs = ["sync_windows_vm_test.py"],
+    deps = [":sync_windows_vm"],
+)
+
+py_library(
+    name = "vm",
+    srcs = ["vm.py"],
+    deps = ["@pypi//click"],
+)
+
 pyright_test(
     name = "pyright_test",
     deps = [
         ":create_windows_vm",
         ":create_windows_vm_test",
+        ":sync_windows_vm",
+        ":sync_windows_vm_test",
+        ":vm",
     ],
 )
 

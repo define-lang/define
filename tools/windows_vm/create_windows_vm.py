@@ -27,18 +27,13 @@ from pathlib import Path
 import click
 
 from tools import runfiles
-
-DOMAIN_NAME = "define-windows"
+from tools.windows_vm import vm
 
 _CACHE_HOME = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
 _DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 # The default storage pool of a libvirt session, which virt-manager shows.
-_DISK_PATH = _DATA_HOME / "libvirt" / "images" / f"{DOMAIN_NAME}.qcow2"
-
-# A session VM needs no root access, libvirt group, or file permissions for the
-# system's QEMU user.
-_LIBVIRT_URI = "qemu:///session"
+_DISK_PATH = _DATA_HOME / "libvirt" / "images" / f"{vm.DOMAIN_NAME}.qcow2"
 
 # The English (United States) ISO from the Microsoft Evaluation Center.
 _WINDOWS_ISO_URL = "https://go.microsoft.com/fwlink/?linkid=2345730"
@@ -154,15 +149,6 @@ def administrator_password() -> str:
 def render_autounattend(template: str, password: str) -> str:
     """Fill in the answer file template."""
     return string.Template(template).substitute(administrator_password=password)
-
-
-def _virsh(commands: dict[str, str], *arguments: str) -> str:
-    return subprocess.run(
-        [commands["virsh"], "--connect", _LIBVIRT_URI, *arguments],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
 
 
 def _copy_with_progress(
@@ -315,36 +301,14 @@ def _eject_install_media(commands: dict[str, str]):
     # The VM then starts without the downloaded ISOs, which are only a cache, or
     # the answer file, which holds the Administrator password.
     for target in _INSTALL_MEDIA_TARGETS:
-        _ = _virsh(commands, "change-media", DOMAIN_NAME, target, "--eject", "--config")
-
-
-def _wait_for_shutoff(commands: dict[str, str]):
-    # Rechecking the state after each wait catches a shutdown that happens
-    # before virsh starts listening for events.
-    while _virsh(commands, "domstate", DOMAIN_NAME).strip() != "shut off":
-        arguments = [
+        _ = vm.virsh(
             commands["virsh"],
-            "--connect",
-            _LIBVIRT_URI,
-            "event",
-            "--domain",
-            DOMAIN_NAME,
-            "--event",
-            "lifecycle",
-            "--timeout",
-            "60",
-        ]
-        result = subprocess.run(
-            arguments,
-            check=False,
-            capture_output=True,
-            text=True,
+            "change-media",
+            vm.DOMAIN_NAME,
+            target,
+            "--eject",
+            "--config",
         )
-        # virsh exits with 1 both when it fails and when its timeout expires.
-        if result.returncode != 0 and "event loop timed out" not in result.stdout:
-            raise subprocess.CalledProcessError(
-                result.returncode, arguments, result.stdout, result.stderr
-            )
 
 
 _HELP = """\
@@ -382,16 +346,16 @@ Files, with $XDG_CACHE_HOME and $XDG_DATA_HOME in place of ~/.cache and
 
 Windows installs unattended and sets itself up with SSH for your key,
 PowerShell 7, Git, the Visual Studio 2022 C++ Build Tools, bazelisk, long paths,
-Developer Mode, Microsoft Defender exclusions for builds, and a clone of
-the repository in C:\\src\\define. This takes about an hour. The command
-then starts the VM and prints how to connect.
+Developer Mode, and Microsoft Defender exclusions for builds. This takes
+about an hour. The command then starts the VM and prints how to connect.
+To copy a checkout into the VM, use //tools/windows_vm:sync_windows_vm.
 
 \b
 Using the VM, which runs in your user's libvirt session (qemu:///session):
   ssh -p SSH_PORT Administrator@localhost
       Runs PowerShell 7 in the VM.
   virsh --connect qemu:///session start define-windows
-  virsh --connect qemu:///session shutdown define-windows
+  virsh --connect qemu:///session shutdown --mode agent define-windows
   virt-manager
       Shows the console, under the QEMU/KVM User session, where you log in
       with the Administrator password.
@@ -487,14 +451,14 @@ def main(
     _create_disk(commands, _DISK_PATH, disk_gib)
     click.echo(
         "Installing Windows. This takes about an hour. To watch it, open "
-        + f"{DOMAIN_NAME} in virt-manager under its QEMU/KVM User session."
+        + f"{vm.DOMAIN_NAME} in virt-manager under its QEMU/KVM User session."
     )
     virt_install_arguments = [
         commands["virt-install"],
         "--connect",
-        _LIBVIRT_URI,
+        vm.LIBVIRT_URI,
         "--name",
-        DOMAIN_NAME,
+        vm.DOMAIN_NAME,
         # Debian 12's osinfo database predates Windows Server 2025, and
         # libvirt gives both versions the same virtual hardware. virt-install
         # gives this version BIOS firmware. Under UEFI, Windows media waits
@@ -524,6 +488,10 @@ def main(
         f"passt,model=virtio,portForward0=127.0.0.1:{ssh_port}:22,"
         + "portForward1.address=::1,portForward1.proto=tcp,"
         + f"portForward1.range0.start={ssh_port},portForward1.range0.to=22",
+        # The guest agent shuts Windows down reliably. Windows can ignore the
+        # virtual power button, such as when its display is off.
+        "--channel",
+        "unix,target.type=virtio,name=org.qemu.guest_agent.0",
         "--noautoconsole",
         "--wait",
         "-1",
@@ -532,17 +500,20 @@ def main(
         _ = subprocess.run(virt_install_arguments, check=True)
     except subprocess.CalledProcessError:
         # Without a VM that uses it, the new disk would only block the next run.
-        if DOMAIN_NAME not in _virsh(commands, "list", "--all", "--name").split():
+        if (
+            vm.DOMAIN_NAME
+            not in vm.virsh(commands["virsh"], "list", "--all", "--name").split()
+        ):
             _DISK_PATH.unlink()
         raise
     # Windows shuts down when its first logon setup succeeds.
-    _wait_for_shutoff(commands)
+    vm.wait_for_shutoff(commands["virsh"])
     _eject_install_media(commands)
     unattend_iso.unlink()
-    _ = _virsh(commands, "start", DOMAIN_NAME)
+    _ = vm.virsh(commands["virsh"], "start", vm.DOMAIN_NAME)
+    vm.wait_for_ssh(commands["virsh"])
     click.echo(
-        "Windows is starting. In about a minute, connect with "
-        + f"`ssh -p {ssh_port} Administrator@localhost`. "
+        f"Windows is ready. Connect with `ssh -p {ssh_port} Administrator@localhost`. "
         + f"The console password is in {password_path}."
     )
 
