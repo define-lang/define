@@ -14,7 +14,7 @@ from define.compiler.errors import parser_exceptions
 from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
 
 # --- Successful parses ---
 
@@ -335,9 +335,11 @@ def test_implication_chained_name_not_allowed(parse: Parse):
 # --- Block-level placement errors ---
 
 
-def test_implication_after_constraint_block_in_potential_position(parse: Parse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
-        parse(
+def test_implication_after_constraint_block_in_potential_position(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</implied>.\n"
@@ -347,7 +349,8 @@ def test_implication_after_constraint_block_in_potential_position(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 23
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 44
 
 
 def test_implication_after_local_position_in_action_block(parse: Parse):
@@ -384,9 +387,9 @@ def test_implication_after_trigger_conditions_block_in_action(parse: Parse):
     assert exc_info.value.location.end_column == 27
 
 
-def test_implication_inside_position_constraint_block(parse: Parse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
-        parse(
+def test_implication_inside_position_constraint_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</implied>.\n"
@@ -396,7 +399,8 @@ def test_implication_inside_position_constraint_block(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 48
 
 
 def test_implication_inside_action_statements_block(parse: Parse):
@@ -454,15 +458,16 @@ def test_implication_inside_local_position_definition_constraint_block(
     assert exc_info.value.location.end_column == 31
 
 
-def test_implication_at_global_scope(parse: Parse):
+def test_implication_at_global_scope(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse(
+        native_parse(
             "it also assigns the position</required>.\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 19
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 40
 
 
 # --- Block content errors ---
