@@ -146,10 +146,6 @@ fn disallowed_character(
             errors.invisible_character_error(position, position, text)
         }
         _ if is_invisible(character) => errors.invisible_character_error(position, position, text),
-        // Every other character that a name may have is printable ASCII.
-        _ if kind == TextKind::Name => {
-            return Some(ParseError::not_yet_supported(position, "non-ASCII names"));
-        }
         _ => return None,
     };
     Some(error)

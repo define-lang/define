@@ -549,11 +549,19 @@ impl<'py, 'source> Parser<'py, 'source> {
         let (content, scanned) = self.scanner.consume_name_content();
         let end = self.scanner.position;
         // The name content is not a global name that ends with `>`.
-        if !content.is_known_ascii
-            || !scanned.is_global_name
-            || !self.scanner.next_byte_is(NAME_CONTENT_END)
-        {
+        if !scanned.is_global_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
             return Err(self.invalid_global_name_content(content, start, end));
+        }
+        // The name content has a character that names do not allow.
+        if !content.is_known_ascii
+            && let Some(error) = characters::first_disallowed_character(
+                &self.errors,
+                start,
+                content.bytes,
+                TextKind::Name,
+            )
+        {
+            return Err(error);
         }
         self.scanner.consume_bytes(1);
         let (fqun, path_start, path_text) = match scanned.last_component_separator {

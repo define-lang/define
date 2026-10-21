@@ -54,6 +54,101 @@ def test_position_definition_locations_have_file_path(native_parse: NativeParse)
     )
 
 
+def test_position_definition_with_non_ascii_path(native_parse: NativeParse):
+    program = native_parse(
+        "define the potential position<mv:define-lang.org:parser:/caf\u00e9>.\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    path = definition.typed_name.name_content.path
+    assert path.name == "/caf\u00e9"
+    assert path.location == ast.SourceLocation(
+        line=1, column=57, end_line=1, end_column=61
+    )
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=62
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=63
+    )
+
+
+def test_position_definition_with_non_ascii_fqun_components(
+    native_parse: NativeParse,
+):
+    program = native_parse(
+        "define the potential position<m\u00fc:d\u00e9fine.org:pars\u00e9r:/path>.\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    fqun = definition.typed_name.name_content.fqun
+    assert fqun is not None
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "m\u00fc"
+    assert fqun.multiverse.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=32
+    )
+    assert fqun.authority is not None
+    assert fqun.authority.name == "d\u00e9fine.org"
+    assert fqun.authority.location == ast.SourceLocation(
+        line=1, column=34, end_line=1, end_column=43
+    )
+    assert fqun.universe.name == "pars\u00e9r"
+    assert fqun.universe.location == ast.SourceLocation(
+        line=1, column=45, end_line=1, end_column=50
+    )
+    path = definition.typed_name.name_content.path
+    assert path.location == ast.SourceLocation(
+        line=1, column=52, end_line=1, end_column=56
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=58
+    )
+
+
+def test_position_definition_missing_terminator_after_non_ascii_name(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/caf\u00e9>\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 63
+
+
+def test_position_requirement_with_non_ascii_name(native_parse: NativeParse):
+    program = native_parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</\u00e9t\u00e9>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is not None
+    [requirement] = definition.constraints.requirements
+    assert requirement.typed_global_name.name_content.path.name == "/\u00e9t\u00e9"
+    assert requirement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=34
+    )
+
+
+def test_position_definition_with_invisible_character_in_invalid_name(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
+        native_parse("define the potential position<a\u200bb>.\n")
+    assert exc_info.value.char == "\u200b"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 32
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 32
+
+
 def test_position_definition_with_local_style_name_is_global_terminal(
     native_parse: NativeParse,
 ):
