@@ -462,12 +462,6 @@ class InvalidPotentialLiteralDefinitionBlock(DefineTokenError):
     )
 
 
-class InvalidPotentialPositionDefinitionBlock(DefineTokenError):
-    """Write something nonsensical in a Potential Position Definition Block."""
-
-    message_format: ClassVar[str] = "Invalid syntax in a potential position definition."
-
-
 class InvalidTriggerConditionsBlock(DefineTokenError):
     """Nonsense in a Trigger Conditions Block."""
 
@@ -592,16 +586,7 @@ class MissingPositionDefinitionContent(DefineTokenError):
     """Left out mandatory content from a position definition block."""
 
     message_format: ClassVar[str] = (
-        "Position definition blocks must contain at least a 'it may only contain the particles where' block."
-        + " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
-    )
-
-
-class MissingPotentialPositionDefinitionContent(DefineTokenError):
-    """Left out mandatory content from a potential position definition block."""
-
-    message_format: ClassVar[str] = (
-        "Potential position definition blocks must contain an"
+        "Position definition blocks must contain an"
         " 'it may only contain particles where' block."
         " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
     )

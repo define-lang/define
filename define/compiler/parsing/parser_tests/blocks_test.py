@@ -18,9 +18,7 @@ if TYPE_CHECKING:
 
 
 def test_empty_block_on_position(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
@@ -309,9 +307,7 @@ def test_mixed_block_and_terminator(native_parse: NativeParse):
 
 
 def test_file_ending_after_block_open(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse("define the potential position<standard:/path> {\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48

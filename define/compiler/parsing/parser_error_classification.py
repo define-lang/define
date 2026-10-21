@@ -475,19 +475,6 @@ def raise_token_error(
             e, file_path
         )
 
-    # We are in a potential position definition block (global, not local).
-    if (
-        "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts
-        and _is_in_definition_started_by(e, "DEFINE_THE_POTENTIAL_POSITION")
-    ):
-        if _ends_block(e.token):
-            raise parser_exceptions.MissingPotentialPositionDefinitionContent.from_lark_exception(
-                e, file_path
-            )
-        raise parser_exceptions.InvalidPotentialPositionDefinitionBlock.from_lark_exception(
-            e, file_path
-        )
-
     # We are at the start of a view definition block.
     if "IT_IS_READ" in e.accepts:
         raise parser_exceptions.MissingViewDirectionStatement.from_lark_exception(

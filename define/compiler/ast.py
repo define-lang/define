@@ -373,9 +373,6 @@ class LocalPositionDefinition(ASTNode):
         return tuple(req.typed_global_name for req in self.constraints.requirements)
 
 
-type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
-
-
 class ViewDefinition(ASTNode):
     """Represents a view definition."""
 

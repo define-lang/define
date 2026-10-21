@@ -263,20 +263,19 @@ impl<'py, 'source> Parser<'py, 'source> {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
-                    .missing_potential_position_definition_content(close, close));
+                    .missing_position_definition_content(close, close));
             }
             // The source ends where the block's content belongs.
             LineInBlock::EndOfSource => {
-                return Err(self.errors.missing_potential_position_definition_content(
-                    block_open_end,
-                    block_open_end,
-                ));
+                return Err(self
+                    .errors
+                    .missing_position_definition_content(block_open_end, block_open_end));
             }
         };
         let constraints_start = self.scanner.position;
         // The block has something other than a position constraint block.
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
-            return Err(self.invalid_potential_position_definition_block());
+            return Err(self.invalid_position_definition_block());
         }
         let constraints =
             self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
@@ -308,13 +307,13 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// block, at the scanner's position, that does not belong there.
     #[cold]
     #[inline(never)]
-    fn invalid_potential_position_definition_block(&self) -> ParseError {
+    fn invalid_position_definition_block(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_after(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
             return error;
         }
         let start = self.scanner.position;
         self.errors
-            .invalid_potential_position_definition_block(start, self.end_of_line())
+            .invalid_position_definition_block(start, self.end_of_line())
     }
 
     /// Returns the error for a statement at the scanner's position where a

@@ -232,9 +232,7 @@ def test_position_definition_with_multiple_requirements(native_parse: NativePars
 
 
 def test_position_definition_block_requires_content(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n}\n"
         )
@@ -461,9 +459,7 @@ def test_action_statements_block_with_multiple_local_block_positions(
 
 
 def test_empty_potential_position_block(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
@@ -472,9 +468,7 @@ def test_empty_potential_position_block(native_parse: NativeParse):
 
 
 def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.InvalidPotentialPositionDefinitionBlock
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
         native_parse(
             "define the potential position<standard:/path> {\n"
             + "    nonsense here\n"
@@ -487,9 +481,7 @@ def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
 
 
 def test_quality_implication_in_potential_position_block(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.InvalidPotentialPositionDefinitionBlock
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
         native_parse(
             "define the potential position<standard:/path> {\n"
             + "    it also assigns the position</required>.\n"

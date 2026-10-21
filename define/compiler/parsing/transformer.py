@@ -14,7 +14,7 @@ from define.compiler.parsing import name_parser
 from define.compiler.parsing.lark import lark_standalone
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
     from pathlib import PurePosixPath
 
 type _LocatedItem = ast.ASTNode | lark_cython.Token
@@ -456,19 +456,12 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
 
         items: [DEFINE_THE_POTENTIAL_POSITION token, name, optional block data].
         """
-        keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
-        if len(items) > 2:
-            block_data = cast("_PositionDefinitionBlockData", items[2])
-            return ast.PositionDefinition.from_name(
-                name=name,
-                constraints=block_data.constraints,
-                location=self._location(start=keyword, end=block_data.block_close),
-            )
+        constraints, location = self._position_definition_constraints_and_location(
+            items
+        )
         return ast.PositionDefinition.from_name(
-            name=name,
-            constraints=None,
-            location=self._location_for_bare_definition(start=keyword, name=name),
+            name=name, constraints=constraints, location=location
         )
 
     @_strip_discard
@@ -544,20 +537,32 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
 
         items: [DEFINE_THE_POSITION token, local_name, optional block data].
         """
-        keyword = cast("lark_cython.Token", items[0])
         local_name = cast("ast.LocalNameContent", items[1])
+        constraints, location = self._position_definition_constraints_and_location(
+            items
+        )
+        return ast.LocalPositionDefinition.from_name(
+            local_name=local_name, constraints=constraints, location=location
+        )
+
+    def _position_definition_constraints_and_location(
+        self,
+        items: Sequence[
+            lark_cython.Token | ast.NameContent | _PositionDefinitionBlockData
+        ],
+    ) -> tuple[ast.PositionConstraintBlock | None, ast.SourceLocation]:
+        """Return the constraints and location of a global or local position definition.
+
+        items: [keyword token, name, optional block data].
+        """
+        keyword = cast("lark_cython.Token", items[0])
         if len(items) > 2:
             block_data = cast("_PositionDefinitionBlockData", items[2])
-            return ast.LocalPositionDefinition.from_name(
-                local_name=local_name,
-                constraints=block_data.constraints,
-                location=self._location(start=keyword, end=block_data.block_close),
+            return block_data.constraints, self._location(
+                start=keyword, end=block_data.block_close
             )
-        return ast.LocalPositionDefinition.from_name(
-            local_name=local_name,
-            constraints=None,
-            location=self._location_for_bare_definition(start=keyword, name=local_name),
-        )
+        name = cast("ast.NameContent", items[1])
+        return None, self._location_for_bare_definition(start=keyword, name=name)
 
     @staticmethod
     @_strip_discard_static

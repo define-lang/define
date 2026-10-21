@@ -278,7 +278,7 @@ class DefinitionStructuralValidator:
             case ast.ActionDefinition():
                 self._validate_action_definition(self._definition)
             case ast.PositionDefinition():
-                self._validate_global_position_definition_block(self._definition)
+                self._validate_position_constraints(self._definition.constraints)
             case ast.PotentialLiteralDefinition():
                 encoding = self._definition.encoding
                 encoding_diagnostics = name_validators.validate_typed_name(
@@ -361,17 +361,6 @@ class DefinitionStructuralValidator:
         )
         self._check_unreferenced_positions()
         self._check_unused_quality_implications()
-
-    def _validate_global_position_definition_block(
-        self,
-        definition: ast.PositionDefinition,
-    ):
-        if definition.constraints:
-            self._validate_position_requirements(
-                definition.constraints.requirements,
-                multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
-            )
-        self._check_unreferenced_positions()
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
         if isinstance(definition, ast.ValueOperationDefinition):
@@ -737,9 +726,14 @@ class DefinitionStructuralValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
-        if local_def.constraints is not None:
+        self._validate_position_constraints(local_def.constraints)
+
+    def _validate_position_constraints(
+        self, constraints: ast.PositionConstraintBlock | None
+    ):
+        if constraints is not None:
             self._validate_position_requirements(
-                local_def.constraints.requirements,
+                constraints.requirements,
                 multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
             )
 

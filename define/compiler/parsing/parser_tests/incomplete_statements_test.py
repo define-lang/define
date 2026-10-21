@@ -189,9 +189,7 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse):
 
 
 def test_global_position_block_open_without_content(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
         )
@@ -220,9 +218,7 @@ def test_global_position_truncated_in_global_name_no_newline(native_parse: Nativ
 
 
 def test_position_block_missing_required_clause(native_parse: NativeParse):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n" + "}\n"
         )
@@ -374,9 +370,7 @@ def test_action_statements_block_truncated_without_final_newline(parse: Parse):
 def test_block_truncated_after_open_brace_without_final_newline(
     native_parse: NativeParse,
 ):
-    with pytest.raises(
-        parser_exceptions.MissingPotentialPositionDefinitionContent
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         native_parse("define the potential position<mv:define-lang.org:parser:/path> {")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 65
