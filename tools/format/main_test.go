@@ -3,6 +3,7 @@ package main_test
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,24 @@ var (
 	dprintConfigRlocationPath string
 	formatRlocationPath       string
 )
+
+func TestMain(m *testing.M) {
+	// Each test isolates HOME, which would give dprint an empty cache and make
+	// it compile its plugins again in every test. That made the tests slow
+	// enough to time out on loaded CI machines.
+	cacheDirectory, err := os.MkdirTemp("", "dprint-cache")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := os.Setenv("DPRINT_CACHE_DIR", cacheDirectory); err != nil {
+		log.Fatal(err)
+	}
+	exitCode := m.Run()
+	if err := os.RemoveAll(cacheDirectory); err != nil {
+		log.Fatal(err)
+	}
+	os.Exit(exitCode)
+}
 
 func newRepository(t *testing.T, files map[string]string) string {
 	t.Helper()
