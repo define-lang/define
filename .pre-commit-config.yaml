@@ -28,7 +28,8 @@ repos:
         exclude: ".*carriage_return.*"
       - id: trailing-whitespace
         priority: 10
-        exclude: ".*trailing_space.*"
+        # Blank context lines in patches are a single space.
+        exclude: ".*trailing_space.*|\\.patch$"
   - repo: local
     hooks:
       - id: ruff-check

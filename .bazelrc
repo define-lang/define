@@ -1,3 +1,7 @@
+# Build for Windows with the native MSVC ABI.
+common --enable_platform_specific_config
+common:windows --host_platform=//tools/platforms:local_windows_msvc
+
 # Show full command lines on failure
 build --verbose_failures
 
@@ -65,8 +69,9 @@ build --aspects=//tools/bzl:linters.bzl%ast_grep
 # rustc links with clang++ from the hermetic LLVM toolchain, whose link flags
 # include --unwindlib=none, which clang++ does not use when linking a shared
 # library. Without this, rustc reports clang's unused-argument warning on every
-# link.
-build --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
+# link. Windows MSVC links with lld-link, which rejects this clang flag.
+build:linux --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
+build:macos --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
 
 # Builds and tests use every instruction this machine supports, including the
 # vector instructions the parser's byte loops can compile to.

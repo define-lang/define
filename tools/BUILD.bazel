@@ -203,7 +203,10 @@ py_binary(
 genrule(
     name = "pyo3_config_file",
     outs = ["pyo3-build-config.txt"],
-    cmd = "$(execpath :pyo3_config) $@",
+    cmd = "$(execpath :pyo3_config) $@" + select({
+        "@platforms//os:windows": " --windows-target",
+        "//conditions:default": "",
+    }),
     tools = [":pyo3_config"],
     visibility = ["//visibility:public"],
 )

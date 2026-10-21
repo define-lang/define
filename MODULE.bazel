@@ -42,6 +42,24 @@ git_override(
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
+# The MSVC toolchain's case-insensitive SDK overlays need a tool that a Windows
+# execution platform can only build with that same toolchain, so building on
+# Windows with MSVC fails with a dependency cycle. Windows filesystems are
+# already case-insensitive, so the first patch omits the overlays there. The
+# libc crate links the MSVC runtime's legacy_stdio_definitions.lib, which the
+# second patch exposes to links.
+# TODO: Remove these patches once an llvm release fixes
+# https://github.com/hermeticbuild/rules_rs/issues/271 and exposes
+# legacy_stdio_definitions.lib.
+single_version_override(
+    module_name = "llvm",
+    patch_strip = 1,
+    patches = [
+        "//tools/patches:llvm_msvc_legacy_stdio_definitions.patch",
+        "//tools/patches:llvm_msvc_windows_exec_case_overlays.patch",
+    ],
+)
+
 # --- Python toolchain ---
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
@@ -106,6 +124,24 @@ rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
 # https://github.com/hermeticbuild/rules_rust/pull/89.
 rules_rust.patch(
     patches = ["//tools/patches:rules_rust_pyo3_cc_runtime_linkage.patch"],
+    strip = 1,
+)
+
+# On Windows MSVC targets, the hermetic LLVM toolchain links through clang-cl,
+# but rustc passes link.exe arguments that only lld-link accepts. This patch
+# makes rustc link with clang-cl's lld-link.
+# TODO: Remove this patch once a rules_rs release includes
+# https://github.com/hermeticbuild/rules_rust/pull/92.
+rules_rust.patch(
+    patches = ["//tools/patches:rules_rust_msvc_lld_link.patch"],
+    strip = 1,
+)
+
+# On Windows, Python's import library is a cc_import interface library, which
+# the PyO3 toolchain does not search when it looks for Python libraries.
+# TODO: Remove this patch once a rules_rs release includes a fix for this.
+rules_rust.patch(
+    patches = ["//tools/patches:rules_rust_pyo3_interface_library.patch"],
     strip = 1,
 )
 use_repo(rules_rust, "rules_rust")
