@@ -99,8 +99,10 @@ class TestMain:
             ["--output", str(output), "--modules", "4", "--layers", "2"],
         )
 
+        with pytest.raises(FileExistsError) as existing:
+            output.mkdir()
         assert result.exit_code == 2
-        assert "File exists" in result.output
+        assert str(existing.value) in result.output
 
 
 class TestGeneratedProjectCompiles:
