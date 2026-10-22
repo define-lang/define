@@ -2,6 +2,7 @@
 mod action_definition;
 mod ast_builder;
 mod characters;
+#[path = "parser/lines.rs"]
 mod lines;
 #[path = "parser/names.rs"]
 mod names;
