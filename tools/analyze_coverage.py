@@ -481,7 +481,7 @@ class _RustPythonExceptions:
         if function is None or callee is None:
             return False
         returns_python_result = self._crate(
-            region.source_file.parent
+            self._crate_directory(region.source_file.parent)
         ).returns_python_result(callee)
         if returns_python_result is not None:
             return returns_python_result
@@ -499,14 +499,29 @@ class _RustPythonExceptions:
             self._sources[source_file] = source
         return source
 
+    def _crate_directory(self, directory: Path) -> Path:
+        """Return the directory of the crate root's module, for a source file of the crate in `directory`."""
+        # A module's submodules are in a directory named after it, beside its
+        # file.
+        while (self._source_root / directory.parent / f"{directory.name}.rs").exists():
+            directory = directory.parent
+        return directory
+
+    def _module_files(self, directory: Path) -> set[Path]:
+        """Return the Rust source files in `directory` and in the directories of their submodules."""
+        source_files: set[Path] = set()
+        for path in (self._source_root / directory).glob("*.rs"):
+            source_file = path.relative_to(self._source_root)
+            source_files.add(source_file)
+            if path.with_suffix("").is_dir():
+                source_files |= self._module_files(source_file.with_suffix(""))
+        return source_files
+
     def _crate(self, directory: Path) -> rust_source.RustCrate:
-        """Return the crate of the Rust source files directly in `directory`."""
+        """Return the crate whose crate root's module is in `directory`."""
         crate = self._crates.get(directory)
         if crate is None:
-            source_files = {
-                path.relative_to(self._source_root)
-                for path in (self._source_root / directory).glob("*.rs")
-            }
+            source_files = self._module_files(directory)
             for generated_source in self._generated_sources:
                 if generated_source.parent == directory:
                     source_files.add(generated_source)

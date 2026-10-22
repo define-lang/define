@@ -977,6 +977,56 @@ def test_analyze_rust_regions_omits_question_marks_that_only_pass_on_python_exce
     )
 
 
+def test_analyze_rust_regions_finds_callees_in_other_modules_of_the_crate(
+    tmp_path: Path,
+):
+    crate_path = tmp_path / "crate"
+    (crate_path / "parser").mkdir(parents=True)
+    _ = (crate_path / "lib.rs").write_text(
+        "mod parser;\n", encoding="utf-8", newline="\n"
+    )
+    _ = (crate_path / "builder.rs").write_text(
+        "fn python() -> PyResult<u8> {\n" + "    Ok(1)\n" + "}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    _ = (crate_path / "parser.rs").write_text(
+        "mod names;\n", encoding="utf-8", newline="\n"
+    )
+    _ = (crate_path / "parser" / "names.rs").write_text(
+        "fn syntax() -> ParseResult<u8> {\n"
+        + "    Ok(2)\n"
+        + "}\n"
+        + "fn parse() -> ParseResult<u8> {\n"
+        + "    let a = python()?;\n"
+        + "    let b = syntax()?;\n"
+        + "    Ok(a + b)\n"
+        + "}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    source_file = Path("crate/parser/names.rs")
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        f"SF:{source_file}\n"
+        + "BRDA:5,0,region from 5:21 to 5:22,0\n"
+        + "BRDA:6,0,region from 6:21 to 6:22,0\n"
+        + "end_of_record\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    regions = analyze_coverage.analyze_rust_regions(report_path, tmp_path, {})
+
+    assert regions == analyze_coverage.RustRegions(
+        actionable=[_question_mark_region(source_file, 6, 21)],
+        pyclass_generated=[],
+        panic_only=[],
+        not_yet_supported=[],
+        python_exception_only=[_question_mark_region(source_file, 5, 21)],
+    )
+
+
 def test_analyze_rust_regions_omits_code_that_only_converts_python_exceptions(
     tmp_path: Path,
 ):
