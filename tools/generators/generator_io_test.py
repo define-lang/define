@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 def test_write_lines_replaces_file_and_returns_line_count(tmp_path: Path):
     output = tmp_path / "generated.dfn"
-    output.write_text("old content\n", encoding="utf-8")
+    output.write_text("old content\n", encoding="utf-8", newline="\n")
 
     written = generator_io.write_lines(output, ["first", "", "third"])
 
@@ -23,7 +23,7 @@ def test_write_lines_replaces_file_and_returns_line_count(tmp_path: Path):
 
 def test_write_lines_preserves_existing_file_when_iteration_fails(tmp_path: Path):
     output = tmp_path / "generated.dfn"
-    output.write_text("old content\n", encoding="utf-8")
+    output.write_text("old content\n", encoding="utf-8", newline="\n")
 
     def failing_lines():
         yield "first"

@@ -250,7 +250,7 @@ def main():
     if not changed:
         return
     fingerprint_path = _fingerprint_path(repository)
-    if fingerprint_path.exists() and fingerprint_path.read_text() == (
+    if fingerprint_path.exists() and fingerprint_path.read_text(encoding="utf-8") == (
         _working_tree_fingerprint(repository, changed)
     ):
         return
@@ -261,7 +261,9 @@ def main():
     if not failed_commands:
         fingerprint_path.parent.mkdir(exist_ok=True)
         _ = fingerprint_path.write_text(
-            _working_tree_fingerprint(repository, _changed_paths(repository))
+            _working_tree_fingerprint(repository, _changed_paths(repository)),
+            encoding="utf-8",
+            newline="\n",
         )
         return
     report = _failure_report(failed_commands)

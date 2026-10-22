@@ -261,6 +261,7 @@ def _write_records(profile_path: Path, records: list[schema.ProfileRecord]):
     _ = profile_path.write_text(
         "".join(json.dumps(record) + "\n" for record in records),
         encoding="utf-8",
+        newline="\n",
     )
 
 
@@ -568,6 +569,7 @@ def test_load_retains_complete_records_before_truncated_tail(tmp_path: Path):
         "".join(json.dumps(record) + "\n" for record in complete_records)
         + '{"record_type":"observation"',
         encoding="utf-8",
+        newline="\n",
     )
 
     profile = schema.load(profile_path)

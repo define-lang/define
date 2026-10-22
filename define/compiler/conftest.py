@@ -87,7 +87,7 @@ def validate_project(
         for name, content in files.items():
             file_path = tmp_path / name
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(content, encoding="utf-8")
+            file_path.write_text(content, encoding="utf-8", newline="\n")
         monkeypatch.chdir(tmp_path)
         structural_result = program_validator.ProgramStructuralValidator(
             _PARSER,

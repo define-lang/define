@@ -93,7 +93,9 @@ class ReportHandler(BaseHTTPRequestHandler):
         ):
             self.send_error(HTTPStatus.BAD_REQUEST)
             return
-        _ = self.selection_path.write_text(json.dumps(payload, indent=2) + "\n")
+        _ = self.selection_path.write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
         self.send_response(204)
         self._send_security_headers()
         self.end_headers()

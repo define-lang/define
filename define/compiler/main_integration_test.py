@@ -41,8 +41,9 @@ def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE):
     (config_dir / "config.defcl").write_text(
         'project: {\n  universe_name: "my.domain.com:my_lib"\n}\n',
         encoding="utf-8",
+        newline="\n",
     )
-    (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+    (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
 
 
 class TestStdinPipe:

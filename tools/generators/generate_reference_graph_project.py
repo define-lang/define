@@ -335,7 +335,7 @@ def write_project(output: Path, files: dict[str, str]):
     for relative_path, content in files.items():
         file_path = output / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        _ = file_path.write_text(content, encoding="utf-8")
+        _ = file_path.write_text(content, encoding="utf-8", newline="\n")
 
 
 @click.command()

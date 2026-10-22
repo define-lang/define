@@ -1325,7 +1325,7 @@ def capture(  # noqa: PLR0913 - Public capture settings are all keyword-only.
         contextlib.ExitStack() as file_descriptors,
         tempfile.TemporaryDirectory() as temporary_directory_name,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,
-        profile_path.open("w", encoding="utf-8") as profile_file,
+        profile_path.open("w", encoding="utf-8", newline="\n") as profile_file,
     ):
         timer_file_descriptor = os.timerfd_create(
             time.CLOCK_MONOTONIC,

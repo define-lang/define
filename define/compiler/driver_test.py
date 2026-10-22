@@ -27,13 +27,17 @@ def _setup_project(tmp_path: Path, universe_name: str):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     config_file = config_dir / "config.defcl"
-    config_file.write_text(f'project: {{\n  universe_name: "{universe_name}"\n}}\n')
+    config_file.write_text(
+        f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
     path = tmp_path / rel_path
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(source, encoding="utf-8")
+    path.write_text(source, encoding="utf-8", newline="\n")
     return path
 
 

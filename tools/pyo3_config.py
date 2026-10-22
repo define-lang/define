@@ -35,7 +35,7 @@ def main():
         )
     else:
         config += "suppress_build_script_link_lines=true\n"
-    _ = output.write_text(config, encoding="utf-8")
+    _ = output.write_text(config, encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

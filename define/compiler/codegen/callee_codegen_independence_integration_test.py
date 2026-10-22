@@ -182,13 +182,13 @@ def _remove_destructor_constraints(
     constraint = f"it has the action</{additional_destructor}>."
     for source_name in contributing_sources:
         source = project / f"{source_name}.dfn"
-        source_text = source.read_text()
+        source_text = source.read_text(encoding="utf-8")
         assert source_text.count(constraint) == 1
         retained_lines: list[str] = []
         for line in source_text.splitlines(keepends=True):
             if line.strip() != constraint:
                 retained_lines.append(line)
-        source.write_text("".join(retained_lines))
+        source.write_text("".join(retained_lines), encoding="utf-8", newline="\n")
         contributing_modules.add(
             Path(f"local/my_domain_com/my_lib/{source_name}/__init__.py")
         )
@@ -231,7 +231,11 @@ def _generate_with_additional_caller(
 ):
     _copy_project(source_project, project)
     test_source = project / "test.dfn"
-    _ = test_source.write_text(_add_additional_caller(test_source.read_text()))
+    _ = test_source.write_text(
+        _add_additional_caller(test_source.read_text(encoding="utf-8")),
+        encoding="utf-8",
+        newline="\n",
+    )
     shutil.copyfile(additional_caller_source, project / "additional_caller.dfn")
     _compile_and_run_project(project, generated, monkeypatch)
 

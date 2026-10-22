@@ -162,7 +162,7 @@ class SourceAnalysis:
         source_path = self._path(source_file)
         lines = self._lines_by_path.get(source_path)
         if lines is None:
-            lines = source_path.read_text().splitlines()
+            lines = source_path.read_text(encoding="utf-8").splitlines()
             self._lines_by_path[source_path] = lines
         return lines
 
@@ -238,7 +238,9 @@ class SourceAnalysis:
         source_path = self._path(branch.source_file)
         tree = self._trees_by_path.get(source_path)
         if tree is None:
-            tree = ast.parse(source_path.read_text(), filename=str(source_path))
+            tree = ast.parse(
+                source_path.read_text(encoding="utf-8"), filename=str(source_path)
+            )
             self._trees_by_path[source_path] = tree
 
         for node in ast.walk(tree):
@@ -267,7 +269,9 @@ class SourceAnalysis:
         source_path = self._path(branch.source_file)
         tree = self._trees_by_path.get(source_path)
         if tree is None:
-            tree = ast.parse(source_path.read_text(), filename=str(source_path))
+            tree = ast.parse(
+                source_path.read_text(encoding="utf-8"), filename=str(source_path)
+            )
             self._trees_by_path[source_path] = tree
 
         for node in ast.walk(tree):
@@ -297,7 +301,9 @@ class SourceAnalysis:
         source_path = self._path(branch.source_file)
         tree = self._trees_by_path.get(source_path)
         if tree is None:
-            tree = ast.parse(source_path.read_text(), filename=str(source_path))
+            tree = ast.parse(
+                source_path.read_text(encoding="utf-8"), filename=str(source_path)
+            )
             self._trees_by_path[source_path] = tree
 
         for node in ast.walk(tree):
@@ -489,7 +495,7 @@ class _RustPythonExceptions:
             path = self._generated_sources.get(
                 source_file, self._source_root / source_file
             )
-            source = rust_source.RustSource(path.read_text())
+            source = rust_source.RustSource(path.read_text(encoding="utf-8"))
             self._sources[source_file] = source
         return source
 

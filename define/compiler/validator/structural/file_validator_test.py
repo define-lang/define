@@ -67,7 +67,7 @@ def _reference_edges(
 class TestFileStructuralValidatorSuccess:
     def test_valid_position(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -91,7 +91,7 @@ class TestFileStructuralValidatorSuccess:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -113,7 +113,7 @@ class TestFileStructuralValidatorErrors:
 
     def test_syntax_error(self, tmp_path: Path, lark_parser: parser.Parser):
         (tmp_path / "test.dfn").write_text(
-            "not valid define syntax\n", encoding="utf-8"
+            "not valid define syntax\n", encoding="utf-8", newline="\n"
         )
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
@@ -145,7 +145,7 @@ class TestFileStructuralValidatorErrors:
 class TestFileStructuralValidatorDiagnostics:
     def test_path_mismatch(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/wrong_path>.\n"
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -155,7 +155,7 @@ class TestFileStructuralValidatorDiagnostics:
 
     def test_fqun_mismatch(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<other.domain.com:other_lib:/test>.\n"
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -168,7 +168,7 @@ class TestFileStructuralValidatorDiagnostics:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -276,7 +276,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -302,7 +302,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(
             tmp_path,
             sub_root_mappings={
@@ -333,7 +333,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -351,7 +351,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -378,7 +378,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -410,7 +410,7 @@ class TestParticleReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -431,7 +431,7 @@ class TestParticleReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -455,7 +455,7 @@ class TestParticleReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -482,7 +482,7 @@ class TestParticleReferenceEdges:
 class TestFileStructuralValidatorTimingStats:
     def test_stats_populated(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 

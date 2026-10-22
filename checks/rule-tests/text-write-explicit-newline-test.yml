@@ -1,0 +1,27 @@
+id: text-write-explicit-newline
+valid:
+  - |
+    path.write_text(content, encoding="utf-8", newline="\n")
+  - |
+    path.open("w", encoding="utf-8", newline="\n")
+  - |
+    open(name, "a", encoding="utf-8", newline="")
+  - |
+    path.open(encoding="utf-8")
+  - |
+    open(name, "r", encoding="utf-8")
+  - |
+    path.open("wb")
+  - |
+    os.open(path, os.O_WRONLY)
+invalid:
+  - |
+    path.write_text(content, encoding="utf-8")
+  - |
+    path.open("w", encoding="utf-8")
+  - |
+    open(name, "x", encoding="utf-8")
+  - |
+    open(name, "r+", encoding="utf-8")
+  - |
+    os.fdopen(descriptor, "w", encoding="utf-8")

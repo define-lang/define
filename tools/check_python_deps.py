@@ -626,7 +626,7 @@ def _apply_changes(repository: Path, changes: list[DependencyChanges]):
 
     for relative_build_file, file_changes in by_build_file.items():
         build_file = repository / relative_build_file
-        lines = build_file.read_text().splitlines(keepends=True)
+        lines = build_file.read_text(encoding="utf-8").splitlines(keepends=True)
         for change in sorted(
             file_changes, key=lambda item: item.target.label, reverse=True
         ):
@@ -635,7 +635,7 @@ def _apply_changes(repository: Path, changes: list[DependencyChanges]):
             lines[start:end] = replace_deps(
                 lines[start:end], change.expected, change.target
             )
-        _ = build_file.write_text("".join(lines))
+        _ = build_file.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
 def _relative_files(files: list[Path], repository: Path) -> frozenset[Path]:
@@ -678,7 +678,9 @@ def _selected_targets(
 
 
 def _parse_source(repository: Path, source: Path) -> ast.Module:
-    return ast.parse((repository / source).read_text(), filename=str(source))
+    return ast.parse(
+        (repository / source).read_text(encoding="utf-8"), filename=str(source)
+    )
 
 
 def _load_repository(

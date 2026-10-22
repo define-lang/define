@@ -15,13 +15,17 @@ def test_matching_files_pass(tmp_path: Path, *, compare_directory: bool):
     generated = tmp_path / "generated"
     expected.mkdir()
     generated.mkdir()
-    _ = (expected / "test.py").write_text("unchanged\n")
-    _ = (generated / "test.py").write_text("unchanged\n")
+    _ = (expected / "test.py").write_text("unchanged\n", encoding="utf-8", newline="\n")
+    _ = (generated / "test.py").write_text(
+        "unchanged\n", encoding="utf-8", newline="\n"
+    )
 
     if compare_directory:
         test_helpers.assert_generated_directory_matches(expected, generated)
     else:
-        _ = (generated / "other.py").write_text("not selected\n")
+        _ = (generated / "other.py").write_text(
+            "not selected\n", encoding="utf-8", newline="\n"
+        )
         test_helpers.assert_generated_files_match(
             expected, generated, {Path("test.py")}
         )
@@ -36,9 +40,11 @@ def test_reports_all_diffs_in_filename_order(
     expected.mkdir()
     generated.mkdir()
     for name in ("z.py", "a.py", "unchanged.py"):
-        _ = (expected / name).write_text("before\n")
+        _ = (expected / name).write_text("before\n", encoding="utf-8", newline="\n")
         _ = (generated / name).write_text(
-            "before\n" if name == "unchanged.py" else "after\n"
+            "before\n" if name == "unchanged.py" else "after\n",
+            encoding="utf-8",
+            newline="\n",
         )
 
     if compare_directory:

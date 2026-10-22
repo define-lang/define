@@ -46,10 +46,14 @@ def _repository(tmp_path: Path) -> Path:
     repository = tmp_path / "repository"
     repository.mkdir()
     _git(repository, "init", "--quiet")
-    _ = (repository / ".gitignore").write_text("ignored.txt\n")
-    _ = (repository / "committed.txt").write_text("committed\n")
-    _ = (repository / "module.py").write_text("\n")
-    _ = (repository / "deleted.py").write_text("\n")
+    _ = (repository / ".gitignore").write_text(
+        "ignored.txt\n", encoding="utf-8", newline="\n"
+    )
+    _ = (repository / "committed.txt").write_text(
+        "committed\n", encoding="utf-8", newline="\n"
+    )
+    _ = (repository / "module.py").write_text("\n", encoding="utf-8", newline="\n")
+    _ = (repository / "deleted.py").write_text("\n", encoding="utf-8", newline="\n")
     _git(repository, "add", ".gitignore", "committed.txt", "module.py", "deleted.py")
     _git(repository, "commit", "--quiet", "-m", "Initial commit")
     return repository
@@ -57,7 +61,7 @@ def _repository(tmp_path: Path) -> Path:
 
 def _write(repository: Path, path: str, content: str = "\n"):
     (repository / path).parent.mkdir(parents=True, exist_ok=True)
-    _ = (repository / path).write_text(content)
+    _ = (repository / path).write_text(content, encoding="utf-8", newline="\n")
 
 
 def _install_fake_tools(
@@ -68,7 +72,7 @@ def _install_fake_tools(
     bin_directory = tmp_path / "bin"
     bin_directory.mkdir()
     run_log = tmp_path / "runs"
-    _ = run_log.write_text("")
+    _ = run_log.write_text("", encoding="utf-8", newline="\n")
     for tool in ("bazelisk", "uv"):
         script_lines = [
             "#!/bin/sh",
@@ -81,7 +85,9 @@ def _install_fake_tools(
                 script_lines.append(f"  '{arguments}') {shell_code};;")
         script_lines.append("esac")
         script = bin_directory / tool
-        _ = script.write_text("\n".join(script_lines) + "\n")
+        _ = script.write_text(
+            "\n".join(script_lines) + "\n", encoding="utf-8", newline="\n"
+        )
         script.chmod(0o755)
     monkeypatch.setenv("PATH", f"{bin_directory}:/usr/bin:/bin")
     return run_log
@@ -103,7 +109,7 @@ def test_clean_repository_runs_nothing(tmp_path: Path, monkeypatch: pytest.Monke
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == []
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_ignored_file_runs_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -112,7 +118,7 @@ def test_ignored_file_runs_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == []
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_unrelated_change_only_formats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -121,7 +127,7 @@ def test_unrelated_change_only_formats(tmp_path: Path, monkeypatch: pytest.Monke
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT]
 
 
 def test_python_dependencies_are_fixed_before_formatting(
@@ -135,7 +141,7 @@ def test_python_dependencies_are_fixed_before_formatting(
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
         f"{_DEPS} module.py pkg/BUILD.bazel pkg/stub.pyi",
         _FORMAT,
     ]
@@ -149,7 +155,7 @@ def test_deleted_python_file_alone_does_not_fix_dependencies(
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT]
 
 
 def test_staged_deletion_does_not_fix_dependencies(
@@ -160,7 +166,7 @@ def test_staged_deletion_does_not_fix_dependencies(
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT]
 
 
 def test_unfixable_python_dependencies_continue_the_turn(
@@ -182,7 +188,10 @@ def test_unfixable_python_dependencies_continue_the_turn(
             f"{_REPORT_HEADING}\n\n$ {_DEPS} module.py\nunresolved import missing"
         ),
     }
-    assert run_log.read_text().splitlines() == [f"{_DEPS} module.py", _FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_DEPS} module.py",
+        _FORMAT,
+    ]
 
 
 def test_steps_run_at_the_top_of_the_repository(
@@ -213,7 +222,11 @@ def test_linted_proto_changes_run_buf_lint(
     run_log = _install_fake_tools(tmp_path, monkeypatch, {})
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT, _BUF_PLUGIN, _BUF_LINT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        _FORMAT,
+        _BUF_PLUGIN,
+        _BUF_LINT,
+    ]
 
 
 def test_buf_lint_errors_continue_the_turn(
@@ -229,7 +242,11 @@ def test_buf_lint_errors_continue_the_turn(
         "decision": "block",
         "reason": f"{_REPORT_HEADING}\n\n$ {_BUF_LINT}\nconfig.proto:1:1: bad",
     }
-    assert run_log.read_text().splitlines() == [_FORMAT, _BUF_PLUGIN, _BUF_LINT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        _FORMAT,
+        _BUF_PLUGIN,
+        _BUF_LINT,
+    ]
 
 
 def test_buf_plugin_build_failure_skips_buf_lint(
@@ -245,7 +262,7 @@ def test_buf_plugin_build_failure_skips_buf_lint(
         "decision": "block",
         "reason": f"{_REPORT_HEADING}\n\n$ {_BUF_PLUGIN}\ncompile error",
     }
-    assert run_log.read_text().splitlines() == [_FORMAT, _BUF_PLUGIN]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT, _BUF_PLUGIN]
 
 
 def test_every_failed_step_is_reported_together(
@@ -299,7 +316,7 @@ def test_nothing_runs_when_nothing_changed_since_checks_passed(
     _ = _run_hook(monkeypatch, repository)
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT]
 
 
 def test_steps_rerun_after_a_file_changes(
@@ -312,7 +329,7 @@ def test_steps_rerun_after_a_file_changes(
     _write(repository, "notes.txt", "edited notes\n")
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT, _FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT, _FORMAT]
 
 
 def test_fixes_made_by_the_steps_are_not_changes(
@@ -328,7 +345,7 @@ def test_fixes_made_by_the_steps_are_not_changes(
     _ = _run_hook(monkeypatch, repository)
 
     assert _run_hook(monkeypatch, repository) == ""
-    assert run_log.read_text().splitlines() == [_FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT]
 
 
 def test_failure_is_checked_again_without_changes(
@@ -345,7 +362,7 @@ def test_failure_is_checked_again_without_changes(
         "decision": "block",
         "reason": f"{_REPORT_HEADING}\n\n$ {_FORMAT}\ndprint crashed",
     }
-    assert run_log.read_text().splitlines() == [_FORMAT, _FORMAT]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [_FORMAT, _FORMAT]
 
 
 def test_missing_tool_is_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

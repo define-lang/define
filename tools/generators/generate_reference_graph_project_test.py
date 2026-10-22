@@ -60,7 +60,7 @@ class TestWriteProject:
         output = tmp_path / "project"
         output.mkdir()
         sentinel = output / "keep.txt"
-        sentinel.write_text("keep\n", encoding="utf-8")
+        sentinel.write_text("keep\n", encoding="utf-8", newline="\n")
 
         with pytest.raises(FileExistsError):
             gen.write_project(output, {"source.dfn": "source\n"})
@@ -120,7 +120,7 @@ class TestGeneratedProjectCompiles:
         for relative_path, content in files.items():
             file_path = tmp_path / relative_path
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(content, encoding="utf-8")
+            file_path.write_text(content, encoding="utf-8", newline="\n")
         monkeypatch.chdir(tmp_path)
 
         output_dir = tmp_path / "generated"
@@ -348,5 +348,7 @@ def test_cli_reverses_references_without_changing_the_graph(tmp_path: Path):
     actual = {}
     for path in output.rglob("*"):
         if path.is_file():
-            actual[path.relative_to(output).as_posix()] = path.read_text()
+            actual[path.relative_to(output).as_posix()] = path.read_text(
+                encoding="utf-8"
+            )
     assert actual == expected

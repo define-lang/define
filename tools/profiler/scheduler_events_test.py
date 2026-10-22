@@ -20,7 +20,9 @@ def _trace_root(tmp_path: Path) -> Path:
     for tracepoint_name in ("sched_waking", "sched_wakeup_new"):
         tracepoint_directory = trace_root / tracepoint_name
         tracepoint_directory.mkdir(parents=True)
-        _ = (tracepoint_directory / "id").write_text("1\n", encoding="utf-8")
+        _ = (tracepoint_directory / "id").write_text(
+            "1\n", encoding="utf-8", newline="\n"
+        )
     return trace_root
 
 
@@ -52,6 +54,7 @@ def test_collector_converts_completed_perf_data(
         "#!/bin/sh\n"
         + "printf '%s\\n' '400/401 2398451.123456789: sched:sched_waking: comm=worker pid=402 prio=120 target_cpu=3'\n",
         encoding="utf-8",
+        newline="\n",
     )
     perf_executable.chmod(0o755)
     monkeypatch.setattr(scheduler_events, "_TRACE_ROOTS", (_trace_root(tmp_path),))

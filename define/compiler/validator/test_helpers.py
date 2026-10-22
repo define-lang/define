@@ -51,6 +51,7 @@ def write_project_config(tmp_path: Path, universe_name: str):
     (config_dir / "config.defcl").write_text(
         f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
         encoding="utf-8",
+        newline="\n",
     )
 
 
@@ -65,4 +66,4 @@ def write_local_deps_config(tmp_path: Path, deps: dict[str, str]):
     content = (
         f"deps: {{\n  local: [\n    {entries}\n  ]\n}}\n" if deps else "deps: {}\n"
     )
-    (deps_dir / "local.defcl").write_text(content, encoding="utf-8")
+    (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")

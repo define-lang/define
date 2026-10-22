@@ -103,6 +103,7 @@ def test_adds_perf_option_to_isolated_bazel_python_launcher(tmp_path: Path):
         + "# __PEX_PY_BINARY_ENTRYPOINT__ _main/compiler.py\n"
         + 'exec "python3" -B -I compiler.py "$@"\n',
         encoding="utf-8",
+        newline="\n",
     )
     environment: dict[str, str] = {}
 
@@ -123,7 +124,7 @@ def test_adds_perf_option_to_isolated_bazel_python_launcher(tmp_path: Path):
 
 def test_leaves_non_bazel_command_unchanged(tmp_path: Path):
     executable_path = tmp_path / "compiler"
-    _ = executable_path.write_text("native executable", encoding="utf-8")
+    _ = executable_path.write_text("native executable", encoding="utf-8", newline="\n")
     environment: dict[str, str] = {}
 
     command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
@@ -154,7 +155,7 @@ def test_adds_perf_option_to_native_bazel_python_launcher(tmp_path: Path):
     _ = interpreter_path.write_bytes(b"")
     main_path = runfiles_path / "_main/tools/compiler.py"
     main_path.parent.mkdir(parents=True, exist_ok=True)
-    _ = main_path.write_text("", encoding="utf-8")
+    _ = main_path.write_text("", encoding="utf-8", newline="\n")
 
     command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
         (str(launcher_path), "compile"),
@@ -234,7 +235,9 @@ def test_replaces_stale_buildid_cache_when_there_are_no_native_objects(
     profile_path = tmp_path / "perf.data"
     retained_buildid_path = perf_profiler.buildid_path(profile_path)
     retained_buildid_path.mkdir()
-    _ = (retained_buildid_path / "stale").write_text("stale", encoding="utf-8")
+    _ = (retained_buildid_path / "stale").write_text(
+        "stale", encoding="utf-8", newline="\n"
+    )
     with mock.patch.object(subprocess, "run", autospec=True) as run:
         perf_profiler._retain_native_objects(  # pyright: ignore[reportPrivateUsage]
             "perf", profile_path, []
@@ -372,8 +375,8 @@ def _install_fake_perf(
     stdout_path = tmp_path / "perf-stdout.txt"
     stderr_path = tmp_path / "perf-stderr.txt"
     arguments_path = tmp_path / "perf-arguments.txt"
-    _ = stdout_path.write_text(stdout, encoding="utf-8")
-    _ = stderr_path.write_text(stderr, encoding="utf-8")
+    _ = stdout_path.write_text(stdout, encoding="utf-8", newline="\n")
+    _ = stderr_path.write_text(stderr, encoding="utf-8", newline="\n")
     executable_dir = tmp_path / "bin"
     executable_dir.mkdir()
     executable = executable_dir / "perf"
@@ -384,6 +387,7 @@ def _install_fake_perf(
         + f"cat '{stderr_path}' >&2\n"
         + f"exit {returncode}\n",
         encoding="utf-8",
+        newline="\n",
     )
     executable.chmod(0o755)
     monkeypatch.setenv("PATH", f"{executable_dir}:{os.environ['PATH']}")
@@ -392,7 +396,7 @@ def _install_fake_perf(
 
 def _write_python_map(profile_path: Path):
     _ = perf_profiler.python_map_path(profile_path).write_text(
-        "100 10 py::work:/workspace/example.py\n", encoding="utf-8"
+        "100 10 py::work:/workspace/example.py\n", encoding="utf-8", newline="\n"
     )
 
 
@@ -489,9 +493,11 @@ def test_refuses_to_attribute_samples_with_unresolved_python_frames(
     profile_path = tmp_path / "perf.data"
     metadata = _profile([]).metadata
     _ = perf_profiler.metadata_path(profile_path).write_text(
-        json.dumps(metadata), encoding="utf-8"
+        json.dumps(metadata), encoding="utf-8", newline="\n"
     )
-    _ = perf_profiler.diagnostics_path(profile_path).write_text("", encoding="utf-8")
+    _ = perf_profiler.diagnostics_path(profile_path).write_text(
+        "", encoding="utf-8", newline="\n"
+    )
     unresolved_sample = perf_analyzer.Sample(
         os_thread_id=102,
         period_ns=1_003_009,
@@ -527,10 +533,10 @@ def test_refuses_to_replace_an_existing_runtime_symbol_map(tmp_path: Path):
     profile_path = tmp_path / "perf.data"
     target_pid = 999_999_998
     _ = perf_profiler.python_map_path(profile_path).write_text(
-        "100 10 py::work:/workspace/example.py\n", encoding="utf-8"
+        "100 10 py::work:/workspace/example.py\n", encoding="utf-8", newline="\n"
     )
     runtime_map_path = perf_profiler.runtime_python_map_path(target_pid)
-    with runtime_map_path.open("x", encoding="utf-8") as runtime_map_file:
+    with runtime_map_path.open("x", encoding="utf-8", newline="\n") as runtime_map_file:
         _ = runtime_map_file.write("unrelated symbols\n")
     try:
         with (
@@ -641,10 +647,12 @@ def test_analyzer_dispatches_native_perf_data(tmp_path: Path):
 
 def test_cpu_command_dispatches_to_perf(tmp_path: Path):
     workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8")
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
     metadata = _profile([(100, 1, "compile")]).metadata
     profile_path = tmp_path / "perf.data"
-    _ = perf_profiler.diagnostics_path(profile_path).write_text("", encoding="utf-8")
+    _ = perf_profiler.diagnostics_path(profile_path).write_text(
+        "", encoding="utf-8", newline="\n"
+    )
     with mock.patch.object(
         perf_profiler,
         "capture",
@@ -674,7 +682,7 @@ def test_cpu_command_dispatches_to_perf(tmp_path: Path):
 
 def test_cpu_command_rejects_wall_coordination_descriptor(tmp_path: Path):
     workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8")
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
 
     result = testing.CliRunner().invoke(
         profiler.main,
@@ -698,7 +706,7 @@ def test_cpu_command_rejects_wall_coordination_descriptor(tmp_path: Path):
 
 def test_reports_perf_failure_before_target_launch(tmp_path: Path):
     workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8")
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
 
     def fail_record(
         *arguments: object, **keyword_arguments: object
@@ -738,7 +746,7 @@ def test_reports_perf_failure_before_target_launch(tmp_path: Path):
 def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
     perf_test_support.require_perf_recording(tmp_path)
     workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8")
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
     profile_path = tmp_path / "perf.data"
 
     metadata = perf_profiler.capture(
@@ -785,7 +793,7 @@ def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
 def test_preserves_target_diagnostics_for_unsuccessful_perf_capture(tmp_path: Path):
     perf_test_support.require_perf_recording(tmp_path)
     workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8")
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
     profile_path = tmp_path / "perf.data"
     diagnostics = io.StringIO()
     with contextlib.redirect_stderr(diagnostics):

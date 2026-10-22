@@ -52,7 +52,7 @@ def load_claude_settings(base_dir: Path) -> dict[str, object]:
     """Load Claude settings file."""
     settings_path = base_dir / ".claude" / "settings.json"
 
-    with settings_path.open() as f:
+    with settings_path.open(encoding="utf-8") as f:
         return cast("dict[str, object]", json.load(f))
 
 
@@ -178,14 +178,14 @@ def sync_permissions(base_dir: Path):
     cursor_dir.mkdir(exist_ok=True)
 
     cursor_path = cursor_dir / "cli.json"
-    with cursor_path.open("w") as f:
+    with cursor_path.open("w", encoding="utf-8", newline="\n") as f:
         json.dump(cursor_config, f, indent=2)
         _ = f.write("\n")
 
     codex_rules_dir = base_dir / ".codex" / "rules"
     codex_rules_dir.mkdir(parents=True, exist_ok=True)
     codex_path = codex_rules_dir / "default.rules"
-    with codex_path.open("w") as f:
+    with codex_path.open("w", encoding="utf-8", newline="\n") as f:
         _ = f.write(codex_rules)
 
     print(f"Synced permissions to {cursor_path}")
@@ -225,7 +225,7 @@ def check_permissions(base_dir: Path):
         print(f"Error: {cursor_path} does not exist")
         has_errors = True
     else:
-        with cursor_path.open() as f:
+        with cursor_path.open(encoding="utf-8") as f:
             actual_config = cast("dict[str, object]", json.load(f))
 
         if actual_config != expected_config:
@@ -240,7 +240,7 @@ def check_permissions(base_dir: Path):
             )
             has_errors = True
 
-    with codex_path.open() as f:
+    with codex_path.open(encoding="utf-8") as f:
         actual_codex_rules = f.read()
 
     if actual_codex_rules != expected_codex_rules:

@@ -75,7 +75,7 @@ def _measure(
 
 
 def _stderr(directory: Path) -> str:
-    return (directory / "resources" / "stderr").read_text()
+    return (directory / "resources" / "stderr").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(

@@ -29,10 +29,12 @@ def test_collector_reports_loop_body_executed_more_than_once(tmp_path: Path):
         + "    result = []\n"
         + "    for value in values:\n"
         + "        result.append(value)\n"
-        + "    return result\n"
+        + "    return result\n",
+        encoding="utf-8",
+        newline="\n",
     )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
     namespace = _execute_source(source_path)
     collect = namespace["collect"]
@@ -45,7 +47,7 @@ def test_collector_reports_loop_body_executed_more_than_once(tmp_path: Path):
     finally:
         collector.stop()
 
-    assert report_path.read_text() == (
+    assert report_path.read_text(encoding="utf-8") == (
         f"SF:{source_path}\n"
         + "BRDA:3,1,loop body executes more than once,1\n"
         + "BRF:1\n"
@@ -61,10 +63,12 @@ def test_collector_handles_multiline_loop_header(tmp_path: Path):
         + "    for (\n"
         + "        value\n"
         + "    ) in values:\n"
-        + "        str(value)\n"
+        + "        str(value)\n",
+        encoding="utf-8",
+        newline="\n",
     )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
     namespace = _execute_source(source_path)
     consume = typing.cast(
@@ -79,7 +83,9 @@ def test_collector_handles_multiline_loop_header(tmp_path: Path):
     finally:
         collector.stop()
 
-    assert "BRDA:2,1,loop body executes more than once,1\n" in report_path.read_text()
+    assert "BRDA:2,1,loop body executes more than once,1\n" in report_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_collector_does_not_combine_nested_loop_activations(tmp_path: Path):
@@ -90,10 +96,12 @@ def test_collector_does_not_combine_nested_loop_activations(tmp_path: Path):
         + "        for (\n"
         + "            inner\n"
         + "        ) in [value]:\n"
-        + "            str(inner)\n"
+        + "            str(inner)\n",
+        encoding="utf-8",
+        newline="\n",
     )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
     namespace = _execute_source(source_path)
     consume = typing.cast(
@@ -108,7 +116,7 @@ def test_collector_does_not_combine_nested_loop_activations(tmp_path: Path):
     finally:
         collector.stop()
 
-    assert report_path.read_text() == (
+    assert report_path.read_text(encoding="utf-8") == (
         f"SF:{source_path}\n"
         + "BRDA:2,1,loop body executes more than once,1\n"
         + "BRDA:3,1,loop body executes more than once,-\n"
@@ -121,10 +129,14 @@ def test_collector_does_not_combine_nested_loop_activations(tmp_path: Path):
 def test_collector_does_not_combine_single_iterations_across_calls(tmp_path: Path):
     source_path = tmp_path / "example.py"
     _ = source_path.write_text(
-        "def consume(values):\n" + "    for value in values:\n" + "        str(value)\n"
+        "def consume(values):\n"
+        + "    for value in values:\n"
+        + "        str(value)\n",
+        encoding="utf-8",
+        newline="\n",
     )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
     namespace = _execute_source(source_path)
     consume = typing.cast(
@@ -140,7 +152,9 @@ def test_collector_does_not_combine_single_iterations_across_calls(tmp_path: Pat
     finally:
         collector.stop()
 
-    assert "BRDA:2,1,loop body executes more than once,-\n" in report_path.read_text()
+    assert "BRDA:2,1,loop body executes more than once,-\n" in report_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_collector_reports_every_loop_type_executed_only_once(tmp_path: Path):
@@ -157,10 +171,12 @@ def test_collector_reports_every_loop_type_executed_only_once(tmp_path: Path):
         + "\n"
         + "async def consume_async_for(values):\n"
         + "    async for value in values:\n"
-        + "        str(value)\n"
+        + "        str(value)\n",
+        encoding="utf-8",
+        newline="\n",
     )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
     namespace = _execute_source(source_path)
     consume_for = typing.cast(
@@ -190,7 +206,7 @@ def test_collector_reports_every_loop_type_executed_only_once(tmp_path: Path):
     finally:
         collector.stop()
 
-    assert report_path.read_text() == (
+    assert report_path.read_text(encoding="utf-8") == (
         f"SF:{source_path}\n"
         + "BRDA:2,1,loop body executes more than once,-\n"
         + "BRDA:7,1,loop body executes more than once,-\n"
@@ -203,7 +219,7 @@ def test_collector_reports_every_loop_type_executed_only_once(tmp_path: Path):
 
 def test_collector_rejects_an_existing_monitoring_tool(tmp_path: Path):
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text("")
+    _ = manifest_path.write_text("", encoding="utf-8", newline="\n")
     collector = loop_coverage.LoopCoverageCollector(
         manifest_path, tmp_path / "loop_coverage.dat"
     )
@@ -226,28 +242,34 @@ def test_collector_rejects_an_existing_monitoring_tool(tmp_path: Path):
 
 def test_collector_ignores_test_modules(tmp_path: Path):
     source_path = tmp_path / "example_test.py"
-    _ = source_path.write_text("for value in [1, 2]:\n    str(value)\n")
+    _ = source_path.write_text(
+        "for value in [1, 2]:\n    str(value)\n", encoding="utf-8", newline="\n"
+    )
     manifest_path = tmp_path / "manifest.txt"
-    _ = manifest_path.write_text(f"{source_path}\n")
+    _ = manifest_path.write_text(f"{source_path}\n", encoding="utf-8", newline="\n")
     report_path = tmp_path / "loop_coverage.dat"
 
     collector = loop_coverage.LoopCoverageCollector(manifest_path, report_path)
     collector._write_report()  # pyright: ignore[reportPrivateUsage]
 
-    assert report_path.read_text() == ""
+    assert report_path.read_text(encoding="utf-8") == ""
 
 
 def test_append_report_adds_records_and_removes_partial_file(tmp_path: Path):
     report_path = tmp_path / "loop_coverage.part"
-    _ = report_path.write_text("SF:example.py\nend_of_record\n")
+    _ = report_path.write_text(
+        "SF:example.py\nend_of_record\n", encoding="utf-8", newline="\n"
+    )
     coverage_output_path = tmp_path / "coverage.dat"
-    _ = coverage_output_path.write_text("SF:other.py\nend_of_record\n")
+    _ = coverage_output_path.write_text(
+        "SF:other.py\nend_of_record\n", encoding="utf-8", newline="\n"
+    )
 
     loop_coverage._append_report(  # pyright: ignore[reportPrivateUsage]
         report_path, coverage_output_path
     )
 
-    assert coverage_output_path.read_text() == (
+    assert coverage_output_path.read_text(encoding="utf-8") == (
         "SF:other.py\nend_of_record\nSF:example.py\nend_of_record\n"
     )
     assert not report_path.exists()

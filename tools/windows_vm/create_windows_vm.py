@@ -223,7 +223,9 @@ def _download_once(url: str, path: Path):
             resumed_bytes = 0
         if resumed_bytes:
             click.echo(f"  Resuming at {resumed_bytes / 1e9:.1f} GB")
-        _ = etag_path.write_text(response.headers["ETag"], encoding="utf-8")
+        _ = etag_path.write_text(
+            response.headers["ETag"], encoding="utf-8", newline="\n"
+        )
         total_bytes = resumed_bytes + int(response.headers["Content-Length"])
         with partial_path.open("ab" if resumed_bytes else "wb") as file:
             _copy_with_progress(response, file, resumed_bytes, total_bytes)
@@ -244,7 +246,7 @@ def _verify_sha256(path: Path, expected: str):
 
 def _write_private_file(path: Path, content: str):
     file_descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(file_descriptor, "w") as file:
+    with os.fdopen(file_descriptor, "w", encoding="utf-8", newline="\n") as file:
         _ = file.write(content)
 
 
@@ -257,7 +259,9 @@ def _build_unattend_iso(
     """Build the answer file CD, with files by their name on the CD."""
     with tempfile.TemporaryDirectory() as directory_name:
         directory = Path(directory_name)
-        _ = (directory / "autounattend.xml").write_text(autounattend, encoding="utf-8")
+        _ = (directory / "autounattend.xml").write_text(
+            autounattend, encoding="utf-8", newline="\n"
+        )
         for name, source in files.items():
             _ = shutil.copy(source, directory / name)
         _ = subprocess.run(

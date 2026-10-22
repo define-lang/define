@@ -37,7 +37,7 @@ def _map_for_file(
 ) -> source_map.SourceMap:
     # The compiler reads project files relative to the project root.
     monkeypatch.chdir(tmp_path)
-    _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+    _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     return source_map.SourceMap(
         {PurePosixPath("test.dfn"): source_map.source_digest(source.encode())},
         in_memory_source=None,
@@ -97,7 +97,9 @@ def test_format_location_omits_source_line_of_changed_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     sources = _map_for_file(tmp_path, monkeypatch, _SOURCE)
-    _ = (tmp_path / "test.dfn").write_text("# changed\n" + _SOURCE, encoding="utf-8")
+    _ = (tmp_path / "test.dfn").write_text(
+        "# changed\n" + _SOURCE, encoding="utf-8", newline="\n"
+    )
     assert sources.format_location(_location(3, 20, 35, "test.dfn")) == (
         'File "test.dfn", line 3, column 20'
     )

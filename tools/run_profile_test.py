@@ -82,7 +82,7 @@ def _analyze(profile_path: Path) -> str:
 # PRF-012: Orchestration boundary.
 def test_rejects_source_and_project_together(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
 
     result = click.testing.CliRunner().invoke(
         run_profile.main,
@@ -166,7 +166,7 @@ def test_builds_compiler_before_preparing_profile(
     monkeypatch: pytest.MonkeyPatch,
 ):
     source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
     monkeypatch.setenv("BUILD_WORKSPACE_DIRECTORY", str(tmp_path))
     completed_build = subprocess.CompletedProcess[str]([], 0)
 
@@ -232,7 +232,7 @@ def test_builds_compiler_before_preparing_profile(
 # PRF-043: Analyzer at every checkpoint.
 def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
     profile_path = tmp_path / "source-profile.jsonl"
 
     result = _capture(
@@ -286,11 +286,13 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
     _ = config_path.write_text(
         'project: { universe_name: "my.domain.com:my_lib" }\n',
         encoding="utf-8",
+        newline="\n",
     )
     entry_path = project_path / "main.dfn"
     _ = entry_path.write_text(
         _CONSTRUCTOR_SOURCE.replace(":/test>", ":/main>"),
         encoding="utf-8",
+        newline="\n",
     )
     profile_path = tmp_path / "project-profile.jsonl"
     output_dir = tmp_path / "generated"
@@ -337,7 +339,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
 def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
     perf_test_support.require_perf_recording(tmp_path)
     source_path = tmp_path / "source.dfn"
-    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8")
+    _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
     profile_path = tmp_path / "perf.data"
 
     result = _capture(

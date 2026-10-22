@@ -20,7 +20,7 @@ def _git(repository: Path, *arguments: str):
 def _write(repository: Path, path: str):
     file = repository / path
     file.parent.mkdir(parents=True, exist_ok=True)
-    _ = file.write_text("\n")
+    _ = file.write_text("\n", encoding="utf-8", newline="\n")
 
 
 def _repository(tmp_path: Path) -> Path:
@@ -67,7 +67,9 @@ def test_untracked_build_file_in_tracked_directory(tmp_path: Path):
 
 def test_ignored_package_is_not_untracked(tmp_path: Path):
     repository = _repository(tmp_path)
-    _ = (repository / ".gitignore").write_text("ignored/\n")
+    _ = (repository / ".gitignore").write_text(
+        "ignored/\n", encoding="utf-8", newline="\n"
+    )
     _write(repository, "ignored/BUILD.bazel")
 
     assert precommit_bazel_checks.untracked_packages(repository) == []

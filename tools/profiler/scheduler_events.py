@@ -72,7 +72,7 @@ def _tracepoint_access_error(
     for trace_root in trace_roots:
         for tracepoint_name in _TRACEPOINT_NAMES:
             try:
-                _ = (trace_root / tracepoint_name / "id").read_text()
+                _ = (trace_root / tracepoint_name / "id").read_text(encoding="utf-8")
             except FileNotFoundError:
                 break
             except PermissionError as error:

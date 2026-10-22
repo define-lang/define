@@ -28,7 +28,9 @@ def _track(repository: Path, *paths: str):
 
 def test_symlink_to_existing_file_is_not_broken(tmp_path: Path):
     repository = _repository(tmp_path)
-    _ = (repository / "target.txt").write_text("target\n")
+    _ = (repository / "target.txt").write_text(
+        "target\n", encoding="utf-8", newline="\n"
+    )
     (repository / "link").symlink_to("target.txt")
     _track(repository, "target.txt", "link")
 
@@ -39,7 +41,9 @@ def test_symlink_whose_target_was_deleted_is_broken(tmp_path: Path):
     repository = _repository(tmp_path)
     (repository / "cases").mkdir()
     (repository / "cases" / "case").mkdir()
-    _ = (repository / "cases" / "case" / "test.dfn").write_text("\n")
+    _ = (repository / "cases" / "case" / "test.dfn").write_text(
+        "\n", encoding="utf-8", newline="\n"
+    )
     (repository / "link").symlink_to("cases/case")
     (repository / "other_link").symlink_to("cases")
     _track(repository, "cases/case/test.dfn", "link", "other_link")

@@ -69,7 +69,9 @@ def main() -> int:
 
     sorted_tokens = sorted(tokens)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _ = OUTPUT_PATH.write_text("\n".join(sorted_tokens) + "\n", encoding="utf-8")
+    _ = OUTPUT_PATH.write_text(
+        "\n".join(sorted_tokens) + "\n", encoding="utf-8", newline="\n"
+    )
     return 0
 
 

@@ -1,0 +1,38 @@
+id: text-io-explicit-encoding
+language: python
+severity: error
+message: Pass `encoding=` to text file reads and writes.
+note:
+  Without it, Python uses the locale's encoding, which is cp1252 on Windows.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+  - "**/lark_standalone.py"
+rule:
+  any:
+    - pattern: $_.read_text($$$)
+    - pattern: $_.write_text($$$)
+    - all:
+        - any:
+            - pattern: open($$$)
+            - pattern: $_.open($$$)
+            - pattern: os.fdopen($$$)
+        - not:
+            pattern: os.open($$$)
+        # A binary mode, such as "rb", reads and writes bytes.
+        - not:
+            has:
+              field: arguments
+              has:
+                stopBy: end
+                kind: string
+                regex: ^["'][rwax+t]*b[rwax+t]*["']$
+  not:
+    has:
+      field: arguments
+      has:
+        kind: keyword_argument
+        has:
+          field: name
+          pattern: encoding

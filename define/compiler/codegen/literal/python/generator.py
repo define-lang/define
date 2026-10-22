@@ -281,7 +281,7 @@ class _DefinitionGenerator:
         relative_file_path = naming.file_path_for_module(module_name)
         file_path = self._output_dir / relative_file_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        _ = file_path.write_text(content)
+        _ = file_path.write_text(content, encoding="utf-8", newline="\n")
         return relative_file_path.parent.parent
 
 
@@ -328,7 +328,7 @@ class PythonLiteralCodeGenerator:
         for dir_path in sorted(needed_dirs):
             init_file = output_dir / dir_path / "__init__.py"
             if not init_file.exists():
-                _ = init_file.write_text(_PACKAGE_INIT)
+                _ = init_file.write_text(_PACKAGE_INIT, encoding="utf-8", newline="\n")
 
     @staticmethod
     def _write_entry_point(
@@ -343,4 +343,6 @@ class PythonLiteralCodeGenerator:
             ),
             trace_operations=context.trace_operations,
         )
-        _ = (output_dir / "__main__.py").write_text(content)
+        _ = (output_dir / "__main__.py").write_text(
+            content, encoding="utf-8", newline="\n"
+        )

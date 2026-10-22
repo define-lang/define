@@ -301,6 +301,7 @@ def _setup_project(
     (config_dir / "config.defcl").write_text(
         f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
         encoding="utf-8",
+        newline="\n",
     )
     if local_deps is None:
         return
@@ -315,14 +316,14 @@ def _setup_project(
         if local_deps
         else "deps: {}\n"
     )
-    (deps_dir / "local.defcl").write_text(content, encoding="utf-8")
+    (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")
 
 
 def _write_files(root: Path, files: dict[str, str]):
     for rel_path, source in files.items():
         path = root / rel_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(source, encoding="utf-8")
+        path.write_text(source, encoding="utf-8", newline="\n")
 
 
 def _reset_tmp_path(tmp_path: Path):
@@ -1763,11 +1764,13 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         _action_simple(_PROJECT_FQUN, "another_test.dfn")
         + _position_simple(_PROJECT_FQUN, "another_test.dfn"),
         encoding="utf-8",
+        newline="\n",
     )
     (tmp_path / "third_test.dfn").write_text(
         _action_simple(_PROJECT_FQUN, "third_test.dfn")
         + _position_simple(_PROJECT_FQUN, "third_test.dfn"),
         encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
     return tmp_path
@@ -2158,7 +2161,7 @@ def _structured_random_global_name_bytes(draw: st.DrawFn) -> bytes:
 @given(source=valid_sources())
 def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     file_path = fuzz_project / "test.dfn"
-    file_path.write_text(source, encoding="utf-8")
+    file_path.write_text(source, encoding="utf-8", newline="\n")
     d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.dfn")).program_validation.file_results
     _assert_results_are_clean(results, _escape_content(source))
@@ -2204,7 +2207,7 @@ def test_valid_projects_validate_cleanly(
 )
 @given(source=mutated_sources())
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
-    (fuzz_project / "test.dfn").write_text(source, encoding="utf-8")
+    (fuzz_project / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.dfn")).program_validation.file_results
     _assert_only_parser_syntax_exceptions(results, _escape_content(source))
