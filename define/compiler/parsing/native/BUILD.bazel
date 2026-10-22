@@ -65,6 +65,9 @@ pyo3_extension(
     crate_root = "parser.rs",
     lint_config = lint_config(),
     module_name = "native_parser",
+    # One codegen unit lets rustc inline across the whole crate, and keeps the
+    # generated code from depending on how the crate is split into modules.
+    rustc_flags = ["-Ccodegen-units=1"],
     stubs = False,
     visibility = ["//tools:__pkg__"],
     deps = [
