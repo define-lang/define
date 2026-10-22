@@ -727,8 +727,11 @@ def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
     )
     os.close(event_write_file_descriptor)
     python_attached = event_reader.wait_for("python-attached")
-    with exit_gate.open("wb") as exit_gate_writer:
-        _ = exit_gate_writer.write(b"\0")
+    if python_attached:
+        with exit_gate.open("wb") as exit_gate_writer:
+            _ = exit_gate_writer.write(b"\0")
+    else:
+        profile_process.terminate()
     capture_stdout, capture_stderr = profile_process.communicate()
     os.close(event_read_file_descriptor)
 
@@ -891,15 +894,19 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
         pass_fds=(event_write_file_descriptor,),
     )
     os.close(event_write_file_descriptor)
-    with exit_gate.open("wb", buffering=0) as exit_stream:
-        observations_persisted = event_reader.wait_for(
-            "successful-observation-persisted",
-            2,
-        )
-        if observations_persisted:
-            _ = exit_stream.write(b"1")
-        else:
-            capture_process.terminate()
+    if event_reader.wait_for("python-attached"):
+        with exit_gate.open("wb", buffering=0) as exit_stream:
+            observations_persisted = event_reader.wait_for(
+                "successful-observation-persisted",
+                2,
+            )
+            if observations_persisted:
+                _ = exit_stream.write(b"1")
+            else:
+                capture_process.terminate()
+    else:
+        observations_persisted = False
+        capture_process.terminate()
     capture_stdout, capture_stderr = capture_process.communicate()
     os.close(event_read_file_descriptor)
 
