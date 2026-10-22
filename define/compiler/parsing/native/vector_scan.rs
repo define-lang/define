@@ -27,14 +27,10 @@
 // other files.
 
 use std::marker::PhantomData;
+use terminals::{
+    COMMENT_START, COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, PATH_SEPARATOR, SPACE,
+};
 use wide::u8x32;
-
-pub const NAME_CONTENT_END: u8 = b'>';
-pub const COMPONENT_SEPARATOR: u8 = b':';
-pub const PATH_SEPARATOR: u8 = b'/';
-pub const SPACE: u8 = b' ';
-pub const LINE_FEED: u8 = b'\n';
-pub const COMMENT_START: u8 = b'#';
 
 const WIDTH: usize = 32;
 

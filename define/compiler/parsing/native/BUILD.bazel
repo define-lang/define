@@ -52,17 +52,20 @@ pyo3_extension(
         "ast_builder.rs",
         "characters.rs",
         "characters/invisible_ranges.rs",
+        "native_parser.rs",
         "parse_error.rs",
         "parser.rs",
         "parser/action_definition.rs",
+        "parser/errors.rs",
         "parser/lines.rs",
         "parser/names.rs",
+        "parser/position_definition.rs",
         "scanner.rs",
         ":ast",
         ":parser_diagnostics",
         ":syntax_errors",
     ],
-    crate_root = "parser.rs",
+    crate_root = "native_parser.rs",
     lint_config = lint_config(),
     module_name = "native_parser",
     # One codegen unit lets rustc inline across the whole crate, and keeps the
@@ -71,6 +74,7 @@ pyo3_extension(
     stubs = False,
     visibility = ["//tools:__pkg__"],
     deps = [
+        ":terminals",
         ":vector_scan",
         "@crates//:rustc-hash",
     ],
@@ -87,6 +91,14 @@ genrule(
     visibility = ["//tools:__pkg__"],
 )
 
+# A crate of its own so that vector_scan, which the extension depends on, can
+# scan for the same terminals the extension parses.
+rust_library(
+    name = "terminals",
+    srcs = ["terminals.rs"],
+    lint_config = lint_config(),
+)
+
 # The parser's vector code is a separate crate so that it stays apart from the
 # code people read to work on the parser, and so that a rust_test can link it.
 # A rust_test cannot link the PyO3 extension, which does not link libpython.
@@ -94,7 +106,10 @@ rust_library(
     name = "vector_scan",
     srcs = ["vector_scan.rs"],
     lint_config = lint_config(),
-    deps = ["@crates//:wide"],
+    deps = [
+        ":terminals",
+        "@crates//:wide",
+    ],
 )
 
 rust_test(
@@ -113,6 +128,7 @@ rust_clippy_test(
     tags = ["precommit"],
     targets = [
         ":parser_extension_shared",
+        ":terminals",
         ":vector_scan",
         ":vector_scan_test",
     ],

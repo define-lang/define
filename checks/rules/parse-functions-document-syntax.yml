@@ -6,6 +6,10 @@ message:
   its doc comment.
 files:
   - define/compiler/parsing/native/parser.rs
+  - define/compiler/parsing/native/parser/errors.rs
+  - define/compiler/parsing/native/parser/lines.rs
+  - define/compiler/parsing/native/parser/names.rs
+  - define/compiler/parsing/native/parser/position_definition.rs
 rule:
   kind: function_item
   has:

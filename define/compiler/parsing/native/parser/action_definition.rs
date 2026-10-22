@@ -1,33 +1,21 @@
 //! Action definitions and the statements in them.
 
+use crate::ast;
 use crate::ast_builder::NodeTuple;
-use crate::lines::{BLOCK_OPEN, INDENTATION_WIDTH, LineInBlock, TERMINATOR};
-use crate::names::CHAIN_SEPARATOR;
 use crate::parse_error::{ParseError, ParseResult};
+use crate::parser::Parser;
+use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
+use crate::parser::names::POSITION_OR_ACTION;
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
-use crate::{DEFINE_THE_POTENTIAL_POSITION, POSITION, POSITION_OR_ACTION, Parser, ast};
-use vector_scan::{LINE_FEED, SPACE};
+use terminals::{
+    BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
+    DEFINE_THE_POTENTIAL_POSITION, DESTROY_THE_PARTICLE_IN, EXECUTE_THE, IT_ALSO_ASSIGNS_THE,
+    IT_HAPPENS_WHEN, LINE_FEED, LITERAL, MOVE_THE_PARTICLE_IN, POSITION, SET_THE_VALUE_OF, SPACE,
+    SPACE_AND_IT_DOES, SPACE_HAS_A_PARTICLE, SPACE_TO, TERMINATOR, THE, THE_ACTION, THE_AND_SPACE,
+    THE_POSITION, THIS_PARTICLE_IS_BEING_DESTROYED, THIS_PARTICLE_IS_CREATED,
+};
 
-const IT_ALSO_ASSIGNS_THE: &[u8] = b"it also assigns the";
-const DEFINE_THE: &[u8] = b"define the ";
-const DEFINE_THE_POSITION: &[u8] = b"define the position";
-const IT_HAPPENS_WHEN: &[u8] = b"it happens when";
-const SPACE_AND_IT_DOES: &[u8] = b" and it does";
-const THE: &[u8] = b"the";
-const THE_AND_SPACE: &[u8] = b"the ";
-const THE_POSITION: &[u8] = b"the position";
-const THE_ACTION: &[u8] = b"the action";
-const SPACE_HAS_A_PARTICLE: &[u8] = b" has a particle";
-const THIS_PARTICLE_IS_CREATED: &[u8] = b"this particle is created";
-const THIS_PARTICLE_IS_BEING_DESTROYED: &[u8] = b"this particle is being destroyed";
-const CREATE_A_PARTICLE_IN: &[u8] = b"create a particle in";
-const MOVE_THE_PARTICLE_IN: &[u8] = b"move the particle in";
-const DESTROY_THE_PARTICLE_IN: &[u8] = b"destroy the particle in";
-const SET_THE_VALUE_OF: &[u8] = b"set the value of";
-const EXECUTE_THE: &[u8] = b"execute the";
-const SPACE_TO: &[u8] = b" to";
-const LITERAL: &[u8] = b"literal";
 /// How far the lines of an action definition block, which is always at the
 /// top level, are indented.
 const ACTION_DEFINITION_BLOCK_INDENTATION: usize = INDENTATION_WIDTH;
@@ -105,7 +93,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             ast::NameType::Action,
             name_content,
         )?;
-        let block_open_end = self.lines().parse_block_open()?;
+        let block_open_end = self.parse_block_open()?;
         // `content_end` is where the block's content ends so far, for the
         // error when the block ends before its trigger conditions block.
         let (implications, line, content_end) =
@@ -142,18 +130,14 @@ impl<'py, 'source> Parser<'py, 'source> {
     )> {
         let implications = self.ast.start_tuple::<ast::QualityImplicationStatement>();
         let mut content_end = block_open_end;
-        let mut line = self
-            .lines()
-            .next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
+        let mut line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         while matches!(line, LineInBlock::Statement)
             && self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE)
         {
             let (implication, end) = self.parse_quality_implication_statement(fqun)?;
             self.ast.push(&implications, implication);
             content_end = end;
-            line = self
-                .lines()
-                .next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
+            line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
         Ok((self.ast.finish_tuple(implications)?, line, content_end))
     }
@@ -181,9 +165,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 self.parse_local_position_definition(ACTION_DEFINITION_BLOCK_INDENTATION, fqun)?;
             self.ast.push(&interface_positions, position);
             content_end = end;
-            line = self
-                .lines()
-                .next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
+            line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
         Ok((
             self.ast.finish_tuple(interface_positions)?,
@@ -200,7 +182,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         block_open_end: Position,
     ) -> ParseResult<Position> {
-        match self.lines().next_line_in_block(0, &[])? {
+        match self.next_line_in_block(0, &[])? {
             LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
             LineInBlock::Statement => return Err(self.statement_instead_of_action_close()),
@@ -209,75 +191,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 return Err(self.missing_close_brace(start, block_open_end));
             }
         }
-        self.lines().parse_block_close()
-    }
-
-    /// Returns the error for a statement at the scanner's position in an
-    /// action definition block before its trigger conditions block that does
-    /// not belong there.
-    #[cold]
-    #[inline(never)]
-    fn invalid_action_definition_block(&self) -> ParseError {
-        if let Some(error) = self.disallowed_character_after_any(&ACTION_DEFINITION_BLOCK_STARTS) {
-            return error;
-        }
-        if let Some(error) = self.misplaced_statement() {
-            return error;
-        }
-        // The line begins like a statement of the block, but with extra or
-        // missing spaces between two of its words.
-        if let Some(error) = self.misspaced_words_in_any(&ACTION_DEFINITION_STATEMENT_STARTS) {
-            return error;
-        }
-        let start = self.scanner.position;
-        self.errors
-            .invalid_action_definitions_block(start, self.end_of_line())
-    }
-
-    /// Returns the error for a quality implication statement or a global
-    /// position definition at the scanner's position, which belong only at
-    /// the start of an action definition block and at the top level, if one
-    /// is there.
-    #[cold]
-    fn misplaced_statement(&self) -> Option<ParseError> {
-        let start = self.scanner.position;
-        // A quality implication statement is somewhere other than the start of
-        // an action definition block.
-        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
-            let end = start.after_ascii(IT_ALSO_ASSIGNS_THE).previous_column();
-            return Some(
-                self.errors
-                    .quality_implication_in_wrong_location(start, end),
-            );
-        }
-        // A global position definition is inside an action definition.
-        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
-            let end = start
-                .after_ascii(DEFINE_THE_POTENTIAL_POSITION)
-                .previous_column();
-            return Some(
-                self.errors
-                    .global_position_definition_in_local_context(start, end),
-            );
-        }
-        None
-    }
-
-    /// Returns the error for a statement at the scanner's position, after an
-    /// action definition's action statements block, where the definition's
-    /// `}` belongs.
-    #[cold]
-    #[inline(never)]
-    fn statement_instead_of_action_close(&self) -> ParseError {
-        // A local position definition comes after the action statements block.
-        if self.scanner.next_bytes_are(DEFINE_THE_POSITION) {
-            let start = self.scanner.position;
-            let end = start.after_ascii(DEFINE_THE_POSITION).previous_column();
-            return self
-                .errors
-                .invalid_position_definition_location_in_action(start, end);
-        }
-        self.statement_instead_of_close_brace()
+        self.parse_block_close()
     }
 
     /// Parses a quality implication statement, whose reference takes its
@@ -303,8 +217,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             Self::expected_position_or_action,
         )?;
         // There is no `.`.
-        let Some(end) = self.lines().parse_terminator()? else {
-            return Err(self.lines().missing_terminator());
+        let Some(end) = self.parse_terminator()? else {
+            return Err(self.missing_terminator());
         };
         let location = self.ast.location(start, end)?;
         let implication = self
@@ -343,7 +257,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             (Some(constraints), end)
         } else {
             // There is no `.` or ` {`.
-            let Some(end) = self.lines().parse_terminator()? else {
+            let Some(end) = self.parse_terminator()? else {
                 return Err(self.missing_terminator_or_brace());
             };
             (None, end)
@@ -390,8 +304,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         };
         let start = self.scanner.position;
         self.scanner.consume(IT_HAPPENS_WHEN);
-        let block_open_end = self.lines().parse_block_open()?;
-        let condition = match self.lines().next_line_in_block(
+        let block_open_end = self.parse_block_open()?;
+        let condition = match self.next_line_in_block(
             ACTION_DEFINITION_BLOCK_INDENTATION,
             &TRIGGER_CONDITION_STARTS,
         )? {
@@ -408,10 +322,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_trigger_condition_content(block_open_end, block_open_end));
             }
         };
-        match self
-            .lines()
-            .next_line_in_block(ACTION_DEFINITION_BLOCK_INDENTATION, &[])?
-        {
+        match self.next_line_in_block(ACTION_DEFINITION_BLOCK_INDENTATION, &[])? {
             LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
             LineInBlock::Statement => {
@@ -430,10 +341,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(SPACE_AND_IT_DOES) {
             return Err(self.missing_action_statements_block());
         }
-        let statements_open_end = self.lines().parse_block_open()?;
+        let statements_open_end = self.parse_block_open()?;
         let statements = self.ast.start_tuple::<ast::ActionStatement>();
         loop {
-            match self.lines().next_line_in_block(
+            match self.next_line_in_block(
                 ACTION_DEFINITION_BLOCK_INDENTATION,
                 &ACTION_STATEMENT_STARTS,
             )? {
@@ -451,29 +362,11 @@ impl<'py, 'source> Parser<'py, 'source> {
                 }
             }
         }
-        let end = self.lines().parse_block_close()?;
+        let end = self.parse_block_close()?;
         let statements = self.ast.finish_tuple(statements)?;
         let location = self.ast.location(statements_start, end)?;
         let action_statements = self.ast.action_statements_block(location, statements)?;
         Ok((trigger_conditions, action_statements))
-    }
-
-    /// Returns the error for the text at the scanner's position, right after a
-    /// trigger conditions block's `}`, where ` and it does` belongs.
-    #[cold]
-    #[inline(never)]
-    fn missing_action_statements_block(&mut self) -> ParseError {
-        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
-            return error;
-        }
-        let start = self.scanner.position;
-        match self.space_before_word() {
-            // The spaces before the next word are missing or extra.
-            Err(error) => error,
-            // The word after the `}` is not `and it does`, or the line ends
-            // where it belongs.
-            Ok(_) => self.errors.missing_action_statements_block(start, start),
-        }
     }
 
     /// Parses a trigger condition statement through the end of its line.
@@ -507,31 +400,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// position after its `.`.
     fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.`.
-        let Some(end) = self.lines().parse_terminator()? else {
-            return Err(self.lines().missing_terminator());
+        let Some(end) = self.parse_terminator()? else {
+            return Err(self.missing_terminator());
         };
         Ok(end)
-    }
-
-    /// Returns the error for a statement at the scanner's position in a
-    /// trigger conditions block that is not a trigger condition statement.
-    #[cold]
-    #[inline(never)]
-    fn invalid_trigger_conditions_block(&self) -> ParseError {
-        if let Some(error) = self.disallowed_character_after_any(&TRIGGER_CONDITION_STARTS) {
-            return error;
-        }
-        if let Some(error) = self.misplaced_statement() {
-            return error;
-        }
-        // The line begins like a trigger condition statement, but with extra or
-        // missing spaces between two of its words.
-        if let Some(error) = self.misspaced_words_in_any(&TRIGGER_CONDITION_STARTS) {
-            return error;
-        }
-        let start = self.scanner.position;
-        self.errors
-            .invalid_trigger_conditions_block(start, self.end_of_line())
     }
 
     /// Parses a position presence statement through the end of its line.
@@ -565,31 +437,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .ast
             .position_presence_statement(location, typed_name, position_reference)?)
-    }
-
-    /// Returns the error for the text at the scanner's position, right after
-    /// the typed name of a position presence statement, where
-    /// ` has a particle` belongs.
-    #[cold]
-    #[inline(never)]
-    fn invalid_has_a_particle_syntax(&mut self) -> ParseError {
-        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
-            return error;
-        }
-        let start = self.scanner.position;
-        // A chained name is where the statement's single local name belongs.
-        if self.scanner.next_bytes_are(CHAIN_SEPARATOR) {
-            return self
-                .errors
-                .chained_name_in_position_presence_statement(start, start.next_column());
-        }
-        match self.space_before_word() {
-            // The spaces before the next word are missing or extra.
-            Err(error) => error,
-            // The word after the typed name is not `has a particle`, or the
-            // line ends where it belongs.
-            Ok(_) => self.errors.invalid_has_a_particle_syntax(start, start),
-        }
     }
 
     /// Parses an action statement, indented `indentation` spaces, whose
@@ -731,7 +578,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// its `.`.
     fn parse_reference_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.` or `::` after the position reference.
-        let Some(end) = self.lines().parse_terminator()? else {
+        let Some(end) = self.parse_terminator()? else {
             if let Some(error) = self.disallowed_character_ahead(0) {
                 return Err(error);
             }
@@ -765,6 +612,141 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         is_word
     }
+}
+
+// The functions that only run on an error path.
+impl<'py, 'source> Parser<'py, 'source> {
+    /// Returns the error for a statement at the scanner's position in an
+    /// action definition block before its trigger conditions block that does
+    /// not belong there.
+    #[cold]
+    #[inline(never)]
+    fn invalid_action_definition_block(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after_any(&ACTION_DEFINITION_BLOCK_STARTS) {
+            return error;
+        }
+        if let Some(error) = self.misplaced_statement() {
+            return error;
+        }
+        // The line begins like a statement of the block, but with extra or
+        // missing spaces between two of its words.
+        if let Some(error) = self.misspaced_words_in_any(&ACTION_DEFINITION_STATEMENT_STARTS) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .invalid_action_definitions_block(start, self.end_of_line())
+    }
+
+    /// Returns the error for a quality implication statement or a global
+    /// position definition at the scanner's position, which belong only at
+    /// the start of an action definition block and at the top level, if one
+    /// is there.
+    #[cold]
+    fn misplaced_statement(&self) -> Option<ParseError> {
+        let start = self.scanner.position;
+        // A quality implication statement is somewhere other than the start of
+        // an action definition block.
+        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
+            let end = start.after_ascii(IT_ALSO_ASSIGNS_THE).previous_column();
+            return Some(
+                self.errors
+                    .quality_implication_in_wrong_location(start, end),
+            );
+        }
+        // A global position definition is inside an action definition.
+        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
+            let end = start
+                .after_ascii(DEFINE_THE_POTENTIAL_POSITION)
+                .previous_column();
+            return Some(
+                self.errors
+                    .global_position_definition_in_local_context(start, end),
+            );
+        }
+        None
+    }
+
+    /// Returns the error for a statement at the scanner's position, after an
+    /// action definition's action statements block, where the definition's
+    /// `}` belongs.
+    #[cold]
+    #[inline(never)]
+    fn statement_instead_of_action_close(&self) -> ParseError {
+        // A local position definition comes after the action statements block.
+        if self.scanner.next_bytes_are(DEFINE_THE_POSITION) {
+            let start = self.scanner.position;
+            let end = start.after_ascii(DEFINE_THE_POSITION).previous_column();
+            return self
+                .errors
+                .invalid_position_definition_location_in_action(start, end);
+        }
+        self.statement_instead_of_close_brace()
+    }
+
+    /// Returns the error for the text at the scanner's position, right after a
+    /// trigger conditions block's `}`, where ` and it does` belongs.
+    #[cold]
+    #[inline(never)]
+    fn missing_action_statements_block(&mut self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
+            return error;
+        }
+        let start = self.scanner.position;
+        match self.space_before_word() {
+            // The spaces before the next word are missing or extra.
+            Err(error) => error,
+            // The word after the `}` is not `and it does`, or the line ends
+            // where it belongs.
+            Ok(_) => self.errors.missing_action_statements_block(start, start),
+        }
+    }
+
+    /// Returns the error for a statement at the scanner's position in a
+    /// trigger conditions block that is not a trigger condition statement.
+    #[cold]
+    #[inline(never)]
+    fn invalid_trigger_conditions_block(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after_any(&TRIGGER_CONDITION_STARTS) {
+            return error;
+        }
+        if let Some(error) = self.misplaced_statement() {
+            return error;
+        }
+        // The line begins like a trigger condition statement, but with extra or
+        // missing spaces between two of its words.
+        if let Some(error) = self.misspaced_words_in_any(&TRIGGER_CONDITION_STARTS) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .invalid_trigger_conditions_block(start, self.end_of_line())
+    }
+
+    /// Returns the error for the text at the scanner's position, right after
+    /// the typed name of a position presence statement, where
+    /// ` has a particle` belongs.
+    #[cold]
+    #[inline(never)]
+    fn invalid_has_a_particle_syntax(&mut self) -> ParseError {
+        if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
+            return error;
+        }
+        let start = self.scanner.position;
+        // A chained name is where the statement's single local name belongs.
+        if self.scanner.next_bytes_are(CHAIN_SEPARATOR) {
+            return self
+                .errors
+                .chained_name_in_position_presence_statement(start, start.next_column());
+        }
+        match self.space_before_word() {
+            // The spaces before the next word are missing or extra.
+            Err(error) => error,
+            // The word after the typed name is not `has a particle`, or the
+            // line ends where it belongs.
+            Ok(_) => self.errors.invalid_has_a_particle_syntax(start, start),
+        }
+    }
 
     /// Returns the error for the text at the scanner's position, right after a
     /// position reference, where ` to` belongs. `wrong_word` returns the
@@ -783,7 +765,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             // The spaces before the next word are missing or extra.
             Err(error) => error,
             // The error covers the word after the space where `to` belongs.
-            Ok(true) => wrong_word(&self.errors, self.scanner.position, self.end_of_word()),
+            Ok(true) => wrong_word(
+                &self.errors,
+                self.scanner.position,
+                self.scanner.end_of_word(),
+            ),
             // The line ends where `to` belongs.
             Ok(false) => wrong_word(&self.errors, start, start),
         }

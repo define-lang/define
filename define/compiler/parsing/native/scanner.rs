@@ -1,7 +1,11 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use vector_scan::{LINE_FEED, SPACE};
+use terminals::{LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
+
+/// The bytes that end a word, for errors that cover the word where something
+/// else belongs.
+pub const WORD_ENDS: [u8; 4] = [NAME_CONTENT_START, SPACE, TERMINATOR, LINE_FEED];
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -116,17 +120,6 @@ impl<'source> Scanner<'source> {
         SourceText {
             bytes: &self.rest[..length],
             is_known_ascii: false,
-        }
-    }
-
-    /// The rest of the line before its line feed.
-    #[cold]
-    #[inline(never)]
-    pub fn rest_of_line(&self) -> SourceText<'source> {
-        let scanned = vector_scan::rest_of_line(self.rest);
-        SourceText {
-            bytes: &self.rest[..scanned.length],
-            is_known_ascii: scanned.is_printable_ascii,
         }
     }
 
@@ -268,5 +261,33 @@ impl<'source> Scanner<'source> {
         self.rest = rest;
         self.position.column += scanned.character_count;
         (text, scanned)
+    }
+}
+
+// The functions that only run on an error path.
+impl<'source> Scanner<'source> {
+    /// The rest of the line before its line feed.
+    #[cold]
+    #[inline(never)]
+    pub fn rest_of_line(&self) -> SourceText<'source> {
+        let scanned = vector_scan::rest_of_line(self.rest);
+        SourceText {
+            bytes: &self.rest[..scanned.length],
+            is_known_ascii: scanned.is_printable_ascii,
+        }
+    }
+
+    /// Returns the position of the last character of the word at the
+    /// scanner's position, or the scanner's position if there is no word
+    /// there.
+    #[cold]
+    pub fn end_of_word(&self) -> Position {
+        let start = self.position;
+        let word = self.text_before_any(&WORD_ENDS);
+        if word.bytes.is_empty() {
+            start
+        } else {
+            start.after(word).previous_column()
+        }
     }
 }
