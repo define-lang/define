@@ -49,14 +49,14 @@ genrule(
 pyo3_extension(
     name = "parser_extension",
     srcs = [
-        "action_definition.rs",
         "ast_builder.rs",
         "characters.rs",
         "characters/invisible_ranges.rs",
         "lines.rs",
-        "names.rs",
         "parse_error.rs",
         "parser.rs",
+        "parser/action_definition.rs",
+        "parser/names.rs",
         "scanner.rs",
         ":ast",
         ":parser_diagnostics",

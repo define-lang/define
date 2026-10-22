@@ -1,7 +1,9 @@
+#[path = "parser/action_definition.rs"]
 mod action_definition;
 mod ast_builder;
 mod characters;
 mod lines;
+#[path = "parser/names.rs"]
 mod names;
 mod parse_error;
 mod scanner;
