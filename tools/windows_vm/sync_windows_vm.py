@@ -26,11 +26,12 @@ _SNAPSHOT_IDENTITY = {
 _SSH_OPTIONS = ("-o", "BatchMode=yes", "-o", "ConnectTimeout=10")
 
 _HELP = """\
-Copy this checkout's current state into its own directory in the Windows VM.
+Copy the current directory's checkout into its own directory in the Windows VM.
 
 \b
-Run it from the checkout with:
-  bazelisk run //tools/windows_vm:sync_windows_vm
+Build it once in a Define checkout, then run it from any checkout:
+  bazelisk build //tools/windows_vm:sync_windows_vm
+  <Define checkout>/bazel-bin/tools/windows_vm/sync_windows_vm
 
 The VM directory is C:\\src\\ followed by the name of the checkout's
 directory, such as C:\\src\\define4 for ~/projects/define4. The command
@@ -109,9 +110,9 @@ def snapshot_commit(git: str, checkout: Path) -> str:
     help="Port on localhost that forwards to the VM's SSH server.",
 )
 def main(ssh_port: int):
-    """Copy this checkout into the Windows VM."""
+    """Copy the current directory's checkout into the Windows VM."""
     commands = _resolve_commands()
-    checkout = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
+    checkout = Path(_git(commands["git"], Path.cwd(), "rev-parse", "--show-toplevel"))
     virsh = commands["virsh"]
     if vm.DOMAIN_NAME not in vm.virsh(virsh, "list", "--all", "--name").split():
         raise click.ClickException(
