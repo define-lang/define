@@ -1,6 +1,10 @@
 # Avoid sizing the initial JVM heap from host RAM: 256 MiB is sufficient to
 # start regular full-suite runs, and the heap can grow as needed.
 startup --host_jvm_args=-Xms256m
+# Let idle servers return more freed heap to the OS. Below 20, the savings are
+# negligible.
+startup --host_jvm_args=-XX:MinHeapFreeRatio=20
+startup --host_jvm_args=-XX:MaxHeapFreeRatio=20
 
 # Build for Windows with the native MSVC ABI.
 common --enable_platform_specific_config
