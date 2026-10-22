@@ -11,6 +11,7 @@ use terminals::{
     ACTION, CHAIN_SEPARATOR, COMPONENT_SEPARATOR, NAME_CONTENT_END, NAME_CONTENT_START,
     PATH_SEPARATOR, POSITION, SPACE, TERMINATOR,
 };
+use vector_scan::FqunSeparators;
 
 pub(crate) const POSITION_OR_ACTION: [(&[u8], ast::NameType); 2] = [
     (POSITION, ast::NameType::Position),
@@ -74,7 +75,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if ends_name && scanned.is_global_name {
             let (location, name_fqun, path) = self.global_name_parts(
                 content,
-                scanned.last_component_separator,
+                scanned.fqun_separators,
                 content_start,
                 content_end,
             )?;
@@ -242,7 +243,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !scanned.is_global_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
             return Err(self.invalid_global_name_content(content, start, end));
         }
-        self.global_name_parts(content, scanned.last_component_separator, start, end)
+        self.global_name_parts(content, scanned.fqun_separators, start, end)
     }
 
     /// Returns the error for a character in name `content`, which begins at
@@ -267,13 +268,13 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Parses global name `content`, which runs from `start` up to `end`, where
-    /// the scanner is before its `>`, and whose last `:` before its path is at
-    /// `last_component_separator`, and returns the location of the name
-    /// content, its FQUN if it has one, and its path.
+    /// the scanner is before its `>`, and whose `:`s before its path are at
+    /// `fqun_separators`, and returns the location of the name content, its
+    /// FQUN if it has one, and its path.
     fn global_name_parts(
         &mut self,
         content: SourceText<'source>,
-        last_component_separator: Option<usize>,
+        fqun_separators: Option<FqunSeparators>,
         start: Position,
         end: Position,
     ) -> ParseResult<(
@@ -283,20 +284,20 @@ impl<'py, 'source> Parser<'py, 'source> {
     )> {
         self.disallowed_name_character(content, start)?;
         self.scanner.consume_bytes(1);
-        let (fqun, path_start, path_text) = match last_component_separator {
+        let (fqun, path_start, path_text) = match fqun_separators {
             None => (None, start, content),
             // The name has a `:` but nothing before it.
-            Some(0) => {
+            Some(FqunSeparators { last: 0, .. }) => {
                 return Err(self
                     .errors
                     .invalid_global_name(start, end.previous_column()));
             }
-            Some(separator) => {
-                let (fqun, fqun_end) = self.parse_fqun(content.slice(..separator), start)?;
+            Some(separators) => {
+                let (fqun, fqun_end) = self.parse_fqun(content, separators, start)?;
                 (
                     Some(fqun),
                     fqun_end.next_column(),
-                    content.slice(separator + 1..),
+                    content.slice(separators.last as usize + 1..),
                 )
             }
         };
@@ -307,8 +308,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((location, fqun, path))
     }
 
-    /// Parses the FQUN `text`, without its final `:`, that begins at `start`,
-    /// and returns it with the position after it.
+    /// Parses the FQUN at the start of global name `content`, which begins at
+    /// `start` and whose `:`s before its path are at `separators`, and returns
+    /// it with the position of its last `:`.
     ///
     /// ```ebnf
     /// fqun =
@@ -318,23 +320,31 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_fqun(
         &mut self,
-        text: SourceText<'source>,
+        content: SourceText<'source>,
+        separators: FqunSeparators,
         start: Position,
     ) -> ParseResult<(ast::Fqun<'py>, Position)> {
-        let mut names = text.split(COMPONENT_SEPARATOR);
-        let (multiverse, authority, universe) =
-            match (names.next(), names.next(), names.next(), names.next()) {
-                (Some(universe), None, None, None) => (None, None, universe),
-                (Some(authority), Some(universe), None, None) => (None, Some(authority), universe),
-                (Some(multiverse), Some(authority), Some(universe), None) => {
-                    (Some(multiverse), Some(authority), universe)
-                }
-                // The FQUN has more than three components.
-                _ => {
-                    let end = start.after(text).previous_column();
-                    return Err(self.errors.global_name_invalid_fqun_format(start, end));
-                }
-            };
+        let first = separators.first as usize;
+        let second = separators.second as usize;
+        let last = separators.last as usize;
+        let (multiverse, authority, universe) = match separators.count.get() {
+            1 => (None, None, content.slice(..last)),
+            2 => (
+                None,
+                Some(content.slice(..first)),
+                content.slice(first + 1..last),
+            ),
+            3 => (
+                Some(content.slice(..first)),
+                Some(content.slice(first + 1..second)),
+                content.slice(second + 1..last),
+            ),
+            // The FQUN has more than three components.
+            _ => {
+                let end = start.after(content.slice(..last)).previous_column();
+                return Err(self.errors.global_name_invalid_fqun_format(start, end));
+            }
+        };
         let mut component_start = start;
         let multiverse = match multiverse {
             Some(name) => {

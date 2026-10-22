@@ -33,16 +33,6 @@ impl<'source> SourceText<'source> {
             is_known_ascii: self.is_known_ascii,
         }
     }
-
-    /// Splits the text at each occurrence of the ASCII `separator`.
-    pub fn split(self, separator: u8) -> impl Iterator<Item = Self> {
-        self.bytes
-            .split(move |&byte| byte == separator)
-            .map(move |bytes| Self {
-                bytes,
-                is_known_ascii: self.is_known_ascii,
-            })
-    }
 }
 
 /// A point in the source, as a 1-based line and a 1-based column counted in

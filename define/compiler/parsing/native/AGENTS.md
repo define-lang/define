@@ -14,3 +14,12 @@ mistake. The attributes say which:
 - A function with neither attribute is on the happy path. It must do only the
   work that valid source needs; anything that only an error needs goes in a
   `#[cold]` function.
+
+## vector_scan.rs
+
+`vector_scan.rs` is optimized only for raw performance and for emitting optimal
+instructions, not for readability. When you change it, read the machine code
+that the optimized extension has for every scan you changed, wherever it is
+inlined, and confirm that it is still optimal: no new branches or memory
+accesses on the common path, no values that could stay in registers spilled to
+the stack, and no instructions that the change does not need.

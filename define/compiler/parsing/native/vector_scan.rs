@@ -27,12 +27,35 @@
 // other files.
 
 use std::marker::PhantomData;
+use std::num::NonZeroU32;
 use terminals::{
     COMMENT_START, COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, PATH_SEPARATOR, SPACE,
 };
 use wide::u8x32;
 
 const WIDTH: usize = 32;
+/// `WIDTH` as a `u32`, for the indexes in name content, which are `u32`s so
+/// that a scan's result and state fit in fewer registers.
+const WIDTH_U32: u32 = 32;
+const _: () = assert!(WIDTH_U32 as usize == WIDTH);
+
+/// Where the `:`s before a global name's path are, which end the components
+/// of its FQUN.
+// Four `u32`s, with a count that is never zero, make an
+// `Option<FqunSeparators>` as small as an `Option<usize>`, and let a scan make
+// `None` without a branch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FqunSeparators {
+    /// How many there are. An FQUN has at most three components, so more than
+    /// three is an FQUN that is not valid.
+    pub count: NonZeroU32,
+    /// The index of the first, or of the last if there is only one.
+    pub first: u32,
+    /// The index of the second, or of the last if there are fewer than two.
+    pub second: u32,
+    /// The index of the last, which comes right before the path.
+    pub last: u32,
+}
 
 /// What a scan of name content where only a global name belongs found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -47,9 +70,10 @@ pub struct GlobalNameContent {
     /// Whether the name content has the shape of a global name: optional text
     /// without spaces that ends in `:`, then `/` and at least one more byte.
     pub is_global_name: bool,
-    /// For a global name, the index of the last `:` before its path. `None`
-    /// for name content that is not a global name.
-    pub last_component_separator: Option<usize>,
+    /// For a global name with an FQUN, where the `:`s before its path are.
+    /// `None` for a global name without an FQUN, and for name content that is
+    /// not a global name.
+    pub fqun_separators: Option<FqunSeparators>,
 }
 
 /// What a scan of name content where a local name may belong found.
@@ -65,9 +89,10 @@ pub struct NameContent {
     /// Whether the name content has the shape of a global name: optional text
     /// without spaces that ends in `:`, then `/` and at least one more byte.
     pub is_global_name: bool,
-    /// For a global name, the index of the last `:` before its path. `None`
-    /// for name content that is not a global name.
-    pub last_component_separator: Option<usize>,
+    /// For a global name with an FQUN, where the `:`s before its path are.
+    /// `None` for a global name without an FQUN, and for name content that is
+    /// not a global name.
+    pub fqun_separators: Option<FqunSeparators>,
     /// Whether the name content is not empty and has no space, `:`, or `/`,
     /// which a local name may not have.
     pub is_local_name: bool,
@@ -86,7 +111,7 @@ trait ScannedNameContent {
         character_count: usize,
         is_printable_ascii: bool,
         is_global_name: bool,
-        last_component_separator: Option<usize>,
+        fqun_separators: Option<FqunSeparators>,
         is_local_name: bool,
     ) -> Self;
 }
@@ -100,7 +125,7 @@ impl ScannedNameContent for GlobalNameContent {
         character_count: usize,
         is_printable_ascii: bool,
         is_global_name: bool,
-        last_component_separator: Option<usize>,
+        fqun_separators: Option<FqunSeparators>,
         _: bool,
     ) -> Self {
         Self {
@@ -108,7 +133,7 @@ impl ScannedNameContent for GlobalNameContent {
             character_count,
             is_printable_ascii,
             is_global_name,
-            last_component_separator,
+            fqun_separators,
         }
     }
 }
@@ -122,7 +147,7 @@ impl ScannedNameContent for NameContent {
         character_count: usize,
         is_printable_ascii: bool,
         is_global_name: bool,
-        last_component_separator: Option<usize>,
+        fqun_separators: Option<FqunSeparators>,
         is_local_name: bool,
     ) -> Self {
         Self {
@@ -130,7 +155,7 @@ impl ScannedNameContent for NameContent {
             character_count,
             is_printable_ascii,
             is_global_name,
-            last_component_separator,
+            fqun_separators,
             is_local_name,
         }
     }
@@ -249,17 +274,28 @@ fn name_content_in_vector<Scanned: ScannedNameContent>(
     let path_starts = masks.path_separators & ((component_separators << 1) | 1) & (within >> 1);
     let first_path_start = path_starts.trailing_zeros();
     let is_global_name = first_path_start < (masks.spaces & within).trailing_zeros();
+    // The `:`s before the first `/` that can begin a path. A global name's
+    // path follows its last `:`, if it has one.
+    let fqun_separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
+    let last = first_path_start.wrapping_sub(1);
+    // The fields are computed before the `Option` is, so that `None`, which
+    // is only a count of 0, is no branch away from `Some`.
+    let first = fqun_separators.trailing_zeros();
+    let second = (fqun_separators & fqun_separators.wrapping_sub(1))
+        .trailing_zeros()
+        .min(last);
+    let count = fqun_separators.count_ones() & 0u32.wrapping_sub(u32::from(is_global_name));
     Scanned::new(
         length,
         length - (masks.continuation & within).count_ones() as usize,
         masks.unprintable & within == 0,
         is_global_name,
-        // A global name's path follows its last `:`, if it has one.
-        if is_global_name && first_path_start != 0 {
-            Some(first_path_start as usize - 1)
-        } else {
-            None
-        },
+        NonZeroU32::new(count).map(|count| FqunSeparators {
+            count,
+            first,
+            second,
+            last,
+        }),
         // `&` rather than `&&`, which compiles to a branch.
         Scanned::FINDS_LOCAL_NAMES
             & (length != 0)
@@ -267,151 +303,270 @@ fn name_content_in_vector<Scanned: ScannedNameContent>(
     )
 }
 
-/// Whether the name content scanned so far has the shape of a global name.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum GlobalNameShape {
-    /// No `/` that can begin a path and no space has been found yet.
-    Undecided,
-    /// The last byte of the previous vector is a `/` that can begin a path, so
-    /// the name content is a global name if any byte follows it.
-    PathStartAtPreviousEnd,
-    Global,
-    NotGlobal,
-}
-
 /// Scans name content that is at least 32 bytes long, one vector at a time.
+// The scan has two loops. The first runs until the name content is known to
+// be a global name or not, and is the only one that tracks what that and the
+// FQUN's `:`s need. The second only counts bytes, so that neither loop carries
+// more state than fits in registers.
+//
 // This examines the first vector again rather than taking its masks from
 // `name_content`, because passing the masks would make every name store them
 // in memory, while only long names need them.
 #[inline(never)]
 fn long_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
-    let mut scan = LongNameContentScan::<Scanned>::new();
-    // The full vectors and the final partial one are separate, so that the
-    // loop has no branch for a partial vector and its state stays in
-    // registers.
     let (chunks, remainder) = source.as_chunks::<WIDTH>();
+    let mut bytes = LongNameBytes::new();
+    let mut undecided = UndecidedName::<Scanned>::new();
+    // The full vectors and the final partial one are separate, so that the
+    // loops have no branch for a partial vector.
+    let mut chunks = chunks.iter();
+    let decided = loop {
+        let Some(&chunk) = chunks.next() else {
+            let (masks, length) = last_vector_masks(source, remainder.len());
+            return undecided.finish(bytes, masks, length);
+        };
+        let masks = NameContentMasks::of(u8x32::new(chunk));
+        if masks.ends != 0 {
+            return undecided.finish(bytes, masks, masks.ends.trailing_zeros() as usize);
+        }
+        if let Some(decided) = undecided.add(masks, bytes.offset) {
+            bytes.add(masks, WIDTH);
+            break decided;
+        }
+        bytes.add(masks, WIDTH);
+    };
     for &chunk in chunks {
         let masks = NameContentMasks::of(u8x32::new(chunk));
         if masks.ends != 0 {
-            return scan.finish(masks, masks.ends.trailing_zeros() as usize);
+            return decided.finish(bytes, masks, masks.ends.trailing_zeros() as usize);
         }
-        scan.add(masks, WIDTH, false);
+        bytes.add(masks, WIDTH);
     }
-    if remainder.is_empty() {
-        return scan.finish(NameContentMasks::NONE, 0);
+    let (masks, length) = last_vector_masks(source, remainder.len());
+    decided.finish(bytes, masks, length)
+}
+
+/// Returns the masks of the last vector of long name content, which runs to
+/// the end of `source` and has `remainder` bytes after its full vectors, with
+/// the length of the name content in it.
+#[inline]
+fn last_vector_masks(source: &[u8], remainder: usize) -> (NameContentMasks, usize) {
+    if remainder == 0 {
+        return (NameContentMasks::NONE, 0);
     }
     // Loading the last 32 bytes of the source, which overlap bytes already
     // scanned, is much faster than copying the remainder into a zeroed array.
     let Some(&last_chunk) = source.last_chunk::<WIDTH>() else {
         unreachable!("long name content is at least 32 bytes long");
     };
-    let mut masks = NameContentMasks::of(u8x32::new(last_chunk)).last(remainder.len());
-    masks.ends |= !low_bits(remainder.len());
-    scan.finish(masks, masks.ends.trailing_zeros() as usize)
+    let mut masks = NameContentMasks::of(u8x32::new(last_chunk)).last(remainder);
+    masks.ends |= !low_bits(remainder);
+    (masks, masks.ends.trailing_zeros() as usize)
 }
 
-/// What a scan of name content longer than one vector, which reports a
-/// `Scanned`, has found so far.
-struct LongNameContentScan<Scanned> {
+/// What a scan of long name content has counted in all of its bytes so far.
+#[derive(Clone, Copy)]
+struct LongNameBytes {
     /// The index in the name content of the next vector's first byte.
-    offset: usize,
+    offset: u32,
     unprintable_bytes: u32,
     continuation_bytes: usize,
-    /// The index of the first `/` that can begin a path, once one is found,
-    /// which is one more than the index of the `:` before it, or 0. It fits in
-    /// one register where an `Option<usize>` needs two.
-    path_start: usize,
-    shape: GlobalNameShape,
+}
+
+impl LongNameBytes {
+    const fn new() -> Self {
+        Self {
+            offset: 0,
+            unprintable_bytes: 0,
+            continuation_bytes: 0,
+        }
+    }
+
+    /// Adds the first `length` bytes of the next vector, given its `masks`.
+    #[inline]
+    fn add(&mut self, masks: NameContentMasks, length: usize) {
+        let within = low_bits(length);
+        self.unprintable_bytes |= masks.unprintable & within;
+        self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
+        self.offset += WIDTH_U32;
+    }
+}
+
+/// What a scan of long name content, which reports a `Scanned`, tracks
+/// before it knows whether the name content is a global name.
+struct UndecidedName<Scanned> {
     /// The spaces, `:`, and `/` found so far, which a local name may not have.
     local_name_breaks: u32,
     /// Bit 0 is set when a `/` at the start of the next vector can begin a
     /// path: at the start of the name content, or after a `:` that ended the
     /// previous vector.
     follows_component_separator: u32,
+    /// How many `:`s have come before any `/` that can begin a path, so far.
+    fqun_separator_count: u32,
+    /// The indexes of the first two of those `:`s, or `u32::MAX` until they
+    /// are found, which `min` with the index of the last `:` replaces.
+    first_fqun_separator: u32,
+    second_fqun_separator: u32,
     scanned: PhantomData<Scanned>,
 }
 
-impl<Scanned: ScannedNameContent> LongNameContentScan<Scanned> {
+/// What a scan of long name content found once it knew whether the name
+/// content is a global name.
+#[derive(Clone, Copy)]
+struct DecidedName {
+    /// Whether a `/` that can begin a path comes before any space, which makes
+    /// the name content a global name if at least one byte follows the `/`.
+    has_path_start: bool,
+    /// The index of that `/`.
+    path_start: u32,
+    fqun_separator_count: u32,
+    first_fqun_separator: u32,
+    second_fqun_separator: u32,
+}
+
+impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
     const fn new() -> Self {
         Self {
-            offset: 0,
-            unprintable_bytes: 0,
-            continuation_bytes: 0,
-            path_start: 0,
-            shape: GlobalNameShape::Undecided,
             local_name_breaks: 0,
             follows_component_separator: 1,
+            fqun_separator_count: 0,
+            first_fqun_separator: u32::MAX,
+            second_fqun_separator: u32::MAX,
             scanned: PhantomData,
         }
     }
 
-    /// Adds the first `length` bytes of the next vector of the name content,
-    /// given its `masks`. `is_last` is whether the name content ends in this
-    /// vector.
+    /// Adds the next full vector, which begins at `offset` and has no end of
+    /// the name content in it, given its `masks`. Returns what the scan found
+    /// if the vector has a space or a `/` that can begin a path.
     #[inline]
-    fn add(&mut self, masks: NameContentMasks, length: usize, is_last: bool) {
-        let within = low_bits(length);
-        self.unprintable_bytes |= masks.unprintable & within;
-        self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
+    fn add(&mut self, masks: NameContentMasks, offset: u32) -> Option<DecidedName> {
+        let path_starts = self.add_separators(masks, u32::MAX, offset);
+        let first_path_start = path_starts.trailing_zeros();
+        let first_space = masks.spaces.trailing_zeros();
+        if first_path_start < first_space {
+            return Some(self.decided(true, offset + first_path_start));
+        }
+        if masks.spaces != 0 {
+            return Some(self.decided(false, 0));
+        }
+        self.follows_component_separator = masks.component_separators >> (WIDTH - 1);
+        None
+    }
+
+    /// Adds the `:`s before the first `/` that can begin a path in the bytes
+    /// at `within` of the vector that begins at `offset`, given its `masks`,
+    /// and returns the `/`s there that can begin a path.
+    #[inline]
+    fn add_separators(&mut self, masks: NameContentMasks, within: u32, offset: u32) -> u32 {
         let component_separators = masks.component_separators & within;
         if Scanned::FINDS_LOCAL_NAMES {
             self.local_name_breaks |=
                 (component_separators | masks.path_separators | masks.spaces) & within;
         }
-        self.shape = match self.shape {
-            GlobalNameShape::Undecided => {
-                let spaces = masks.spaces & within;
-                let path_starts = masks.path_separators
-                    & ((component_separators << 1) | self.follows_component_separator)
-                    & within;
-                let first_path_start = path_starts.trailing_zeros();
-                self.path_start = self.offset + first_path_start as usize;
-                if first_path_start >= spaces.trailing_zeros() {
-                    if spaces == 0 {
-                        GlobalNameShape::Undecided
-                    } else {
-                        GlobalNameShape::NotGlobal
-                    }
-                } else if (first_path_start as usize) + 1 < length {
-                    GlobalNameShape::Global
-                } else if is_last {
-                    GlobalNameShape::NotGlobal
-                } else {
-                    GlobalNameShape::PathStartAtPreviousEnd
-                }
-            }
-            GlobalNameShape::PathStartAtPreviousEnd => {
-                if length == 0 {
-                    GlobalNameShape::NotGlobal
-                } else {
-                    GlobalNameShape::Global
-                }
-            }
-            decided => decided,
-        };
-        self.follows_component_separator = component_separators >> (WIDTH - 1);
-        self.offset += WIDTH;
+        let path_starts = masks.path_separators
+            & ((component_separators << 1) | self.follows_component_separator)
+            & within;
+        let separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
+        let after_first = separators & separators.wrapping_sub(1);
+        // The first two `:`s in this vector, or `u32::MAX` where there are
+        // fewer. A later vector's indexes are all greater than an earlier one's,
+        // so `min` and `max` keep the first two overall without a branch.
+        let first_here =
+            (offset + separators.trailing_zeros()) | 0u32.wrapping_sub(u32::from(separators == 0));
+        let second_here = (offset + after_first.trailing_zeros())
+            | 0u32.wrapping_sub(u32::from(after_first == 0));
+        let first_before = self.first_fqun_separator;
+        self.first_fqun_separator = first_before.min(first_here);
+        self.second_fqun_separator = self
+            .second_fqun_separator
+            .min(first_before.max(first_here))
+            .min(second_here);
+        self.fqun_separator_count += separators.count_ones();
+        path_starts
+    }
+
+    #[inline]
+    const fn decided(&self, has_path_start: bool, path_start: u32) -> DecidedName {
+        DecidedName {
+            has_path_start,
+            path_start,
+            fqun_separator_count: self.fqun_separator_count,
+            first_fqun_separator: self.first_fqun_separator,
+            second_fqun_separator: self.second_fqun_separator,
+        }
     }
 
     /// Adds the first `length` bytes of the vector in which the name content
-    /// ends, given its `masks`, and returns what the scan found.
+    /// ends, given its `masks`, to `bytes`, and returns what the scan found.
     #[inline]
-    fn finish(mut self, masks: NameContentMasks, length: usize) -> Scanned {
-        let total_length = self.offset + length;
-        self.add(masks, length, true);
-        let is_global_name = self.shape == GlobalNameShape::Global;
+    fn finish(
+        mut self,
+        mut bytes: LongNameBytes,
+        masks: NameContentMasks,
+        length: usize,
+    ) -> Scanned {
+        let offset = bytes.offset;
+        let within = low_bits(length);
+        let path_starts = self.add_separators(masks, within, offset);
+        let first_path_start = path_starts.trailing_zeros();
+        let decided = self.decided(
+            first_path_start < (masks.spaces & within).trailing_zeros(),
+            offset + first_path_start,
+        );
+        let is_local_name = Scanned::FINDS_LOCAL_NAMES & (self.local_name_breaks == 0);
+        bytes.add(masks, length);
+        decided.scanned(bytes, offset as usize + length, is_local_name)
+    }
+}
+
+impl DecidedName {
+    /// Adds the first `length` bytes of the vector in which the name content
+    /// ends, given its `masks`, to `bytes`, and returns what the scan found.
+    #[inline]
+    fn finish<Scanned: ScannedNameContent>(
+        self,
+        mut bytes: LongNameBytes,
+        masks: NameContentMasks,
+        length: usize,
+    ) -> Scanned {
+        let total_length = bytes.offset as usize + length;
+        bytes.add(masks, length);
+        // Name content with a space or a `/` that can begin a path is not a
+        // local name.
+        self.scanned(bytes, total_length, false)
+    }
+
+    /// Returns what a scan of name content that is `total_length` bytes long,
+    /// and whose bytes are `bytes`, found.
+    #[inline]
+    fn scanned<Scanned: ScannedNameContent>(
+        self,
+        bytes: LongNameBytes,
+        total_length: usize,
+        is_local_name: bool,
+    ) -> Scanned {
+        // A global name's path is at least one byte after its first `/`.
+        let is_global_name = self.has_path_start & ((self.path_start as usize) + 1 < total_length);
+        // A global name's path follows its last `:`, if it has one. The fields
+        // are computed before the `Option` is, so that `None`, which is only a
+        // count of 0, is no branch away from `Some`.
+        let last = self.path_start.wrapping_sub(1);
+        let first = self.first_fqun_separator.min(last);
+        let second = self.second_fqun_separator.min(last);
+        let count = self.fqun_separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
         Scanned::new(
             total_length,
-            total_length - self.continuation_bytes,
-            self.unprintable_bytes == 0,
+            total_length - bytes.continuation_bytes,
+            bytes.unprintable_bytes == 0,
             is_global_name,
-            // A global name's path follows its last `:`, if it has one.
-            if is_global_name {
-                self.path_start.checked_sub(1)
-            } else {
-                None
-            },
-            Scanned::FINDS_LOCAL_NAMES & (self.local_name_breaks == 0),
+            NonZeroU32::new(count).map(|count| FqunSeparators {
+                count,
+                first,
+                second,
+                last,
+            }),
+            is_local_name,
         )
     }
 }
@@ -729,7 +884,12 @@ mod tests {
                 character_count: 14,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -744,8 +904,114 @@ mod tests {
                 character_count: 23,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(18),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(2).unwrap(),
+                    first: 9,
+                    second: 18,
+                    last: 18
+                }),
                 is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_too_many_component_separators() {
+        expect_that!(
+            name_content(b"a:b:c:d:/x>.\n"),
+            eq(NameContent {
+                length: 10,
+                character_count: 10,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(4).unwrap(),
+                    first: 1,
+                    second: 3,
+                    last: 7
+                }),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_component_separator_first() {
+        expect_that!(
+            name_content(b":/x>.\n"),
+            eq(NameContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 0,
+                    second: 0,
+                    last: 0
+                }),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_component_separators_only_in_second_vector() {
+        let source = [&[b'a'; 40][..], b":b:/c>.\n"].concat();
+        expect_that!(
+            name_content(&source),
+            eq(NameContent {
+                length: 45,
+                character_count: 45,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(2).unwrap(),
+                    first: 40,
+                    second: 42,
+                    last: 42
+                }),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_too_many_component_separators_across_vectors() {
+        let source = [&b"a:b:"[..], &[b'c'; 30][..], b":d:/e>.\n"].concat();
+        expect_that!(
+            name_content(&source),
+            eq(NameContent {
+                length: 39,
+                character_count: 39,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(4).unwrap(),
+                    first: 1,
+                    second: 3,
+                    last: 36
+                }),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn global_name_content_with_full_fqun() {
+        expect_that!(
+            global_name_content(b"mv:define-lang.org:parser:/my_action>.\n"),
+            eq(GlobalNameContent {
+                length: 36,
+                character_count: 36,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(3).unwrap(),
+                    first: 2,
+                    second: 18,
+                    last: 25
+                }),
             })
         );
     }
@@ -759,7 +1025,7 @@ mod tests {
                 character_count: 5,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -774,7 +1040,7 @@ mod tests {
                 character_count: 6,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -789,7 +1055,7 @@ mod tests {
                 character_count: 10,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -804,7 +1070,7 @@ mod tests {
                 character_count: 3,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -819,7 +1085,12 @@ mod tests {
                 character_count: 14,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -834,7 +1105,12 @@ mod tests {
                 character_count: 7,
                 is_printable_ascii: false,
                 is_global_name: true,
-                last_component_separator: Some(5),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 5,
+                    second: 5,
+                    last: 5
+                }),
                 is_local_name: false,
             })
         );
@@ -849,7 +1125,12 @@ mod tests {
                 character_count: 13,
                 is_printable_ascii: false,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -864,7 +1145,12 @@ mod tests {
                 character_count: 14,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -879,7 +1165,12 @@ mod tests {
                 character_count: 14,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -894,7 +1185,7 @@ mod tests {
                 character_count: 9,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -909,7 +1200,12 @@ mod tests {
                 character_count: 41,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -924,7 +1220,12 @@ mod tests {
                 character_count: 47,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -941,7 +1242,12 @@ mod tests {
                 character_count: 14,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
             })
         );
     }
@@ -955,7 +1261,12 @@ mod tests {
                 character_count: 47,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(8),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
             })
         );
     }
@@ -969,7 +1280,7 @@ mod tests {
                 character_count: 3,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
             })
         );
     }
@@ -983,7 +1294,7 @@ mod tests {
                 character_count: 3,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: true,
             })
         );
@@ -998,7 +1309,7 @@ mod tests {
                 character_count: 36,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -1015,7 +1326,7 @@ mod tests {
                 character_count: 55,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(37),
+                fqun_separators: Some(FqunSeparators { count: NonZeroU32::new(3).unwrap(), first: 10, second: 28, last: 37 }),
                 is_local_name: false,
             })
         );
@@ -1030,7 +1341,12 @@ mod tests {
                 character_count: 33,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(30),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 30,
+                    second: 30,
+                    last: 30
+                }),
                 is_local_name: false,
             })
         );
@@ -1045,7 +1361,7 @@ mod tests {
                 character_count: 37,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -1060,7 +1376,7 @@ mod tests {
                 character_count: 36,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: true,
             })
         );
@@ -1075,7 +1391,7 @@ mod tests {
                 character_count: 32,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -1090,7 +1406,7 @@ mod tests {
                 character_count: 35,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -1105,7 +1421,12 @@ mod tests {
                 character_count: 34,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(31),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 31,
+                    second: 31,
+                    last: 31
+                }),
                 is_local_name: false,
             })
         );
@@ -1120,7 +1441,7 @@ mod tests {
                 character_count: 38,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: None,
+                fqun_separators: None,
                 is_local_name: false,
             })
         );
@@ -1135,7 +1456,12 @@ mod tests {
                 character_count: 36,
                 is_printable_ascii: false,
                 is_global_name: true,
-                last_component_separator: Some(34),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 34,
+                    second: 34,
+                    last: 34
+                }),
                 is_local_name: false,
             })
         );
@@ -1151,7 +1477,12 @@ mod tests {
                 character_count: 64,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(60),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 60,
+                    second: 60,
+                    last: 60
+                }),
                 is_local_name: false,
             })
         );
@@ -1167,7 +1498,33 @@ mod tests {
                 character_count: 64,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(60),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 60,
+                    second: 60,
+                    last: 60
+                }),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_path_in_first_of_three_vectors() {
+        let source = [&b"standard:/"[..], &[b'a'; 60][..], b">.\n"].concat();
+        expect_that!(
+            name_content(&source),
+            eq(NameContent {
+                length: 70,
+                character_count: 70,
+                is_printable_ascii: true,
+                is_global_name: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
                 is_local_name: false,
             })
         );
@@ -1183,7 +1540,12 @@ mod tests {
                 character_count: 68,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(65),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 65,
+                    second: 65,
+                    last: 65
+                }),
                 is_local_name: false,
             })
         );
@@ -1199,7 +1561,12 @@ mod tests {
                 character_count: 65,
                 is_printable_ascii: true,
                 is_global_name: true,
-                last_component_separator: Some(62),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).unwrap(),
+                    first: 62,
+                    second: 62,
+                    last: 62
+                }),
                 is_local_name: false,
             })
         );
