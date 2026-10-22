@@ -17,7 +17,7 @@ mod syntax_errors;
 
 use ast_builder::{AstBuilder, FilePath, Node};
 use characters::TextKind;
-use lines::{BLOCK_OPEN, LineInBlock, Lines, OPEN_BRACE, TERMINATOR};
+use lines::{BLOCK_OPEN, INDENTATION_WIDTH, LineInBlock, Lines, OPEN_BRACE, TERMINATOR};
 use parse_error::{ParseError, ParseResult};
 use parser_diagnostics::ParserDiagnostics;
 use pyo3::exceptions::PyNotImplementedError;
@@ -307,13 +307,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
         let block_open_end = self.lines().parse_block_open()?;
-        let indentation = match self
+        match self
             .lines()
             .next_line_in_block(opener_indentation, &[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE])?
         {
-            LineInBlock::Statement { indentation } => indentation,
+            LineInBlock::Statement => {}
             // The block is empty.
-            LineInBlock::Close { .. } => {
+            LineInBlock::Close => {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
@@ -331,12 +331,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
             return Err(self.invalid_position_definition_block());
         }
-        let constraints =
-            self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
+        let constraints = self.parse_position_constraint_block(
+            constraints_start,
+            opener_indentation + INDENTATION_WIDTH,
+            fqun,
+        )?;
         match self.lines().next_line_in_block(opener_indentation, &[])? {
-            LineInBlock::Close { .. } => {}
+            LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
-            LineInBlock::Statement { .. } => {
+            LineInBlock::Statement => {
                 return Err(self.statement_instead_of_close_brace());
             }
             // The block ends before its `}`.
@@ -458,9 +461,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             .lines()
             .next_line_in_block(indentation, &[IT_HAS_THE])?
         {
-            LineInBlock::Statement { .. } => {}
+            LineInBlock::Statement => {}
             // The block is empty.
-            LineInBlock::Close { .. } => {
+            LineInBlock::Close => {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
@@ -481,8 +484,8 @@ impl<'py, 'source> Parser<'py, 'source> {
                 .lines()
                 .next_line_in_block(indentation, &[IT_HAS_THE])?
             {
-                LineInBlock::Statement { .. } => {}
-                LineInBlock::Close { .. } => break,
+                LineInBlock::Statement => {}
+                LineInBlock::Close => break,
                 // The block ends before its `}`.
                 LineInBlock::Unclosed => {
                     return Err(self.missing_close_brace(start, block_open_end));

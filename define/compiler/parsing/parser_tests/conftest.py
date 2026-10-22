@@ -99,6 +99,14 @@ def native_parse_with_diagnostics_lark_rejects() -> NativeParseWithDiagnostics:
 
 
 @pytest.fixture
+def native_parse_with_diagnostics_lark_diagnostics_wrong() -> (
+    NativeParseWithDiagnostics
+):
+    """Return a parse callable that uses the parser in parser.rs and returns its whole result, for sources the Lark parser reports the wrong diagnostics for."""
+    return test_helpers.parse_with_diagnostics_where_lark_diagnostics_are_wrong
+
+
+@pytest.fixture
 def native_parse() -> NativeParse:
     """Return a parse callable that uses the parser in parser.rs and raises its exceptions."""
     return test_helpers.parse

@@ -1,7 +1,7 @@
 //! Action definitions and the statements in them.
 
 use crate::ast_builder::NodeTuple;
-use crate::lines::{BLOCK_OPEN, LineInBlock, TERMINATOR};
+use crate::lines::{BLOCK_OPEN, INDENTATION_WIDTH, LineInBlock, TERMINATOR};
 use crate::names::CHAIN_SEPARATOR;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::scanner::Position;
@@ -28,6 +28,9 @@ const SET_THE_VALUE_OF: &[u8] = b"set the value of";
 const EXECUTE_THE: &[u8] = b"execute the";
 const SPACE_TO: &[u8] = b" to";
 const LITERAL: &[u8] = b"literal";
+/// How far the lines of an action definition block, which is always at the
+/// top level, are indented.
+const ACTION_DEFINITION_BLOCK_INDENTATION: usize = INDENTATION_WIDTH;
 /// Expands to an array of the words that begin each statement an action
 /// definition block may have before its trigger conditions block, followed
 /// by `extra`.
@@ -142,7 +145,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let mut line = self
             .lines()
             .next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
-        while matches!(line, LineInBlock::Statement { .. })
+        while matches!(line, LineInBlock::Statement)
             && self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE)
         {
             let (implication, end) = self.parse_quality_implication_statement(fqun)?;
@@ -171,10 +174,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         Position,
     )> {
         let interface_positions = self.ast.start_tuple::<ast::LocalPositionDefinition>();
-        while let LineInBlock::Statement { indentation } = line
+        while matches!(line, LineInBlock::Statement)
             && self.scanner.next_bytes_are(DEFINE_THE_POSITION)
         {
-            let (position, end) = self.parse_local_position_definition(indentation, fqun)?;
+            let (position, end) =
+                self.parse_local_position_definition(ACTION_DEFINITION_BLOCK_INDENTATION, fqun)?;
             self.ast.push(&interface_positions, position);
             content_end = end;
             line = self
@@ -197,9 +201,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         block_open_end: Position,
     ) -> ParseResult<Position> {
         match self.lines().next_line_in_block(0, &[])? {
-            LineInBlock::Close { .. } => {}
+            LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
-            LineInBlock::Statement { .. } => return Err(self.statement_instead_of_action_close()),
+            LineInBlock::Statement => return Err(self.statement_instead_of_action_close()),
             // The block ends before its `}`.
             LineInBlock::Unclosed => {
                 return Err(self.missing_close_brace(start, block_open_end));
@@ -369,15 +373,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         ast::TriggerConditionsBlock<'py>,
         ast::ActionStatementsBlock<'py>,
     )> {
-        let indentation = match line {
-            LineInBlock::Statement { indentation }
-                if self.scanner.next_bytes_are(IT_HAPPENS_WHEN) =>
-            {
-                indentation
-            }
-            LineInBlock::Statement { .. } => return Err(self.invalid_action_definition_block()),
+        match line {
+            LineInBlock::Statement if self.scanner.next_bytes_are(IT_HAPPENS_WHEN) => {}
+            LineInBlock::Statement => return Err(self.invalid_action_definition_block()),
             // The block closes before its trigger conditions block.
-            LineInBlock::Close { .. } => {
+            LineInBlock::Close => {
                 let close = self.scanner.position;
                 return Err(self.errors.missing_action_definition_syntax(close, close));
             }
@@ -391,13 +391,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.scanner.consume(IT_HAPPENS_WHEN);
         let block_open_end = self.lines().parse_block_open()?;
-        let condition = match self
-            .lines()
-            .next_line_in_block(indentation, &TRIGGER_CONDITION_STARTS)?
-        {
-            LineInBlock::Statement { .. } => self.parse_trigger_condition()?,
+        let condition = match self.lines().next_line_in_block(
+            ACTION_DEFINITION_BLOCK_INDENTATION,
+            &TRIGGER_CONDITION_STARTS,
+        )? {
+            LineInBlock::Statement => self.parse_trigger_condition()?,
             // The block is empty.
-            LineInBlock::Close { .. } => {
+            LineInBlock::Close => {
                 let close = self.scanner.position;
                 return Err(self.errors.missing_trigger_condition_content(close, close));
             }
@@ -408,12 +408,13 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_trigger_condition_content(block_open_end, block_open_end));
             }
         };
-        // The `}` line opens the action statements block, whose contents are
-        // indented from it as it is written.
-        let statements_indentation = match self.lines().next_line_in_block(indentation, &[])? {
-            LineInBlock::Close { indentation } => indentation,
+        match self
+            .lines()
+            .next_line_in_block(ACTION_DEFINITION_BLOCK_INDENTATION, &[])?
+        {
+            LineInBlock::Close => {}
             // A statement is where the block's `}` belongs.
-            LineInBlock::Statement { .. } => {
+            LineInBlock::Statement => {
                 return Err(self.statement_instead_of_close_brace());
             }
             // The block ends before its `}`.
@@ -432,15 +433,18 @@ impl<'py, 'source> Parser<'py, 'source> {
         let statements_open_end = self.lines().parse_block_open()?;
         let statements = self.ast.start_tuple::<ast::ActionStatement>();
         loop {
-            match self
-                .lines()
-                .next_line_in_block(statements_indentation, &ACTION_STATEMENT_STARTS)?
-            {
-                LineInBlock::Statement { indentation } => {
-                    let statement = self.parse_action_statement(indentation, fqun)?;
+            match self.lines().next_line_in_block(
+                ACTION_DEFINITION_BLOCK_INDENTATION,
+                &ACTION_STATEMENT_STARTS,
+            )? {
+                LineInBlock::Statement => {
+                    let statement = self.parse_action_statement(
+                        ACTION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
+                        fqun,
+                    )?;
                     self.ast.push(&statements, statement);
                 }
-                LineInBlock::Close { .. } => break,
+                LineInBlock::Close => break,
                 // The block ends before its `}`.
                 LineInBlock::Unclosed => {
                     return Err(self.missing_close_brace(statements_start, statements_open_end));

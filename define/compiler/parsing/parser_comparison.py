@@ -71,6 +71,37 @@ def native_parse_where_lark_rejects_by_mistake(
     return native_parse(source, file_path)
 
 
+def native_parse_where_lark_diagnostics_are_wrong(
+    source: str, file_path: PurePosixPath | None = None
+) -> native_parser.ParseResult:
+    """Parse source with the parser in parser.rs, for a source the Lark parser reports the wrong diagnostics for.
+
+    Raises:
+        ParsersDisagreeError: The parsers disagree about whether the source is
+            valid or about its program, or the Lark parser's diagnostics are
+            no longer different.
+    """
+    lark_result = _LARK_PARSER.parse_and_transform(source, file_path=file_path)
+    native_result = native_parse(source, file_path)
+    if (lark_result.exception is None) != (native_result.exception is None):
+        raise ParsersDisagreeError(
+            f"the parsers disagree about whether {source!r} is valid"
+        )
+    differences = _differences(lark_result.program, native_result.program, "program")
+    if differences:
+        raise ParsersDisagreeError(
+            f"the parsers produce different programs for {source!r}:\n"
+            + "\n".join(differences)
+        )
+    if not _differences(
+        lark_result.diagnostics, native_result.diagnostics, "diagnostics"
+    ):
+        raise ParsersDisagreeError(
+            f"the Lark parser's diagnostics are no longer different for {source!r}"
+        )
+    return native_result
+
+
 def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
     """Parse source with both parsers and return how they agreed.
 

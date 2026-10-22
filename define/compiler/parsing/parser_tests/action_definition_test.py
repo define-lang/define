@@ -288,9 +288,9 @@ def test_action_block_comment_after_action_close(native_parse: NativeParse):
 
 
 def test_action_block_no_indentation(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "define the position<run>.\n"
         + "it happens when {\n"
@@ -313,6 +313,16 @@ def test_action_block_no_indentation(
         ),
         diagnostics.IncorrectIndentationDiagnostic(
             location=ast.SourceLocation(line=4, column=1, end_line=4, end_column=1),
+            expected_indent=8,
+            actual_indent=0,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=5, column=1, end_line=5, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=6, column=1, end_line=6, end_column=1),
             expected_indent=4,
             actual_indent=0,
         ),

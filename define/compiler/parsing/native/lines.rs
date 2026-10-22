@@ -16,7 +16,7 @@ pub const BLOCK_OPEN: &[u8] = &[SPACE, OPEN_BRACE];
 pub const TERMINATOR: u8 = b'.';
 /// How much deeper than the statement that opens a block each line in the
 /// block is indented.
-const INDENTATION_WIDTH: usize = 4;
+pub const INDENTATION_WIDTH: usize = 4;
 
 pub struct Lines<'parser, 'py, 'source> {
     scanner: &'parser mut Scanner<'source>,
@@ -26,10 +26,10 @@ pub struct Lines<'parser, 'py, 'source> {
 
 /// What comes next in a block, after any blank and comment lines.
 pub enum LineInBlock {
-    /// The block's `}`, after `indentation` spaces.
-    Close { indentation: usize },
-    /// A statement, after `indentation` spaces.
-    Statement { indentation: usize },
+    /// The block's `}`.
+    Close,
+    /// A statement.
+    Statement,
     /// The source ends, or a line indented less than the block's lines that
     /// begins none of the block's statements comes, where a line of the block
     /// belongs.
@@ -174,7 +174,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             };
             if self.scanner.next_byte_is(CLOSE_BRACE) {
                 self.check_indentation(line_start, opener_indentation, indentation)?;
-                return Ok(LineInBlock::Close { indentation });
+                return Ok(LineInBlock::Close);
             }
             // A line of an outer block follows the block's lines without the
             // block's `}` between them.
@@ -182,7 +182,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
                 return Ok(LineInBlock::Unclosed);
             }
             self.check_indentation(line_start, contents_indentation, indentation)?;
-            return Ok(LineInBlock::Statement { indentation });
+            return Ok(LineInBlock::Statement);
         }
     }
 

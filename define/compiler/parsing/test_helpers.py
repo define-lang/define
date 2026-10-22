@@ -59,6 +59,15 @@ def parse_with_diagnostics_where_lark_rejects_by_mistake(
     )
 
 
+def parse_with_diagnostics_where_lark_diagnostics_are_wrong(
+    source: str, file_path: PurePosixPath | None = None
+) -> native_parser.ParseResult:
+    """Parse source like `parse_with_diagnostics`, for a source the Lark parser reports the wrong diagnostics for."""
+    return parser_comparison.native_parse_where_lark_diagnostics_are_wrong(
+        source, file_path
+    )
+
+
 def _program(result: native_parser.ParseResult) -> ast.Program:
     assert result.diagnostics == []
     if result.exception is not None:
