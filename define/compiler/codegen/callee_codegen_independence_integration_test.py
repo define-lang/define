@@ -147,7 +147,7 @@ def test_later_init_configuration_does_not_change_generated_callees(
     expected = (case / "expected").resolve()
     project = tmp_path / "project"
     generated = tmp_path / "generated"
-    shutil.copytree(case, project)
+    _copy_project(case, project)
     contributing_modules = _remove_destructor_constraints(
         project, additional_destructor, contributing_sources
     )
@@ -161,6 +161,16 @@ def test_later_init_configuration_does_not_change_generated_callees(
     test_helpers.assert_generated_files_match(
         expected, generated, actual_files - contributing_modules
     )
+
+
+def _copy_project(source: Path, destination: Path):
+    # Copy only file contents, because shutil.copytree also copies permissions,
+    # and remote execution gives the tests read-only input directories.
+    for directory, _, file_names in source.walk(follow_symlinks=True):
+        destination_directory = destination / directory.relative_to(source)
+        destination_directory.mkdir()
+        for file_name in file_names:
+            shutil.copyfile(directory / file_name, destination_directory / file_name)
 
 
 def _remove_destructor_constraints(
@@ -219,7 +229,7 @@ def _generate_with_additional_caller(
     generated: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    shutil.copytree(source_project, project)
+    _copy_project(source_project, project)
     test_source = project / "test.dfn"
     _ = test_source.write_text(_add_additional_caller(test_source.read_text()))
     shutil.copyfile(additional_caller_source, project / "additional_caller.dfn")
@@ -267,7 +277,7 @@ def test_adding_a_destructor_contributing_caller_does_not_change_generated_calle
     case_root = case.baseline.resolve()
     caller_sources = case.caller_sources.resolve()
     baseline_project = tmp_path / "baseline_project"
-    shutil.copytree(case_root, baseline_project)
+    _copy_project(case_root, baseline_project)
     shutil.copyfile(caller_sources / "baseline_test.dfn", baseline_project / "test.dfn")
     baseline_generated = tmp_path / "baseline_generated"
     _compile_and_run_project(baseline_project, baseline_generated, monkeypatch)
