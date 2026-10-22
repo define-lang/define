@@ -82,6 +82,10 @@ py_test(
     size = "small",
     timeout = "moderate",
     srcs = ["perf_profiler_test.py"],
+    # perf reads symbol maps only from fixed /tmp paths, which this test writes
+    # for fixed fake process IDs. A remote worker runs as another user that
+    # shares /tmp, and neither user can replace the other's files.
+    tags = ["no-remote-exec"],
     deps = [
         ":analyzer",
         ":analyzer_model",
