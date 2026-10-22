@@ -40,11 +40,20 @@ local_path_override(
 # extensions to compile for the interpreter's ABI, which this patch adds.
 # TODO: Remove the patch once an aspect_rules_py release includes
 # https://github.com/aspect-build/rules_py/pull/1611.
+# Windows CPython reads only a venv's Lib/site-packages, and it resolves a
+# relative pyvenv.cfg home against its startup directory rather than the venv,
+# so Python in a Windows venv finds neither its packages nor its stdlib. The
+# venv layout patch puts site-packages and home where Windows CPython expects.
+# TODO: Remove the venv layout patch once an aspect_rules_py release includes
+# https://github.com/aspect-build/rules_py/pull/1614.
 git_override(
     module_name = "aspect_rules_py",
     commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
     patch_strip = 1,
-    patches = ["//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch"],
+    patches = [
+        "//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch",
+        "//tools/patches:aspect_rules_py_windows_venv_layout.patch",
+    ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
