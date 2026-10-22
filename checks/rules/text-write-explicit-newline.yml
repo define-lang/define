@@ -1,0 +1,35 @@
+id: text-write-explicit-newline
+language: python
+severity: error
+message: Pass `newline=` to text file writes.
+note:
+  Without it, Python writes each "\n" as "\r\n" on Windows.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+  - "**/lark_standalone.py"
+rule:
+  any:
+    - pattern: $_.write_text($$$)
+    - all:
+        - any:
+            - pattern: open($$$)
+            - pattern: $_.open($$$)
+            - pattern: os.fdopen($$$)
+        - not:
+            pattern: os.open($$$)
+        - has:
+            field: arguments
+            has:
+              stopBy: end
+              kind: string
+              regex: ^["'][rt]*[wax+][rwax+t]*["']$
+  not:
+    has:
+      field: arguments
+      has:
+        kind: keyword_argument
+        has:
+          field: name
+          pattern: newline

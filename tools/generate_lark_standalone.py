@@ -37,7 +37,7 @@ def main():
     )
 
     output_path = Path("lark_parser.py")
-    with output_path.open("w", encoding="utf-8") as output_file:
+    with output_path.open("w", encoding="utf-8", newline="\n") as output_file:
         # PRF-025: Failure threshold. Compressed parser data avoids module line
         # tables that exceed CPython 3.14's remote-unwinder limit.
         standalone.gen_standalone(

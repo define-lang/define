@@ -470,7 +470,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     test_helpers.write_project_config(tmp_path / "lib", child_fqun)
     test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
     test_helpers.write_project_config(tmp_path / "lib" / "nested", parent_fqun)
-    _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+    _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     _ = (tmp_path / "lib" / "target.dfn").write_text(
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
@@ -480,10 +480,12 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
             "}\n"
         ),
         encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "lib" / "nested" / "leaf.dfn").write_text(
         f"define the potential position<{parent_fqun}:/leaf>.\n",
         encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 
@@ -522,10 +524,12 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        'project: {\n  universe_name "bad"\n}\n', encoding="utf-8"
+        'project: {\n  universe_name "bad"\n}\n', encoding="utf-8", newline="\n"
     )
     _ = (tmp_path / "test.dfn").write_text(
-        "define the potential position<x.com:lib:/test>.\n", encoding="utf-8"
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 
@@ -545,9 +549,13 @@ def test_config_validation_error_message(
 ):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
-    _ = (config_dir / "config.defcl").write_text("project: {}\n", encoding="utf-8")
+    _ = (config_dir / "config.defcl").write_text(
+        "project: {}\n", encoding="utf-8", newline="\n"
+    )
     _ = (tmp_path / "test.dfn").write_text(
-        "define the potential position<x.com:lib:/test>.\n", encoding="utf-8"
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 

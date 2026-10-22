@@ -30,12 +30,16 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
     successful_case = codegen_root / "category" / "successful"
     for case_dir in (failed_case, successful_case):
         case_dir.mkdir(parents=True)
-        _ = (case_dir / "test.dfn").write_text("")
+        _ = (case_dir / "test.dfn").write_text("", encoding="utf-8", newline="\n")
     failed_expected = failed_case / "expected"
     failed_expected.mkdir()
     failed_expected_file = failed_expected / "generated.py"
-    _ = failed_expected_file.write_text("existing output")
-    _ = (successful_case / "operation_trace.txt").write_text("existing trace")
+    _ = failed_expected_file.write_text(
+        "existing output", encoding="utf-8", newline="\n"
+    )
+    _ = (successful_case / "operation_trace.txt").write_text(
+        "existing trace", encoding="utf-8", newline="\n"
+    )
 
     def compile_program(
         driver_instance: driver.Driver,
@@ -49,7 +53,9 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
         failed = Path.cwd() == failed_case
         if not failed:
             output_dir.mkdir()
-            _ = (output_dir / "generated.py").write_text("new output")
+            _ = (output_dir / "generated.py").write_text(
+                "new output", encoding="utf-8", newline="\n"
+            )
         result = typing.cast("object", _CompilationResult(failed=failed))
         return typing.cast("driver.CompilationResult", result)
 
@@ -67,12 +73,16 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
         )
 
     assert raised.value.code == 1
-    assert failed_expected_file.read_text() == "existing output"
-    assert (successful_case / "expected" / "generated.py").read_text() == "new output"
-    assert (
-        successful_case / "expected_trace" / "generated.py"
-    ).read_text() == "new output"
-    assert (successful_case / "operation_trace.txt").read_text() == "existing trace"
+    assert failed_expected_file.read_text(encoding="utf-8") == "existing output"
+    assert (successful_case / "expected" / "generated.py").read_text(
+        encoding="utf-8"
+    ) == "new output"
+    assert (successful_case / "expected_trace" / "generated.py").read_text(
+        encoding="utf-8"
+    ) == "new output"
+    assert (successful_case / "operation_trace.txt").read_text(
+        encoding="utf-8"
+    ) == "existing trace"
     assert capsys.readouterr().out == (
         "  category/failed: FAILED\n"
         "    compilation failed\n"

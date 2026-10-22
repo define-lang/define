@@ -14,7 +14,7 @@ from define.compiler import ast
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_bom_at_start(native_parse: NativeParse):
@@ -278,9 +278,9 @@ def test_zero_width_space_in_comment_is_rejected(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 4
 
 
-def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
+def test_bidi_override_in_literal_content_is_rejected(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<p>.\n"
             + "    it happens when {\n"
@@ -381,9 +381,9 @@ def test_comment_with_direction_marks(native_parse: NativeParse):
     )
 
 
-def test_direction_mark_in_literal_content_is_rejected(parse: Parse):
+def test_direction_mark_in_literal_content_is_rejected(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<p>.\n"
             + "    it happens when {\n"
@@ -400,9 +400,9 @@ def test_direction_mark_in_literal_content_is_rejected(parse: Parse):
     assert exc_info.value.location.end_column == 59
 
 
-def test_direction_mark_in_local_name_is_rejected(parse: Parse):
+def test_direction_mark_in_local_name_is_rejected(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<a\u200eb>.\n"
             + "}\n"
@@ -581,3 +581,284 @@ def test_control_character_where_block_close_belongs(native_parse: NativeParse):
     assert exc_info.value.location.column == 5
     assert exc_info.value.location.end_line == 5
     assert exc_info.value.location.end_column == 5
+
+
+def test_control_character_in_trigger_condition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        this\x01 particle is created.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 13
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 13
+
+
+def test_control_character_after_position_presence_typed_name(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run>\x01 has a particle.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 26
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 26
+
+
+def test_control_character_after_trigger_close_brace(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    }\x01 and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 6
+
+
+def test_control_character_after_move_source(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        move the particle in position<run>\x01 to position<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 43
+
+
+def test_control_character_in_action_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a\x01 particle in position<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 17
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 17
+
+
+def test_control_character_in_action_definition_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it\x01 happens when {\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 7
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 7
+
+
+def test_invisible_character_in_local_name_reference(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<r\u200bun>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\u200b"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 40
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 40
+
+
+def test_control_character_in_reference_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in posi\x01tion<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 34
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 34
+
+
+def test_invisible_character_in_invalid_reference_name(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<a\u200b:b>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\u200b"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 40
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 40
+
+
+def test_control_character_after_create_particle_reference(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<run>\x01.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\x01"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 43
+
+
+def test_invisible_character_in_encoding_constraint_name_type(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encod\u200bing</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 2
+    assert error.value.location.column == 21
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 21
+
+
+def test_invisible_character_in_it_has_the(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has\u200b the encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 2
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 11
+
+
+def test_invisible_character_after_escape_in_literal(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + '        set the value of position<dest> to literal</text>"a\\"\u202e".\n'
+            + "    }\n}\n"
+        )
+    assert error.value.char == "\u202e"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 62
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 62
+
+
+def test_invisible_character_escaped_in_literal(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + '        set the value of position<dest> to literal</text>"a\\\u202e".\n'
+            + "    }\n}\n"
+        )
+    assert error.value.char == "\u202e"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 61
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 61
+
+
+def test_invisible_character_before_literal_content(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + '        set the value of position<dest> to literal</text>\u202e"a".\n'
+            + "    }\n}\n"
+        )
+    assert error.value.char == "\u202e"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 58
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 58
+
+
+def test_invisible_character_in_value_source_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        set the value of position<dest> to posi\u200btion<x>.\n"
+            + "    }\n}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 48
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 48

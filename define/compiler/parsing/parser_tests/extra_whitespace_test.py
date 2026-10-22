@@ -13,7 +13,7 @@ import pytest
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_file_all_spaces(native_parse: NativeParse):
@@ -98,19 +98,20 @@ def test_space_after_define_at_end_of_line(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 7
 
 
-def test_extra_space_after_potential_in_action_definition(parse: Parse):
+def test_extra_space_after_potential_in_action_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")
+        native_parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 21
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 22
 
 
 def test_extra_space_in_local_position_definition_in_action_block(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    define  the position<my_pos>.\n"
@@ -121,13 +122,14 @@ def test_extra_space_in_local_position_definition_in_action_block(
             + "}\n"
         )
     assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 10
+    assert exc_info.value.location.column == 11
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 12
 
 
-def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
+def test_extra_space_in_trigger_clause_in_action_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens  when {\n"
@@ -137,13 +139,14 @@ def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 16
 
 
-def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
+def test_extra_space_in_and_it_does_clause_in_action_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -153,13 +156,14 @@ def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 7
+    assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_line == 5
     assert exc_info.value.location.end_column == 7
 
 
-def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
+def test_extra_space_after_and_it_does_before_open_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -170,7 +174,8 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 18
-    assert exc_info.value.location.end_column == 18
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 19
 
 
 def test_extra_space_before_local_name_in_position_requirement_statement(
@@ -201,9 +206,9 @@ def test_space_before_name_in_position_definition(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 30
 
 
-def test_extra_space_after_create_a_particle_in(parse: Parse):
+def test_extra_space_after_create_a_particle_in(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -214,13 +219,14 @@ def test_extra_space_after_create_a_particle_in(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 30
 
 
-def test_extra_space_before_to_in_move_statement(parse: Parse):
+def test_extra_space_before_to_in_move_statement(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -231,13 +237,14 @@ def test_extra_space_before_to_in_move_statement(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 44
+    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 44
 
 
-def test_extra_space_after_to_in_move_statement(parse: Parse):
+def test_extra_space_after_to_in_move_statement(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -248,13 +255,14 @@ def test_extra_space_after_to_in_move_statement(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 47
+    assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 47
 
 
-def test_extra_space_after_the_in_trigger_condition(parse: Parse):
+def test_extra_space_after_the_in_trigger_condition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -264,5 +272,95 @@ def test_extra_space_after_the_in_trigger_condition(parse: Parse):
             + "}\n"
         )
     assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 13
+    assert exc_info.value.location.column == 12
+    assert exc_info.value.location.end_line == 4
     assert exc_info.value.location.end_column == 13
+
+
+def test_extra_space_before_has_a_particle(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run>  has a particle.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 26
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 27
+
+
+def test_extra_space_in_constructor_condition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        this  particle is created.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 13
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 14
+
+
+def test_extra_space_in_action_statement_words(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create  a particle in position<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 15
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 16
+
+
+def test_extra_space_before_position_definition_brace(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path>  {\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 64
+
+
+def test_extra_space_before_encoding_in_encoding_constraint(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the  encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 16
+
+
+def test_extra_space_in_encoding_constraint(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it  has the encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 7
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 8

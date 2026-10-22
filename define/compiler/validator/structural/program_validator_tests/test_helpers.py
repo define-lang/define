@@ -29,7 +29,7 @@ def parse_and_validate_file(
     source_path = tmp_path / relative_path
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     if isinstance(source, str):
-        _ = source_path.write_text(source, encoding="utf-8")
+        _ = source_path.write_text(source, encoding="utf-8", newline="\n")
     else:
         _ = source_path.write_bytes(source)
     monkeypatch.chdir(tmp_path)

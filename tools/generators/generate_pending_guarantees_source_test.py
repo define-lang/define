@@ -123,7 +123,7 @@ def test_cli(tmp_path: Path):
         ],
     )
     assert result.exit_code == 0
-    source = output.read_text()
+    source = output.read_text(encoding="utf-8")
     assert source.count("    define the position<unrelated_") == 2
     assert source.count("        define the position<temporary_") == 3
     assert "action<mv:example.com:generated:/stage_2>" in source

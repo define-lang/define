@@ -130,7 +130,9 @@ def _profiled_command(
         1,
     )
     profiled_launcher_path = temporary_directory / "python-launcher"
-    _ = profiled_launcher_path.write_text(profiled_launcher, encoding="utf-8")
+    _ = profiled_launcher_path.write_text(
+        profiled_launcher, encoding="utf-8", newline="\n"
+    )
     profiled_launcher_path.chmod(0o700)
     environment["RUNFILES_DIR"] = os.fspath(
         launcher_path.with_name(launcher_path.name + ".runfiles")
@@ -150,6 +152,7 @@ def _target_command(
         + shlex.quote(os.fspath(target_pid_path))
         + '\nrm -f "/tmp/perf-$$.map"\nexec "$@"\n',
         encoding="utf-8",
+        newline="\n",
     )
     target_launcher_path.chmod(0o700)
     return (os.fspath(target_launcher_path), *command), target_pid_path
@@ -300,7 +303,9 @@ def capture(
         _ = shutil.move(recorded_data_path, profile_path)
         _retain_recorded_native_objects(perf_executable, profile_path, runtime_map_path)
 
-    _ = diagnostics_path(profile_path).write_text(diagnostics, encoding="utf-8")
+    _ = diagnostics_path(profile_path).write_text(
+        diagnostics, encoding="utf-8", newline="\n"
+    )
     profile_path.with_name(profile_path.name + ".inject.stderr").unlink(missing_ok=True)
     metadata: Metadata = {
         "command": list(command),
@@ -315,6 +320,7 @@ def capture(
     _ = metadata_path(profile_path).write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     if diagnostics:
         _ = sys.stderr.write(diagnostics)

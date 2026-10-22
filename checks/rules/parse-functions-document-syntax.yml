@@ -6,6 +6,7 @@ message:
   its doc comment.
 files:
   - define/compiler/parsing/native/parser.rs
+  - define/compiler/parsing/native/parser/*.rs
 rule:
   kind: function_item
   has:

@@ -782,9 +782,9 @@ def test_trace_records_direct_calls_and_repeated_operations(
     monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
     literal.start(_Entry, trace_operations=True)
     expected = "entry.create(run)\nworker.create(item)\nworker.destroy(item)\nworker.create(item)\nworker.destroy(item)\nentry.destroy(run)\n"
-    assert trace_file.read_text() == expected
+    assert trace_file.read_text(encoding="utf-8") == expected
     literal.start(_Entry, trace_operations=True)
-    assert trace_file.read_text() == expected
+    assert trace_file.read_text(encoding="utf-8") == expected
 
 
 def test_disabled_tracing_does_not_write_file(
@@ -815,4 +815,7 @@ def test_failed_action_clears_tracing(monkeypatch: pytest.MonkeyPatch, tmp_path:
     with pytest.raises(ValueError, match="failed action"):
         literal.start(Failing, trace_operations=True)
     literal.start(_Worker, trace_operations=True)
-    assert trace_file.read_text() == "worker.create(item)\nworker.destroy(item)\n"
+    assert (
+        trace_file.read_text(encoding="utf-8")
+        == "worker.create(item)\nworker.destroy(item)\n"
+    )

@@ -10,11 +10,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
+from define.compiler import ast, name_types
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        NativeParse,
+        NativeParseWithDiagnostics,
+    )
 
 
 def test_empty_file(native_parse: NativeParse):
@@ -26,20 +29,30 @@ def test_empty_file(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_unmatched_close_brace(parse: Parse):
+def test_unmatched_close_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("}\n")
+        native_parse("}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 1
 
 
-def test_file_starts_with_indented_trigger_conditions(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("    it happens when {\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 1
+def test_file_starts_with_indented_trigger_conditions(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics("    it happens when {\n")
+    assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=5, end_line=1, end_column=21
+    )
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=1, column=1, end_line=1, end_column=4),
+            expected_indent=0,
+            actual_indent=4,
+        )
+    ]
 
 
 def test_file_all_newlines(native_parse: NativeParse):
@@ -61,12 +74,12 @@ def test_define_the_potential_incomplete_global_prefix(native_parse: NativeParse
 
 
 def test_missing_space_in_global_definition_prefix(native_parse: NativeParse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         native_parse("definethe potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.column == 7
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 62
+    assert exc_info.value.location.end_column == 9
 
 
 def test_misspelled_define_in_global_definition_prefix(native_parse: NativeParse):
@@ -154,9 +167,9 @@ def test_bare_slash_between_definitions(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_close_angle_colon_in_action_statements_block(parse: Parse):
+def test_close_angle_colon_in_action_statements_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -168,12 +181,13 @@ def test_close_angle_colon_in_action_statements_block(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 9
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 10
 
 
-def test_missing_open_angle_with_close_angle_colon(parse: Parse):
+def test_missing_open_angle_with_close_angle_colon(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -185,7 +199,8 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse):
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_column == 30
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 28
 
 
 def test_global_position_block_open_without_content(native_parse: NativeParse):
@@ -199,11 +214,12 @@ def test_global_position_block_open_without_content(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 65
 
 
-def test_global_action_block_open_without_content(parse: Parse):
+def test_global_action_block_open_without_content(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse("define the potential action<mv:define-lang.org:parser:/path> {\n")
+        native_parse("define the potential action<mv:define-lang.org:parser:/path> {\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 63
 
 
@@ -241,31 +257,41 @@ def test_position_required_clause_missing_open_brace(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 40
 
 
-def test_action_block_missing_trigger_clause(parse: Parse):
+def test_action_block_missing_trigger_clause(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n" + "}\n"
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
-def test_action_trigger_clause_missing_open_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path> {\n"
-            + "it happens when\n"
-            + "}\n"
+def test_action_trigger_clause_missing_open_brace(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "it happens when\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
+    assert result.exception.location == ast.SourceLocation(
+        line=2, column=16, end_line=2, end_column=16
+    )
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=2, column=1, end_line=2, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
         )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 16
-    assert exc_info.value.location.end_column == 16
+    ]
 
 
-def test_action_missing_and_it_does_clause(parse: Parse):
+def test_action_missing_and_it_does_clause(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -275,12 +301,13 @@ def test_action_missing_and_it_does_clause(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 6
+    assert exc_info.value.location.end_line == 5
     assert exc_info.value.location.end_column == 6
 
 
-def test_action_and_it_does_clause_missing_open_brace(parse: Parse):
+def test_action_and_it_does_clause_missing_open_brace(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -290,22 +317,32 @@ def test_action_and_it_does_clause_missing_open_brace(parse: Parse):
         )
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 18
+    assert exc_info.value.location.end_line == 5
     assert exc_info.value.location.end_column == 18
 
 
-def test_action_and_it_does_block_missing_close_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "}\n"
+def test_action_and_it_does_block_missing_close_brace(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=62
+    )
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=6, column=1, end_line=6, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
         )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 2
-    assert exc_info.value.location.end_column == 2
+    ]
 
 
 def test_position_constraint_block_truncated_without_final_newline(
@@ -352,9 +389,11 @@ def test_position_definition_block_truncated_after_constraint_block(
     assert exc_info.value.location.end_column == 64
 
 
-def test_action_statements_block_truncated_without_final_newline(parse: Parse):
+def test_action_statements_block_truncated_without_final_newline(
+    native_parse: NativeParse,
+):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -362,9 +401,10 @@ def test_action_statements_block_truncated_without_final_newline(parse: Parse):
             + "    } and it does {\n"
             + "        create a particle in position<run>."
         )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 43
-    assert exc_info.value.location.end_column == 43
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 7
+    assert exc_info.value.location.end_line == 5
+    assert exc_info.value.location.end_column == 19
 
 
 def test_block_truncated_after_open_brace_without_final_newline(
@@ -378,26 +418,30 @@ def test_block_truncated_after_open_brace_without_final_newline(
     assert exc_info.value.location.end_column == 65
 
 
-def test_action_truncated_before_trigger_block_without_final_newline(parse: Parse):
+def test_action_truncated_before_trigger_block_without_final_newline(
+    native_parse: NativeParse,
+):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>."
         )
     assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_column == 29
+    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 30
 
 
-def test_trigger_conditions_block_truncated_after_open(parse: Parse):
+def test_trigger_conditions_block_truncated_after_open(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTriggerConditionContent) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 22
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 22
 
 
@@ -415,22 +459,23 @@ def test_position_constraint_block_truncated_after_open_without_final_newline(
     assert exc_info.value.location.end_column == 42
 
 
-def test_local_position_block_truncated_after_open(parse: Parse):
+def test_local_position_block_truncated_after_open(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run> {\n"
         )
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 31
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 31
 
 
-def test_block_truncated_mid_statement_reports_the_statement(parse: Parse):
+def test_block_truncated_mid_statement_reports_the_statement(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -439,15 +484,16 @@ def test_block_truncated_mid_statement_reports_the_statement(parse: Parse):
             + "        create a particle in position<run>"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 42
-    assert exc_info.value.location.end_column == 42
+    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 43
 
 
 def test_local_position_keyword_without_name_in_action_definition_block(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    define the position\n"
@@ -459,14 +505,15 @@ def test_local_position_keyword_without_name_in_action_definition_block(
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 24
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 24
 
 
 def test_local_position_keyword_without_name_in_action_statements_block(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -478,6 +525,7 @@ def test_local_position_keyword_without_name_in_action_statements_block(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 28
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 28
 
 
@@ -553,9 +601,9 @@ def test_position_requirement_name_starts_and_then_newline(native_parse: NativeP
     assert exc_info.value.location.end_column == 29
 
 
-def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
+def test_position_requirement_missing_space_after_it_has_the(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<example.com:my_lib:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -572,14 +620,15 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
         )
     assert exc_info.value.location.line == 10
     assert exc_info.value.location.column == 19
+    assert exc_info.value.location.end_line == 10
     assert exc_info.value.location.end_column == 26
 
 
 def test_create_particle_missing_reference(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -591,12 +640,13 @@ def test_create_particle_missing_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 29
 
 
-def test_value_cannot_start_position_reference(parse: Parse):
+def test_value_cannot_start_position_reference(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -607,12 +657,13 @@ def test_value_cannot_start_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 30
+    assert error.value.location.end_line == 5
     assert error.value.location.end_column == 34
 
 
-def test_value_cannot_be_in_chained_position_reference(parse: Parse):
+def test_value_cannot_be_in_chained_position_reference(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -623,12 +674,13 @@ def test_value_cannot_be_in_chained_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 46
+    assert error.value.location.end_line == 5
     assert error.value.location.end_column == 50
 
 
-def test_value_cannot_be_local_position_reference(parse: Parse):
+def test_value_cannot_be_local_position_reference(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -639,14 +691,15 @@ def test_value_cannot_be_local_position_reference(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 30
+    assert error.value.location.end_line == 5
     assert error.value.location.end_column == 34
 
 
 def test_create_particle_reference_missing_name_after_chain_separator(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -658,14 +711,15 @@ def test_create_particle_reference_missing_name_after_chain_separator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 45
 
 
 def test_create_particle_reference_chain_separator_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -677,16 +731,17 @@ def test_create_particle_reference_chain_separator_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 45
 
 
 def test_create_particle_reference_single_colon_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -698,16 +753,17 @@ def test_create_particle_reference_single_colon_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 43
 
 
 def test_create_particle_reference_single_slash_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -719,13 +775,14 @@ def test_create_particle_reference_single_slash_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 43
 
 
 def test_double_colon_in_create_reference_parses_as_global_name(
-    parse: Parse,
+    native_parse_lark_wrong: NativeParse,
 ):
-    tree = parse(
+    program = native_parse_lark_wrong(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -735,17 +792,25 @@ def test_double_colon_in_create_reference_parses_as_global_name(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/foo::bar",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.CreateParticleStatement)
+    [typed_name] = statement.target_position.typed_names
+    assert isinstance(typed_name, ast.GlobalTypedNameReference)
+    assert typed_name.name_type == name_types.NameType.POSITION
+    assert typed_name.name_content.fqun is None
+    assert typed_name.name_content.path.name == "/foo::bar"
+    assert typed_name.location == ast.SourceLocation(
+        line=6, column=30, end_line=6, end_column=48
+    )
 
 
 def test_destroy_particle_missing_reference(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -757,14 +822,15 @@ def test_destroy_particle_missing_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 32
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 32
 
 
 def test_destroy_particle_reference_missing_name_after_chain_separator(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -776,14 +842,15 @@ def test_destroy_particle_reference_missing_name_after_chain_separator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 48
 
 
 def test_destroy_particle_reference_chain_separator_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -795,16 +862,17 @@ def test_destroy_particle_reference_chain_separator_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 48
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 48
 
 
 def test_destroy_particle_reference_single_colon_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -816,13 +884,14 @@ def test_destroy_particle_reference_single_colon_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 46
 
 
 def test_double_colon_in_destroy_reference_parses_as_global_name(
-    parse: Parse,
+    native_parse_lark_wrong: NativeParse,
 ):
-    tree = parse(
+    program = native_parse_lark_wrong(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -832,17 +901,25 @@ def test_double_colon_in_destroy_reference_parses_as_global_name(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/path",
-        "/foo::bar",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.DestroyParticleStatement)
+    [typed_name] = statement.target_position.typed_names
+    assert isinstance(typed_name, ast.GlobalTypedNameReference)
+    assert typed_name.name_type == name_types.NameType.POSITION
+    assert typed_name.name_content.fqun is None
+    assert typed_name.name_content.path.name == "/foo::bar"
+    assert typed_name.location == ast.SourceLocation(
+        line=6, column=33, end_line=6, end_column=51
+    )
 
 
 def test_name_chain_invalid_item(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -854,14 +931,15 @@ def test_name_chain_invalid_item(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 45
 
 
 def test_move_particle_missing_source_reference(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -873,14 +951,15 @@ def test_move_particle_missing_source_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 29
 
 
 def test_move_particle_missing_to_keyword(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -892,14 +971,15 @@ def test_move_particle_missing_to_keyword(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 44
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 51
 
 
 def test_move_particle_missing_destination_reference(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -911,14 +991,15 @@ def test_move_particle_missing_destination_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 46
 
 
 def test_move_particle_chain_separator_after_source_then_terminator(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -930,14 +1011,15 @@ def test_move_particle_chain_separator_after_source_then_terminator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 45
 
 
 def test_move_particle_chain_separator_after_source_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -949,14 +1031,15 @@ def test_move_particle_chain_separator_after_source_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 45
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 45
 
 
 def test_move_particle_chain_separator_after_destination_then_terminator(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -968,14 +1051,15 @@ def test_move_particle_chain_separator_after_destination_then_terminator(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 63
 
 
 def test_move_particle_chain_separator_after_destination_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -987,14 +1071,15 @@ def test_move_particle_chain_separator_after_destination_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 63
 
 
 def test_move_particle_single_colon_after_source(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1006,16 +1091,17 @@ def test_move_particle_single_colon_after_source(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 43
 
 
 def test_move_particle_single_colon_after_destination(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1027,14 +1113,15 @@ def test_move_particle_single_colon_after_destination(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 61
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 61
 
 
 def test_move_particle_no_space_before_to(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1046,14 +1133,15 @@ def test_move_particle_no_space_before_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 44
 
 
 def test_move_particle_no_space_after_to(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1065,14 +1153,15 @@ def test_move_particle_no_space_after_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 46
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 53
 
 
 def test_move_particle_chained_source_missing_to(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1084,16 +1173,17 @@ def test_move_particle_chained_source_missing_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 60
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 60
 
 
 def test_move_particle_missing_terminator_after_destination(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(
         parser_exceptions.ExpectedChainSeparatorOrTerminator
     ) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1105,14 +1195,15 @@ def test_move_particle_missing_terminator_after_destination(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 61
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 61
 
 
 def test_move_particle_missing_close_angle_bracket_before_to(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1124,14 +1215,15 @@ def test_move_particle_missing_close_angle_bracket_before_to(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 47
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 47
 
 
 def test_move_keyword_then_newline(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1143,14 +1235,15 @@ def test_move_keyword_then_newline(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 12
 
 
 def test_move_particle_in_space_dot(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1162,14 +1255,15 @@ def test_move_particle_in_space_dot(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 30
 
 
 def test_create_particle_no_space_before_reference(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1181,6 +1275,7 @@ def test_create_particle_no_space_before_reference(
         )
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 36
 
 
@@ -1225,3 +1320,190 @@ def test_file_ending_where_open_brace_belongs(native_parse: NativeParse):
     assert exc_info.value.location.column == 40
     assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 40
+
+
+def test_text_after_create_particle_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<run>.x\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 44
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 44
+
+
+def test_word_starting_with_to_after_move_source(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        move the particle in position<run> tox position<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 44
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 46
+
+
+def test_no_space_before_create_particle_reference_terminator(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 29
+
+
+def test_create_particle_reference_without_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in <run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 30
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 30
+
+
+def test_create_particle_reference_missing_open_angle(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position.run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 38
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 38
+
+
+def test_create_particle_reference_with_empty_fqun(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<:/run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 39
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 43
+
+
+def test_reference_name_that_is_neither_local_nor_global(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvalidName) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<a:b>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 39
+    assert exc_info.value.location.end_line == 6
+    assert exc_info.value.location.end_column == 41
+
+
+def test_position_requirement_ends_after_it_has_the(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 19
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 19
+
+
+def test_potential_literal_definition_block_truncated_after_open(
+    native_parse: NativeParse,
+):
+    with pytest.raises(
+        parser_exceptions.InvalidPotentialLiteralDefinitionBlock
+    ) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        )
+    assert error.value.location.line == 1
+    assert error.value.location.column == 67
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 67
+
+
+def test_potential_literal_definition_block_truncated_after_encoding_constraint(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encoding</decimal>.\n"
+        )
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 66
+
+
+def test_encoding_constraint_ends_after_it_has_the(native_parse: NativeParse):
+    with pytest.raises(
+        parser_exceptions.InvalidPotentialLiteralDefinitionBlock
+    ) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 15

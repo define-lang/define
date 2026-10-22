@@ -17,7 +17,7 @@ import pytest
 from define.compiler.errors import parser_exceptions, source_map
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
@@ -94,9 +94,9 @@ def test_token_error_message(native_parse: NativeParse):
         This statement must end with a '.' or a single space followed by '{'""")
 
 
-def test_error_message_for_indented_code_in_action_block(parse: Parse):
+def test_error_message_for_indented_code_in_action_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<local_name.\n"
@@ -108,6 +108,7 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 36
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 36
     assert _format(
         exc_info.value,

@@ -31,6 +31,7 @@ pub enum TextKind {
     /// have; any other character that does not belong is a syntax error.
     Syntax,
     Name,
+    LiteralContent,
     Comment,
 }
 
@@ -63,32 +64,6 @@ pub fn first_disallowed_character(
         }
     }
     None
-}
-
-/// Returns the error for the character `offset` bytes, which are ASCII, past
-/// the scanner's position, where the syntax there went wrong, if no syntax may
-/// have it.
-pub fn disallowed_character_ahead(
-    errors: &SyntaxErrors,
-    scanner: &Scanner,
-    offset: usize,
-) -> Option<ParseError> {
-    let start = scanner.position;
-    let position = Position {
-        line: start.line,
-        column: start.column + offset,
-    };
-    let chunk = scanner.rest_of_line().bytes[offset..]
-        .utf8_chunks()
-        .next()?;
-    let Some(character) = chunk.valid().chars().next() else {
-        return Some(invalid_encoding(errors, position, chunk.invalid()));
-    };
-    let neighbors = Neighbors {
-        previous: None,
-        next: None,
-    };
-    disallowed_character(errors, position, character, TextKind::Syntax, neighbors)
 }
 
 /// The characters on either side of a character being checked, where `None`
@@ -151,13 +126,6 @@ fn disallowed_character(
     Some(error)
 }
 
-/// Returns the error for the bytes at `position` that are not valid UTF-8.
-fn invalid_encoding(errors: &SyntaxErrors, position: Position, bytes: &[u8]) -> ParseError {
-    // The bytes are not characters, so the error shows them as escapes.
-    let escaped: String = bytes.iter().map(|byte| format!("\\x{byte:02x}")).collect();
-    errors.invalid_encoding_error(position, position, &escaped)
-}
-
 /// Whether `character` is in the spec's invisible ranges, apart from the
 /// characters that its Invisible Characters rule allows in some contexts.
 fn is_invisible(character: char) -> bool {
@@ -174,4 +142,49 @@ fn is_visible(character: char) -> bool {
         && !VARIATION_SELECTORS.contains(&character)
         && !JOINERS.contains(&character)
         && !is_invisible(character)
+}
+
+/// Returns the error for the character `offset` bytes, which are ASCII, past
+/// the scanner's position, where the syntax there went wrong, if no syntax may
+/// have it.
+#[cold]
+pub fn disallowed_character_ahead(
+    errors: &SyntaxErrors,
+    scanner: &Scanner,
+    offset: usize,
+) -> Option<ParseError> {
+    let start = scanner.position;
+    let position = Position {
+        line: start.line,
+        column: start.column + offset,
+    };
+    disallowed_first_character(errors, position, &scanner.rest_of_line().bytes[offset..])
+}
+
+/// Returns the error for the first character of `text`, which begins at
+/// `position` and has no line feed, if no syntax may have it.
+#[cold]
+pub fn disallowed_first_character(
+    errors: &SyntaxErrors,
+    position: Position,
+    text: &[u8],
+) -> Option<ParseError> {
+    let chunk = text.utf8_chunks().next()?;
+    let Some(character) = chunk.valid().chars().next() else {
+        return Some(invalid_encoding(errors, position, chunk.invalid()));
+    };
+    let neighbors = Neighbors {
+        previous: None,
+        next: None,
+    };
+    disallowed_character(errors, position, character, TextKind::Syntax, neighbors)
+}
+
+/// Returns the error for the bytes at `position` that are not valid UTF-8.
+#[cold]
+#[inline(never)]
+fn invalid_encoding(errors: &SyntaxErrors, position: Position, bytes: &[u8]) -> ParseError {
+    // The bytes are not characters, so the error shows them as escapes.
+    let escaped: String = bytes.iter().map(|byte| format!("\\x{byte:02x}")).collect();
+    errors.invalid_encoding_error(position, position, &escaped)
 }

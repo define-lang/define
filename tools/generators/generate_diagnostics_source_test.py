@@ -60,7 +60,7 @@ def test_cli(tmp_path: Path):
     )
     assert result.exit_code == 0
     assert (
-        output.read_text()
+        output.read_text(encoding="utf-8")
         == "\n".join(gen.generate_source_lines(2, 50, 5, "mv:example.com:generated"))
         + "\n"
     )
@@ -90,6 +90,6 @@ def test_indentation_cli(tmp_path: Path):
     )
     assert result.exit_code == 0
     assert (
-        output.read_text()
+        output.read_text(encoding="utf-8")
         == "\n".join(gen.generate_source_lines(errors=1, indent_width=100)) + "\n"
     )

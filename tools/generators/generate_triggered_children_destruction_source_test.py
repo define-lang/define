@@ -138,7 +138,7 @@ def test_cli(tmp_path: Path):
     )
     assert result.exit_code == 0
     assert (
-        output.read_text()
+        output.read_text(encoding="utf-8")
         == "\n".join(
             gen.generate_source_lines(3, 2, gen.Shape.MOVE, "mv:example.com:generated")
         )

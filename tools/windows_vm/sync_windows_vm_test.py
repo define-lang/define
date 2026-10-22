@@ -32,16 +32,28 @@ def _git(checkout: Path, *arguments: str) -> str:
 
 def test_snapshot_includes_working_tree_without_changing_checkout(tmp_path: Path):
     _ = _git(tmp_path, "init", "--quiet")
-    _ = (tmp_path / ".gitignore").write_text("ignored.txt\n")
-    _ = (tmp_path / "committed.txt").write_text("committed\n")
-    _ = (tmp_path / "staged.txt").write_text("staged\n")
+    _ = (tmp_path / ".gitignore").write_text(
+        "ignored.txt\n", encoding="utf-8", newline="\n"
+    )
+    _ = (tmp_path / "committed.txt").write_text(
+        "committed\n", encoding="utf-8", newline="\n"
+    )
+    _ = (tmp_path / "staged.txt").write_text("staged\n", encoding="utf-8", newline="\n")
     _ = _git(tmp_path, "add", ".")
     _ = _git(tmp_path, "commit", "--quiet", "--message=Initial")
-    _ = (tmp_path / "committed.txt").write_text("modified\n")
-    _ = (tmp_path / "staged.txt").write_text("staged change\n")
+    _ = (tmp_path / "committed.txt").write_text(
+        "modified\n", encoding="utf-8", newline="\n"
+    )
+    _ = (tmp_path / "staged.txt").write_text(
+        "staged change\n", encoding="utf-8", newline="\n"
+    )
     _ = _git(tmp_path, "add", "staged.txt")
-    _ = (tmp_path / "untracked.txt").write_text("untracked\n")
-    _ = (tmp_path / "ignored.txt").write_text("ignored\n")
+    _ = (tmp_path / "untracked.txt").write_text(
+        "untracked\n", encoding="utf-8", newline="\n"
+    )
+    _ = (tmp_path / "ignored.txt").write_text(
+        "ignored\n", encoding="utf-8", newline="\n"
+    )
     head = _git(tmp_path, "rev-parse", "HEAD")
     status = _git(tmp_path, "status", "--porcelain")
 

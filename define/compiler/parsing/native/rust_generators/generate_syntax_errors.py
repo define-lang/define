@@ -59,7 +59,7 @@ def main():
         exceptions=[_describe_exception(cls) for cls in _exception_classes()],
     )
     _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_syntax_errors(description), encoding="utf-8"
+        rust_renderer.render_syntax_errors(description), encoding="utf-8", newline="\n"
     )
 
 

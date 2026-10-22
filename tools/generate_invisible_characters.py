@@ -154,8 +154,10 @@ def main():
         general_categories(_download_unicode_data()),
         default_ignorable_code_points(_download_derived_core_properties()),
     )
-    _ = PYTHON_OUTPUT_PATH.write_text(render_python(ranges))
-    _ = RUST_OUTPUT_PATH.write_text(render_rust(ranges))
+    _ = PYTHON_OUTPUT_PATH.write_text(
+        render_python(ranges), encoding="utf-8", newline="\n"
+    )
+    _ = RUST_OUTPUT_PATH.write_text(render_rust(ranges), encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

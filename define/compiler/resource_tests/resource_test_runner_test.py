@@ -24,7 +24,7 @@ def _run(
     data: int = 512 * _MIB,
 ):
     source = tmp_path / "stdin"
-    _ = source.write_text("input\n")
+    _ = source.write_text("input\n", encoding="utf-8", newline="\n")
     artifacts = tmp_path / "artifacts"
     measured = resource_test_runner.run(
         [sys.executable, "-c", program],
@@ -39,8 +39,8 @@ def _run(
     )
     return (
         measured,
-        (artifacts / "stdout").read_text(),
-        (artifacts / "stderr").read_text(),
+        (artifacts / "stdout").read_text(encoding="utf-8"),
+        (artifacts / "stderr").read_text(encoding="utf-8"),
     )
 
 

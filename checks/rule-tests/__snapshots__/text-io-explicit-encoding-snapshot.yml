@@ -1,0 +1,44 @@
+id: text-io-explicit-encoding
+snapshots:
+  "open(name)\n":
+    labels:
+    - source: open(name)
+      style: primary
+      start: 0
+      end: 10
+  "open(name, \"r\")\n":
+    labels:
+    - source: open(name, "r")
+      style: primary
+      start: 0
+      end: 15
+  "os.fdopen(descriptor, \"w\", newline=\"\\n\")\n":
+    labels:
+    - source: os.fdopen(descriptor, "w", newline="\n")
+      style: primary
+      start: 0
+      end: 40
+  "path.open(\"w\", newline=\"\\n\")\n":
+    labels:
+    - source: path.open("w", newline="\n")
+      style: primary
+      start: 0
+      end: 28
+  "path.open()\n":
+    labels:
+    - source: path.open()
+      style: primary
+      start: 0
+      end: 11
+  "path.read_text()\n":
+    labels:
+    - source: path.read_text()
+      style: primary
+      start: 0
+      end: 16
+  "path.write_text(content, newline=\"\\n\")\n":
+    labels:
+    - source: path.write_text(content, newline="\n")
+      style: primary
+      start: 0
+      end: 38

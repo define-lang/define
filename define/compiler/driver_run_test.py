@@ -23,10 +23,14 @@ def _write_valid_position_project(project_root: Path, universe_name: str):
     config_dir = project_root / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        f'project: {{ universe_name: "{universe_name}" }}\n'
+        f'project: {{ universe_name: "{universe_name}" }}\n',
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (project_root / "test.dfn").write_text(
-        f"define the potential position<{universe_name}:/test>.\n"
+        f"define the potential position<{universe_name}:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
 
 
@@ -75,9 +79,13 @@ def test_invalid_config_returns_error_and_prints_to_stream(
 ):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
-    _ = (config_dir / "config.defcl").write_text("project: {}\n")
+    _ = (config_dir / "config.defcl").write_text(
+        "project: {}\n", encoding="utf-8", newline="\n"
+    )
     _ = (tmp_path / "test.dfn").write_text(
-        "define the potential position<x.com:lib:/test>.\n"
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 
@@ -98,9 +106,13 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
 ):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
-    _ = (config_dir / "config.defcl").write_text("project: {}\n")
+    _ = (config_dir / "config.defcl").write_text(
+        "project: {}\n", encoding="utf-8", newline="\n"
+    )
     _ = (tmp_path / "test.dfn").write_text(
-        "define the potential position<x.com:lib:/test>.\n"
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 
@@ -199,11 +211,15 @@ def test_multiple_errors_are_separated_by_divider(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        'project: { universe_name: "mv:define-lang.org:test_path" }\n'
+        'project: { universe_name: "mv:define-lang.org:test_path" }\n',
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "wrong_file.dfn").write_text(
         "define the potential position<mv:define-lang.org:test_path:/first>.\n"
-        + "define the potential position<mv:define-lang.org:test_path:/second>.\n"
+        + "define the potential position<mv:define-lang.org:test_path:/second>.\n",
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 

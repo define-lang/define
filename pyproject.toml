@@ -46,6 +46,10 @@ ignore = [
   # Exception message style.
   "EM",
   "TRY003",
+  # Bazel marks every input of a remotely executed action as executable, so
+  # Ruff cannot see a file's real executable bit.
+  "EXE001",
+  "EXE002",
   # TODO comments are allowed and need no author or issue link.
   "FIX002",
   "TD",

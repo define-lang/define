@@ -115,6 +115,7 @@ def test_config_error_sets_all_phases_to_zero(
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
         encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
     results = (
@@ -161,6 +162,7 @@ def test_config_loading_time_ns_tracks_successful_root_load(
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
         encoding="utf-8",
+        newline="\n",
     )
     validator_test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
@@ -179,6 +181,7 @@ def test_config_loading_time_ns_tracks_failing_root_load(
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
         encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
 

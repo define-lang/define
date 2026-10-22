@@ -259,6 +259,7 @@ def _regenerate_compiler_profile(
         _ = config_path.write_text(
             'project: { universe_name: "mv:define-lang.org:large_program" }\n',
             encoding="utf-8",
+            newline="\n",
         )
         source = temporary_path / "compiler.dfn"
         _ = generate_large_define_source.write_to_path(source, 30_000)

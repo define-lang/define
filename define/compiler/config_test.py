@@ -24,7 +24,7 @@ class TestAssertIsProjectRoot:
     ):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text("")
+        (config_dir / "config.defcl").write_text("", encoding="utf-8", newline="\n")
         monkeypatch.chdir(tmp_path)
 
         config.ConfigLoader(constants.PROJECT_ROOT).assert_is_project_root()
@@ -35,7 +35,9 @@ class TestProjectConfig:
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
         (config_dir / "config.defcl").write_text(
-            'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+            'project: {\n  universe_name: "test.example.com:my_lib"\n}\n',
+            encoding="utf-8",
+            newline="\n",
         )
         monkeypatch.chdir(tmp_path)
 
@@ -47,7 +49,9 @@ class TestProjectConfig:
     ):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text('project: {\n  universe_name: ""\n}\n')
+        (config_dir / "config.defcl").write_text(
+            'project: {\n  universe_name: ""\n}\n', encoding="utf-8", newline="\n"
+        )
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(config.ConfigValidationError):
@@ -58,7 +62,9 @@ class TestProjectConfig:
     ):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text("project: {}\n")
+        (config_dir / "config.defcl").write_text(
+            "project: {}\n", encoding="utf-8", newline="\n"
+        )
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(config.ConfigValidationError):
@@ -69,7 +75,9 @@ class TestProjectConfig:
     ):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text("project: {}\n")
+        (config_dir / "config.defcl").write_text(
+            "project: {}\n", encoding="utf-8", newline="\n"
+        )
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(config.ConfigValidationError) as exc_info:
@@ -91,7 +99,9 @@ class TestProjectConfig:
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
         (config_dir / "config.defcl").write_text(
-            'project: {\n  universe_name "test.example.com:my_lib"\n}\n'
+            'project: {\n  universe_name "test.example.com:my_lib"\n}\n',
+            encoding="utf-8",
+            newline="\n",
         )
         monkeypatch.chdir(tmp_path)
 
@@ -107,7 +117,7 @@ class TestLocalDepsConfig:
     def _write_local_deps(self, tmp_path: Path, content: str):
         deps_dir = tmp_path / ".define" / "deps"
         deps_dir.mkdir(parents=True, exist_ok=True)
-        (deps_dir / "local.defcl").write_text(content)
+        (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")
 
     def test_valid_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         self._write_local_deps(
@@ -303,12 +313,14 @@ class TestLoadProjectRootConfig:
     def _write_project_config(self, tmp_path: Path, content: str):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
-        (config_dir / "config.defcl").write_text(content)
+        (config_dir / "config.defcl").write_text(
+            content, encoding="utf-8", newline="\n"
+        )
 
     def _write_local_deps(self, tmp_path: Path, content: str):
         deps_dir = tmp_path / ".define" / "deps"
         deps_dir.mkdir(parents=True, exist_ok=True)
-        (deps_dir / "local.defcl").write_text(content)
+        (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")
 
     def test_resolves_fqun_and_sub_roots(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -395,7 +407,9 @@ class TestConfigSyntaxError:
     ):
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text("project: { universe_name: 'bad' }\n")
+        (config_dir / "config.defcl").write_text(
+            "project: { universe_name: 'bad' }\n", encoding="utf-8", newline="\n"
+        )
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(config.ConfigSyntaxError) as exc_info:
@@ -409,7 +423,9 @@ class TestConfigSyntaxError:
         deps_dir = tmp_path / ".define" / "deps"
         deps_dir.mkdir(parents=True)
         (deps_dir / "local.defcl").write_text(
-            "deps: { local: [{ universe_name: 'bad' }] }\n"
+            "deps: { local: [{ universe_name: 'bad' }] }\n",
+            encoding="utf-8",
+            newline="\n",
         )
         monkeypatch.chdir(tmp_path)
 
@@ -423,12 +439,14 @@ class TestSubRoot:
     def _write_project_config(self, tmp_path: Path, subroot: str, content: str):
         config_dir = tmp_path / subroot / ".define" / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
-        (config_dir / "config.defcl").write_text(content)
+        (config_dir / "config.defcl").write_text(
+            content, encoding="utf-8", newline="\n"
+        )
 
     def _write_local_deps(self, tmp_path: Path, subroot: str, content: str):
         deps_dir = tmp_path / subroot / ".define" / "deps"
         deps_dir.mkdir(parents=True, exist_ok=True)
-        (deps_dir / "local.defcl").write_text(content)
+        (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")
 
     def test_assert_is_project_root_succeeds(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -322,7 +322,7 @@ def main():
     (output_path,) = sys.argv[1:]
     description = _describe(ast)
     _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_ast_nodes(description), encoding="utf-8"
+        rust_renderer.render_ast_nodes(description), encoding="utf-8", newline="\n"
     )
 
 

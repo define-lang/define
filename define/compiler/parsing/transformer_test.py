@@ -155,6 +155,15 @@ _TWO_DEFINITIONS = (
 
 
 def _only_action(source: str) -> ast.ActionDefinition:
+    program = test_helpers.parse(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    return definition
+
+
+# TODO: Use _only_action instead once the parser in parser.rs supports literals
+# and operation execution statements.
+def _only_action_from_lark_parser(source: str) -> ast.ActionDefinition:
     program = test_helpers.parse_and_transform(source)
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
@@ -627,7 +636,7 @@ def test_local_position_definition_with_constraints_fields():
 
 def test_value_definition_fields():
     source = "define the potential value<mv:example.com:example:/number/natural>.\n"
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ValueDefinition)
@@ -653,7 +662,7 @@ def test_value_definition_between_other_definitions():
         + "define the potential value<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 3
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.ValueDefinition)
@@ -662,7 +671,7 @@ def test_value_definition_between_other_definitions():
 
 def test_encoding_definition_fields():
     source = "define the encoding<mv:example.com:example:/number/natural>.\n"
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.EncodingDefinition)
@@ -689,7 +698,7 @@ def test_encoding_definition_between_other_definitions():
         + "define the encoding<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 3
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.EncodingDefinition)
@@ -914,7 +923,7 @@ def test_potential_literal_definition_fields():
         + "    it has the encoding</decimal_text>.\n"
         + "}\n"
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PotentialLiteralDefinition)
@@ -953,7 +962,7 @@ def test_potential_literal_definitions_update_reference_fqun():
         + "    it has the encoding<standard:/decimal_text>.\n"
         + "}\n"
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     first, second, third = program.definitions
     assert isinstance(first, ast.PotentialLiteralDefinition)
     assert isinstance(second, ast.PotentialLiteralDefinition)
@@ -1039,11 +1048,8 @@ def test_literal_file_path_and_following_statement():
         + "    }\n}\n"
     )
     file_path = PurePosixPath("set_value.dfn")
-    result = parser.Parser().parse_and_transform(source, file_path)
-    assert result.exception is None
-    assert result.diagnostics == []
-    assert result.program is not None
-    definition = result.program.definitions[0]
+    program = test_helpers.parse(source, file_path)
+    definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     for statement in definition.action_statements.statements:
         assert isinstance(statement, ast.ValueSettingStatement)
@@ -1519,7 +1525,7 @@ _OPERATION_EXECUTING_ACTION = (
 
 
 def test_action_operation_execution_statement_without_arguments_fields():
-    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    block = _only_action_from_lark_parser(_OPERATION_EXECUTING_ACTION).action_statements
     statement = block.statements[0]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.arguments == ()
@@ -1538,7 +1544,7 @@ def test_action_operation_execution_statement_without_arguments_fields():
 
 
 def test_action_operation_execution_statement_with_arguments_fields():
-    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    block = _only_action_from_lark_parser(_OPERATION_EXECUTING_ACTION).action_statements
     statement = block.statements[1]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.full_typed_name == "operation<standard:/add>"

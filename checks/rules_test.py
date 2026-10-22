@@ -16,7 +16,9 @@ _SNAPSHOTS = _RULE_TESTS / "__snapshots__"
 def _ids_by_path(directory: Path) -> dict[Path, str]:
     ids: dict[Path, str] = {}
     for path in sorted(directory.glob("*.yml")):
-        document = cast("dict[str, object]", yaml.safe_load(path.read_text()))
+        document = cast(
+            "dict[str, object]", yaml.safe_load(path.read_text(encoding="utf-8"))
+        )
         ids[path] = cast("str", document["id"])
     return ids
 
@@ -42,12 +44,16 @@ def test_snapshots_match_invalid_cases():
     # ast-grep test --update-all keeps the snapshots of cases removed from a rule
     # test.
     for path in sorted(_SNAPSHOTS.glob("*.yml")):
-        snapshot = cast("dict[str, object]", yaml.safe_load(path.read_text()))
+        snapshot = cast(
+            "dict[str, object]", yaml.safe_load(path.read_text(encoding="utf-8"))
+        )
         rule_id = cast("str", snapshot["id"])
         assert path.stem == f"{rule_id}-snapshot"
         rule_test = cast(
             "dict[str, list[str]]",
-            yaml.safe_load((_RULE_TESTS / f"{rule_id}-test.yml").read_text()),
+            yaml.safe_load(
+                (_RULE_TESTS / f"{rule_id}-test.yml").read_text(encoding="utf-8")
+            ),
         )
         snapshots = cast("dict[str, object]", snapshot["snapshots"])
         assert sorted(snapshots) == sorted(rule_test["invalid"])

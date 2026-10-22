@@ -44,7 +44,9 @@ def _repository(tmp_path: Path) -> Path:
     repository = tmp_path / "repository"
     repository.mkdir()
     _git(repository, "init", "--quiet")
-    _ = (repository / "README.md").write_text("readme\n")
+    _ = (repository / "README.md").write_text(
+        "readme\n", encoding="utf-8", newline="\n"
+    )
     _git(repository, "add", "README.md")
     _git(repository, "commit", "--quiet", "-m", "Initial commit")
     return repository
@@ -64,7 +66,7 @@ def _install_fake_bazelisk(
     bin_directory = tmp_path / "bin"
     bin_directory.mkdir()
     run_log = tmp_path / "runs"
-    _ = run_log.write_text("")
+    _ = run_log.write_text("", encoding="utf-8", newline="\n")
     bazelisk = bin_directory / "bazelisk"
     script_lines = [
         "#!/bin/sh",
@@ -76,7 +78,9 @@ def _install_fake_bazelisk(
         "esac",
         f"exit {exit_code}",
     ]
-    _ = bazelisk.write_text("\n".join(script_lines) + "\n")
+    _ = bazelisk.write_text(
+        "\n".join(script_lines) + "\n", encoding="utf-8", newline="\n"
+    )
     bazelisk.chmod(0o755)
     monkeypatch.setenv("PATH", f"{bin_directory}:/usr/bin:/bin")
     return run_log
@@ -106,7 +110,7 @@ def test_unrelated_command_does_nothing(
         )
         == ""
     )
-    assert run_log.read_text().splitlines() == []
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_git_worktree_remove_expunges_first(
@@ -120,7 +124,9 @@ def test_git_worktree_remove_expunges_first(
         _run_hook(monkeypatch, repository, "git worktree remove --force worktrees/a")
         == ""
     )
-    assert run_log.read_text().splitlines() == [f"{_EXPUNGE} in {worktree}"]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_EXPUNGE} in {worktree}"
+    ]
 
 
 def test_git_options_before_the_subcommand_are_skipped(
@@ -134,7 +140,9 @@ def test_git_options_before_the_subcommand_are_skipped(
         _run_hook(monkeypatch, repository, "git --no-pager worktree remove worktrees/a")
         == ""
     )
-    assert run_log.read_text().splitlines() == [f"{_EXPUNGE} in {worktree}"]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_EXPUNGE} in {worktree}"
+    ]
 
 
 def test_each_removed_worktree_is_expunged_once_after_an_earlier_cd(
@@ -153,7 +161,7 @@ def test_each_removed_worktree_is_expunged_once_after_an_earlier_cd(
         )
         == ""
     )
-    assert run_log.read_text().splitlines() == [
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
         f"{_EXPUNGE} in {first}",
         f"{_EXPUNGE} in {second}",
     ]
@@ -167,7 +175,7 @@ def test_worktree_that_bazel_never_built_in_is_not_expunged(
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
 
     assert _run_hook(monkeypatch, repository, "git worktree remove worktrees/a") == ""
-    assert run_log.read_text().splitlines() == []
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_failed_expunge_is_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -176,7 +184,9 @@ def test_failed_expunge_is_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch, exit_code=1)
 
     assert _run_hook(monkeypatch, repository, "git worktree remove worktrees/a") == ""
-    assert run_log.read_text().splitlines() == [f"{_EXPUNGE} in {worktree}"]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_EXPUNGE} in {worktree}"
+    ]
 
 
 def _project(tmp_path: Path) -> Path:
@@ -187,7 +197,7 @@ def _project(tmp_path: Path) -> Path:
         "define/config/project/config.proto",
     ):
         (repository / path).parent.mkdir(parents=True, exist_ok=True)
-        _ = (repository / path).write_text("\n")
+        _ = (repository / path).write_text("\n", encoding="utf-8", newline="\n")
         _git(repository, "add", path)
     _git(repository, "commit", "--quiet", "-m", "Add project files")
     return repository
@@ -203,7 +213,9 @@ def test_first_uv_run_runs_setup_local_dev_once(
     )
 
     assert _run_hook(monkeypatch, repository, "uv run pytest && uv run x.py") == ""
-    assert run_log.read_text().splitlines() == [f"{_SETUP_LOCAL_DEV} in {repository}"]
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_SETUP_LOCAL_DEV} in {repository}"
+    ]
 
 
 def test_changed_source_makes_uv_run_refresh_again(
@@ -221,7 +233,7 @@ def test_changed_source_makes_uv_run_refresh_again(
     )
 
     assert _run_hook(monkeypatch, repository, "uv run x.py") == ""
-    assert run_log.read_text().splitlines() == [
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
         f"{_SETUP_LOCAL_DEV} in {repository}",
         f"{_SETUP_LOCAL_DEV} in {repository}",
     ]
@@ -243,7 +255,7 @@ def test_failed_setup_local_dev_output_goes_to_the_agent_at_each_uv_run(
             ),
         }
     }
-    assert run_log.read_text().splitlines() == [
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
         f"{_SETUP_LOCAL_DEV} in {repository}",
         f"{_SETUP_LOCAL_DEV} in {repository}",
     ]
@@ -256,14 +268,16 @@ def test_other_uv_subcommands_do_nothing(
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
 
     assert _run_hook(monkeypatch, repository, "uv sync && uv --version") == ""
-    assert run_log.read_text().splitlines() == []
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_prefilter_runs_the_checks_only_for_commands_that_mention_them(
     tmp_path: Path,
 ):
     _ = shutil.copy(runfiles.resolve_from_env("PREFILTER"), tmp_path)
-    _ = (tmp_path / "shell_command_checks.py").write_text("print('checked')\n")
+    _ = (tmp_path / "shell_command_checks.py").write_text(
+        "print('checked')\n", encoding="utf-8", newline="\n"
+    )
     bash = shutil.which("bash")
     assert bash is not None
     commands = [

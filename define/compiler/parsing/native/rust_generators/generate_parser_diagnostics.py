@@ -54,7 +54,9 @@ def main():
         diagnostics=[_describe_diagnostic(cls) for cls in _PARSER_DIAGNOSTICS],
     )
     _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_parser_diagnostics(description), encoding="utf-8"
+        rust_renderer.render_parser_diagnostics(description),
+        encoding="utf-8",
+        newline="\n",
     )
 
 

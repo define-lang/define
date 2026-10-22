@@ -29,6 +29,7 @@ py_test(
     srcs = ["create_windows_vm_test.py"],
     data = ["autounattend.xml"],
     env = {"AUTOUNATTEND": "$(rlocationpath autounattend.xml)"},
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":create_windows_vm",
         "//tools:runfiles",

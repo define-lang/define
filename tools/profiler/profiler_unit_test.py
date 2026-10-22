@@ -618,7 +618,7 @@ def test_unwind_failure_before_python_stack_is_runtime_initializing(
         "failure_reason": "RuntimeError: No interpreter state found",
     }
 
-    with profile_path.open("w", encoding="utf-8") as profile_file:
+    with profile_path.open("w", encoding="utf-8", newline="\n") as profile_file:
         profiler._persist_observation(  # pyright: ignore[reportPrivateUsage]
             profiler._ProfileWriter(profile_file),  # pyright: ignore[reportPrivateUsage]
             state,
@@ -659,7 +659,7 @@ def test_other_observation_failures_remain_discarded(
         "failure_reason": "failure",
     }
 
-    with profile_path.open("w", encoding="utf-8") as profile_file:
+    with profile_path.open("w", encoding="utf-8", newline="\n") as profile_file:
         profiler._persist_observation(  # pyright: ignore[reportPrivateUsage]
             profiler._ProfileWriter(profile_file),  # pyright: ignore[reportPrivateUsage]
             _capture_state(python_stack_observed=python_stack_observed),
@@ -726,7 +726,7 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
     sample_state = _capture_state()
     sample_until_exit = profiler._sample_until_exit  # pyright: ignore[reportPrivateUsage]
     profile_path = tmp_path / "observations.jsonl"
-    with profile_path.open("w", encoding="utf-8") as profile_file:
+    with profile_path.open("w", encoding="utf-8", newline="\n") as profile_file:
         writer = profiler._ProfileWriter(  # pyright: ignore[reportPrivateUsage]
             profile_file
         )
@@ -1597,7 +1597,7 @@ def test_main_reports_profile_completion_and_success(
 ):
     profile_path = tmp_path / "profile.jsonl"
     workload_path = tmp_path / "source.py"
-    _ = workload_path.write_text("pass\n", encoding="utf-8")
+    _ = workload_path.write_text("pass\n", encoding="utf-8", newline="\n")
     captured_profile = _raw_profile(complete=complete, success=success)
 
     with mock.patch.object(

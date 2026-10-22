@@ -197,13 +197,16 @@ impl<'py, 'source> AstBuilder<'py, 'source> {
         match self.names.entry(text.bytes) {
             Entry::Occupied(entry) => Ok(entry.get().clone()),
             Entry::Vacant(entry) => {
-                let name = std::str::from_utf8(text.bytes).map_err(|error| {
-                    PyValueError::new_err(format!("a name is not valid UTF-8: {error}"))
-                })?;
-                let name = PyString::intern(self.py, name);
+                let name = PyString::intern(self.py, utf8(text.bytes)?);
                 Ok(entry.insert(name).clone())
             }
         }
+    }
+
+    /// Returns a new Python string for `text`, such as literal content, which
+    /// is not interned because it is rarely the same as other text.
+    pub fn string(&self, text: &[u8]) -> PyResult<Bound<'py, PyString>> {
+        Ok(PyString::new(self.py, utf8(text)?))
     }
 
     pub fn location(&mut self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
@@ -252,4 +255,10 @@ impl<'py, 'source> AstBuilder<'py, 'source> {
             element: PhantomData,
         })
     }
+}
+
+/// Returns `text`, which the parser has already checked is UTF-8, as a `str`.
+fn utf8(text: &[u8]) -> PyResult<&str> {
+    std::str::from_utf8(text)
+        .map_err(|error| PyValueError::new_err(format!("text is not valid UTF-8: {error}")))
 }

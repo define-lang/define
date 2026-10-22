@@ -45,7 +45,7 @@ def _post_without_content_length(port: int, origin: str) -> int:
 def test_server_restricts_access_and_stops_after_valid_submission(tmp_path: Path):
     report_path = tmp_path / "report.html"
     selection_path = tmp_path / "selection.json"
-    _ = report_path.write_text("<h1>Coverage</h1>")
+    _ = report_path.write_text("<h1>Coverage</h1>", encoding="utf-8", newline="\n")
 
     serve_report.ReportHandler.report_path = report_path
     serve_report.ReportHandler.selection_path = selection_path
@@ -182,4 +182,7 @@ def test_server_restricts_access_and_stops_after_valid_submission(tmp_path: Path
         server_thread.join(timeout=1)
         assert not server_thread.is_alive()
 
-    assert selection_path.read_text() == '{\n  "selected_branches": []\n}\n'
+    assert (
+        selection_path.read_text(encoding="utf-8")
+        == '{\n  "selected_branches": []\n}\n'
+    )

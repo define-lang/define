@@ -1,0 +1,64 @@
+id: text-write-explicit-newline
+snapshots:
+  "open(name, \"r+\", encoding=\"utf-8\")\n":
+    labels:
+    - source: open(name, "r+", encoding="utf-8")
+      style: primary
+      start: 0
+      end: 34
+    - source: "\"r+\""
+      style: secondary
+      start: 11
+      end: 15
+    - source: "\"r+\""
+      style: secondary
+      start: 11
+      end: 15
+  "open(name, \"x\", encoding=\"utf-8\")\n":
+    labels:
+    - source: open(name, "x", encoding="utf-8")
+      style: primary
+      start: 0
+      end: 33
+    - source: "\"x\""
+      style: secondary
+      start: 11
+      end: 14
+    - source: "\"x\""
+      style: secondary
+      start: 11
+      end: 14
+  "os.fdopen(descriptor, \"w\", encoding=\"utf-8\")\n":
+    labels:
+    - source: os.fdopen(descriptor, "w", encoding="utf-8")
+      style: primary
+      start: 0
+      end: 44
+    - source: "\"w\""
+      style: secondary
+      start: 22
+      end: 25
+    - source: "\"w\""
+      style: secondary
+      start: 22
+      end: 25
+  "path.open(\"w\", encoding=\"utf-8\")\n":
+    labels:
+    - source: path.open("w", encoding="utf-8")
+      style: primary
+      start: 0
+      end: 32
+    - source: "\"w\""
+      style: secondary
+      start: 10
+      end: 13
+    - source: "\"w\""
+      style: secondary
+      start: 10
+      end: 13
+  "path.write_text(content, encoding=\"utf-8\")\n":
+    labels:
+    - source: path.write_text(content, encoding="utf-8")
+      style: primary
+      start: 0
+      end: 42

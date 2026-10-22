@@ -22,12 +22,23 @@ an hour.
 
 If `define-windows` is listed, use it:
 
-1. Copy your checkout's current state into the VM. This starts the VM if it is
-   shut off and waits until SSH is ready:
+1. Build the sync tool once in a Define checkout:
 
    ```sh
-   bazelisk run //tools/windows_vm:sync_windows_vm
+   bazelisk build //tools/windows_vm:sync_windows_vm
    ```
+
+   Then, from the checkout you want to test, which can be any git checkout, run
+   it from that Define checkout's `bazel-bin` to copy your checkout's current
+   state into the VM. This starts the VM if it is shut off and waits until SSH
+   is ready:
+
+   ```sh
+   <Define checkout>/bazel-bin/tools/windows_vm/sync_windows_vm
+   ```
+
+   Don't use `bazelisk run`, because the tool copies the checkout of the
+   directory it runs in, and `bazelisk run` runs it in its runfiles.
 
    It copies everything git would commit, including uncommitted and untracked
    files, into `C:\src\<name>`, where `<name>` is the name of your checkout's

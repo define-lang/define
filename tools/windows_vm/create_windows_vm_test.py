@@ -53,7 +53,9 @@ def _fake_sudo(tmp_path: Path) -> tuple[Path, Path]:
     bin_directory.mkdir()
     sudo_arguments = tmp_path / "sudo-arguments"
     sudo = bin_directory / "sudo"
-    _ = sudo.write_text(f'#!/bin/sh\necho "$@" >> {sudo_arguments}\n')
+    _ = sudo.write_text(
+        f'#!/bin/sh\necho "$@" >> {sudo_arguments}\n', encoding="utf-8", newline="\n"
+    )
     sudo.chmod(0o755)
     return bin_directory, sudo_arguments
 
@@ -69,7 +71,7 @@ def test_installs_packages_with_dnf_on_fedora(tmp_path: Path):
     ):
         result = _invoke_with_path(tmp_path, bin_directory)
 
-    assert sudo_arguments.read_text() == (
+    assert sudo_arguments.read_text(encoding="utf-8") == (
         "dnf install --assumeyes libvirt-client libvirt-daemon-kvm passt "
         + "qemu-img virt-install virt-manager xorriso\n"
     )
@@ -93,7 +95,7 @@ def test_installs_packages_with_apt_on_ubuntu(tmp_path: Path):
     ):
         result = _invoke_with_path(tmp_path, bin_directory)
 
-    assert sudo_arguments.read_text() == (
+    assert sudo_arguments.read_text(encoding="utf-8") == (
         "apt-get update\n"
         + "apt-get install --yes libvirt-clients libvirt-daemon "
         + "libvirt-daemon-driver-qemu passt qemu-system-x86 qemu-utils "
@@ -196,7 +198,7 @@ def test_download_resumes_unfinished_download(
 ):
     path = tmp_path / "file.iso"
     _ = (tmp_path / "file.iso.partial").write_bytes(_CONTENT[: 6 * 1024 * 1024])
-    _ = (tmp_path / "file.iso.etag").write_text(_ETAG, encoding="utf-8")
+    _ = (tmp_path / "file.iso.etag").write_text(_ETAG, encoding="utf-8", newline="\n")
 
     requested_ranges, output = _download_from_server(path, capsys)
 
@@ -217,7 +219,7 @@ def test_download_restarts_when_file_changed(
 ):
     path = tmp_path / "file.iso"
     _ = (tmp_path / "file.iso.partial").write_bytes(b"old file")
-    _ = (tmp_path / "file.iso.etag").write_text('"old"', encoding="utf-8")
+    _ = (tmp_path / "file.iso.etag").write_text('"old"', encoding="utf-8", newline="\n")
 
     requested_ranges, _ = _download_from_server(path, capsys)
 
@@ -231,7 +233,7 @@ def test_download_finishes_completely_downloaded_file(
 ):
     path = tmp_path / "file.iso"
     _ = (tmp_path / "file.iso.partial").write_bytes(_CONTENT)
-    _ = (tmp_path / "file.iso.etag").write_text(_ETAG, encoding="utf-8")
+    _ = (tmp_path / "file.iso.etag").write_text(_ETAG, encoding="utf-8", newline="\n")
 
     requested_ranges, output = _download_from_server(path, capsys)
 

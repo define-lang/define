@@ -246,7 +246,7 @@ class LoopCoverageCollector:
         report = "\n".join(lines)
         if lines:
             report += "\n"
-        _ = self._report_path.write_text(report)
+        _ = self._report_path.write_text(report, encoding="utf-8", newline="\n")
 
 
 def _monitored_frame() -> FrameType:  # pragma: no cover
@@ -296,7 +296,9 @@ def _loop_entries(
 
 
 def _append_report(report_path: Path, coverage_output_path: Path):
-    with coverage_output_path.open("a", encoding="utf-8") as coverage_output:
+    with coverage_output_path.open(
+        "a", encoding="utf-8", newline="\n"
+    ) as coverage_output:
         _ = coverage_output.write(report_path.read_text(encoding="utf-8"))
     report_path.unlink()
 

@@ -1,7 +1,11 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use vector_scan::{LINE_FEED, SPACE};
+use terminals::{ESCAPE, LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
+
+/// The bytes that end a word, for errors that cover the word where something
+/// else belongs.
+pub const WORD_ENDS: [u8; 4] = [NAME_CONTENT_START, SPACE, TERMINATOR, LINE_FEED];
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
@@ -29,16 +33,13 @@ impl<'source> SourceText<'source> {
             is_known_ascii: self.is_known_ascii,
         }
     }
+}
 
-    /// Splits the text at each occurrence of the ASCII `separator`.
-    pub fn split(self, separator: u8) -> impl Iterator<Item = Self> {
-        self.bytes
-            .split(move |&byte| byte == separator)
-            .map(move |bytes| Self {
-                bytes,
-                is_known_ascii: self.is_known_ascii,
-            })
-    }
+/// Literal content as it is written, with its escapes.
+pub struct LiteralContent<'source> {
+    pub written: SourceText<'source>,
+    /// Whether the content has a `\`.
+    pub has_escape: bool,
 }
 
 /// A point in the source, as a 1-based line and a 1-based column counted in
@@ -119,15 +120,6 @@ impl<'source> Scanner<'source> {
         }
     }
 
-    /// The rest of the line before its line feed.
-    pub fn rest_of_line(&self) -> SourceText<'source> {
-        let scanned = vector_scan::rest_of_line(self.rest);
-        SourceText {
-            bytes: &self.rest[..scanned.length],
-            is_known_ascii: scanned.is_printable_ascii,
-        }
-    }
-
     /// The number of bytes at the start of the remaining text that match the
     /// start of `expected`.
     pub fn matching_prefix_length(&self, expected: &[u8]) -> usize {
@@ -145,6 +137,12 @@ impl<'source> Scanner<'source> {
 
     pub fn next_bytes_are(&self, expected: &[u8]) -> bool {
         self.rest.starts_with(expected)
+    }
+
+    /// The remaining text after `prefix`, if the remaining text starts with
+    /// it.
+    pub fn rest_after(&self, prefix: &[u8]) -> Option<&'source [u8]> {
+        self.rest.strip_prefix(prefix)
     }
 
     /// Whether the scanner is at a line feed or the end of the source.
@@ -166,6 +164,16 @@ impl<'source> Scanner<'source> {
         self.rest = rest;
         self.position = self.position.after_ascii(expected);
         true
+    }
+
+    /// Consumes the first of `keywords` that the remaining text starts with,
+    /// and returns the value paired with it. Each keyword must be ASCII
+    /// without a line feed.
+    pub fn consume_any<Value: Copy>(&mut self, keywords: &[(&[u8], Value)]) -> Option<Value> {
+        keywords
+            .iter()
+            .find(|&&(keyword, _)| self.consume(keyword))
+            .map(|&(_, value)| value)
     }
 
     /// Consumes `expected` if it is the next byte. `expected` must be ASCII and
@@ -196,6 +204,21 @@ impl<'source> Scanner<'source> {
         self.position.column += count;
     }
 
+    /// Consumes the `words` that begin a definition and the `name_type` after
+    /// them, if the remaining text starts with them, and returns the position
+    /// of the name type. `words` and `name_type` must be ASCII without a line
+    /// feed.
+    pub fn consume_definition_start(&mut self, words: &[u8], name_type: &[u8]) -> Option<Position> {
+        let after_words = self.rest.strip_prefix(words)?;
+        if !after_words.starts_with(name_type) {
+            return None;
+        }
+        self.consume_bytes(words.len());
+        let typed_name_start = self.position;
+        self.consume_bytes(name_type.len());
+        Some(typed_name_start)
+    }
+
     /// Consumes and returns the next `length` bytes, which have no line feed.
     pub fn consume_text(&mut self, length: usize) -> SourceText<'source> {
         let (bytes, rest) = self.rest.split_at(length);
@@ -220,9 +243,72 @@ impl<'source> Scanner<'source> {
         true
     }
 
-    /// Consumes the name content before the first `>` or line feed, or all of
-    /// the remaining text if it contains neither, and returns it with what the
-    /// scan found in it.
+    /// Consumes the name content, where only a global name belongs, before the
+    /// first `>` or line feed, or all of the remaining text if it contains
+    /// neither, and returns it with what the scan found in it.
+    pub fn consume_global_name_content(
+        &mut self,
+    ) -> (SourceText<'source>, vector_scan::GlobalNameContent) {
+        let scanned = vector_scan::global_name_content(self.rest);
+        let (bytes, rest) = self.rest.split_at(scanned.length);
+        let text = SourceText {
+            bytes,
+            is_known_ascii: scanned.is_printable_ascii,
+        };
+        self.rest = rest;
+        self.position.column += scanned.character_count;
+        (text, scanned)
+    }
+
+    /// Consumes literal content up to its first `"` that is not after a `\`,
+    /// or up to the end of the line or the source, and returns it.
+    pub fn consume_literal_content(&mut self) -> LiteralContent<'source> {
+        let mut length = 0;
+        let mut character_count = 0;
+        let mut is_printable_ascii = true;
+        let mut has_escape = false;
+        loop {
+            let scanned = vector_scan::literal_content(&self.rest[length..]);
+            length += scanned.length;
+            character_count += scanned.character_count;
+            is_printable_ascii &= scanned.is_printable_ascii;
+            if self.rest.get(length) != Some(&ESCAPE) {
+                break;
+            }
+            has_escape = true;
+            length += 1;
+            character_count += 1;
+            // A `\` at the end of the line or the source has nothing after it
+            // to escape.
+            let Some(&escaped) = self.rest.get(length) else {
+                break;
+            };
+            if escaped == LINE_FEED {
+                break;
+            }
+            // The escaped byte may be `"` or `\`, which would stop the next
+            // scan, so it is consumed here. If it begins a character longer
+            // than one byte, the next scan counts none of that character's
+            // other bytes.
+            length += 1;
+            character_count += 1;
+            is_printable_ascii &= escaped == SPACE || escaped.is_ascii_graphic();
+        }
+        let (bytes, rest) = self.rest.split_at(length);
+        self.rest = rest;
+        self.position.column += character_count;
+        LiteralContent {
+            written: SourceText {
+                bytes,
+                is_known_ascii: is_printable_ascii,
+            },
+            has_escape,
+        }
+    }
+
+    /// Consumes the name content, where a local name may belong, before the
+    /// first `>` or line feed, or all of the remaining text if it contains
+    /// neither, and returns it with what the scan found in it.
     pub fn consume_name_content(&mut self) -> (SourceText<'source>, vector_scan::NameContent) {
         let scanned = vector_scan::name_content(self.rest);
         let (bytes, rest) = self.rest.split_at(scanned.length);
@@ -233,5 +319,33 @@ impl<'source> Scanner<'source> {
         self.rest = rest;
         self.position.column += scanned.character_count;
         (text, scanned)
+    }
+}
+
+// The functions that only run on an error path.
+impl<'source> Scanner<'source> {
+    /// The rest of the line before its line feed.
+    #[cold]
+    #[inline(never)]
+    pub fn rest_of_line(&self) -> SourceText<'source> {
+        let scanned = vector_scan::rest_of_line(self.rest);
+        SourceText {
+            bytes: &self.rest[..scanned.length],
+            is_known_ascii: scanned.is_printable_ascii,
+        }
+    }
+
+    /// Returns the position of the last character of the word at the
+    /// scanner's position, or the scanner's position if there is no word
+    /// there.
+    #[cold]
+    pub fn end_of_word(&self) -> Position {
+        let start = self.position;
+        let word = self.text_before_any(&WORD_ENDS);
+        if word.bytes.is_empty() {
+            start
+        } else {
+            start.after(word).previous_column()
+        }
     }
 }

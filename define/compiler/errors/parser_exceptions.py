@@ -180,6 +180,8 @@ class InvalidLiteralEscape(DefineCharError):
     )
 
 
+# TODO: Remove this when we switch fully to the native parser, which reports
+# each of these characters with the error specific to it.
 class InvalidLiteralCharacter(DefineCharError):
     """A forbidden file character in literal content."""
 
@@ -214,6 +216,16 @@ class InvisibleCharacterError(DefineCharError):
 # parser error classification system.
 #
 # Keep these in alphabetical order.
+
+
+class ChainedNameInPositionPresenceStatement(DefineTokenError):
+    """Wrote a chained name in a position presence statement."""
+
+    message_format: ClassVar[str] = (
+        "A position presence statement only accepts a single local name, like:\n"
+        "    the position<foo> has a particle.\n"
+        "Chained names (with '::') are not allowed here."
+    )
 
 
 class EmptyBlock(DefineTokenError):
@@ -355,6 +367,8 @@ class InvalidHasAParticleSyntax(DefineTokenError):
     )
 
 
+# TODO: Remove this when we switch fully to the native parser, which reports
+# MissingLiteralContentStart or MissingLiteralContentEnd instead.
 class InvalidLiteralSyntax(DefineTokenError):
     """Literal content is missing double quotes or contains a raw newline."""
 
@@ -526,6 +540,22 @@ class MissingCloseBrace(DefineTokenError):
     """Forgot to write } at the end of a block."""
 
     message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
+
+
+class MissingLiteralContentEnd(DefineTokenError):
+    """Literal content without a '"' after it on its line."""
+
+    message_format: ClassVar[str] = (
+        "This literal's content has no closing '\"' before the end of the line."
+    )
+
+
+class MissingLiteralContentStart(DefineTokenError):
+    """A literal without a '"' right after its typed name."""
+
+    message_format: ClassVar[str] = (
+        "A literal's content must start with '\"' right after the '>' of its typed name."
+    )
 
 
 class MissingNewlineAfterCloseBrace(DefineTokenError):

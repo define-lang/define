@@ -365,6 +365,7 @@ def start(entry_point: type[Action], *, trace_operations: bool = False):
             _ = Path(trace_file).write_text(
                 "".join(f"{operation}\n" for operation in _operation_trace),
                 encoding="utf-8",
+                newline="\n",
             )
     finally:
         _operation_trace = None

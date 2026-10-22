@@ -145,6 +145,7 @@ def test_config_error_populates_exception_and_root_prefix(
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
         encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
     results = (

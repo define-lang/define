@@ -97,11 +97,15 @@ def test_native_extension_stub_preserves_implementation_and_infers_imports(
 ):
     package = tmp_path / "define" / "example"
     package.mkdir(parents=True)
-    _ = (package / "context.py").write_text("class Context: pass\n")
+    _ = (package / "context.py").write_text(
+        "class Context: pass\n", encoding="utf-8", newline="\n"
+    )
     _ = (package / "native.pyi").write_text(
         """from define.example import context
 def render(value: context.Context) -> str: ...
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (package / "BUILD.bazel").write_text(
         """py_library(name = "context", srcs = ["context.py"])
@@ -111,7 +115,9 @@ deps = [
 ":renderer", # keep: native implementation
 ],
 )
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     repository = check_python_deps.load_repository(tmp_path)
     results = check_python_deps.analyze_targets(repository, [package / "native.pyi"])
@@ -211,7 +217,9 @@ def test_repository_resolves_relative_and_absolute_py_proto_dependencies(
         'proto_library(name = "first", srcs = ["first.proto"])\n'
         + 'proto_library(name = "second", srcs = ["second.proto"])\n'
         + 'py_proto_library(name = "first_py", deps = [":first"])\n'
-        + 'py_proto_library(name = "second_py", deps = ["//define/config:second"])\n'
+        + 'py_proto_library(name = "second_py", deps = ["//define/config:second"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -227,7 +235,9 @@ def test_repository_resolves_extensions_that_generate_stubs(tmp_path: Path):
     package.mkdir(parents=True)
     _ = (package / "BUILD.bazel").write_text(
         'pyo3_extension(name = "generated", module_name = "native", stubs = True)\n'
-        + 'pyo3_extension(name = "hand_written", module_name = "other", stubs = False)\n'
+        + 'pyo3_extension(name = "hand_written", module_name = "other", stubs = False)\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -243,7 +253,9 @@ def test_repository_rejects_stub_generating_extension_without_module_name(
     package = tmp_path / "define" / "example"
     package.mkdir(parents=True)
     _ = (package / "BUILD.bazel").write_text(
-        'pyo3_extension(name = "generated", stubs = True)\n'
+        'pyo3_extension(name = "generated", stubs = True)\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     with pytest.raises(ValueError, match="//define/example:generated"):
@@ -251,18 +263,24 @@ def test_repository_rejects_stub_generating_extension_without_module_name(
 
 
 def test_repository_skips_directories_in_bazelignore(tmp_path: Path):
-    _ = (tmp_path / ".bazelignore").write_text("# Worktrees\n\nworktrees\n")
+    _ = (tmp_path / ".bazelignore").write_text(
+        "# Worktrees\n\nworktrees\n", encoding="utf-8", newline="\n"
+    )
     ignored = tmp_path / "worktrees" / "define"
     ignored.mkdir(parents=True)
     _ = (ignored / "BUILD.bazel").write_text(
-        'py_library(name = "many", srcs = ["a.py", "b.py"])\n'
+        'py_library(name = "many", srcs = ["a.py", "b.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
     package = tmp_path / "define"
     package.mkdir()
     _ = (package / "BUILD.bazel").write_text(
-        'py_library(name = "single", srcs = ["single.py"])\n'
+        'py_library(name = "single", srcs = ["single.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
-    _ = (package / "single.py").write_text("")
+    _ = (package / "single.py").write_text("", encoding="utf-8", newline="\n")
 
     repository = check_python_deps.load_repository(tmp_path)
 
@@ -276,7 +294,9 @@ def test_repository_ignores_proto_rules_without_one_matching_source(tmp_path: Pa
         'proto_library(name = "empty", srcs = [])\n'
         + 'py_proto_library(name = "empty_py", deps = [":empty"])\n'
         + 'py_proto_library(name = "multiple_py", deps = [":empty", ":missing"])\n'
-        + 'py_proto_library(name = "missing_py", deps = [":missing"])\n'
+        + 'py_proto_library(name = "missing_py", deps = [":missing"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -290,35 +310,47 @@ def test_repository_analysis_updates_mixed_imports_and_conftest_deps(
     package = tmp_path / "define/example"
     child_package = package / "child"
     child_package.mkdir(parents=True)
-    _ = (package / "__init__.py").write_text("exported_symbol = object()\n")
-    _ = (package / "owned_module.py").write_text("")
+    _ = (package / "__init__.py").write_text(
+        "exported_symbol = object()\n", encoding="utf-8", newline="\n"
+    )
+    _ = (package / "owned_module.py").write_text("", encoding="utf-8", newline="\n")
     _ = (package / "conftest.py").write_text(
-        "import pytest\n@pytest.fixture\ndef shared_fixture(): pass\n"
+        "import pytest\n@pytest.fixture\ndef shared_fixture(): pass\n",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (package / "example_test.py").write_text(
         """from define.example import owned_module, exported_symbol
 def test_example(shared_fixture): pass
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (child_package / "child_test.py").write_text(
-        "def test_child(shared_fixture): pass\n"
+        "def test_child(shared_fixture): pass\n", encoding="utf-8", newline="\n"
     )
     (tmp_path / "define/unrelated").mkdir()
     _ = (tmp_path / "define/unrelated/unrelated_test.py").write_text(
-        "def test_unrelated(): pass\n"
+        "def test_unrelated(): pass\n", encoding="utf-8", newline="\n"
     )
     _ = (package / "BUILD.bazel").write_text(
         """py_library(name = "example", srcs = ["__init__.py"])
 py_library(name = "owned_module", srcs = ["owned_module.py"])
 py_library(name = "conftest", srcs = ["conftest.py"], deps = ["@pypi//pytest"])
 py_test(name = "example_test", srcs = ["example_test.py"], deps = ["//old:unused"])
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (child_package / "BUILD.bazel").write_text(
-        'py_test(name = "child_test", srcs = ["child_test.py"])\n'
+        'py_test(name = "child_test", srcs = ["child_test.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "define/unrelated/BUILD.bazel").write_text(
-        'py_test(name = "unrelated_test", srcs = ["unrelated_test.py"])\n'
+        'py_test(name = "unrelated_test", srcs = ["unrelated_test.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -386,7 +418,9 @@ py_library(
     srcs = ["second.py"],
     deps = ["//old:unused"],
 )
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     first = check_python_deps.PythonTarget(
         "//tools:first",
@@ -413,7 +447,7 @@ py_library(
     )
 
     assert check_python_deps.report_results(repository, results, check_only=False) == 0
-    contents = build_file.read_text()
+    contents = build_file.read_text(encoding="utf-8")
     assert '"@pypi//click",  # keep' in contents
     assert "//old:unused" not in contents
     assert 'name = "second"' in contents
@@ -431,7 +465,7 @@ def test_report_results_check_only_fails_without_rewriting(
     deps = ["//old:unused"],
 )
 """
-    _ = build_file.write_text(original_contents)
+    _ = build_file.write_text(original_contents, encoding="utf-8", newline="\n")
     first = check_python_deps.PythonTarget(
         "//tools:first",
         "py_library",
@@ -446,7 +480,7 @@ def test_report_results_check_only_fails_without_rewriting(
 
     assert check_python_deps.report_results(repository, results, check_only=True) == 1
     assert capsys.readouterr().out == "//tools:first\n  remove //old:unused\n"
-    assert build_file.read_text() == original_contents
+    assert build_file.read_text(encoding="utf-8") == original_contents
 
 
 def test_repository_analysis_combines_imports_and_fixtures_of_test_sources(
@@ -459,19 +493,25 @@ def test_repository_analysis_combines_imports_and_fixtures_of_test_sources(
     )
     package = tmp_path / "define/example"
     package.mkdir(parents=True)
-    _ = (package / "owned_module.py").write_text("")
-    _ = (package / "other_module.py").write_text("")
+    _ = (package / "owned_module.py").write_text("", encoding="utf-8", newline="\n")
+    _ = (package / "other_module.py").write_text("", encoding="utf-8", newline="\n")
     _ = (package / "conftest.py").write_text(
-        "import pytest\n@pytest.fixture\ndef shared_fixture(): pass\n"
+        "import pytest\n@pytest.fixture\ndef shared_fixture(): pass\n",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (package / "first_test.py").write_text(
-        "from define.example import owned_module\ndef test_first(): pass\n"
+        "from define.example import owned_module\ndef test_first(): pass\n",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (package / "second_test.py").write_text(
         """from define.example import other_module
 from define.example import first_test
 def test_second(shared_fixture): pass
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (package / "BUILD.bazel").write_text(
         """py_library(name = "owned_module", srcs = ["owned_module.py"])
@@ -482,7 +522,9 @@ py_test(
     srcs = ["first_test.py", "second_test.py"],
     deps = ["//old:unused"],
 )
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -528,13 +570,19 @@ def test_repository_analysis_keeps_package_init_deps_selected_by_build_file(
     package.mkdir(parents=True)
     runner_package = tmp_path / "tools/bzl"
     runner_package.mkdir(parents=True)
-    _ = (package / "__init__.py").write_text("")
+    _ = (package / "__init__.py").write_text("", encoding="utf-8", newline="\n")
     _ = (package / "BUILD.bazel").write_text(
-        'py_library(name = "example", srcs = ["__init__.py"], deps = ["//kept:dep"])\n'
+        'py_library(name = "example", srcs = ["__init__.py"], deps = ["//kept:dep"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
-    _ = (runner_package / "pyright_test_runner.py").write_text("")
+    _ = (runner_package / "pyright_test_runner.py").write_text(
+        "", encoding="utf-8", newline="\n"
+    )
     _ = (runner_package / "BUILD.bazel").write_text(
-        'py_binary(name = "pyright_test_runner", srcs = ["pyright_test_runner.py"])\n'
+        'py_binary(name = "pyright_test_runner", srcs = ["pyright_test_runner.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -552,7 +600,9 @@ def test_load_repository_rejects_unlisted_tests_with_multiple_sources(
     package = tmp_path / "tools"
     package.mkdir()
     _ = (package / "BUILD.bazel").write_text(
-        'py_test(name = "example_test", srcs = ["first_test.py", "second_test.py"])\n'
+        'py_test(name = "example_test", srcs = ["first_test.py", "second_test.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     with pytest.raises(
@@ -568,7 +618,9 @@ def test_load_repository_rejects_libraries_with_multiple_sources(
     package = tmp_path / "tools"
     package.mkdir()
     _ = (package / "BUILD.bazel").write_text(
-        'py_library(name = "example", srcs = ["first.py", "second.py"])\n'
+        'py_library(name = "example", srcs = ["first.py", "second.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     with pytest.raises(
@@ -581,7 +633,7 @@ def test_load_repository_rejects_libraries_with_multiple_sources(
 def test_load_repository_rejects_malformed_keep_dependency(tmp_path: Path):
     package = tmp_path / "tools"
     package.mkdir()
-    _ = (package / "example.py").write_text("")
+    _ = (package / "example.py").write_text("", encoding="utf-8", newline="\n")
     _ = (package / "BUILD.bazel").write_text(
         """py_library(
     name = "example",
@@ -590,7 +642,9 @@ def test_load_repository_rejects_malformed_keep_dependency(tmp_path: Path):
         invalid_label,  # keep
     ],
 )
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
 
     with pytest.raises(ValueError, match="Invalid # keep dependency"):
@@ -604,9 +658,9 @@ def test_repository_analysis_updates_nearest_pyright_test_dependencies(
     child = tools / "child"
     grandchild = child / "grandchild"
     grandchild.mkdir(parents=True)
-    _ = (tools / "first.py").write_text("")
-    _ = (child / "second.py").write_text("")
-    _ = (grandchild / "third.py").write_text("")
+    _ = (tools / "first.py").write_text("", encoding="utf-8", newline="\n")
+    _ = (child / "second.py").write_text("", encoding="utf-8", newline="\n")
+    _ = (grandchild / "third.py").write_text("", encoding="utf-8", newline="\n")
     _ = (tools / "BUILD.bazel").write_text(
         """py_library(name = "first", srcs = ["first.py"])
 py_library(name = "generated", srcs = [":generated.py"])
@@ -625,15 +679,21 @@ pyright_test(
     srcs = glob(["generated/**/*.py"]),
     deps = ["//define/runtime:literal"],
 )
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (child / "BUILD.bazel").write_text(
-        'py_test(name = "second", srcs = ["second.py"])\n'
+        'py_test(name = "second", srcs = ["second.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (grandchild / "BUILD.bazel").write_text(
         """py_library(name = "third", srcs = ["third.py"])
 pyright_test(name = "pyright_test", deps = [":third"])
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -652,7 +712,7 @@ pyright_test(name = "pyright_test", deps = [":third"])
     assert change.missing == {"//tools/child:second"}
     assert change.unnecessary == {"//old:unused", "//tools:generated"}
     assert check_python_deps.report_results(repository, results, check_only=False) == 0
-    contents = (tools / "BUILD.bazel").read_text()
+    contents = (tools / "BUILD.bazel").read_text(encoding="utf-8")
     assert '"//kept:dependency",  # keep' in contents
     assert '"//tools/child:second",' in contents
     assert "//old:unused" not in contents
@@ -663,15 +723,19 @@ def test_pyright_test_does_not_implicitly_cover_subpackages(tmp_path: Path):
     tools = tmp_path / "tools"
     child = tools / "child"
     child.mkdir(parents=True)
-    _ = (tools / "first.py").write_text("")
-    _ = (child / "second.py").write_text("")
+    _ = (tools / "first.py").write_text("", encoding="utf-8", newline="\n")
+    _ = (child / "second.py").write_text("", encoding="utf-8", newline="\n")
     _ = (tools / "BUILD.bazel").write_text(
         """py_library(name = "first", srcs = ["first.py"])
 pyright_test(name = "pyright_test", deps = [":first"])
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (child / "BUILD.bazel").write_text(
-        'py_library(name = "second", srcs = ["second.py"])\n'
+        'py_library(name = "second", srcs = ["second.py"])\n',
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -684,11 +748,13 @@ def test_pyright_test_covers_targets_outside_known_top_level_directories(
 ):
     checks = tmp_path / "checks"
     checks.mkdir()
-    _ = (checks / "rules_test.py").write_text("")
+    _ = (checks / "rules_test.py").write_text("", encoding="utf-8", newline="\n")
     _ = (checks / "BUILD.bazel").write_text(
         """py_test(name = "rules_test", srcs = ["rules_test.py"])
 pyright_test(name = "pyright_test", deps = [])
-"""
+""",
+        encoding="utf-8",
+        newline="\n",
     )
 
     repository = check_python_deps.load_repository(tmp_path)
@@ -705,7 +771,9 @@ def test_load_repository_skips_vendored_and_node_modules(tmp_path: Path):
     for package in (tmp_path / "vendored", tmp_path / "tools" / "node_modules"):
         package.mkdir(parents=True)
         _ = (package / "BUILD.bazel").write_text(
-            'py_library(name = "library", srcs = ["first.py", "second.py"])\n'
+            'py_library(name = "library", srcs = ["first.py", "second.py"])\n',
+            encoding="utf-8",
+            newline="\n",
         )
 
     repository = check_python_deps.load_repository(tmp_path)
