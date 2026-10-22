@@ -1,10 +1,14 @@
 //! The parser: a program, and the dispatch to each kind of global definition.
 
 mod action_definition;
+mod encoding_definition;
 mod errors;
 mod lines;
+mod literals;
 mod names;
 mod position_definition;
+mod potential_literal_definition;
+mod value_definition;
 
 use crate::ast;
 use crate::ast_builder::{AstBuilder, FilePath};
@@ -15,13 +19,19 @@ use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use terminals::{
-    ACTION, DEFINE_THE_POTENTIAL, DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_POSITION,
-    POSITION,
+    ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION, DEFINE_THE_POTENTIAL,
+    DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL, DEFINE_THE_POTENTIAL_POSITION,
+    DEFINE_THE_POTENTIAL_VALUE, ENCODING, LITERAL, POSITION, VALUE,
 };
 
 /// The words that begin each global definition the parser supports.
-const GLOBAL_DEFINITION_STARTS: [&[u8]; 2] =
-    [DEFINE_THE_POTENTIAL_POSITION, DEFINE_THE_POTENTIAL_ACTION];
+const GLOBAL_DEFINITION_STARTS: [&[u8]; 5] = [
+    DEFINE_THE_POTENTIAL_POSITION,
+    DEFINE_THE_POTENTIAL_ACTION,
+    DEFINE_THE_POTENTIAL_VALUE,
+    DEFINE_THE_POTENTIAL_LITERAL,
+    DEFINE_THE_ENCODING,
+];
 pub(crate) struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
     ast: AstBuilder<'py, 'source>,
@@ -103,22 +113,70 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_definition(&mut self) -> ParseResult<(ast::GlobalDefinition<'py>, Position)> {
         let start = self.scanner.position;
-        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
-            self.scanner.consume(DEFINE_THE_POTENTIAL);
-            let typed_name_start = self.scanner.position;
-            self.scanner.consume(POSITION);
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE_POTENTIAL, POSITION)
+        {
             let (definition, end) = self.parse_position_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
-        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_ACTION) {
-            self.scanner.consume(DEFINE_THE_POTENTIAL);
-            let typed_name_start = self.scanner.position;
-            self.scanner.consume(ACTION);
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE_POTENTIAL, ACTION)
+        {
             let (definition, end) = self.parse_action_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE_POTENTIAL, VALUE)
+        {
+            let (definition, end) = self.parse_value_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE_POTENTIAL, LITERAL)
+        {
+            let (definition, end) =
+                self.parse_potential_literal_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
+        // An encoding operation definition, which the parser does not support
+        // yet, also begins with `define the encoding`.
+        if !self.scanner.next_bytes_are(DEFINE_THE_ENCODING_OPERATION)
+            && let Some(typed_name_start) =
+                self.scanner.consume_definition_start(DEFINE_THE, ENCODING)
+        {
+            let (definition, end) = self.parse_encoding_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
         // The text does not begin a global definition the parser supports.
         Err(self.expected_global_definition())
+    }
+
+    /// Parses the name content and terminator of a definition that is only a
+    /// typed name with `name_type`, which begins at `typed_name_start`, and
+    /// returns the typed name with the position after the `.`.
+    ///
+    /// ```ebnf
+    /// "<", fully_qualified_global_name, ">", terminator
+    /// ```
+    fn parse_definition_name_and_terminator(
+        &mut self,
+        typed_name_start: Position,
+        name_type: ast::NameType,
+    ) -> ParseResult<(ast::GlobalTypedNameInDefinition<'py>, Position)> {
+        let (name_content, _) = self.parse_global_name_definition_content()?;
+        let location = self.ast.location(typed_name_start, self.scanner.position)?;
+        let typed_name =
+            self.ast
+                .global_typed_name_in_definition(location, name_type, name_content)?;
+        // There is no `.`.
+        let Some(end) = self.parse_terminator()? else {
+            return Err(self.missing_terminator());
+        };
+        Ok((typed_name, end))
     }
 }
 

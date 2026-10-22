@@ -585,3 +585,21 @@ def test_every_line_of_shifted_definition_is_reported(
             actual_indent=2,
         ),
     ]
+
+
+def test_encoding_constraint_under_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        + "  it has the encoding</decimal_text>.\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=2, column=1, end_line=2, end_column=2),
+            expected_indent=4,
+            actual_indent=2,
+        ),
+    ]

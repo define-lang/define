@@ -6,44 +6,51 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests import test_helpers
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
-def test_value_definition(parse: Parse):
-    tree = parse(
+def test_value_definition(native_parse: NativeParse):
+    program = native_parse(
         "define the potential value<mv:define-lang.org:parser:/number/natural>.\n"
     )
-    assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/number/natural"
-    ]
-    assert test_helpers.get_tokens_by_type(tree, "DEFINE_THE_POTENTIAL_VALUE") == [
-        "define the potential value"
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ValueDefinition)
+    assert definition.typed_name.name_type == name_types.NameType.VALUE
+    assert definition.typed_name.name_content.path.name == "/number/natural"
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=69
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=70
+    )
 
 
-def test_value_definition_requires_global_name(parse: Parse):
+def test_value_definition_requires_global_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = parse("define the potential value<rational>.\n")
+        _ = native_parse("define the potential value<rational>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 28
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 35
 
 
-def test_value_definition_requires_terminator(parse: Parse):
+def test_value_definition_requires_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the potential value<standard:/number/natural>\n")
+        _ = native_parse("define the potential value<standard:/number/natural>\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 53
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 53
 
 
-def test_value_definition_disallows_block(parse: Parse):
+def test_value_definition_disallows_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the potential value<standard:/number/natural> {\n}\n")
+        _ = native_parse("define the potential value<standard:/number/natural> {\n}\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 53
-    assert error.value.location.end_column == 54
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 53

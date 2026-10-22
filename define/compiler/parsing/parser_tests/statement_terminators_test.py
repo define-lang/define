@@ -190,3 +190,41 @@ def test_text_where_position_definition_terminator_belongs(native_parse: NativeP
     assert exc_info.value.location.column == 63
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 63
+
+
+def test_text_after_encoding_constraint_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encoding</decimal>.x\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 35
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 35
+
+
+def test_text_after_value_definition_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
+        _ = native_parse("define the potential value<standard:/number/natural>.x\n")
+    assert error.value.location.line == 1
+    assert error.value.location.column == 54
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 54
+
+
+def test_text_after_value_setting_literal_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + '        set the value of position<dest> to literal</text>"a".x\n'
+            + "    }\n}\n"
+        )
+    assert error.value.location.line == 5
+    assert error.value.location.column == 62
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 62

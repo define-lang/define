@@ -9,7 +9,7 @@ use crate::parser::names::POSITION_OR_ACTION;
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use terminals::{
-    BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
+    ACTION, BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
     DEFINE_THE_POTENTIAL_POSITION, DESTROY_THE_PARTICLE_IN, EXECUTE_THE, IT_ALSO_ASSIGNS_THE,
     IT_HAPPENS_WHEN, LINE_FEED, LITERAL, MOVE_THE_PARTICLE_IN, POSITION, SET_THE_VALUE_OF, SPACE,
     SPACE_AND_IT_DOES, SPACE_HAS_A_PARTICLE, SPACE_TO, TERMINATOR, THE, THE_ACTION, THE_AND_SPACE,
@@ -166,11 +166,22 @@ impl<'py, 'source> Parser<'py, 'source> {
         Position,
     )> {
         let interface_positions = self.ast.start_tuple::<ast::LocalPositionDefinition>();
-        while matches!(line, LineInBlock::Statement)
-            && self.scanner.next_bytes_are(DEFINE_THE_POSITION)
-        {
-            let (position, end) =
-                self.parse_local_position_definition(ACTION_DEFINITION_BLOCK_INDENTATION, fqun)?;
+        loop {
+            if !matches!(line, LineInBlock::Statement) {
+                break;
+            }
+            let start = self.scanner.position;
+            let Some(typed_name_start) =
+                self.scanner.consume_definition_start(DEFINE_THE, POSITION)
+            else {
+                break;
+            };
+            let (position, end) = self.parse_local_position_definition(
+                start,
+                typed_name_start,
+                ACTION_DEFINITION_BLOCK_INDENTATION,
+                fqun,
+            )?;
             self.ast.push(&interface_positions, position);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
@@ -239,9 +250,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((implication, end))
     }
 
-    /// Parses a local position definition, indented `indentation` spaces,
-    /// whose references take their default FQUN from `fqun`, and returns it
-    /// with the position after its last character.
+    /// Parses the rest of a local position definition after its `position`,
+    /// given the positions of the definition's start and of its `position`,
+    /// where the definition is indented `indentation` spaces and its
+    /// references take their default FQUN from `fqun`, and returns it with the
+    /// position after its last character.
     ///
     /// ```ebnf
     /// local_position_definition =
@@ -249,13 +262,11 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_local_position_definition(
         &mut self,
+        start: Position,
+        typed_name_start: Position,
         indentation: usize,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::LocalPositionDefinition<'py>, Position)> {
-        let start = self.scanner.position;
-        self.scanner.consume(DEFINE_THE);
-        let typed_name_start = self.scanner.position;
-        self.scanner.consume(POSITION);
         let name_content = self.parse_local_name_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
         let typed_name = self.ast.local_typed_name_reference(
@@ -473,11 +484,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         indentation: usize,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::ActionStatement<'py>> {
-        if self.scanner.next_bytes_are(DEFINE_THE_POSITION) {
-            let (definition, _) = self.parse_local_position_definition(indentation, fqun)?;
+        let start = self.scanner.position;
+        if let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, POSITION)
+        {
+            let (definition, _) =
+                self.parse_local_position_definition(start, typed_name_start, indentation, fqun)?;
             return Ok(definition.into());
         }
-        let start = self.scanner.position;
         if self.scanner.consume(CREATE_A_PARTICLE_IN) {
             let target = self.parse_statement_position_reference(fqun)?;
             let end = self.parse_reference_terminator()?;
@@ -560,18 +573,39 @@ impl<'py, 'source> Parser<'py, 'source> {
             let missing = self.scanner.position;
             return Err(self.errors.missing_value_source(missing, missing));
         }
-        if self.scanner.next_bytes_are(LITERAL) {
-            return Err(ParseError::not_yet_supported(
-                self.scanner.position,
-                "literals",
-            ));
-        }
-        let source = self.parse_position_reference(fqun)?;
-        let end = self.parse_reference_terminator()?;
+        let (source, end) = self.parse_value_source(fqun)?;
         let location = self.ast.location(start, end)?;
-        Ok(self
-            .ast
-            .value_setting_statement(location, target, source.into())?)
+        Ok(self.ast.value_setting_statement(location, target, source)?)
+    }
+
+    /// Parses a value's source, a position reference or a literal, whose
+    /// references take their default FQUN from `fqun`, and the `.` after it,
+    /// and returns the source with the position after the `.`.
+    ///
+    /// ```ebnf
+    /// ( position_reference | literal ), terminator
+    /// ```
+    fn parse_value_source(
+        &mut self,
+        fqun: &ast::Fqun<'py>,
+    ) -> ParseResult<(ast::PositionReferenceOrLiteral<'py>, Position)> {
+        if self.scanner.next_bytes_are(LITERAL) {
+            let literal = self.parse_literal(fqun)?;
+            // There is no `.` after the literal.
+            let Some(end) = self.parse_terminator()? else {
+                return Err(self.missing_terminator());
+            };
+            return Ok((literal.into(), end));
+        }
+        // The value's source is neither a position reference nor a literal.
+        if !POSITION_OR_ACTION
+            .iter()
+            .any(|&(keyword, _)| self.scanner.next_bytes_are(keyword))
+        {
+            return Err(self.expected_value_source());
+        }
+        let reference = self.parse_position_reference(fqun)?;
+        Ok((reference.into(), self.parse_reference_terminator()?))
     }
 
     /// Parses the space and position reference that follow the words that
@@ -623,14 +657,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         // the end of the line, or the `.` or name type where what follows `to`
         // belongs comes after it. A missing reference after a whole `to` is
         // reported where the reference belongs.
-        // TODO: Also accept `literal` once value setting statements support
-        // literals, so that `toliteral<...>` is a missing space too.
         let is_word = matches!(
             after_to.first(),
             None | Some(&(SPACE | TERMINATOR | LINE_FEED))
-        ) || POSITION_OR_ACTION
-            .iter()
-            .any(|&(keyword, _)| after_to.starts_with(keyword));
+        ) || after_to.starts_with(LITERAL)
+            || POSITION_OR_ACTION
+                .iter()
+                .any(|&(keyword, _)| after_to.starts_with(keyword));
         if is_word {
             self.scanner.consume(SPACE_TO);
         }
@@ -640,6 +673,20 @@ impl<'py, 'source> Parser<'py, 'source> {
 
 // The functions that only run on an error path.
 impl<'py, 'source> Parser<'py, 'source> {
+    /// Returns the error for the name type, at the scanner's position, of a
+    /// value setting statement's source that is not `position`, `action`, or
+    /// `literal`.
+    #[cold]
+    #[inline(never)]
+    fn expected_value_source(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after_any(&[POSITION, ACTION, LITERAL]) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .expected_position_or_action_or_literal(start, self.scanner.end_of_word())
+    }
+
     /// Returns the error for a statement at the scanner's position in an
     /// action definition block before its trigger conditions block that does
     /// not belong there.

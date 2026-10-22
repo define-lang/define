@@ -225,7 +225,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// "<", global_name, ">"
     /// global_name = [ fqun ], global_name_path ;
     /// ```
-    fn parse_global_name_content(
+    pub(crate) fn parse_global_name_content(
         &mut self,
     ) -> ParseResult<(
         ast::SourceLocation<'py>,

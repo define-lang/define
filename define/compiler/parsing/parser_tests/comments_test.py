@@ -266,3 +266,37 @@ def test_empty_comment_hash_space_newline_after_statement_same_line(
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 66
     assert exc_info.value.location.end_column == 66
+
+
+def test_comment_with_trailing_whitespace_before_encoding_constraint(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    # note \n"
+            + "    it has the encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 2
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 11
+
+
+def test_comment_with_trailing_whitespace_after_encoding_constraint(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encoding</decimal>.\n"
+            + "    # note \n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 3
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 11

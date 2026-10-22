@@ -31,6 +31,7 @@ pub enum TextKind {
     /// have; any other character that does not belong is a syntax error.
     Syntax,
     Name,
+    LiteralContent,
     Comment,
 }
 
@@ -157,9 +158,18 @@ pub fn disallowed_character_ahead(
         line: start.line,
         column: start.column + offset,
     };
-    let chunk = scanner.rest_of_line().bytes[offset..]
-        .utf8_chunks()
-        .next()?;
+    disallowed_first_character(errors, position, &scanner.rest_of_line().bytes[offset..])
+}
+
+/// Returns the error for the first character of `text`, which begins at
+/// `position` and has no line feed, if no syntax may have it.
+#[cold]
+pub fn disallowed_first_character(
+    errors: &SyntaxErrors,
+    position: Position,
+    text: &[u8],
+) -> Option<ParseError> {
+    let chunk = text.utf8_chunks().next()?;
     let Some(character) = chunk.valid().chars().next() else {
         return Some(invalid_encoding(errors, position, chunk.invalid()));
     };

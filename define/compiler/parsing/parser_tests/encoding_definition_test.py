@@ -8,44 +8,52 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests import test_helpers
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
-def test_encoding_definition(parse: Parse):
-    tree = parse("define the encoding<mv:define-lang.org:parser:/number/natural>.\n")
-    assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/number/natural"
-    ]
-    assert test_helpers.get_tokens_by_type(tree, "DEFINE_THE_ENCODING") == [
-        "define the encoding"
-    ]
+def test_encoding_definition(native_parse: NativeParse):
+    program = native_parse(
+        "define the encoding<mv:define-lang.org:parser:/number/natural>.\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.EncodingDefinition)
+    assert definition.typed_name.name_type == name_types.NameType.ENCODING
+    assert definition.typed_name.name_content.path.name == "/number/natural"
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=12, end_line=1, end_column=62
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=63
+    )
 
 
-def test_encoding_definition_requires_global_name(parse: Parse):
+def test_encoding_definition_requires_global_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = parse("define the encoding<rational>.\n")
+        _ = native_parse("define the encoding<rational>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 21
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 28
 
 
-def test_encoding_definition_requires_terminator(parse: Parse):
+def test_encoding_definition_requires_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the encoding<standard:/number/natural>\n")
+        _ = native_parse("define the encoding<standard:/number/natural>\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 46
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 46
 
 
-def test_encoding_definition_disallows_block(parse: Parse):
+def test_encoding_definition_disallows_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the encoding<standard:/number/natural> {\n}\n")
+        _ = native_parse("define the encoding<standard:/number/natural> {\n}\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 46
-    assert error.value.location.end_column == 47
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 46
 
 
 def test_encoding_definition_disallows_potential(native_parse: NativeParse):
@@ -59,9 +67,9 @@ def test_encoding_definition_disallows_potential(native_parse: NativeParse):
     assert error.value.location.end_column == 63
 
 
-def test_encoding_definition_disallows_local_context(parse: Parse):
+def test_encoding_definition_disallows_local_context(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        _ = parse(
+        _ = native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -72,7 +80,8 @@ def test_encoding_definition_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 27
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 61
 
 
 def test_encoding_in_constraints(native_parse: NativeParse):

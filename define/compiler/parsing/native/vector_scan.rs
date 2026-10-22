@@ -29,7 +29,8 @@
 use std::marker::PhantomData;
 use std::num::NonZeroU32;
 use terminals::{
-    COMMENT_START, COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, PATH_SEPARATOR, SPACE,
+    COMMENT_START, COMPONENT_SEPARATOR, ESCAPE, LINE_FEED, LITERAL_CONTENT_DELIMITER,
+    NAME_CONTENT_END, PATH_SEPARATOR, SPACE,
 };
 use wide::u8x32;
 
@@ -633,6 +634,100 @@ pub fn rest_of_line(source: &[u8]) -> RestOfLine {
         length: offset + length,
         is_printable_ascii: unprintable == 0 && remainder_unprintable & low_bits(length) == 0,
     }
+}
+
+/// What a scan of literal content found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LiteralContent {
+    /// The length in bytes of the literal content before its first `"`, `\`,
+    /// or line feed, or before the end of the source.
+    pub length: usize,
+    /// The number of UTF-8 characters in those bytes.
+    pub character_count: usize,
+    /// Whether every one of those bytes is from ` ` through `~`.
+    pub is_printable_ascii: bool,
+}
+
+/// Scans the literal content at the start of `source`, up to its first `"`,
+/// `\`, or line feed.
+// The scan stops at a `\` as well as at the end of the content, so that
+// content without escapes, which is almost all of it, needs nothing more than
+// this one scan.
+#[must_use]
+pub fn literal_content(source: &[u8]) -> LiteralContent {
+    let (chunks, remainder) = source.as_chunks::<WIDTH>();
+    let mut unprintable = 0;
+    let mut continuation_bytes = 0;
+    for (index, &chunk) in chunks.iter().enumerate() {
+        let vector = u8x32::new(chunk);
+        let stops = literal_content_stops(vector);
+        if stops != 0 {
+            let length = stops.trailing_zeros() as usize;
+            let within = low_bits(length);
+            unprintable |= unprintable_mask(vector) & within;
+            continuation_bytes += (continuation_byte_mask(vector) & within).count_ones() as usize;
+            let length = index * WIDTH + length;
+            return LiteralContent {
+                length,
+                character_count: length - continuation_bytes,
+                is_printable_ascii: unprintable == 0,
+            };
+        }
+        unprintable |= unprintable_mask(vector);
+        continuation_bytes += continuation_byte_mask(vector).count_ones() as usize;
+    }
+    let (stops, remainder_unprintable, remainder_continuation) = match source.last_chunk::<WIDTH>()
+    {
+        // Loading the last 32 bytes of the source, which overlap bytes
+        // already scanned, is much faster than copying the remainder into
+        // a zeroed array.
+        Some(&last_chunk) if !remainder.is_empty() => {
+            let vector = u8x32::new(last_chunk);
+            let shift = WIDTH - remainder.len();
+            (
+                literal_content_stops(vector) >> shift,
+                unprintable_mask(vector) >> shift,
+                continuation_byte_mask(vector) >> shift,
+            )
+        }
+        // For a source shorter than one vector, a byte loop is faster than
+        // copying it into a zeroed array.
+        _ => {
+            let mut stops = 0;
+            let mut unprintable = 0;
+            let mut continuation = 0;
+            for (index, &byte) in remainder.iter().enumerate() {
+                stops |= u32::from(matches!(
+                    byte,
+                    LITERAL_CONTENT_DELIMITER | ESCAPE | LINE_FEED
+                )) << index;
+                unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
+                continuation |= u32::from(byte & 0b1100_0000 == 0b1000_0000) << index;
+            }
+            (stops, unprintable, continuation)
+        }
+    };
+    let remainder_length = if stops == 0 {
+        remainder.len()
+    } else {
+        stops.trailing_zeros() as usize
+    };
+    let within = low_bits(remainder_length);
+    let length = chunks.len() * WIDTH + remainder_length;
+    LiteralContent {
+        length,
+        character_count: length
+            - continuation_bytes
+            - (remainder_continuation & within).count_ones() as usize,
+        is_printable_ascii: unprintable == 0 && remainder_unprintable & within == 0,
+    }
+}
+
+/// Returns a mask of the bytes in `vector` at which a scan of literal content
+/// stops: `"`, `\`, and line feed.
+#[inline]
+fn literal_content_stops(vector: u8x32) -> u32 {
+    mask(vector, LITERAL_CONTENT_DELIMITER) | mask(vector, ESCAPE) | mask(vector, LINE_FEED)
 }
 
 /// Returns a mask of the bytes in `vector` that are not from ` ` through `~`.
@@ -1859,6 +1954,130 @@ mod tests {
             eq(LineEnd::Unusual {
                 leading_space_count: 40,
                 length: 52
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_ending_at_delimiter_near_end_of_source() {
+        expect_that!(
+            literal_content(b"abc\".\n"),
+            eq(LiteralContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_ending_at_delimiter() {
+        expect_that!(
+            literal_content(b"hello world\". # define the potential position<standard:/after>.\n"),
+            eq(LiteralContent {
+                length: 11,
+                character_count: 11,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_ending_at_escape() {
+        expect_that!(
+            literal_content(b"a\\\"b\".\ndefine the potential position<standard:/after>.\n"),
+            eq(LiteralContent {
+                length: 1,
+                character_count: 1,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_ending_at_line_feed() {
+        expect_that!(
+            literal_content(b"abc\ndefine the potential position<standard:/after>.\n"),
+            eq(LiteralContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_with_non_ascii_character() {
+        expect_that!(
+            literal_content(
+                "café\".\ndefine the potential position<standard:/after>.\n".as_bytes()
+            ),
+            eq(LiteralContent {
+                length: 5,
+                character_count: 4,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_with_unprintable_character() {
+        expect_that!(
+            literal_content(b"a\tb\".\ndefine the potential position<standard:/after>.\n"),
+            eq(LiteralContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_at_end_of_short_source() {
+        expect_that!(
+            literal_content(b"abc"),
+            eq(LiteralContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_longer_than_one_vector() {
+        let source = [&[b'a'; 40][..], b"\".\n"].concat();
+        expect_that!(
+            literal_content(&source),
+            eq(LiteralContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_longer_than_one_vector_at_end_of_source() {
+        expect_that!(
+            literal_content(&[b'a'; 40]),
+            eq(LiteralContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn literal_content_with_non_ascii_character_after_first_vector() {
+        let source = [&[b'a'; 33][..], "é\".\n".as_bytes()].concat();
+        expect_that!(
+            literal_content(&source),
+            eq(LiteralContent {
+                length: 35,
+                character_count: 34,
+                is_printable_ascii: false,
             })
         );
     }

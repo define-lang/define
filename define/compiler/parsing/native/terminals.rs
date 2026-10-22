@@ -41,3 +41,13 @@ pub const SPACE_TO: &[u8] = b" to";
 pub const LITERAL: &[u8] = b"literal";
 pub const VALUE: &[u8] = b"value";
 pub const ENCODING: &[u8] = b"encoding";
+pub const DEFINE_THE_POTENTIAL_VALUE: &[u8] = b"define the potential value";
+pub const DEFINE_THE_POTENTIAL_LITERAL: &[u8] = b"define the potential literal";
+pub const DEFINE_THE_ENCODING: &[u8] = b"define the encoding";
+pub const DEFINE_THE_ENCODING_OPERATION: &[u8] = b"define the encoding_operation";
+/// The `"` that begins and ends literal content.
+pub const LITERAL_CONTENT_DELIMITER: u8 = b'"';
+/// The `\` that begins an escape in literal content.
+pub const ESCAPE: u8 = b'\\';
+/// The character after a `\` that stands for a line feed in literal content.
+pub const ESCAPED_LINE_FEED: u8 = b'n';

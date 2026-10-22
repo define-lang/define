@@ -636,7 +636,7 @@ def test_local_position_definition_with_constraints_fields():
 
 def test_value_definition_fields():
     source = "define the potential value<mv:example.com:example:/number/natural>.\n"
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ValueDefinition)
@@ -662,7 +662,7 @@ def test_value_definition_between_other_definitions():
         + "define the potential value<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 3
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.ValueDefinition)
@@ -671,7 +671,7 @@ def test_value_definition_between_other_definitions():
 
 def test_encoding_definition_fields():
     source = "define the encoding<mv:example.com:example:/number/natural>.\n"
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.EncodingDefinition)
@@ -698,7 +698,7 @@ def test_encoding_definition_between_other_definitions():
         + "define the encoding<standard:/number/natural>.\n"
         + _CONSTRUCTOR_ACTION
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 3
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.EncodingDefinition)
@@ -923,7 +923,7 @@ def test_potential_literal_definition_fields():
         + "    it has the encoding</decimal_text>.\n"
         + "}\n"
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PotentialLiteralDefinition)
@@ -962,7 +962,7 @@ def test_potential_literal_definitions_update_reference_fqun():
         + "    it has the encoding<standard:/decimal_text>.\n"
         + "}\n"
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     first, second, third = program.definitions
     assert isinstance(first, ast.PotentialLiteralDefinition)
     assert isinstance(second, ast.PotentialLiteralDefinition)
@@ -986,7 +986,7 @@ def test_value_setting_literal_fields():
         + '        set the value of position<dest> to literal</text>" # Hello 世界 > : \\" \\\\ \\n \\\\n ".\n'
         + "    }\n}\n"
     )
-    statement = _only_action_from_lark_parser(source).action_statements.statements[0]
+    statement = _only_action(source).action_statements.statements[0]
     assert isinstance(statement, ast.ValueSettingStatement)
     assert statement.target_position.source_chained_name == "position<dest>"
     literal = statement.source
@@ -1020,7 +1020,7 @@ def test_value_setting_literal_empty_and_explicit_fqun():
         + '        set the value of position<dest> to literal<mv:example.com:other:/text>"".\n'
         + "    }\n}\n"
     )
-    statement = _only_action_from_lark_parser(source).action_statements.statements[0]
+    statement = _only_action(source).action_statements.statements[0]
     assert isinstance(statement, ast.ValueSettingStatement)
     literal = statement.source
     assert isinstance(literal, ast.Literal)
@@ -1048,11 +1048,8 @@ def test_literal_file_path_and_following_statement():
         + "    }\n}\n"
     )
     file_path = PurePosixPath("set_value.dfn")
-    result = parser.Parser().parse_and_transform(source, file_path)
-    assert result.exception is None
-    assert result.diagnostics == []
-    assert result.program is not None
-    definition = result.program.definitions[0]
+    program = test_helpers.parse(source, file_path)
+    definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     for statement in definition.action_statements.statements:
         assert isinstance(statement, ast.ValueSettingStatement)

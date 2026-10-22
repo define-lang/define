@@ -513,3 +513,16 @@ def test_control_character_after_potential_position_definition_block_close(
     assert exc_info.value.location.column == 2
     assert exc_info.value.location.end_line == 5
     assert exc_info.value.location.end_column == 2
+
+
+def test_text_after_potential_literal_definition_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encoding</decimal>.\n"
+            + "}x\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 2
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 2

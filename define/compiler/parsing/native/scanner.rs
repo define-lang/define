@@ -1,7 +1,7 @@
 //! Moving through the source and tracking positions in it.
 
 use std::slice::SliceIndex;
-use terminals::{LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
+use terminals::{ESCAPE, LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
 
 /// The bytes that end a word, for errors that cover the word where something
 /// else belongs.
@@ -33,6 +33,13 @@ impl<'source> SourceText<'source> {
             is_known_ascii: self.is_known_ascii,
         }
     }
+}
+
+/// Literal content as it is written, with its escapes.
+pub struct LiteralContent<'source> {
+    pub written: SourceText<'source>,
+    /// Whether the content has a `\`.
+    pub has_escape: bool,
 }
 
 /// A point in the source, as a 1-based line and a 1-based column counted in
@@ -197,6 +204,21 @@ impl<'source> Scanner<'source> {
         self.position.column += count;
     }
 
+    /// Consumes the `words` that begin a definition and the `name_type` after
+    /// them, if the remaining text starts with them, and returns the position
+    /// of the name type. `words` and `name_type` must be ASCII without a line
+    /// feed.
+    pub fn consume_definition_start(&mut self, words: &[u8], name_type: &[u8]) -> Option<Position> {
+        let after_words = self.rest.strip_prefix(words)?;
+        if !after_words.starts_with(name_type) {
+            return None;
+        }
+        self.consume_bytes(words.len());
+        let typed_name_start = self.position;
+        self.consume_bytes(name_type.len());
+        Some(typed_name_start)
+    }
+
     /// Consumes and returns the next `length` bytes, which have no line feed.
     pub fn consume_text(&mut self, length: usize) -> SourceText<'source> {
         let (bytes, rest) = self.rest.split_at(length);
@@ -236,6 +258,52 @@ impl<'source> Scanner<'source> {
         self.rest = rest;
         self.position.column += scanned.character_count;
         (text, scanned)
+    }
+
+    /// Consumes literal content up to its first `"` that is not after a `\`,
+    /// or up to the end of the line or the source, and returns it.
+    pub fn consume_literal_content(&mut self) -> LiteralContent<'source> {
+        let mut length = 0;
+        let mut character_count = 0;
+        let mut is_printable_ascii = true;
+        let mut has_escape = false;
+        loop {
+            let scanned = vector_scan::literal_content(&self.rest[length..]);
+            length += scanned.length;
+            character_count += scanned.character_count;
+            is_printable_ascii &= scanned.is_printable_ascii;
+            if self.rest.get(length) != Some(&ESCAPE) {
+                break;
+            }
+            has_escape = true;
+            length += 1;
+            character_count += 1;
+            // A `\` at the end of the line or the source has nothing after it
+            // to escape.
+            let Some(&escaped) = self.rest.get(length) else {
+                break;
+            };
+            if escaped == LINE_FEED {
+                break;
+            }
+            // The escaped byte may be `"` or `\`, which would stop the next
+            // scan, so it is consumed here. If it begins a character longer
+            // than one byte, the next scan counts none of that character's
+            // other bytes.
+            length += 1;
+            character_count += 1;
+            is_printable_ascii &= escaped == SPACE || escaped.is_ascii_graphic();
+        }
+        let (bytes, rest) = self.rest.split_at(length);
+        self.rest = rest;
+        self.position.column += character_count;
+        LiteralContent {
+            written: SourceText {
+                bytes,
+                is_known_ascii: is_printable_ascii,
+            },
+            has_escape,
+        }
     }
 
     /// Consumes the name content, where a local name may belong, before the

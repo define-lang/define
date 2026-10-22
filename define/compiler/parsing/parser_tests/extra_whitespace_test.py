@@ -338,3 +338,29 @@ def test_extra_space_before_position_definition_brace(native_parse: NativeParse)
     assert exc_info.value.location.column == 63
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 64
+
+
+def test_extra_space_before_encoding_in_encoding_constraint(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the  encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 16
+
+
+def test_extra_space_in_encoding_constraint(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it  has the encoding</decimal>.\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 7
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 8

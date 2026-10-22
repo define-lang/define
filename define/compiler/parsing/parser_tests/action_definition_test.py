@@ -164,6 +164,34 @@ def test_action_with_multiple_local_position_definitions(native_parse: NativePar
     )
 
 
+def test_blank_line_and_comment_between_interface_positions(
+    native_parse: NativeParse,
+):
+    program = native_parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<first_pos>.\n"
+        + "\n"
+        + "    # The position that the particle moves to.\n"
+        + "    define the position<second_pos>.\n"
+        + "    it happens when {\n"
+        + "        the position<first_pos> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [first_position, second_position] = definition.interface_positions
+    assert first_position.typed_name.name_content.name == "first_pos"
+    assert first_position.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=35
+    )
+    assert second_position.typed_name.name_content.name == "second_pos"
+    assert second_position.location == ast.SourceLocation(
+        line=5, column=5, end_line=5, end_column=36
+    )
+
+
 def test_action_with_mixed_local_position_definition_forms(native_parse: NativeParse):
     program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"

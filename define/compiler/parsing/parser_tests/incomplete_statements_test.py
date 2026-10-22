@@ -1463,3 +1463,47 @@ def test_position_requirement_ends_after_it_has_the(native_parse: NativeParse):
     assert exc_info.value.location.column == 19
     assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 19
+
+
+def test_potential_literal_definition_block_truncated_after_open(
+    native_parse: NativeParse,
+):
+    with pytest.raises(
+        parser_exceptions.InvalidPotentialLiteralDefinitionBlock
+    ) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        )
+    assert error.value.location.line == 1
+    assert error.value.location.column == 67
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 67
+
+
+def test_potential_literal_definition_block_truncated_after_encoding_constraint(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the encoding</decimal>.\n"
+        )
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 66
+
+
+def test_encoding_constraint_ends_after_it_has_the(native_parse: NativeParse):
+    with pytest.raises(
+        parser_exceptions.InvalidPotentialLiteralDefinitionBlock
+    ) as error:
+        _ = native_parse(
+            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+            + "    it has the\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 15

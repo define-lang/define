@@ -475,3 +475,19 @@ def test_value_setting_ends_after_to(native_parse: NativeParse):
     assert exc_info.value.location.column == 42
     assert exc_info.value.location.end_line == 6
     assert exc_info.value.location.end_column == 42
+
+
+def test_value_source_with_other_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        set the value of position<dest> to value</x>.\n"
+            + "    }\n}\n"
+        )
+    assert error.value.location.line == 5
+    assert error.value.location.column == 44
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 48
