@@ -119,6 +119,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// definition block, after its `{` at `block_open_end`, whose references
     /// take their default FQUN from `fqun`. Returns them with the line in the
     /// block after them and where the block's content ends before that line.
+    ///
+    /// ```ebnf
+    /// { quality_implication_statement }
+    /// ```
     fn parse_quality_implications(
         &mut self,
         block_open_end: Position,
@@ -147,6 +151,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// references take their default FQUN from `fqun`. Returns them with the
     /// line in the block after them and where the block's content ends before
     /// that line.
+    ///
+    /// ```ebnf
+    /// { local_position_definition }
+    /// ```
     fn parse_interface_positions(
         &mut self,
         mut line: LineInBlock,
@@ -177,6 +185,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the `}` that closes an action definition block, which a line
     /// from `start` up to `block_open_end`, the position after its `{`, opens,
     /// and returns the position after the `}`.
+    ///
+    /// ```ebnf
+    /// block_close
+    /// ```
     fn parse_action_definition_close(
         &mut self,
         start: Position,
@@ -398,6 +410,10 @@ impl<'py, 'source> Parser<'py, 'source> {
 
     /// Parses a terminator through the end of its line, and returns the
     /// position after its `.`.
+    ///
+    /// ```ebnf
+    /// terminator
+    /// ```
     fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.`.
         let Some(end) = self.parse_terminator()? else {
@@ -561,6 +577,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the space and position reference that follow the words that
     /// begin a statement, whose global names take their default FQUN from
     /// `fqun`.
+    ///
+    /// ```ebnf
+    /// " ", position_reference
+    /// ```
     fn parse_statement_position_reference(
         &mut self,
         fqun: &ast::Fqun<'py>,
@@ -576,6 +596,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the terminator after a statement that ends with a position
     /// reference, through the end of its line, and returns the position after
     /// its `.`.
+    ///
+    /// ```ebnf
+    /// terminator
+    /// ```
     fn parse_reference_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.` or `::` after the position reference.
         let Some(end) = self.parse_terminator()? else {
