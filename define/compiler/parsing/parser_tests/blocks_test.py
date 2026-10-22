@@ -14,7 +14,7 @@ from define.compiler import ast
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_empty_block_on_position(native_parse: NativeParse):
@@ -26,11 +26,12 @@ def test_empty_block_on_position(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_empty_block_on_action(parse: Parse):
+def test_empty_block_on_action(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse("define the potential action<standard:/path> {\n}\n")
+        native_parse("define the potential action<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
@@ -375,9 +376,9 @@ def test_missing_terminator_still_works(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 46
 
 
-def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
+def test_missing_outer_block_close_with_inner_block_message(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<standard:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -385,9 +386,10 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
             + "    } and it does {\n"
             + "    }\n"
         )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_column == 6
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 45
 
 
 def test_position_constraint_invalid_type_keyword(native_parse: NativeParse):

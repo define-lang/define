@@ -216,6 +216,16 @@ class InvisibleCharacterError(DefineCharError):
 # Keep these in alphabetical order.
 
 
+class ChainedNameInPositionPresenceStatement(DefineTokenError):
+    """Wrote a chained name in a position presence statement."""
+
+    message_format: ClassVar[str] = (
+        "A position presence statement only accepts a single local name, like:\n"
+        "    the position<foo> has a particle.\n"
+        "Chained names (with '::') are not allowed here."
+    )
+
+
 class EmptyBlock(DefineTokenError):
     """Wrote {}."""
 

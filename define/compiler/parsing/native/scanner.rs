@@ -120,6 +120,8 @@ impl<'source> Scanner<'source> {
     }
 
     /// The rest of the line before its line feed.
+    #[cold]
+    #[inline(never)]
     pub fn rest_of_line(&self) -> SourceText<'source> {
         let scanned = vector_scan::rest_of_line(self.rest);
         SourceText {
@@ -147,6 +149,12 @@ impl<'source> Scanner<'source> {
         self.rest.starts_with(expected)
     }
 
+    /// The remaining text after `prefix`, if the remaining text starts with
+    /// it.
+    pub fn rest_after(&self, prefix: &[u8]) -> Option<&'source [u8]> {
+        self.rest.strip_prefix(prefix)
+    }
+
     /// Whether the scanner is at a line feed or the end of the source.
     pub const fn is_at_line_end(&self) -> bool {
         matches!(self.rest.first(), None | Some(&LINE_FEED))
@@ -166,6 +174,16 @@ impl<'source> Scanner<'source> {
         self.rest = rest;
         self.position = self.position.after_ascii(expected);
         true
+    }
+
+    /// Consumes the first of `keywords` that the remaining text starts with,
+    /// and returns the value paired with it. Each keyword must be ASCII
+    /// without a line feed.
+    pub fn consume_any<Value: Copy>(&mut self, keywords: &[(&[u8], Value)]) -> Option<Value> {
+        keywords
+            .iter()
+            .find(|&&(keyword, _)| self.consume(keyword))
+            .map(|&(_, value)| value)
     }
 
     /// Consumes `expected` if it is the next byte. `expected` must be ASCII and
@@ -220,9 +238,26 @@ impl<'source> Scanner<'source> {
         true
     }
 
-    /// Consumes the name content before the first `>` or line feed, or all of
-    /// the remaining text if it contains neither, and returns it with what the
-    /// scan found in it.
+    /// Consumes the name content, where only a global name belongs, before the
+    /// first `>` or line feed, or all of the remaining text if it contains
+    /// neither, and returns it with what the scan found in it.
+    pub fn consume_global_name_content(
+        &mut self,
+    ) -> (SourceText<'source>, vector_scan::GlobalNameContent) {
+        let scanned = vector_scan::global_name_content(self.rest);
+        let (bytes, rest) = self.rest.split_at(scanned.length);
+        let text = SourceText {
+            bytes,
+            is_known_ascii: scanned.is_printable_ascii,
+        };
+        self.rest = rest;
+        self.position.column += scanned.character_count;
+        (text, scanned)
+    }
+
+    /// Consumes the name content, where a local name may belong, before the
+    /// first `>` or line feed, or all of the remaining text if it contains
+    /// neither, and returns it with what the scan found in it.
     pub fn consume_name_content(&mut self) -> (SourceText<'source>, vector_scan::NameContent) {
         let scanned = vector_scan::name_content(self.rest);
         let (bytes, rest) = self.rest.split_at(scanned.length);

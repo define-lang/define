@@ -68,6 +68,7 @@ pub fn first_disallowed_character(
 /// Returns the error for the character `offset` bytes, which are ASCII, past
 /// the scanner's position, where the syntax there went wrong, if no syntax may
 /// have it.
+#[cold]
 pub fn disallowed_character_ahead(
     errors: &SyntaxErrors,
     scanner: &Scanner,
@@ -152,6 +153,8 @@ fn disallowed_character(
 }
 
 /// Returns the error for the bytes at `position` that are not valid UTF-8.
+#[cold]
+#[inline(never)]
 fn invalid_encoding(errors: &SyntaxErrors, position: Position, bytes: &[u8]) -> ParseError {
     // The bytes are not characters, so the error shows them as escapes.
     let escaped: String = bytes.iter().map(|byte| format!("\\x{byte:02x}")).collect();

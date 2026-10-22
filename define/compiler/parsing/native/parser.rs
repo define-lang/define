@@ -1,6 +1,8 @@
+mod action_definition;
 mod ast_builder;
 mod characters;
 mod lines;
+mod names;
 mod parse_error;
 mod scanner;
 // rustfmt runs on the source tree, which has ast.rs only after
@@ -27,15 +29,24 @@ use vector_scan::{COMPONENT_SEPARATOR, LINE_FEED, NAME_CONTENT_END, SPACE};
 
 const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 const POSITION: &[u8] = b"position";
+const ACTION: &[u8] = b"action";
 const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
+const DEFINE_THE_POTENTIAL_ACTION: &[u8] = b"define the potential action";
+/// The words that begin each global definition the parser supports.
+const GLOBAL_DEFINITION_STARTS: [&[u8]; 2] =
+    [DEFINE_THE_POTENTIAL_POSITION, DEFINE_THE_POTENTIAL_ACTION];
 const NAME_CONTENT_START: u8 = b'<';
 const IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: &[u8] = b"it may only contain particles where";
-const IT_HAS_THE: &[u8] = b"it has the ";
+const IT_HAS_THE: &[u8] = b"it has the";
 const CONSTRAINT_NAME_TYPES: [(&[u8], ast::NameType); 4] = [
-    (b"position", ast::NameType::Position),
-    (b"action", ast::NameType::Action),
+    (POSITION, ast::NameType::Position),
+    (ACTION, ast::NameType::Action),
     (b"value", ast::NameType::Value),
     (b"encoding", ast::NameType::Encoding),
+];
+const POSITION_OR_ACTION: [(&[u8], ast::NameType); 2] = [
+    (POSITION, ast::NameType::Position),
+    (ACTION, ast::NameType::Action),
 ];
 
 struct Parser<'py, 'source> {
@@ -65,15 +76,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             if self.scanner.is_at_end() {
                 break;
             }
+            let line_start = self.scanner.position;
             let Some(indentation) = self.lines().start_line(0)? else {
                 continue;
             };
-            if indentation > 0 {
-                return Err(ParseError::not_yet_supported(
-                    self.scanner.position,
-                    "indentation outside a block",
-                ));
-            }
+            self.lines().check_indentation(line_start, 0, indentation)?;
             start.get_or_insert(self.scanner.position);
             let (definition, definition_end) = self.parse_definition()?;
             self.ast.push(&definitions, definition);
@@ -116,8 +123,14 @@ impl<'py, 'source> Parser<'py, 'source> {
             let (definition, end) = self.parse_position_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
-        // The text does not begin a position definition, the only global
-        // definition the parser supports so far.
+        if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_ACTION) {
+            self.scanner.consume(DEFINE_THE_POTENTIAL);
+            let typed_name_start = self.scanner.position;
+            self.scanner.consume(ACTION);
+            let (definition, end) = self.parse_action_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
+        // The text does not begin a global definition the parser supports.
         Err(self.expected_global_definition())
     }
 
@@ -126,12 +139,12 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn expected_global_definition(&self) -> ParseError {
-        if let Some(error) = self.disallowed_character_after(DEFINE_THE_POTENTIAL_POSITION) {
+        if let Some(error) = self.disallowed_character_after_any(&GLOBAL_DEFINITION_STARTS) {
             return error;
         }
-        // The line begins like a position definition, but with extra spaces
-        // between two of its words.
-        if let Some(error) = self.extra_spaces_between_words(DEFINE_THE_POTENTIAL_POSITION) {
+        // The line begins like a global definition, but with extra or missing
+        // spaces between two of its words.
+        if let Some(error) = self.misspaced_words_in_any(&GLOBAL_DEFINITION_STARTS) {
             return error;
         }
         let start = self.scanner.position;
@@ -139,17 +152,37 @@ impl<'py, 'source> Parser<'py, 'source> {
             .expected_global_definition(start, self.end_of_line())
     }
 
-    /// Returns the error for the spaces where the line at the scanner's
-    /// position, which does not start with `words`, ASCII words separated by
-    /// single spaces, stops matching them, if they are extra spaces before a
-    /// word.
-    fn extra_spaces_between_words(&self, words: &[u8]) -> Option<ParseError> {
-        let line = self.scanner.rest_of_line().bytes;
+    /// Returns the error for the spaces where `line`, the rest of the line at
+    /// the scanner's position, which does not start with `words`, ASCII words
+    /// separated by single spaces, stops matching them, if it has extra spaces
+    /// before a word there or is missing the space before one.
+    #[cold]
+    fn misspaced_words(&self, line: &[u8], words: &[u8]) -> Option<ParseError> {
         let matching = line
             .iter()
             .zip(words)
             .take_while(|(byte, expected)| byte == expected)
             .count();
+        // Every byte the line matches is ASCII, so each is one column.
+        let start = self.scanner.position;
+        if words.get(matching) == Some(&SPACE) {
+            let next_word = words[matching + 1..]
+                .split(|&byte| byte == SPACE)
+                .next()
+                .unwrap_or_default();
+            // The next word follows the one before it without the space
+            // between them. A different word that starts like the one before
+            // it is not followed by the next word.
+            if !line[matching..].starts_with(next_word) {
+                return None;
+            }
+            let word_start = Position {
+                line: start.line,
+                column: start.column + matching,
+            };
+            let word_end = word_start.after_ascii(next_word).previous_column();
+            return Some(self.errors.missing_whitespace(word_start, word_end));
+        }
         if matching == 0 || words[matching - 1] != SPACE {
             return None;
         }
@@ -163,8 +196,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         if spaces == 1 || first + spaces == line.len() {
             return None;
         }
-        // Every byte through the spaces is ASCII, so each is one column.
-        let start = self.scanner.position;
         let spaces_start = Position {
             line: start.line,
             column: start.column + first,
@@ -174,6 +205,17 @@ impl<'py, 'source> Parser<'py, 'source> {
             column: start.column + first + spaces - 1,
         };
         Some(self.errors.extra_whitespace(spaces_start, spaces_end))
+    }
+
+    /// Returns the error for the spaces where the line at the scanner's
+    /// position stops matching the first of `phrases` that it has extra spaces
+    /// in or is missing a space in.
+    #[cold]
+    fn misspaced_words_in_any(&self, phrases: &[&[u8]]) -> Option<ParseError> {
+        let line = self.scanner.rest_of_line().bytes;
+        phrases
+            .iter()
+            .find_map(|phrase| self.misspaced_words(line, phrase))
     }
 
     /// Parses the rest of a position definition after its `position`, given
@@ -200,8 +242,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             name_content,
         )?;
         let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (constraints, end) =
-                self.parse_potential_position_definition_block(start, &fqun)?;
+            let (constraints, end) = self.parse_position_definition_block(start, 0, &fqun)?;
             (Some(constraints), end)
         } else {
             // There is no `.` or ` {`.
@@ -236,37 +277,50 @@ impl<'py, 'source> Parser<'py, 'source> {
                 .errors
                 .missing_whitespace_before_brace(missing, missing);
         }
-        ParseError::not_yet_supported(missing, "anything but a terminator or ` {` here")
+        let spaces = self.scanner.next_space_count();
+        // More than one space comes before the `{`.
+        if spaces > 1 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&OPEN_BRACE) {
+            let last_space = Position {
+                line: missing.line,
+                column: missing.column + spaces - 1,
+            };
+            return self.errors.extra_whitespace(missing, last_space);
+        }
+        self.errors.missing_terminator_or_brace(missing, missing)
     }
 
-    /// Parses the block of a potential position definition at the top level
-    /// that begins at `start`, whose references take their default FQUN from
-    /// `fqun`, and returns its position constraint block with the position
-    /// after its `}`.
+    /// Parses the block of a position definition that begins at `start`,
+    /// indented `opener_indentation` spaces, whose references take their
+    /// default FQUN from `fqun`, and returns its position constraint block
+    /// with the position after its `}`.
     ///
     /// ```ebnf
-    /// potential_position_definition_block =
+    /// position_definition_block =
     ///     block_open,
     ///     position_constraint_block,
     ///     block_close ;
     /// ```
-    fn parse_potential_position_definition_block(
+    fn parse_position_definition_block(
         &mut self,
         start: Position,
+        opener_indentation: usize,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
         let block_open_end = self.lines().parse_block_open()?;
-        let indentation = match self.lines().next_line_in_block(0)? {
+        let indentation = match self
+            .lines()
+            .next_line_in_block(opener_indentation, &[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE])?
+        {
             LineInBlock::Statement { indentation } => indentation,
             // The block is empty.
-            LineInBlock::Close => {
+            LineInBlock::Close { .. } => {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
                     .missing_position_definition_content(close, close));
             }
-            // The source ends where the block's content belongs.
-            LineInBlock::EndOfSource => {
+            // The block ends where its content belongs.
+            LineInBlock::Unclosed => {
                 return Err(self
                     .errors
                     .missing_position_definition_content(block_open_end, block_open_end));
@@ -279,14 +333,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let constraints =
             self.parse_position_constraint_block(constraints_start, indentation, fqun)?;
-        match self.lines().next_line_in_block(0)? {
-            LineInBlock::Close => {}
+        match self.lines().next_line_in_block(opener_indentation, &[])? {
+            LineInBlock::Close { .. } => {}
             // A statement is where the block's `}` belongs.
             LineInBlock::Statement { .. } => {
                 return Err(self.statement_instead_of_close_brace());
             }
-            // The source ends before the block's `}`.
-            LineInBlock::EndOfSource => {
+            // The block ends before its `}`.
+            LineInBlock::Unclosed => {
                 return Err(self.missing_close_brace(start, block_open_end));
             }
         }
@@ -294,8 +348,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((constraints, end))
     }
 
-    /// Returns the error for a block that the source ends in, which a line from
-    /// `start` up to `block_open_end`, the position after its `{`, opens.
+    /// Returns the error for a block that ends without its `}`, which a line
+    /// from `start` up to `block_open_end`, the position after its `{`, opens.
     #[cold]
     #[inline(never)]
     fn missing_close_brace(&self, start: Position, block_open_end: Position) -> ParseError {
@@ -345,18 +399,35 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Returns the error for the character `offset` bytes, which are ASCII,
     /// past the scanner's position, where the syntax there went wrong, if no
     /// syntax may have it.
+    #[cold]
+    #[inline(never)]
     fn disallowed_character_ahead(&self, offset: usize) -> Option<ParseError> {
         characters::disallowed_character_ahead(&self.errors, &self.scanner, offset)
     }
 
     /// Returns the error for the character where the line at the scanner's
     /// position stops matching `expected`, if no syntax may have it.
+    #[cold]
     fn disallowed_character_after(&self, expected: &[u8]) -> Option<ParseError> {
         self.disallowed_character_ahead(self.scanner.matching_prefix_length(expected))
     }
 
+    /// Returns the error for the character where the line at the scanner's
+    /// position stops matching the one of `phrases` that it matches the most
+    /// of, if no syntax may have it.
+    #[cold]
+    fn disallowed_character_after_any(&self, phrases: &[&[u8]]) -> Option<ParseError> {
+        let matched = phrases
+            .iter()
+            .map(|phrase| self.scanner.matching_prefix_length(phrase))
+            .max()
+            .unwrap_or(0);
+        self.disallowed_character_ahead(matched)
+    }
+
     /// Returns the position of the last character on the line before its line
     /// feed, which must not be empty from the scanner's position.
+    #[cold]
     fn end_of_line(&self) -> Position {
         self.scanner
             .position
@@ -383,17 +454,20 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::PositionConstraintBlock<'py>> {
         let block_open_end = self.lines().parse_block_open()?;
-        match self.lines().next_line_in_block(indentation)? {
+        match self
+            .lines()
+            .next_line_in_block(indentation, &[IT_HAS_THE])?
+        {
             LineInBlock::Statement { .. } => {}
             // The block is empty.
-            LineInBlock::Close => {
+            LineInBlock::Close { .. } => {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
                     .missing_position_constraint_content(close, close));
             }
-            // The source ends where the block's content belongs.
-            LineInBlock::EndOfSource => {
+            // The block ends where its content belongs.
+            LineInBlock::Unclosed => {
                 return Err(self
                     .errors
                     .missing_position_constraint_content(block_open_end, block_open_end));
@@ -403,11 +477,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         loop {
             let requirement = self.parse_position_requirement_statement(fqun)?;
             self.ast.push(&requirements, requirement);
-            match self.lines().next_line_in_block(indentation)? {
+            match self
+                .lines()
+                .next_line_in_block(indentation, &[IT_HAS_THE])?
+            {
                 LineInBlock::Statement { .. } => {}
-                LineInBlock::Close => break,
-                // The source ends before the block's `}`.
-                LineInBlock::EndOfSource => {
+                LineInBlock::Close { .. } => break,
+                // The block ends before its `}`.
+                LineInBlock::Unclosed => {
                     return Err(self.missing_close_brace(start, block_open_end));
                 }
             }
@@ -433,7 +510,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(IT_HAS_THE) {
             return Err(self.invalid_position_constraint_block());
         }
-        let typed_name = self.parse_typed_global_name_reference(fqun)?;
+        // The line ends where the typed name belongs.
+        if !self.space_before_word()? {
+            return Err(self.expected_constraint_name_type());
+        }
+        let typed_name = self.parse_typed_global_name_reference(
+            fqun,
+            &CONSTRAINT_NAME_TYPES,
+            Self::expected_constraint_name_type,
+        )?;
         // There is no `.`.
         let Some(end) = self.lines().parse_terminator()? else {
             return Err(self.lines().missing_terminator());
@@ -445,7 +530,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Parses a typed global name in a reference, whose default FQUN is
-    /// `fqun`.
+    /// `fqun`, with one of the `name_types`, where `wrong_name_type` returns
+    /// the error for any other name type.
     ///
     /// ```ebnf
     /// typed_global_name = name_type, "<", global_name, ">" ;
@@ -453,14 +539,13 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn parse_typed_global_name_reference(
         &mut self,
         fqun: &ast::Fqun<'py>,
+        name_types: &[(&[u8], ast::NameType)],
+        wrong_name_type: fn(&Self) -> ParseError,
     ) -> ParseResult<ast::GlobalTypedNameReference<'py>> {
         let start = self.scanner.position;
-        // The name type is not one a position requirement statement allows.
-        let Some(&(_, name_type)) = CONSTRAINT_NAME_TYPES
-            .iter()
-            .find(|&&(keyword, _)| self.scanner.consume(keyword))
-        else {
-            return Err(self.expected_constraint_name_type());
+        // The name type is not one this reference allows.
+        let Some(name_type) = self.scanner.consume_any(name_types) else {
+            return Err(wrong_name_type(self));
         };
         let (location, name_fqun, path) = self.parse_global_name_content()?;
         let name_content = self
@@ -546,12 +631,22 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_open_angle_bracket());
         }
         let start = self.scanner.position;
-        let (content, scanned) = self.scanner.consume_name_content();
+        let (content, scanned) = self.scanner.consume_global_name_content();
         let end = self.scanner.position;
         // The name content is not a global name that ends with `>`.
         if !scanned.is_global_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
             return Err(self.invalid_global_name_content(content, start, end));
         }
+        self.global_name_parts(content, scanned.last_component_separator, start, end)
+    }
+
+    /// Returns the error for a character in name `content`, which begins at
+    /// `start`, that names do not allow, if it has one.
+    fn disallowed_name_character(
+        &self,
+        content: SourceText<'source>,
+        start: Position,
+    ) -> ParseResult<()> {
         // The name content has a character that names do not allow.
         if !content.is_known_ascii
             && let Some(error) = characters::first_disallowed_character(
@@ -563,8 +658,27 @@ impl<'py, 'source> Parser<'py, 'source> {
         {
             return Err(error);
         }
+        Ok(())
+    }
+
+    /// Parses global name `content`, which runs from `start` up to `end`, where
+    /// the scanner is before its `>`, and whose last `:` before its path is at
+    /// `last_component_separator`, and returns the location of the name
+    /// content, its FQUN if it has one, and its path.
+    fn global_name_parts(
+        &mut self,
+        content: SourceText<'source>,
+        last_component_separator: Option<usize>,
+        start: Position,
+        end: Position,
+    ) -> ParseResult<(
+        ast::SourceLocation<'py>,
+        Option<ast::Fqun<'py>>,
+        ast::GlobalPathName<'py>,
+    )> {
+        self.disallowed_name_character(content, start)?;
         self.scanner.consume_bytes(1);
-        let (fqun, path_start, path_text) = match scanned.last_component_separator {
+        let (fqun, path_start, path_text) = match last_component_separator {
             None => (None, start, content),
             // The name has a `:` but nothing before it.
             Some(0) => {
@@ -612,8 +726,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.errors.missing_open_angle_bracket(missing, missing)
     }
 
-    /// Returns the error for name `content` from `start` up to `end`, which the
-    /// scanner is at, that is not a global name followed by `>`.
+    /// Returns the error for name `content` from `start` up to `end`, the
+    /// scanner's position, that is not a global name followed by `>`.
     #[cold]
     #[inline(never)]
     fn invalid_global_name_content(

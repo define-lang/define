@@ -26,6 +26,7 @@
 // (other than the tests). That's why the Scanner and other structs are in
 // other files.
 
+use std::marker::PhantomData;
 use wide::u8x32;
 
 pub const NAME_CONTENT_END: u8 = b'>';
@@ -37,7 +38,25 @@ pub const COMMENT_START: u8 = b'#';
 
 const WIDTH: usize = 32;
 
-/// What a scan of name content found.
+/// What a scan of name content where only a global name belongs found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct GlobalNameContent {
+    /// The length in bytes of the name content, which ends before the first
+    /// `>` or line feed, or at the end of the source.
+    pub length: usize,
+    /// The number of UTF-8 characters in the name content.
+    pub character_count: usize,
+    /// Whether every byte of the name content is from ` ` through `~`.
+    pub is_printable_ascii: bool,
+    /// Whether the name content has the shape of a global name: optional text
+    /// without spaces that ends in `:`, then `/` and at least one more byte.
+    pub is_global_name: bool,
+    /// For a global name, the index of the last `:` before its path. `None`
+    /// for name content that is not a global name.
+    pub last_component_separator: Option<usize>,
+}
+
+/// What a scan of name content where a local name may belong found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NameContent {
     /// The length in bytes of the name content, which ends before the first
@@ -50,18 +69,100 @@ pub struct NameContent {
     /// Whether the name content has the shape of a global name: optional text
     /// without spaces that ends in `:`, then `/` and at least one more byte.
     pub is_global_name: bool,
-    /// The index of the last `:` in the name content.
+    /// For a global name, the index of the last `:` before its path. `None`
+    /// for name content that is not a global name.
     pub last_component_separator: Option<usize>,
+    /// Whether the name content is not empty and has no space, `:`, or `/`,
+    /// which a local name may not have.
+    pub is_local_name: bool,
 }
 
-/// Scans the name content at the start of `source`.
-// Name content is the one span whose checks happen in the scan rather than in
-// the parser: its global-name shape and its last `:` come from the same
-// vector load that finds its end, which is much faster than separate passes
-// over the name afterward.
+/// What a scan of name content reports, which is whether the name content
+/// is a local name only when `FINDS_LOCAL_NAMES` is true.
+// Each scan builds its own result type on every path, so that a scan that
+// skips the work for local names does not copy a larger result into a smaller
+// one.
+trait ScannedNameContent {
+    const FINDS_LOCAL_NAMES: bool;
+
+    fn new(
+        length: usize,
+        character_count: usize,
+        is_printable_ascii: bool,
+        is_global_name: bool,
+        last_component_separator: Option<usize>,
+        is_local_name: bool,
+    ) -> Self;
+}
+
+impl ScannedNameContent for GlobalNameContent {
+    const FINDS_LOCAL_NAMES: bool = false;
+
+    #[inline(always)]
+    fn new(
+        length: usize,
+        character_count: usize,
+        is_printable_ascii: bool,
+        is_global_name: bool,
+        last_component_separator: Option<usize>,
+        _: bool,
+    ) -> Self {
+        Self {
+            length,
+            character_count,
+            is_printable_ascii,
+            is_global_name,
+            last_component_separator,
+        }
+    }
+}
+
+impl ScannedNameContent for NameContent {
+    const FINDS_LOCAL_NAMES: bool = true;
+
+    #[inline(always)]
+    fn new(
+        length: usize,
+        character_count: usize,
+        is_printable_ascii: bool,
+        is_global_name: bool,
+        last_component_separator: Option<usize>,
+        is_local_name: bool,
+    ) -> Self {
+        Self {
+            length,
+            character_count,
+            is_printable_ascii,
+            is_global_name,
+            last_component_separator,
+            is_local_name,
+        }
+    }
+}
+
+/// Scans the name content at the start of `source`, where only a global name
+/// belongs.
+#[inline]
+#[must_use]
+pub fn global_name_content(source: &[u8]) -> GlobalNameContent {
+    scan_name_content(source)
+}
+
+/// Scans the name content at the start of `source`, where a local name may
+/// belong.
 #[inline]
 #[must_use]
 pub fn name_content(source: &[u8]) -> NameContent {
+    scan_name_content(source)
+}
+
+// Name content is the one span whose checks happen in the scan rather than in
+// the parser: its global-name shape and its last `:` come from the same
+// vector load that finds its end, which is much faster than separate passes
+// over the name afterward. Where only a global name belongs, the scan skips
+// the work for local names, which costs about a quarter of a scan.
+#[inline(always)]
+fn scan_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
     let Some(&chunk) = source.first_chunk::<WIDTH>() else {
         return short_name_content(source);
     };
@@ -132,7 +233,7 @@ impl NameContentMasks {
 // `name_content` stays in a register instead of passing through memory.
 #[cold]
 #[inline(never)]
-fn short_name_content(source: &[u8]) -> NameContent {
+fn short_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
     let mut masks = NameContentMasks::of(zero_padded(source));
     masks.ends |= !low_bits(source.len());
     name_content_in_vector(masks, masks.ends.trailing_zeros() as usize)
@@ -141,23 +242,33 @@ fn short_name_content(source: &[u8]) -> NameContent {
 /// Scans the first `length` bytes of a vector with `masks`, where `length` is
 /// less than 32.
 #[inline]
-const fn name_content_in_vector(masks: NameContentMasks, length: usize) -> NameContent {
+fn name_content_in_vector<Scanned: ScannedNameContent>(
+    masks: NameContentMasks,
+    length: usize,
+) -> Scanned {
     let within = low_bits(length);
     let component_separators = masks.component_separators & within;
     // A `/` can begin the path of a global name when it is first or follows a
     // `:`, and when at least one more byte follows it in the name content.
     let path_starts = masks.path_separators & ((component_separators << 1) | 1) & (within >> 1);
-    NameContent {
+    let first_path_start = path_starts.trailing_zeros();
+    let is_global_name = first_path_start < (masks.spaces & within).trailing_zeros();
+    Scanned::new(
         length,
-        character_count: length - (masks.continuation & within).count_ones() as usize,
-        is_printable_ascii: masks.unprintable & within == 0,
-        is_global_name: path_starts.trailing_zeros() < (masks.spaces & within).trailing_zeros(),
-        last_component_separator: if component_separators == 0 {
-            None
+        length - (masks.continuation & within).count_ones() as usize,
+        masks.unprintable & within == 0,
+        is_global_name,
+        // A global name's path follows its last `:`, if it has one.
+        if is_global_name && first_path_start != 0 {
+            Some(first_path_start as usize - 1)
         } else {
-            Some((u32::BITS - 1 - component_separators.leading_zeros()) as usize)
+            None
         },
-    }
+        // `&` rather than `&&`, which compiles to a branch.
+        Scanned::FINDS_LOCAL_NAMES
+            & (length != 0)
+            & ((component_separators | masks.path_separators | masks.spaces) & within == 0),
+    )
 }
 
 /// Whether the name content scanned so far has the shape of a global name.
@@ -177,8 +288,8 @@ enum GlobalNameShape {
 // `name_content`, because passing the masks would make every name store them
 // in memory, while only long names need them.
 #[inline(never)]
-fn long_name_content(source: &[u8]) -> NameContent {
-    let mut scan = LongNameContentScan::new();
+fn long_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
+    let mut scan = LongNameContentScan::<Scanned>::new();
     // The full vectors and the final partial one are separate, so that the
     // loop has no branch for a partial vector and its state stays in
     // registers.
@@ -203,31 +314,38 @@ fn long_name_content(source: &[u8]) -> NameContent {
     scan.finish(masks, masks.ends.trailing_zeros() as usize)
 }
 
-/// What a scan of name content longer than one vector has found so far.
-struct LongNameContentScan {
+/// What a scan of name content longer than one vector, which reports a
+/// `Scanned`, has found so far.
+struct LongNameContentScan<Scanned> {
     /// The index in the name content of the next vector's first byte.
     offset: usize,
     unprintable_bytes: u32,
     continuation_bytes: usize,
-    /// One more than the index of the last `:`, or 0 if there is none yet,
-    /// which fits in one register where an `Option<usize>` needs two.
-    last_component_separator_end: usize,
+    /// The index of the first `/` that can begin a path, once one is found,
+    /// which is one more than the index of the `:` before it, or 0. It fits in
+    /// one register where an `Option<usize>` needs two.
+    path_start: usize,
     shape: GlobalNameShape,
+    /// The spaces, `:`, and `/` found so far, which a local name may not have.
+    local_name_breaks: u32,
     /// Bit 0 is set when a `/` at the start of the next vector can begin a
     /// path: at the start of the name content, or after a `:` that ended the
     /// previous vector.
     follows_component_separator: u32,
+    scanned: PhantomData<Scanned>,
 }
 
-impl LongNameContentScan {
+impl<Scanned: ScannedNameContent> LongNameContentScan<Scanned> {
     const fn new() -> Self {
         Self {
             offset: 0,
             unprintable_bytes: 0,
             continuation_bytes: 0,
-            last_component_separator_end: 0,
+            path_start: 0,
             shape: GlobalNameShape::Undecided,
+            local_name_breaks: 0,
             follows_component_separator: 1,
+            scanned: PhantomData,
         }
     }
 
@@ -240,9 +358,9 @@ impl LongNameContentScan {
         self.unprintable_bytes |= masks.unprintable & within;
         self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
         let component_separators = masks.component_separators & within;
-        if component_separators != 0 {
-            self.last_component_separator_end =
-                self.offset + (u32::BITS - component_separators.leading_zeros()) as usize;
+        if Scanned::FINDS_LOCAL_NAMES {
+            self.local_name_breaks |=
+                (component_separators | masks.path_separators | masks.spaces) & within;
         }
         self.shape = match self.shape {
             GlobalNameShape::Undecided => {
@@ -251,6 +369,7 @@ impl LongNameContentScan {
                     & ((component_separators << 1) | self.follows_component_separator)
                     & within;
                 let first_path_start = path_starts.trailing_zeros();
+                self.path_start = self.offset + first_path_start as usize;
                 if first_path_start >= spaces.trailing_zeros() {
                     if spaces == 0 {
                         GlobalNameShape::Undecided
@@ -281,16 +400,23 @@ impl LongNameContentScan {
     /// Adds the first `length` bytes of the vector in which the name content
     /// ends, given its `masks`, and returns what the scan found.
     #[inline]
-    fn finish(mut self, masks: NameContentMasks, length: usize) -> NameContent {
+    fn finish(mut self, masks: NameContentMasks, length: usize) -> Scanned {
         let total_length = self.offset + length;
         self.add(masks, length, true);
-        NameContent {
-            length: total_length,
-            character_count: total_length - self.continuation_bytes,
-            is_printable_ascii: self.unprintable_bytes == 0,
-            is_global_name: self.shape == GlobalNameShape::Global,
-            last_component_separator: self.last_component_separator_end.checked_sub(1),
-        }
+        let is_global_name = self.shape == GlobalNameShape::Global;
+        Scanned::new(
+            total_length,
+            total_length - self.continuation_bytes,
+            self.unprintable_bytes == 0,
+            is_global_name,
+            // A global name's path follows its last `:`, if it has one.
+            if is_global_name {
+                self.path_start.checked_sub(1)
+            } else {
+                None
+            },
+            Scanned::FINDS_LOCAL_NAMES & (self.local_name_breaks == 0),
+        )
     }
 }
 
@@ -608,6 +734,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
+                is_local_name: false,
             })
         );
     }
@@ -622,6 +749,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(18),
+                is_local_name: false,
             })
         );
     }
@@ -636,6 +764,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -649,7 +778,8 @@ mod tests {
                 character_count: 6,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(3),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -663,7 +793,8 @@ mod tests {
                 character_count: 10,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(8),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -678,6 +809,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -692,6 +824,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
+                is_local_name: false,
             })
         );
     }
@@ -706,6 +839,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 last_component_separator: Some(5),
+                is_local_name: false,
             })
         );
     }
@@ -720,6 +854,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 last_component_separator: Some(8),
+                is_local_name: false,
             })
         );
     }
@@ -734,6 +869,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
+                is_local_name: false,
             })
         );
     }
@@ -748,6 +884,126 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(8),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_component_separators_in_path() {
+        expect_that!(
+            name_content(b"/foo::bar>.\n"),
+            eq(NameContent {
+                length: 9,
+                character_count: 9,
+                is_printable_ascii: true,
+                is_global_name: true,
+                last_component_separator: None,
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_longer_than_one_vector_with_component_separator_in_path() {
+        expect_that!(
+            name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
+            eq(NameContent {
+                length: 41,
+                character_count: 41,
+                is_printable_ascii: true,
+                is_global_name: true,
+                last_component_separator: Some(8),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_component_separator_in_path_in_second_vector() {
+        expect_that!(
+            name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
+            eq(NameContent {
+                length: 47,
+                character_count: 47,
+                is_printable_ascii: true,
+                is_global_name: true,
+                last_component_separator: Some(8),
+                is_local_name: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn global_name_content_with_fqun() {
+        expect_that!(
+            global_name_content(
+                b"standard:/path>.\ndefine the potential position<standard:/other>.\n"
+            ),
+            eq(GlobalNameContent {
+                length: 14,
+                character_count: 14,
+                is_printable_ascii: true,
+                is_global_name: true,
+                last_component_separator: Some(8),
+            })
+        );
+    }
+
+    #[gtest]
+    fn global_name_content_longer_than_one_vector() {
+        expect_that!(
+            global_name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
+            eq(GlobalNameContent {
+                length: 47,
+                character_count: 47,
+                is_printable_ascii: true,
+                is_global_name: true,
+                last_component_separator: Some(8),
+            })
+        );
+    }
+
+    #[gtest]
+    fn global_name_content_of_local_name() {
+        expect_that!(
+            global_name_content(b"run>.\n"),
+            eq(GlobalNameContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+                is_global_name: false,
+                last_component_separator: None,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_of_local_name() {
+        expect_that!(
+            name_content(b"run>.\ndefine the potential position<standard:/other>.\n"),
+            eq(NameContent {
+                length: 3,
+                character_count: 3,
+                is_printable_ascii: true,
+                is_global_name: false,
+                last_component_separator: None,
+                is_local_name: true,
+            })
+        );
+    }
+
+    #[gtest]
+    fn name_content_with_component_separator_in_second_vector_is_not_local() {
+        expect_that!(
+            name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
+            eq(NameContent {
+                length: 36,
+                character_count: 36,
+                is_printable_ascii: true,
+                is_global_name: false,
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -764,6 +1020,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(37),
+                is_local_name: false,
             })
         );
     }
@@ -778,6 +1035,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(30),
+                is_local_name: false,
             })
         );
     }
@@ -791,7 +1049,8 @@ mod tests {
                 character_count: 37,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(34),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -806,6 +1065,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: false,
                 last_component_separator: None,
+                is_local_name: true,
             })
         );
     }
@@ -819,7 +1079,8 @@ mod tests {
                 character_count: 32,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(30),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -833,7 +1094,8 @@ mod tests {
                 character_count: 35,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(33),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -848,6 +1110,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(31),
+                is_local_name: false,
             })
         );
     }
@@ -861,7 +1124,8 @@ mod tests {
                 character_count: 38,
                 is_printable_ascii: true,
                 is_global_name: false,
-                last_component_separator: Some(35),
+                last_component_separator: None,
+                is_local_name: false,
             })
         );
     }
@@ -876,6 +1140,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 last_component_separator: Some(34),
+                is_local_name: false,
             })
         );
     }
@@ -891,6 +1156,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(60),
+                is_local_name: false,
             })
         );
     }
@@ -906,6 +1172,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(60),
+                is_local_name: false,
             })
         );
     }
@@ -921,6 +1188,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(65),
+                is_local_name: false,
             })
         );
     }
@@ -936,6 +1204,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 last_component_separator: Some(62),
+                is_local_name: false,
             })
         );
     }

@@ -26,12 +26,14 @@ pub struct Lines<'parser, 'py, 'source> {
 
 /// What comes next in a block, after any blank and comment lines.
 pub enum LineInBlock {
-    /// The block's `}`.
-    Close,
+    /// The block's `}`, after `indentation` spaces.
+    Close { indentation: usize },
     /// A statement, after `indentation` spaces.
     Statement { indentation: usize },
-    /// The end of the source, before the block's `}`.
-    EndOfSource,
+    /// The source ends, or a line indented less than the block's lines that
+    /// begins none of the block's statements comes, where a line of the block
+    /// belongs.
+    Unclosed,
 }
 
 impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
@@ -78,11 +80,22 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line or the source ends where the ` {` belongs.
-        if self.scanner.is_at_line_end() {
-            return self.errors.missing_open_brace(missing, missing);
+        let spaces = self.scanner.next_space_count();
+        // More than one space comes before the `{`.
+        if spaces > 1 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&OPEN_BRACE) {
+            let last_space = Position {
+                line: missing.line,
+                column: missing.column + spaces - 1,
+            };
+            return self.errors.extra_whitespace(missing, last_space);
         }
-        ParseError::not_yet_supported(missing, "anything but ` {` here")
+        // The `{` has no space before it.
+        if self.scanner.next_byte_is(OPEN_BRACE) {
+            return self
+                .errors
+                .missing_whitespace_before_brace(missing, missing);
+        }
+        self.errors.missing_open_brace(missing, missing)
     }
 
     /// Returns the error for text after the `{` that opens a block, which the
@@ -98,7 +111,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
         if self.scanner.next_byte_is(CLOSE_BRACE) {
             return self.errors.empty_block(text, text);
         }
-        ParseError::not_yet_supported(text, "anything but a line end after `{`")
+        self.errors.missing_newline_after_open_brace(text, text)
     }
 
     /// Parses the `}` that closes a block, which `next_line_in_block` found
@@ -133,20 +146,27 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
     /// Returns the error for the character `offset` bytes, which are ASCII,
     /// past the scanner's position, where the syntax there went wrong, if no
     /// syntax may have it.
+    #[cold]
+    #[inline(never)]
     fn disallowed_character_ahead(&self, offset: usize) -> Option<ParseError> {
         characters::disallowed_character_ahead(self.errors, self.scanner, offset)
     }
 
     /// Consumes any blank and comment lines, then the indentation of the next
     /// line in the block opened by a statement indented `opener_indentation`
-    /// spaces, and returns what comes next. Adds a diagnostic for each line
-    /// that is not indented as deep as the block requires.
+    /// spaces, whose statements begin with one of `statement_starts` where the
+    /// next line is one of them, and returns what comes next. Adds a diagnostic
+    /// for each line that is not indented as deep as the block requires.
     #[inline]
-    pub fn next_line_in_block(&mut self, opener_indentation: usize) -> ParseResult<LineInBlock> {
+    pub fn next_line_in_block(
+        &mut self,
+        opener_indentation: usize,
+        statement_starts: &[&[u8]],
+    ) -> ParseResult<LineInBlock> {
         let contents_indentation = opener_indentation + INDENTATION_WIDTH;
         loop {
             if self.scanner.is_at_end() {
-                return Ok(LineInBlock::EndOfSource);
+                return Ok(LineInBlock::Unclosed);
             }
             let line_start = self.scanner.position;
             let Some(indentation) = self.start_line(contents_indentation)? else {
@@ -154,17 +174,32 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             };
             if self.scanner.next_byte_is(CLOSE_BRACE) {
                 self.check_indentation(line_start, opener_indentation, indentation)?;
-                return Ok(LineInBlock::Close);
+                return Ok(LineInBlock::Close { indentation });
+            }
+            // A line of an outer block follows the block's lines without the
+            // block's `}` between them.
+            if indentation < contents_indentation && !self.begins_statement(statement_starts) {
+                return Ok(LineInBlock::Unclosed);
             }
             self.check_indentation(line_start, contents_indentation, indentation)?;
             return Ok(LineInBlock::Statement { indentation });
         }
     }
 
+    /// Returns whether the text at the scanner's position begins a statement
+    /// that begins with one of `statement_starts`.
+    #[cold]
+    #[inline(never)]
+    fn begins_statement(&self, statement_starts: &[&[u8]]) -> bool {
+        statement_starts
+            .iter()
+            .any(|start| self.scanner.next_bytes_are(start))
+    }
+
     /// Adds a diagnostic if the line at `line_start` is indented `actual`
     /// spaces instead of `expected`.
     #[inline(always)]
-    fn check_indentation(
+    pub fn check_indentation(
         &mut self,
         line_start: Position,
         expected: usize,
@@ -224,11 +259,7 @@ impl<'parser, 'py, 'source> Lines<'parser, 'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        // The line or the source ends where the `.` belongs.
-        if self.scanner.is_at_line_end() {
-            return self.errors.missing_terminator(missing, missing);
-        }
-        ParseError::not_yet_supported(missing, "anything but a terminator here")
+        self.errors.missing_terminator(missing, missing)
     }
 
     /// Parses the rest of the line after the `.` of the terminator at

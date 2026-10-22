@@ -72,7 +72,6 @@ py_test(
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:parser_exceptions",
         "//define/compiler/errors:source_map",
-        "//define/compiler/parsing:parser",
         "@pypi//pytest",
     ],
 )

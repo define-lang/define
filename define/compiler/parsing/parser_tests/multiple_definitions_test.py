@@ -8,11 +8,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
+from define.compiler import ast, name_types
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_multiple_position_definitions(native_parse: NativeParse):
@@ -33,8 +32,8 @@ def test_multiple_position_definitions(native_parse: NativeParse):
     )
 
 
-def test_multiple_action_definitions(parse: Parse):
-    tree = parse(
+def test_multiple_action_definitions(native_parse: NativeParse):
+    program = native_parse(
         "define the potential action<my_mv:example.com:my_lib:/first> {\n"
         + "    define the position<_noop>.\n"
         + "    it happens when {\n"
@@ -54,14 +53,23 @@ def test_multiple_action_definitions(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "my_mv:example.com:my_lib:/first",
-        "my_mv:example.com:my_lib:/second",
-    ]
+    [first, second] = program.definitions
+    assert isinstance(first, ast.ActionDefinition)
+    assert first.typed_name.name_type == name_types.NameType.ACTION
+    assert first.typed_name.name_content.path.name == "/first"
+    assert first.location == ast.SourceLocation(
+        line=1, column=1, end_line=9, end_column=1
+    )
+    assert isinstance(second, ast.ActionDefinition)
+    assert second.typed_name.name_type == name_types.NameType.ACTION
+    assert second.typed_name.name_content.path.name == "/second"
+    assert second.location == ast.SourceLocation(
+        line=10, column=1, end_line=18, end_column=1
+    )
 
 
-def test_mixed_position_and_action_definitions(parse: Parse):
-    tree = parse(
+def test_mixed_position_and_action_definitions(native_parse: NativeParse):
+    program = native_parse(
         "define the potential position<example.com:my_lib:/pos>.\n"
         + "define the potential action<my_mv:example.com:my_lib:/act> {\n"
         + "    define the position<_noop>.\n"
@@ -73,10 +81,19 @@ def test_mixed_position_and_action_definitions(parse: Parse):
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "example.com:my_lib:/pos",
-        "my_mv:example.com:my_lib:/act",
-    ]
+    [position_definition, action_definition] = program.definitions
+    assert isinstance(position_definition, ast.PositionDefinition)
+    assert position_definition.typed_name.name_type == name_types.NameType.POSITION
+    assert position_definition.typed_name.name_content.path.name == "/pos"
+    assert position_definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=55
+    )
+    assert isinstance(action_definition, ast.ActionDefinition)
+    assert action_definition.typed_name.name_type == name_types.NameType.ACTION
+    assert action_definition.typed_name.name_content.path.name == "/act"
+    assert action_definition.location == ast.SourceLocation(
+        line=2, column=1, end_line=10, end_column=1
+    )
 
 
 def test_definitions_separated_by_blank_lines(native_parse: NativeParse):

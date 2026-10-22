@@ -57,6 +57,20 @@ def native_parse_where_lark_is_wrong(
     return native_parse(source, file_path)
 
 
+def native_parse_where_lark_rejects_by_mistake(
+    source: str, file_path: PurePosixPath | None = None
+) -> native_parser.ParseResult:
+    """Parse source with the parser in parser.rs, for a source the Lark parser rejects by mistake.
+
+    Raises:
+        ParsersDisagreeError: The Lark parser no longer rejects the source.
+    """
+    lark_result = _LARK_PARSER.parse_and_transform(source, file_path=file_path)
+    if lark_result.exception is None:
+        raise ParsersDisagreeError(f"the Lark parser no longer rejects {source!r}")
+    return native_parse(source, file_path)
+
+
 def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
     """Parse source with both parsers and return how they agreed.
 

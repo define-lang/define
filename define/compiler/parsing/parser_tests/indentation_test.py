@@ -237,3 +237,240 @@ def test_indentation_diagnostic_before_syntax_error(
             actual_indent=2,
         )
     ]
+
+
+def test_action_statement_under_indented_after_blank_line(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "\n"
+        + "it happens when {\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert isinstance(
+        result.exception, parser_exceptions.MissingTriggerConditionContent
+    )
+    assert result.exception.location == ast.SourceLocation(
+        line=5, column=1, end_line=5, end_column=1
+    )
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=4, column=1, end_line=4, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
+        ),
+    ]
+
+
+def test_trigger_conditions_block_not_indented_in_action_block(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "it happens when {\n"
+        + "    the position<run> has a particle.\n"
+        + "} and it does {\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
+        ),
+    ]
+
+
+def test_trigger_conditions_block_under_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "  it happens when {\n"
+        + "      the position<run> has a particle.\n"
+        + "  } and it does {\n"
+        + "  }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=2),
+            expected_indent=4,
+            actual_indent=2,
+        ),
+    ]
+
+
+def test_trigger_conditions_block_over_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "        it happens when {\n"
+        + "            the position<run> has a particle.\n"
+        + "        } and it does {\n"
+        + "        }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=8),
+            expected_indent=4,
+            actual_indent=8,
+        ),
+    ]
+
+
+def test_action_close_brace_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "    }\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=7, column=1, end_line=7, end_column=4),
+            expected_indent=0,
+            actual_indent=4,
+        ),
+    ]
+
+
+def test_top_level_definition_indented(
+    native_parse_with_diagnostics_lark_rejects: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics_lark_rejects(
+        "    define the potential position<standard:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=1, column=1, end_line=1, end_column=4),
+            expected_indent=0,
+            actual_indent=4,
+        ),
+    ]
+
+
+def test_comment_in_action_block_not_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "# wrong indent comment\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=1),
+            expected_indent=4,
+            actual_indent=0,
+        ),
+    ]
+
+
+def test_indentation_wrong_in_several_definitions(
+    native_parse_with_diagnostics_lark_rejects: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics_lark_rejects(
+        "  define the potential position<standard:/path>.\n"
+        + "define the potential action<standard:/act> {\n"
+        + "    define the position<run>.\n"
+        + "  it happens when {\n"
+        + "      the position<run> has a particle.\n"
+        + "  } and it does {\n"
+        + "  }\n"
+        + "  }\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=1, column=1, end_line=1, end_column=2),
+            expected_indent=0,
+            actual_indent=2,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=4, column=1, end_line=4, end_column=2),
+            expected_indent=4,
+            actual_indent=2,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=8, column=1, end_line=8, end_column=2),
+            expected_indent=0,
+            actual_indent=2,
+        ),
+    ]
+
+
+def test_action_lines_indented_at_random(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + " it happens when {\n"
+        + "     the position<run> has a particle.\n"
+        + "   } and it does {\n"
+        + "     create a particle in position<run>.\n"
+        + "       }\n"
+        + "           }\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=1),
+            expected_indent=4,
+            actual_indent=1,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=5, column=1, end_line=5, end_column=3),
+            expected_indent=1,
+            actual_indent=3,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=6, column=1, end_line=6, end_column=5),
+            expected_indent=7,
+            actual_indent=5,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=7, column=1, end_line=7, end_column=7),
+            expected_indent=3,
+            actual_indent=7,
+        ),
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=8, column=1, end_line=8, end_column=11),
+            expected_indent=0,
+            actual_indent=11,
+        ),
+    ]

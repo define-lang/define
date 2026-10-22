@@ -179,3 +179,14 @@ def test_missing_terminator_after_typed_reference_in_position_constraint(
     assert exc_info.value.location.column == 41
     assert exc_info.value.location.end_line == 4
     assert exc_info.value.location.end_column == 41
+
+
+def test_text_where_position_definition_terminator_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
+        native_parse(
+            "define the potential position<mv:define-lang.org:parser:/path> x\n"
+        )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 63
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 63

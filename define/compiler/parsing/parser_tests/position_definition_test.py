@@ -13,10 +13,9 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse, Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 def test_position_definition_parses(native_parse: NativeParse):
@@ -433,9 +432,9 @@ def test_second_constraint_block_on_requirement_line(native_parse: NativeParse):
 
 
 def test_action_definition_block_with_mixed_local_position_forms(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
-    tree = parse(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
@@ -450,22 +449,37 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/act",
-        "/child",
-    ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
-        "run",
-        "empty_pos",
-        "constrained_pos",
-        "run",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [run, empty_pos, constrained_pos] = definition.interface_positions
+    assert run.typed_name.name_type == name_types.NameType.POSITION
+    assert run.typed_name.name_content.name == "run"
+    assert run.constraints is None
+    assert run.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=29
+    )
+    assert empty_pos.typed_name.name_type == name_types.NameType.POSITION
+    assert empty_pos.typed_name.name_content.name == "empty_pos"
+    assert empty_pos.constraints is None
+    assert empty_pos.location == ast.SourceLocation(
+        line=3, column=5, end_line=3, end_column=35
+    )
+    assert constrained_pos.typed_name.name_type == name_types.NameType.POSITION
+    assert constrained_pos.typed_name.name_content.name == "constrained_pos"
+    assert constrained_pos.constraints is not None
+    [requirement] = constrained_pos.constraints.requirements
+    assert requirement.typed_global_name.name_type == name_types.NameType.POSITION
+    assert requirement.typed_global_name.name_content.fqun is None
+    assert requirement.typed_global_name.name_content.path.name == "/child"
+    assert constrained_pos.location == ast.SourceLocation(
+        line=4, column=5, end_line=8, end_column=5
+    )
 
 
 def test_action_definition_block_with_multiple_local_block_positions(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
-    tree = parse(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<first_pos> {\n"
@@ -484,23 +498,43 @@ def test_action_definition_block_with_multiple_local_block_positions(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/act",
-        "/first_child",
-        "/second_child",
-    ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
-        "run",
-        "first_pos",
-        "second_pos",
-        "run",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [run, first_pos, second_pos] = definition.interface_positions
+    assert run.typed_name.name_type == name_types.NameType.POSITION
+    assert run.typed_name.name_content.name == "run"
+    assert run.constraints is None
+    assert run.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=29
+    )
+    assert first_pos.typed_name.name_type == name_types.NameType.POSITION
+    assert first_pos.typed_name.name_content.name == "first_pos"
+    assert first_pos.constraints is not None
+    [first_requirement] = first_pos.constraints.requirements
+    assert first_requirement.typed_global_name.name_type == name_types.NameType.POSITION
+    assert first_requirement.typed_global_name.name_content.fqun is None
+    assert first_requirement.typed_global_name.name_content.path.name == "/first_child"
+    assert first_pos.location == ast.SourceLocation(
+        line=3, column=5, end_line=7, end_column=5
+    )
+    assert second_pos.typed_name.name_type == name_types.NameType.POSITION
+    assert second_pos.typed_name.name_content.name == "second_pos"
+    assert second_pos.constraints is not None
+    [second_requirement] = second_pos.constraints.requirements
+    assert second_requirement.typed_global_name.name_type == name_types.NameType.ACTION
+    assert second_requirement.typed_global_name.name_content.fqun is None
+    assert (
+        second_requirement.typed_global_name.name_content.path.name == "/second_child"
+    )
+    assert second_pos.location == ast.SourceLocation(
+        line=8, column=5, end_line=12, end_column=5
+    )
 
 
 def test_action_statements_block_with_mixed_local_position_forms(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
-    tree = parse(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -515,22 +549,33 @@ def test_action_statements_block_with_mixed_local_position_forms(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/act",
-        "/inner_action",
-    ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
-        "run",
-        "run",
-        "empty_inner",
-        "constrained_inner",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [empty_inner, constrained_inner] = definition.action_statements.statements
+    assert isinstance(empty_inner, ast.LocalPositionDefinition)
+    assert empty_inner.typed_name.name_type == name_types.NameType.POSITION
+    assert empty_inner.typed_name.name_content.name == "empty_inner"
+    assert empty_inner.constraints is None
+    assert empty_inner.location == ast.SourceLocation(
+        line=6, column=9, end_line=6, end_column=41
+    )
+    assert isinstance(constrained_inner, ast.LocalPositionDefinition)
+    assert constrained_inner.typed_name.name_type == name_types.NameType.POSITION
+    assert constrained_inner.typed_name.name_content.name == "constrained_inner"
+    assert constrained_inner.constraints is not None
+    [requirement] = constrained_inner.constraints.requirements
+    assert requirement.typed_global_name.name_type == name_types.NameType.ACTION
+    assert requirement.typed_global_name.name_content.fqun is None
+    assert requirement.typed_global_name.name_content.path.name == "/inner_action"
+    assert constrained_inner.location == ast.SourceLocation(
+        line=7, column=9, end_line=11, end_column=9
+    )
 
 
 def test_action_statements_block_with_multiple_local_block_positions(
-    parse: Parse,
+    native_parse: NativeParse,
 ):
-    tree = parse(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -549,17 +594,33 @@ def test_action_statements_block_with_multiple_local_block_positions(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/act",
-        "/first_child",
-        "/second_child",
-    ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
-        "run",
-        "run",
-        "first_inner",
-        "second_inner",
-    ]
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [first_inner, second_inner] = definition.action_statements.statements
+    assert isinstance(first_inner, ast.LocalPositionDefinition)
+    assert first_inner.typed_name.name_type == name_types.NameType.POSITION
+    assert first_inner.typed_name.name_content.name == "first_inner"
+    assert first_inner.constraints is not None
+    [first_requirement] = first_inner.constraints.requirements
+    assert first_requirement.typed_global_name.name_type == name_types.NameType.POSITION
+    assert first_requirement.typed_global_name.name_content.fqun is None
+    assert first_requirement.typed_global_name.name_content.path.name == "/first_child"
+    assert first_inner.location == ast.SourceLocation(
+        line=6, column=9, end_line=10, end_column=9
+    )
+    assert isinstance(second_inner, ast.LocalPositionDefinition)
+    assert second_inner.typed_name.name_type == name_types.NameType.POSITION
+    assert second_inner.typed_name.name_content.name == "second_inner"
+    assert second_inner.constraints is not None
+    [second_requirement] = second_inner.constraints.requirements
+    assert second_requirement.typed_global_name.name_type == name_types.NameType.ACTION
+    assert second_requirement.typed_global_name.name_content.fqun is None
+    assert (
+        second_requirement.typed_global_name.name_content.path.name == "/second_child"
+    )
+    assert second_inner.location == ast.SourceLocation(
+        line=11, column=9, end_line=15, end_column=9
+    )
 
 
 def test_empty_potential_position_block(native_parse: NativeParse):
@@ -600,9 +661,9 @@ def test_quality_implication_in_potential_position_block(native_parse: NativePar
     assert exc_info.value.location.end_column == 44
 
 
-def test_empty_local_position_definition_block(parse: Parse):
+def test_empty_local_position_definition_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<standard:/act> {\n"
             + "    define the position<bad> {\n"
             + "    }\n"
@@ -614,12 +675,13 @@ def test_empty_local_position_definition_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 5
+    assert exc_info.value.location.end_line == 3
     assert exc_info.value.location.end_column == 5
 
 
-def test_invalid_content_in_local_position_definition_block(parse: Parse):
+def test_invalid_content_in_local_position_definition_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        parse(
+        native_parse(
             "define the potential action<standard:/act> {\n"
             + "    define the position<bad> {\n"
             + "        nonsense here\n"
@@ -632,4 +694,17 @@ def test_invalid_content_in_local_position_definition_block(parse: Parse):
         )
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_column == 16
+    assert exc_info.value.location.end_line == 3
+    assert exc_info.value.location.end_column == 21
+
+
+def test_text_where_local_position_terminator_belongs(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
+        native_parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run> x\n"
+        )
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 29
+    assert exc_info.value.location.end_line == 2
+    assert exc_info.value.location.end_column == 29
