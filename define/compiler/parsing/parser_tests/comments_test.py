@@ -300,3 +300,220 @@ def test_comment_with_trailing_whitespace_after_encoding_constraint(
     assert error.value.location.column == 11
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 11
+
+
+def test_comment_with_trailing_whitespace_before_operation_statements_block(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    # note \n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 2
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 11
+
+
+def test_comment_with_trailing_whitespace_after_operation_statements_block(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "    # note \n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 5
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 11
+
+
+def test_comment_with_trailing_whitespace_before_operation_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        # note \n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 3
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 15
+
+
+def test_comment_with_trailing_whitespace_after_operation_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "        # note \n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 4
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 15
+
+
+def test_comment_with_trailing_whitespace_before_operation_argument(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            # note \n"
+            + "            with view<a> looking at view<left>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 4
+    assert error.value.location.column == 19
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 19
+
+
+def test_comment_with_trailing_whitespace_after_operation_argument(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "            # note \n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 5
+    assert error.value.location.column == 19
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 19
+
+
+def test_comment_with_trailing_whitespace_before_view_direction_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        # note \n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 3
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 15
+
+
+def test_comment_with_trailing_whitespace_after_view_read_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        # note \n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 4
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 15
+
+
+def test_comment_with_trailing_whitespace_after_view_written_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it is written.\n"
+            + "        # note \n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 5
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 15
+
+
+def test_comment_with_trailing_whitespace_before_view_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "        # note \n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == " "
+    assert error.value.location.line == 7
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 7
+    assert error.value.location.end_column == 15

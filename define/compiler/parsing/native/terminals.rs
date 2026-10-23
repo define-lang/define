@@ -51,3 +51,15 @@ pub const LITERAL_CONTENT_DELIMITER: u8 = b'"';
 pub const ESCAPE: u8 = b'\\';
 /// The character after a `\` that stands for a line feed in literal content.
 pub const ESCAPED_LINE_FEED: u8 = b'n';
+pub const OPERATION: &[u8] = b"operation";
+pub const ENCODING_OPERATION: &[u8] = b"encoding_operation";
+pub const VIEW: &[u8] = b"view";
+pub const DEFINE_THE_OPERATION: &[u8] = b"define the operation";
+pub const DEFINE_THE_VIEW: &[u8] = b"define the view";
+pub const IT_IS_READ: &[u8] = b"it is read";
+pub const IT_IS_WRITTEN: &[u8] = b"it is written";
+pub const IT_DOES: &[u8] = b"it does";
+pub const EXECUTE_THE_ENCODING_OPERATION: &[u8] = b"execute the encoding operation";
+pub const EXECUTE_THE_COMPUTER_OPERATION: &[u8] = b"execute the computer operation";
+pub const WITH: &[u8] = b"with";
+pub const SPACE_LOOKING_AT: &[u8] = b" looking at";

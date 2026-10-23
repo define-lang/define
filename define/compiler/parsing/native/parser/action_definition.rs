@@ -6,6 +6,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::POSITION_OR_ACTION;
+use crate::parser::operation_execution::OperationKind;
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use terminals::{
@@ -60,10 +61,10 @@ const TRIGGER_CONDITION_STARTS: [&[u8]; 4] = [
 ];
 /// The words that begin each action statement.
 const ACTION_STATEMENT_STARTS: [&[u8]; 6] = action_statement_starts!();
-/// The words that begin each action statement, a quality implication
-/// statement, or a global position definition, which belong elsewhere.
-const ACTION_STATEMENTS_BLOCK_STARTS: [&[u8]; 8] =
-    action_statement_starts!(IT_ALSO_ASSIGNS_THE, DEFINE_THE_POTENTIAL_POSITION);
+/// The words that begin each action statement, or a global position
+/// definition, which belongs at the top level instead.
+const ACTION_STATEMENTS_BLOCK_STARTS: [&[u8]; 7] =
+    action_statement_starts!(DEFINE_THE_POTENTIAL_POSITION);
 
 impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the rest of an action definition after its `action`, given the
@@ -102,7 +103,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             self.parse_interface_positions(line, content_end, &fqun)?;
         let (trigger_conditions, action_statements) =
             self.parse_trigger_and_action(line, content_end, &fqun)?;
-        let end = self.parse_action_definition_close(start, block_open_end)?;
+        let end = self.parse_block_close_after_content(
+            start,
+            block_open_end,
+            0,
+            Self::statement_instead_of_action_close,
+        )?;
         let location = self.ast.location(start, end)?;
         let definition = self.ast.action_definition(
             location,
@@ -193,30 +199,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         ))
     }
 
-    /// Parses the `}` that closes an action definition block, which a line
-    /// from `start` up to `block_open_end`, the position after its `{`, opens,
-    /// and returns the position after the `}`.
-    ///
-    /// ```ebnf
-    /// block_close
-    /// ```
-    fn parse_action_definition_close(
-        &mut self,
-        start: Position,
-        block_open_end: Position,
-    ) -> ParseResult<Position> {
-        match self.next_line_in_block(0, &[])? {
-            LineInBlock::Close => {}
-            // A statement is where the block's `}` belongs.
-            LineInBlock::Statement => return Err(self.statement_instead_of_action_close()),
-            // The block ends before its `}`.
-            LineInBlock::Unclosed => {
-                return Err(self.missing_close_brace(start, block_open_end));
-            }
-        }
-        self.parse_block_close()
-    }
-
     /// Parses a quality implication statement, whose reference takes its
     /// default FQUN from `fqun`, through the end of its line, and returns it
     /// with the position after its `.`.
@@ -230,7 +212,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> ParseResult<(ast::QualityImplicationStatement<'py>, Position)> {
         let start = self.scanner.position;
         self.scanner.consume(IT_ALSO_ASSIGNS_THE);
-        // The line ends where the typed name belongs.
+        // The line ends, or a non-letter character comes, where the typed name
+        // belongs.
         if !self.space_before_word()? {
             return Err(self.expected_position_or_action());
         }
@@ -425,7 +408,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// terminator
     /// ```
-    fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
+    pub(crate) fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.`.
         let Some(end) = self.parse_terminator()? else {
             return Err(self.missing_terminator());
@@ -444,7 +427,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> ParseResult<ast::PositionPresenceStatement<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(THE);
-        // The line ends where the typed name belongs.
+        // The line ends, or a non-letter character comes, where the typed name
+        // belongs.
         if !self.space_before_word()? {
             return Err(self.expected_position_or_action());
         }
@@ -513,10 +497,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Ok(self.parse_value_setting_statement(fqun)?.into());
         }
         if self.scanner.next_bytes_are(EXECUTE_THE) {
-            return Err(ParseError::not_yet_supported(
-                start,
-                "operation execution statements",
-            ));
+            return Ok(self
+                .parse_operation_execution_statement(OperationKind::Value, indentation, fqun)?
+                .into());
         }
         Err(self.invalid_action_statements_block())
     }
@@ -537,7 +520,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let source = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the source position.
         if !self.consume_to() {
-            return Err(self.missing_to(SyntaxErrors::invalid_move_statement_syntax));
+            return Err(self.missing_connecting_word(SyntaxErrors::invalid_move_statement_syntax));
         }
         let target = self.parse_statement_position_reference(fqun)?;
         let end = self.parse_reference_terminator()?;
@@ -561,9 +544,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         let target = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the target position.
         if !self.consume_to() {
-            return Err(self.missing_to(SyntaxErrors::invalid_value_setting_statement_syntax));
+            return Err(
+                self.missing_connecting_word(SyntaxErrors::invalid_value_setting_statement_syntax)
+            );
         }
-        // The line ends where the value's source belongs.
+        // The line ends, or a non-letter character comes, where the value's
+        // source belongs.
         if !self.space_before_word()? {
             let missing = self.scanner.position;
             return Err(self.errors.missing_value_source(missing, missing));
@@ -573,22 +559,27 @@ impl<'py, 'source> Parser<'py, 'source> {
             let missing = self.scanner.position;
             return Err(self.errors.missing_value_source(missing, missing));
         }
-        let (source, end) = self.parse_value_source(fqun)?;
+        let (source, end) = self.parse_value_source(fqun, Self::expected_value_source)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.value_setting_statement(location, target, source)?)
     }
 
     /// Parses a value's source, a position reference or a literal, whose
     /// references take their default FQUN from `fqun`, and the `.` after it,
-    /// and returns the source with the position after the `.`.
+    /// and returns the source with the position after the `.`. `wrong_source`
+    /// returns the error for a source that is neither.
     ///
     /// ```ebnf
     /// ( position_reference | literal ), terminator
     /// ```
-    fn parse_value_source(
+    pub(crate) fn parse_value_source<Source>(
         &mut self,
         fqun: &ast::Fqun<'py>,
-    ) -> ParseResult<(ast::PositionReferenceOrLiteral<'py>, Position)> {
+        wrong_source: fn(&Self) -> ParseError,
+    ) -> ParseResult<(Source, Position)>
+    where
+        Source: From<ast::PositionReference<'py>> + From<ast::Literal<'py>>,
+    {
         if self.scanner.next_bytes_are(LITERAL) {
             let literal = self.parse_literal(fqun)?;
             // There is no `.` after the literal.
@@ -602,7 +593,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             .iter()
             .any(|&(keyword, _)| self.scanner.next_bytes_are(keyword))
         {
-            return Err(self.expected_value_source());
+            return Err(wrong_source(self));
         }
         let reference = self.parse_position_reference(fqun)?;
         Ok((reference.into(), self.parse_reference_terminator()?))
@@ -619,7 +610,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         fqun: &ast::Fqun<'py>,
     ) -> ParseResult<ast::PositionReference<'py>> {
-        // The line ends where the position reference belongs.
+        // The line ends, or a non-letter character comes, where the position
+        // reference belongs.
         if !self.space_before_word()? {
             let missing = self.scanner.position;
             return Err(self.errors.missing_position_reference(missing, missing));
@@ -696,7 +688,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.disallowed_character_after_any(&ACTION_DEFINITION_BLOCK_STARTS) {
             return error;
         }
-        if let Some(error) = self.misplaced_statement() {
+        let start = self.scanner.position;
+        // Quality implication statements must come first in the block.
+        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
+            let end = start.after_ascii(IT_ALSO_ASSIGNS_THE).previous_column();
+            return self.errors.quality_implication_in_wrong_order(start, end);
+        }
+        if let Some(error) = self.global_position_definition_in_local_context() {
             return error;
         }
         // The line begins like a statement of the block, but with extra or
@@ -704,27 +702,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.misspaced_words_in_any(&ACTION_DEFINITION_STATEMENT_STARTS) {
             return error;
         }
-        let start = self.scanner.position;
         self.errors
             .invalid_action_definitions_block(start, self.end_of_line())
     }
 
-    /// Returns the error for a quality implication statement or a global
-    /// position definition at the scanner's position, which belong only at
-    /// the start of an action definition block and at the top level, if one
-    /// is there.
+    /// Returns the error for a global position definition at the scanner's
+    /// position, which belongs only at the top level.
     #[cold]
-    fn misplaced_statement(&self) -> Option<ParseError> {
+    fn global_position_definition_in_local_context(&self) -> Option<ParseError> {
         let start = self.scanner.position;
-        // A quality implication statement is somewhere other than the start of
-        // an action definition block.
-        if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
-            let end = start.after_ascii(IT_ALSO_ASSIGNS_THE).previous_column();
-            return Some(
-                self.errors
-                    .quality_implication_in_wrong_location(start, end),
-            );
-        }
         // A global position definition is inside an action definition.
         if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
             let end = start
@@ -781,9 +767,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.disallowed_character_after_any(&TRIGGER_CONDITION_STARTS) {
             return error;
         }
-        if let Some(error) = self.misplaced_statement() {
-            return error;
-        }
         // The line begins like a trigger condition statement, but with extra or
         // missing spaces between two of its words.
         if let Some(error) = self.misspaced_words_in_any(&TRIGGER_CONDITION_STARTS) {
@@ -820,11 +803,12 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for the text at the scanner's position, right after a
-    /// position reference, where ` to` belongs. `wrong_word` returns the
-    /// statement's error for whatever is there instead.
+    /// reference, where the words that connect it to the rest of its statement
+    /// belong, such as ` to`. `wrong_word` returns the statement's error for
+    /// whatever is there instead.
     #[cold]
     #[inline(never)]
-    fn missing_to(
+    pub(crate) fn missing_connecting_word(
         &mut self,
         wrong_word: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
     ) -> ParseError {
@@ -835,13 +819,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         match self.space_before_word() {
             // The spaces before the next word are missing or extra.
             Err(error) => error,
-            // The error covers the word after the space where `to` belongs.
+            // The error covers the word after the space where the connecting
+            // words belong.
             Ok(true) => wrong_word(
                 &self.errors,
                 self.scanner.position,
                 self.scanner.end_of_word(),
             ),
-            // The line ends where `to` belongs.
+            // The line ends where the connecting words belong.
             Ok(false) => wrong_word(&self.errors, start, start),
         }
     }
@@ -854,7 +839,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.disallowed_character_after_any(&ACTION_STATEMENTS_BLOCK_STARTS) {
             return error;
         }
-        if let Some(error) = self.misplaced_statement() {
+        if let Some(error) = self.global_position_definition_in_local_context() {
             return error;
         }
         // The line begins like an action statement, but with extra or missing

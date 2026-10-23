@@ -6,6 +6,8 @@ mod errors;
 mod lines;
 mod literals;
 mod names;
+mod operation_definition;
+mod operation_execution;
 mod position_definition;
 mod potential_literal_definition;
 mod value_definition;
@@ -13,24 +15,28 @@ mod value_definition;
 use crate::ast;
 use crate::ast_builder::{AstBuilder, FilePath};
 use crate::parse_error::{ParseError, ParseResult};
+use crate::parser::operation_execution::OperationKind;
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use terminals::{
-    ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION, DEFINE_THE_POTENTIAL,
-    DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL, DEFINE_THE_POTENTIAL_POSITION,
-    DEFINE_THE_POTENTIAL_VALUE, ENCODING, LITERAL, POSITION, VALUE,
+    ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION, DEFINE_THE_OPERATION,
+    DEFINE_THE_POTENTIAL, DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL,
+    DEFINE_THE_POTENTIAL_POSITION, DEFINE_THE_POTENTIAL_VALUE, ENCODING, ENCODING_OPERATION,
+    LITERAL, OPERATION, POSITION, VALUE,
 };
 
-/// The words that begin each global definition the parser supports.
-const GLOBAL_DEFINITION_STARTS: [&[u8]; 5] = [
+/// The words that begin each global definition.
+const GLOBAL_DEFINITION_STARTS: [&[u8]; 7] = [
     DEFINE_THE_POTENTIAL_POSITION,
     DEFINE_THE_POTENTIAL_ACTION,
     DEFINE_THE_POTENTIAL_VALUE,
     DEFINE_THE_POTENTIAL_LITERAL,
     DEFINE_THE_ENCODING,
+    DEFINE_THE_OPERATION,
+    DEFINE_THE_ENCODING_OPERATION,
 ];
 pub(crate) struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
@@ -142,16 +148,29 @@ impl<'py, 'source> Parser<'py, 'source> {
                 self.parse_potential_literal_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
-        // An encoding operation definition, which the parser does not support
-        // yet, also begins with `define the encoding`.
-        if !self.scanner.next_bytes_are(DEFINE_THE_ENCODING_OPERATION)
-            && let Some(typed_name_start) =
-                self.scanner.consume_definition_start(DEFINE_THE, ENCODING)
+        if let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, OPERATION)
+        {
+            return self.parse_operation_definition(OperationKind::Value, start, typed_name_start);
+        }
+        // An encoding definition's `define the encoding` also begins an encoding
+        // operation definition, so the encoding operation definition is checked
+        // first.
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE, ENCODING_OPERATION)
+        {
+            return self.parse_operation_definition(
+                OperationKind::Encoding,
+                start,
+                typed_name_start,
+            );
+        }
+        if let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, ENCODING)
         {
             let (definition, end) = self.parse_encoding_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
-        // The text does not begin a global definition the parser supports.
+        // The text does not begin a global definition.
         Err(self.expected_global_definition())
     }
 

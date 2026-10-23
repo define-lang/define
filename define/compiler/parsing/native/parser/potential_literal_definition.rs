@@ -56,16 +56,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let encoding = self.parse_encoding_constraint(&fqun)?;
-        match self.next_line_in_block(0, &[])? {
-            LineInBlock::Close => {}
-            // A statement is where the block's `}` belongs.
-            LineInBlock::Statement => return Err(self.statement_instead_of_close_brace()),
-            // The block ends before its `}`.
-            LineInBlock::Unclosed => {
-                return Err(self.missing_close_brace(start, block_open_end));
-            }
-        }
-        let end = self.parse_block_close()?;
+        let end = self.parse_block_close_after_content(
+            start,
+            block_open_end,
+            0,
+            Self::statement_instead_of_close_brace,
+        )?;
         let location = self.ast.location(start, end)?;
         let definition = self
             .ast
@@ -87,7 +83,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(IT_HAS_THE) {
             return Err(self.invalid_potential_literal_definition_statement());
         }
-        // The line ends where the typed name belongs.
+        // The line ends, or a non-letter character comes, where the typed name
+        // belongs.
         if !self.space_before_word()? {
             return Err(self.expected_encoding_name_type());
         }

@@ -288,7 +288,7 @@ def raise_token_error(
                 e, file_path
             )
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
-            raise parser_exceptions.QualityImplicationInWrongLocation.from_lark_exception(
+            raise parser_exceptions.QualityImplicationInWrongOrder.from_lark_exception(
                 e, file_path
             )
         if e.token.type in {
@@ -407,7 +407,7 @@ def raise_token_error(
                 e, file_path
             )
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
-            raise parser_exceptions.QualityImplicationInWrongLocation.from_lark_exception(
+            raise parser_exceptions.QualityImplicationInWrongOrder.from_lark_exception(
                 e, file_path
             )
         raise parser_exceptions.InvalidTriggerConditionsBlock.from_lark_exception(
@@ -452,7 +452,7 @@ def raise_token_error(
     # the top level still surfaces as ExpectedGlobalDefinition (the user likely just
     # forgot to start a definition).
     if e.token.type == "IT_ALSO_ASSIGNS_THE":
-        raise parser_exceptions.QualityImplicationInWrongLocation.from_lark_exception(
+        raise parser_exceptions.QualityImplicationInWrongOrder.from_lark_exception(
             e, file_path
         )
 

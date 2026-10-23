@@ -492,6 +492,8 @@ class InvalidValueSettingStatementSyntax(DefineTokenError):
     )
 
 
+# TODO: Remove this when we switch fully to the native parser, which reports
+# MissingViewConstraintBlock instead.
 class InvalidViewDefinitionBlock(DefineTokenError):
     """Wrote something nonsensical after the View Direction Statements."""
 
@@ -582,6 +584,16 @@ class MissingNewlineAtEof(DefineTokenError):
     message_format: ClassVar[str] = "Define source code files must end with a newline."
 
 
+class MissingEncodingOperationStatementsContent(DefineTokenError):
+    """Left out the statements of an Encoding Operation Statements Block."""
+
+    message_format: ClassVar[str] = (
+        "Encoding operation statements blocks must contain at least one"
+        " 'execute the encoding_operation<...>' or"
+        " 'execute the computer operation.' statement."
+    )
+
+
 class MissingOpenAngleBracket(DefineTokenError):
     """A missing < on a name (could be just a raw "define the position", too)."""
 
@@ -593,6 +605,32 @@ class MissingOpenBrace(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "This line must end with a single space followed by a '{{'."
+    )
+
+
+class MissingOperationArgumentsContent(DefineTokenError):
+    """Left out the Operation Argument Statements of an Operation Arguments Block."""
+
+    message_format: ClassVar[str] = (
+        "Operation arguments blocks must contain at least one"
+        " 'with view<...> looking at ...' statement."
+    )
+
+
+class MissingOperationStatementsBlock(DefineTokenError):
+    """Left out the 'it does' block of an Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "Missing 'it does' block in this operation definition."
+    )
+
+
+class MissingOperationStatementsContent(DefineTokenError):
+    """Left out the statements of an Operation Statements Block."""
+
+    message_format: ClassVar[str] = (
+        "Operation statements blocks must contain at least one"
+        " 'execute the operation<...>' or 'execute the encoding operation.' statement."
     )
 
 
@@ -669,6 +707,15 @@ class MissingValueSource(DefineTokenError):
     )
 
 
+class MissingViewConstraintBlock(DefineTokenError):
+    """Left out the position constraint block after a view's View Direction Statements."""
+
+    message_format: ClassVar[str] = (
+        "A view definition must contain an 'it may only contain particles where'"
+        " block after its 'it is read.' and 'it is written.' statements."
+    )
+
+
 class MissingViewDirectionStatement(DefineTokenError):
     """Left out the View Direction Statements at the start of a view definition."""
 
@@ -697,12 +744,12 @@ class SpaceBeforeOpenAngleBracket(DefineTokenError):
     )
 
 
-class QualityImplicationInWrongLocation(DefineTokenError):
-    """Wrote an 'it also assigns the' statement somewhere it isn't allowed."""
+class QualityImplicationInWrongOrder(DefineTokenError):
+    """Wrote an 'it also assigns the' statement after another statement in an action definition block."""
 
     message_format: ClassVar[str] = (
-        "'it also assigns the' statements may appear only at the top of an"
-        " action definition block."
+        "'it also assigns the' statements must come before every other"
+        " statement in an action definition block."
     )
 
 

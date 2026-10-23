@@ -228,3 +228,18 @@ def test_text_after_value_setting_literal_terminator(native_parse: NativeParse):
     assert error.value.location.column == 62
     assert error.value.location.end_line == 5
     assert error.value.location.end_column == 62
+
+
+def test_text_after_operation_execution_terminator(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other>.x\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 39
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 39

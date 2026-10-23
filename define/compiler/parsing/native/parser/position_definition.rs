@@ -102,18 +102,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             opener_indentation + INDENTATION_WIDTH,
             fqun,
         )?;
-        match self.next_line_in_block(opener_indentation, &[])? {
-            LineInBlock::Close => {}
-            // A statement is where the block's `}` belongs.
-            LineInBlock::Statement => {
-                return Err(self.statement_instead_of_close_brace());
-            }
-            // The block ends before its `}`.
-            LineInBlock::Unclosed => {
-                return Err(self.missing_close_brace(start, block_open_end));
-            }
-        }
-        let end = self.parse_block_close()?;
+        let end = self.parse_block_close_after_content(
+            start,
+            block_open_end,
+            opener_indentation,
+            Self::statement_instead_of_close_brace,
+        )?;
         Ok((constraints, end))
     }
 
@@ -129,7 +123,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     { position_requirement_statement },
     ///     block_close ;
     /// ```
-    fn parse_position_constraint_block(
+    pub(crate) fn parse_position_constraint_block(
         &mut self,
         start: Position,
         indentation: usize,
@@ -186,7 +180,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(IT_HAS_THE) {
             return Err(self.invalid_position_constraint_block());
         }
-        // The line ends where the typed name belongs.
+        // The line ends, or a non-letter character comes, where the typed name
+        // belongs.
         if !self.space_before_word()? {
             return Err(self.expected_constraint_name_type());
         }

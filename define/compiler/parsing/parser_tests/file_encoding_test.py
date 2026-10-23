@@ -862,3 +862,175 @@ def test_invisible_character_in_value_source_name_type(native_parse: NativeParse
     assert error.value.location.column == 48
     assert error.value.location.end_line == 5
     assert error.value.location.end_column == 48
+
+
+def test_invisible_character_in_view_direction_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is\u200b read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 3
+    assert error.value.location.column == 14
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 14
+
+
+def test_invisible_character_in_view_constraint_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may\u200b only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 4
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 15
+
+
+def test_invisible_character_in_view_definition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the vi\u200bew<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 2
+    assert error.value.location.column == 18
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 18
+
+
+def test_invisible_character_in_operation_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute\u200b the operation</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 3
+    assert error.value.location.column == 16
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 16
+
+
+def test_invisible_character_in_operation_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the opera\u200btion</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 3
+    assert error.value.location.column == 26
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 26
+
+
+def test_invisible_character_in_encoding_operation_name_type(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding_opera\u200btion</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 3
+    assert error.value.location.column == 35
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 35
+
+
+def test_invisible_character_in_operation_argument_view_name_type(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with vi\u200bew<a> looking at view<left>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 4
+    assert error.value.location.column == 20
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 20
+
+
+def test_invisible_character_in_operation_argument_source_name_type(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at posi\u200btion<p>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 4
+    assert error.value.location.column == 41
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 41
+
+
+def test_invisible_character_in_operation_argument_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            wi\u200bth view<a> looking at view<left>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 4
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 15

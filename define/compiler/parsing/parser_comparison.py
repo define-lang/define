@@ -5,12 +5,10 @@
 
 from __future__ import annotations
 
-import enum
 import typing
 
 import msgspec
 
-from define.compiler.errors import parser_exceptions
 from define.compiler.parsing import parser
 from define.compiler.parsing.native import native_parser
 
@@ -19,15 +17,6 @@ if typing.TYPE_CHECKING:
     from pathlib import PurePosixPath
 
 _LARK_PARSER = parser.Parser()
-
-
-class Agreement(enum.Enum):
-    """How the two parsers agreed about a source."""
-
-    SAME_PROGRAM = enum.auto()
-    BOTH_REJECTED = enum.auto()
-    NOT_YET_SUPPORTED = enum.auto()
-    """The parser in parser.rs does not support the source yet."""
 
 
 class ParsersDisagreeError(AssertionError):
@@ -102,8 +91,8 @@ def native_parse_where_lark_diagnostics_are_wrong(
     return native_result
 
 
-def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
-    """Parse source with both parsers and return how they agreed.
+def compare(source: str, file_path: PurePosixPath | None = None):
+    """Parse source with both parsers and check that they agree.
 
     Raises:
         ParsersDisagreeError: One parser accepts the source and the other rejects
@@ -111,24 +100,14 @@ def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
     """
     lark_result = _LARK_PARSER.parse_and_transform(source, file_path=file_path)
     lark_accepts = lark_result.exception is None
-    try:
-        native_result = native_parse(source, file_path)
-    except NotImplementedError:
-        return Agreement.NOT_YET_SUPPORTED
+    native_result = native_parse(source, file_path)
     error = native_result.exception
-    if isinstance(error, parser_exceptions.ExpectedGlobalDefinition):
-        # TODO: Remove this once the parser in parser.rs supports every kind of
-        # global definition. Until then, it reports every other kind as
-        # ExpectedGlobalDefinition.
-        if lark_accepts:
-            return Agreement.NOT_YET_SUPPORTED
-        return Agreement.BOTH_REJECTED
     if error is not None:
         if lark_accepts:
             raise ParsersDisagreeError(
                 f"only the Lark parser accepts {source!r}: {error}"
             ) from error
-        return Agreement.BOTH_REJECTED
+        return
     if not lark_accepts:
         raise ParsersDisagreeError(
             f"only the parser in parser.rs accepts {source!r}: {lark_result.exception}"
@@ -141,7 +120,6 @@ def compare(source: str, file_path: PurePosixPath | None = None) -> Agreement:
             f"the parsers produce different results for {source!r}:\n"
             + "\n".join(differences)
         )
-    return Agreement.SAME_PROGRAM
 
 
 def _differences(lark_value: object, native_value: object, path: str) -> list[str]:

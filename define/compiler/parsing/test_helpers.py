@@ -19,7 +19,7 @@ def parse_and_transform(
     source: str, file_path: PurePosixPath | None = None
 ) -> ast.Program:
     """Parse and transform source into an AST Program."""
-    _ = parser_comparison.compare(source, file_path)
+    parser_comparison.compare(source, file_path)
     result = _PARSER.parse_and_transform(source, file_path=file_path)
     assert result.diagnostics == []
     assert result.exception is None
@@ -29,7 +29,7 @@ def parse_and_transform(
 
 def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
     """Parse source into an AST Program with the parser in parser.rs, which must report no diagnostics."""
-    _ = parser_comparison.compare(source, file_path)
+    parser_comparison.compare(source, file_path)
     return _program(parser_comparison.native_parse(source, file_path))
 
 
@@ -46,7 +46,7 @@ def parse_with_diagnostics(
     source: str, file_path: PurePosixPath | None = None
 ) -> native_parser.ParseResult:
     """Parse source with the parser in parser.rs, and return its result."""
-    _ = parser_comparison.compare(source, file_path)
+    parser_comparison.compare(source, file_path)
     return parser_comparison.native_parse(source, file_path)
 
 

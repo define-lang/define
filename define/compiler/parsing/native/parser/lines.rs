@@ -100,6 +100,36 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(end)
     }
 
+    /// Parses the rest of a block, whose content has been parsed, through the
+    /// end of its `}` line, where a line from `start` up to `block_open_end`,
+    /// the position after its `{`, indented `opener_indentation` spaces, opens
+    /// the block. Returns the position after the `}`.
+    /// `statement_instead_of_close` returns the error for a statement where
+    /// the `}` belongs.
+    ///
+    /// ```ebnf
+    /// block_close
+    /// ```
+    #[inline]
+    pub(crate) fn parse_block_close_after_content(
+        &mut self,
+        start: Position,
+        block_open_end: Position,
+        opener_indentation: usize,
+        statement_instead_of_close: fn(&Self) -> ParseError,
+    ) -> ParseResult<Position> {
+        match self.next_line_in_block(opener_indentation, &[])? {
+            LineInBlock::Close => {}
+            // A statement is where the block's `}` belongs.
+            LineInBlock::Statement => return Err(statement_instead_of_close(self)),
+            // The block ends before its `}`.
+            LineInBlock::Unclosed => {
+                return Err(self.missing_close_brace(start, block_open_end));
+            }
+        }
+        self.parse_block_close()
+    }
+
     /// Consumes any blank and comment lines, then the indentation of the next
     /// line in the block opened by a statement indented `opener_indentation`
     /// spaces, whose statements begin with one of `statement_starts` where the

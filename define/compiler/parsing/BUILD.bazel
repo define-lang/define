@@ -106,7 +106,6 @@ py_library(
     visibility = ["//define/compiler/parsing:__subpackages__"],
     deps = [
         ":parser",
-        "//define/compiler/errors:parser_exceptions",
         "//define/compiler/parsing/native:native_parser",
         "@pypi//msgspec",
     ],

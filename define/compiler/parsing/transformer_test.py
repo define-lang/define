@@ -161,15 +161,6 @@ def _only_action(source: str) -> ast.ActionDefinition:
     return definition
 
 
-# TODO: Use _only_action instead once the parser in parser.rs supports literals
-# and operation execution statements.
-def _only_action_from_lark_parser(source: str) -> ast.ActionDefinition:
-    program = test_helpers.parse_and_transform(source)
-    definition = program.definitions[0]
-    assert isinstance(definition, ast.ActionDefinition)
-    return definition
-
-
 def _only_position(source: str) -> ast.PositionDefinition:
     program = test_helpers.parse(source)
     definition = program.definitions[0]
@@ -1098,7 +1089,7 @@ _FULL_OPERATION = (
 
 
 def _only_operation(source: str) -> ast.ValueOperationDefinition:
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     definition = program.definitions[0]
     assert isinstance(definition, ast.ValueOperationDefinition)
     return definition
@@ -1354,7 +1345,7 @@ def test_operation_definitions_update_reference_fqun():
         + "    }\n"
         + "}\n"
     )
-    first, second = test_helpers.parse_and_transform(source).definitions
+    first, second = test_helpers.parse(source).definitions
     assert isinstance(first, ast.OperationDefinition)
     assert isinstance(second, ast.OperationDefinition)
     first_statement = first.operation_statements[0]
@@ -1391,7 +1382,7 @@ _FULL_ENCODING_OPERATION = (
 
 
 def _only_encoding_operation(source: str) -> ast.EncodingOperationDefinition:
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     definition = program.definitions[0]
     assert isinstance(definition, ast.EncodingOperationDefinition)
     return definition
@@ -1525,7 +1516,7 @@ _OPERATION_EXECUTING_ACTION = (
 
 
 def test_action_operation_execution_statement_without_arguments_fields():
-    block = _only_action_from_lark_parser(_OPERATION_EXECUTING_ACTION).action_statements
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
     statement = block.statements[0]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.arguments == ()
@@ -1544,7 +1535,7 @@ def test_action_operation_execution_statement_without_arguments_fields():
 
 
 def test_action_operation_execution_statement_with_arguments_fields():
-    block = _only_action_from_lark_parser(_OPERATION_EXECUTING_ACTION).action_statements
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
     statement = block.statements[1]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.full_typed_name == "operation<standard:/add>"

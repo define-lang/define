@@ -364,3 +364,81 @@ def test_extra_space_in_encoding_constraint(native_parse: NativeParse):
     assert error.value.location.column == 7
     assert error.value.location.end_line == 2
     assert error.value.location.end_column == 8
+
+
+def test_extra_space_in_view_direction_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it  is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 11
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 12
+
+
+def test_extra_space_in_view_constraint_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may  only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 16
+
+
+def test_extra_space_in_view_definition(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the  view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 15
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 16
+
+
+def test_extra_space_in_operation_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute  the operation</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 16
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 17

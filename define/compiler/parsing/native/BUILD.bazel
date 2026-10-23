@@ -61,6 +61,8 @@ pyo3_extension(
         "parser/lines.rs",
         "parser/literals.rs",
         "parser/names.rs",
+        "parser/operation_definition.rs",
+        "parser/operation_execution.rs",
         "parser/position_definition.rs",
         "parser/potential_literal_definition.rs",
         "parser/value_definition.rs",

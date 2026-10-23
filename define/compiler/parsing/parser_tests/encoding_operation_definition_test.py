@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
-from define.compiler.parsing.parser_tests.test_helpers import get_tokens_by_type
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import NativeParse
 
 
 _ENCODING_OPERATION_PREFIX = (
@@ -22,140 +22,206 @@ _ENCODING_OPERATION_PREFIX = (
 _ENCODING_OPERATION_SUFFIX = "    }\n}\n"
 
 
-def test_encoding_operation_definition(parse: Parse):
-    tree = parse(
-        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-        + "    it does {\n"
-        + "        execute the computer operation.\n"
-        + "    }\n"
-        + "}\n"
+def _only_encoding_operation(program: ast.Program) -> ast.EncodingOperationDefinition:
+    [definition] = program.definitions
+    assert isinstance(definition, ast.EncodingOperationDefinition)
+    return definition
+
+
+def test_encoding_operation_definition(native_parse: NativeParse):
+    definition = _only_encoding_operation(
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the computer operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
     )
-    assert get_tokens_by_type(tree, "DEFINE_THE_ENCODING_OPERATION") == [
-        "define the encoding_operation"
-    ]
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/add"
-    ]
-    assert get_tokens_by_type(tree, "IT_DOES") == ["it does"]
-    assert get_tokens_by_type(tree, "EXECUTE_THE_COMPUTER_OPERATION") == [
-        "execute the computer operation"
-    ]
-
-
-def test_encoding_operation_definition_with_views(parse: Parse):
-    tree = parse(
-        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-        + "    define the view<left> {\n"
-        + "        it is read.\n"
-        + "        it may only contain particles where {\n"
-        + "            it has the encoding</decimal>.\n"
-        + "        }\n"
-        + "    }\n"
-        + "    define the view<right> {\n"
-        + "        it is written.\n"
-        + "        it may only contain particles where {\n"
-        + "            it has the encoding</decimal>.\n"
-        + "        }\n"
-        + "    }\n"
-        + "    it does {\n"
-        + "        execute the computer operation.\n"
-        + "    }\n"
-        + "}\n"
+    assert definition.typed_name.name_type == name_types.NameType.ENCODING_OPERATION
+    assert definition.typed_name.name_content.path.name == "/add"
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=12, end_line=1, end_column=61
     )
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["left", "right"]
-    assert get_tokens_by_type(tree, "DEFINE_THE_VIEW") == [
-        "define the view",
-        "define the view",
-    ]
-
-
-def test_encoding_operation_execution_without_arguments(parse: Parse):
-    tree = parse(
-        _ENCODING_OPERATION_PREFIX
-        + "        execute the encoding_operation</other>.\n"
-        + _ENCODING_OPERATION_SUFFIX
+    assert definition.views == ()
+    [statement] = definition.operation_statements
+    assert isinstance(statement, ast.ComputerOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=39
     )
-    assert get_tokens_by_type(tree, "EXECUTE_THE") == ["execute the"]
-    assert get_tokens_by_type(tree, "ENCODING_OPERATION") == ["encoding_operation"]
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/add",
-        "/other",
-    ]
-
-
-def test_encoding_operation_execution_with_arguments(parse: Parse):
-    tree = parse(
-        _ENCODING_OPERATION_PREFIX
-        + "        execute the encoding_operation<mv:define-lang.org:parser:/other> {\n"
-        + "            with view<a> looking at view<left>.\n"
-        + "            with view<b> looking at position<p>.\n"
-        + '            with view<c> looking at literal</number>"12".\n'
-        + "        }\n"
-        + _ENCODING_OPERATION_SUFFIX
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=1
     )
-    assert get_tokens_by_type(tree, "ENCODING_OPERATION") == ["encoding_operation"]
-    assert get_tokens_by_type(tree, "WITH") == ["with", "with", "with"]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
-        "a",
-        "left",
-        "b",
-        "p",
-        "c",
-    ]
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/add",
-        "mv:define-lang.org:parser:/other",
-        "/number",
-    ]
-    assert get_tokens_by_type(tree, "LITERAL_CONTENT") == ["12"]
 
 
-def test_multiple_statements_comments_and_blank_lines(parse: Parse):
-    tree = parse(
-        "define the encoding_operation<mv:define-lang.org:parser:/add> { # comment\n"
-        + "\n"
-        + "    # comment\n"
-        + "    define the view<left> { # comment\n"
-        + "\n"
-        + "        it is read. # comment\n"
-        + "\n"
-        + "        it may only contain particles where { # comment\n"
-        + "\n"
-        + "            it has the encoding</decimal>. # comment\n"
-        + "\n"
-        + "        } # comment\n"
-        + "\n"
-        + "    } # comment\n"
-        + "\n"
-        + "    it does { # comment\n"
-        + "\n"
-        + "        execute the encoding_operation</first>. # comment\n"
-        + "\n"
-        + "        execute the encoding_operation</second> { # comment\n"
-        + "\n"
-        + "            with view<a> looking at view<left>. # comment\n"
-        + "\n"
-        + "        } # comment\n"
-        + "\n"
-        + "        execute the computer operation. # comment\n"
-        + "\n"
-        + "    } # comment\n"
-        + "\n"
-        + "} # comment\n"
+def test_encoding_operation_definition_with_views(native_parse: NativeParse):
+    definition = _only_encoding_operation(
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the encoding</decimal>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    define the view<right> {\n"
+            + "        it is written.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the encoding</decimal>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "    it does {\n"
+            + "        execute the computer operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/add",
-        "/decimal",
-        "/first",
-        "/second",
-    ]
-    assert get_tokens_by_type(tree, "EXECUTE_THE_COMPUTER_OPERATION") == [
-        "execute the computer operation"
-    ]
+    [left, right] = definition.views
+    assert left.typed_name.name_content.name == "left"
+    assert left.location == ast.SourceLocation(
+        line=2, column=5, end_line=7, end_column=5
+    )
+    assert right.typed_name.name_content.name == "right"
+    assert right.location == ast.SourceLocation(
+        line=8, column=5, end_line=13, end_column=5
+    )
 
 
-def test_between_other_definitions(parse: Parse):
-    tree = parse(
+def test_encoding_operation_execution_without_arguments(native_parse: NativeParse):
+    definition = _only_encoding_operation(
+        native_parse(
+            _ENCODING_OPERATION_PREFIX
+            + "        execute the encoding_operation</other>.\n"
+            + _ENCODING_OPERATION_SUFFIX
+        )
+    )
+    [statement] = definition.operation_statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
+    assert statement.operation.name_content.fqun is None
+    assert statement.operation.name_content.path.name == "/other"
+    assert statement.operation.location == ast.SourceLocation(
+        line=3, column=21, end_line=3, end_column=46
+    )
+    assert statement.arguments == ()
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=47
+    )
+
+
+def test_encoding_operation_execution_with_arguments(native_parse: NativeParse):
+    definition = _only_encoding_operation(
+        native_parse(
+            _ENCODING_OPERATION_PREFIX
+            + "        execute the encoding_operation<mv:define-lang.org:parser:/other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "            with view<b> looking at position<p>.\n"
+            + '            with view<c> looking at literal</number>"12".\n'
+            + "        }\n"
+            + _ENCODING_OPERATION_SUFFIX
+        )
+    )
+    [statement] = definition.operation_statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
+    fqun = statement.operation.name_content.fqun
+    assert fqun is not None
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "mv"
+    assert fqun.authority is not None
+    assert fqun.authority.name == "define-lang.org"
+    assert fqun.universe.name == "parser"
+    assert statement.operation.name_content.path.name == "/other"
+    [view_argument, position_argument, literal_argument] = statement.arguments
+    assert view_argument.view.name_content.name == "a"
+    looking_at_view = view_argument.looking_at
+    assert isinstance(looking_at_view, ast.LocalTypedNameReference)
+    assert looking_at_view.name_content.name == "left"
+    assert view_argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=47
+    )
+    assert position_argument.view.name_content.name == "b"
+    assert isinstance(position_argument.looking_at, ast.PositionReference)
+    assert position_argument.location == ast.SourceLocation(
+        line=5, column=13, end_line=5, end_column=48
+    )
+    assert literal_argument.view.name_content.name == "c"
+    looking_at_literal = literal_argument.looking_at
+    assert isinstance(looking_at_literal, ast.Literal)
+    assert looking_at_literal.content == "12"
+    assert literal_argument.location == ast.SourceLocation(
+        line=6, column=13, end_line=6, end_column=57
+    )
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=7, end_column=9
+    )
+
+
+def test_multiple_statements_comments_and_blank_lines(native_parse: NativeParse):
+    definition = _only_encoding_operation(
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> { # comment\n"
+            + "\n"
+            + "    # comment\n"
+            + "    define the view<left> { # comment\n"
+            + "\n"
+            + "        it is read. # comment\n"
+            + "\n"
+            + "        it may only contain particles where { # comment\n"
+            + "\n"
+            + "            it has the encoding</decimal>. # comment\n"
+            + "\n"
+            + "        } # comment\n"
+            + "\n"
+            + "    } # comment\n"
+            + "\n"
+            + "    it does { # comment\n"
+            + "\n"
+            + "        execute the encoding_operation</first>. # comment\n"
+            + "\n"
+            + "        execute the encoding_operation</second> { # comment\n"
+            + "\n"
+            + "            with view<a> looking at view<left>. # comment\n"
+            + "\n"
+            + "        } # comment\n"
+            + "\n"
+            + "        execute the computer operation. # comment\n"
+            + "\n"
+            + "    } # comment\n"
+            + "\n"
+            + "} # comment\n"
+        )
+    )
+    [view] = definition.views
+    assert view.location == ast.SourceLocation(
+        line=4, column=5, end_line=14, end_column=5
+    )
+    [first, second, third] = definition.operation_statements
+    assert isinstance(first, ast.OperationExecutionStatement)
+    assert first.operation.name_content.path.name == "/first"
+    assert first.location == ast.SourceLocation(
+        line=18, column=9, end_line=18, end_column=47
+    )
+    assert isinstance(second, ast.OperationExecutionStatement)
+    assert second.operation.name_content.path.name == "/second"
+    [argument] = second.arguments
+    assert argument.location == ast.SourceLocation(
+        line=22, column=13, end_line=22, end_column=47
+    )
+    assert second.location == ast.SourceLocation(
+        line=20, column=9, end_line=24, end_column=9
+    )
+    assert isinstance(third, ast.ComputerOperationExecutionStatement)
+    assert third.location == ast.SourceLocation(
+        line=26, column=9, end_line=26, end_column=39
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=30, end_column=1
+    )
+
+
+def test_between_other_definitions(native_parse: NativeParse):
+    program = native_parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
         + "        execute the encoding operation.\n"
@@ -168,16 +234,19 @@ def test_between_other_definitions(parse: Parse):
         + "}\n"
         + "define the encoding<mv:define-lang.org:parser:/decimal>.\n"
     )
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
-        "mv:define-lang.org:parser:/add",
-        "mv:define-lang.org:parser:/add_decimal",
-        "mv:define-lang.org:parser:/decimal",
-    ]
+    [operation, encoding_operation, encoding] = program.definitions
+    assert isinstance(operation, ast.ValueOperationDefinition)
+    assert isinstance(encoding_operation, ast.EncodingOperationDefinition)
+    assert encoding_operation.typed_name.name_content.path.name == "/add_decimal"
+    assert encoding_operation.location == ast.SourceLocation(
+        line=6, column=1, end_line=10, end_column=1
+    )
+    assert isinstance(encoding, ast.EncodingDefinition)
 
 
-def test_requires_global_name(parse: Parse):
+def test_requires_global_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
+        native_parse(
             "define the encoding_operation<add> {\n"
             + "    it does {\n"
             + "        execute the computer operation.\n"
@@ -186,28 +255,33 @@ def test_requires_global_name(parse: Parse):
         )
     assert error.value.location.line == 1
     assert error.value.location.column == 31
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 33
 
 
-def test_requires_block(parse: Parse):
+def test_requires_block(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        parse("define the encoding_operation<mv:define-lang.org:parser:/add>.\n")
+        native_parse("define the encoding_operation<mv:define-lang.org:parser:/add>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 62
+    assert error.value.location.end_line == 1
     assert error.value.location.end_column == 62
 
 
-def test_requires_operation_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        parse("define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n")
+def test_requires_operation_statements_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n"
+        )
     assert error.value.location.line == 2
     assert error.value.location.column == 1
+    assert error.value.location.end_line == 2
     assert error.value.location.end_column == 1
 
 
-def test_disallows_local_position_definition(parse: Parse):
+def test_disallows_local_position_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        parse(
+        native_parse(
             "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the position<p>.\n"
             + "    it does {\n"
@@ -217,38 +291,41 @@ def test_disallows_local_position_definition(parse: Parse):
         )
     assert error.value.location.line == 2
     assert error.value.location.column == 5
-    assert error.value.location.end_column == 23
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 27
 
 
-def test_requires_statement(parse: Parse):
+def test_requires_statement(native_parse: NativeParse):
     with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
+        parser_exceptions.MissingEncodingOperationStatementsContent
     ) as error:
-        parse(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
+        native_parse(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
     assert error.value.location.line == 3
     assert error.value.location.column == 5
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 5
 
 
-def test_disallows_action_statement(parse: Parse):
+def test_disallows_action_statement(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.InvalidEncodingOperationStatementsBlock
     ) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        create a particle in position<p>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 28
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 41
 
 
-def test_disallows_action_statement_after_first_statement(parse: Parse):
+def test_disallows_action_statement_after_first_statement(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.InvalidEncodingOperationStatementsBlock
     ) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the computer operation.\n"
             + "        create a particle in position<p>.\n"
@@ -256,98 +333,106 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 28
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 41
 
 
-def test_disallows_encoding_operation_statement(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
-    ) as error:
-        parse(
+def test_disallows_encoding_operation_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the encoding operation.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_column == 38
+    assert error.value.location.column == 21
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 28
 
 
-def test_disallows_value_operation_execution(parse: Parse):
+def test_disallows_value_operation_execution(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the operation</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 29
 
 
-def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
+def test_encoding_operation_name_type_cannot_be_position(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the position</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 28
 
 
-def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
+def test_encoding_operation_extra_space_after_execute_the(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the  encoding_operation</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
-    assert error.value.location.column == 21
+    assert error.value.location.column == 20
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 21
 
 
-def test_computer_operation_requires_terminator(parse: Parse):
+def test_computer_operation_requires_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the computer operation\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 39
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 39
 
 
-def test_encoding_operation_execution_requires_terminator_or_block(parse: Parse):
+def test_encoding_operation_execution_requires_terminator_or_block(
+    native_parse: NativeParse,
+):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the encoding_operation</other>\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 47
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 47
 
 
-def test_encoding_operation_execution_requires_global_name(parse: Parse):
+def test_encoding_operation_execution_requires_global_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the encoding_operation<other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 40
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 44
 
 
-def test_arguments_block_requires_argument(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
-        parse(
+def test_arguments_block_requires_argument(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
+        native_parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the encoding_operation</other> {\n"
             + "        }\n"
@@ -355,12 +440,13 @@ def test_arguments_block_requires_argument(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
+    assert error.value.location.end_line == 4
     assert error.value.location.end_column == 9
 
 
-def test_value_operation_disallows_computer_operation(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        parse(
+def test_value_operation_disallows_computer_operation(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+        native_parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the computer operation.\n"
@@ -368,13 +454,16 @@ def test_value_operation_disallows_computer_operation(parse: Parse):
             + "}\n"
         )
     assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_column == 38
+    assert error.value.location.column == 21
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 28
 
 
-def test_value_operation_disallows_encoding_operation_execution(parse: Parse):
+def test_value_operation_disallows_encoding_operation_execution(
+    native_parse: NativeParse,
+):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        parse(
+        native_parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the encoding_operation</other>.\n"
@@ -383,12 +472,13 @@ def test_value_operation_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 21
+    assert error.value.location.end_line == 3
     assert error.value.location.end_column == 38
 
 
-def test_action_disallows_encoding_operation_execution(parse: Parse):
+def test_action_disallows_encoding_operation_execution(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -399,12 +489,13 @@ def test_action_disallows_encoding_operation_execution(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 21
+    assert error.value.location.end_line == 5
     assert error.value.location.end_column == 38
 
 
-def test_disallows_local_context(parse: Parse):
+def test_disallows_local_context(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        parse(
+        native_parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -419,12 +510,14 @@ def test_disallows_local_context(parse: Parse):
         )
     assert error.value.location.line == 5
     assert error.value.location.column == 9
-    assert error.value.location.end_column == 37
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 71
 
 
-def test_computer_operation_is_not_a_global_definition(parse: Parse):
+def test_computer_operation_is_not_a_global_definition(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        parse("execute the computer operation.\n")
+        native_parse("execute the computer operation.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
-    assert error.value.location.end_column == 30
+    assert error.value.location.end_line == 1
+    assert error.value.location.end_column == 31

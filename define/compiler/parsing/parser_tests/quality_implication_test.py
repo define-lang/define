@@ -450,7 +450,7 @@ def test_implication_after_constraint_block_in_potential_position(
 
 
 def test_implication_after_local_position_in_action_block(native_parse: NativeParse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
+    with pytest.raises(parser_exceptions.QualityImplicationInWrongOrder) as exc_info:
         native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
@@ -470,7 +470,7 @@ def test_implication_after_local_position_in_action_block(native_parse: NativePa
 def test_implication_after_trigger_conditions_block_in_action(
     native_parse: NativeParse,
 ):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
         native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
@@ -484,7 +484,7 @@ def test_implication_after_trigger_conditions_block_in_action(
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 48
 
 
 def test_implication_inside_position_constraint_block(native_parse: NativeParse):
@@ -504,7 +504,7 @@ def test_implication_inside_position_constraint_block(native_parse: NativeParse)
 
 
 def test_implication_inside_action_statements_block(native_parse: NativeParse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
         native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
@@ -518,11 +518,11 @@ def test_implication_inside_action_statements_block(native_parse: NativeParse):
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 9
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 48
 
 
 def test_implication_inside_trigger_conditions_block(native_parse: NativeParse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongLocation) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
         native_parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
@@ -535,7 +535,7 @@ def test_implication_inside_trigger_conditions_block(native_parse: NativeParse):
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 9
     assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 27
+    assert exc_info.value.location.end_column == 48
 
 
 def test_implication_inside_local_position_definition_constraint_block(

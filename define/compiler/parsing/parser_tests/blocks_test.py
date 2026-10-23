@@ -526,3 +526,88 @@ def test_text_after_potential_literal_definition_block_close(native_parse: Nativ
     assert error.value.location.column == 2
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 2
+
+
+def test_text_after_operation_definition_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}x\n"
+        )
+    assert error.value.location.line == 5
+    assert error.value.location.column == 2
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 2
+
+
+def test_text_after_view_definition_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }x\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 7
+    assert error.value.location.column == 6
+    assert error.value.location.end_line == 7
+    assert error.value.location.end_column == 6
+
+
+def test_text_after_operation_statements_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+            + "    }x\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 6
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 6
+
+
+def test_text_after_operation_arguments_block_close(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "        }x\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 5
+    assert error.value.location.column == 10
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 10
+
+
+def test_text_after_operation_arguments_block_open(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {x\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 40
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 40

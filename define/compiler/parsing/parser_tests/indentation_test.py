@@ -603,3 +603,51 @@ def test_encoding_constraint_under_indented(
             actual_indent=2,
         ),
     ]
+
+
+def test_view_direction_statement_under_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<left> {\n"
+        + "      it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=6),
+            expected_indent=8,
+            actual_indent=6,
+        ),
+    ]
+
+
+def test_operation_argument_under_indented(
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+):
+    result = native_parse_with_diagnostics(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "        with view<a> looking at view<left>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.IncorrectIndentationDiagnostic(
+            location=ast.SourceLocation(line=4, column=1, end_line=4, end_column=8),
+            expected_indent=12,
+            actual_indent=8,
+        ),
+    ]

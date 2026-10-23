@@ -1507,3 +1507,179 @@ def test_encoding_constraint_ends_after_it_has_the(native_parse: NativeParse):
     assert error.value.location.column == 15
     assert error.value.location.end_line == 2
     assert error.value.location.end_column == 15
+
+
+def test_view_definition_truncated_after_open(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingViewDirectionStatement) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 28
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 28
+
+
+def test_view_definition_truncated_after_direction_statement(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 20
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 20
+
+
+def test_view_definition_truncated_after_constraint_block(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 5
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 27
+
+
+def test_operation_definition_truncated_after_view(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<left> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the value</number>.\n"
+            + "        }\n"
+            + "    }\n"
+        )
+    assert error.value.location.line == 7
+    assert error.value.location.column == 6
+    assert error.value.location.end_line == 7
+    assert error.value.location.end_column == 6
+
+
+def test_operation_statements_block_truncated_after_open(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOperationStatementsContent) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 14
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 14
+
+
+def test_operation_statements_block_truncated_after_statement(
+    native_parse: NativeParse,
+):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding operation.\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 5
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 13
+
+
+def test_operation_arguments_block_truncated_after_open(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 40
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 40
+
+
+def test_operation_arguments_block_truncated_after_argument(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 39
+
+
+def test_operation_execution_ends_after_execute_the(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 20
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 20
+
+
+def test_encoding_operation_execution_ends_after_execute_the(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
+        native_parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 20
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 20
+
+
+def test_operation_argument_ends_after_with(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedView) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 17
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 17
+
+
+def test_operation_argument_ends_after_looking_at(native_parse: NativeParse):
+    with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
+        native_parse(
+            "define the operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 36
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 36
