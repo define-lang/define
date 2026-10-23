@@ -52,6 +52,17 @@ local_path_override(
 # such modules through extended-length paths.
 # TODO: Remove the long extension paths patch once an aspect_rules_py release
 # includes https://github.com/aspect-build/rules_py/pull/1625.
+# The interpreter repository's test-suite and feature excludes name
+# lib/python3.14 rather than a free-threaded build's lib/python3.14t, so every
+# Python action's inputs carry CPython's own tests. The free-threaded test
+# excludes patch uses the real standard library directory.
+# TODO: Remove the free-threaded test excludes patch once an aspect_rules_py
+# release includes https://github.com/aspect-build/rules_py/pull/1619.
+# The interpreter repository leaves out all bytecode, so every Python process
+# compiles the standard library from source. The precompiled stdlib patch
+# compiles the standard library once with bytecode that never goes stale.
+# TODO: Remove the precompiled stdlib patch once an aspect_rules_py release
+# includes https://github.com/aspect-build/rules_py/pull/1620.
 git_override(
     module_name = "aspect_rules_py",
     commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
@@ -60,6 +71,8 @@ git_override(
         "//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch",
         "//tools/patches:aspect_rules_py_windows_venv_layout.patch",
         "//tools/patches:aspect_rules_py_windows_long_extension_paths.patch",
+        "//tools/patches:aspect_rules_py_freethreaded_test_excludes.patch",
+        "//tools/patches:aspect_rules_py_precompiled_stdlib.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )

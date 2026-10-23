@@ -1,0 +1,485 @@
+diff --git a/docs/interpreter.md b/docs/interpreter.md
+index be50c9d9..746f14c4 100644
+--- a/docs/interpreter.md
++++ b/docs/interpreter.md
+@@ -29,6 +29,15 @@ import libraries. Regular runtimes also expose stable-ABI headers.
+ Free-threaded runtimes expose only the full ABI; the `abi3t` ABI introduced
+ by [PEP 803](https://peps.python.org/pep-0803/) is not yet modeled.
+ 
++**Precompiled standard library.** When the host can run the interpreter, the
++interpreter repository compiles the standard library to unchecked-hash
++bytecode ([PEP 552](https://peps.python.org/pep-0552/)), so Python actions do
++not compile it from source in every sandbox or on every remote executor.
++CPython's own test suite is not precompiled, and images built with
++`py_image_layer` leave the bytecode out. Setting
++`--@aspect_rules_py//uv/private/pyc:precompile=False`, which also turns off
++wheel precompilation, leaves the bytecode out of the interpreter's files.
++
+ ## Quickstart
+ 
+ ```starlark
+diff --git a/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel b/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel
+new file mode 100644
+index 00000000..ce9ede88
+--- /dev/null
++++ b/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel
+@@ -0,0 +1,28 @@
++load("@aspect_rules_py//py:defs.bzl", "py_test")
++load("@bazel_lib//lib:transitions.bzl", "platform_transition_test")
++
++py_test(
++    name = "test",
++    srcs = ["test.py"],
++    main = "test.py",
++)
++
++platform(
++    name = "no_precompile",
++    flags = ["--@aspect_rules_py//uv/private/pyc:precompile=False"],
++    parents = ["@platforms//host"],
++)
++
++py_test(
++    name = "no_precompile_test_bin",
++    srcs = ["test.py"],
++    env = {"PRECOMPILE": "False"},
++    main = "test.py",
++    tags = ["manual"],
++)
++
++platform_transition_test(
++    name = "no_precompile_test",
++    binary = ":no_precompile_test_bin",
++    target_platform = ":no_precompile",
++)
+diff --git a/e2e/cases/interpreter-precompiled-stdlib/test.py b/e2e/cases/interpreter-precompiled-stdlib/test.py
+new file mode 100644
+index 00000000..1edd4a05
+--- /dev/null
++++ b/e2e/cases/interpreter-precompiled-stdlib/test.py
+@@ -0,0 +1,54 @@
++"""The interpreter's standard library ships bytecode that is never rewritten,
++unless the precompile flag is off."""
++
++import os
++import re
++import sys
++import unittest
++
++# PEP 552: hash-based bytecode that Python never checks against its source.
++_UNCHECKED_HASH = 0b01
++
++# The standard library's directory in the interpreter's repository.
++_STDLIB = re.compile(r"[^/]+/(Lib|lib/python3\.\d+t?)/")
++
++
++def _runfiles() -> dict[str, str]:
++    """Maps each runfiles path to the file it names."""
++    manifest = os.environ.get("RUNFILES_MANIFEST_FILE")
++    if manifest:
++        runfiles = {}
++        with open(manifest) as f:
++            for line in f:
++                path, _, target = line.rstrip("\n").partition(" ")
++                runfiles[path] = target
++        return runfiles
++    root = os.environ["TEST_SRCDIR"]
++    runfiles = {}
++    for dirpath, _, filenames in os.walk(root):
++        for name in filenames:
++            target = os.path.join(dirpath, name)
++            runfiles[os.path.relpath(target, root).replace(os.sep, "/")] = target
++    return runfiles
++
++
++class PrecompiledStdlibTest(unittest.TestCase):
++    def test_stdlib_bytecode_is_unchecked_hash(self) -> None:
++        # The interpreter's own paths resolve to the fetched repository, which
++        # has every file, so look at the interpreter's files in the runfiles.
++        bytecode = {}
++        for path, target in _runfiles().items():
++            if _STDLIB.match(path) and "/__pycache__/" in path and path.endswith(".pyc"):
++                bytecode[_STDLIB.sub("", path, count=1)] = target
++        if os.environ.get("PRECOMPILE") == "False":
++            self.assertEqual(bytecode, {})
++            return
++        self.assertIn(f"__pycache__/os.{sys.implementation.cache_tag}.pyc", bytecode)
++        for path, target in bytecode.items():
++            with open(target, "rb") as f:
++                flags = int.from_bytes(f.read(8)[4:8], "little")
++            self.assertEqual(flags, _UNCHECKED_HASH, path)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/e2e/interpreter-toolchain-settings/test.sh b/e2e/interpreter-toolchain-settings/test.sh
+index 24289d37..45227c11 100755
+--- a/e2e/interpreter-toolchain-settings/test.sh
++++ b/e2e/interpreter-toolchain-settings/test.sh
+@@ -114,12 +114,12 @@ if ! grep -q "Conflicting root toolchain settings for Python 3.11" "$failure_log
+     fail "conflicting duplicate root declarations lacked a clear diagnostic"
+ fi
+ 
+-# Bytecode written into a fetched interpreter after the fact (Python running
+-# against the hermetic interpreter outside a write-blocking sandbox) must not
+-# become an input of the interpreter filegroups, or every consumer's action key
+-# changes the first time some module happens to be imported locally. Plant a pyc
+-# next to every shipped .py so the check holds for whichever glob (core or any
+-# feature, present or future) claims that directory.
++# Python run outside a sandbox can write bytecode into the fetched interpreter,
++# and that bytecode must not become one of the interpreter's files, or actions
++# that use the interpreter would get new cache keys. The standard library is
++# precompiled, so Python writes new bytecode only when run with -O or -OO.
++# Plant such a file in every directory with a .py file, so the check covers
++# every glob that claims one.
+ repo=python_3_12_x86_64_unknown_linux_gnu
+ "$BAZEL" fetch --lockfile_mode=off --repo="@${repo}" \
+     || fail "fetching ${repo} failed"
+@@ -152,7 +152,7 @@ grep -E '/[^/]*\.py$' "$failure_log" | sed -E 's|^@[^/]*//:||; s|/[^/]*$||' | so
+         if [ ! -d "$pycache" ]; then
+             mkdir -p "$pycache" && echo "D ${pycache}" >>"$planted"
+         fi
+-        : >"${pycache}/stray.cpython-312.pyc" && echo "F ${pycache}/stray.cpython-312.pyc" >>"$planted"
++        : >"${pycache}/stray.cpython-312.opt-1.pyc" && echo "F ${pycache}/stray.cpython-312.opt-1.pyc" >>"$planted"
+     done
+ [ "$(grep -c '^F ' "$planted")" -ge 50 ] \
+     || fail "planted too few pycs to be meaningful: $(grep -c '^F ' "$planted")"
+@@ -161,8 +161,8 @@ if ! "$BAZEL" query --lockfile_mode=off \
+     cat "$failure_log" >&2
+     fail "querying the ${repo} sources failed"
+ fi
+-if grep -q "__pycache__" "$failure_log"; then
+-    grep "__pycache__" "$failure_log" | head -n 20 >&2
++if grep -q "__pycache__/stray\." "$failure_log"; then
++    grep "__pycache__/stray\." "$failure_log" | head -n 20 >&2
+     fail "bytecode written after fetch leaked into @${repo}//:files"
+ fi
+ 
+diff --git a/py/private/interpreter/BUILD.bazel b/py/private/interpreter/BUILD.bazel
+index 36412293..7553352a 100644
+--- a/py/private/interpreter/BUILD.bazel
++++ b/py/private/interpreter/BUILD.bazel
+@@ -117,6 +117,7 @@ bzl_library(
+     srcs = ["repository.bzl"],
+     deps = [
+         ":exclude_feature_bzl",  # keep
++        ":resolve",
+     ],
+ )
+ 
+diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
+index 9c573a06..0aae3eb5 100644
+--- a/py/private/interpreter/repository.bzl
++++ b/py/private/interpreter/repository.bzl
+@@ -1,6 +1,7 @@
+ """Repository rules for Python interpreter toolchains."""
+ 
+ load(":exclude_feature.bzl", "INTERPRETER_FEATURES")
++load(":resolve.bzl", "host_platform_triple")
+ 
+ _PYTHON_VERSION_FLAG = "@aspect_rules_py//py/private/interpreter:python_version"
+ _RPY_VERSION_FLAG = "@rules_python//python/config_settings:python_version"
+@@ -43,8 +44,18 @@ def _python_interpreter_impl(rctx):
+     if "linux" in platform:
+         rctx.delete("share/terminfo")
+ 
++    # Every Python process imports the standard library, and bytecode written
++    # at runtime never persists in a sandbox or on a remote executor, so
++    # without precompiled bytecode every action compiles the standard library
++    # from source. Only a host that can run this interpreter can compile it.
++    precompiled = host_platform_triple(rctx) == platform
++    if precompiled:
++        stdlib = "Lib" if is_windows else "lib/python{}.{}{}".format(major, minor, rctx.attr.abi_flags)
++        _precompile_stdlib(rctx, python_bin, stdlib)
++
+     rctx.file("BUILD.bazel", content = _build_file_content(
+         abi_flags = rctx.attr.abi_flags,
++        precompiled = precompiled,
+         major = major,
+         minor = minor,
+         micro = micro,
+@@ -57,7 +68,61 @@ def _python_interpreter_impl(rctx):
+ 
+     return rctx.repo_metadata(reproducible = True)
+ 
+-def _feature_filegroups(stdlib, is_windows):
++def _precompile_stdlib(rctx, python_bin, stdlib):
++    """Compiles the standard library to bytecode that is never rewritten."""
++    result = rctx.execute([
++        rctx.path(python_bin),
++        # Otherwise the interpreter writes timestamp-based bytecode for the
++        # modules compileall imports, and compileall keeps it.
++        "-B",
++        "-I",
++        "-m",
++        "compileall",
++        # The archives ship timestamp-based bytecode, which compileall would
++        # otherwise keep.
++        "-f",
++        "-q",
++        # Remote inputs do not keep file times, and the toolchain's files must
++        # not change at runtime. No -j: bytecode compiled by parallel workers
++        # depends on which worker compiled which file.
++        "--invalidation-mode",
++        "unchecked-hash",
++        # Some test files are deliberately invalid Python. The test suites'
++        # bytecode is left out of the toolchain's files to match.
++        "-x",
++        r"[/\\]tests?[/\\]",
++        stdlib,
++    ])
++    if result.return_code != 0:
++        fail("Precompiling the Python standard library failed:\n" + result.stdout + result.stderr)
++
++# Bytecode written after the fetch would change the toolchain's files, so only
++# the precompiled bytecode is kept: optimized bytecode and the test suites are
++# never precompiled.
++_PYCACHE_EXCLUDES = ["**/__pycache__/*.pyc*"]
++_PRECOMPILED_PYCACHE_EXCLUDES = [
++    "**/__pycache__/*.opt-*.pyc*",
++    "**/test/**/__pycache__/**",
++    "**/tests/**/__pycache__/**",
++]
++
++_PRECOMPILE_SETTING = "@aspect_rules_py//uv/private/pyc:is_precompile"
++
++def _files_glob(include, exclude, precompiled, allow_empty = False):
++    """A glob of interpreter files that keeps precompiled bytecode when the precompile flag is set."""
++    template = "glob({}, exclude = {{}}{})".format(repr(include), ", allow_empty = True" if allow_empty else "")
++    if not precompiled:
++        return template.format(repr(exclude + _PYCACHE_EXCLUDES))
++    return """select({{
++        "{setting}": {precompiled},
++        "//conditions:default": {plain},
++    }})""".format(
++        setting = _PRECOMPILE_SETTING,
++        precompiled = template.format(repr(exclude + _PRECOMPILED_PYCACHE_EXCLUDES)),
++        plain = template.format(repr(exclude + _PYCACHE_EXCLUDES)),
++    )
++
++def _feature_filegroups(stdlib, is_windows, precompiled):
+     """Generate per-feature filegroup targets and config_settings.
+ 
+     Returns a tuple of (feature_targets_str, all_feature_exclude_patterns).
+@@ -86,19 +151,19 @@ config_setting(
+         lines.append("""\
+ filegroup(
+     name = "_feature_{feature}",
+-    srcs = glob({patterns}, exclude = ["**/__pycache__/*.pyc*"], allow_empty = True),
++    srcs = {srcs},
+ )
+-""".format(feature = feature_name, patterns = repr(patterns)))
++""".format(feature = feature_name, srcs = _files_glob(patterns, [], precompiled, allow_empty = True)))
+ 
+     return "\n".join(lines), all_excludes
+ 
+-def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial):
++def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial, precompiled):
+     """Generate the full BUILD.bazel content for an interpreter repo."""
+ 
+     # A free-threaded build's standard library is lib/python3.14t, not
+     # lib/python3.14.
+     stdlib = "lib/python{}.{}{}".format(major, minor, abi_flags)
+-    feature_targets, feature_excludes = _feature_filegroups(stdlib, is_windows)
++    feature_targets, feature_excludes = _feature_filegroups(stdlib, is_windows, precompiled)
+ 
+     include_dirs = ["include"]
+     if not is_windows:
+@@ -176,19 +241,15 @@ cc_library(
+             headers_abi3_attr = "    headers_abi3 = \":python_headers\",\n"
+ 
+     if is_windows:
+-        core_include = '["**/*.py", "**/*.pyd", "**/*.dll", "**/*.exe", "include/**", "Lib/**"]'
+-        core_exclude = '["Lib/**/test/**", "Lib/**/tests/**", "**/__pycache__/*.pyc*"]'
++        core_include = ["**/*.py", "**/*.pyd", "**/*.dll", "**/*.exe", "include/**", "Lib/**"]
++        core_exclude = ["Lib/**/test/**", "Lib/**/tests/**"]
+     else:
+-        core_include = '["bin/**", "lib/**"]'
+-        core_exclude = repr(
+-            [
+-                "lib/**/*.a",
+-                stdlib + "/**/test/**",
+-                stdlib + "/**/tests/**",
+-                "**/__pycache__/*.pyc*",
+-            ] +
+-            feature_excludes,
+-        )
++        core_include = ["bin/**", "lib/**"]
++        core_exclude = [
++            "lib/**/*.a",
++            stdlib + "/**/test/**",
++            stdlib + "/**/tests/**",
++        ] + feature_excludes
+ 
+     # Build the select() expressions for optional features
+     feature_selects = ""
+@@ -217,10 +278,7 @@ package(default_visibility = ["//visibility:public"])
+ 
+ filegroup(
+     name = "_core",
+-    srcs = glob(
+-        include = {core_include},
+-        exclude = {core_exclude},
+-    ),
++    srcs = {core_srcs},
+ )
+ 
+ filegroup(
+@@ -280,8 +338,7 @@ py_cc_toolchain(
+         serial = serial,
+         feature_targets = feature_targets,
+         feature_selects = feature_selects,
+-        core_include = core_include,
+-        core_exclude = core_exclude,
++        core_srcs = _files_glob(core_include, core_exclude, precompiled),
+     )
+ 
+ python_interpreter = repository_rule(
+diff --git a/py/private/interpreter/resolve.bzl b/py/private/interpreter/resolve.bzl
+index 76647e6f..593a1c6c 100644
+--- a/py/private/interpreter/resolve.bzl
++++ b/py/private/interpreter/resolve.bzl
+@@ -12,7 +12,7 @@ load(":sanitize.bzl", "sanitize")
+ # python_interpreters extension in the root MODULE.bazel.
+ _PBS_PYTHON_VERSION = "3.13"
+ 
+-def _host_platform_triple(ctx):
++def host_platform_triple(ctx):
+     """Determine the PBS platform triple for the current host.
+ 
+     Args:
+@@ -63,7 +63,7 @@ def resolve_host_interpreter_label(ctx):
+         or None if the host platform cannot be determined.
+     """.format(version = _PBS_PYTHON_VERSION)
+ 
+-    triple = _host_platform_triple(ctx)
++    triple = host_platform_triple(ctx)
+     if not triple:
+         return None
+ 
+diff --git a/py/private/interpreter/tests/repository_test.bzl b/py/private/interpreter/tests/repository_test.bzl
+index 7544cec6..3e399884 100644
+--- a/py/private/interpreter/tests/repository_test.bzl
++++ b/py/private/interpreter/tests/repository_test.bzl
+@@ -9,7 +9,7 @@ _PYCACHE_EXCLUDE = 'exclude = ["**/__pycache__/*.pyc*"]'
+ def _feature_filegroups_exclude_pycache_test_impl(ctx):
+     env = unittest.begin(ctx)
+ 
+-    targets, excludes = repository_testlib.feature_filegroups("lib/python3.13", False)
++    targets, excludes = repository_testlib.feature_filegroups("lib/python3.13", False, False)
+ 
+     # One glob per feature, and every one of them ignores bytecode: the
+     # distribution ships none, so a pyc under a feature directory was written
+@@ -23,23 +23,24 @@ def _feature_filegroups_exclude_pycache_test_impl(ctx):
+     asserts.true(env, "lib/python3.13/pydoc_data/**" in excludes)
+ 
+     # Windows generates no feature filegroups.
+-    asserts.equals(env, ("", []), repository_testlib.feature_filegroups("lib/python3.13", True))
++    asserts.equals(env, ("", []), repository_testlib.feature_filegroups("lib/python3.13", True, False))
+ 
+     return unittest.end(env)
+ 
+ feature_filegroups_exclude_pycache_test = unittest.make(_feature_filegroups_exclude_pycache_test_impl)
+ 
+-def _build_file(abi_flags):
++def _build_file(precompiled = False, is_windows = False, abi_flags = ""):
+     return repository_testlib.build_file_content(
+         major = "3",
+         minor = "14",
+         micro = "0",
+-        python_bin = "bin/python3",
++        python_bin = "python.exe" if is_windows else "bin/python3",
+         is_macos = False,
+-        is_windows = False,
++        is_windows = is_windows,
+         abi_flags = abi_flags,
+         releaselevel = "final",
+         serial = "0",
++        precompiled = precompiled,
+     )
+ 
+ def _freethreaded_stdlib_excludes_test_impl(ctx):
+@@ -48,7 +49,7 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+     # A free-threaded build's standard library is lib/python3.14t, so the
+     # test-suite and feature patterns must name that directory, or CPython's
+     # own tests and every optional feature stay in _core.
+-    content = _build_file("t")
++    content = _build_file(abi_flags = "t")
+     for pattern in [
+         "lib/python3.14t/**/test/**",
+         "lib/python3.14t/**/tests/**",
+@@ -58,7 +59,7 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+         asserts.true(env, repr(pattern) in content, pattern)
+     asserts.false(env, "lib/python3.14/" in content)
+ 
+-    content = _build_file("")
++    content = _build_file(abi_flags = "")
+     asserts.true(env, repr("lib/python3.14/**/test/**") in content)
+     asserts.true(env, repr("lib/python3.14/pydoc_data/**") in content)
+     asserts.false(env, "lib/python3.14t/" in content)
+@@ -67,9 +68,37 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+ 
+ freethreaded_stdlib_excludes_test = unittest.make(_freethreaded_stdlib_excludes_test_impl)
+ 
++_PRECOMPILED_PATTERNS = ["**/__pycache__/*.opt-*.pyc*", "**/test/**/__pycache__/**", "**/tests/**/__pycache__/**"]
++
++def _precompiled_stdlib_keeps_bytecode_test_impl(ctx):
++    env = unittest.begin(ctx)
++
++    for is_windows, globs in [(False, 1 + len(INTERPRETER_FEATURES)), (True, 1)]:
++        # With the precompile flag, the precompiled bytecode is kept, since it
++        # is never rewritten. Python can still write optimized bytecode and the
++        # test suites' bytecode, so those stay out of _core and every feature.
++        # Without the flag, every glob leaves out all bytecode, as it does
++        # when nothing was precompiled.
++        content = _build_file(True, is_windows = is_windows)
++        asserts.equals(env, globs, content.count(repr("@aspect_rules_py//uv/private/pyc:is_precompile")))
++        asserts.equals(env, globs, content.count(repr("**/__pycache__/*.pyc*")))
++        for pattern in _PRECOMPILED_PATTERNS:
++            asserts.equals(env, globs, content.count(repr(pattern)), pattern)
++
++        content = _build_file(False, is_windows = is_windows)
++        asserts.false(env, "is_precompile" in content)
++        asserts.equals(env, globs, content.count(repr("**/__pycache__/*.pyc*")))
++        for pattern in _PRECOMPILED_PATTERNS:
++            asserts.false(env, repr(pattern) in content, pattern)
++
++    return unittest.end(env)
++
++precompiled_stdlib_keeps_bytecode_test = unittest.make(_precompiled_stdlib_keeps_bytecode_test_impl)
++
+ def repository_test_suite():
+     unittest.suite(
+         "repository_tests",
+         feature_filegroups_exclude_pycache_test,
+         freethreaded_stdlib_excludes_test,
++        precompiled_stdlib_keeps_bytecode_test,
+     )
+diff --git a/py/private/py_image_layer.bzl b/py/private/py_image_layer.bzl
+index a65510b9..bd5e495a 100644
+--- a/py/private/py_image_layer.bzl
++++ b/py/private/py_image_layer.bzl
+@@ -440,6 +440,11 @@ def _layer_aspect_impl(target, ctx):
+         interp_depset, _ = interpreter_files_and_version(target)
+         if interp_depset == None:
+             return []
++
++        # Images leave out bytecode, as they do for packages
++        # (_should_skip_pkg_path), including the interpreter's precompiled
++        # standard library.
++        interp_depset = depset([f for f in interp_depset.to_list() if "/__pycache__/" not in f.path])
+         plan = ctx.attr._layer_tier[PyLayerTierInfo]
+         interp_group = plan.interpreter_group
+ 
+diff --git a/uv/private/pyc/BUILD.bazel b/uv/private/pyc/BUILD.bazel
+index 2e85ead9..320c5185 100644
+--- a/uv/private/pyc/BUILD.bazel
++++ b/uv/private/pyc/BUILD.bazel
+@@ -1,5 +1,7 @@
+ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+ 
++# Whether `whl_install` compiles wheels to `.pyc` files and the interpreter's
++# files include its precompiled standard library.
+ bool_flag(
+     name = "precompile",
+     build_setting_default = True,

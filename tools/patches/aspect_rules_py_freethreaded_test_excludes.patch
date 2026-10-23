@@ -1,0 +1,205 @@
+diff --git a/e2e/cases/freethreaded-805/test.py b/e2e/cases/freethreaded-805/test.py
+index 579d5355..d15b4063 100644
+--- a/e2e/cases/freethreaded-805/test.py
++++ b/e2e/cases/freethreaded-805/test.py
+@@ -58,6 +58,18 @@ class FreethreadedTest(unittest.TestCase):
+         )
+         self.assertEqual(out.stdout.strip(), "1", out.stderr)
+ 
++    def test_stdlib_test_suite_is_excluded(self) -> None:
++        """CPython's own test suite under lib/python3.<m>t must not be an
++        interpreter input."""
++        # The stdlib path resolves to the fetched repository, which has every
++        # file, so look at the interpreter's files in the runfiles instead.
++        stdlib = sysconfig.get_path("stdlib")
++        repo = os.path.basename(os.path.dirname(os.path.dirname(stdlib)))
++        minor = sys.version_info.minor
++        runfiles_stdlib = os.path.join(os.environ["TEST_SRCDIR"], repo, "lib", f"python3.{minor}t")
++        self.assertTrue(os.path.isfile(os.path.join(runfiles_stdlib, "os.py")), runfiles_stdlib)
++        self.assertFalse(os.path.lexists(os.path.join(runfiles_stdlib, "test")), runfiles_stdlib)
++
+     def test_regex_native_extension_is_freethreaded(self) -> None:
+         """The regex C extension .so must be the freethreaded variant."""
+         import regex
+diff --git a/py/private/interpreter/exclude_feature.bzl b/py/private/interpreter/exclude_feature.bzl
+index b46e0626..b85b9a55 100644
+--- a/py/private/interpreter/exclude_feature.bzl
++++ b/py/private/interpreter/exclude_feature.bzl
+@@ -31,7 +31,8 @@ exclude_feature_flag = rule(
+ 
+ # Feature definitions: maps feature name to the glob patterns it claims
+ # from the interpreter install tree. Used by the interpreter repo rule
+-# to generate per-feature filegroups.
++# to generate per-feature filegroups. `{stdlib}` is the standard library
++# directory, such as lib/python3.14t for a free-threaded build.
+ INTERPRETER_FEATURES = {
+     "headers": {
+         "include": ["include/**"],
+@@ -43,8 +44,8 @@ INTERPRETER_FEATURES = {
+     },
+     "tkinter": {
+         "include": [
+-            "lib/python{major}.{minor}/tkinter/**",
+-            "lib/python{major}.{minor}/lib-dynload/_tkinter*",
++            "{stdlib}/tkinter/**",
++            "{stdlib}/lib-dynload/_tkinter*",
+             "lib/libtcl*",
+             "lib/libtk*",
+             "lib/tcl*/**",
+@@ -55,29 +56,29 @@ INTERPRETER_FEATURES = {
+         "doc": "Tk GUI bindings",
+     },
+     "idle": {
+-        "include": ["lib/python{major}.{minor}/idlelib/**"],
++        "include": ["{stdlib}/idlelib/**"],
+         "doc": "IDLE editor",
+     },
+     "ensurepip": {
+-        "include": ["lib/python{major}.{minor}/ensurepip/**"],
++        "include": ["{stdlib}/ensurepip/**"],
+         "doc": "pip bootstrapper (bundled pip/setuptools wheels)",
+     },
+     "config": {
+-        "include": ["lib/python{major}.{minor}/config-*/**"],
++        "include": ["{stdlib}/config-*/**"],
+         "doc": "Build/link configuration and static libraries",
+     },
+     "pydoc": {
+-        "include": ["lib/python{major}.{minor}/pydoc_data/**"],
++        "include": ["{stdlib}/pydoc_data/**"],
+         "doc": "pydoc HTML templates",
+     },
+     "lib2to3": {
+-        "include": ["lib/python{major}.{minor}/lib2to3/**"],
++        "include": ["{stdlib}/lib2to3/**"],
+         "doc": "Python 2 to 3 conversion tool",
+     },
+     "turtle": {
+         "include": [
+-            "lib/python{major}.{minor}/turtle.py",
+-            "lib/python{major}.{minor}/turtledemo/**",
++            "{stdlib}/turtle.py",
++            "{stdlib}/turtledemo/**",
+         ],
+         "doc": "Turtle graphics",
+     },
+diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
+index 196b8916..9c573a06 100644
+--- a/py/private/interpreter/repository.bzl
++++ b/py/private/interpreter/repository.bzl
+@@ -57,7 +57,7 @@ def _python_interpreter_impl(rctx):
+ 
+     return rctx.repo_metadata(reproducible = True)
+ 
+-def _feature_filegroups(major, minor, is_windows):
++def _feature_filegroups(stdlib, is_windows):
+     """Generate per-feature filegroup targets and config_settings.
+ 
+     Returns a tuple of (feature_targets_str, all_feature_exclude_patterns).
+@@ -71,7 +71,7 @@ def _feature_filegroups(major, minor, is_windows):
+ 
+     for feature_name, feature_info in INTERPRETER_FEATURES.items():
+         patterns = [
+-            p.format(major = major, minor = minor)
++            p.format(stdlib = stdlib)
+             for p in feature_info["include"]
+         ]
+         all_excludes.extend(patterns)
+@@ -95,7 +95,10 @@ filegroup(
+ def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial):
+     """Generate the full BUILD.bazel content for an interpreter repo."""
+ 
+-    feature_targets, feature_excludes = _feature_filegroups(major, minor, is_windows)
++    # A free-threaded build's standard library is lib/python3.14t, not
++    # lib/python3.14.
++    stdlib = "lib/python{}.{}{}".format(major, minor, abi_flags)
++    feature_targets, feature_excludes = _feature_filegroups(stdlib, is_windows)
+ 
+     include_dirs = ["include"]
+     if not is_windows:
+@@ -180,8 +183,8 @@ cc_library(
+         core_exclude = repr(
+             [
+                 "lib/**/*.a",
+-                "lib/python{}.{}/**/test/**".format(major, minor),
+-                "lib/python{}.{}/**/tests/**".format(major, minor),
++                stdlib + "/**/test/**",
++                stdlib + "/**/tests/**",
+                 "**/__pycache__/*.pyc*",
+             ] +
+             feature_excludes,
+@@ -559,5 +562,6 @@ python_toolchains = repository_rule(
+ 
+ # Exposed for unit tests only.
+ repository_testlib = struct(
++    build_file_content = _build_file_content,
+     feature_filegroups = _feature_filegroups,
+ )
+diff --git a/py/private/interpreter/tests/repository_test.bzl b/py/private/interpreter/tests/repository_test.bzl
+index 4a32b80b..7544cec6 100644
+--- a/py/private/interpreter/tests/repository_test.bzl
++++ b/py/private/interpreter/tests/repository_test.bzl
+@@ -9,7 +9,7 @@ _PYCACHE_EXCLUDE = 'exclude = ["**/__pycache__/*.pyc*"]'
+ def _feature_filegroups_exclude_pycache_test_impl(ctx):
+     env = unittest.begin(ctx)
+ 
+-    targets, excludes = repository_testlib.feature_filegroups("3", "13", False)
++    targets, excludes = repository_testlib.feature_filegroups("lib/python3.13", False)
+ 
+     # One glob per feature, and every one of them ignores bytecode: the
+     # distribution ships none, so a pyc under a feature directory was written
+@@ -23,14 +23,53 @@ def _feature_filegroups_exclude_pycache_test_impl(ctx):
+     asserts.true(env, "lib/python3.13/pydoc_data/**" in excludes)
+ 
+     # Windows generates no feature filegroups.
+-    asserts.equals(env, ("", []), repository_testlib.feature_filegroups("3", "13", True))
++    asserts.equals(env, ("", []), repository_testlib.feature_filegroups("lib/python3.13", True))
+ 
+     return unittest.end(env)
+ 
+ feature_filegroups_exclude_pycache_test = unittest.make(_feature_filegroups_exclude_pycache_test_impl)
+ 
++def _build_file(abi_flags):
++    return repository_testlib.build_file_content(
++        major = "3",
++        minor = "14",
++        micro = "0",
++        python_bin = "bin/python3",
++        is_macos = False,
++        is_windows = False,
++        abi_flags = abi_flags,
++        releaselevel = "final",
++        serial = "0",
++    )
++
++def _freethreaded_stdlib_excludes_test_impl(ctx):
++    env = unittest.begin(ctx)
++
++    # A free-threaded build's standard library is lib/python3.14t, so the
++    # test-suite and feature patterns must name that directory, or CPython's
++    # own tests and every optional feature stay in _core.
++    content = _build_file("t")
++    for pattern in [
++        "lib/python3.14t/**/test/**",
++        "lib/python3.14t/**/tests/**",
++        "lib/python3.14t/pydoc_data/**",
++        "lib/python3.14t/tkinter/**",
++    ]:
++        asserts.true(env, repr(pattern) in content, pattern)
++    asserts.false(env, "lib/python3.14/" in content)
++
++    content = _build_file("")
++    asserts.true(env, repr("lib/python3.14/**/test/**") in content)
++    asserts.true(env, repr("lib/python3.14/pydoc_data/**") in content)
++    asserts.false(env, "lib/python3.14t/" in content)
++
++    return unittest.end(env)
++
++freethreaded_stdlib_excludes_test = unittest.make(_freethreaded_stdlib_excludes_test_impl)
++
+ def repository_test_suite():
+     unittest.suite(
+         "repository_tests",
+         feature_filegroups_exclude_pycache_test,
++        freethreaded_stdlib_excludes_test,
+     )

@@ -1,6 +1,8 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
+    "aspect_rules_py_freethreaded_test_excludes.patch",
+    "aspect_rules_py_precompiled_stdlib.patch",
     "aspect_rules_py_windows_free_threaded_headers.patch",
     "aspect_rules_py_windows_long_extension_paths.patch",
     "aspect_rules_py_windows_venv_layout.patch",
