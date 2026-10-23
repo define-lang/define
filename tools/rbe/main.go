@@ -1,8 +1,9 @@
 // Command rbe serves Bazel remote caching and execution for builds on the same
-// machine.
+// machine. It serves on a socket that systemd passes to it; see README.md.
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -20,7 +22,6 @@ import (
 )
 
 func main() {
-	listen := flag.String("listen", "127.0.0.1:50051", "address to serve gRPC on")
 	root := flag.String("root", "", "directory for the store and action directories; inputs are hardlinked, so both must be on one filesystem")
 	maxCasBytes := flag.Int64("max_cas_bytes", 100<<30, "bytes of blobs to keep before evicting the least recently used")
 	maxDirectories := flag.Int("max_cached_directories", 100_000, "decoded input directories to keep in memory")
@@ -39,9 +40,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("creating the executor: %v", err)
 	}
-	listener, err := net.Listen("tcp", *listen)
+	listener, err := systemdListener()
 	if err != nil {
-		log.Fatalf("listening on %s: %v", *listen, err)
+		log.Fatalf("getting the socket from systemd: %v", err)
 	}
 	server := grpc.NewServer(
 		grpc.MaxRecvMsgSize(service.MaxMessageBytes),
@@ -55,8 +56,21 @@ func main() {
 		<-signals
 		server.Stop()
 	}()
-	log.Printf("serving on %s", *listen)
+	log.Printf("serving on %s", listener.Addr())
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("serving: %v", err)
 	}
+}
+
+// systemdListener returns the one socket that systemd passed to this process.
+// systemd holds the socket while the service restarts, so clients that connect
+// during a deploy wait instead of failing.
+func systemdListener() (net.Listener, error) {
+	if os.Getenv("LISTEN_PID") != strconv.Itoa(os.Getpid()) || os.Getenv("LISTEN_FDS") != "1" {
+		return nil, errors.New("expected exactly one socket from systemd socket activation")
+	}
+	// systemd passes its sockets starting at file descriptor 3.
+	file := os.NewFile(3, "systemd socket")
+	defer file.Close()
+	return net.FileListener(file)
 }

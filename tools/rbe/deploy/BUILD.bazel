@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_binary")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_binary(
+    name = "deploy",
+    srcs = ["main.go"],
+    args = ["$(rlocationpath //tools/rbe)"],
+    data = ["//tools/rbe"],
+    deps = [
+        "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:execution",
+        "@org_golang_google_grpc//:grpc",
+        "@org_golang_google_grpc//credentials/insecure",
+    ],
+)
+
+check_build_file()

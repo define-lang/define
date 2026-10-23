@@ -1,0 +1,13 @@
+[Unit]
+Description=Store for remote execution of local Bazel builds
+RequiresMountsFor=/var/lib/rbe
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Direct I/O keeps the kernel from caching the store's data twice, once for the
+# image file and once for XFS. mount -o loop can't turn it on, so attach the
+# image here. Detaching a mounted loop device makes the kernel detach it when
+# it's unmounted, or now if the mount failed.
+ExecStart=/bin/sh -c 'device=$(losetup --find --show --direct-io=on --sector-size=4096 /var/lib/rbe/store.img) || exit; mount -o noatime "$device" /var/lib/rbe/store; status=$?; losetup --detach "$device"; exit $status'
+ExecStop=/usr/bin/umount /var/lib/rbe/store

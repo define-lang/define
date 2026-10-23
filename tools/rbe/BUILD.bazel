@@ -4,6 +4,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 go_binary(
     name = "rbe",
     embed = [":rbe_lib"],
+    visibility = ["//tools/rbe/deploy:__pkg__"],
 )
 
 go_library(

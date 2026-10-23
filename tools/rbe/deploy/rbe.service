@@ -1,0 +1,12 @@
+[Unit]
+Description=Remote execution for local Bazel builds
+Requires=rbe.socket rbe-store.service
+After=rbe.socket rbe-store.service
+
+[Service]
+User=rbe
+Group=rbe
+# setup.sh sets MAX_CAS_BYTES from the size of the store's filesystem.
+ExecStart=/usr/local/libexec/rbe/rbe --root=/var/lib/rbe/store --max_cas_bytes=${MAX_CAS_BYTES}
+Restart=on-failure
+LimitNOFILE=65536

@@ -1,0 +1,13 @@
+[Unit]
+Description=Socket for remote execution of local Bazel builds
+
+[Socket]
+ListenStream=/run/rbe/rbe.sock
+SocketUser=rbe
+# Anyone who can connect can run commands as the rbe user, so only the socket's
+# group may connect. setup.sh makes it the primary group of the developer who
+# ran it.
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target
