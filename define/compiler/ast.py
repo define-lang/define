@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import abc
 import sys
 
 # Code that reads the constructor signature of an AST class, such as the
@@ -32,10 +31,6 @@ type Derived[T] = T
 # Marks a field whose value is computed from the other fields the first time it
 # is used, which every constructor, including the parser's, leaves as `None`.
 type ComputedOnFirstUse[T] = T
-
-
-class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
-    """Combine msgspec struct construction with abstract AST base classes."""
 
 
 # A program has millions of these, and they never form reference cycles, so the
@@ -83,8 +78,10 @@ def start_of_file_location(
 
 
 # A program has millions of nodes, and they never form reference cycles, so the
-# garbage collector does not track them.
-class ASTNode(msgspec.Struct, metaclass=ASTNodeMeta, eq=False, gc=False):
+# garbage collector does not track them. AST classes are not `abc.ABC`s, because
+# `abc.ABCMeta` would run every `isinstance` check against them through
+# `ABCMeta.__instancecheck__`, which was 4% of a compile.
+class ASTNode(msgspec.Struct, eq=False, gc=False):
     """Base class for all AST nodes.
 
     Treat nodes as immutable after construction so cached values remain valid.
@@ -275,13 +272,13 @@ class PositionDefinition(QualityDefinition):
         return tuple(req.typed_global_name for req in self.constraints.requirements)
 
 
-class NameContent(ASTNode, abc.ABC):
+class NameContent(ASTNode):
     """Base class for name content nodes (local or global)."""
 
     @property
-    @abc.abstractmethod
     def source_name(self) -> str:
         """The inner content as it appears in the source."""
+        raise NotImplementedError
 
 
 class LocalNameContent(NameContent):
@@ -489,7 +486,7 @@ ChainedNameTupleT_co = TypeVar(
 )
 
 
-class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
+class ChainedName(ASTNode, Generic[ChainedNameTupleT_co]):
     """A chain of typed name references joined by ::.
 
     Treat location and typed_names as immutable after construction so that
@@ -528,11 +525,11 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
             )
         return self._canonical_chained_name_tuple
 
-    @abc.abstractmethod
     def _tag(
-        self, canonical_names: chained_name.ChainedNameTuple
+        self, _canonical_names: chained_name.ChainedNameTuple, /
     ) -> ChainedNameTupleT_co:
         """Tag canonical typed names with this chained name's kind."""
+        raise NotImplementedError
 
     @property
     def canonical_chained_name(self) -> str:
