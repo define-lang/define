@@ -12,17 +12,17 @@ command-line flags. For example, you might compile a C++ program like:
 
 ```bash
 g++ -std=c++17 -O2 -march=native -Wall -Wextra -Werror -Wno-unused-parameter \
-    -I./include -I./third_party/boost/include -I./third_party/protobuf/include \
-    -I/usr/local/include -I./generated/proto \
-    -DDEBUG=1 -DLOG_LEVEL=3 -DFEATURE_FLAG_ENABLED -DVERSION_STRING="1.2.3" \
-    -DPLATFORM_LINUX -DARCH_X86_64 \
-    -L./lib -L./third_party/boost/lib -L/usr/local/lib \
-    -lboost_system -lboost_filesystem -lprotobuf -lpthread -ldl \
-    -g -fno-omit-frame-pointer -fstack-protector-strong \
-    -Wl,-rpath,./lib -Wl,-rpath,./third_party/boost/lib \
-    -o my_program \
-    src/main.cpp src/utils.cpp src/parser.cpp src/network.cpp \
-    generated/proto/messages.pb.cc
+	-I./include -I./third_party/boost/include -I./third_party/protobuf/include \
+	-I/usr/local/include -I./generated/proto \
+	-DDEBUG=1 -DLOG_LEVEL=3 -DFEATURE_FLAG_ENABLED -DVERSION_STRING="1.2.3" \
+	-DPLATFORM_LINUX -DARCH_X86_64 \
+	-L./lib -L./third_party/boost/lib -L/usr/local/lib \
+	-lboost_system -lboost_filesystem -lprotobuf -lpthread -ldl \
+	-g -fno-omit-frame-pointer -fstack-protector-strong \
+	-Wl,-rpath,./lib -Wl,-rpath,./third_party/boost/lib \
+	-o my_program \
+	src/main.cpp src/utils.cpp src/parser.cpp src/network.cpp \
+	generated/proto/messages.pb.cc
 ```
 
 Obviously, this is very hard to read. It also causes numerous problems in

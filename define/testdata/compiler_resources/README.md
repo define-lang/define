@@ -9,13 +9,13 @@ Execution paths for guarantee propagation.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_action_graph_source -- \
-  --output define/testdata/compiler_resources/guarantee_expansion.dfn \
-  --layers 20 \
-  --width 10 \
-  --fan-out 10 \
-  --destructor-fraction 0.5 \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_action_graph_source -- \
+	--output define/testdata/compiler_resources/guarantee_expansion.dfn \
+	--layers 20 \
+	--width 10 \
+	--fan-out 10 \
+	--destructor-fraction 0.5 \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Deep Position Requirements
@@ -25,11 +25,11 @@ callers.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_deep_pipeline_source -- \
-  --output define/testdata/compiler_resources/deep_requirements.dfn \
-  --pipelines 8 \
-  --processing-stages 30 \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_deep_pipeline_source -- \
+	--output define/testdata/compiler_resources/deep_requirements.dfn \
+	--pipelines 8 \
+	--processing-stages 30 \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Destruction Contracts
@@ -39,15 +39,15 @@ with shared child names.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_destruction_contracts_source -- \
-  --output define/testdata/compiler_resources/destruction_contracts.dfn \
-  --callers 4 \
-  --call-depth 20 \
-  --pass-through-actions 1 \
-  --local-children 3 \
-  --repetitions 2 \
-  --shared-child-paths \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_destruction_contracts_source -- \
+	--output define/testdata/compiler_resources/destruction_contracts.dfn \
+	--callers 4 \
+	--call-depth 20 \
+	--pass-through-actions 1 \
+	--local-children 3 \
+	--repetitions 2 \
+	--shared-child-paths \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Large operation volume
@@ -57,10 +57,10 @@ one action.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_large_define_source -- \
-  --output define/testdata/compiler_resources/large_operation_volume.dfn \
-  --lines 2500 \
-  --fqun mv:define-lang.org:compiler_memory:/test
+	//tools/generators:generate_large_define_source -- \
+	--output define/testdata/compiler_resources/large_operation_volume.dfn \
+	--lines 2500 \
+	--fqun mv:define-lang.org:compiler_memory:/test
 ```
 
 ## Particle Operations
@@ -70,17 +70,17 @@ action executions, and destruction.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_particle_operations_source -- \
-  --output define/testdata/compiler_resources/particle_operations.dfn \
-  --repetitions 12 \
-  --move-chain-length 20 \
-  --tree-depth 20 \
-  --wide-children 28 \
-  --pods 2 \
-  --retriggers 2 \
-  --independent-move-branches 96 \
-  --independent-move-chain-length 96 \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_particle_operations_source -- \
+	--output define/testdata/compiler_resources/particle_operations.dfn \
+	--repetitions 12 \
+	--move-chain-length 20 \
+	--tree-depth 20 \
+	--wide-children 28 \
+	--pods 2 \
+	--retriggers 2 \
+	--independent-move-branches 96 \
+	--independent-move-chain-length 96 \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Many substantial actions
@@ -90,13 +90,13 @@ substantial bodies.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_action_codegen_source -- \
-  --output define/testdata/compiler_resources/many_substantial_actions.dfn \
-  --actions 650 \
-  --chains-per-action 4 \
-  --topology-groups 0 \
-  --topology-width 1 \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_action_codegen_source -- \
+	--output define/testdata/compiler_resources/many_substantial_actions.dfn \
+	--actions 650 \
+	--chains-per-action 4 \
+	--topology-groups 0 \
+	--topology-width 1 \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Wide destruction
@@ -106,13 +106,13 @@ Positions.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_action_codegen_source -- \
-  --output define/testdata/compiler_resources/wide_destruction.dfn \
-  --actions 0 \
-  --chains-per-action 1 \
-  --topology-groups 80 \
-  --topology-width 40 \
-  --fqun-prefix mv:define-lang.org:compiler_memory
+	//tools/generators:generate_action_codegen_source -- \
+	--output define/testdata/compiler_resources/wide_destruction.dfn \
+	--actions 0 \
+	--chains-per-action 1 \
+	--topology-groups 80 \
+	--topology-width 40 \
+	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
 ## Many-file reference graph
@@ -125,14 +125,14 @@ a new destination.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_reference_graph_project -- \
-  --output define/testdata/compiler_resources/reference_graph_project \
-  --modules 2000 \
-  --layers 20 \
-  --fan-out 3 \
-  --utility-fraction 0.3 \
-  --seed 7 \
-  --universe-name mv:define-lang.org:compiler_memory
+	//tools/generators:generate_reference_graph_project -- \
+	--output define/testdata/compiler_resources/reference_graph_project \
+	--modules 2000 \
+	--layers 20 \
+	--fan-out 3 \
+	--utility-fraction 0.3 \
+	--seed 7 \
+	--universe-name mv:define-lang.org:compiler_memory
 ```
 
 ## Reference depth updates
@@ -144,17 +144,17 @@ Remove each destination directory before regenerating it.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_reference_graph_project -- \
-  --output define/testdata/compiler_resources/reference_depth_updates_project \
-  --shape depth-updates \
-  --modules 8192
+	//tools/generators:generate_reference_graph_project -- \
+	--output define/testdata/compiler_resources/reference_depth_updates_project \
+	--shape depth-updates \
+	--modules 8192
 
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_reference_graph_project -- \
-  --output define/testdata/compiler_resources/reference_depth_updates_control_project \
-  --shape depth-updates \
-  --modules 8192 \
-  --reverse-references
+	//tools/generators:generate_reference_graph_project -- \
+	--output define/testdata/compiler_resources/reference_depth_updates_control_project \
+	--shape depth-updates \
+	--modules 8192 \
+	--reverse-references
 ```
 
 ## Pending Action Guarantees
@@ -164,10 +164,10 @@ of unrelated particles.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_pending_guarantees_source -- \
-  --output define/testdata/compiler_resources/pending_guarantees.dfn \
-  --pending-positions 512 \
-  --destroyed-positions 512
+	//tools/generators:generate_pending_guarantees_source -- \
+	--output define/testdata/compiler_resources/pending_guarantees.dfn \
+	--pending-positions 512 \
+	--destroyed-positions 512
 ```
 
 ## Quality Implications
@@ -177,28 +177,28 @@ through a linearly growing number of qualities.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_quality_implications_source -- \
-  --output define/testdata/compiler_resources/quality_implications.dfn \
-  --layers 32 --width 2 --fan-out 2 --assignments 1
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/quality_implications.dfn \
+	--layers 32 --width 2 --fan-out 2 --assignments 1
 
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_quality_implications_source -- \
-  --output define/testdata/compiler_resources/quality_implications_control.dfn \
-  --layers 12 --width 2 --fan-out 2 --assignments 1
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/quality_implications_control.dfn \
+	--layers 12 --width 2 --fan-out 2 --assignments 1
 ```
 
 ## Pending Action Guarantee CPU growth
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_pending_guarantees_source -- \
-  --output define/testdata/compiler_resources/pending_guarantees_growth_control.dfn \
-  --pending-positions 1024 --destroyed-positions 102
+	//tools/generators:generate_pending_guarantees_source -- \
+	--output define/testdata/compiler_resources/pending_guarantees_growth_control.dfn \
+	--pending-positions 1024 --destroyed-positions 102
 
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_pending_guarantees_source -- \
-  --output define/testdata/compiler_resources/pending_guarantees_growth.dfn \
-  --pending-positions 8192 --destroyed-positions 819
+	//tools/generators:generate_pending_guarantees_source -- \
+	--output define/testdata/compiler_resources/pending_guarantees_growth.dfn \
+	--pending-positions 8192 --destroyed-positions 819
 ```
 
 ## Destroying triggered children
@@ -225,14 +225,14 @@ triggering it again, so there are no child particles.
 
 ```sh
 for shape in local destructors contracted move rearrange rearrange-destructors error dependent-siblings in-destructor in-destructor-contracted same-particle; do
-  suffix=$([ "$shape" = local ] && echo "" || echo "_${shape//-/_}")
-  bazelisk run --noshow_progress --ui_event_filters=-info \
-    //tools/generators:generate_triggered_children_destruction_source -- \
-    --output "define/testdata/compiler_resources/triggered_children_destruction${suffix}_control.dfn" \
-    --depth 10 --fan-out 2 --shape "$shape"
-  bazelisk run --noshow_progress --ui_event_filters=-info \
-    //tools/generators:generate_triggered_children_destruction_source -- \
-    --output "define/testdata/compiler_resources/triggered_children_destruction${suffix}.dfn" \
-    --depth 24 --fan-out 2 --shape "$shape"
+	suffix=$([ "$shape" = local ] && echo "" || echo "_${shape//-/_}")
+	bazelisk run --noshow_progress --ui_event_filters=-info \
+		//tools/generators:generate_triggered_children_destruction_source -- \
+		--output "define/testdata/compiler_resources/triggered_children_destruction${suffix}_control.dfn" \
+		--depth 10 --fan-out 2 --shape "$shape"
+	bazelisk run --noshow_progress --ui_event_filters=-info \
+		//tools/generators:generate_triggered_children_destruction_source -- \
+		--output "define/testdata/compiler_resources/triggered_children_destruction${suffix}.dfn" \
+		--depth 24 --fan-out 2 --shape "$shape"
 done
 ```

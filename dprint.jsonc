@@ -22,7 +22,7 @@
   // after each URL.
   "plugins": [
     // renovate: depName=dprint/dprint-plugin-markdown
-    "https://plugins.dprint.dev/markdown-0.26.0.wasm@5cebd0459bf1aa13fb027331720158d03e2a897b1d9f7b3bf93cac661ca4ddbd",
+    "https://plugins.dprint.dev/markdown-0.27.1.wasm@92486ceb94205c01209e981fd860d68317a14ff2375f8b916289f2b0baded129",
     // renovate: depName=dprint/dprint-plugin-oxc
     "https://plugins.dprint.dev/oxc-0.47.0.wasm@531f729b3ebf18203a07b9c2da869eef5003130ac6a8936c2eca28cf6ee8b20b",
     // renovate: depName=kachick/dprint-plugin-sh
