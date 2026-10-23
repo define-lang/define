@@ -279,10 +279,6 @@ class LocalNameContent(NameContent):
 
     name: str
 
-    def __post_init__(self):
-        """Intern the local name."""
-        self.name = sys.intern(self.name)
-
     @property
     @override
     def source_name(self) -> str:
@@ -855,10 +851,6 @@ class GlobalPathName(ASTNode):
 
     name: str
 
-    def __post_init__(self):
-        """Intern the global path name."""
-        self.name = sys.intern(self.name)
-
     @property
     def relative_path(self) -> define_path.DefinePath:
         """The path as a relative DefinePath."""
@@ -1013,29 +1005,17 @@ class Multiverse(ASTNode):
 
     name: str
 
-    def __post_init__(self):
-        """Intern the multiverse name."""
-        self.name = sys.intern(str(self.name))
-
 
 class Universe(ASTNode):
     """Represents a universe name."""
 
     name: str
 
-    def __post_init__(self):
-        """Intern the universe name."""
-        self.name = sys.intern(str(self.name))
-
 
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
     name: str
-
-    def __post_init__(self):
-        """Intern the authority name."""
-        self.name = sys.intern(str(self.name))
 
 
 class Fqun(ASTNode):
