@@ -57,9 +57,9 @@ After changing the code in `tools/rbe`, run:
 bazelisk run //tools/rbe/deploy
 ```
 
-This installs the new binary and restarts the service. Actions running at that
-moment fail, so deploy between builds. Bazel waits during the restart instead of
-failing to connect.
+This installs the new binary and restarts the service. A build that's running
+keeps going: Bazel waits for the service to come back and runs again the actions
+the restart cut off.
 
 The service logs to the journal: `journalctl -u rbe.service`.
 
