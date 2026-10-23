@@ -23,14 +23,12 @@ from define.compiler import (
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
-from define.compiler.parsing import parser_error_classification
+from define.compiler.parsing.native import native_parser
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
-
-    from define.compiler.parsing import parser
 
 
 class FileValidationContext(msgspec.Struct, frozen=True, dict=True):
@@ -74,12 +72,6 @@ class FileStructuralValidator:
     the coordinator to process.
     """
 
-    _parser: parser.Parser
-
-    def __init__(self, lark_parser: parser.Parser):
-        """Initialize with a shared parser instance."""
-        self._parser = lark_parser
-
     def validate_file(
         self, context: FileValidationContext
     ) -> validation_result.FileValidationResult:
@@ -115,25 +107,25 @@ class FileStructuralValidator:
         tracker.mark_file_loading_finished()
         return self._validate_source(
             context=context,
-            source=source,
+            # A lone surrogate becomes invalid UTF-8, as it would be in a file,
+            # instead of failing to encode.
+            source=source.encode(errors="surrogatepass"),
             source_digest=None,
             tracker=tracker,
         )
 
+    @staticmethod
     def _validate_source(
-        self,
         context: FileValidationContext,
-        source: str,
+        source: bytes,
         source_digest: bytes | None,
         tracker: stats.ValidationStatsTracker,
     ) -> validation_result.FileValidationResult:
-        """Parse, transform, and validate source text."""
+        """Parse and validate UTF-8 source text."""
         parser_file_path = (
             context.full_path.as_posix_path() if context.is_filesystem_context else None
         )
-        parse_result = self._parser.parse_and_transform(
-            source, file_path=parser_file_path
-        )
+        parse_result = native_parser.parse(source, parser_file_path)
         tracker.mark_parse_finished()
 
         if parse_result.exception is not None:
@@ -184,31 +176,20 @@ class FileStructuralValidator:
     @staticmethod
     def _load_file(
         path: define_path.DefinePath,
-    ) -> tuple[str, bytes | None, validation_result.AnyValidationException | None]:
-        """Load a Define source file and return its source, digest, and syntax errors."""
+    ) -> tuple[bytes, bytes | None, validation_result.AnyValidationException | None]:
+        """Load a Define source file and return its source, digest, and loading error."""
         posix_path = path.as_posix_path()
         try:
-            raw = pathlib.Path(posix_path).read_bytes()
+            source = pathlib.Path(posix_path).read_bytes()
         except FileNotFoundError:
             return (
-                "",
+                b"",
                 None,
                 exceptions.SourceFileNotFoundError(
                     filesystem_path=pathlib.Path(posix_path)
                 ),
             )
-        digest = source_map.source_digest(raw)
-        try:
-            source = raw.decode("utf-8")
-        except UnicodeDecodeError as e:
-            return (
-                "",
-                digest,
-                parser_error_classification.make_invalid_encoding_error(
-                    raw, e, posix_path
-                ),
-            )
-        return source, digest, None
+        return source, source_map.source_digest(source), None
 
 
 class DefinitionStructuralValidator:

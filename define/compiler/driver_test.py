@@ -12,15 +12,12 @@ import pytest
 from define.compiler import driver
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, exceptions
-from define.compiler.parsing import parser
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.validator import validation_result
-
-_PARSER = parser.Parser()
 
 
 def _setup_project(tmp_path: Path, universe_name: str):
@@ -50,7 +47,7 @@ class TestPathFormats:
         _write_source(tmp_path, "sub/test.dfn", source)
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver(_PARSER)
+        d = driver.Driver()
         driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.dfn")))
         assert len(driver_result.program_validation.file_results) == 1
         result = driver_result.program_validation.file_results[0]
@@ -71,7 +68,7 @@ class TestPathResolution:
         )
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver(_PARSER).validate_program(source_file)
+        driver_result = driver.Driver().validate_program(source_file)
         assert len(driver_result.program_validation.file_results) == 1
         assert_no_errors(driver_result.program_validation)
         assert driver_result.program_validation.file_results[
@@ -89,7 +86,7 @@ class TestPathResolution:
         source_file = outside / "hello.dfn"
         monkeypatch.chdir(project)
 
-        d = driver.Driver(_PARSER)
+        d = driver.Driver()
         with pytest.raises(exceptions.AbsolutePathError) as exc_info:
             d.validate_program(source_file)
         assert exc_info.value.input_path == source_file
@@ -108,9 +105,7 @@ class TestPathResolution:
         )
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver(_PARSER).validate_program(
-            Path("sub/../hello.dfn")
-        )
+        driver_result = driver.Driver().validate_program(Path("sub/../hello.dfn"))
         assert len(driver_result.program_validation.file_results) == 1
         assert_no_errors(driver_result.program_validation)
         assert driver_result.program_validation.file_results[
@@ -133,7 +128,7 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.dfn"))
+        driver_result = driver.Driver().validate_program(Path("link/hello.dfn"))
         assert len(driver_result.program_validation.file_results) == 1
         assert_no_errors(driver_result.program_validation)
         assert driver_result.program_validation.file_results[
@@ -151,7 +146,7 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        d = driver.Driver(_PARSER)
+        d = driver.Driver()
         with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_program(Path("link/../hello.dfn"))
         assert exc_info.value.input_path == Path("link/../hello.dfn")
@@ -170,9 +165,7 @@ class TestPathResolution:
         (tmp_path / "link").symlink_to(tmp_path / "real" / "sub")
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver(_PARSER).validate_program(
-            Path("link/../hello.dfn")
-        )
+        driver_result = driver.Driver().validate_program(Path("link/../hello.dfn"))
         assert len(driver_result.program_validation.file_results) == 1
         assert_no_errors(driver_result.program_validation)
         assert driver_result.program_validation.file_results[
@@ -185,7 +178,7 @@ class TestPathResolution:
         _setup_project(tmp_path, "test.example.com:my_lib")
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver(_PARSER)
+        d = driver.Driver()
         with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_program(Path("../hello.dfn"))
         assert exc_info.value.input_path == Path("../hello.dfn")
@@ -234,15 +227,13 @@ class TestSourceValidation:
                 side_effect=validate_reference_graph,
             ),
         ):
-            driver_result = driver.Driver(_PARSER).validate_source(
-                source, max_threads=3
-            )
+            driver_result = driver.Driver().validate_source(source, max_threads=3)
 
         assert_no_errors(driver_result.program_validation)
 
     def test_clean_source_validates_with_no_errors(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        driver_result = driver.Driver(_PARSER).validate_source(source)
+        driver_result = driver.Driver().validate_source(source)
         assert len(driver_result.program_validation.file_results) == 1
         assert_no_errors(driver_result.program_validation)
         assert driver_result.program_validation.file_results[0].source_digest is None
@@ -252,7 +243,7 @@ class TestSourceValidation:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
-        driver_result = driver.Driver(_PARSER).validate_source(source)
+        driver_result = driver.Driver().validate_source(source)
         assert driver_result.program_validation.all_exceptions == []
         all_diagnostics = driver_result.program_validation.all_diagnostics
         assert len(all_diagnostics) == 1
@@ -277,7 +268,7 @@ class TestSourceCompilation:
             "    }\n"
             "}\n"
         )
-        driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
+        driver_result = driver.Driver().compile_source(source, tmp_path)
         assert_no_errors(driver_result)
         main_file = tmp_path / "__main__.py"
         assert main_file.exists()
@@ -285,7 +276,7 @@ class TestSourceCompilation:
 
     def test_position_entry_point_reports_diagnostic(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
+        driver_result = driver.Driver().compile_source(source, tmp_path)
         assert driver_result.all_exceptions == []
         all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1
@@ -308,7 +299,7 @@ class TestSourceCompilation:
             "    }\n"
             "}\n"
         )
-        driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
+        driver_result = driver.Driver().compile_source(source, tmp_path)
         assert driver_result.all_exceptions == []
         all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1

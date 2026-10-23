@@ -26,7 +26,11 @@ py_library(
 py_library(
     name = "native_parser",
     srcs = ["native_parser.pyi"],
-    visibility = ["//define/compiler/parsing:__subpackages__"],
+    visibility = [
+        "//define/compiler/parsing:__subpackages__",
+        "//define/compiler/validator/structural:__pkg__",
+        "//tools/generators:__pkg__",
+    ],
     deps = [
         ":parser_extension",  # keep: supplies the native implementation of this stub
         "//define/compiler:ast",

@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 import msgspec
 import pytest
 
-from define.compiler.parsing import parser
 from define.compiler.validator import test_helpers
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
@@ -20,8 +19,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler.validator import validation_result
-
-_PARSER = parser.Parser()
 
 
 class FullValidationResult(msgspec.Struct):
@@ -90,7 +87,6 @@ def validate_project(
             file_path.write_text(content, encoding="utf-8", newline="\n")
         monkeypatch.chdir(tmp_path)
         structural_result = program_validator.ProgramStructuralValidator(
-            _PARSER,
             allow_entry_action_interface_positions=(
                 allow_entry_action_interface_positions
             ),
@@ -190,7 +186,6 @@ def validate_testdata_structural_non_filesystem(
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         return program_validator.ProgramStructuralValidator(
-            _PARSER,
             allow_entry_action_interface_positions=(
                 allow_entry_action_interface_positions
             ),
@@ -217,7 +212,6 @@ def validate_testdata_structural(
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         return program_validator.ProgramStructuralValidator(
-            _PARSER,
             allow_entry_action_interface_positions=(
                 allow_entry_action_interface_positions
             ),
@@ -247,7 +241,6 @@ def validate_testdata_non_filesystem_with_reference_graph(
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         result = program_validator.ProgramStructuralValidator(
-            _PARSER,
             allow_entry_action_interface_positions=(
                 allow_entry_action_interface_positions
             ),
@@ -319,7 +312,6 @@ def validate_testdata_project_with_reference_graph(
     ) -> FullValidationResult:
         monkeypatch.chdir(directory)
         structural_result = program_validator.ProgramStructuralValidator(
-            _PARSER,
             allow_entry_action_interface_positions=(
                 allow_entry_action_interface_positions
             ),

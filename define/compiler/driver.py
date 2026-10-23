@@ -28,7 +28,6 @@ if typing.TYPE_CHECKING:
     import collections.abc
 
     from define.compiler import ast
-    from define.compiler.parsing import parser
     from define.compiler.validator import codegen_input as codegen_input_types
     from define.compiler.validator import validation_result
 
@@ -151,23 +150,12 @@ class CompilationResult(CompilerResult):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    def __init__(self, parser_instance: parser.Parser | None = None):
-        """Initialize the driver.
-
-        If parser_instance is provided, it will be used instead of
-        constructing a new one. This is only a performance optimization
-        that avoids reconstructing the Lark grammar on each compilation.
-        """
-        self._parser_instance: parser.Parser | None = parser_instance
-
     def validate_program(
         self, path: Path, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        structural_validator = program_validator.ProgramStructuralValidator(
-            self._parser_instance
-        )
+        structural_validator = program_validator.ProgramStructuralValidator()
         program_validation = structural_validator.validate_program(
             path=resolved_path, max_workers=max_threads
         )
@@ -183,9 +171,7 @@ class Driver:
         self, source: str, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
         """Validate source text in non-filesystem mode."""
-        structural_validator = program_validator.ProgramStructuralValidator(
-            self._parser_instance
-        )
+        structural_validator = program_validator.ProgramStructuralValidator()
         program_validation = structural_validator.validate_program_non_filesystem(
             source, max_workers=max_threads
         )

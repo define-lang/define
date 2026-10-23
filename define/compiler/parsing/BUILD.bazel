@@ -134,7 +134,6 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":parser",
         ":parser_comparison",
         "//define/compiler:ast",
         "//define/compiler/parsing/native:native_parser",

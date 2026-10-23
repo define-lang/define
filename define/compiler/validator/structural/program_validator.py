@@ -22,7 +22,6 @@ from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
-from define.compiler.parsing import parser
 from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
 
@@ -42,15 +41,11 @@ class _FileWorkPool:
     _executor: ThreadPoolExecutor
     _fv: file_validator.FileStructuralValidator
 
-    def __init__(
-        self,
-        parser_instance: parser.Parser,
-        max_workers: int | None = None,
-    ):
+    def __init__(self, max_workers: int | None = None):
         """Initialize with pool configuration only — no side effects."""
         self._pending = 0
         self._completed = queue.SimpleQueue()
-        self._fv = file_validator.FileStructuralValidator(parser_instance)
+        self._fv = file_validator.FileStructuralValidator()
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def __enter__(self) -> typing.Self:
@@ -100,7 +95,6 @@ class ProgramStructuralValidator:
     config_loading_time_ns stores program-level config loading time.
     """
 
-    _parser: parser.Parser
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
@@ -113,22 +107,15 @@ class ProgramStructuralValidator:
 
     def __init__(
         self,
-        parser_instance: parser.Parser | None = None,
         *,
         allow_entry_action_interface_positions: bool = False,
     ):
         """Initialize coordinator state for one program validation.
 
-        If parser_instance is provided, it will be used instead of
-        constructing a new one. This is only a performance optimization
-        that avoids reconstructing the Lark grammar on each validation.
-
         allow_entry_action_interface_positions exists only for validation tests
         that specifically require an entry action with interface positions. It
         must remain false when validating a program for code generation.
         """
-        # Lark parsers are thread-safe, so sharing one instance is safe.
-        self._parser = parser_instance or parser.Parser()
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
@@ -160,7 +147,7 @@ class ProgramStructuralValidator:
             root_config=root_config,
         )
 
-        with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
+        with _FileWorkPool(max_workers=max_workers) as pool:
             self._path_tracker.mark_in_progress(root_prefix / path_dp)
             pool.submit(initial_context)
             self._run_pool_loop(pool)
@@ -175,9 +162,7 @@ class ProgramStructuralValidator:
         max_workers: int | None = None,
     ) -> validation_result.ProgramValidationResult:
         """Validate a program from source text, loading config only when needed."""
-        result = file_validator.FileStructuralValidator(self._parser).validate_source(
-            source
-        )
+        result = file_validator.FileStructuralValidator().validate_source(source)
         if result.exception is not None:
             return self._build_program_result([result], in_memory_source=source)
 
@@ -187,7 +172,7 @@ class ProgramStructuralValidator:
         # for filesystem-prefix queries, so omitting it is harmless.
         self._path_tracker.set_result(result.file_path, result)
 
-        with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
+        with _FileWorkPool(max_workers=max_workers) as pool:
             self._resolve_non_filesystem_references(result, pool)
             self._process_completed_result(result, pool, submit_referenced_files=False)
             self._run_pool_loop(pool)

@@ -114,7 +114,6 @@ py_library(
     testonly = True,
     srcs = ["test_helpers.py"],
     deps = [
-        "//define/compiler/parsing:parser",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",

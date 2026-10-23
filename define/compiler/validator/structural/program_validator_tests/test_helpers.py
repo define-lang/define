@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler.parsing import parser
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -15,8 +14,6 @@ if TYPE_CHECKING:
     import pytest
 
     from define.compiler.validator import validation_result
-
-_PARSER = parser.Parser()
 
 
 def parse_and_validate_file(
@@ -34,7 +31,7 @@ def parse_and_validate_file(
         _ = source_path.write_bytes(source)
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramStructuralValidator(_PARSER)
+        program_validator.ProgramStructuralValidator()
         .validate_program(relative_path)
         .file_results
     )

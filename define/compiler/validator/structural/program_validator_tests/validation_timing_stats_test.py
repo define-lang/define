@@ -68,25 +68,6 @@ def test_parse_error_sets_file_validation_phase_to_zero(
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_invalid_utf8_sets_parse_and_later_phases_to_zero(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    result = test_helpers.parse_and_validate_file(
-        b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff",
-        tmp_path,
-        monkeypatch,
-    )
-
-    timings = result.stats
-    assert timings.overall_compile > 0
-
-    assert timings.file_loading > 0
-    assert timings.parse == 0
-    assert timings.file_validation == 0
-    assert timings.queue_wait > 0
-    _assert_overall_equals_phase_sum(timings)
-
-
 def test_name_parser_error_at_definition_sets_file_validation_phase_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

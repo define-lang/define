@@ -29,7 +29,7 @@ def _position_reference_for(chained_name: str) -> ast.PositionReference:
         "    }\n"
         "}\n"
     )
-    program = test_helpers.parse_and_transform(source)
+    program = test_helpers.parse(source)
     action_definition = program.definitions[0]
     assert isinstance(action_definition, ast.ActionDefinition)
     for statement in action_definition.action_statements.statements:
@@ -39,14 +39,14 @@ def _position_reference_for(chained_name: str) -> ast.PositionReference:
 
 
 def _parse_position(source: str) -> ast.PositionDefinition:
-    definition = test_helpers.parse_and_transform(source).definitions[0]
+    definition = test_helpers.parse(source).definitions[0]
     if not isinstance(definition, ast.PositionDefinition):
         raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
     return definition
 
 
 def _parse_action(source: str) -> ast.ActionDefinition:
-    definition = test_helpers.parse_and_transform(source).definitions[0]
+    definition = test_helpers.parse(source).definitions[0]
     if not isinstance(definition, ast.ActionDefinition):
         raise TypeError(f"Expected ActionDefinition, got {type(definition)}")
     return definition
@@ -905,7 +905,7 @@ class TestLiteralContentCharacterLocation:
             "    }\n"
             "}\n"
         )
-        program = test_helpers.parse_and_transform(source)
+        program = test_helpers.parse(source)
         action_definition = program.definitions[0]
         assert isinstance(action_definition, ast.ActionDefinition)
         statement = action_definition.action_statements.statements[1]

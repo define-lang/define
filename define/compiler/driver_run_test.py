@@ -14,9 +14,6 @@ from pathlib import Path
 import pytest
 
 from define.compiler import constants, driver, overall_stats
-from define.compiler.parsing import parser
-
-_PARSER = parser.Parser()
 
 
 def _write_valid_position_project(project_root: Path, universe_name: str):
@@ -45,7 +42,7 @@ def test_absolute_path_in_project_returns_success(
     monkeypatch.chdir(project_root)
     error_stream = io.StringIO()
 
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         project_root / "test.dfn",
         error_stream=error_stream,
     )
@@ -63,7 +60,7 @@ def test_absolute_path_outside_project_root_returns_error(
     monkeypatch.chdir(project_root)
 
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(outside_path, error_stream=error_stream)
+    result = driver.Driver().run(outside_path, error_stream=error_stream)
 
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
@@ -90,7 +87,7 @@ def test_invalid_config_returns_error_and_prints_to_stream(
     monkeypatch.chdir(tmp_path)
 
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
+    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         'File ".define/project/config.defcl"\n'
@@ -116,7 +113,7 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     )
     monkeypatch.chdir(tmp_path)
 
-    result = driver.Driver(_PARSER).run(Path("test.dfn"))
+    result = driver.Driver().run(Path("test.dfn"))
 
     captured = capsys.readouterr()
     assert result == driver.ExitCode.ERROR
@@ -133,7 +130,7 @@ def test_valid_file_returns_success(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
+    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.SUCCESS
     assert error_stream.getvalue() == ""
 
@@ -147,9 +144,7 @@ def test_relative_path_outside_project_root_returns_error(
     monkeypatch.chdir(project_root)
 
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
-        Path("../outside.dfn"), error_stream=error_stream
-    )
+    result = driver.Driver().run(Path("../outside.dfn"), error_stream=error_stream)
 
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
@@ -165,7 +160,7 @@ def test_syntax_error_returns_error_and_prints_to_stream(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         error_stream=error_stream,
     )
@@ -173,7 +168,7 @@ def test_syntax_error_returns_error_and_prints_to_stream(
     assert error_stream.getvalue() == (
         'File "test.dfn", line 1, column 1\n'
         "    defin the potential position<mv:define-lang.org:test_files:/test>.\n"
-        "    ^^^^^\n"
+        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         "Expected a global definition, one of:\n"
         "    - define the potential position\n"
         "    - define the potential action\n"
@@ -192,7 +187,7 @@ def test_validation_diagnostics_returns_error_and_prints_to_stream(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("wrong_file.dfn"),
         error_stream=error_stream,
     )
@@ -224,9 +219,7 @@ def test_multiple_errors_are_separated_by_divider(
     monkeypatch.chdir(tmp_path)
 
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
-        Path("wrong_file.dfn"), error_stream=error_stream
-    )
+    result = driver.Driver().run(Path("wrong_file.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         (
@@ -251,7 +244,7 @@ def test_stats_stream_receives_output(
 ):
     monkeypatch.chdir(testdata_project_directory)
     stats_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         stats_stream=stats_stream,
         stats_mode=overall_stats.StatsMode.OVERALL,
@@ -268,7 +261,7 @@ def test_stats_stream_none_produces_no_stats(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
+    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.SUCCESS
     assert "Compilation Stats" not in error_stream.getvalue()
 
@@ -279,7 +272,7 @@ def test_compile_succeeds(
     tmp_path: Path,
 ):
     monkeypatch.chdir(testdata_project_directory)
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         mode=driver.DriverMode.COMPILE,
         output_dir=tmp_path,
@@ -299,7 +292,7 @@ def test_compile_source_succeeds(tmp_path: Path):
         "}\n"
     )
 
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         source=source,
         mode=driver.DriverMode.COMPILE,
         output_dir=tmp_path,
@@ -317,7 +310,7 @@ def test_compile_with_errors_returns_error(
     tmp_path: Path,
 ):
     monkeypatch.chdir(testdata_project_directory)
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         mode=driver.DriverMode.COMPILE,
         error_stream=io.StringIO(),
@@ -333,7 +326,7 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         mode=driver.DriverMode.COMPILE,
         error_stream=error_stream,
@@ -350,12 +343,12 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
 
 def test_compile_without_output_directory_raises_value_error():
     with pytest.raises(ValueError, match="output_dir is required when mode is COMPILE"):
-        _ = driver.Driver(_PARSER).run(mode=driver.DriverMode.COMPILE)
+        _ = driver.Driver().run(mode=driver.DriverMode.COMPILE)
 
 
 def test_compile_without_path_or_source_raises_value_error(tmp_path: Path):
     with pytest.raises(ValueError, match="path is required when source is not given"):
-        _ = driver.Driver(_PARSER).run(
+        _ = driver.Driver().run(
             mode=driver.DriverMode.COMPILE,
             output_dir=tmp_path,
         )
@@ -378,7 +371,7 @@ def test_multifile_project_returns_success(
     error_stream = io.StringIO()
     stats_stream = io.StringIO()
 
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         error_stream=error_stream,
         stats_stream=stats_stream,
@@ -399,7 +392,7 @@ def test_reference_graph_diagnostic_returns_error(
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
 
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("test.dfn"),
         error_stream=error_stream,
     )
@@ -427,7 +420,7 @@ def test_relative_path_with_dotdot_in_project_returns_success(
     monkeypatch.chdir(project_root)
     error_stream = io.StringIO()
 
-    result = driver.Driver(_PARSER).run(
+    result = driver.Driver().run(
         Path("unused/../test.dfn"),
         error_stream=error_stream,
     )
@@ -440,7 +433,7 @@ def test_valid_source_returns_success():
     source = "define the potential position<my.domain.com:my_lib:/test>.\n"
     error_stream = io.StringIO()
 
-    result = driver.Driver(_PARSER).run(source=source, error_stream=error_stream)
+    result = driver.Driver().run(source=source, error_stream=error_stream)
 
     assert result == driver.ExitCode.SUCCESS
     assert error_stream.getvalue() == ""
@@ -448,4 +441,4 @@ def test_valid_source_returns_success():
 
 def test_validate_without_path_or_source_raises_value_error():
     with pytest.raises(ValueError, match="path is required when source is not given"):
-        _ = driver.Driver(_PARSER).run()
+        _ = driver.Driver().run()
