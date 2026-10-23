@@ -46,6 +46,12 @@ local_path_override(
 # venv layout patch puts site-packages and home where Windows CPython expects.
 # TODO: Remove the venv layout patch once an aspect_rules_py release includes
 # https://github.com/aspect-build/rules_py/pull/1614.
+# Windows fails to load an extension module with an embedded manifest from a
+# path longer than about 250 characters, even with long paths enabled, and
+# Bazel's runfiles paths are often longer. The long extension paths patch loads
+# such modules through extended-length paths.
+# TODO: Remove the long extension paths patch once an aspect_rules_py release
+# includes https://github.com/aspect-build/rules_py/pull/1625.
 git_override(
     module_name = "aspect_rules_py",
     commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
@@ -53,6 +59,7 @@ git_override(
     patches = [
         "//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch",
         "//tools/patches:aspect_rules_py_windows_venv_layout.patch",
+        "//tools/patches:aspect_rules_py_windows_long_extension_paths.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )

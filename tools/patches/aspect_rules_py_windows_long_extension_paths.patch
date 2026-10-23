@@ -1,0 +1,151 @@
+diff --git a/py/private/py_venv/BUILD.bazel b/py/private/py_venv/BUILD.bazel
+index 8df0198f..729f2031 100644
+--- a/py/private/py_venv/BUILD.bazel
++++ b/py/private/py_venv/BUILD.bazel
+@@ -8,6 +8,7 @@ exports_files([
+     "templates/link.py",
+     "templates/venv.tmpl.sh",
+     "templates/venv_activate.tmpl.sh",
++    "templates/windows_long_paths.py",
+ ])
+ 
+ bool_flag(
+diff --git a/py/private/py_venv/py_venv.bzl b/py/private/py_venv/py_venv.bzl
+index 5ddeec14..a8cc4907 100644
+--- a/py/private/py_venv/py_venv.bzl
++++ b/py/private/py_venv/py_venv.bzl
+@@ -83,6 +83,7 @@ def _assemble_venv_target(ctx, executable, console_scripts):
+         venv_activate_tmpl = ctx.file._venv_activate_tmpl if executable else None,
+         site_merge_script_py = ctx.file._site_merge_script,
+         console_script_tmpl = ctx.file._console_script_tmpl if console_scripts else None,
++        windows_long_paths_py = ctx.file._windows_long_paths,
+         venv_name = ".{}".format(venv_stem),
+     )
+     venv_only = assembled.console_scripts + ([assembled.activate] if assembled.activate != None else [])
+@@ -263,6 +264,10 @@ does not reinsert a wheel.
+         allow_single_file = True,
+         default = "//py/tools/site_merge:site_merge.py",
+     ),
++    "_windows_long_paths": attr.label(
++        allow_single_file = True,
++        default = "//py/private/py_venv:templates/windows_long_paths.py",
++    ),
+ })
+ 
+ _lib_attrs.update(**_py_library.attrs)
+diff --git a/py/private/py_venv/templates/windows_long_paths.py b/py/private/py_venv/templates/windows_long_paths.py
+new file mode 100644
+index 00000000..a65b17c4
+--- /dev/null
++++ b/py/private/py_venv/templates/windows_long_paths.py
+@@ -0,0 +1,57 @@
++r"""Load Windows extension modules from paths near or over MAX_PATH.
++
++Windows' DLL loader rejects such a path for a DLL with an embedded manifest,
++even when long paths are enabled, unless the path has the extended-length
++`\\?\` prefix. See https://github.com/python/cpython/issues/126929.
++"""
++
++import collections.abc
++import importlib.machinery
++import ntpath
++import sys
++import types
++
++# Not MAX_PATH (260) itself: for a DLL with a manifest, the loader also builds
++# the path plus `.2.Config`, which must fit in MAX_PATH with its terminating
++# NUL, so a path of 251 to 259 characters fails too.
++_LONGEST_LOADABLE_PATH = 260 - len(".2.Config") - 1
++
++_EXTENDED_LENGTH_PREFIX = "\\\\?\\"
++
++
++def loadable_path(path: str) -> str:
++    # Windows doesn't normalize a `\\?\` path, so it must be absolute, with only
++    # backslashes and no `.` or `..` components. The loader's length limit also
++    # applies to the absolute path, not to the path as written.
++    absolute_path = ntpath.abspath(path)
++    if len(absolute_path) <= _LONGEST_LOADABLE_PATH or absolute_path.startswith(
++        _EXTENDED_LENGTH_PREFIX
++    ):
++        return path
++    if absolute_path.startswith("\\\\"):
++        return _EXTENDED_LENGTH_PREFIX + "UNC\\" + absolute_path[2:]
++    return _EXTENDED_LENGTH_PREFIX + absolute_path
++
++
++class _LongExtensionPathFinder(importlib.machinery.PathFinder):
++    @classmethod
++    def find_spec(
++        cls,
++        fullname: str,
++        path: collections.abc.Sequence[str] | None = None,
++        target: types.ModuleType | None = None,
++    ) -> importlib.machinery.ModuleSpec | None:
++        spec = super().find_spec(fullname, path, target)
++        if spec is None or not isinstance(
++            spec.loader, importlib.machinery.ExtensionFileLoader
++        ):
++            return spec
++        spec.origin = spec.loader.path = loadable_path(spec.loader.path)
++        return spec
++
++
++def install() -> None:
++    for index, finder in enumerate(sys.meta_path):
++        if finder is importlib.machinery.PathFinder:
++            sys.meta_path[index] = _LongExtensionPathFinder
++            return
+diff --git a/py/private/py_venv/venv.bzl b/py/private/py_venv/venv.bzl
+index ffa191f9..28596084 100644
+--- a/py/private/py_venv/venv.bzl
++++ b/py/private/py_venv/venv.bzl
+@@ -64,6 +64,8 @@ _ADDSITEDIR_LINE = (
+     "vars().get(\"known_paths\"))"
+ )
+ 
++_WINDOWS_LONG_PATHS_MODULE = "_aspect_rules_py_windows_long_paths"
++
+ def _dict_to_exports(env):
+     return ["export %s=\"%s\"" % (k, v) for (k, v) in env.items()]
+ 
+@@ -81,6 +83,7 @@ def assemble_venv(
+         venv_activate_tmpl,
+         site_merge_script_py,
+         console_script_tmpl,
++        windows_long_paths_py,
+         venv_name):
+     """Declare every file + symlink that makes up a venv for a target.
+ 
+@@ -110,6 +113,9 @@ def assemble_venv(
+         EXEC_TOOLS_TOOLCHAIN for an exec-configuration interpreter.
+       console_script_tmpl: File or None — the console-script wrapper template
+         (usually `ctx.file._console_script_tmpl`); `None` skips wrappers.
++      windows_long_paths_py: File — the module that lets Windows load
++        extension modules from paths longer than MAX_PATH (usually
++        `ctx.file._windows_long_paths`). Only installed when `is_windows`.
+       venv_name: str — the venv dir basename (e.g. "." + venv_stem).
+ 
+     Returns:
+@@ -300,6 +306,21 @@ def assemble_venv(
+     pth_lines.set_param_file_format("multiline")
+     pth_lines.add(escape)
+ 
++    # Windows can't load an extension module whose path exceeds MAX_PATH, as
++    # a venv's long runfiles paths often do, unless the loader gets an
++    # extended-length path.
++    if is_windows:
++        windows_long_paths_module = ctx.actions.declare_file(
++            "{}/{}.py".format(site_packages_rel, _WINDOWS_LONG_PATHS_MODULE),
++        )
++        ctx.actions.expand_template(
++            template = windows_long_paths_py,
++            output = windows_long_paths_module,
++            substitutions = {},
++        )
++        declared.append(windows_long_paths_module)
++        pth_lines.add("import {name}; {name}.install()".format(name = _WINDOWS_LONG_PATHS_MODULE))
++
+     # Make wheel-declared console scripts reachable via `subprocess.run("name", ...)`
+     # without loading the distutils shim on every interpreter startup.
+     pth_lines.add(
