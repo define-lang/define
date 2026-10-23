@@ -73,7 +73,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self.ast.position_reference(
             location,
             typed_names,
-            Some(canonical_chained_name_tuple),
+            canonical_chained_name_tuple,
             true,
         )?)
     }

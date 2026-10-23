@@ -32,6 +32,11 @@ type Derived[T] = T
 # is used, which every constructor, including the parser's, leaves as `None`.
 type ComputedOnFirstUse[T] = T
 
+# Marks a field whose value is computed from the other fields, which the parser
+# passes, and which Python code that constructs a node leaves as `None` for a
+# property to compute the first time it is used.
+type ParsedOrComputedOnFirstUse[T] = T
+
 
 # A program has millions of these, and they never form reference cycles, so the
 # garbage collector does not track them.
@@ -497,7 +502,9 @@ class ChainedName(ASTNode, Generic[ChainedNameTupleT_co]):
     # A covariant type in a mutable field is safe here only because nothing
     # writes it through a chained name of a wider kind: only this class's
     # property and the construction of a concrete kind set it.
-    _canonical_chained_name_tuple: Derived[ChainedNameTupleT_co | None] = None
+    _canonical_chained_name_tuple: ParsedOrComputedOnFirstUse[
+        ChainedNameTupleT_co | None
+    ] = None
     _canonical_chained_name: ComputedOnFirstUse[str | None] = None
 
     def __post_init__(self):

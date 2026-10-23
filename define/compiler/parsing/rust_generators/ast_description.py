@@ -10,7 +10,9 @@ The description is made in three steps:
    that can be constructed, its constructor's parameters.
 
 Each field of a class, derived ones included, is a constructor parameter,
-except a field computed on first use, which the constructor sets to `None`.
+except a field computed on first use, which the constructor sets to `None`. A
+`ParsedOrComputedOnFirstUse` field is a parameter that may not be `None`, since
+the parser always passes it.
 Each parameter's annotation becomes a `FieldType`:
 
 - An AST class becomes `Node`.
@@ -109,10 +111,22 @@ def _is_computed_on_first_use(parameter: inspect.Parameter) -> bool:
 def _field_annotation(
     parameter: inspect.Parameter, type_variable_values: dict[typing.TypeVar, object]
 ) -> object:
-    """Return the annotation of `parameter` without `Final` or `Derived`, as the value of its type variable if it is one."""
+    """Return the annotation of `parameter` without `Final`, `Derived`, or `ParsedOrComputedOnFirstUse`, as the value of its type variable if it is one.
+
+    A `ParsedOrComputedOnFirstUse` field is `None` only until Python code
+    computes it, so its annotation is the one type other than `None` in its
+    union.
+    """
     annotation = typing.cast("object", parameter.annotation)
-    if typing.get_origin(annotation) in {typing.Final, ast.Derived}:
+    origin = typing.get_origin(annotation)
+    if origin in {typing.Final, ast.Derived, ast.ParsedOrComputedOnFirstUse}:
         annotation = _type_arguments(annotation)[0]
+    if origin is ast.ParsedOrComputedOnFirstUse:
+        (annotation,) = [
+            member
+            for member in _type_arguments(annotation)
+            if member is not types.NoneType
+        ]
     return _type_variable_value(annotation, type_variable_values)
 
 

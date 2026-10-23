@@ -512,7 +512,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let position_reference = self.ast.position_reference(
             typed_name_location,
             typed_names,
-            Some(canonical_chained_name_tuple),
+            canonical_chained_name_tuple,
             true,
         )?;
         let location = self.ast.location(start, end)?;
