@@ -1,6 +1,5 @@
 node_modules
 mutants
-.todo-worktrees
 .claude/worktrees
 vendored/re2
 target
