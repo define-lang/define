@@ -62,6 +62,7 @@ pyo3_extension(
         "ast_builder.rs",
         "characters.rs",
         "characters/invisible_ranges.rs",
+        "element_stack.rs",
         "node_construction.rs",
         "parse_error.rs",
         "parser.rs",

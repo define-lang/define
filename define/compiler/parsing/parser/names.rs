@@ -51,8 +51,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::PositionReference<'py>> {
         let start = self.scanner.position;
-        let typed_names = self.ast.start_tuple::<ast::TypedNameReference>();
-        let full_typed_names = self.ast.start_texts();
+        let typed_names = self.nodes.start::<ast::TypedNameReference>();
+        let full_typed_names = self.texts.start();
         loop {
             // There is no typed name where the reference or its next part
             // belongs.
@@ -61,14 +61,14 @@ impl<'py, 'source> Parser<'py, 'source> {
                 return Err(self.errors.missing_position_reference(missing, missing));
             }
             let (typed_name, full_typed_name) = self.parse_typed_name_reference(fqun)?;
-            self.ast.push(&typed_names, typed_name);
-            self.ast.push_text(&full_typed_names, full_typed_name);
+            self.nodes.push(&typed_names, typed_name);
+            self.texts.push(&full_typed_names, full_typed_name);
             if !self.scanner.consume(CHAIN_SEPARATOR) {
                 break;
             }
         }
-        let typed_names = self.ast.finish_tuple(typed_names)?;
-        let canonical_chained_name_tuple = self.ast.finish_text_tuple(full_typed_names)?;
+        let typed_names = self.nodes.finish_tuple(typed_names)?;
+        let canonical_chained_name_tuple = self.texts.finish_tuple(full_typed_names)?;
         let location = self.ast.location(start, self.scanner.position)?;
         Ok(self.ast.position_reference(
             location,

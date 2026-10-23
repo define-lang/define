@@ -150,12 +150,12 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_position_constraint_content(block_open_end, block_open_end));
             }
         }
-        let requirements = self.ast.start_tuple::<ast::PositionRequirementStatement>();
-        let required_names = self.ast.start_texts();
+        let requirements = self.nodes.start::<ast::PositionRequirementStatement>();
+        let required_names = self.texts.start();
         loop {
             let (requirement, required_name) = self.parse_position_requirement_statement(fqun)?;
-            self.ast.push(&requirements, requirement);
-            self.ast.push_text(&required_names, required_name);
+            self.nodes.push(&requirements, requirement);
+            self.texts.push(&required_names, required_name);
             match self.next_line_in_block(indentation, &[IT_HAS_THE])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -166,8 +166,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let end = self.parse_block_close()?;
-        let requirements = self.ast.finish_tuple(requirements)?;
-        let required_names = self.ast.finish_text_set(required_names)?;
+        let requirements = self.nodes.finish_tuple(requirements)?;
+        let required_names = self.texts.finish_set(required_names)?;
         let location = self.ast.location(start, end)?;
         Ok(self
             .ast

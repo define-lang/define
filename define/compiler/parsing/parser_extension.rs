@@ -2,6 +2,7 @@
 
 mod ast_builder;
 mod characters;
+mod element_stack;
 mod node_construction;
 mod parse_error;
 mod parser;

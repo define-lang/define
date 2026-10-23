@@ -100,20 +100,20 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let views = self.ast.start_tuple::<ast::ViewDefinition>();
+        let views = self.nodes.start::<ast::ViewDefinition>();
         let mut content_end = block_open_end;
         loop {
             let line = self.next_line_in_block(0, &OPERATION_DEFINITION_STATEMENT_STARTS)?;
             if !matches!(line, LineInBlock::Statement) {
-                return Ok((self.ast.finish_tuple(views)?, line, content_end));
+                return Ok((self.nodes.finish_tuple(views)?, line, content_end));
             }
             let start = self.scanner.position;
             let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, VIEW)
             else {
-                return Ok((self.ast.finish_tuple(views)?, line, content_end));
+                return Ok((self.nodes.finish_tuple(views)?, line, content_end));
             };
             let (view, end) = self.parse_view_definition(start, typed_name_start, fqun)?;
-            self.ast.push(&views, view);
+            self.nodes.push(&views, view);
             content_end = end;
         }
     }
@@ -271,14 +271,14 @@ impl<'py, 'source> Parser<'py, 'source> {
                 return Err(self.missing_operation_statements_content(kind, block_open_end));
             }
         }
-        let statements = self.ast.start_tuple::<ast::OperationStatement>();
+        let statements = self.nodes.start::<ast::OperationStatement>();
         loop {
             let statement = self.parse_operation_statement(
                 kind,
                 OPERATION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
                 fqun,
             )?;
-            self.ast.push(&statements, statement);
+            self.nodes.push(&statements, statement);
             match self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, &[EXECUTE_THE])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -289,7 +289,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         self.parse_block_close()?;
-        Ok(self.ast.finish_tuple(statements)?)
+        Ok(self.nodes.finish_tuple(statements)?)
     }
 
     /// Parses a statement in the operation statements block of an operation

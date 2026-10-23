@@ -183,18 +183,18 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let implications = self.ast.start_tuple::<ast::QualityImplicationStatement>();
+        let implications = self.nodes.start::<ast::QualityImplicationStatement>();
         let mut content_end = block_open_end;
         let mut line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         while matches!(line, LineInBlock::Statement)
             && self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE)
         {
             let (implication, end) = self.parse_quality_implication_statement(fqun)?;
-            self.ast.push(&implications, implication);
+            self.nodes.push(&implications, implication);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
-        Ok((self.ast.finish_tuple(implications)?, line, content_end))
+        Ok((self.nodes.finish_tuple(implications)?, line, content_end))
     }
 
     /// Parses the local position definitions in an action definition block,
@@ -217,7 +217,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let interface_positions = self.ast.start_tuple::<ast::LocalPositionDefinition>();
+        let interface_positions = self.nodes.start::<ast::LocalPositionDefinition>();
         let mut named_interface_positions = Vec::new();
         loop {
             if !matches!(line, LineInBlock::Statement) {
@@ -236,12 +236,12 @@ impl<'py, 'source> Parser<'py, 'source> {
                 fqun,
             )?;
             named_interface_positions.push((name, position.clone()));
-            self.ast.push(&interface_positions, position);
+            self.nodes.push(&interface_positions, position);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
         Ok((
-            self.ast.finish_tuple(interface_positions)?,
+            self.nodes.finish_tuple(interface_positions)?,
             named_interface_positions,
             line,
             content_end,
@@ -400,7 +400,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_action_statements_block());
         }
         let statements_open_end = self.parse_block_open()?;
-        let statements = self.ast.start_tuple::<ast::ActionStatement>();
+        let statements = self.nodes.start::<ast::ActionStatement>();
         loop {
             match self.next_line_in_block(
                 ACTION_DEFINITION_BLOCK_INDENTATION,
@@ -411,7 +411,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                         ACTION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
                         fqun,
                     )?;
-                    self.ast.push(&statements, statement);
+                    self.nodes.push(&statements, statement);
                 }
                 LineInBlock::Close => break,
                 // The block ends before its `}`.
@@ -421,7 +421,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let end = self.parse_block_close()?;
-        let statements = self.ast.finish_tuple(statements)?;
+        let statements = self.nodes.finish_tuple(statements)?;
         let location = self.ast.location(statements_start, end)?;
         let action_statements = self.ast.action_statements_block(location, statements)?;
         Ok((trigger_conditions, trigger_name, action_statements))
@@ -502,13 +502,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.invalid_has_a_particle_syntax());
         }
         let end = self.parse_statement_terminator()?;
-        let typed_names = self.ast.start_tuple::<ast::TypedNameReference>();
-        self.ast.push(&typed_names, typed_name.clone());
-        let typed_names = self.ast.finish_tuple(typed_names)?;
-        let canonical_names = self.ast.start_texts();
-        self.ast
-            .push_text(&canonical_names, source_typed_name.clone());
-        let canonical_chained_name_tuple = self.ast.finish_text_tuple(canonical_names)?;
+        let typed_names = self.nodes.start::<ast::TypedNameReference>();
+        self.nodes.push(&typed_names, typed_name.clone());
+        let typed_names = self.nodes.finish_tuple(typed_names)?;
+        let canonical_names = self.texts.start();
+        self.texts.push(&canonical_names, source_typed_name.clone());
+        let canonical_chained_name_tuple = self.texts.finish_tuple(canonical_names)?;
         let position_reference = self.ast.position_reference(
             typed_name_location,
             typed_names,

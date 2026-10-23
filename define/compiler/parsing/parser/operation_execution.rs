@@ -83,8 +83,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         let Some(end) = self.parse_terminator()? else {
             return Err(self.missing_terminator_or_brace());
         };
-        let arguments = self.ast.start_tuple::<ast::OperationArgumentStatement>();
-        let arguments = self.ast.finish_tuple(arguments)?;
+        let arguments = self.nodes.start::<ast::OperationArgumentStatement>();
+        let arguments = self.nodes.finish_tuple(arguments)?;
         let location = self.ast.location(start, end)?;
         Ok(self
             .ast
@@ -129,10 +129,10 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_operation_arguments_content(block_open_end, block_open_end));
             }
         }
-        let arguments = self.ast.start_tuple::<ast::OperationArgumentStatement>();
+        let arguments = self.nodes.start::<ast::OperationArgumentStatement>();
         loop {
             let argument = self.parse_operation_argument_statement(fqun)?;
-            self.ast.push(&arguments, argument);
+            self.nodes.push(&arguments, argument);
             match self.next_line_in_block(indentation, &[WITH])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -143,7 +143,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let end = self.parse_block_close()?;
-        Ok((self.ast.finish_tuple(arguments)?, end))
+        Ok((self.nodes.finish_tuple(arguments)?, end))
     }
 
     /// Parses an operation argument statement, whose references take their

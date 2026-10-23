@@ -14,6 +14,7 @@ mod value_definition;
 
 use crate::ast;
 use crate::ast_builder::AstBuilder;
+use crate::element_stack::ElementStack;
 use crate::node_construction::FilePath;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::operation_execution::OperationKind;
@@ -21,7 +22,7 @@ use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyList, PyString};
 use terminals::{
     ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION, DEFINE_THE_OPERATION,
     DEFINE_THE_POTENTIAL, DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL,
@@ -42,6 +43,10 @@ const GLOBAL_DEFINITION_STARTS: [&[u8]; 7] = [
 pub(crate) struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
     ast: AstBuilder<'py>,
+    /// The nodes of the tuples of nodes being built.
+    nodes: ElementStack<'py, PyAny>,
+    /// The strings of the tuples and sets of strings being built.
+    texts: ElementStack<'py, PyString>,
     /// Where `typed_name_text` spells a typed name, kept to reuse its
     /// allocation.
     typed_name_text_buffer: Vec<u8>,
@@ -58,6 +63,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(Self {
             scanner: Scanner::new(source),
             ast: AstBuilder::new(py, file_path.clone())?,
+            nodes: ElementStack::new(py),
+            texts: ElementStack::new(py),
             typed_name_text_buffer: Vec::new(),
             errors: SyntaxErrors::new(py, file_path.clone()),
             diagnostics: ParserDiagnostics::new(py, file_path),
@@ -77,7 +84,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// line_end = newline | comment ;
     /// ```
     pub(crate) fn parse_program(&mut self) -> ParseResult<ast::Program<'py>> {
-        let definitions = self.ast.start_tuple::<ast::GlobalDefinition>();
+        let definitions = self.nodes.start::<ast::GlobalDefinition>();
         let mut start = None;
         let mut end = self.scanner.position;
         loop {
@@ -91,7 +98,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             self.check_indentation(line_start, 0, indentation)?;
             start.get_or_insert(self.scanner.position);
             let (definition, definition_end) = self.parse_definition()?;
-            self.ast.push(&definitions, definition);
+            self.nodes.push(&definitions, definition);
             end = definition_end;
         }
         // The program has no definitions.
@@ -106,7 +113,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 .errors
                 .missing_newline_at_eof(end_of_source, end_of_source));
         }
-        let definitions = self.ast.finish_tuple(definitions)?;
+        let definitions = self.nodes.finish_tuple(definitions)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.program(location, definitions)?)
     }

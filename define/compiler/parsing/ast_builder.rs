@@ -1,24 +1,10 @@
 use crate::ast::{AstClasses, SourceLocation};
-use crate::node_construction::{FilePath, Node, NodeTuple};
+use crate::node_construction::FilePath;
 use crate::scanner::Position;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyFrozenSet, PyInt, PyString, PyTuple};
+use pyo3::types::{PyInt, PyString};
 use rustc_hash::FxHashMap;
-use std::marker::PhantomData;
-
-/// Where the elements of a tuple start on the builder's element stack. It is
-/// not `Copy`, so that each tuple is finished exactly once.
-pub struct TupleStart<Element> {
-    index: usize,
-    element: PhantomData<Element>,
-}
-
-/// Where the texts of a tuple or set start on the builder's text stack. It is
-/// not `Copy`, so that each tuple or set is finished exactly once.
-pub struct TextsStart {
-    index: usize,
-}
 
 /// Constructs the Python AST for one parse.
 pub struct AstBuilder<'py> {
@@ -30,13 +16,6 @@ pub struct AstBuilder<'py> {
     interned_texts: FxHashMap<Box<[u8]>, Bound<'py, PyString>>,
     /// The Python int for each line number, indexed by line number minus one.
     line_numbers: Vec<Bound<'py, PyInt>>,
-    /// The elements of the tuples being built. A construct pushes its elements
-    /// after any elements of the constructs it belongs to, and takes them off
-    /// before it returns, so one stack serves every construct.
-    tuple_elements: Vec<Bound<'py, PyAny>>,
-    /// The texts of the tuples and sets of texts being built, which are taken
-    /// off like `tuple_elements`.
-    text_elements: Vec<Bound<'py, PyString>>,
 }
 
 impl<'py> AstBuilder<'py> {
@@ -47,8 +26,6 @@ impl<'py> AstBuilder<'py> {
             file_path,
             interned_texts: FxHashMap::default(),
             line_numbers: Vec::new(),
-            tuple_elements: Vec::new(),
-            text_elements: Vec::new(),
         })
     }
 
@@ -98,51 +75,6 @@ impl<'py> AstBuilder<'py> {
             self.line_numbers.push(PyInt::new(self.py, next_line));
         }
         self.line_numbers[line - 1].clone()
-    }
-
-    pub const fn start_tuple<Element>(&self) -> TupleStart<Element> {
-        TupleStart {
-            index: self.tuple_elements.len(),
-            element: PhantomData,
-        }
-    }
-
-    // `_start` makes the element's type the one that its tuple holds.
-    pub fn push<Element: Node<'py>>(
-        &mut self,
-        _start: &TupleStart<Element>,
-        element: impl Into<Element>,
-    ) {
-        self.tuple_elements.push(element.into().into_object());
-    }
-
-    pub const fn start_texts(&self) -> TextsStart {
-        TextsStart {
-            index: self.text_elements.len(),
-        }
-    }
-
-    // `_start` is the tuple or set that the text belongs to.
-    pub fn push_text(&mut self, _start: &TextsStart, text: Bound<'py, PyString>) {
-        self.text_elements.push(text);
-    }
-
-    pub fn finish_text_tuple(&mut self, start: TextsStart) -> PyResult<Bound<'py, PyTuple>> {
-        PyTuple::new(self.py, self.text_elements.drain(start.index..))
-    }
-
-    pub fn finish_text_set(&mut self, start: TextsStart) -> PyResult<Bound<'py, PyFrozenSet>> {
-        PyFrozenSet::new(self.py, self.text_elements.drain(start.index..))
-    }
-
-    pub fn finish_tuple<Element>(
-        &mut self,
-        start: TupleStart<Element>,
-    ) -> PyResult<NodeTuple<'py, Element>> {
-        Ok(NodeTuple::new(PyTuple::new(
-            self.py,
-            self.tuple_elements.drain(start.index..),
-        )?))
     }
 }
 
