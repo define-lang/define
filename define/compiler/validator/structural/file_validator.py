@@ -23,7 +23,7 @@ from define.compiler import (
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
-from define.compiler.parsing.native import native_parser
+from define.compiler.parsing import parser
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 
@@ -125,7 +125,7 @@ class FileStructuralValidator:
         parser_file_path = (
             context.full_path.as_posix_path() if context.is_filesystem_context else None
         )
-        parse_result = native_parser.parse(source, parser_file_path)
+        parse_result = parser.parse(source, parser_file_path)
         tracker.mark_parse_finished()
 
         if parse_result.exception is not None:

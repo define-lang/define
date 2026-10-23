@@ -14,11 +14,11 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_typed_global_name_reference_short_position_name(native_parse: NativeParse):
-    program = native_parse(
+def test_typed_global_name_reference_short_position_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
@@ -51,8 +51,8 @@ def test_typed_global_name_reference_short_position_name(native_parse: NativePar
     )
 
 
-def test_typed_global_name_reference_short_action_name(native_parse: NativeParse):
-    program = native_parse(
+def test_typed_global_name_reference_short_action_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the action</do_work>.\n"
@@ -85,8 +85,8 @@ def test_typed_global_name_reference_short_action_name(native_parse: NativeParse
     )
 
 
-def test_typed_global_name_reference_full_name(native_parse: NativeParse):
-    program = native_parse(
+def test_typed_global_name_reference_full_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the action<mv:define-lang.org:parser:/do_work>.\n"
@@ -124,10 +124,10 @@ def test_typed_global_name_reference_full_name(native_parse: NativeParse):
 
 
 def test_typed_global_name_reference_local_style_name_is_global_terminal(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/root> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position<foo>.\n"

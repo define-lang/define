@@ -14,11 +14,11 @@ from define.compiler import ast
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_local_name_simple(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_simple(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
@@ -42,8 +42,8 @@ def test_local_name_simple(native_parse: NativeParse):
     )
 
 
-def test_local_name_underscore_start(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_underscore_start(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_private>.\n"
         + "    it happens when {\n"
@@ -67,8 +67,8 @@ def test_local_name_underscore_start(native_parse: NativeParse):
     )
 
 
-def test_local_name_with_digits(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_with_digits(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<pos_1>.\n"
         + "    it happens when {\n"
@@ -92,8 +92,8 @@ def test_local_name_with_digits(native_parse: NativeParse):
     )
 
 
-def test_local_name_single_char(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_single_char(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<x>.\n"
         + "    it happens when {\n"
@@ -117,8 +117,8 @@ def test_local_name_single_char(native_parse: NativeParse):
     )
 
 
-def test_local_name_single_underscore(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_single_underscore(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_>.\n"
         + "    it happens when {\n"
@@ -142,8 +142,8 @@ def test_local_name_single_underscore(native_parse: NativeParse):
     )
 
 
-def test_local_name_starting_with_digit(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_starting_with_digit(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<2bad>.\n"
         + "    it happens when {\n"
@@ -167,8 +167,8 @@ def test_local_name_starting_with_digit(native_parse: NativeParse):
     )
 
 
-def test_local_name_uppercase(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_uppercase(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<MyPos>.\n"
         + "    it happens when {\n"
@@ -192,9 +192,9 @@ def test_local_name_uppercase(native_parse: NativeParse):
     )
 
 
-def test_local_name_with_space(native_parse: NativeParse):
+def test_local_name_with_space(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position< >.\n"
@@ -211,9 +211,9 @@ def test_local_name_with_space(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 25
 
 
-def test_local_name_with_space_after_valid_characters(native_parse: NativeParse):
+def test_local_name_with_space_after_valid_characters(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<test path>.\n"
@@ -230,9 +230,9 @@ def test_local_name_with_space_after_valid_characters(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 29
 
 
-def test_create_position_ref_starting_with_space(native_parse: NativeParse):
+def test_create_position_ref_starting_with_space(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidName) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -249,9 +249,9 @@ def test_create_position_ref_starting_with_space(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 39
 
 
-def test_local_name_first_char_colon(native_parse: NativeParse):
+def test_local_name_first_char_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<:>.\n"
@@ -268,9 +268,9 @@ def test_local_name_first_char_colon(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 25
 
 
-def test_local_name_first_char_slash(native_parse: NativeParse):
+def test_local_name_first_char_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position</>.\n"
@@ -287,9 +287,9 @@ def test_local_name_first_char_slash(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 25
 
 
-def test_local_name_missing_open_angle(native_parse: NativeParse):
+def test_local_name_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the positionmy_pos>.\n"
@@ -305,9 +305,9 @@ def test_local_name_missing_open_angle(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 24
 
 
-def test_local_name_empty(native_parse: NativeParse):
+def test_local_name_empty(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<>.\n"
@@ -323,8 +323,8 @@ def test_local_name_empty(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 25
 
 
-def test_local_name_with_angle_bracket(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_with_angle_bracket(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<<>.\n"
@@ -343,8 +343,8 @@ def test_local_name_with_angle_bracket(native_parse: NativeParse):
     )
 
 
-def test_local_name_dot_then_angle_bracket(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_dot_then_angle_bracket(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<.<>.\n"
@@ -363,9 +363,9 @@ def test_local_name_dot_then_angle_bracket(native_parse: NativeParse):
     )
 
 
-def test_local_name_dot_then_slash(native_parse: NativeParse):
+def test_local_name_dot_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<./>.\n"
@@ -382,9 +382,9 @@ def test_local_name_dot_then_slash(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 26
 
 
-def test_local_name_brace_then_slash(native_parse: NativeParse):
+def test_local_name_brace_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<}/>.\n"
@@ -401,9 +401,9 @@ def test_local_name_brace_then_slash(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 26
 
 
-def test_local_name_angle_bracket_then_slash(native_parse: NativeParse):
+def test_local_name_angle_bracket_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<</>.\n"
@@ -420,9 +420,9 @@ def test_local_name_angle_bracket_then_slash(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 26
 
 
-def test_local_name_angle_bracket_then_colon(native_parse: NativeParse):
+def test_local_name_angle_bracket_then_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<<:>.\n"
@@ -439,9 +439,9 @@ def test_local_name_angle_bracket_then_colon(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 26
 
 
-def test_local_name_with_slash(native_parse: NativeParse):
+def test_local_name_with_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<my/pos>.\n"
@@ -457,9 +457,9 @@ def test_local_name_with_slash(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 27
 
 
-def test_local_name_with_colon(native_parse: NativeParse):
+def test_local_name_with_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<my:pos>.\n"
@@ -476,9 +476,9 @@ def test_local_name_with_colon(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 27
 
 
-def test_local_name_with_global_short_form(native_parse: NativeParse):
+def test_local_name_with_global_short_form(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position</mypos>.\n"
@@ -494,9 +494,9 @@ def test_local_name_with_global_short_form(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 30
 
 
-def test_local_name_with_global_long_form(native_parse: NativeParse):
+def test_local_name_with_global_long_form(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<mv:define-lang.org:other_universe:/mypos>.\n"
@@ -512,8 +512,8 @@ def test_local_name_with_global_long_form(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_local_name_with_hyphen(native_parse: NativeParse):
-    program = native_parse(
+def test_local_name_with_hyphen(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my-pos>.\n"
         + "    it happens when {\n"

@@ -26,7 +26,7 @@ use pyo3::types::PyList;
     frozen,
     get_all,
     name = "ParseResult",
-    module = "define.compiler.parsing.native_parser"
+    module = "define.compiler.parsing.parser"
 )]
 struct PythonParseResult {
     /// The `ast.Program`, unless the parse ended in `exception`.
@@ -58,8 +58,9 @@ fn parse<'py>(
     })
 }
 
-#[pymodule(gil_used = false)]
-fn native_parser(module: &Bound<'_, PyModule>) -> PyResult<()> {
+// The module is named `parser`, which the crate's `parser` module already uses.
+#[pymodule(gil_used = false, name = "parser")]
+fn parser_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PythonParseResult>()?;
     module.add_function(wrap_pyfunction!(parse, module)?)
 }

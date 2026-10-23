@@ -113,7 +113,8 @@ struct NodeClass {
     snake_case_name: String,
     /// The AST classes that this class inherits from.
     ancestors: Vec<String>,
-    /// `None` for abstract and generic classes, which are never constructed.
+    /// `None` for abstract and generic classes, and for classes with subclasses,
+    /// which the parser never constructs.
     constructor: Option<Constructor>,
     /// Whether the class also gets a constructor that needs no `AstBuilder`.
     has_standalone_constructor: bool,

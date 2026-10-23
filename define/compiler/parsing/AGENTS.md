@@ -1,4 +1,4 @@
-# Native Parser Instructions
+# Parser Instructions
 
 ## Hot and Cold Paths
 

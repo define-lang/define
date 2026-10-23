@@ -15,15 +15,15 @@ from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
-        NativeParse,
-        NativeParseWithDiagnostics,
+        Parse,
+        ParseWithDiagnostics,
     )
 
 
 def test_action_statements_block_with_value_setting_local_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -52,9 +52,9 @@ def test_action_statements_block_with_value_setting_local_positions(
 
 
 def test_action_statements_block_with_value_setting_short_global_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -85,9 +85,9 @@ def test_action_statements_block_with_value_setting_short_global_positions(
 
 
 def test_action_statements_block_with_value_setting_full_global_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -130,9 +130,9 @@ def test_action_statements_block_with_value_setting_full_global_positions(
 
 
 def test_action_statements_block_with_value_setting_chained_target(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -168,9 +168,9 @@ def test_action_statements_block_with_value_setting_chained_target(
 
 
 def test_action_statements_block_with_value_setting_chained_source(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -207,9 +207,9 @@ def test_action_statements_block_with_value_setting_chained_source(
 
 
 def test_action_statements_block_with_value_setting_both_chained(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -250,9 +250,9 @@ def test_action_statements_block_with_value_setting_both_chained(
 
 
 def test_action_statements_block_with_mixed_create_and_move_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -292,9 +292,9 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
 
 
 def test_action_statements_block_with_value_setting_mixed_local_and_global(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -331,9 +331,9 @@ _ACTION_PREFIX = (
 )
 
 
-def test_missing_to(native_parse: NativeParse):
+def test_missing_to(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX + "        set the value of position<dest>.\n" + "    }\n}\n"
         )
     assert error.value.location.line == 5
@@ -342,9 +342,9 @@ def test_missing_to(native_parse: NativeParse):
     assert error.value.location.end_column == 40
 
 
-def test_missing_source(native_parse: NativeParse):
+def test_missing_source(parse: Parse):
     with pytest.raises(parser_exceptions.MissingValueSource) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to .\n"
             + "    }\n}\n"
@@ -355,18 +355,18 @@ def test_missing_source(native_parse: NativeParse):
     assert error.value.location.end_column == 44
 
 
-def test_missing_target(native_parse: NativeParse):
+def test_missing_target(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionReference) as error:
-        native_parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
+        parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
     assert error.value.location.line == 5
     assert error.value.location.column == 26
     assert error.value.location.end_line == 5
     assert error.value.location.end_column == 26
 
 
-def test_missing_terminator(native_parse: NativeParse):
+def test_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedChainSeparatorOrTerminator) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to position<src>\n"
             + "    }\n}\n"
@@ -377,27 +377,27 @@ def test_missing_terminator(native_parse: NativeParse):
     assert error.value.location.end_column == 57
 
 
-def test_value_setting_outside_action(native_parse: NativeParse):
+def test_value_setting_outside_action(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        native_parse("set the value of position<dest> to position<src>.\n")
+        parse("set the value of position<dest> to position<src>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
     assert error.value.location.end_line == 1
     assert error.value.location.end_column == 49
 
 
-def test_missing_to_at_eof(native_parse: NativeParse):
+def test_missing_to_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        native_parse(_ACTION_PREFIX + "        set the value of position<dest>")
+        parse(_ACTION_PREFIX + "        set the value of position<dest>")
     assert error.value.location.line == 5
     assert error.value.location.column == 40
     assert error.value.location.end_line == 5
     assert error.value.location.end_column == 40
 
 
-def test_missing_to_after_chained_target(native_parse: NativeParse):
+def test_missing_to_after_chained_target(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest>::position<child>.\n"
             + "    }\n}\n"
@@ -409,9 +409,9 @@ def test_missing_to_after_chained_target(native_parse: NativeParse):
 
 
 def test_missing_to_during_transformation(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         _ACTION_PREFIX
         + "        move the particle in position<src> to position<dest>.\n"
         + "        set the value of position<dest>"
@@ -426,9 +426,9 @@ def test_missing_to_during_transformation(
 
 
 def test_missing_move_to_after_value_setting(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         _ACTION_PREFIX
         + "        set the value of position<dest> to position<src>.\n"
         + "        move the particle in position<src>.\n"
@@ -441,9 +441,9 @@ def test_missing_move_to_after_value_setting(
     )
 
 
-def test_extra_space_after_to_in_value_setting(native_parse: NativeParse):
+def test_extra_space_after_to_in_value_setting(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -459,9 +459,9 @@ def test_extra_space_after_to_in_value_setting(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 43
 
 
-def test_value_setting_ends_after_to(native_parse: NativeParse):
+def test_value_setting_ends_after_to(parse: Parse):
     with pytest.raises(parser_exceptions.MissingValueSource) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -477,9 +477,9 @@ def test_value_setting_ends_after_to(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 42
 
 
-def test_value_source_with_other_name_type(native_parse: NativeParse):
+def test_value_source_with_other_name_type(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"

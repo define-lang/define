@@ -15,13 +15,11 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_position_definition_parses(native_parse: NativeParse):
-    program = native_parse(
-        "define the potential position<mv:define-lang.org:parser:/path>.\n"
-    )
+def test_position_definition_parses(parse: Parse):
+    program = parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert (
@@ -38,11 +36,9 @@ def test_position_definition_parses(native_parse: NativeParse):
     assert definition.constraints is None
 
 
-def test_position_definition_locations_have_file_path(native_parse: NativeParse):
+def test_position_definition_locations_have_file_path(parse: Parse):
     file_path = PurePosixPath("library/positions.def")
-    program = native_parse(
-        "define the potential position<standard:/path>.\n", file_path
-    )
+    program = parse("define the potential position<standard:/path>.\n", file_path)
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.location == ast.SourceLocation(
@@ -53,8 +49,8 @@ def test_position_definition_locations_have_file_path(native_parse: NativeParse)
     )
 
 
-def test_position_definition_with_non_ascii_path(native_parse: NativeParse):
-    program = native_parse(
+def test_position_definition_with_non_ascii_path(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/caf\u00e9>.\n"
     )
     [definition] = program.definitions
@@ -73,9 +69,9 @@ def test_position_definition_with_non_ascii_path(native_parse: NativeParse):
 
 
 def test_position_definition_with_non_ascii_fqun_components(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential position<m\u00fc:d\u00e9fine.org:pars\u00e9r:/path>.\n"
     )
     [definition] = program.definitions
@@ -106,20 +102,18 @@ def test_position_definition_with_non_ascii_fqun_components(
 
 
 def test_position_definition_missing_terminator_after_non_ascii_name(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        native_parse(
-            "define the potential position<mv:define-lang.org:parser:/caf\u00e9>\n"
-        )
+        parse("define the potential position<mv:define-lang.org:parser:/caf\u00e9>\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 63
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 63
 
 
-def test_position_requirement_with_non_ascii_name(native_parse: NativeParse):
-    program = native_parse(
+def test_position_requirement_with_non_ascii_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</\u00e9t\u00e9>.\n"
@@ -137,10 +131,10 @@ def test_position_requirement_with_non_ascii_name(native_parse: NativeParse):
 
 
 def test_position_definition_with_invisible_character_in_invalid_name(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        native_parse("define the potential position<a\u200bb>.\n")
+        parse("define the potential position<a\u200bb>.\n")
     assert exc_info.value.char == "\u200b"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 32
@@ -148,9 +142,9 @@ def test_position_definition_with_invisible_character_in_invalid_name(
     assert exc_info.value.location.end_column == 32
 
 
-def test_position_definition_with_empty_fqun(native_parse: NativeParse):
+def test_position_definition_with_empty_fqun(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse("define the potential position<:/path>.\n")
+        parse("define the potential position<:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
@@ -158,41 +152,37 @@ def test_position_definition_with_empty_fqun(native_parse: NativeParse):
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse("define the potential position<foo>.\n")
+        parse("define the potential position<foo>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 33
 
 
-def test_position_definition_missing_open_angle(native_parse: NativeParse):
+def test_position_definition_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse("define the potential positionstandard:/path>.\n")
+        parse("define the potential positionstandard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 30
 
 
-def test_position_definition_space_instead_of_open_angle(native_parse: NativeParse):
+def test_position_definition_space_instead_of_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse(
-            "define the potential position mv:define-lang.org:parser:/path>.\n"
-        )
+        parse("define the potential position mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 30
 
 
-def test_position_definition_with_control_character(native_parse: NativeParse):
+def test_position_definition_with_control_character(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        native_parse(
-            "define the potential \x00position<mv:define-lang.org:parser:/path>.\n"
-        )
+        parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.char == "\x00"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 22
@@ -201,10 +191,10 @@ def test_position_definition_with_control_character(native_parse: NativeParse):
 
 
 def test_position_definition_with_control_character_in_name(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        native_parse("define the potential position<standard:/a\x01b>.\n")
+        parse("define the potential position<standard:/a\x01b>.\n")
     assert exc_info.value.char == "\x01"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 42
@@ -212,29 +202,29 @@ def test_position_definition_with_control_character_in_name(
     assert exc_info.value.location.end_column == 42
 
 
-def test_position_definition_with_empty_global_path(native_parse: NativeParse):
+def test_position_definition_with_empty_global_path(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse("define the potential position<mv:define-lang.org:parser:>.\n")
+        parse("define the potential position<mv:define-lang.org:parser:>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 56
 
 
-def test_position_definition_without_fqun(native_parse: NativeParse):
+def test_position_definition_without_fqun(parse: Parse):
     with pytest.raises(
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as exc_info:
-        native_parse("define the potential position</path>.\n")
+        parse("define the potential position</path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 35
 
 
-def test_position_definition_with_too_many_fqun_components(native_parse: NativeParse):
+def test_position_definition_with_too_many_fqun_components(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as exc_info:
-        native_parse("define the potential position<a:b:c:d:/path>.\n")
+        parse("define the potential position<a:b:c:d:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
@@ -242,36 +232,36 @@ def test_position_definition_with_too_many_fqun_components(native_parse: NativeP
 
 
 def test_position_definition_with_global_path_missing_leading_slash(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse("define the potential position<mv:define-lang.org:parser:path>.\n")
+        parse("define the potential position<mv:define-lang.org:parser:path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 60
 
 
-def test_position_definition_empty_name_content(native_parse: NativeParse):
+def test_position_definition_empty_name_content(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse("define the potential position<>.\n")
+        parse("define the potential position<>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 31
 
 
-def test_position_definition_empty_name_at_eof(native_parse: NativeParse):
+def test_position_definition_empty_name_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse("define the potential position<")
+        parse("define the potential position<")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 31
 
 
-def test_position_definition_with_constraint_block(native_parse: NativeParse):
-    program = native_parse(
+def test_position_definition_with_constraint_block(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
@@ -299,8 +289,8 @@ def test_position_definition_with_constraint_block(native_parse: NativeParse):
     assert requirement.typed_global_name.name_content.path.name == "/child"
 
 
-def test_position_definition_with_multiple_requirements(native_parse: NativeParse):
-    program = native_parse(
+def test_position_definition_with_multiple_requirements(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the position</first>.\n"
@@ -334,20 +324,18 @@ def test_position_definition_with_multiple_requirements(native_parse: NativePars
     assert second.typed_global_name.name_content.path.name == "/second"
 
 
-def test_position_definition_block_requires_content(native_parse: NativeParse):
+def test_position_definition_block_requires_content(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        native_parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n}\n"
-        )
+        parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
-def test_position_constraint_block_requires_requirements(native_parse: NativeParse):
+def test_position_constraint_block_requires_requirements(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "    }\n"
@@ -360,10 +348,10 @@ def test_position_constraint_block_requires_requirements(native_parse: NativePar
 
 
 def test_position_constraint_block_with_invalid_statement_then_more_definitions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<my_lib:/path>.\n"
             + "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -379,10 +367,10 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
 
 
 def test_position_definition_rejects_multiple_constraint_blocks(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
@@ -398,9 +386,9 @@ def test_position_definition_rejects_multiple_constraint_blocks(
     assert exc_info.value.location.end_column == 41
 
 
-def test_second_constraint_block_after_close_on_same_line(native_parse: NativeParse):
+def test_second_constraint_block_after_close_on_same_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
@@ -415,9 +403,9 @@ def test_second_constraint_block_after_close_on_same_line(native_parse: NativePa
     assert exc_info.value.location.end_column == 6
 
 
-def test_second_constraint_block_on_requirement_line(native_parse: NativeParse):
+def test_second_constraint_block_on_requirement_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</first>.    it may only contain particles where {\n"
@@ -432,9 +420,9 @@ def test_second_constraint_block_on_requirement_line(native_parse: NativeParse):
 
 
 def test_action_definition_block_with_mixed_local_position_forms(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
@@ -477,9 +465,9 @@ def test_action_definition_block_with_mixed_local_position_forms(
 
 
 def test_action_definition_block_with_multiple_local_block_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<first_pos> {\n"
@@ -532,9 +520,9 @@ def test_action_definition_block_with_multiple_local_block_positions(
 
 
 def test_action_statements_block_with_mixed_local_position_forms(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -573,9 +561,9 @@ def test_action_statements_block_with_mixed_local_position_forms(
 
 
 def test_action_statements_block_with_multiple_local_block_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -623,18 +611,18 @@ def test_action_statements_block_with_multiple_local_block_positions(
     )
 
 
-def test_empty_potential_position_block(native_parse: NativeParse):
+def test_empty_potential_position_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        native_parse("define the potential position<standard:/path> {\n}\n")
+        parse("define the potential position<standard:/path> {\n}\n")
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
     assert exc_info.value.location.end_column == 1
 
 
-def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
+def test_invalid_content_in_potential_position_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<standard:/path> {\n"
             + "    nonsense here\n"
             + "}\n"
@@ -645,9 +633,9 @@ def test_invalid_content_in_potential_position_block(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 17
 
 
-def test_quality_implication_in_potential_position_block(native_parse: NativeParse):
+def test_quality_implication_in_potential_position_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<standard:/path> {\n"
             + "    it also assigns the position</required>.\n"
             + "    it may only contain particles where {\n"
@@ -661,9 +649,9 @@ def test_quality_implication_in_potential_position_block(native_parse: NativePar
     assert exc_info.value.location.end_column == 44
 
 
-def test_empty_local_position_definition_block(native_parse: NativeParse):
+def test_empty_local_position_definition_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<standard:/act> {\n"
             + "    define the position<bad> {\n"
             + "    }\n"
@@ -679,9 +667,9 @@ def test_empty_local_position_definition_block(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 5
 
 
-def test_invalid_content_in_local_position_definition_block(native_parse: NativeParse):
+def test_invalid_content_in_local_position_definition_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<standard:/act> {\n"
             + "    define the position<bad> {\n"
             + "        nonsense here\n"
@@ -698,9 +686,9 @@ def test_invalid_content_in_local_position_definition_block(native_parse: Native
     assert exc_info.value.location.end_column == 21
 
 
-def test_text_where_local_position_terminator_belongs(native_parse: NativeParse):
+def test_text_where_local_position_terminator_belongs(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run> x\n"
         )

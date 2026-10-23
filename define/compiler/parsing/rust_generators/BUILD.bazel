@@ -8,7 +8,7 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_binary(
     name = "generate_ast_nodes",
     srcs = ["generate_ast_nodes.py"],
-    visibility = ["//define/compiler/parsing/native:__pkg__"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":renderer_extension",
         ":rust_names",
@@ -20,7 +20,7 @@ py_binary(
 py_binary(
     name = "generate_parser_diagnostics",
     srcs = ["generate_parser_diagnostics.py"],
-    visibility = ["//define/compiler/parsing/native:__pkg__"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":renderer_extension",
         ":rust_names",
@@ -31,7 +31,7 @@ py_binary(
 py_binary(
     name = "generate_syntax_errors",
     srcs = ["generate_syntax_errors.py"],
-    visibility = ["//define/compiler/parsing/native:__pkg__"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":renderer_extension",
         ":rust_names",

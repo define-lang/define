@@ -9,8 +9,8 @@ py_library(
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/parsing:parser",
         "//define/compiler/parsing:test_helpers",
-        "//define/compiler/parsing/native:native_parser",
         "@pypi//pytest",
     ],
 )

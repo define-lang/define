@@ -36,7 +36,7 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.parsing.native.rust_generators import rust_names, rust_renderer
+from define.compiler.parsing.rust_generators import rust_names, rust_renderer
 
 _SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
     str: rust_renderer.FieldType.String(),
@@ -132,7 +132,7 @@ def _ast_classes(module: types.ModuleType) -> list[type]:
 
 
 def _describe(module: types.ModuleType) -> rust_renderer.AstDescription:
-    classes = _ast_classes(module)
+    classes = _parsed_classes(module)
     field_types = _FieldTypes(classes)
     # Type aliases come first, so that a union written out in a field
     # annotation takes the name of an alias for the same classes.
@@ -148,6 +148,57 @@ def _describe(module: types.ModuleType) -> rust_renderer.AstDescription:
     )
 
 
+def _parsed_classes(module: types.ModuleType) -> list[type]:
+    """Return the AST classes in `module` that a parsed `Program` can contain.
+
+    These are `Program`, and every class that a constructor parameter of one
+    of them names, with its subclasses.
+    """
+    classes = _ast_classes(module)
+    reachable: set[type] = set()
+    pending: list[type] = [ast.Program]
+    while pending:
+        cls = pending.pop()
+        if cls in reachable:
+            continue
+        reachable.add(cls)
+        pending.extend(subclass for subclass in classes if issubclass(subclass, cls))
+        pending.extend(_constructor_classes(cls, classes, module))
+    return [cls for cls in classes if cls in reachable]
+
+
+def _constructor_classes(
+    cls: type, classes: list[type], module: types.ModuleType
+) -> list[type]:
+    """Return the AST classes that the annotations of `cls`'s constructor parameters name."""
+    if inspect.isabstract(cls) or getattr(cls, "__parameters__", ()):
+        return []
+    type_variable_values = _type_variable_values(cls, vars(module))
+    named: list[type] = []
+    for parameter in inspect.signature(cls).parameters.values():
+        if _is_derived(parameter):
+            continue
+        annotation = typing.cast("object", parameter.annotation)
+        if typing.get_origin(annotation) is typing.Final:
+            annotation = _type_arguments(annotation)[0]
+        if isinstance(annotation, typing.TypeVar):
+            annotation = type_variable_values[annotation]
+        named.extend(_annotation_classes(annotation, classes))
+    return named
+
+
+def _annotation_classes(annotation: object, classes: list[type]) -> list[type]:
+    """Return the AST classes in `classes` that `annotation` names."""
+    if isinstance(annotation, type) and annotation in classes:
+        return [annotation]
+    if isinstance(annotation, typing.TypeAliasType):
+        return _annotation_classes(typing.cast("object", annotation.__value__), classes)
+    named: list[type] = []
+    for argument in _type_arguments(annotation):
+        named.extend(_annotation_classes(argument, classes))
+    return named
+
+
 def _describe_class(
     cls: type,
     classes: list[type],
@@ -156,7 +207,16 @@ def _describe_class(
 ) -> rust_renderer.NodeClass:
     ancestors = [base.__name__ for base in cls.__mro__[1:] if base in classes]
     constructor = None
-    if not inspect.isabstract(cls) and not getattr(cls, "__parameters__", ()):
+    # A class that has subclasses is only ever a base of the classes the
+    # parser builds.
+    has_subclasses = any(
+        other is not cls and issubclass(other, cls) for other in classes
+    )
+    if (
+        not inspect.isabstract(cls)
+        and not getattr(cls, "__parameters__", ())
+        and not has_subclasses
+    ):
         constructor = _describe_constructor(cls, field_types, module)
     return rust_renderer.NodeClass(
         name=cls.__name__,
@@ -198,18 +258,23 @@ class _FieldTypes:
 
     def __init__(self, classes: list[type]):
         self._classes: list[type] = classes
+        self._alias_names: dict[frozenset[type], str] = {}
         self._unions: dict[frozenset[type], rust_renderer.NodeUnion] = {}
         self._enums: dict[type, rust_renderer.FieldEnum] = {}
 
     def register_type_aliases(self, module: types.ModuleType):
-        """Name the union of AST classes that each type alias in `module` stands for after the alias."""
+        """Name each union of AST classes that a type alias in `module` stands for after the alias."""
         namespace: dict[str, object] = vars(module)
         for value in namespace.values():
-            if isinstance(value, typing.TypeAliasType) and not value.__type_params__:
-                _ = self._union_type(
-                    self._union_members(typing.cast("object", value.__value__)),
-                    value.__name__,
-                )
+            if not isinstance(value, typing.TypeAliasType) or value.__type_params__:
+                continue
+            members = _annotation_classes(
+                typing.cast("object", value.__value__), _ast_classes(module)
+            )
+            # An alias that names a class a parsed program cannot contain names
+            # no union that a parameter can have.
+            if all(member in self._classes for member in members):
+                self._alias_names[frozenset(members)] = value.__name__
 
     def unions(self) -> list[rust_renderer.NodeUnion]:
         return list(self._unions.values())
@@ -279,13 +344,15 @@ class _FieldTypes:
     def _union_type(
         self, members: list[type], alias_name: str | None
     ) -> rust_renderer.FieldType.Node:
-        """Return the union of `members`, registering it under `alias_name` the first time it is seen.
+        """Return the union of `members`, registering it the first time it is seen.
 
-        A union without a type alias is named by joining its members' names
+        The union is named after `alias_name`, or the type alias registered
+        for the same classes, and otherwise by joining its members' names
         with "Or".
         """
         key = frozenset(members)
         if key not in self._unions:
+            alias_name = alias_name or self._alias_names.get(key)
             name = alias_name or "Or".join(member.__name__ for member in members)
             member_classes: list[str] = []
             for cls in self._classes:

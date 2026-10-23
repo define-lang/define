@@ -17,16 +17,16 @@ import pytest
 from define.compiler.errors import parser_exceptions, source_map
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
     return error.format(source_map.SourceMap({}, in_memory_source=source))
 
 
-def test_empty_source_error_message(native_parse: NativeParse):
+def test_empty_source_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        native_parse("")
+        parse("")
     assert _format(exc_info.value, "") == textwrap.dedent("""\
         line 1, column 1
 
@@ -43,9 +43,9 @@ def test_empty_source_error_message(native_parse: NativeParse):
             - define the encoding_operation""")
 
 
-def test_error_message_without_path(native_parse: NativeParse):
+def test_error_message_without_path(parse: Parse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        native_parse("\ufeffdefine the potential position<standard:/path>.\n")
+        parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 1
@@ -62,9 +62,9 @@ def test_error_message_without_path(native_parse: NativeParse):
     )
 
 
-def test_char_error_message(native_parse: NativeParse):
+def test_char_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        native_parse("define the potential position<standard:/path>.\r\n")
+        parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
     assert exc_info.value.location.end_line == 1
@@ -78,9 +78,9 @@ def test_char_error_message(native_parse: NativeParse):
         Carriage return character (\\r) is not allowed.""")
 
 
-def test_token_error_message(native_parse: NativeParse):
+def test_token_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        native_parse("define the potential position<standard:/path>\n")
+        parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
     assert exc_info.value.location.end_line == 1
@@ -94,9 +94,9 @@ def test_token_error_message(native_parse: NativeParse):
         This statement must end with a '.' or a single space followed by '{'""")
 
 
-def test_error_message_for_indented_code_in_action_block(native_parse: NativeParse):
+def test_error_message_for_indented_code_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    define the position<local_name.\n"
@@ -122,9 +122,9 @@ def test_error_message_for_indented_code_in_action_block(native_parse: NativePar
         Missing '>' on this name: local_name.""")
 
 
-def test_invisible_character_error_message(native_parse: NativeParse):
+def test_invisible_character_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        native_parse(
+        parse(
             "# a\u200bb\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )

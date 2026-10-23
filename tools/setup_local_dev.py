@@ -28,9 +28,9 @@ SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 # rust-analyzer reads generated Rust sources from the source tree. They are in
 # the order of their command-line arguments.
 GENERATED_RUST_SOURCES = [
-    "define/compiler/parsing/native/ast.rs",
-    "define/compiler/parsing/native/parser_diagnostics.rs",
-    "define/compiler/parsing/native/syntax_errors.rs",
+    "define/compiler/parsing/ast.rs",
+    "define/compiler/parsing/parser_diagnostics.rs",
+    "define/compiler/parsing/syntax_errors.rs",
 ]
 
 # Type checkers and editors read the stubs of native extensions whose stubs
@@ -44,7 +44,7 @@ GENERATED_PYTHON_STUBS = [
 # their command-line arguments.
 NATIVE_EXTENSION_PACKAGES = [
     "define/compiler/codegen/literal/python",
-    "define/compiler/parsing/native",
+    "define/compiler/parsing",
 ]
 
 # re2 makes only its py_library public, so its files are found by their path in

@@ -14,13 +14,13 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 # --- Successful parses ---
 
 
-def test_implication_with_action_name_type(native_parse: NativeParse):
-    program = native_parse(
+def test_implication_with_action_name_type(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the action</required>.\n"
         + "    it happens when {\n"
@@ -40,8 +40,8 @@ def test_implication_with_action_name_type(native_parse: NativeParse):
     )
 
 
-def test_implication_with_various_fqun_forms(native_parse: NativeParse):
-    program = native_parse(
+def test_implication_with_various_fqun_forms(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the position<mv:example.com:my_lib:/full>.\n"
         + "    it also assigns the position<example.com:my_lib:/short_mv>.\n"
@@ -113,8 +113,8 @@ def test_implication_with_various_fqun_forms(native_parse: NativeParse):
     assert path_only_name.name_content.path.name == "/local"
 
 
-def test_implication_in_action_before_local_position(native_parse: NativeParse):
-    program = native_parse(
+def test_implication_in_action_before_local_position(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the position</required>.\n"
         + "    define the position<run>.\n"
@@ -136,8 +136,8 @@ def test_implication_in_action_before_local_position(native_parse: NativeParse):
     assert position.typed_name.name_content.name == "run"
 
 
-def test_implication_in_action_with_no_local_positions(native_parse: NativeParse):
-    program = native_parse(
+def test_implication_in_action_with_no_local_positions(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the position</required>.\n"
         + "    it happens when {\n"
@@ -158,9 +158,9 @@ def test_implication_in_action_with_no_local_positions(native_parse: NativeParse
 
 
 def test_multiple_implications_in_action_before_multiple_local_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    it also assigns the position</first>.\n"
         + "    it also assigns the action</second>.\n"
@@ -190,8 +190,8 @@ def test_multiple_implications_in_action_before_multiple_local_positions(
     assert other_position.typed_name.name_content.name == "other"
 
 
-def test_implication_with_comments_and_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_implication_with_comments_and_blank_lines(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    # leading comment\n"
         + "    it also assigns the position</first>.\n"
@@ -223,9 +223,9 @@ def test_implication_with_comments_and_blank_lines(native_parse: NativeParse):
 # --- Statement-level syntax errors ---
 
 
-def test_implication_missing_open_angle_at_eol(native_parse: NativeParse):
+def test_implication_missing_open_angle_at_eol(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position\n"
             + "    it happens when {\n"
@@ -240,9 +240,9 @@ def test_implication_missing_open_angle_at_eol(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 33
 
 
-def test_implication_missing_open_angle_with_terminator(native_parse: NativeParse):
+def test_implication_missing_open_angle_with_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position.\n"
             + "    it happens when {\n"
@@ -257,9 +257,9 @@ def test_implication_missing_open_angle_with_terminator(native_parse: NativePars
     assert exc_info.value.location.end_column == 33
 
 
-def test_implication_missing_open_angle_with_trailing_space(native_parse: NativeParse):
+def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position .\n"
             + "    it happens when {\n"
@@ -274,9 +274,9 @@ def test_implication_missing_open_angle_with_trailing_space(native_parse: Native
     assert exc_info.value.location.end_column == 33
 
 
-def test_implication_empty_name(native_parse: NativeParse):
+def test_implication_empty_name(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<>.\n"
             + "    it happens when {\n"
@@ -291,9 +291,9 @@ def test_implication_empty_name(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 34
 
 
-def test_implication_newline_inside_name(native_parse: NativeParse):
+def test_implication_newline_inside_name(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<\n"
             + "        /required>.\n"
@@ -309,9 +309,9 @@ def test_implication_newline_inside_name(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 34
 
 
-def test_implication_missing_close_angle(native_parse: NativeParse):
+def test_implication_missing_close_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required.\n"
             + "    it happens when {\n"
@@ -326,9 +326,9 @@ def test_implication_missing_close_angle(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 44
 
 
-def test_implication_missing_terminator(native_parse: NativeParse):
+def test_implication_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required>\n"
             + "    it happens when {\n"
@@ -343,9 +343,9 @@ def test_implication_missing_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 44
 
 
-def test_implication_missing_newline_after_terminator(native_parse: NativeParse):
+def test_implication_missing_newline_after_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required>.    it also assigns the position</other>.\n"
             + "    it happens when {\n"
@@ -360,9 +360,9 @@ def test_implication_missing_newline_after_terminator(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 45
 
 
-def test_implication_missing_space_after_keyword(native_parse: NativeParse):
+def test_implication_missing_space_after_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns theposition</required>.\n"
             + "    it happens when {\n"
@@ -377,9 +377,9 @@ def test_implication_missing_space_after_keyword(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 31
 
 
-def test_implication_extra_space_after_keyword(native_parse: NativeParse):
+def test_implication_extra_space_after_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the  position</required>.\n"
             + "    it happens when {\n"
@@ -394,9 +394,9 @@ def test_implication_extra_space_after_keyword(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 25
 
 
-def test_implication_local_name_where_global_required(native_parse: NativeParse):
+def test_implication_local_name_where_global_required(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position<foo>.\n"
             + "    it happens when {\n"
@@ -411,9 +411,9 @@ def test_implication_local_name_where_global_required(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 36
 
 
-def test_implication_chained_name_not_allowed(native_parse: NativeParse):
+def test_implication_chained_name_not_allowed(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</a>::position</b>.\n"
             + "    it happens when {\n"
@@ -432,10 +432,10 @@ def test_implication_chained_name_not_allowed(native_parse: NativeParse):
 
 
 def test_implication_after_constraint_block_in_potential_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</implied>.\n"
@@ -449,9 +449,9 @@ def test_implication_after_constraint_block_in_potential_position(
     assert exc_info.value.location.end_column == 44
 
 
-def test_implication_after_local_position_in_action_block(native_parse: NativeParse):
+def test_implication_after_local_position_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.QualityImplicationInWrongOrder) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it also assigns the position</required>.\n"
@@ -468,10 +468,10 @@ def test_implication_after_local_position_in_action_block(native_parse: NativePa
 
 
 def test_implication_after_trigger_conditions_block_in_action(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -487,9 +487,9 @@ def test_implication_after_trigger_conditions_block_in_action(
     assert exc_info.value.location.end_column == 48
 
 
-def test_implication_inside_position_constraint_block(native_parse: NativeParse):
+def test_implication_inside_position_constraint_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</implied>.\n"
@@ -503,9 +503,9 @@ def test_implication_inside_position_constraint_block(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 48
 
 
-def test_implication_inside_action_statements_block(native_parse: NativeParse):
+def test_implication_inside_action_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -521,9 +521,9 @@ def test_implication_inside_action_statements_block(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 48
 
 
-def test_implication_inside_trigger_conditions_block(native_parse: NativeParse):
+def test_implication_inside_trigger_conditions_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -539,10 +539,10 @@ def test_implication_inside_trigger_conditions_block(native_parse: NativeParse):
 
 
 def test_implication_inside_local_position_definition_constraint_block(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<inner> {\n"
             + "        it may only contain particles where {\n"
@@ -561,9 +561,9 @@ def test_implication_inside_local_position_definition_constraint_block(
     assert exc_info.value.location.end_column == 52
 
 
-def test_implication_at_global_scope(native_parse: NativeParse):
+def test_implication_at_global_scope(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        native_parse(
+        parse(
             "it also assigns the position</required>.\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )
@@ -576,9 +576,9 @@ def test_implication_at_global_scope(native_parse: NativeParse):
 # --- Block content errors ---
 
 
-def test_implication_only_in_action_definition_block(native_parse: NativeParse):
+def test_implication_only_in_action_definition_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</required>.\n"
             + "}\n"
@@ -589,9 +589,9 @@ def test_implication_only_in_action_definition_block(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_quality_implication_ends_after_keyword(native_parse: NativeParse):
+def test_quality_implication_ends_after_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the\n"
             + "    define the position<run>.\n"

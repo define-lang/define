@@ -10,11 +10,11 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_value_constraint_short_name(native_parse: NativeParse):
-    program = native_parse(
+def test_value_constraint_short_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the value</number/natural>.\n"
@@ -45,8 +45,8 @@ def test_value_constraint_short_name(native_parse: NativeParse):
     )
 
 
-def test_value_constraint_full_name(native_parse: NativeParse):
-    program = native_parse(
+def test_value_constraint_full_name(parse: Parse):
+    program = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
         + "        it has the value<standard:/number/natural>.\n"
@@ -81,9 +81,9 @@ def test_value_constraint_full_name(native_parse: NativeParse):
     )
 
 
-def test_value_constraint_requires_global_name(native_parse: NativeParse):
+def test_value_constraint_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the value<rational>.\n"
@@ -96,9 +96,9 @@ def test_value_constraint_requires_global_name(native_parse: NativeParse):
     assert error.value.location.end_column == 33
 
 
-def test_constraint_name_type_error_includes_value(native_parse: NativeParse):
+def test_constraint_name_type_error_includes_value(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the thing</number>.\n"

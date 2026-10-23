@@ -35,19 +35,11 @@ flowchart LR
     CodeGen -.->|generated code imports| Runtime["runtime/literal.py"]
 ```
 
-## Grammar
-
-- When updating the grammar, use EBNF instead of regex.
-
 ## Parser
 
 - Before changing the functionality of the parser, update the tests in
-  `compiler/parser_tests` first, or write a new test in the same style if you
-  are adding totally new functionality.
-
-## Transformer
-
-- The transformer turns the parse tree into an AST.
+  `compiler/parsing/parser_tests` first, or write a new test in the same style
+  if you are adding totally new functionality.
 
 ## Validator
 
@@ -66,14 +58,14 @@ flowchart LR
 
 - The fuzz test (`compiler/driver_fuzz_test.py`) is tagged `manual` and does not
   run with `bazelisk test //...`. Run it explicitly with
-  `bazelisk test //define/compiler:driver_fuzz_test` after changes to the
-  parser, transformer, validator, or error classification code.
+  `bazelisk test //define/compiler:driver_fuzz_test` after changes to the parser
+  or validator code.
 - Update the fuzz test's code generation when the syntax or semantics of the
   language change, so that the generated inputs remain representative of valid
   and near-valid Define source.
 - When a fuzz test failure reveals a bug, add a targeted unit test for the
-  affected component (parser, transformer, or validator) that reproduces the
-  specific issue before fixing it.
+  affected component (parser or validator) that reproduces the specific issue
+  before fixing it.
 
 ## Implementation Sequence
 

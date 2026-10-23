@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.parsing.native import native_parser
+from define.compiler.parsing import parser
 
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
@@ -24,8 +24,8 @@ def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
 
 def parse_with_diagnostics(
     source: str, file_path: PurePosixPath | None = None
-) -> native_parser.ParseResult:
+) -> parser.ParseResult:
     """Parse source, and return the parser's result."""
     # A lone surrogate in source becomes invalid UTF-8, as it would be in a
     # file, instead of failing to encode.
-    return native_parser.parse(source.encode(errors="surrogatepass"), file_path)
+    return parser.parse(source.encode(errors="surrogatepass"), file_path)

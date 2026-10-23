@@ -11,7 +11,7 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 _ACTION_PREFIX = (
@@ -31,9 +31,9 @@ def _action_statements(program: ast.Program) -> tuple[ast.ActionStatement, ...]:
     return definition.action_statements.statements
 
 
-def test_operation_execution_without_arguments(native_parse: NativeParse):
+def test_operation_execution_without_arguments(parse: Parse):
     [statement] = _action_statements(
-        native_parse(
+        parse(
             _ACTION_PREFIX + "        execute the operation</add>.\n" + _ACTION_SUFFIX
         )
     )
@@ -46,9 +46,9 @@ def test_operation_execution_without_arguments(native_parse: NativeParse):
     )
 
 
-def test_operation_execution_with_arguments(native_parse: NativeParse):
+def test_operation_execution_with_arguments(parse: Parse):
     [statement] = _action_statements(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the operation<mv:define-lang.org:parser:/add> {\n"
             + "            with view<a> looking at position<p>.\n"
@@ -93,9 +93,9 @@ def test_operation_execution_with_arguments(native_parse: NativeParse):
     )
 
 
-def test_operation_execution_among_action_statements(native_parse: NativeParse):
+def test_operation_execution_among_action_statements(parse: Parse):
     [local_position, create, add, clear, destroy] = _action_statements(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        define the position<q>.\n"
             + "\n"
@@ -130,9 +130,9 @@ def test_operation_execution_among_action_statements(native_parse: NativeParse):
     assert isinstance(destroy, ast.DestroyParticleStatement)
 
 
-def test_disallows_encoding_operation_execution(native_parse: NativeParse):
+def test_disallows_encoding_operation_execution(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the encoding operation.\n"
             + _ACTION_SUFFIX
@@ -143,42 +143,36 @@ def test_disallows_encoding_operation_execution(native_parse: NativeParse):
     assert error.value.location.end_column == 28
 
 
-def test_operation_execution_requires_terminator_or_block(native_parse: NativeParse):
+def test_operation_execution_requires_terminator_or_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
-        native_parse(
-            _ACTION_PREFIX + "        execute the operation</add>\n" + _ACTION_SUFFIX
-        )
+        parse(_ACTION_PREFIX + "        execute the operation</add>\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 36
     assert error.value.location.end_line == 6
     assert error.value.location.end_column == 36
 
 
-def test_operation_name_type_cannot_be_position(native_parse: NativeParse):
+def test_operation_name_type_cannot_be_position(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        native_parse(
-            _ACTION_PREFIX + "        execute the position</add>.\n" + _ACTION_SUFFIX
-        )
+        parse(_ACTION_PREFIX + "        execute the position</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 21
     assert error.value.location.end_line == 6
     assert error.value.location.end_column == 28
 
 
-def test_operation_missing_space_after_execute_the(native_parse: NativeParse):
+def test_operation_missing_space_after_execute_the(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
-            _ACTION_PREFIX + "        execute theoperation</add>.\n" + _ACTION_SUFFIX
-        )
+        parse(_ACTION_PREFIX + "        execute theoperation</add>.\n" + _ACTION_SUFFIX)
     assert error.value.location.line == 6
     assert error.value.location.column == 20
     assert error.value.location.end_line == 6
     assert error.value.location.end_column == 28
 
 
-def test_arguments_block_requires_argument(native_parse: NativeParse):
+def test_arguments_block_requires_argument(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the operation</add> {\n"
             + "        }\n"
@@ -190,9 +184,9 @@ def test_arguments_block_requires_argument(native_parse: NativeParse):
     assert error.value.location.end_column == 9
 
 
-def test_arguments_block_disallows_action_statement(native_parse: NativeParse):
+def test_arguments_block_disallows_action_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the operation</add> {\n"
             + "            create a particle in position<p>.\n"
@@ -206,10 +200,10 @@ def test_arguments_block_disallows_action_statement(native_parse: NativeParse):
 
 
 def test_arguments_block_disallows_action_statement_after_first_argument(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the operation</add> {\n"
             + "            with view<a> looking at position<p>.\n"
@@ -223,9 +217,9 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
     assert error.value.location.end_column == 45
 
 
-def test_argument_cannot_look_at_value(native_parse: NativeParse):
+def test_argument_cannot_look_at_value(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        execute the operation</add> {\n"
             + "            with view<a> looking at value<b>.\n"

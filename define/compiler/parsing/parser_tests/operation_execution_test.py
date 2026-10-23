@@ -11,7 +11,7 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 _OPERATION_PREFIX = (
@@ -29,9 +29,9 @@ def _operation_statements(
     return definition.operation_statements
 
 
-def test_encoding_operation_execution(native_parse: NativeParse):
+def test_encoding_operation_execution(parse: Parse):
     [statement] = _operation_statements(
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the encoding operation.\n"
             + _OPERATION_SUFFIX
@@ -43,9 +43,9 @@ def test_encoding_operation_execution(native_parse: NativeParse):
     )
 
 
-def test_operation_execution_without_arguments(native_parse: NativeParse):
+def test_operation_execution_without_arguments(parse: Parse):
     [statement] = _operation_statements(
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other>.\n"
             + _OPERATION_SUFFIX
@@ -64,9 +64,9 @@ def test_operation_execution_without_arguments(native_parse: NativeParse):
     )
 
 
-def test_operation_execution_with_arguments(native_parse: NativeParse):
+def test_operation_execution_with_arguments(parse: Parse):
     [statement] = _operation_statements(
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation<mv:define-lang.org:parser:/other> {\n"
             + "            with view<a> looking at view<left>.\n"
@@ -135,9 +135,9 @@ def test_operation_execution_with_arguments(native_parse: NativeParse):
     )
 
 
-def test_multiple_statements_comments_and_blank_lines(native_parse: NativeParse):
+def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     [first, second, third] = _operation_statements(
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "\n"
             + "        execute the operation</first>. # comment\n"
@@ -173,18 +173,18 @@ def test_multiple_statements_comments_and_blank_lines(native_parse: NativeParse)
     )
 
 
-def test_requires_statement(native_parse: NativeParse):
+def test_requires_statement(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOperationStatementsContent) as error:
-        native_parse(_OPERATION_PREFIX + _OPERATION_SUFFIX)
+        parse(_OPERATION_PREFIX + _OPERATION_SUFFIX)
     assert error.value.location.line == 3
     assert error.value.location.column == 5
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 5
 
 
-def test_disallows_action_statement(native_parse: NativeParse):
+def test_disallows_action_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        create a particle in position<p>.\n"
             + _OPERATION_SUFFIX
@@ -195,9 +195,9 @@ def test_disallows_action_statement(native_parse: NativeParse):
     assert error.value.location.end_column == 41
 
 
-def test_disallows_action_statement_after_first_statement(native_parse: NativeParse):
+def test_disallows_action_statement_after_first_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the encoding operation.\n"
             + "        create a particle in position<p>.\n"
@@ -209,9 +209,9 @@ def test_disallows_action_statement_after_first_statement(native_parse: NativePa
     assert error.value.location.end_column == 41
 
 
-def test_encoding_operation_requires_terminator(native_parse: NativeParse):
+def test_encoding_operation_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the encoding operation\n"
             + _OPERATION_SUFFIX
@@ -222,9 +222,9 @@ def test_encoding_operation_requires_terminator(native_parse: NativeParse):
     assert error.value.location.end_column == 39
 
 
-def test_operation_execution_requires_terminator_or_block(native_parse: NativeParse):
+def test_operation_execution_requires_terminator_or_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other>\n"
             + _OPERATION_SUFFIX
@@ -235,9 +235,9 @@ def test_operation_execution_requires_terminator_or_block(native_parse: NativePa
     assert error.value.location.end_column == 38
 
 
-def test_operation_requires_global_name(native_parse: NativeParse):
+def test_operation_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation<other>.\n"
             + _OPERATION_SUFFIX
@@ -248,9 +248,9 @@ def test_operation_requires_global_name(native_parse: NativeParse):
     assert error.value.location.end_column == 35
 
 
-def test_operation_requires_open_angle_bracket(native_parse: NativeParse):
+def test_operation_requires_open_angle_bracket(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation /other.\n"
             + _OPERATION_SUFFIX
@@ -261,9 +261,9 @@ def test_operation_requires_open_angle_bracket(native_parse: NativeParse):
     assert error.value.location.end_column == 30
 
 
-def test_operation_name_type_cannot_be_position(native_parse: NativeParse):
+def test_operation_name_type_cannot_be_position(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the position</other>.\n"
             + _OPERATION_SUFFIX
@@ -274,9 +274,9 @@ def test_operation_name_type_cannot_be_position(native_parse: NativeParse):
     assert error.value.location.end_column == 28
 
 
-def test_operation_name_type_cannot_be_action(native_parse: NativeParse):
+def test_operation_name_type_cannot_be_action(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the action</other>.\n"
             + _OPERATION_SUFFIX
@@ -287,9 +287,9 @@ def test_operation_name_type_cannot_be_action(native_parse: NativeParse):
     assert error.value.location.end_column == 26
 
 
-def test_arguments_block_requires_argument(native_parse: NativeParse):
+def test_arguments_block_requires_argument(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "        }\n"
@@ -301,9 +301,9 @@ def test_arguments_block_requires_argument(native_parse: NativeParse):
     assert error.value.location.end_column == 9
 
 
-def test_argument_requires_terminator(native_parse: NativeParse):
+def test_argument_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> looking at view<p>\n"
@@ -316,9 +316,9 @@ def test_argument_requires_terminator(native_parse: NativeParse):
     assert error.value.location.end_column == 44
 
 
-def test_argument_requires_local_view_name(native_parse: NativeParse):
+def test_argument_requires_local_view_name(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view</a> looking at view<p>.\n"
@@ -331,9 +331,9 @@ def test_argument_requires_local_view_name(native_parse: NativeParse):
     assert error.value.location.end_column == 24
 
 
-def test_argument_requires_view_name_type(native_parse: NativeParse):
+def test_argument_requires_view_name_type(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedView) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with position<a> looking at view<p>.\n"
@@ -346,9 +346,9 @@ def test_argument_requires_view_name_type(native_parse: NativeParse):
     assert error.value.location.end_column == 25
 
 
-def test_argument_requires_looking_at(native_parse: NativeParse):
+def test_argument_requires_looking_at(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationArgumentSyntax) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> position<p>.\n"
@@ -361,9 +361,9 @@ def test_argument_requires_looking_at(native_parse: NativeParse):
     assert error.value.location.end_column == 33
 
 
-def test_operation_missing_space_after_execute_the(native_parse: NativeParse):
+def test_operation_missing_space_after_execute_the(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute theoperation</other>.\n"
             + _OPERATION_SUFFIX
@@ -374,9 +374,9 @@ def test_operation_missing_space_after_execute_the(native_parse: NativeParse):
     assert error.value.location.end_column == 28
 
 
-def test_operation_extra_space_after_execute_the(native_parse: NativeParse):
+def test_operation_extra_space_after_execute_the(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the  operation</other>.\n"
             + _OPERATION_SUFFIX
@@ -387,9 +387,9 @@ def test_operation_extra_space_after_execute_the(native_parse: NativeParse):
     assert error.value.location.end_column == 21
 
 
-def test_argument_missing_space_after_with(native_parse: NativeParse):
+def test_argument_missing_space_after_with(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            withview<a> looking at view<p>.\n"
@@ -402,9 +402,9 @@ def test_argument_missing_space_after_with(native_parse: NativeParse):
     assert error.value.location.end_column == 20
 
 
-def test_argument_extra_space_after_with(native_parse: NativeParse):
+def test_argument_extra_space_after_with(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with  view<a> looking at view<p>.\n"
@@ -417,9 +417,9 @@ def test_argument_extra_space_after_with(native_parse: NativeParse):
     assert error.value.location.end_column == 18
 
 
-def test_argument_missing_space_before_looking_at(native_parse: NativeParse):
+def test_argument_missing_space_before_looking_at(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a>looking at view<p>.\n"
@@ -432,9 +432,9 @@ def test_argument_missing_space_before_looking_at(native_parse: NativeParse):
     assert error.value.location.end_column == 31
 
 
-def test_argument_extra_space_before_looking_at(native_parse: NativeParse):
+def test_argument_extra_space_before_looking_at(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a>  looking at view<p>.\n"
@@ -447,9 +447,9 @@ def test_argument_extra_space_before_looking_at(native_parse: NativeParse):
     assert error.value.location.end_column == 26
 
 
-def test_argument_missing_space_after_looking_at(native_parse: NativeParse):
+def test_argument_missing_space_after_looking_at(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> looking atview<p>.\n"
@@ -462,9 +462,9 @@ def test_argument_missing_space_after_looking_at(native_parse: NativeParse):
     assert error.value.location.end_column == 39
 
 
-def test_argument_extra_space_after_looking_at(native_parse: NativeParse):
+def test_argument_extra_space_after_looking_at(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> looking at  view<p>.\n"
@@ -477,9 +477,9 @@ def test_argument_extra_space_after_looking_at(native_parse: NativeParse):
     assert error.value.location.end_column == 37
 
 
-def test_argument_view_cannot_be_chained(native_parse: NativeParse):
+def test_argument_view_cannot_be_chained(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> looking at view<p>::position<q>.\n"
@@ -492,9 +492,9 @@ def test_argument_view_cannot_be_chained(native_parse: NativeParse):
     assert error.value.location.end_column == 44
 
 
-def test_argument_cannot_look_at_value(native_parse: NativeParse):
+def test_argument_cannot_look_at_value(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
-        native_parse(
+        parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
             + "            with view<a> looking at value<b>.\n"
@@ -507,9 +507,9 @@ def test_argument_cannot_look_at_value(native_parse: NativeParse):
     assert error.value.location.end_column == 41
 
 
-def test_disallows_quality_implication(native_parse: NativeParse):
+def test_disallows_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        it also assigns the position</a>.\n"
@@ -522,9 +522,9 @@ def test_disallows_quality_implication(native_parse: NativeParse):
     assert error.value.location.end_column == 41
 
 
-def test_arguments_block_disallows_quality_implication(native_parse: NativeParse):
+def test_arguments_block_disallows_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the operation</other> {\n"
@@ -539,9 +539,9 @@ def test_arguments_block_disallows_quality_implication(native_parse: NativeParse
     assert error.value.location.end_column == 45
 
 
-def test_argument_source_requires_local_view_name(native_parse: NativeParse):
+def test_argument_source_requires_local_view_name(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the operation</other> {\n"

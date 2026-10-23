@@ -8,7 +8,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.parsing.native import native_parser
+from define.compiler.parsing import parser
 from tools.generators import generate_large_define_source as gen
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:
-    result = native_parser.parse(source.encode(), PurePosixPath("generated.dfn"))
+    result = parser.parse(source.encode(), PurePosixPath("generated.dfn"))
     assert result.exception is None
     assert result.diagnostics == []
     assert result.program is not None
@@ -148,7 +148,7 @@ def test_malformed_eof_preserves_valid_prefix():
     valid = gen.generate_source_lines(500)
     invalid = gen.generate_source_lines(500, malformed_eof=True)
     assert invalid[:-1] == valid
-    result = native_parser.parse(("\n".join(invalid) + "\n").encode(), None)
+    result = parser.parse(("\n".join(invalid) + "\n").encode(), None)
     assert result.exception is not None
     assert result.diagnostics == []
     assert result.program is None

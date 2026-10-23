@@ -11,11 +11,11 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_operation_definition(native_parse: NativeParse):
-    program = native_parse(
+def test_operation_definition(parse: Parse):
+    program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
         + "        execute the encoding operation.\n"
@@ -37,8 +37,8 @@ def test_operation_definition(native_parse: NativeParse):
     )
 
 
-def test_operation_definition_with_views(native_parse: NativeParse):
-    program = native_parse(
+def test_operation_definition_with_views(parse: Parse):
+    program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    define the view<left> {\n"
         + "        it is read.\n"
@@ -78,8 +78,8 @@ def test_operation_definition_with_views(native_parse: NativeParse):
     )
 
 
-def test_comments_and_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_comments_and_blank_lines(parse: Parse):
+    program = parse(
         "define the operation<mv:define-lang.org:parser:/add> { # comment\n"
         + "\n"
         + "    # comment\n"
@@ -120,8 +120,8 @@ def test_comments_and_blank_lines(native_parse: NativeParse):
     )
 
 
-def test_between_other_definitions(native_parse: NativeParse):
-    program = native_parse(
+def test_between_other_definitions(parse: Parse):
+    program = parse(
         "define the potential value<mv:define-lang.org:parser:/number>.\n"
         + "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
@@ -140,9 +140,9 @@ def test_between_other_definitions(native_parse: NativeParse):
     assert isinstance(encoding, ast.EncodingDefinition)
 
 
-def test_requires_global_name(native_parse: NativeParse):
+def test_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        native_parse(
+        parse(
             "define the operation<add> {\n"
             + "    it does {\n"
             + "        execute the encoding operation.\n"
@@ -155,27 +155,27 @@ def test_requires_global_name(native_parse: NativeParse):
     assert error.value.location.end_column == 24
 
 
-def test_requires_block(native_parse: NativeParse):
+def test_requires_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        native_parse("define the operation<mv:define-lang.org:parser:/add>.\n")
+        parse("define the operation<mv:define-lang.org:parser:/add>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 53
     assert error.value.location.end_line == 1
     assert error.value.location.end_column == 53
 
 
-def test_requires_operation_statements_block(native_parse: NativeParse):
+def test_requires_operation_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
-        native_parse("define the operation<mv:define-lang.org:parser:/add> {\n}\n")
+        parse("define the operation<mv:define-lang.org:parser:/add> {\n}\n")
     assert error.value.location.line == 2
     assert error.value.location.column == 1
     assert error.value.location.end_line == 2
     assert error.value.location.end_column == 1
 
 
-def test_requires_operation_statements_block_after_views(native_parse: NativeParse):
+def test_requires_operation_statements_block_after_views(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<left> {\n"
             + "        it is read.\n"
@@ -191,9 +191,9 @@ def test_requires_operation_statements_block_after_views(native_parse: NativePar
     assert error.value.location.end_column == 1
 
 
-def test_disallows_local_position_definition(native_parse: NativeParse):
+def test_disallows_local_position_definition(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the position<p>.\n"
             + "    it does {\n"
@@ -207,9 +207,9 @@ def test_disallows_local_position_definition(native_parse: NativeParse):
     assert error.value.location.end_column == 27
 
 
-def test_disallows_view_after_operation_statements_block(native_parse: NativeParse):
+def test_disallows_view_after_operation_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the encoding operation.\n"
@@ -228,9 +228,9 @@ def test_disallows_view_after_operation_statements_block(native_parse: NativePar
     assert error.value.location.end_column == 27
 
 
-def test_disallows_second_operation_statements_block(native_parse: NativeParse):
+def test_disallows_second_operation_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the encoding operation.\n"
@@ -246,9 +246,9 @@ def test_disallows_second_operation_statements_block(native_parse: NativeParse):
     assert error.value.location.end_column == 13
 
 
-def test_missing_close_brace_at_eof(native_parse: NativeParse):
+def test_missing_close_brace_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the encoding operation.\n"
@@ -260,9 +260,9 @@ def test_missing_close_brace_at_eof(native_parse: NativeParse):
     assert error.value.location.end_column == 54
 
 
-def test_operation_statements_block_extra_whitespace(native_parse: NativeParse):
+def test_operation_statements_block_extra_whitespace(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does  {\n"
             + "        execute the encoding operation.\n"
@@ -275,9 +275,9 @@ def test_operation_statements_block_extra_whitespace(native_parse: NativeParse):
     assert error.value.location.end_column == 13
 
 
-def test_disallows_local_context(native_parse: NativeParse):
+def test_disallows_local_context(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -296,9 +296,9 @@ def test_disallows_local_context(native_parse: NativeParse):
     assert error.value.location.end_column == 62
 
 
-def test_disallows_quality_implication(native_parse: NativeParse):
+def test_disallows_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        native_parse(
+        parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it also assigns the position</a>.\n"
             + "    it does {\n"

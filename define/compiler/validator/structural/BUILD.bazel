@@ -20,7 +20,7 @@ py_library(
         "//define/compiler/errors:exceptions",
         "//define/compiler/errors:source_map",
         "//define/compiler/graphs:reference_graph",
-        "//define/compiler/parsing/native:native_parser",
+        "//define/compiler/parsing:parser",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",

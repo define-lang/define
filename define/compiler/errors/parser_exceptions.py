@@ -100,7 +100,7 @@ class ControlCharacterError(DefineCharError):
 
 
 # TODO: Trailing whitespace is always spaces, so this should not take a `char`,
-# and the parser in parser.rs should not have to pass it " ".
+# and the parser should not have to pass it " ".
 class TrailingWhitespaceError(DefineCharError):
     """Raised when trailing whitespace is found."""
 

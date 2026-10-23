@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, name_types
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_multiple_position_definitions(native_parse: NativeParse):
-    program = native_parse(
+def test_multiple_position_definitions(parse: Parse):
+    program = parse(
         "define the potential position<example.com:my_lib:/first>.\n"
         + "define the potential position<example.com:my_lib:/second>.\n"
     )
@@ -32,8 +32,8 @@ def test_multiple_position_definitions(native_parse: NativeParse):
     )
 
 
-def test_multiple_action_definitions(native_parse: NativeParse):
-    program = native_parse(
+def test_multiple_action_definitions(parse: Parse):
+    program = parse(
         "define the potential action<my_mv:example.com:my_lib:/first> {\n"
         + "    define the position<_noop>.\n"
         + "    it happens when {\n"
@@ -68,8 +68,8 @@ def test_multiple_action_definitions(native_parse: NativeParse):
     )
 
 
-def test_mixed_position_and_action_definitions(native_parse: NativeParse):
-    program = native_parse(
+def test_mixed_position_and_action_definitions(parse: Parse):
+    program = parse(
         "define the potential position<example.com:my_lib:/pos>.\n"
         + "define the potential action<my_mv:example.com:my_lib:/act> {\n"
         + "    define the position<_noop>.\n"
@@ -96,8 +96,8 @@ def test_mixed_position_and_action_definitions(native_parse: NativeParse):
     )
 
 
-def test_definitions_separated_by_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_definitions_separated_by_blank_lines(parse: Parse):
+    program = parse(
         "define the potential position<standard:/first>.\n"
         + "\n"
         + "define the potential position<example.com:my_lib:/second>.\n"
@@ -115,8 +115,8 @@ def test_definitions_separated_by_blank_lines(native_parse: NativeParse):
     )
 
 
-def test_definitions_separated_by_comments(native_parse: NativeParse):
-    program = native_parse(
+def test_definitions_separated_by_comments(parse: Parse):
+    program = parse(
         "define the potential position<my_mv:example.com:my_lib:/first>.\n"
         + "# a comment between definitions\n"
         + "define the potential position<my_mv:example.com:my_lib:/second>.\n"

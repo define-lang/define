@@ -15,22 +15,22 @@ from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
-        NativeParse,
-        NativeParseWithDiagnostics,
+        Parse,
+        ParseWithDiagnostics,
     )
 
 
-def test_action_definition_without_body_is_error(native_parse: NativeParse):
+def test_action_definition_without_body_is_error(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
-        native_parse("define the potential action<standard:/path>.\n")
+        parse("define the potential action<standard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 44
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 44
 
 
-def test_action_definition_with_body_parses(native_parse: NativeParse):
-    program = native_parse(
+def test_action_definition_with_body_parses(parse: Parse):
+    program = parse(
         "define the potential action<standard:/path> {\n"
         + "    define the position<pp>.\n"
         + "    it happens when {\n"
@@ -50,26 +50,26 @@ def test_action_definition_with_body_parses(native_parse: NativeParse):
     )
 
 
-def test_action_definition_missing_open_angle(native_parse: NativeParse):
+def test_action_definition_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        native_parse("define the potential actionstandard:/path>.\n")
+        parse("define the potential actionstandard:/path>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 28
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 28
 
 
-def test_action_definition_empty_name_content(native_parse: NativeParse):
+def test_action_definition_empty_name_content(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        native_parse("define the potential action<>.\n")
+        parse("define the potential action<>.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 29
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 29
 
 
-def test_action_with_empty_inner_blocks(native_parse: NativeParse):
-    program = native_parse(
+def test_action_with_empty_inner_blocks(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -86,8 +86,8 @@ def test_action_with_empty_inner_blocks(native_parse: NativeParse):
     )
 
 
-def test_action_with_local_position_definition(native_parse: NativeParse):
-    program = native_parse(
+def test_action_with_local_position_definition(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
@@ -107,8 +107,8 @@ def test_action_with_local_position_definition(native_parse: NativeParse):
     )
 
 
-def test_action_with_constrained_local_position_definition(native_parse: NativeParse):
-    program = native_parse(
+def test_action_with_constrained_local_position_definition(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos> {\n"
         + "        it may only contain particles where {\n"
@@ -136,8 +136,8 @@ def test_action_with_constrained_local_position_definition(native_parse: NativeP
     )
 
 
-def test_action_with_multiple_local_position_definitions(native_parse: NativeParse):
-    program = native_parse(
+def test_action_with_multiple_local_position_definitions(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
         + "    define the position<second_pos>.\n"
@@ -165,9 +165,9 @@ def test_action_with_multiple_local_position_definitions(native_parse: NativePar
 
 
 def test_blank_line_and_comment_between_interface_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
         + "\n"
@@ -192,8 +192,8 @@ def test_blank_line_and_comment_between_interface_positions(
     )
 
 
-def test_action_with_mixed_local_position_definition_forms(native_parse: NativeParse):
-    program = native_parse(
+def test_action_with_mixed_local_position_definition_forms(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
         + "    define the position<second_pos> {\n"
@@ -228,8 +228,8 @@ def test_action_with_mixed_local_position_definition_forms(native_parse: NativeP
     )
 
 
-def test_action_block_with_comments_and_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_with_comments_and_blank_lines(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
         + "\n"
@@ -250,8 +250,8 @@ def test_action_block_with_comments_and_blank_lines(native_parse: NativeParse):
     )
 
 
-def test_action_block_with_full_fqun(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_with_full_fqun(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/some/path> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
@@ -276,8 +276,8 @@ def test_action_block_with_full_fqun(native_parse: NativeParse):
     )
 
 
-def test_action_block_comment_after_trigger_open(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_comment_after_trigger_open(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when { # comment\n"
@@ -297,8 +297,8 @@ def test_action_block_comment_after_trigger_open(native_parse: NativeParse):
     )
 
 
-def test_action_block_comment_after_action_close(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_comment_after_action_close(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -316,9 +316,9 @@ def test_action_block_comment_after_action_close(native_parse: NativeParse):
 
 
 def test_action_block_no_indentation(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "define the position<run>.\n"
         + "it happens when {\n"
@@ -368,8 +368,8 @@ def test_action_block_no_indentation(
     assert definition.action_statements.statements == ()
 
 
-def test_action_block_blank_lines_in_trigger_block(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_blank_lines_in_trigger_block(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -391,8 +391,8 @@ def test_action_block_blank_lines_in_trigger_block(native_parse: NativeParse):
     )
 
 
-def test_action_block_blank_lines_in_action_block(native_parse: NativeParse):
-    program = native_parse(
+def test_action_block_blank_lines_in_action_block(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -412,9 +412,9 @@ def test_action_block_blank_lines_in_action_block(native_parse: NativeParse):
 
 
 def test_action_block_with_local_position_definition_in_action_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -437,9 +437,9 @@ def test_action_block_with_local_position_definition_in_action_statements(
 
 
 def test_action_block_with_multiple_local_position_definitions_in_action_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -470,9 +470,9 @@ def test_action_block_with_multiple_local_position_definitions_in_action_stateme
 
 
 def test_action_block_with_local_position_definitions_inside_and_outside_action_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<outer_pos>.\n"
         + "    it happens when {\n"
@@ -501,8 +501,8 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     )
 
 
-def test_two_action_definitions_in_same_file(native_parse: NativeParse):
-    program = native_parse(
+def test_two_action_definitions_in_same_file(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/first> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -533,9 +533,9 @@ def test_two_action_definitions_in_same_file(native_parse: NativeParse):
     )
 
 
-def test_action_block_missing_trigger_block(native_parse: NativeParse):
+def test_action_block_missing_trigger_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<my_pos>.\n"
             + "}\n"
@@ -547,12 +547,12 @@ def test_action_block_missing_trigger_block(native_parse: NativeParse):
 
 
 def test_global_position_definition_not_allowed_in_action_definition_block(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(
         parser_exceptions.GlobalPositionDefinitionInLocalContext
     ) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
             + "    it happens when {\n"
@@ -568,12 +568,12 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
 
 
 def test_global_position_definition_not_allowed_in_action_statements_block(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(
         parser_exceptions.GlobalPositionDefinitionInLocalContext
     ) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -589,9 +589,9 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
     assert exc_info.value.location.end_column == 37
 
 
-def test_action_block_missing_action_statements_block(native_parse: NativeParse):
+def test_action_block_missing_action_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -605,9 +605,9 @@ def test_action_block_missing_action_statements_block(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 6
 
 
-def test_action_block_missing_outer_close(native_parse: NativeParse):
+def test_action_block_missing_outer_close(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -621,9 +621,9 @@ def test_action_block_missing_outer_close(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 67
 
 
-def test_action_block_extra_space_before_brace(native_parse: NativeParse):
+def test_action_block_extra_space_before_brace(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/path>  {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -638,20 +638,18 @@ def test_action_block_extra_space_before_brace(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 62
 
 
-def test_action_block_no_newline_after_open_brace(native_parse: NativeParse):
+def test_action_block_no_newline_after_open_brace(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
-        native_parse(
-            "define the potential action<mv:define-lang.org:parser:/path> {}\n"
-        )
+        parse("define the potential action<mv:define-lang.org:parser:/path> {}\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 63
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 63
 
 
-def test_action_block_missing_newline_after_outer_open_brace(native_parse: NativeParse):
+def test_action_block_missing_newline_after_outer_open_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
             + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
@@ -664,9 +662,9 @@ def test_action_block_missing_newline_after_outer_open_brace(native_parse: Nativ
     assert exc_info.value.location.end_column == 63
 
 
-def test_action_block_missing_newline_after_inner_close(native_parse: NativeParse):
+def test_action_block_missing_newline_after_inner_close(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -680,9 +678,9 @@ def test_action_block_missing_newline_after_inner_close(native_parse: NativePars
     assert exc_info.value.location.end_column == 6
 
 
-def test_trigger_and_action_on_wrong_line(native_parse: NativeParse):
+def test_trigger_and_action_on_wrong_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -698,11 +696,11 @@ def test_trigger_and_action_on_wrong_line(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 6
 
 
-def test_local_position_after_trigger_and_action(native_parse: NativeParse):
+def test_local_position_after_trigger_and_action(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPositionDefinitionLocationInAction
     ) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -718,9 +716,9 @@ def test_local_position_after_trigger_and_action(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 23
 
 
-def test_second_trigger_and_action_block_pair_not_allowed(native_parse: NativeParse):
+def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -740,9 +738,9 @@ def test_second_trigger_and_action_block_pair_not_allowed(native_parse: NativePa
 
 
 def test_missing_close_brace_followed_by_global_definition(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -759,9 +757,9 @@ def test_missing_close_brace_followed_by_global_definition(
 
 
 def test_trigger_conditions_block_missing_close_brace_followed_by_global_definition(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -775,9 +773,9 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_global_definit
     assert result.diagnostics == []
 
 
-def test_action_statements_block_invalid_statement(native_parse: NativeParse):
+def test_action_statements_block_invalid_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -794,9 +792,9 @@ def test_action_statements_block_invalid_statement(native_parse: NativeParse):
 
 
 def test_action_statements_block_with_create_particle_local_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -820,9 +818,9 @@ def test_action_statements_block_with_create_particle_local_position(
 
 
 def test_action_statements_block_with_create_particle_short_global_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -847,9 +845,9 @@ def test_action_statements_block_with_create_particle_short_global_position(
 
 
 def test_action_statements_block_with_create_particle_full_global_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -880,9 +878,9 @@ def test_action_statements_block_with_create_particle_full_global_position(
 
 
 def test_action_statements_block_with_create_particle_chain(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -913,9 +911,9 @@ def test_action_statements_block_with_create_particle_chain(
 
 
 def test_action_statements_block_with_create_particle_short_global_chain(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -948,9 +946,9 @@ def test_action_statements_block_with_create_particle_short_global_chain(
 
 
 def test_action_statements_block_with_create_particle_any_typed_chain(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -982,9 +980,9 @@ def test_action_statements_block_with_create_particle_any_typed_chain(
 
 
 def test_action_statements_block_with_mixed_statements_and_multiple_create_particles(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -1034,9 +1032,9 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     )
 
 
-def test_no_space_before_and_it_does(native_parse: NativeParse):
+def test_no_space_before_and_it_does(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1051,9 +1049,9 @@ def test_no_space_before_and_it_does(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 8
 
 
-def test_comment_trailing_space_first_in_action_block(native_parse: NativeParse):
+def test_comment_trailing_space_first_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    # comment \n"
             + "    define the position<run>.\n"
@@ -1070,9 +1068,9 @@ def test_comment_trailing_space_first_in_action_block(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 14
 
 
-def test_comment_trailing_space_after_quality_implication(native_parse: NativeParse):
+def test_comment_trailing_space_after_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it also assigns the position</q>.\n"
             + "    # comment \n"
@@ -1090,9 +1088,9 @@ def test_comment_trailing_space_after_quality_implication(native_parse: NativePa
     assert exc_info.value.location.end_column == 14
 
 
-def test_comment_trailing_space_after_interface_position(native_parse: NativeParse):
+def test_comment_trailing_space_after_interface_position(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    # comment \n"
@@ -1109,9 +1107,9 @@ def test_comment_trailing_space_after_interface_position(native_parse: NativePar
     assert exc_info.value.location.end_column == 14
 
 
-def test_comment_trailing_space_before_action_close(native_parse: NativeParse):
+def test_comment_trailing_space_before_action_close(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1128,9 +1126,9 @@ def test_comment_trailing_space_before_action_close(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 14
 
 
-def test_text_after_action_close(native_parse: NativeParse):
+def test_text_after_action_close(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1145,9 +1143,9 @@ def test_text_after_action_close(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 2
 
 
-def test_text_after_interface_position_terminator(native_parse: NativeParse):
+def test_text_after_interface_position_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.x\n"
             + "    it happens when {\n"
@@ -1162,9 +1160,9 @@ def test_text_after_interface_position_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 30
 
 
-def test_no_space_before_trigger_conditions_brace(native_parse: NativeParse):
+def test_no_space_before_trigger_conditions_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when{\n"
@@ -1175,9 +1173,9 @@ def test_no_space_before_trigger_conditions_brace(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 20
 
 
-def test_comment_trailing_space_in_action_statements_block(native_parse: NativeParse):
+def test_comment_trailing_space_in_action_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1195,10 +1193,10 @@ def test_comment_trailing_space_in_action_statements_block(native_parse: NativeP
 
 
 def test_missing_space_between_words_of_trigger_conditions_block(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happenswhen {\n"
@@ -1213,9 +1211,9 @@ def test_missing_space_between_words_of_trigger_conditions_block(
     assert exc_info.value.location.end_column == 18
 
 
-def test_missing_space_between_words_of_action_statement(native_parse: NativeParse):
+def test_missing_space_between_words_of_action_statement(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1232,10 +1230,10 @@ def test_missing_space_between_words_of_action_statement(native_parse: NativePar
 
 
 def test_word_that_starts_like_action_statement_word_is_not_missing_space(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -1252,9 +1250,9 @@ def test_word_that_starts_like_action_statement_word_is_not_missing_space(
 
 
 def test_position_constraint_block_missing_close_brace_followed_by_action_statement(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -1275,9 +1273,9 @@ def test_position_constraint_block_missing_close_brace_followed_by_action_statem
 
 
 def test_trigger_conditions_block_missing_close_brace_followed_by_local_position(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -1293,9 +1291,9 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_local_position
 
 
 def test_action_statements_block_missing_close_brace_followed_by_implication(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"

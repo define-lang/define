@@ -1045,7 +1045,7 @@ def test_cli_reads_generated_rust_sources_from_runfiles(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    crate_path = tmp_path / "define/compiler/parsing/native"
+    crate_path = tmp_path / "define/compiler/parsing"
     crate_path.mkdir(parents=True)
     _ = (crate_path / "lib.rs").write_text(
         "fn parse(ast: &mut AstBuilder) -> ParseResult<u8> {\n"
@@ -1057,7 +1057,7 @@ def test_cli_reads_generated_rust_sources_from_runfiles(
     report_path = tmp_path / "bazel-out/_coverage/_coverage_report.dat"
     report_path.parent.mkdir(parents=True)
     _ = report_path.write_text(
-        "SF:define/compiler/parsing/native/lib.rs\n"
+        "SF:define/compiler/parsing/lib.rs\n"
         + "BRDA:2,0,region from 2:30 to 2:31,0\n"
         + "end_of_record\n",
         encoding="utf-8",

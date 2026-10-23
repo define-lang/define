@@ -11,7 +11,7 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 _ACTION_PREFIX = (
@@ -31,9 +31,9 @@ def _only_literal(program: ast.Program) -> ast.Literal:
     return statement.source
 
 
-def test_literal_source(native_parse: NativeParse):
+def test_literal_source(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</decimal>"123".\n'
             + "    }\n}\n"
@@ -52,9 +52,9 @@ def test_literal_source(native_parse: NativeParse):
     )
 
 
-def test_literal_full_global_name(native_parse: NativeParse):
+def test_literal_full_global_name(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest>::position<child> to literal<mv:define-lang.org:parser:/text>"hello".\n'
             + "    }\n}\n"
@@ -74,9 +74,9 @@ def test_literal_full_global_name(native_parse: NativeParse):
     )
 
 
-def test_literal_empty_content(native_parse: NativeParse):
+def test_literal_empty_content(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"".\n'
             + "    }\n}\n"
@@ -88,9 +88,9 @@ def test_literal_empty_content(native_parse: NativeParse):
     )
 
 
-def test_literal_spaces_comments_unicode_and_escapes(native_parse: NativeParse):
+def test_literal_spaces_comments_unicode_and_escapes(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>" # Hello 世界 < {} . > : \\" \\\\ \\n ". # comment\n'
             + "    }\n}\n"
@@ -102,9 +102,9 @@ def test_literal_spaces_comments_unicode_and_escapes(native_parse: NativeParse):
     )
 
 
-def test_literal_starts_with_comment_character(native_parse: NativeParse):
+def test_literal_starts_with_comment_character(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"#content". # comment\n'
             + "    }\n}\n"
@@ -116,8 +116,8 @@ def test_literal_starts_with_comment_character(native_parse: NativeParse):
     )
 
 
-def test_literal_brace_before_comment_character(native_parse: NativeParse):
-    program = native_parse(
+def test_literal_brace_before_comment_character(parse: Parse):
+    program = parse(
         _ACTION_PREFIX
         + '        set the value of position<dest> to literal</text>" {#content".\n'
         + '        set the value of position<dest> to literal</text>"next".\n'
@@ -135,10 +135,10 @@ def test_literal_brace_before_comment_character(native_parse: NativeParse):
 
 
 def test_comment_after_literal_with_escaped_quote_brace_and_hash(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"a\\" {#b\\\\". # comment\n'
             + "    }\n}\n"
@@ -147,9 +147,9 @@ def test_comment_after_literal_with_escaped_quote_brace_and_hash(
     assert literal.content == 'a" {#b\\'
 
 
-def test_comment_after_literal_containing_angle_brackets(native_parse: NativeParse):
+def test_comment_after_literal_containing_angle_brackets(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"< # >". # comment\n'
             + "    }\n}\n"
@@ -158,9 +158,9 @@ def test_comment_after_literal_containing_angle_brackets(native_parse: NativePar
     assert literal.content == "< # >"
 
 
-def test_literal_unknown_escape_is_invalid(native_parse: NativeParse):
+def test_literal_unknown_escape_is_invalid(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"bad\\t".\n'
             + "    }\n}\n"
@@ -172,9 +172,9 @@ def test_literal_unknown_escape_is_invalid(native_parse: NativeParse):
     assert error.value.location.end_column == 63
 
 
-def test_literal_unknown_escape_of_non_ascii_character(native_parse: NativeParse):
+def test_literal_unknown_escape_of_non_ascii_character(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"aé\\é".\n'
             + "    }\n}\n"
@@ -186,9 +186,9 @@ def test_literal_unknown_escape_of_non_ascii_character(native_parse: NativeParse
     assert error.value.location.end_column == 62
 
 
-def test_literal_newline(native_parse: NativeParse):
+def test_literal_newline(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"a\nb".\n'
             + "    }\n}\n"
@@ -199,9 +199,9 @@ def test_literal_newline(native_parse: NativeParse):
     assert error.value.location.end_column == 60
 
 
-def test_literal_target_is_invalid(native_parse: NativeParse):
+def test_literal_target_is_invalid(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of literal</text>"a" to position<dest>.\n'
             + "    }\n}\n"
@@ -212,9 +212,9 @@ def test_literal_target_is_invalid(native_parse: NativeParse):
     assert error.value.location.end_column == 32
 
 
-def test_literal_missing_global_name(native_parse: NativeParse):
+def test_literal_missing_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal<text>"abc".\n'
             + "    }\n}\n"
@@ -225,9 +225,9 @@ def test_literal_missing_global_name(native_parse: NativeParse):
     assert error.value.location.end_column == 55
 
 
-def test_literal_empty_name(native_parse: NativeParse):
+def test_literal_empty_name(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal<>"abc".\n'
             + "    }\n}\n"
@@ -238,9 +238,9 @@ def test_literal_empty_name(native_parse: NativeParse):
     assert error.value.location.end_column == 52
 
 
-def test_literal_missing_open_angle_bracket(native_parse: NativeParse):
+def test_literal_missing_open_angle_bracket(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal/text>"abc".\n'
             + "    }\n}\n"
@@ -251,9 +251,9 @@ def test_literal_missing_open_angle_bracket(native_parse: NativeParse):
     assert error.value.location.end_column == 51
 
 
-def test_literal_missing_close_angle_bracket(native_parse: NativeParse):
+def test_literal_missing_close_angle_bracket(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text"abc".\n'
             + "    }\n}\n"
@@ -265,9 +265,9 @@ def test_literal_missing_close_angle_bracket(native_parse: NativeParse):
     assert error.value.name == '/text"abc".'
 
 
-def test_literal_missing_open_quote(native_parse: NativeParse):
+def test_literal_missing_open_quote(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to literal</text>.\n"
             + "    }\n}\n"
@@ -278,9 +278,9 @@ def test_literal_missing_open_quote(native_parse: NativeParse):
     assert error.value.location.end_column == 58
 
 
-def test_literal_unquoted_content(native_parse: NativeParse):
+def test_literal_unquoted_content(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to literal</foo>5.\n"
             + "    }\n}\n"
@@ -291,9 +291,9 @@ def test_literal_unquoted_content(native_parse: NativeParse):
     assert error.value.location.end_column == 57
 
 
-def test_literal_missing_close_quote(native_parse: NativeParse):
+def test_literal_missing_close_quote(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"abc.\n'
             + "    }\n}\n"
@@ -304,9 +304,9 @@ def test_literal_missing_close_quote(native_parse: NativeParse):
     assert error.value.location.end_column == 63
 
 
-def test_literal_content_starting_with_slash(native_parse: NativeParse):
+def test_literal_content_starting_with_slash(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"/0".\n'
             + "    }\n}\n"
@@ -315,9 +315,9 @@ def test_literal_content_starting_with_slash(native_parse: NativeParse):
     assert literal.content == "/0"
 
 
-def test_literal_cannot_be_child_of_position(native_parse: NativeParse):
+def test_literal_cannot_be_child_of_position(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to position<parent>::literal</text>"abc".\n'
             + "    }\n}\n"
@@ -328,9 +328,9 @@ def test_literal_cannot_be_child_of_position(native_parse: NativeParse):
     assert error.value.location.end_column == 68
 
 
-def test_literal_cannot_start_position_reference(native_parse: NativeParse):
+def test_literal_cannot_start_position_reference(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"a"::position<child>.\n'
             + "    }\n}\n"
@@ -341,9 +341,9 @@ def test_literal_cannot_start_position_reference(native_parse: NativeParse):
     assert error.value.location.end_column == 61
 
 
-def test_literal_missing_terminator(native_parse: NativeParse):
+def test_literal_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"a"\n'
             + "    }\n}\n"
@@ -354,9 +354,9 @@ def test_literal_missing_terminator(native_parse: NativeParse):
     assert error.value.location.end_column == 61
 
 
-def test_literal_old_syntax_is_invalid(native_parse: NativeParse):
+def test_literal_old_syntax_is_invalid(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to literal</text:abc>.\n"
             + "    }\n}\n"
@@ -367,9 +367,9 @@ def test_literal_old_syntax_is_invalid(native_parse: NativeParse):
     assert error.value.location.end_column == 62
 
 
-def test_literal_escape_at_end_of_line(native_parse: NativeParse):
+def test_literal_escape_at_end_of_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"ab\\\n'
             + "    }\n}\n"
@@ -380,9 +380,9 @@ def test_literal_escape_at_end_of_line(native_parse: NativeParse):
     assert error.value.location.end_column == 62
 
 
-def test_literal_escape_at_end_of_source(native_parse: NativeParse):
+def test_literal_escape_at_end_of_source(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"ab\\'
         )
@@ -392,9 +392,9 @@ def test_literal_escape_at_end_of_source(native_parse: NativeParse):
     assert error.value.location.end_column == 62
 
 
-def test_literal_with_escape_and_non_ascii_character(native_parse: NativeParse):
+def test_literal_with_escape_and_non_ascii_character(parse: Parse):
     literal = _only_literal(
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"é\\"x".\n'
             + "    }\n}\n"
@@ -406,9 +406,9 @@ def test_literal_with_escape_and_non_ascii_character(native_parse: NativeParse):
     )
 
 
-def test_literal_missing_close_quote_after_escape(native_parse: NativeParse):
+def test_literal_missing_close_quote_after_escape(parse: Parse):
     with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> to literal</text>"a\\"b\n'
             + "    }\n}\n"
@@ -419,9 +419,9 @@ def test_literal_missing_close_quote_after_escape(native_parse: NativeParse):
     assert error.value.location.end_column == 63
 
 
-def test_no_space_between_to_and_literal(native_parse: NativeParse):
+def test_no_space_between_to_and_literal(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        native_parse(
+        parse(
             _ACTION_PREFIX
             + '        set the value of position<dest> toliteral</text>"a".\n'
             + "    }\n}\n"

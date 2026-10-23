@@ -10,11 +10,11 @@ from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_potential_literal_definition(native_parse: NativeParse):
-    program = native_parse(
+def test_potential_literal_definition(parse: Parse):
+    program = parse(
         "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
         + "    it has the encoding</decimal_text>.\n"
         + "}\n"
@@ -38,8 +38,8 @@ def test_potential_literal_definition(native_parse: NativeParse):
     )
 
 
-def test_comments_and_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_comments_and_blank_lines(parse: Parse):
+    program = parse(
         "define the potential literal<mv:define-lang.org:parser:/decimal> { # comment\n"
         + "\n"
         + "    # comment\n"
@@ -58,31 +58,29 @@ def test_comments_and_blank_lines(native_parse: NativeParse):
     )
 
 
-def test_requires_global_name(native_parse: NativeParse):
+def test_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = native_parse("define the potential literal<decimal> {\n}\n")
+        _ = parse("define the potential literal<decimal> {\n}\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 30
     assert error.value.location.end_line == 1
     assert error.value.location.end_column == 36
 
 
-def test_requires_block(native_parse: NativeParse):
+def test_requires_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        _ = native_parse(
-            "define the potential literal<mv:define-lang.org:parser:/decimal>.\n"
-        )
+        _ = parse("define the potential literal<mv:define-lang.org:parser:/decimal>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 65
     assert error.value.location.end_line == 1
     assert error.value.location.end_column == 65
 
 
-def test_requires_encoding_constraint(native_parse: NativeParse):
+def test_requires_encoding_constraint(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "}\n"
         )
@@ -92,11 +90,11 @@ def test_requires_encoding_constraint(native_parse: NativeParse):
     assert error.value.location.end_column == 1
 
 
-def test_requires_encoding_type(native_parse: NativeParse):
+def test_requires_encoding_type(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "    it has the value</decimal>.\n"
             + "}\n"
@@ -107,9 +105,9 @@ def test_requires_encoding_type(native_parse: NativeParse):
     assert error.value.location.end_column == 20
 
 
-def test_encoding_requires_global_name(native_parse: NativeParse):
+def test_encoding_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "    it has the encoding<decimal>.\n"
             + "}\n"
@@ -120,9 +118,9 @@ def test_encoding_requires_global_name(native_parse: NativeParse):
     assert error.value.location.end_column == 31
 
 
-def test_encoding_requires_terminator(native_parse: NativeParse):
+def test_encoding_requires_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "    it has the encoding</decimal>\n"
             + "}\n"
@@ -133,9 +131,9 @@ def test_encoding_requires_terminator(native_parse: NativeParse):
     assert error.value.location.end_column == 34
 
 
-def test_disallows_multiple_encodings(native_parse: NativeParse):
+def test_disallows_multiple_encodings(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "    it has the encoding</decimal>.\n"
             + "    it has the encoding</decimal>.\n"
@@ -147,9 +145,9 @@ def test_disallows_multiple_encodings(native_parse: NativeParse):
     assert error.value.location.end_column == 34
 
 
-def test_disallows_local_context(native_parse: NativeParse):
+def test_disallows_local_context(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it happens when {\n"
             + "        this particle is created.\n"
@@ -166,9 +164,9 @@ def test_disallows_local_context(native_parse: NativeParse):
     assert error.value.location.end_column == 74
 
 
-def test_disallows_particle_constraint(native_parse: NativeParse):
+def test_disallows_particle_constraint(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential position<mv:define-lang.org:parser:/test> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the literal</decimal>.\n"
@@ -181,9 +179,9 @@ def test_disallows_particle_constraint(native_parse: NativeParse):
     assert error.value.location.end_column == 26
 
 
-def test_disallows_quality_implication(native_parse: NativeParse):
+def test_disallows_quality_implication(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential action<mv:define-lang.org:parser:/test> {\n"
             + "    it also assigns the literal</decimal>.\n"
             + "    it happens when {\n"
@@ -198,11 +196,11 @@ def test_disallows_quality_implication(native_parse: NativeParse):
     assert error.value.location.end_column == 31
 
 
-def test_statement_that_is_not_an_encoding_constraint(native_parse: NativeParse):
+def test_statement_that_is_not_an_encoding_constraint(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:
-        _ = native_parse(
+        _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "    it is a literal.\n"
             + "}\n"

@@ -8,7 +8,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.parsing.native import native_parser
+from define.compiler.parsing import parser
 from tools.generators import generate_particle_operations_source as gen
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:
-    result = native_parser.parse(source.encode(), PurePosixPath("generated.dfn"))
+    result = parser.parse(source.encode(), PurePosixPath("generated.dfn"))
     assert result.exception is None
     assert result.diagnostics == []
     assert result.program is not None

@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, name_types
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 def test_action_statements_block_with_move_particle_local_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -48,9 +48,9 @@ def test_action_statements_block_with_move_particle_local_positions(
 
 
 def test_action_statements_block_with_move_particle_short_global_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -83,9 +83,9 @@ def test_action_statements_block_with_move_particle_short_global_positions(
 
 
 def test_action_statements_block_with_move_particle_full_global_positions(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -130,9 +130,9 @@ def test_action_statements_block_with_move_particle_full_global_positions(
 
 
 def test_action_statements_block_with_move_particle_chained_source(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -170,9 +170,9 @@ def test_action_statements_block_with_move_particle_chained_source(
 
 
 def test_action_statements_block_with_move_particle_chained_destination(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -210,9 +210,9 @@ def test_action_statements_block_with_move_particle_chained_destination(
 
 
 def test_action_statements_block_with_move_particle_both_chained(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -251,9 +251,9 @@ def test_action_statements_block_with_move_particle_both_chained(
 
 
 def test_action_statements_block_with_mixed_create_and_move_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -278,9 +278,9 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
 
 
 def test_action_statements_block_with_move_particle_mixed_local_and_global(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"

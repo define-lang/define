@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, name_types
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import NativeParse
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 def test_action_statements_block_with_destroy_particle_local_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -41,9 +41,9 @@ def test_action_statements_block_with_destroy_particle_local_position(
 
 
 def test_action_statements_block_with_destroy_particle_short_global_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -68,9 +68,9 @@ def test_action_statements_block_with_destroy_particle_short_global_position(
 
 
 def test_action_statements_block_with_destroy_particle_full_global_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -101,9 +101,9 @@ def test_action_statements_block_with_destroy_particle_full_global_position(
 
 
 def test_action_statements_block_with_destroy_particle_chained_position(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -134,9 +134,9 @@ def test_action_statements_block_with_destroy_particle_chained_position(
 
 
 def test_action_statements_block_with_destroy_particle_short_global_chain(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -169,9 +169,9 @@ def test_action_statements_block_with_destroy_particle_short_global_chain(
 
 
 def test_action_statements_block_with_destroy_particle_any_typed_chain(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -203,9 +203,9 @@ def test_action_statements_block_with_destroy_particle_any_typed_chain(
 
 
 def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -237,9 +237,9 @@ def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
 
 
 def test_action_statements_block_with_mixed_statements_and_multiple_destroy_particles(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -271,9 +271,9 @@ def test_action_statements_block_with_mixed_statements_and_multiple_destroy_part
 
 
 def test_action_statements_block_with_destroy_particle_mixed_local_and_global(
-    native_parse: NativeParse,
+    parse: Parse,
 ):
-    program = native_parse(
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"

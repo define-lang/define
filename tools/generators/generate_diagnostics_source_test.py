@@ -8,7 +8,7 @@ import pytest
 
 from define.compiler import driver
 from define.compiler.errors import diagnostics
-from define.compiler.parsing.native import native_parser
+from define.compiler.parsing import parser
 from tools.generators import generate_diagnostics_source as gen
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ def test_cli(tmp_path: Path):
 @pytest.mark.parametrize("width", [1, 1000])
 def test_indentation_diagnostics(width: int):
     source = "\n".join(gen.generate_source_lines(errors=2, indent_width=width)) + "\n"
-    result = native_parser.parse(source.encode(), PurePosixPath("test.dfn"))
+    result = parser.parse(source.encode(), PurePosixPath("test.dfn"))
     assert result.exception is None
     assert [type(diagnostic) for diagnostic in result.diagnostics] == [
         diagnostics.IncorrectIndentationDiagnostic

@@ -15,13 +15,13 @@ from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
-        NativeParse,
-        NativeParseWithDiagnostics,
+        Parse,
+        ParseWithDiagnostics,
     )
 
 
-def test_destructor_with_no_interface_positions(native_parse: NativeParse):
-    program = native_parse(
+def test_destructor_with_no_interface_positions(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        this particle is being destroyed.\n"
@@ -39,8 +39,8 @@ def test_destructor_with_no_interface_positions(native_parse: NativeParse):
     assert definition.interface_positions == ()
 
 
-def test_destructor_with_comments(native_parse: NativeParse):
-    program = native_parse(
+def test_destructor_with_comments(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        # a comment\n"
@@ -59,8 +59,8 @@ def test_destructor_with_comments(native_parse: NativeParse):
     )
 
 
-def test_destructor_with_blank_lines(native_parse: NativeParse):
-    program = native_parse(
+def test_destructor_with_blank_lines(parse: Parse):
+    program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "\n"
@@ -79,9 +79,9 @@ def test_destructor_with_blank_lines(native_parse: NativeParse):
     )
 
 
-def test_destructor_missing_terminator(native_parse: NativeParse):
+def test_destructor_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    it happens when {\n"
             + "        this particle is being destroyed\n"
@@ -95,9 +95,9 @@ def test_destructor_missing_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 41
 
 
-def test_destructor_followed_by_extra_content(native_parse: NativeParse):
+def test_destructor_followed_by_extra_content(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    it happens when {\n"
             + "        this particle is being destroyed now.\n"
@@ -111,9 +111,9 @@ def test_destructor_followed_by_extra_content(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 41
 
 
-def test_trigger_condition_and_destructor_in_one_block(native_parse: NativeParse):
+def test_trigger_condition_and_destructor_in_one_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -129,9 +129,9 @@ def test_trigger_condition_and_destructor_in_one_block(native_parse: NativeParse
     assert exc_info.value.location.end_column == 41
 
 
-def test_destructor_as_action_statement(native_parse: NativeParse):
+def test_destructor_as_action_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
@@ -147,18 +147,18 @@ def test_destructor_as_action_statement(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 41
 
 
-def test_destructor_at_top_level(native_parse: NativeParse):
+def test_destructor_at_top_level(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        native_parse("this particle is being destroyed.\n")
+        parse("this particle is being destroyed.\n")
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.end_column == 33
 
 
-def test_truncated_destructor_phrase_in_trigger_block(native_parse: NativeParse):
+def test_truncated_destructor_phrase_in_trigger_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    it happens when {\n"
             + "        this particle.\n"
@@ -172,9 +172,9 @@ def test_truncated_destructor_phrase_in_trigger_block(native_parse: NativeParse)
     assert exc_info.value.location.end_column == 22
 
 
-def test_destructor_block_missing_and_it_does(native_parse: NativeParse):
+def test_destructor_block_missing_and_it_does(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        native_parse(
+        parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    it happens when {\n"
             + "        this particle is being destroyed.\n"
@@ -188,9 +188,9 @@ def test_destructor_block_missing_and_it_does(native_parse: NativeParse):
 
 
 def test_destructor_action_block_missing_close_brace(
-    native_parse_with_diagnostics: NativeParseWithDiagnostics,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics(
+    result = parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        this particle is being destroyed.\n"

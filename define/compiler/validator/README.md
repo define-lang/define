@@ -6,12 +6,12 @@ This directory contains all the phases of the Define validator.
 
 The intentional design of the system is that we have the following components:
 
-1. **Structural Validator**: This actually calls the parser, transformer, and
-   config loader. Its primary duty is to build the "reference graph," which is a
-   DAG of which global definitions reference each other. It loads and parses
-   files in parallel and produces diagnostics primarily related to program
-   structure: dependency configuration correctness, name formats, basic
-   reference validity, and so on.
+1. **Structural Validator**: This actually calls the parser and the config
+   loader. Its primary duty is to build the "reference graph," which is a DAG of
+   which global definitions reference each other. It loads and parses files in
+   parallel and produces diagnostics primarily related to program structure:
+   dependency configuration correctness, name formats, basic reference validity,
+   and so on.
 2. **Reference Graph Validator**: Takes the reference graph from the structural
    validator and produces the "action graph," which is a graph of which actions
    trigger other, when.

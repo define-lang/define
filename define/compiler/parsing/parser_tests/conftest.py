@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     import pathlib
 
     from define.compiler import ast
-    from define.compiler.parsing.native import native_parser
+    from define.compiler.parsing import parser
 
 
-class NativeParse(Protocol):
-    """Callable that parses source with the parser in parser.rs and returns the program."""
+class Parse(Protocol):
+    """Callable that parses source and returns the program."""
 
     def __call__(
         self,
@@ -27,25 +27,25 @@ class NativeParse(Protocol):
         ...
 
 
-class NativeParseWithDiagnostics(Protocol):
-    """Callable that parses source with the parser in parser.rs and returns its result."""
+class ParseWithDiagnostics(Protocol):
+    """Callable that parses source and returns the parser's result."""
 
     def __call__(
         self,
         source: str,
         file_path: pathlib.PurePosixPath | None = ...,
-    ) -> native_parser.ParseResult:
+    ) -> parser.ParseResult:
         """Parse source and return the result."""
         ...
 
 
 @pytest.fixture
-def native_parse_with_diagnostics() -> NativeParseWithDiagnostics:
-    """Return a parse callable that uses the parser in parser.rs and returns its whole result."""
+def parse_with_diagnostics() -> ParseWithDiagnostics:
+    """Return a parse callable that returns the parser's whole result."""
     return test_helpers.parse_with_diagnostics
 
 
 @pytest.fixture
-def native_parse() -> NativeParse:
-    """Return a parse callable that uses the parser in parser.rs and raises its exceptions."""
+def parse() -> Parse:
+    """Return a parse callable that raises the parser's exceptions."""
     return test_helpers.parse
