@@ -194,6 +194,8 @@ def _project(tmp_path: Path) -> Path:
     for path in (
         "defcl/python/grammar.lark",
         "define/config/project/config.proto",
+        "define/compiler/parsing/parser.rs",
+        "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
         "MODULE.bazel.lock",
     ):
         (repository / path).parent.mkdir(parents=True, exist_ok=True)
@@ -218,7 +220,15 @@ def test_first_uv_run_runs_setup_local_dev_once(
     ]
 
 
-@pytest.mark.parametrize("source", ["defcl/python/grammar.lark", "MODULE.bazel.lock"])
+@pytest.mark.parametrize(
+    "source",
+    [
+        "defcl/python/grammar.lark",
+        "define/compiler/parsing/parser.rs",
+        "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
+        "MODULE.bazel.lock",
+    ],
+)
 def test_changed_source_makes_uv_run_refresh_again(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str
 ):

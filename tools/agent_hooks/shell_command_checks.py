@@ -67,9 +67,17 @@ def _generated_files_may_be_stale(repository: Path) -> bool:
         return True
     stamp_time = stamp.stat().st_mtime_ns
     # MODULE.bazel.lock pins the Bazel Python interpreter that the local venv
-    # uses.
+    # uses. Rust sources and templates build the native extensions and the
+    # generated Rust sources that setup_local_dev copies.
     sources = _git(
-        repository, "ls-files", "-z", "*.proto", "*.lark", "MODULE.bazel.lock"
+        repository,
+        "ls-files",
+        "-z",
+        "*.proto",
+        "*.lark",
+        "*.rs",
+        "*.j2",
+        "MODULE.bazel.lock",
     )
     for source in sources.split("\0"):
         if source and (repository / source).stat().st_mtime_ns > stamp_time:
