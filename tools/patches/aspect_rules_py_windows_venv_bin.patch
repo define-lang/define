@@ -1,0 +1,192 @@
+diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
+index 793f874d..ac4d5da2 100644
+--- a/py/private/interpreter/repository.bzl
++++ b/py/private/interpreter/repository.bzl
+@@ -247,7 +247,20 @@ cc_library(
+         if abi_flags == "":
+             headers_abi3_attr = "    headers_abi3 = \":python_headers\",\n"
+ 
++    venv_dlls_target = ""
++    venv_dlls_attr = ""
+     if is_windows:
++        # The DLLs that `python -m venv --symlinks` links beside a venv's
++        # interpreter on Windows.
++        venv_dlls_target = """\
++filegroup(
++    name = "venv_dlls",
++    srcs = glob(["python*.dll", "vcruntime*.dll"]),
++    visibility = ["//visibility:private"],
++)
++
++"""
++        venv_dlls_attr = "    venv_dlls = [\":venv_dlls\"],\n"
+         core_include = ["**/*.py", "**/*.pyd", "**/*.dll", "**/*.exe", "include/**", "Lib/**"]
+         core_exclude = ["Lib/**/test/**", "Lib/**/tests/**"]
+     else:
+@@ -311,7 +324,7 @@ filegroup(
+     deps = {header_interface_deps},
+ )
+ 
+-py_runtime_toolchain(
++{venv_dlls_target}py_runtime_toolchain(
+     name = "runtime",
+     abi_flags = "{abi_flags}",
+     files = [":files"],
+@@ -323,7 +336,7 @@ py_runtime_toolchain(
+         "releaselevel": "{releaselevel}",
+         "serial": "{serial}",
+     }},
+-)
++{venv_dlls_attr})
+ 
+ py_cc_toolchain(
+     name = "py_cc_toolchain",
+@@ -348,6 +361,8 @@ py_cc_toolchain(
+         feature_targets = feature_targets,
+         feature_selects = feature_selects,
+         core_srcs = _files_glob(core_include, core_exclude, precompiled),
++        venv_dlls_target = venv_dlls_target,
++        venv_dlls_attr = venv_dlls_attr,
+     )
+ 
+ python_interpreter = repository_rule(
+diff --git a/py/private/interpreter/runtime.bzl b/py/private/interpreter/runtime.bzl
+index 9c0d89fc..9bbc87c9 100644
+--- a/py/private/interpreter/runtime.bzl
++++ b/py/private/interpreter/runtime.bzl
+@@ -50,6 +50,9 @@ def _py_runtime_toolchain_impl(ctx):
+             py3_runtime = runtime,
+             # The //py/private/toolchain:exec_tools_toolchain_type contract.
+             exec_runtime = runtime,
++            # Read by rules_py's venv assembly, which links these into a
++            # Windows venv's `bin/`.
++            venv_dlls = ctx.files.venv_dlls,
+         ),
+         DefaultInfo(files = depset([ctx.file.interpreter], transitive = [runtime.files])),
+     ]
+@@ -79,6 +82,11 @@ build host regardless of the target platform being built for).""",
+         "abi_flags": attr.string(
+             doc = "CPython ABI flag suffix, e.g. \"t\" for freethreaded.",
+         ),
++        "venv_dlls": attr.label_list(
++            doc = "Windows only: the DLLs beside the interpreter that a venv links into its `bin/`, " +
++                  "so that a process started from there finds them.",
++            allow_files = [".dll"],
++        ),
+         "_bootstrap_template": attr.label(
+             allow_single_file = True,
+             default = "@rules_python//python/private:bootstrap_template",
+diff --git a/py/private/py_semantics.bzl b/py/private/py_semantics.bzl
+index 7ff1c81e..ffe3ba43 100644
+--- a/py/private/py_semantics.bzl
++++ b/py/private/py_semantics.bzl
+@@ -67,6 +67,8 @@ def _resolve_toolchain(ctx):
+         python = interpreter,
+         interpreter_version_info = interpreter_version_info,
+         freethreaded = freethreaded,
++        # Only rules_py's own interpreter toolchains provide this.
++        venv_dlls = getattr(toolchain_info, "venv_dlls", None),
+     )
+ 
+ semantics = struct(
+diff --git a/py/private/py_venv/toolchains_resolver.bzl b/py/private/py_venv/toolchains_resolver.bzl
+index 89d8f367..54dc6289 100644
+--- a/py/private/py_venv/toolchains_resolver.bzl
++++ b/py/private/py_venv/toolchains_resolver.bzl
+@@ -132,6 +132,52 @@ def _bin_python_target_path(ctx, py_toolchain, package_depth):
+         to_rlocation_path(ctx, py_toolchain.python),
+     )
+ 
++def _interpreter_dir_dlls(py_toolchain):
++    """The runtime's ``python*.dll`` and ``vcruntime*.dll`` beside its interpreter.
++
++    The last resort for toolchains that have neither rules_py's ``venv_dlls`` nor
++    rules_python 2.0's ``venv_bin_files``, such as rules_python before 2.0. It
++    flattens all of the runtime's files, which ``venv_dlls`` exists to avoid.
++    Matches the ``venv_dlls`` glob in the interpreter repositories rules_py
++    generates, case-insensitively as ``python -m venv --symlinks`` does.
++    """
++    interpreter_dir = py_toolchain.python.dirname
++    dlls = []
++    for f in py_toolchain.files.to_list():
++        if (f.dirname == interpreter_dir and
++            f.extension.lower() == "dll" and
++            f.basename.lower().startswith(("python", "vcruntime"))):
++            dlls.append(f)
++    return sorted(dlls, key = lambda f: f.basename)
++
++def _windows_bin_links(ctx, py_toolchain, package_depth):
++    """Extra ``bin/`` symlinks that Windows needs to find and start the venv's interpreter.
++
++    Windows finds only ``python.exe`` on ``PATH``, and loads a program's DLLs from
++    the directory it was started from, so ``bin/`` gets both.
++
++    Returns:
++      dict of ``bin/``-relative name to symlink ``target_path``.
++    """
++    links = {"python.exe": "python"}
++    dlls = py_toolchain.venv_dlls
++
++    # Toolchains not generated by rules_py don't provide `venv_dlls`.
++    # rules_python 2.0+ runtimes declare the same DLLs as `venv_bin_files`
++    # (`*.dll` beside the interpreter), and link all of them into their own
++    # venvs. Older runtimes declare nothing, so as a last resort find the DLLs
++    # among the runtime's files, which flattens the whole runtime.
++    if dlls == None:
++        dlls = getattr(py_toolchain.toolchain, "venv_bin_files", None)
++        if not dlls:
++            dlls = _interpreter_dir_dlls(py_toolchain)
++    for dll in dlls:
++        links[dll.basename] = "{}/{}".format(
++            _relative_up(3 + package_depth),
++            to_rlocation_path(ctx, dll),
++        )
++    return links
++
+ def resolve_venv_toolchain(ctx, *, py_toolchain, is_windows, venv_name):
+     """Compute toolchain-derived paths and flags for venv assembly.
+ 
+@@ -145,7 +191,7 @@ def resolve_venv_toolchain(ctx, *, py_toolchain, is_windows, venv_name):
+       struct with ``wheel_py_ver``, ``venv_py_ver``, ``escape``,
+       ``venv_to_runfiles_escape``, ``site_packages_rel``,
+       ``pyvenv_home``, ``versioned_python_names``,
+-      ``bin_python_target_path``.
++      ``bin_python_target_path``, ``windows_bin_links``.
+     """
+     wheel_py_ver, venv_py_ver = _py_versions(py_toolchain)
+     depth = _package_depth(ctx)
+@@ -161,4 +207,5 @@ def resolve_venv_toolchain(ctx, *, py_toolchain, is_windows, venv_name):
+         pyvenv_home = _pyvenv_home(ctx, py_toolchain, is_windows, venv_to_runfiles_escape),
+         versioned_python_names = _versioned_python_names(py_toolchain),
+         bin_python_target_path = _bin_python_target_path(ctx, py_toolchain, depth),
++        windows_bin_links = _windows_bin_links(ctx, py_toolchain, depth) if is_windows else {},
+     )
+diff --git a/py/private/py_venv/venv.bzl b/py/private/py_venv/venv.bzl
+index 36a795a3..6d47fac0 100644
+--- a/py/private/py_venv/venv.bzl
++++ b/py/private/py_venv/venv.bzl
+@@ -16,6 +16,9 @@ distutils, etc.) treat it as a real venv:
+         python                                  symlink -> py_toolchain.python
+         python3                                 symlink -> python
+         python3.<MAJ>.<MIN>                     symlink -> python
++        python.exe                              Windows only: symlink -> python
++        python*.dll, vcruntime*.dll             Windows only: symlinks to the
++                                                interpreter's DLLs
+         activate                                bash/zsh activation script
+         <console_script>                        one per wheel-declared entry point
+       lib/python<MAJ>.<MIN>/site-packages/      Lib/site-packages/ on Windows
+@@ -386,6 +389,14 @@ def assemble_venv(
+         )
+         declared.append(sym)
+ 
++    for name, target_path in tc.windows_bin_links.items():
++        sym = ctx.actions.declare_symlink("{}/bin/{}".format(venv_name, name))
++        ctx.actions.symlink(
++            output = sym,
++            target_path = target_path,
++        )
++        declared.append(sym)
++
+     bin_activate = None
+     if venv_activate_tmpl != None:
+         bin_activate = ctx.actions.declare_file("{}/bin/activate".format(venv_name))
