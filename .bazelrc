@@ -28,6 +28,9 @@ build:windows_cross --host_platform=//tools/platforms:local_linux_for_windows_cr
 # common:windows applies only on Windows hosts, but Windows programs built from
 # Linux need runfiles directories for the same reasons.
 build:windows_cross --enable_runfiles
+# rules_js's default Windows launcher runs bash at the path a Linux host assumes
+# for it, c:/msys64/usr/bin/bash.exe, so it fails wherever bash is elsewhere.
+build:windows_cross --@aspect_rules_js//js:use_hermetic_launcher
 common:windows_cross --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
 
 # Show full command lines on failure
