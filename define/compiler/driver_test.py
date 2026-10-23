@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path, PureWindowsPath
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -135,6 +136,9 @@ class TestPathResolution:
             0
         ].file_path == define_path.DefinePath("link/hello.dfn")
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="Windows removes `link/..` before following it"
+    )
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
@@ -152,6 +156,9 @@ class TestPathResolution:
         assert exc_info.value.input_path == Path("link/../hello.dfn")
         assert exc_info.value.project_root == project.resolve()
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="Windows removes `link/..` before following it"
+    )
     def test_symlink_with_dotdot_staying_in_root_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
@@ -171,6 +178,32 @@ class TestPathResolution:
         assert driver_result.program_validation.file_results[
             0
         ].file_path == define_path.DefinePath("real/hello.dfn")
+
+    @pytest.mark.skipif(
+        sys.platform != "win32", reason="POSIX follows `link` before applying `..`"
+    )
+    def test_symlink_with_dotdot_is_removed_before_following_on_windows(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        project = tmp_path / "project"
+        project.mkdir()
+        _setup_project(project, "test.example.com:my_lib")
+        _write_source(
+            project,
+            "hello.dfn",
+            "define the potential position<test.example.com:my_lib:/hello>.\n",
+        )
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (project / "link").symlink_to(outside)
+        monkeypatch.chdir(project)
+
+        driver_result = driver.Driver().validate_program(Path("link/../hello.dfn"))
+        assert len(driver_result.program_validation.file_results) == 1
+        assert_no_errors(driver_result.program_validation)
+        assert driver_result.program_validation.file_results[
+            0
+        ].file_path == define_path.DefinePath("hello.dfn")
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
