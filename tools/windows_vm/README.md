@@ -34,7 +34,7 @@ If `define-windows` is listed, use it:
    is ready:
 
    ```sh
-   <Define checkout>/bazel-bin/tools/windows_vm/sync_windows_vm
+   "<Define checkout>/bazel-bin/tools/windows_vm/sync_windows_vm"
    ```
 
    Don't use `bazelisk run`, because the tool copies the checkout of the
