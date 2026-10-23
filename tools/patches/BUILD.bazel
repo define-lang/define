@@ -10,6 +10,7 @@ exports_files([
     "bufplugin_checktest_windows_file_paths.patch",
     "llvm_msvc_legacy_stdio_definitions.patch",
     "llvm_windows_exec_sdk_case_overlays.patch",
+    "rules_multitool_target_toolchains.patch",
     "rules_rust_coverage_collector_flag.patch",
     "rules_rust_msvc_lld_link.patch",
     "rules_rust_pyo3_cc_runtime_linkage.patch",

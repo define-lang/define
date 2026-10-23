@@ -103,6 +103,20 @@ single_version_override(
     ],
 )
 
+# Each tool registers one toolchain for its execution platform and one for its
+# target platform. A cross build matches both and picks the execution platform's
+# one, so a test that runs a tool on its target platform gets a binary that
+# cannot run there. The target toolchains patch registers only the target
+# platform's toolchain, which still matches the execution platform when a tool
+# is built for it.
+# TODO: Remove the target toolchains patch once a rules_multitool release
+# includes https://github.com/bazel-contrib/rules_multitool/pull/126.
+single_version_override(
+    module_name = "rules_multitool",
+    patch_strip = 1,
+    patches = ["//tools/patches:rules_multitool_target_toolchains.patch"],
+)
+
 # --- Python toolchain ---
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
