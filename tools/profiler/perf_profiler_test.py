@@ -17,6 +17,7 @@ from click import testing
 from tools.profiler import (
     analyzer,
     analyzer_model,
+    perf_access,
     perf_analyzer,
     perf_profiler,
     perf_test_support,
@@ -680,6 +681,39 @@ def test_cpu_command_dispatches_to_perf(tmp_path: Path):
     capture.assert_called_once()
 
 
+def test_cpu_command_reports_missing_perf_access_before_target_launch(
+    tmp_path: Path,
+):
+    workload_path = tmp_path / "workload.define"
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
+    profile_path = tmp_path / "perf.data"
+    with mock.patch.object(
+        perf_access,
+        "require_cpu_access",
+        autospec=True,
+        side_effect=perf_access.PerfAccessError("grant CPU access"),
+    ):
+        result = testing.CliRunner().invoke(
+            profiler.main,
+            (
+                "--mode",
+                "cpu",
+                "--profile",
+                str(profile_path),
+                "--workload",
+                str(workload_path),
+                "--working-directory",
+                str(tmp_path),
+                "--",
+                "compiler",
+            ),
+        )
+
+    assert result.exit_code == 1
+    assert result.output == "Error: grant CPU access\n"
+    assert not profile_path.exists()
+
+
 def test_cpu_command_rejects_wall_coordination_descriptor(tmp_path: Path):
     workload_path = tmp_path / "workload.define"
     _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
@@ -717,9 +751,10 @@ def test_reports_perf_failure_before_target_launch(tmp_path: Path):
         return subprocess.CompletedProcess(command, 255)
 
     with (
+        mock.patch.object(perf_access, "require_cpu_access", autospec=True),
         mock.patch.object(
-            perf_profiler,
-            "_perf_executable",
+            perf_access,
+            "perf_executable",
             autospec=True,
             return_value="perf",
         ),

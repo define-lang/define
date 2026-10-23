@@ -26,6 +26,7 @@ import click
 import msgspec
 
 from tools.profiler import (
+    perf_access,
     perf_profiler,
     process_events,
     remote_frame_names,
@@ -1316,6 +1317,7 @@ def capture(  # noqa: PLR0913 - Public capture settings are all keyword-only.
         random_generator=random_generator,
     )
 
+    scheduler_events.require_access()
     if event_file_descriptor is not None:
         _ = os.fstat(event_file_descriptor)
         os.set_blocking(event_file_descriptor, False)
@@ -1359,7 +1361,6 @@ def capture(  # noqa: PLR0913 - Public capture settings are all keyword-only.
         with scheduler_events.start(
             target_process.process.pid,
             pathlib.Path(temporary_directory_name),
-            enabled=True,
         ) as scheduler_event_collector:
             compiler_exit_status = _capture_process(session)
             causality_result = scheduler_event_collector.finish()
@@ -1383,7 +1384,8 @@ def capture(  # noqa: PLR0913 - Public capture settings are all keyword-only.
     epilog=(
         "Place -- before the target command. Wall mode takes randomized "
         "blocking all-thread observations. CPU mode runs the complete command "
-        "under Linux perf with CPython frame trampolines."
+        "under Linux perf with CPython frame trampolines. See run_profile "
+        "--help for the machine setup that each mode needs."
     ),
 )
 @click.option(
@@ -1484,6 +1486,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
         except (
             OSError,
             subprocess.SubprocessError,
+            perf_access.PerfAccessError,
         ) as error:
             raise click.ClickException(str(error)) from error
         successful = metadata[
@@ -1503,16 +1506,19 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
             raise click.ClickException("profile capture was not successful")
         return
 
-    profile = capture(
-        command=command,
-        profile_path=absolute_profile_path,
-        workload_path=workload_path.absolute(),
-        working_directory=working_directory.absolute(),
-        mean_interval_seconds=mean_interval_seconds,
-        random_seed=random.SystemRandom().randrange(2**63),
-        attachment_timeout_seconds=attachment_timeout_seconds,
-        event_file_descriptor=event_file_descriptor,
-    )
+    try:
+        profile = capture(
+            command=command,
+            profile_path=absolute_profile_path,
+            workload_path=workload_path.absolute(),
+            working_directory=working_directory.absolute(),
+            mean_interval_seconds=mean_interval_seconds,
+            random_seed=random.SystemRandom().randrange(2**63),
+            attachment_timeout_seconds=attachment_timeout_seconds,
+            event_file_descriptor=event_file_descriptor,
+        )
+    except perf_access.PerfAccessError as error:
+        raise click.ClickException(str(error)) from error
     counts = profile.observation_counts
     attempted = counts["successful"] + counts["discarded"]
     status = "successful" if profile.success else "unsuccessful"

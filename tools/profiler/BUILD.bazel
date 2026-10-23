@@ -56,6 +56,25 @@ py_test(
     ],
 )
 
+# PRF-020: Machine and human interfaces.
+py_library(
+    name = "perf_access",
+    srcs = ["perf_access.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+# PRF-020: Machine and human interfaces.
+py_test(
+    name = "perf_access_test",
+    size = "small",
+    srcs = ["perf_access_test.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":perf_access",
+        "@pypi//pytest",
+    ],
+)
+
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
 # PRF-018: Focused analysis. PRF-019: Concurrency semantics.
 py_library(
@@ -74,6 +93,9 @@ py_library(
     name = "perf_profiler",
     srcs = ["perf_profiler.py"],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":perf_access",
+    ],
 )
 
 # PRF-010: Raw-data preservation. PRF-014: CPU mode.
@@ -89,6 +111,7 @@ py_test(
     deps = [
         ":analyzer",
         ":analyzer_model",
+        ":perf_access",
         ":perf_analyzer",
         ":perf_profiler",
         ":perf_test_support",
@@ -105,7 +128,9 @@ py_library(
     srcs = ["perf_test_support.py"],
     visibility = ["//tools:__pkg__"],
     deps = [
+        ":perf_access",
         ":perf_profiler",
+        ":scheduler_events",
         "@pypi//pytest",
     ],
 )
@@ -138,6 +163,7 @@ py_library(
     srcs = ["profiler.py"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":perf_access",
         ":perf_profiler",
         ":process_events",
         ":remote_frame_names",
@@ -186,6 +212,7 @@ py_test(
     },
     deps = [
         ":analyzer",
+        ":perf_test_support",
         ":process_events",
         ":profiler",
         ":schema",
@@ -209,9 +236,11 @@ py_test(
     size = "small",
     srcs = ["profiler_unit_test.py"],
     deps = [
+        ":perf_access",
         ":process_events",
         ":profiler",
         ":remote_frame_names",
+        ":scheduler_events",
         ":schema",
         "@pypi//click",
         "@pypi//msgspec",
@@ -256,6 +285,7 @@ py_library(
     srcs = ["scheduler_events.py"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":perf_access",
         ":perf_profiler",
         ":schema",
         "@pypi//msgspec",
@@ -357,6 +387,8 @@ pyright_test(
         ":analyzer",
         ":analyzer_model",
         ":compiler_profile_test",
+        ":perf_access",
+        ":perf_access_test",
         ":perf_analyzer",
         ":perf_profiler",
         ":perf_profiler_test",

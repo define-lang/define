@@ -122,7 +122,10 @@ def record_profile(invocation: ProfileInvocation):
             env=invocation.environment,
             stdin=source_stream,
         )
-    completed.check_returncode()
+    # The profiler has already printed why it failed, so a traceback here would
+    # only bury that message.
+    if completed.returncode != 0:
+        raise SystemExit(completed.returncode)
 
 
 def _profile_invocation(
@@ -175,7 +178,14 @@ def _profile_invocation(
         "  run_profile --project PROJECT --entry main.dfn --out PROFILE\n\n"
         "The profiler records all-thread wall observations or Linux perf CPU samples. "
         "Generated code goes to a temporary directory unless --output-dir is "
-        "provided."
+        "provided.\n\n"
+        "Machine setup: CPU mode needs kernel.perf_event_paranoid set to 1 or "
+        "lower, for example in a file in /etc/sysctl.d/, and a CPython that "
+        "runs with -X perf. Wall mode records scheduler tracepoints to tell "
+        "which thread woke which, so it needs kernel.perf_event_paranoid set "
+        "to -1 and /sys/kernel/tracing readable by the user, for example by "
+        "mounting tracefs with gid=GROUP,mode=0750. Each mode refuses to "
+        "start without its access and says how to grant it."
     )
 )
 @click.option(

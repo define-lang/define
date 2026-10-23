@@ -231,6 +231,7 @@ def test_builds_compiler_before_preparing_profile(
 # PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
     profile_path = tmp_path / "source-profile.jsonl"
@@ -279,6 +280,7 @@ def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
 # PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     project_path = tmp_path / "project"
     project_path.mkdir()
     config_path = project_path / ".define/project/config.defcl"

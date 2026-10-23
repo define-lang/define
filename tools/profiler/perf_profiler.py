@@ -15,6 +15,8 @@ import tempfile
 import time
 import typing
 
+from tools.profiler import perf_access
+
 _BAZEL_PYTHON_ENTRYPOINT_MARKER = "__PEX_PY_BINARY_ENTRYPOINT__"
 _BAZEL_PYTHON_EXEC = 'exec "python3" '
 # CPython and perf require this fixed exchange path rather than TMPDIR.
@@ -61,13 +63,6 @@ def runtime_python_map_path(target_pid: int) -> pathlib.Path:
 def diagnostics_path(profile_path: pathlib.Path) -> pathlib.Path:
     """Return the target diagnostics retained with a perf data file."""
     return profile_path.with_name(profile_path.name + ".stderr")
-
-
-def _perf_executable() -> str:
-    executable = shutil.which("perf")
-    if executable is None:
-        raise FileNotFoundError("Linux perf is not installed or not on PATH")
-    return executable
 
 
 def _sha256(path: pathlib.Path) -> str:
@@ -237,7 +232,8 @@ def capture(
 ) -> Metadata:
     """Run the complete target and retain perf data with its Python symbol map."""
     started_ns = time.monotonic_ns()
-    perf_executable = _perf_executable()
+    perf_access.require_cpu_access()
+    perf_executable = perf_access.perf_executable()
     with (
         tempfile.TemporaryDirectory(prefix="define-perf-") as temporary_directory,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,

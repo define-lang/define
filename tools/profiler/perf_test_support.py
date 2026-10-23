@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tools.profiler import perf_profiler
+from tools.profiler import perf_access, perf_profiler, scheduler_events
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -50,3 +50,11 @@ def require_perf_recording(temporary_directory: Path):
     if diagnostic:
         reason += f": {diagnostic}"
     pytest.skip(reason)
+
+
+def require_scheduler_events():
+    """Skip the current test when this machine cannot record scheduler events."""
+    try:
+        scheduler_events.require_access()
+    except perf_access.PerfAccessError as error:
+        pytest.skip(str(error))

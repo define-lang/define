@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import pathlib
 import re
-import shutil
 import signal
 import subprocess
 import typing
 
 import msgspec
 
-from tools.profiler import perf_profiler
+from tools.profiler import perf_access, perf_profiler
 
 if typing.TYPE_CHECKING:
     from tools.profiler import schema
@@ -23,7 +22,12 @@ _TRACE_ROOTS = (
 )
 _TIMESTAMP_PATTERN = re.compile(r"(?P<seconds>\d+)\.(?P<nanoseconds>\d{9}):")
 _THREAD_PATTERN = re.compile(r"(?<![\d./])(?:\d+/)?(?P<thread_id>\d+)(?![\d./])")
-_DOWNSTREAM_PATTERN = re.compile(r"(?:^|\s)pid=(?P<thread_id>\d+)(?:\s|$)")
+# perf prints the woken thread either as fields, such as `comm=worker pid=402`,
+# or as `worker:402 [120]`, depending on the event and the kernel's format.
+_DOWNSTREAM_PATTERNS = (
+    re.compile(r"(?:^|\s)pid=(?P<thread_id>\d+)(?:\s|$)"),
+    re.compile(r":(?P<thread_id>\d+)\s+\[\d+\]"),
+)
 _LOST_PATTERN = re.compile(
     r"\blost(?:=|:|\s+)\s*(?P<count>\d+)\b",
     re.IGNORECASE,
@@ -35,19 +39,6 @@ class CaptureResult(msgspec.Struct, frozen=True):
 
     events: list[schema.SchedulerWakeEvent]
     summary: schema.CausalitySummary
-
-
-def _unavailable(reason: str) -> CaptureResult:
-    return CaptureResult(
-        events=[],
-        summary={
-            "backend": "linux-perf-sched-waking",
-            "status": "unavailable",
-            "event_count": 0,
-            "lost_event_count": 0,
-            "reason": reason,
-        },
-    )
 
 
 def _failed(reason: str) -> CaptureResult:
@@ -63,26 +54,17 @@ def _failed(reason: str) -> CaptureResult:
     )
 
 
-def _tracepoint_access_error(
-    trace_roots: tuple[pathlib.Path, ...],
-) -> str | None:
-    # Tracepoint access is intentionally checked before launching perf because
-    # perf's own diagnostics vary across kernel-tool version combinations.
-    permission_error: PermissionError | None = None
-    for trace_root in trace_roots:
-        for tracepoint_name in _TRACEPOINT_NAMES:
-            try:
-                _ = (trace_root / tracepoint_name / "id").read_text(encoding="utf-8")
-            except FileNotFoundError:
-                break
-            except PermissionError as error:
-                permission_error = error
-                break
-        else:
-            return None
-    if permission_error is not None:
-        return "scheduler tracepoints are not readable by the profiler user"
-    return "the kernel does not expose the required scheduler tracepoints"
+def require_access():
+    """Require the access that recording scheduler events needs."""
+    perf_access.require_scheduler_access(_TRACE_ROOTS, _TRACEPOINT_NAMES)
+
+
+def _downstream_thread_match(payload: str) -> re.Match[str] | None:
+    for pattern in _DOWNSTREAM_PATTERNS:
+        match = pattern.search(payload)
+        if match is not None:
+            return match
+    return None
 
 
 def parse_script_output(output: str) -> tuple[list[schema.SchedulerWakeEvent], int]:
@@ -115,7 +97,7 @@ def parse_script_output(output: str) -> tuple[list[schema.SchedulerWakeEvent], i
         if not thread_matches:
             raise ValueError(f"scheduler event has no waking thread: {line}")
         payload = line.split(event_marker, maxsplit=1)[1]
-        downstream_match = _DOWNSTREAM_PATTERN.search(payload)
+        downstream_match = _downstream_thread_match(payload)
         if downstream_match is None:
             raise ValueError(f"scheduler event has no woken thread: {line}")
         host_monotonic_ns = int(timestamp_match.group("seconds")) * 1_000_000_000 + int(
@@ -135,10 +117,9 @@ def parse_script_output(output: str) -> tuple[list[schema.SchedulerWakeEvent], i
 class Collector(msgspec.Struct):
     """An external perf scheduler-event collection process."""
 
-    perf_executable: str | None
+    perf_executable: str
     perf_data_path: pathlib.Path
-    process: subprocess.Popen[str] | None
-    unavailable_reason: str | None
+    process: subprocess.Popen[str]
     _result: CaptureResult | None = None
 
     def finish(self) -> CaptureResult:
@@ -146,19 +127,16 @@ class Collector(msgspec.Struct):
         # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
         if self._result is not None:
             return self._result
-        if self.process is None:
-            self._result = _unavailable(typing.cast("str", self.unavailable_reason))
-            return self._result
         _, standard_error = self.process.communicate()
         if self.process.returncode != 0:
             reason = standard_error.strip() or (
                 f"perf record exited with status {self.process.returncode}"
             )
-            self._result = _unavailable(reason)
+            self._result = _failed(reason)
             return self._result
         script_result = subprocess.run(
             [
-                typing.cast("str", self.perf_executable),
+                self.perf_executable,
                 "script",
                 "--input",
                 str(self.perf_data_path),
@@ -204,48 +182,20 @@ class Collector(msgspec.Struct):
         _traceback: object,
     ) -> typing.Literal[False]:
         """Stop an unfinished collector when its owner exits early."""
-        if (
-            self._result is None
-            and self.process is not None
-            and self.process.poll() is None
-        ):
+        if self._result is None and self.process.poll() is None:
             self.process.send_signal(signal.SIGINT)
         _ = self.finish()
         return False
 
 
-def start(
-    process_id: int,
-    temporary_directory: pathlib.Path,
-    *,
-    enabled: bool,
-) -> Collector:
-    """Start scheduler-event collection for a target and its future threads."""
+def start(process_id: int, temporary_directory: pathlib.Path) -> Collector:
+    """Start scheduler-event collection for a target and its future threads.
+
+    The caller has already checked access with `require_access`.
+    """
     # PRF-052: Independent causal evidence.
     perf_data_path = temporary_directory / "scheduler-events.perf.data"
-    if not enabled:
-        return Collector(
-            perf_executable=None,
-            perf_data_path=perf_data_path,
-            process=None,
-            unavailable_reason="scheduler causality is collected only in wall mode",
-        )
-    perf_executable = shutil.which("perf")
-    if perf_executable is None:
-        return Collector(
-            perf_executable=None,
-            perf_data_path=perf_data_path,
-            process=None,
-            unavailable_reason="perf is not installed",
-        )
-    access_error = _tracepoint_access_error(_TRACE_ROOTS)
-    if access_error is not None:
-        return Collector(
-            perf_executable=perf_executable,
-            perf_data_path=perf_data_path,
-            process=None,
-            unavailable_reason=access_error,
-        )
+    perf_executable = perf_access.perf_executable()
     process = subprocess.Popen(
         [
             perf_executable,
@@ -273,5 +223,4 @@ def start(
         perf_executable=perf_executable,
         perf_data_path=perf_data_path,
         process=process,
-        unavailable_reason=None,
     )

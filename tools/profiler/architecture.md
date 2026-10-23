@@ -37,9 +37,10 @@ name both the waking and woken operating-system threads. They never contribute
 duration, sample hits, or statistical weight; randomized stack observations
 remain the only source of wall attribution. The analyzer translates event
 timestamps onto the target-running clock, excludes profiler pauses, and prefers
-direct wake evidence over sampled-state transition inference. When tracepoint
-access is unavailable or events are lost, the report exposes that limitation and
-labels sampled-transition inference separately.
+direct wake evidence over sampled-state transition inference. Wall mode refuses
+to start without tracepoint access. When recording fails or events are lost, the
+report exposes that limitation and labels sampled-transition inference
+separately.
 
 `run_profile` is an orchestration tool, not part of the profiler implementation.
 Its job is to build the compiler, prepare the requested source or project
@@ -608,8 +609,8 @@ checkpoint.
     Direct wake evidence takes precedence over candidates inferred from sampled
     thread-state changes.
 13. **PRF-053: Causal diagnostics.** The raw profile and report identify the
-    causal-event backend, availability, event count, and lost-event count. A
-    missing or incomplete causal stream never becomes invented direct evidence;
+    causal-event backend, recording status, event count, and lost-event count. A
+    failed or incomplete causal stream never becomes invented direct evidence;
     the analyzer labels sampled-transition inference separately.
 
 ### Bias and lifecycle acceptance tests

@@ -15,6 +15,7 @@ import click.testing
 from tools import runfiles
 from tools.profiler import (
     analyzer,
+    perf_test_support,
     process_events,
     profiler,
     schema,
@@ -66,6 +67,7 @@ def test_termination_records_exit_status_when_target_has_already_exited():
 
 
 def test_generated_dataclass_constructor_uses_class_name(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "dataclass-profile.jsonl"
     exit_gate = tmp_path / "exit-gate"
     target_source = """\
@@ -141,6 +143,7 @@ def test_main_profiles_relative_target(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ):
+    perf_test_support.require_scheduler_events()
     target_path = tmp_path / "target"
     target_path.symlink_to(sys.executable)
     profile_path = tmp_path / "profile.jsonl"
@@ -373,6 +376,7 @@ def _assert_complete_profile(profile_path: Path):
 
 
 def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     launcher_gate = tmp_path / "launcher-gate"
     exit_gate = tmp_path / "exit-gate"
@@ -707,6 +711,7 @@ def test_real_profile_reports_worker_waiting_from_first_observation():
 # PRF-024: Explicit failures. PRF-026: No silent partial success.
 # PRF-041: Realistic tests.
 def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     exit_gate = tmp_path / "exit-gate"
     os.mkfifo(exit_gate)
@@ -773,6 +778,7 @@ def test_normal_exit_before_observation_is_an_explicit_failure(tmp_path: Path):
 # PRF-026: No silent partial success. PRF-041: Realistic tests.
 # PRF-049: Event-driven coordination.
 def test_event_reader_failure_terminates_target_and_is_recorded(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "event-reader-failure.jsonl"
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
@@ -819,6 +825,7 @@ def test_event_reader_failure_terminates_target_and_is_recorded(tmp_path: Path):
 # PRF-026: No silent partial success. PRF-027: Incremental persistence.
 # PRF-041: Realistic tests. PRF-049: Event-driven coordination.
 def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     event_read_file_descriptor, event_write_file_descriptor = os.pipe()
     event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
@@ -875,6 +882,7 @@ def test_real_interrupt_preserves_observations_and_terminates_target(tmp_path: P
 # PRF-024: Explicit failures. PRF-026: No silent partial success.
 # PRF-041: Realistic tests.
 def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "failure.jsonl"
     exit_gate = tmp_path / "failure-exit-gate"
     os.mkfifo(exit_gate)
@@ -929,6 +937,7 @@ def test_capture_records_diagnostics_and_nonzero_exit(tmp_path: Path):
 # PRF-027: Incremental persistence. PRF-041: Realistic tests.
 # PRF-049: Event-driven coordination.
 def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     target = runfiles.resolve_from_env("PROFILER_CONTINUOUS_SOURCE")
     signal_sent = threading.Event()
@@ -986,6 +995,7 @@ def test_main_handles_a_real_signal_in_the_calling_process(tmp_path: Path):
 # PRF-027: Incremental persistence. PRF-041: Realistic tests.
 # PRF-049: Event-driven coordination.
 def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "stopped-interrupt.jsonl"
     target = runfiles.resolve_from_env("PROFILER_INTERRUPT_SOURCE")
     signal_sent = threading.Event()
@@ -1056,6 +1066,7 @@ def test_signal_during_a_stopped_observation_resumes_target(tmp_path: Path):
 # PRF-026: No silent partial success. PRF-041: Realistic tests.
 # PRF-043: Analyzer at every checkpoint.
 def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     target_gate = tmp_path / "target-gate"
     os.mkfifo(target_gate)
@@ -1088,6 +1099,7 @@ def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
 # PRF-026: No silent partial success. PRF-041: Realistic tests.
 # PRF-049: Event-driven coordination.
 def test_non_python_target_exit_before_attachment_is_recorded(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
     profile_path = tmp_path / "profile.jsonl"
     exit_gate = tmp_path / "exit-gate"
     os.mkfifo(exit_gate)

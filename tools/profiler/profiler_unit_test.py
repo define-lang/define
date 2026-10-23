@@ -16,7 +16,14 @@ import click.testing
 import msgspec
 import pytest
 
-from tools.profiler import process_events, profiler, remote_frame_names, schema
+from tools.profiler import (
+    perf_access,
+    process_events,
+    profiler,
+    remote_frame_names,
+    scheduler_events,
+    schema,
+)
 
 if typing.TYPE_CHECKING:
     import subprocess
@@ -1624,3 +1631,34 @@ def test_main_reports_profile_completion_and_success(
         f"Capture: {'complete' if complete else 'incomplete'}; "
         f"{'successful' if success else 'unsuccessful'};"
     ) in result.output
+
+
+def test_wall_command_reports_missing_scheduler_access_before_target_launch(
+    tmp_path: Path,
+):
+    workload_path = tmp_path / "workload.define"
+    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
+    profile_path = tmp_path / "profile.jsonl"
+    with mock.patch.object(
+        scheduler_events,
+        "require_access",
+        autospec=True,
+        side_effect=perf_access.PerfAccessError("grant tracepoint access"),
+    ):
+        result = click.testing.CliRunner().invoke(
+            profiler.main,
+            (
+                "--profile",
+                str(profile_path),
+                "--workload",
+                str(workload_path),
+                "--working-directory",
+                str(tmp_path),
+                "--",
+                "compiler",
+            ),
+        )
+
+    assert result.exit_code == 1
+    assert result.output == "Error: grant tracepoint access\n"
+    assert not profile_path.exists()
