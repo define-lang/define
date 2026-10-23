@@ -66,7 +66,11 @@ def _generated_files_may_be_stale(repository: Path) -> bool:
     if not stamp.exists():
         return True
     stamp_time = stamp.stat().st_mtime_ns
-    sources = _git(repository, "ls-files", "-z", "*.proto", "*.lark")
+    # MODULE.bazel.lock pins the Bazel Python interpreter that the local venv
+    # uses.
+    sources = _git(
+        repository, "ls-files", "-z", "*.proto", "*.lark", "MODULE.bazel.lock"
+    )
     for source in sources.split("\0"):
         if source and (repository / source).stat().st_mtime_ns > stamp_time:
             return True

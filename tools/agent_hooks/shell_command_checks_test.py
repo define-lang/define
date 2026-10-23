@@ -7,13 +7,13 @@ import shutil
 import subprocess
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tools import runfiles
 from tools.agent_hooks import shell_command_checks
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
 _EXPUNGE = "bazelisk clean --noshow_progress --ui_event_filters=-info --expunge_async"
 _SETUP_LOCAL_DEV = (
@@ -194,6 +194,7 @@ def _project(tmp_path: Path) -> Path:
     for path in (
         "defcl/python/grammar.lark",
         "define/config/project/config.proto",
+        "MODULE.bazel.lock",
     ):
         (repository / path).parent.mkdir(parents=True, exist_ok=True)
         _ = (repository / path).write_text("\n", encoding="utf-8", newline="\n")
@@ -217,8 +218,9 @@ def test_first_uv_run_runs_setup_local_dev_once(
     ]
 
 
+@pytest.mark.parametrize("source", ["defcl/python/grammar.lark", "MODULE.bazel.lock"])
 def test_changed_source_makes_uv_run_refresh_again(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str
 ):
     repository = _project(tmp_path)
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
@@ -227,7 +229,7 @@ def test_changed_source_makes_uv_run_refresh_again(
     # Setting the time explicitly keeps coarse filesystem timestamps from
     # making the edit look as old as the stamp.
     os.utime(
-        repository / "defcl/python/grammar.lark",
+        repository / source,
         ns=(stamp.st_atime_ns, stamp.st_mtime_ns + 1_000_000_000),
     )
 
