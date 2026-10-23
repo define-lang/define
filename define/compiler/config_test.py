@@ -1,13 +1,17 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+import typing
+from pathlib import PurePosixPath
 
 import pytest
 
 from defcl.python import exceptions as dcl_exceptions
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestAssertIsProjectRoot:
@@ -284,7 +288,7 @@ class TestLocalDepsConfig:
         assert exc_info.value.violation_messages == [
             'deps.local: duplicate universe_name "mv:define-lang.org:lib"'
         ]
-        assert exc_info.value.config_path == Path(".define/deps/local.defcl")
+        assert exc_info.value.config_path == PurePosixPath(".define/deps/local.defcl")
 
     def test_error_message_format(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -416,6 +420,9 @@ class TestConfigSyntaxError:
             config.ConfigLoader(constants.PROJECT_ROOT).project_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
+        assert exc_info.value.syntax_error.path_name == PurePosixPath(
+            ".define/project/config.defcl"
+        )
 
     def test_local_deps_syntax_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -433,6 +440,9 @@ class TestConfigSyntaxError:
             config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
+        assert exc_info.value.syntax_error.path_name == PurePosixPath(
+            ".define/deps/local.defcl"
+        )
 
 
 class TestSubRoot:
@@ -467,7 +477,7 @@ class TestSubRoot:
                 define_path.DefinePath("subroot")
             ).assert_is_project_root()
 
-        assert exc_info.value.config_path == Path(
+        assert exc_info.value.config_path == PurePosixPath(
             "subroot/.define/project/config.defcl"
         )
         assert exc_info.value.root == "subroot"
@@ -492,7 +502,7 @@ class TestSubRoot:
         with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(define_path.DefinePath("subroot")).project_config()
 
-        assert exc_info.value.config_path == Path(
+        assert exc_info.value.config_path == PurePosixPath(
             "subroot/.define/project/config.defcl"
         )
 
@@ -546,4 +556,6 @@ class TestSubRoot:
         with pytest.raises(config.ConfigValidationError) as exc_info:
             config.ConfigLoader(define_path.DefinePath("subroot")).local_deps_config()
 
-        assert exc_info.value.config_path == Path("subroot/.define/deps/local.defcl")
+        assert exc_info.value.config_path == PurePosixPath(
+            "subroot/.define/deps/local.defcl"
+        )

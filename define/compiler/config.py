@@ -30,10 +30,10 @@ class ConfigError(exceptions.DefineError):
 class NotProjectRootError(ConfigError):
     """A directory is not a Define project root."""
 
-    config_path: Path
+    config_path: PurePosixPath
     root: str
 
-    def __init__(self, config_path: Path, root: define_path.DefinePath):
+    def __init__(self, config_path: PurePosixPath, root: define_path.DefinePath):
         """Initialize with the config path that was not found."""
         self.config_path = config_path
         self.root = str(root)
@@ -110,10 +110,10 @@ class ConfigSyntaxError(ConfigError):
 class ConfigValidationError(ConfigError):
     """Project configuration failed validation."""
 
-    config_path: Path
+    config_path: PurePosixPath
     violation_messages: list[str]
 
-    def __init__(self, config_path: Path, violation_messages: list[str]):
+    def __init__(self, config_path: PurePosixPath, violation_messages: list[str]):
         """Initialize with the config path and list of violation messages."""
         self.config_path = config_path
         self.violation_messages = violation_messages
@@ -165,7 +165,7 @@ class ConfigLoader:
         self, subpath: define_path.DefinePath, message_type: type[M]
     ) -> M:
         """Load and validate a defcl config file."""
-        path = Path((self._root / subpath).as_posix_path())
+        path = (self._root / subpath).as_posix_path()
         try:
             result = self._parser.parse_file(path, message_type)
         except dcl_exceptions.DclSyntaxError as e:
@@ -192,8 +192,8 @@ class ConfigLoader:
 
     def assert_is_project_root(self):
         """Raise NotProjectRootError if the root is not a project root."""
-        config_path = Path((self._root / CONFIG_PATH).as_posix_path())
-        if not config_path.exists():
+        config_path = (self._root / CONFIG_PATH).as_posix_path()
+        if not Path(config_path).exists():
             raise NotProjectRootError(config_path, self._root)
 
     def project_config(self) -> config_pb2.ProjectConfigFile:
@@ -207,8 +207,8 @@ class ConfigLoader:
 
         Returns an immutable mapping from universe name to relative path.
         """
-        deps_path = Path((self._root / LOCAL_DEPS_PATH).as_posix_path())
-        if not deps_path.exists():
+        deps_path = (self._root / LOCAL_DEPS_PATH).as_posix_path()
+        if not Path(deps_path).exists():
             return _EMPTY_DEPS
         result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
         deps: dict[str, define_path.DefinePathFromPosix] = {}
