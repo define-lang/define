@@ -27,6 +27,10 @@ def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
 def test_empty_source_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("")
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 1
     assert _format(exc_info.value, "") == textwrap.dedent("""\
         line 1, column 1
 
@@ -128,6 +132,10 @@ def test_invisible_character_error_message(parse: Parse):
             "# a\u200bb\n"
             + "define the potential position<mv:define-lang.org:parser:/path>.\n"
         )
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 4
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 4
     assert _format(
         exc_info.value,
         "# a\u200bb\n"

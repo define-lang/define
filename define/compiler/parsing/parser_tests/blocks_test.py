@@ -372,6 +372,7 @@ def test_missing_terminator_still_works(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 46
     assert exc_info.value.location.end_column == 46
 

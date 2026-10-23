@@ -1,0 +1,103 @@
+id: parser-tests-assert-error-location
+snapshots:
+  "def test_missing_terminator(parse):\n    with pytest.raises(parser_exceptions.MissingTerminator) as error:\n        parse(\"define the potential position<standard:/x>\\n\")\n    assert error.value.location.column == 44\n    assert error.value.location.end_line == 1\n    assert error.value.location.end_column == 44\n":
+    labels:
+    - source: |-
+        def test_missing_terminator(parse):
+            with pytest.raises(parser_exceptions.MissingTerminator) as error:
+                parse("define the potential position<standard:/x>\n")
+            assert error.value.location.column == 44
+            assert error.value.location.end_line == 1
+            assert error.value.location.end_column == 44
+      style: primary
+      start: 0
+      end: 307
+    - source: pytest.raises(parser_exceptions.MissingTerminator)
+      style: secondary
+      start: 45
+      end: 95
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: pytest.raises(parser_exceptions.MissingTerminator) as error
+      style: secondary
+      start: 45
+      end: 104
+  "def test_missing_terminator(parse):\n    with pytest.raises(parser_exceptions.MissingTerminator) as error:\n        parse(\"define the potential position<standard:/x>\\n\")\n    assert error.value.location.line == 1\n    assert error.value.location.column == 44\n":
+    labels:
+    - source: |-
+        def test_missing_terminator(parse):
+            with pytest.raises(parser_exceptions.MissingTerminator) as error:
+                parse("define the potential position<standard:/x>\n")
+            assert error.value.location.line == 1
+            assert error.value.location.column == 44
+      style: primary
+      start: 0
+      end: 254
+    - source: pytest.raises(parser_exceptions.MissingTerminator)
+      style: secondary
+      start: 45
+      end: 95
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: pytest.raises(parser_exceptions.MissingTerminator) as error
+      style: secondary
+      start: 45
+      end: 104
+  "def test_missing_terminator(parse):\n    with pytest.raises(parser_exceptions.MissingTerminator) as error:\n        parse(\"define the potential position<standard:/x>\\n\")\n    assert other.value.location.line == 1\n    assert error.value.location.column == 44\n    assert error.value.location.end_line == 1\n    assert error.value.location.end_column == 44\n":
+    labels:
+    - source: |-
+        def test_missing_terminator(parse):
+            with pytest.raises(parser_exceptions.MissingTerminator) as error:
+                parse("define the potential position<standard:/x>\n")
+            assert other.value.location.line == 1
+            assert error.value.location.column == 44
+            assert error.value.location.end_line == 1
+            assert error.value.location.end_column == 44
+      style: primary
+      start: 0
+      end: 349
+    - source: pytest.raises(parser_exceptions.MissingTerminator)
+      style: secondary
+      start: 45
+      end: 95
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: error
+      style: secondary
+      start: 99
+      end: 104
+    - source: pytest.raises(parser_exceptions.MissingTerminator) as error
+      style: secondary
+      start: 45
+      end: 104
+  "def test_missing_terminator(parse):\n    with pytest.raises(parser_exceptions.MissingTerminator):\n        parse(\"define the potential position<standard:/x>\\n\")\n":
+    labels:
+    - source: |-
+        def test_missing_terminator(parse):
+            with pytest.raises(parser_exceptions.MissingTerminator):
+                parse("define the potential position<standard:/x>\n")
+      style: primary
+      start: 0
+      end: 158
+    - source: pytest.raises(parser_exceptions.MissingTerminator)
+      style: secondary
+      start: 45
+      end: 95
+    - source: pytest.raises(parser_exceptions.MissingTerminator)
+      style: secondary
+      start: 45
+      end: 95

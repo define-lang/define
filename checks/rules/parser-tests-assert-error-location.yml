@@ -1,0 +1,49 @@
+id: parser-tests-assert-error-location
+language: python
+severity: error
+message:
+  Assert every field of the expected syntax error's location (`line`, `column`,
+  `end_line`, and `end_column`).
+files:
+  - define/compiler/parsing/parser_tests/*_test.py
+rule:
+  kind: function_definition
+  any:
+    # The test does not keep the error, so it cannot assert its location.
+    - has:
+        stopBy: end
+        kind: with_item
+        has:
+          field: value
+          kind: call
+          pattern: pytest.raises($$$)
+    - all:
+        - has:
+            stopBy: end
+            kind: as_pattern
+            all:
+              - has:
+                  kind: call
+                  pattern: pytest.raises($$$)
+              - has:
+                  field: alias
+                  has:
+                    kind: identifier
+                    pattern: $ERROR
+        - any:
+            - not:
+                has:
+                  stopBy: end
+                  pattern: assert $ERROR.value.location.line == $LINE
+            - not:
+                has:
+                  stopBy: end
+                  pattern: assert $ERROR.value.location.column == $COLUMN
+            - not:
+                has:
+                  stopBy: end
+                  pattern: assert $ERROR.value.location.end_line == $END_LINE
+            - not:
+                has:
+                  stopBy: end
+                  pattern: assert $ERROR.value.location.end_column == $END_COLUMN

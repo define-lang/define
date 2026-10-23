@@ -101,6 +101,7 @@ def test_non_ascii_comment_with_trailing_whitespace(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("define the potential position<standard:/path>. # café \n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.char == " "
     assert exc_info.value.location.column == 54
     assert exc_info.value.location.end_column == 54
@@ -133,6 +134,7 @@ def test_comment_with_trailing_whitespace(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("# comment with trailing space \n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.char == " "
     assert exc_info.value.location.column == 30
     assert exc_info.value.location.end_column == 30
@@ -142,6 +144,7 @@ def test_same_line_comment_with_trailing_whitespace(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("define the potential position<standard:/path>. # comment \n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.char == " "
     assert exc_info.value.location.column == 57
     assert exc_info.value.location.end_column == 57
@@ -151,6 +154,7 @@ def test_comment_only_file_without_newline(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("# a comment")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 
@@ -159,6 +163,7 @@ def test_empty_comment_hash_only_file_by_itself(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("#")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 
@@ -167,6 +172,7 @@ def test_empty_comment_hash_newline_file_by_itself(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("#\n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 
@@ -176,6 +182,7 @@ def test_empty_comment_hash_space_file_by_itself(parse: Parse):
         parse("# ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 2
     assert exc_info.value.location.end_column == 2
 
@@ -185,6 +192,7 @@ def test_empty_comment_hash_space_newline_file_by_itself(parse: Parse):
         parse("# \n")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 2
     assert exc_info.value.location.end_column == 2
 
@@ -209,6 +217,7 @@ def test_empty_comment_hash_space_newline_above_statement(parse: Parse):
         parse("# \ndefine the potential position<mv:define-lang.org:parser:/path>.\n")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 2
     assert exc_info.value.location.end_column == 2
 
@@ -217,6 +226,7 @@ def test_empty_comment_hash_only_after_statement_same_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:/path>. #")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 66
     assert exc_info.value.location.end_column == 66
 
@@ -243,6 +253,7 @@ def test_empty_comment_hash_space_after_statement_same_line(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:/path>. # ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 66
     assert exc_info.value.location.end_column == 66
 
@@ -254,6 +265,7 @@ def test_empty_comment_hash_space_newline_after_statement_same_line(
         parse("define the potential position<mv:define-lang.org:parser:/path>. # \n")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 66
     assert exc_info.value.location.end_column == 66
 

@@ -21,6 +21,7 @@ def test_file_all_spaces(parse: Parse):
         parse("   ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 
@@ -30,6 +31,7 @@ def test_file_spaces_and_newlines_only(parse: Parse):
         parse(" \n  \n ")
     assert str(exc_info.value.char) == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_column == 1
 

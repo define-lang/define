@@ -31,6 +31,7 @@ def test_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 46
     assert exc_info.value.location.end_column == 46
 
@@ -39,6 +40,7 @@ def test_missing_newline_after_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         parse("define the potential position<standard:/path>.")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 47
     assert exc_info.value.location.end_column == 47
 
@@ -70,6 +72,7 @@ def test_double_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_column == 64
 
@@ -127,6 +130,7 @@ def test_trailing_space_before_newline(parse: Parse):
         parse("define the potential position<standard:/path>. \n")
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 47
     assert exc_info.value.location.end_column == 47
 
@@ -136,6 +140,7 @@ def test_several_trailing_spaces_before_newline(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:/path>.   \n")
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_column == 64
 
@@ -145,6 +150,7 @@ def test_trailing_space_at_end_of_source(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:/path>. ")
     assert exc_info.value.char == " "
     assert exc_info.value.location.line == 1
+    assert exc_info.value.location.end_line == 1
     assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_column == 64
 

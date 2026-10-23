@@ -2,11 +2,9 @@ id: parser-tests-use-parse-fixture
 language: python
 severity: error
 message:
-  Use the `parse` fixture, or `p` for the raw `ParseResult`, instead of
-  constructing `parser.Parser`.
+  Use the `parse` fixture, or `parse_with_diagnostics` for the parser's whole
+  result, instead of calling `parser.parse`.
 files:
   - define/compiler/parsing/parser_tests/*_test.py
 rule:
-  any:
-    - pattern: parser.Parser($$$)
-    - pattern: Parser($$$)
+  pattern: parser.parse($$$)

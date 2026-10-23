@@ -1,0 +1,48 @@
+id: parser-tests-assert-error-location
+valid:
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator) as error:
+            parse("define the potential position<standard:/x>\n")
+        assert error.value.location.line == 1
+        assert error.value.location.column == 44
+        assert error.value.location.end_line == 1
+        assert error.value.location.end_column == 44
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
+            parse("define the potential position<standard:/x>\n")
+        assert exc_info.value.location.line == 1
+        assert exc_info.value.location.column == 44
+        assert exc_info.value.location.end_line == 1
+        assert exc_info.value.location.end_column == 44
+  - |
+    def test_position_definition(parse):
+        program = parse("define the potential position<standard:/x>.\n")
+        assert program.definitions != ()
+invalid:
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator) as error:
+            parse("define the potential position<standard:/x>\n")
+        assert error.value.location.line == 1
+        assert error.value.location.column == 44
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator) as error:
+            parse("define the potential position<standard:/x>\n")
+        assert error.value.location.column == 44
+        assert error.value.location.end_line == 1
+        assert error.value.location.end_column == 44
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator) as error:
+            parse("define the potential position<standard:/x>\n")
+        assert other.value.location.line == 1
+        assert error.value.location.column == 44
+        assert error.value.location.end_line == 1
+        assert error.value.location.end_column == 44
+  - |
+    def test_missing_terminator(parse):
+        with pytest.raises(parser_exceptions.MissingTerminator):
+            parse("define the potential position<standard:/x>\n")

@@ -2,9 +2,10 @@ id: parser-tests-use-parse-fixture
 valid:
   - |
     def test_global_position(parse: Parse):
-        parse("define position</x>.\n")
+        parse("define the potential position<standard:/x>.\n")
+  - |
+    def test_global_position(parse_with_diagnostics: ParseWithDiagnostics):
+        result = parse_with_diagnostics("define the potential position<standard:/x>.\n")
 invalid:
   - |
-    tree = parser.Parser().parse("define position</x>.\n")
-  - |
-    tree = Parser().parse("define position</x>.\n")
+    result = parser.parse(b"define the potential position<standard:/x>.\n", None)
