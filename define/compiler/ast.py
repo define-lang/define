@@ -32,7 +32,9 @@ class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
     """Combine msgspec struct construction with abstract AST base classes."""
 
 
-class SourceLocation(msgspec.Struct, frozen=True):
+# A program has millions of these, and they never form reference cycles, so the
+# garbage collector does not track them.
+class SourceLocation(msgspec.Struct, frozen=True, gc=False):
     """Represents a location in source code.
 
     Lines and columns are 1-based, and columns count characters.
@@ -74,7 +76,9 @@ def start_of_file_location(
     )
 
 
-class ASTNode(msgspec.Struct, metaclass=ASTNodeMeta, eq=False):
+# A program has millions of nodes, and they never form reference cycles, so the
+# garbage collector does not track them.
+class ASTNode(msgspec.Struct, metaclass=ASTNodeMeta, eq=False, gc=False):
     """Base class for all AST nodes.
 
     Treat nodes as immutable after construction so cached values remain valid.
