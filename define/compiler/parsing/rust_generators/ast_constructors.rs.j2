@@ -1,0 +1,43 @@
+// Generated from `{{ description.module_name }}` by
+// //define/compiler/parsing/rust_generators:generate_ast_constructors.
+
+#![allow(
+    clippy::too_many_arguments,
+    reason = "a constructor takes each field of its node"
+)]
+
+use crate::ast::*;
+use crate::ast_builder::AstBuilder;
+use crate::node_construction::{FieldValue, FilePath, NodeTuple};
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyFrozenSet, PyInt, PyNone, PyString, PyTuple};
+
+impl<'py> AstBuilder<'py> {
+{%- for class in description.classes %}
+{%- if let Some(constructor) = class.constructor %}
+    pub fn {{ class.snake_case_name }}(
+        &self,
+{%- for parameter in constructor.parameters %}
+        {{ parameter.rust_name() }}: {{ parameter.rust_type() }},
+{%- endfor %}
+    ) -> PyResult<{{ class.name }}<'py>> {
+        let py = self.py();
+        let classes = self.classes();
+        classes
+            .{{ class.snake_case_name }}
+            .construct(
+                py,
+                [
+{%- for parameter in constructor.parameters %}
+                    {{ parameter.rust_name() }}.into_field_object(py, classes),
+{%- endfor %}
+{%- for name in constructor.computed_on_first_use %}
+                    PyNone::get(py).to_owned().into_any(),
+{%- endfor %}
+                ],
+            )
+            .map({{ class.name }})
+    }
+{% endif %}
+{%- endfor %}
+}

@@ -4,6 +4,7 @@ use crate::ast;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
+use crate::parser::names::FqunWithCanonicalText;
 use crate::scanner::Position;
 use terminals::{ENCODING, IT_HAS_THE};
 
@@ -31,12 +32,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::PotentialLiteralDefinition<'py>, Position)> {
-        let (name_content, fqun) = self.parse_global_name_definition_content()?;
+        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.ast.global_typed_name_in_definition(
+        let typed_name = self.global_typed_name_in_definition(
             typed_name_location,
             ast::NameType::Literal,
             name_content,
+            name_text,
         )?;
         let block_open_end = self.parse_block_open()?;
         match self.next_line_in_block(0, &[IT_HAS_THE])? {
@@ -77,7 +79,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_encoding_constraint(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::GlobalTypedNameReference<'py>> {
         // The statement is not an encoding constraint.
         if !self.scanner.consume(IT_HAS_THE) {
@@ -88,7 +90,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_encoding_name_type());
         }
-        let encoding = self.parse_typed_global_name_reference(
+        let (encoding, _) = self.parse_typed_global_name_reference(
             fqun,
             &ENCODING_NAME_TYPE,
             Self::expected_encoding_name_type,

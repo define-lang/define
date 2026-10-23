@@ -4,6 +4,7 @@ use crate::ast;
 use crate::characters::{self, TextKind};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
+use crate::parser::names::FqunWithCanonicalText;
 use crate::scanner::{Position, SourceText};
 use pyo3::prelude::*;
 use pyo3::types::PyString;
@@ -17,20 +18,17 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     pub(crate) fn parse_literal(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::Literal<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(LITERAL);
-        let (location, name_fqun, path) = self.parse_global_name_content()?;
-        let name_content = self
-            .ast
-            .reference_global_name_content(location, name_fqun, path)?;
+        let name = self.parse_global_name_content()?;
         let typed_name_location = self.ast.location(start, self.scanner.position)?;
-        let potential_literal = self.ast.global_typed_name_reference(
+        let (potential_literal, _) = self.global_typed_name_reference(
             typed_name_location,
-            fqun.clone(),
+            fqun,
             ast::NameType::Literal,
-            name_content,
+            name,
         )?;
         // There is no `"` before the literal content.
         if !self.scanner.consume_byte(LITERAL_CONTENT_DELIMITER) {

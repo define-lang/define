@@ -1,14 +1,16 @@
 //! Action definitions and the statements in them.
 
 use crate::ast;
-use crate::ast_builder::NodeTuple;
+use crate::node_construction::{Node, NodeTuple};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
-use crate::parser::names::POSITION_OR_ACTION;
+use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
 use crate::parser::operation_execution::OperationKind;
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyString};
 use terminals::{
     ACTION, BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
     DEFINE_THE_POTENTIAL_POSITION, DESTROY_THE_PARTICLE_IN, EXECUTE_THE, IT_ALSO_ASSIGNS_THE,
@@ -66,6 +68,10 @@ const ACTION_STATEMENT_STARTS: [&[u8]; 6] = action_statement_starts!();
 const ACTION_STATEMENTS_BLOCK_STARTS: [&[u8]; 7] =
     action_statement_starts!(DEFINE_THE_POTENTIAL_POSITION);
 
+/// Each interface position of an action definition with its source typed
+/// name.
+type NamedInterfacePositions<'py> = Vec<(Bound<'py, PyString>, ast::LocalPositionDefinition<'py>)>;
+
 impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the rest of an action definition after its `action`, given the
     /// positions of the definition's start and of its `action`, and returns
@@ -87,21 +93,22 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::ActionDefinition<'py>, Position)> {
-        let (name_content, fqun) = self.parse_global_name_definition_content()?;
+        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.ast.global_typed_name_in_definition(
+        let typed_name = self.global_typed_name_in_definition(
             typed_name_location,
             ast::NameType::Action,
             name_content,
+            name_text,
         )?;
         let block_open_end = self.parse_block_open()?;
         // `content_end` is where the block's content ends so far, for the
         // error when the block ends before its trigger conditions block.
         let (implications, line, content_end) =
             self.parse_quality_implications(block_open_end, &fqun)?;
-        let (interface_positions, line, content_end) =
+        let (interface_positions, named_interface_positions, line, content_end) =
             self.parse_interface_positions(line, content_end, &fqun)?;
-        let (trigger_conditions, action_statements) =
+        let (trigger_conditions, trigger_name, action_statements) =
             self.parse_trigger_and_action(line, content_end, &fqun)?;
         let end = self.parse_block_close_after_content(
             start,
@@ -109,6 +116,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             0,
             Self::statement_instead_of_action_close,
         )?;
+        let (interface_positions_by_name, trigger_position) = self
+            .interface_positions_by_name_and_trigger_position(
+                named_interface_positions,
+                trigger_name,
+            )?;
         let location = self.ast.location(start, end)?;
         let definition = self.ast.action_definition(
             location,
@@ -117,8 +129,41 @@ impl<'py, 'source> Parser<'py, 'source> {
             interface_positions,
             trigger_conditions,
             action_statements,
+            interface_positions_by_name,
+            trigger_position,
         )?;
         Ok((definition, end))
+    }
+
+    /// Returns the dict from each source typed name of an interface position in
+    /// `named_interface_positions` to the interface position it refers to, and
+    /// the interface position named `trigger_name`, whose particle triggers
+    /// the action, if there is one.
+    fn interface_positions_by_name_and_trigger_position(
+        &self,
+        named_interface_positions: NamedInterfacePositions<'py>,
+        trigger_name: Option<Bound<'py, PyString>>,
+    ) -> PyResult<(
+        Bound<'py, PyDict>,
+        Option<ast::LocalPositionDefinition<'py>>,
+    )> {
+        let interface_positions_by_name = PyDict::new(self.ast.py());
+        for (name, position) in &named_interface_positions {
+            // As in `ActionDefinition.__post_init__`, a name refers to the
+            // first interface position with that name.
+            if !interface_positions_by_name.contains(name)? {
+                interface_positions_by_name.set_item(name, position.clone().into_object())?;
+            }
+        }
+        // An action has only a few interface positions, and their names are
+        // interned, so comparing identities is cheaper than a dict lookup.
+        let trigger_position = trigger_name.and_then(|trigger_name| {
+            named_interface_positions
+                .into_iter()
+                .find(|(name, _)| name.is(&trigger_name))
+                .map(|(_, position)| position)
+        });
+        Ok((interface_positions_by_name, trigger_position))
     }
 
     /// Parses the quality implication statements at the start of an action
@@ -132,7 +177,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn parse_quality_implications(
         &mut self,
         block_open_end: Position,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         NodeTuple<'py, ast::QualityImplicationStatement<'py>>,
         LineInBlock,
@@ -154,9 +199,9 @@ impl<'py, 'source> Parser<'py, 'source> {
 
     /// Parses the local position definitions in an action definition block,
     /// starting at `line`, after content that ends at `content_end`, whose
-    /// references take their default FQUN from `fqun`. Returns them with the
-    /// line in the block after them and where the block's content ends before
-    /// that line.
+    /// references take their default FQUN from `fqun`. Returns them, and each
+    /// of them with its source typed name, with the line in the block after
+    /// them and where the block's content ends before that line.
     ///
     /// ```ebnf
     /// { local_position_definition }
@@ -165,13 +210,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         mut line: LineInBlock,
         mut content_end: Position,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         NodeTuple<'py, ast::LocalPositionDefinition<'py>>,
+        NamedInterfacePositions<'py>,
         LineInBlock,
         Position,
     )> {
         let interface_positions = self.ast.start_tuple::<ast::LocalPositionDefinition>();
+        let mut named_interface_positions = Vec::new();
         loop {
             if !matches!(line, LineInBlock::Statement) {
                 break;
@@ -182,18 +229,20 @@ impl<'py, 'source> Parser<'py, 'source> {
             else {
                 break;
             };
-            let (position, end) = self.parse_local_position_definition(
+            let (position, name, end) = self.parse_local_position_definition(
                 start,
                 typed_name_start,
                 ACTION_DEFINITION_BLOCK_INDENTATION,
                 fqun,
             )?;
+            named_interface_positions.push((name, position.clone()));
             self.ast.push(&interface_positions, position);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
         Ok((
             self.ast.finish_tuple(interface_positions)?,
+            named_interface_positions,
             line,
             content_end,
         ))
@@ -208,7 +257,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_quality_implication_statement(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(ast::QualityImplicationStatement<'py>, Position)> {
         let start = self.scanner.position;
         self.scanner.consume(IT_ALSO_ASSIGNS_THE);
@@ -217,7 +266,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_position_or_action());
         }
-        let typed_name = self.parse_typed_global_name_reference(
+        let (typed_name, _) = self.parse_typed_global_name_reference(
             fqun,
             &POSITION_OR_ACTION,
             Self::expected_position_or_action,
@@ -236,8 +285,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the rest of a local position definition after its `position`,
     /// given the positions of the definition's start and of its `position`,
     /// where the definition is indented `indentation` spaces and its
-    /// references take their default FQUN from `fqun`, and returns it with the
-    /// position after its last character.
+    /// references take their default FQUN from `fqun`, and returns it with its
+    /// source typed name and the position after its last character.
     ///
     /// ```ebnf
     /// local_position_definition =
@@ -248,15 +297,16 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
         indentation: usize,
-        fqun: &ast::Fqun<'py>,
-    ) -> ParseResult<(ast::LocalPositionDefinition<'py>, Position)> {
-        let name_content = self.parse_local_name_content()?;
+        fqun: &FqunWithCanonicalText<'py, 'source>,
+    ) -> ParseResult<(
+        ast::LocalPositionDefinition<'py>,
+        Bound<'py, PyString>,
+        Position,
+    )> {
+        let name = self.parse_local_name_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.ast.local_typed_name_reference(
-            typed_name_location,
-            ast::NameType::Position,
-            name_content,
-        )?;
+        let (typed_name, source_typed_name) =
+            self.local_typed_name_reference(typed_name_location, ast::NameType::Position, name)?;
         let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
             let (constraints, end) =
                 self.parse_position_definition_block(start, indentation, fqun)?;
@@ -272,13 +322,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         let definition = self
             .ast
             .local_position_definition(location, typed_name, constraints)?;
-        Ok((definition, end))
+        Ok((definition, source_typed_name, end))
     }
 
     /// Parses the trigger conditions block at `line` in an action definition
     /// block, whose content ends at `content_end` before it, and the action
     /// statements block after it, whose references take their default FQUN
-    /// from `fqun`.
+    /// from `fqun`. Returns them with the source typed name of the position
+    /// whose particle triggers the action, if a particle in a position does.
     ///
     /// ```ebnf
     /// trigger_conditions_block = "it happens when", block_open, trigger_condition_statement, "}" ;
@@ -288,9 +339,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         line: LineInBlock,
         content_end: Position,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         ast::TriggerConditionsBlock<'py>,
+        Option<Bound<'py, PyString>>,
         ast::ActionStatementsBlock<'py>,
     )> {
         match line {
@@ -311,7 +363,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.scanner.consume(IT_HAPPENS_WHEN);
         let block_open_end = self.parse_block_open()?;
-        let condition = match self.next_line_in_block(
+        let (condition, trigger_name) = match self.next_line_in_block(
             ACTION_DEFINITION_BLOCK_INDENTATION,
             &TRIGGER_CONDITION_STARTS,
         )? {
@@ -372,10 +424,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         let statements = self.ast.finish_tuple(statements)?;
         let location = self.ast.location(statements_start, end)?;
         let action_statements = self.ast.action_statements_block(location, statements)?;
-        Ok((trigger_conditions, action_statements))
+        Ok((trigger_conditions, trigger_name, action_statements))
     }
 
-    /// Parses a trigger condition statement through the end of its line.
+    /// Parses a trigger condition statement through the end of its line, and
+    /// returns it with the source typed name of the position it names, if it
+    /// is a position presence statement.
     ///
     /// ```ebnf
     /// trigger_condition_statement =
@@ -383,23 +437,31 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     | constructor_condition_statement
     ///     | destructor_condition_statement ;
     /// ```
-    fn parse_trigger_condition(&mut self) -> ParseResult<ast::TriggerConditionStatement<'py>> {
+    fn parse_trigger_condition(
+        &mut self,
+    ) -> ParseResult<(
+        ast::TriggerConditionStatement<'py>,
+        Option<Bound<'py, PyString>>,
+    )> {
         let start = self.scanner.position;
         if self.scanner.consume(THIS_PARTICLE_IS_CREATED) {
             let end = self.parse_statement_terminator()?;
             let location = self.ast.location(start, end)?;
-            return Ok(self.ast.constructor_condition_statement(location)?.into());
+            let condition = self.ast.constructor_condition_statement(location)?;
+            return Ok((condition.into(), None));
         }
         if self.scanner.consume(THIS_PARTICLE_IS_BEING_DESTROYED) {
             let end = self.parse_statement_terminator()?;
             let location = self.ast.location(start, end)?;
-            return Ok(self.ast.destructor_condition_statement(location)?.into());
+            let condition = self.ast.destructor_condition_statement(location)?;
+            return Ok((condition.into(), None));
         }
         // The statement is not a trigger condition statement.
         if !self.scanner.next_bytes_are(THE_AND_SPACE) {
             return Err(self.invalid_trigger_conditions_block());
         }
-        Ok(self.parse_position_presence_statement()?.into())
+        let (condition, name) = self.parse_position_presence_statement()?;
+        Ok((condition.into(), Some(name)))
     }
 
     /// Parses a terminator through the end of its line, and returns the
@@ -416,7 +478,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(end)
     }
 
-    /// Parses a position presence statement through the end of its line.
+    /// Parses a position presence statement through the end of its line, and
+    /// returns it with the source typed name of the position it names.
     ///
     /// ```ebnf
     /// position_presence_statement =
@@ -424,7 +487,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_position_presence_statement(
         &mut self,
-    ) -> ParseResult<ast::PositionPresenceStatement<'py>> {
+    ) -> ParseResult<(ast::PositionPresenceStatement<'py>, Bound<'py, PyString>)> {
         let start = self.scanner.position;
         self.scanner.consume(THE);
         // The line ends, or a non-letter character comes, where the typed name
@@ -432,7 +495,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_position_or_action());
         }
-        let (typed_name, typed_name_location) = self.parse_typed_local_name_reference()?;
+        let (typed_name, source_typed_name, typed_name_location) =
+            self.parse_typed_local_name_reference()?;
         // There is no ` has a particle` after the typed name.
         if !self.scanner.consume(SPACE_HAS_A_PARTICLE) {
             return Err(self.invalid_has_a_particle_syntax());
@@ -441,13 +505,21 @@ impl<'py, 'source> Parser<'py, 'source> {
         let typed_names = self.ast.start_tuple::<ast::TypedNameReference>();
         self.ast.push(&typed_names, typed_name.clone());
         let typed_names = self.ast.finish_tuple(typed_names)?;
-        let position_reference =
-            self.ast
-                .position_reference(typed_name_location, typed_names, true)?;
+        let canonical_names = self.ast.start_texts();
+        self.ast
+            .push_text(&canonical_names, source_typed_name.clone());
+        let canonical_chained_name_tuple = self.ast.finish_text_tuple(canonical_names)?;
+        let position_reference = self.ast.position_reference(
+            typed_name_location,
+            typed_names,
+            Some(canonical_chained_name_tuple),
+            true,
+        )?;
         let location = self.ast.location(start, end)?;
-        Ok(self
-            .ast
-            .position_presence_statement(location, typed_name, position_reference)?)
+        let statement =
+            self.ast
+                .position_presence_statement(location, typed_name, position_reference)?;
+        Ok((statement, source_typed_name))
     }
 
     /// Parses an action statement, indented `indentation` spaces, whose
@@ -466,12 +538,12 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn parse_action_statement(
         &mut self,
         indentation: usize,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::ActionStatement<'py>> {
         let start = self.scanner.position;
         if let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, POSITION)
         {
-            let (definition, _) =
+            let (definition, _, _) =
                 self.parse_local_position_definition(start, typed_name_start, indentation, fqun)?;
             return Ok(definition.into());
         }
@@ -513,7 +585,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_move_particle_statement(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::MoveParticleStatement<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(MOVE_THE_PARTICLE_IN);
@@ -537,7 +609,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_value_setting_statement(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::ValueSettingStatement<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(SET_THE_VALUE_OF);
@@ -574,7 +646,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     pub(crate) fn parse_value_source<Source>(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
         wrong_source: fn(&Self) -> ParseError,
     ) -> ParseResult<(Source, Position)>
     where
@@ -608,7 +680,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_statement_position_reference(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::PositionReference<'py>> {
         // The line ends, or a non-letter character comes, where the position
         // reference belongs.

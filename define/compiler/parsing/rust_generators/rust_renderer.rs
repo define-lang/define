@@ -15,6 +15,12 @@ enum FieldType {
     Tuple {
         element_name: String,
     },
+    /// A tuple of strings.
+    StringTuple {},
+    /// A frozen set of strings.
+    StringSet {},
+    /// A dict from strings to AST nodes.
+    Dict {},
     String {},
     Integer {},
     Boolean {},
@@ -34,6 +40,9 @@ impl fmt::Display for FieldType {
             Self::Tuple { element_name } => {
                 write!(formatter, "NodeTuple<'py, {element_name}<'py>>")
             }
+            Self::StringTuple {} => write!(formatter, "Bound<'py, PyTuple>"),
+            Self::StringSet {} => write!(formatter, "Bound<'py, PyFrozenSet>"),
+            Self::Dict {} => write!(formatter, "Bound<'py, PyDict>"),
             Self::String {} => write!(formatter, "Bound<'py, PyString>"),
             Self::Integer {} => write!(formatter, "Bound<'py, PyInt>"),
             Self::Boolean {} => write!(formatter, "bool"),
@@ -43,7 +52,7 @@ impl fmt::Display for FieldType {
     }
 }
 
-/// A constructor parameter for a field that is not derived.
+/// A constructor parameter for a field.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 struct Parameter {
@@ -66,6 +75,13 @@ impl Parameter {
 }
 
 impl Parameter {
+    /// The parameter's name in Rust, which leaves out the `_` that starts the
+    /// name of a private field, since in Rust it would mark the parameter
+    /// unused.
+    fn rust_name(&self) -> &str {
+        self.name.trim_start_matches('_')
+    }
+
     fn rust_type(&self) -> String {
         if self.is_optional {
             format!("Option<{}>", self.field_type)
@@ -75,33 +91,30 @@ impl Parameter {
     }
 }
 
-/// How to call a class. The first `positional_count` parameters are passed by
-/// position and the rest by keyword.
+/// The fields that a constructor sets.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 struct Constructor {
     parameters: Vec<Parameter>,
-    positional_count: usize,
+    /// The names of the fields that the constructor sets to `None`, which are
+    /// computed on first use.
+    computed_on_first_use: Vec<String>,
 }
 
 #[pymethods]
 impl Constructor {
     #[new]
-    const fn new(parameters: Vec<Parameter>, positional_count: usize) -> Self {
+    const fn new(parameters: Vec<Parameter>, computed_on_first_use: Vec<String>) -> Self {
         Self {
             parameters,
-            positional_count,
+            computed_on_first_use,
         }
     }
 }
 
 impl Constructor {
-    fn positional_parameters(&self) -> &[Parameter] {
-        &self.parameters[..self.positional_count]
-    }
-
-    fn keyword_parameters(&self) -> &[Parameter] {
-        &self.parameters[self.positional_count..]
+    fn field_count(&self) -> usize {
+        self.parameters.len() + self.computed_on_first_use.len()
     }
 }
 
@@ -168,15 +181,18 @@ impl NodeUnion {
 struct EnumMember {
     python_name: String,
     rust_name: String,
+    /// The member's value, which is a string.
+    value: String,
 }
 
 #[pymethods]
 impl EnumMember {
     #[new]
-    const fn new(python_name: String, rust_name: String) -> Self {
+    const fn new(python_name: String, rust_name: String, value: String) -> Self {
         Self {
             python_name,
             rust_name,
+            value,
         }
     }
 }
@@ -236,6 +252,14 @@ impl AstDescription {
             enums,
         }
     }
+}
+
+/// The constructors of the classes in an `AstDescription`, which are methods
+/// of `AstBuilder`.
+#[derive(Template)]
+#[template(path = "ast_constructors.rs.j2", escape = "none")]
+struct AstConstructors<'a> {
+    description: &'a AstDescription,
 }
 
 /// An exception class that the parser can raise.
@@ -331,6 +355,15 @@ fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
 }
 
 #[pyfunction]
+fn render_ast_constructors(description: AstDescription) -> PyResult<String> {
+    AstConstructors {
+        description: &description,
+    }
+    .render()
+    .map_err(|error| PyRuntimeError::new_err(error.to_string()))
+}
+
+#[pyfunction]
 fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String> {
     description
         .render()
@@ -350,6 +383,7 @@ mod rust_renderer {
     use super::{
         AstDescription, Constructor, EnumMember, FieldEnum, FieldType, NodeClass, NodeUnion,
         Parameter, ParserDiagnostic, ParserDiagnosticsDescription, ParserException,
-        SyntaxErrorsDescription, render_ast_nodes, render_parser_diagnostics, render_syntax_errors,
+        SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
+        render_parser_diagnostics, render_syntax_errors,
     };
 }

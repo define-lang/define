@@ -2,6 +2,7 @@
 
 mod ast_builder;
 mod characters;
+mod node_construction;
 mod parse_error;
 mod parser;
 mod scanner;
@@ -11,11 +12,13 @@ mod scanner;
 mod ast;
 // Generated like ast.rs, so rustfmt skips them for the same reason.
 #[rustfmt::skip]
+mod ast_constructors;
+#[rustfmt::skip]
 mod parser_diagnostics;
 #[rustfmt::skip]
 mod syntax_errors;
 
-use ast_builder::{FilePath, Node};
+use node_construction::{FilePath, Node};
 use parse_error::ParseError;
 use parser::Parser;
 use pyo3::prelude::*;

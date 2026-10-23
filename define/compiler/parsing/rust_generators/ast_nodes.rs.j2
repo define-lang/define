@@ -1,16 +1,10 @@
 // Generated from `{{ module_name }}` by
 // //define/compiler/parsing/rust_generators:generate_ast_nodes.
 
-#![allow(
-    clippy::needless_pass_by_value,
-    reason = "constructor arguments become part of the new node"
-)]
-
-use crate::ast_builder::{AstBuilder, FilePath, Node, NodeTuple, PythonArgument};
-use pyo3::Borrowed;
+use crate::node_construction::{ClassLayout, FieldValue, FilePath, Node};
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::{PyInt, PyString, PyTuple, PyType};
+use pyo3::types::PyInt;
 {% for enum_type in enums %}
 /// `{{ enum_type.module_name }}.{{ enum_type.name }}`.
 #[derive(Clone, Copy)]
@@ -20,12 +14,20 @@ pub enum {{ enum_type.name }} {
 {%- endfor %}
 }
 
-impl<'py> PythonArgument<'py> for {{ enum_type.name }} {
-    fn as_argument<'a>(&'a self, py: Python<'py>, classes: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
-    where
-        'py: 'a,
-    {
-        classes.{{ enum_type.snake_case_name }}_members[*self as usize].bind_borrowed(py)
+impl {{ enum_type.name }} {
+    /// The member's value.
+    pub const fn value(self) -> &'static str {
+        match self {
+{%- for member in enum_type.members %}
+            Self::{{ member.rust_name }} => "{{ member.value }}",
+{%- endfor %}
+        }
+    }
+}
+
+impl<'py> FieldValue<'py> for {{ enum_type.name }} {
+    fn into_field_object(self, py: Python<'py>, classes: &AstClasses) -> Bound<'py, PyAny> {
+        classes.{{ enum_type.snake_case_name }}_members[self as usize].bind(py).clone()
     }
 }
 {% endfor %}
@@ -33,7 +35,7 @@ impl<'py> PythonArgument<'py> for {{ enum_type.name }} {
 /// `{{ module_name }}.{{ class.name }}`.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct {{ class.name }}<'py>(Bound<'py, PyAny>);
+pub struct {{ class.name }}<'py>(pub(crate) Bound<'py, PyAny>);
 
 impl<'py> Node<'py> for {{ class.name }}<'py> {
     fn into_object(self) -> Bound<'py, PyAny> {
@@ -41,12 +43,9 @@ impl<'py> Node<'py> for {{ class.name }}<'py> {
     }
 }
 
-impl<'py> PythonArgument<'py> for {{ class.name }}<'py> {
-    fn as_argument<'a>(&'a self, _: Python<'py>, _: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
-    where
-        'py: 'a,
-    {
-        self.0.as_borrowed()
+impl<'py> FieldValue<'py> for {{ class.name }}<'py> {
+    fn into_field_object(self, _: Python<'py>, _: &AstClasses) -> Bound<'py, PyAny> {
+        self.0
     }
 }
 {%- for ancestor in class.ancestors %}
@@ -77,12 +76,9 @@ impl<'py> Node<'py> for {{ node_union.name }}<'py> {
     }
 }
 
-impl<'py> PythonArgument<'py> for {{ node_union.name }}<'py> {
-    fn as_argument<'a>(&'a self, _: Python<'py>, _: &'a AstClasses) -> Borrowed<'a, 'py, PyAny>
-    where
-        'py: 'a,
-    {
-        self.0.as_borrowed()
+impl<'py> FieldValue<'py> for {{ node_union.name }}<'py> {
+    fn into_field_object(self, _: Python<'py>, _: &AstClasses) -> Bound<'py, PyAny> {
+        self.0
     }
 }
 {%- for member in node_union.member_classes %}
@@ -99,40 +95,27 @@ impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
 {%- if let Some(constructor) = class.constructor %}
 impl<'py> {{ class.name }}<'py> {
     /// Constructs a `{{ module_name }}.{{ class.name }}` without an `AstBuilder`.
-    /// It makes an ordinary Python call, which is slower than the vectorcall
-    /// that the `AstBuilder` method makes.
     pub fn new(
         py: Python<'py>,
 {%- for parameter in constructor.parameters %}
-        {{ parameter.name }}: {{ parameter.rust_type() }},
+        {{ parameter.rust_name() }}: {{ parameter.rust_type() }},
 {%- endfor %}
     ) -> PyResult<Self> {
         let classes = AstClasses::get(py)?;
-        let positional = PyTuple::new(
-            py,
-            [
-{%- for parameter in constructor.positional_parameters() %}
-                {{ parameter.name }}.as_argument(py, classes),
-{%- endfor %}
-            ],
-        )?;
-{%- if constructor.keyword_parameters().is_empty() %}
         classes
             .{{ class.snake_case_name }}
-            .bind(py)
-            .call1(positional)
-            .map(Self)
-{%- else %}
-        let keywords = pyo3::types::PyDict::new(py);
-{%- for parameter in constructor.keyword_parameters() %}
-        keywords.set_item("{{ parameter.name }}", {{ parameter.name }}.as_argument(py, classes))?;
+            .construct(
+                py,
+                [
+{%- for parameter in constructor.parameters %}
+                    {{ parameter.rust_name() }}.into_field_object(py, classes),
 {%- endfor %}
-        classes
-            .{{ class.snake_case_name }}
-            .bind(py)
-            .call(positional, Some(&keywords))
+{%- for name in constructor.computed_on_first_use %}
+                    PyNone::get(py).to_owned().into_any(),
+{%- endfor %}
+                ],
+            )
             .map(Self)
-{%- endif %}
     }
 }
 {% endif %}
@@ -143,14 +126,11 @@ impl<'py> {{ class.name }}<'py> {
 pub struct AstClasses {
 {%- for class in classes %}
 {%- if let Some(constructor) = class.constructor %}
-    {{ class.snake_case_name }}: Py<PyType>,
-{%- if !constructor.keyword_parameters().is_empty() %}
-    {{ class.snake_case_name }}_keyword_names: Py<PyTuple>,
-{%- endif %}
+    pub(crate) {{ class.snake_case_name }}: ClassLayout<{{ constructor.field_count() }}>,
 {%- endif %}
 {%- endfor %}
 {%- for enum_type in enums %}
-    {{ enum_type.snake_case_name }}_members: [Py<PyAny>; {{ enum_type.members.len() }}],
+    pub(crate) {{ enum_type.snake_case_name }}_members: [Py<PyAny>; {{ enum_type.members.len() }}],
 {%- endfor %}
 }
 
@@ -169,18 +149,18 @@ impl AstClasses {
         Ok(Self {
 {%- for class in classes %}
 {%- if let Some(constructor) = class.constructor %}
-            {{ class.snake_case_name }}: module.getattr("{{ class.name }}")?.cast_into::<PyType>()?.unbind(),
-{%- if !constructor.keyword_parameters().is_empty() %}
-            {{ class.snake_case_name }}_keyword_names: PyTuple::new(
-                py,
+            {{ class.snake_case_name }}: ClassLayout::load(
+                &module,
+                "{{ class.name }}",
                 [
-{%- for parameter in constructor.keyword_parameters() %}
-                    PyString::intern(py, "{{ parameter.name }}"),
+{%- for parameter in constructor.parameters %}
+                    "{{ parameter.name }}",
+{%- endfor %}
+{%- for name in constructor.computed_on_first_use %}
+                    "{{ name }}",
 {%- endfor %}
                 ],
-            )?
-            .unbind(),
-{%- endif %}
+            )?,
 {%- endif %}
 {%- endfor %}
 {%- for enum_type in enums %}
@@ -192,34 +172,4 @@ impl AstClasses {
 {%- endfor %}
         })
     }
-}
-
-impl<'py> AstBuilder<'py, '_> {
-{%- for class in classes %}
-{%- if let Some(constructor) = class.constructor %}
-    pub fn {{ class.snake_case_name }}(
-        &self,
-{%- for parameter in constructor.parameters %}
-        {{ parameter.name }}: {{ parameter.rust_type() }},
-{%- endfor %}
-    ) -> PyResult<{{ class.name }}<'py>> {
-        let py = self.py();
-        let classes = self.classes();
-        self.construct(
-            &classes.{{ class.snake_case_name }},
-            [
-{%- for parameter in constructor.parameters %}
-                {{ parameter.name }}.as_argument(py, classes),
-{%- endfor %}
-            ],
-{%- if constructor.keyword_parameters().is_empty() %}
-            None,
-{%- else %}
-            Some(&classes.{{ class.snake_case_name }}_keyword_names),
-{%- endif %}
-        )
-        .map({{ class.name }})
-    }
-{% endif %}
-{%- endfor %}
 }

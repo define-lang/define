@@ -18,6 +18,17 @@ genrule(
     visibility = ["//tools:__pkg__"],
 )
 
+genrule(
+    name = "ast_constructors",
+    outs = ["ast_constructors.rs"],
+    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_ast_constructors) $@ && $(execpath @rules_rust//tools/upstream_wrapper:rustfmt) --edition 2024 $@",
+    tools = [
+        "//define/compiler/parsing/rust_generators:generate_ast_constructors",
+        "@rules_rust//tools/upstream_wrapper:rustfmt",
+    ],
+    visibility = ["//tools:__pkg__"],
+)
+
 py_library(
     name = "parser",
     srcs = ["parser.pyi"],
@@ -51,6 +62,7 @@ pyo3_extension(
         "ast_builder.rs",
         "characters.rs",
         "characters/invisible_ranges.rs",
+        "node_construction.rs",
         "parse_error.rs",
         "parser.rs",
         "parser/action_definition.rs",
@@ -67,6 +79,7 @@ pyo3_extension(
         "parser_extension.rs",
         "scanner.rs",
         ":ast",
+        ":ast_constructors",
         ":parser_diagnostics",
         ":syntax_errors",
     ],

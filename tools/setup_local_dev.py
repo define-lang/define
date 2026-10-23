@@ -29,6 +29,7 @@ SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 # the order of their command-line arguments.
 GENERATED_RUST_SOURCES = [
     "define/compiler/parsing/ast.rs",
+    "define/compiler/parsing/ast_constructors.rs",
     "define/compiler/parsing/parser_diagnostics.rs",
     "define/compiler/parsing/syntax_errors.rs",
 ]

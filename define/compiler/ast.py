@@ -23,9 +23,15 @@ import msgspec
 from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
 
-# Marks a field whose value is computed from the other fields, so that
-# constructors do not need to pass it.
+# Marks a field whose value is computed from the other fields. Python code that
+# constructs a node does not pass it, and `__post_init__` or a property computes
+# it, but the parser computes and passes it, since the parser's constructors
+# skip `__post_init__`.
 type Derived[T] = T
+
+# Marks a field whose value is computed from the other fields the first time it
+# is used, which every constructor, including the parser's, leaves as `None`.
+type ComputedOnFirstUse[T] = T
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -371,6 +377,8 @@ class TypedName(ASTNode, Generic[NameContentT_co], kw_only=True):  # noqa: UP046
 
     def __post_init__(self):
         """Build the interned source-form typed name."""
+        # The parser computes the same text in `typed_name_text` in
+        # define/compiler/parsing/parser/names.rs. Keep the two in sync.
         self._source_typed_name = sys.intern(
             f"{self.name_type.value}<{self.name_content.source_name}>"
         )
@@ -407,6 +415,8 @@ class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
     def __post_init__(self):
         """Build the interned canonical typed name."""
         super().__post_init__()
+        # The parser computes the same text in `global_typed_name_reference` in
+        # define/compiler/parsing/parser/names.rs. Keep the two in sync.
         fqun = self.name_content.fqun or self.enclosing_fqun
         self._full_typed_name = sys.intern(
             f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
@@ -491,19 +501,25 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
     # writes it through a chained name of a wider kind: only this class's
     # property and the construction of a concrete kind set it.
     _canonical_chained_name_tuple: Derived[ChainedNameTupleT_co | None] = None
-    _canonical_chained_name: Derived[str | None] = None
+    _canonical_chained_name: ComputedOnFirstUse[str | None] = None
 
     def __post_init__(self):
         """Require at least one typed name."""
         if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
 
-    # These remain lazy because computing them for every new chain was a top
-    # hotspot in compilation profiles. The values are deterministic over the
-    # immutable typed_names, so a benign race recomputes an equal value.
+    # These remain lazy for the chains that Python code constructs, because
+    # computing them for every new chain was a top hotspot in compilation
+    # profiles. The parser passes the tuple for the chains that it constructs.
+    # The values are deterministic over the immutable typed_names, so a benign
+    # race recomputes an equal value.
     @property
     def canonical_chained_name_tuple(self) -> ChainedNameTupleT_co:
         """The canonical typed names in this chain."""
+        # The parser computes the same tuple in `parse_position_reference` in
+        # define/compiler/parsing/parser/names.rs and in
+        # `parse_position_presence_statement` in
+        # define/compiler/parsing/parser/action_definition.rs. Keep them in sync.
         if self._canonical_chained_name_tuple is None:
             self._canonical_chained_name_tuple = self._tag(
                 chained_name.ChainedNameTuple(
@@ -832,14 +848,9 @@ class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
     requirements: tuple[PositionRequirementStatement, ...]
-    as_set: Derived[frozenset[str]] = frozenset()
-
-    def __post_init__(self):
-        """Build the set of canonical required names."""
-        self.as_set = frozenset(
-            requirement.typed_global_name.full_typed_name
-            for requirement in self.requirements
-        )
+    # The full typed names that the requirements require. Only the parser
+    # constructs this class.
+    as_set: Derived[frozenset[str]]
 
     @property
     def value_constraint(self) -> GlobalTypedNameReference | None:
@@ -959,6 +970,10 @@ class ActionDefinition(QualityDefinition):
 
     def __post_init__(self):
         """Populate the interface-position lookup values."""
+        # The parser computes the same values in
+        # `interface_positions_by_name_and_trigger_position` in
+        # define/compiler/parsing/parser/action_definition.rs. Keep the two in
+        # sync.
         # Computing these up front guarantees later thread-safety for accessing
         # this information instead of creating multiple cached copies across threads.
         for local_def in self.interface_positions:
@@ -1032,6 +1047,8 @@ class Fqun(ASTNode):
 
     def __post_init__(self):
         """Build the interned canonical FQUN."""
+        # The parser computes the same text in `parse_fqun` in
+        # define/compiler/parsing/parser/names.rs. Keep the two in sync.
         # Pre-built because canonical is the only part of Fqun that
         # anything needs after name validation.
         if self.authority is None:

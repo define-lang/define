@@ -4,7 +4,10 @@ use crate::ast;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
+use crate::parser::names::FqunWithCanonicalText;
 use crate::scanner::Position;
+use pyo3::prelude::*;
+use pyo3::types::PyString;
 use terminals::{
     ACTION, BLOCK_OPEN, ENCODING, IT_HAS_THE, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, LINE_FEED,
     NAME_CONTENT_START, OPEN_BRACE, POSITION, SPACE, TERMINATOR, VALUE,
@@ -34,12 +37,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::PositionDefinition<'py>, Position)> {
-        let (name_content, fqun) = self.parse_global_name_definition_content()?;
+        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.ast.global_typed_name_in_definition(
+        let typed_name = self.global_typed_name_in_definition(
             typed_name_location,
             ast::NameType::Position,
             name_content,
+            name_text,
         )?;
         let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
             let (constraints, end) = self.parse_position_definition_block(start, 0, &fqun)?;
@@ -73,7 +77,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         start: Position,
         opener_indentation: usize,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
         let block_open_end = self.parse_block_open()?;
         match self.next_line_in_block(opener_indentation, &[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE])? {
@@ -127,7 +131,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         start: Position,
         indentation: usize,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::PositionConstraintBlock<'py>> {
         let block_open_end = self.parse_block_open()?;
         match self.next_line_in_block(indentation, &[IT_HAS_THE])? {
@@ -147,9 +151,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let requirements = self.ast.start_tuple::<ast::PositionRequirementStatement>();
+        let required_names = self.ast.start_texts();
         loop {
-            let requirement = self.parse_position_requirement_statement(fqun)?;
+            let (requirement, required_name) = self.parse_position_requirement_statement(fqun)?;
             self.ast.push(&requirements, requirement);
+            self.ast.push_text(&required_names, required_name);
             match self.next_line_in_block(indentation, &[IT_HAS_THE])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -161,20 +167,24 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let end = self.parse_block_close()?;
         let requirements = self.ast.finish_tuple(requirements)?;
+        let required_names = self.ast.finish_text_set(required_names)?;
         let location = self.ast.location(start, end)?;
-        Ok(self.ast.position_constraint_block(location, requirements)?)
+        Ok(self
+            .ast
+            .position_constraint_block(location, requirements, required_names)?)
     }
 
     /// Parses a position requirement statement, whose reference's default FQUN
-    /// is `fqun`, through the end of its line.
+    /// is `fqun`, through the end of its line, and returns it with the full
+    /// typed name that it requires.
     ///
     /// ```ebnf
     /// position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
     /// ```
     fn parse_position_requirement_statement(
         &mut self,
-        fqun: &ast::Fqun<'py>,
-    ) -> ParseResult<ast::PositionRequirementStatement<'py>> {
+        fqun: &FqunWithCanonicalText<'py, 'source>,
+    ) -> ParseResult<(ast::PositionRequirementStatement<'py>, Bound<'py, PyString>)> {
         let start = self.scanner.position;
         // The statement is not a position requirement statement.
         if !self.scanner.consume(IT_HAS_THE) {
@@ -185,7 +195,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_constraint_name_type());
         }
-        let typed_name = self.parse_typed_global_name_reference(
+        let (typed_name, full_typed_name) = self.parse_typed_global_name_reference(
             fqun,
             &CONSTRAINT_NAME_TYPES,
             Self::expected_constraint_name_type,
@@ -195,9 +205,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_terminator());
         };
         let location = self.ast.location(start, end)?;
-        Ok(self
+        let requirement = self
             .ast
-            .position_requirement_statement(location, typed_name)?)
+            .position_requirement_statement(location, typed_name)?;
+        Ok((requirement, full_typed_name))
     }
 }
 

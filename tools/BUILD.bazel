@@ -9,12 +9,14 @@ py_binary(
     srcs = ["analyze_coverage.py"],
     data = [
         "//define/compiler/parsing:ast",
+        "//define/compiler/parsing:ast_constructors",
         "//define/compiler/parsing:parser_diagnostics",
         "//define/compiler/parsing:syntax_errors",
     ],
     env = {
         "RUST_GENERATED_SOURCES": " ".join([
             "$(rlocationpath //define/compiler/parsing:ast)",
+            "$(rlocationpath //define/compiler/parsing:ast_constructors)",
             "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
             "$(rlocationpath //define/compiler/parsing:syntax_errors)",
         ]),
@@ -33,11 +35,13 @@ py_test(
     srcs = ["analyze_coverage_test.py"],
     data = [
         "//define/compiler/parsing:ast",
+        "//define/compiler/parsing:ast_constructors",
         "//define/compiler/parsing:parser_diagnostics",
     ],
     env = {
         "ANALYZE_COVERAGE_TEST_GENERATED_SOURCES": " ".join([
             "$(rlocationpath //define/compiler/parsing:ast)",
+            "$(rlocationpath //define/compiler/parsing:ast_constructors)",
             "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
         ]),
     },
@@ -336,6 +340,7 @@ py_binary(
     args = [
         "$(rlocationpath @multitool//tools/uv)",
         "$(rlocationpath //define/compiler/parsing:ast)",
+        "$(rlocationpath //define/compiler/parsing:ast_constructors)",
         "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
         "$(rlocationpath //define/compiler/parsing:syntax_errors)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer_stub)",
@@ -346,6 +351,7 @@ py_binary(
         "//define/compiler/codegen/literal/python:renderer",
         "//define/compiler/codegen/literal/python:renderer_stub",
         "//define/compiler/parsing:ast",
+        "//define/compiler/parsing:ast_constructors",
         "//define/compiler/parsing:parser_diagnostics",
         "//define/compiler/parsing:parser_extension",
         "//define/compiler/parsing:syntax_errors",

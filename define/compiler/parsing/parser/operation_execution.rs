@@ -1,10 +1,11 @@
 //! Operation execution statements and their operation arguments blocks.
 
 use crate::ast;
-use crate::ast_builder::NodeTuple;
+use crate::node_construction::NodeTuple;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
+use crate::parser::names::FqunWithCanonicalText;
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use terminals::{
@@ -49,7 +50,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         kind: OperationKind,
         indentation: usize,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationExecutionStatement<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(EXECUTE_THE);
@@ -58,7 +59,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.wrong_operation_name_type(kind));
         }
-        let operation = match kind {
+        let (operation, _) = match kind {
             OperationKind::Value => self.parse_typed_global_name_reference(
                 fqun,
                 &OPERATION_NAME_TYPE,
@@ -106,7 +107,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         start: Position,
         indentation: usize,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         NodeTuple<'py, ast::OperationArgumentStatement<'py>>,
         Position,
@@ -154,7 +155,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_operation_argument_statement(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationArgumentStatement<'py>> {
         let start = self.scanner.position;
         // The statement is not an operation argument statement.
@@ -198,7 +199,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     // everywhere.
     fn parse_operation_argument_source(
         &mut self,
-        fqun: &ast::Fqun<'py>,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         ast::PositionReferenceOrLocalTypedNameReferenceOrLiteral<'py>,
         Position,
@@ -222,11 +223,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.scanner.consume(VIEW) {
             return Err(self.expected_view());
         }
-        let name_content = self.parse_local_name_content()?;
+        let name = self.parse_local_name_content()?;
         let location = self.ast.location(start, self.scanner.position)?;
-        Ok(self
-            .ast
-            .local_typed_name_reference(location, ast::NameType::View, name_content)?)
+        let (typed_name, _) =
+            self.local_typed_name_reference(location, ast::NameType::View, name)?;
+        Ok(typed_name)
     }
 }
 

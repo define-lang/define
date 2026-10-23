@@ -5,15 +5,36 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-py_binary(
-    name = "generate_ast_nodes",
-    srcs = ["generate_ast_nodes.py"],
-    visibility = ["//define/compiler/parsing:__pkg__"],
+py_library(
+    name = "ast_description",
+    srcs = ["ast_description.py"],
     deps = [
         ":renderer_extension",
         ":rust_names",
         "//define/compiler:ast",
         "@pypi//msgspec",
+    ],
+)
+
+py_binary(
+    name = "generate_ast_constructors",
+    srcs = ["generate_ast_constructors.py"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
+    deps = [
+        ":ast_description",
+        ":renderer_extension",
+        "//define/compiler:ast",
+    ],
+)
+
+py_binary(
+    name = "generate_ast_nodes",
+    srcs = ["generate_ast_nodes.py"],
+    visibility = ["//define/compiler/parsing:__pkg__"],
+    deps = [
+        ":ast_description",
+        ":renderer_extension",
+        "//define/compiler:ast",
     ],
 )
 
@@ -44,6 +65,7 @@ pyo3_extension(
     srcs = ["rust_renderer.rs"],
     compile_data = [
         "askama.toml",
+        "ast_constructors.rs.j2",
         "ast_nodes.rs.j2",
         "parser_diagnostics.rs.j2",
         "syntax_errors.rs.j2",
@@ -79,6 +101,8 @@ rust_clippy_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":ast_description",
+        ":generate_ast_constructors",
         ":generate_ast_nodes",
         ":generate_parser_diagnostics",
         ":generate_syntax_errors",

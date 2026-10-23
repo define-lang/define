@@ -13,7 +13,8 @@ mod potential_literal_definition;
 mod value_definition;
 
 use crate::ast;
-use crate::ast_builder::{AstBuilder, FilePath};
+use crate::ast_builder::AstBuilder;
+use crate::node_construction::FilePath;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::operation_execution::OperationKind;
 use crate::parser_diagnostics::ParserDiagnostics;
@@ -40,7 +41,10 @@ const GLOBAL_DEFINITION_STARTS: [&[u8]; 7] = [
 ];
 pub(crate) struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
-    ast: AstBuilder<'py, 'source>,
+    ast: AstBuilder<'py>,
+    /// Where `typed_name_text` spells a typed name, kept to reuse its
+    /// allocation.
+    typed_name_text_buffer: Vec<u8>,
     errors: SyntaxErrors<'py>,
     diagnostics: ParserDiagnostics<'py>,
 }
@@ -54,6 +58,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(Self {
             scanner: Scanner::new(source),
             ast: AstBuilder::new(py, file_path.clone())?,
+            typed_name_text_buffer: Vec::new(),
             errors: SyntaxErrors::new(py, file_path.clone()),
             diagnostics: ParserDiagnostics::new(py, file_path),
         })
@@ -186,11 +191,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         typed_name_start: Position,
         name_type: ast::NameType,
     ) -> ParseResult<(ast::GlobalTypedNameInDefinition<'py>, Position)> {
-        let (name_content, _) = self.parse_global_name_definition_content()?;
+        let (name_content, name_text, _) = self.parse_global_name_definition_content()?;
         let location = self.ast.location(typed_name_start, self.scanner.position)?;
         let typed_name =
-            self.ast
-                .global_typed_name_in_definition(location, name_type, name_content)?;
+            self.global_typed_name_in_definition(location, name_type, name_content, name_text)?;
         // There is no `.`.
         let Some(end) = self.parse_terminator()? else {
             return Err(self.missing_terminator());
