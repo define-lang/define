@@ -96,6 +96,15 @@
       datasourceTemplate: "golang-version",
     },
     {
+      // The gomod manager updates the go directive of each go.mod but not of
+      // go.work, which must name a Go at least as new as every module's.
+      customType: "regex",
+      managerFilePatterns: ["/^go\\.work$/"],
+      matchStrings: ["(?m)^go (?<currentValue>\\S+)$"],
+      depNameTemplate: "go",
+      datasourceTemplate: "golang-version",
+    },
+    {
       customType: "regex",
       managerFilePatterns: ["/^MODULE\\.bazel$/"],
       matchStrings: [
@@ -185,7 +194,7 @@
       groupName: "go dependencies",
     },
     {
-      // MODULE.bazel and go.mod name the same Go version.
+      // MODULE.bazel, go.mod and go.work name the same Go version.
       matchDatasources: ["golang-version"],
       groupName: "Go SDK",
       rangeStrategy: "bump",

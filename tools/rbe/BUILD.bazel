@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_binary(
+    name = "rbe",
+    embed = [":rbe_lib"],
+)
+
+go_library(
+    name = "rbe_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/define-lang/define/tools/rbe",
+    deps = [
+        "//tools/rbe/cas",
+        "//tools/rbe/execution",
+        "//tools/rbe/service",
+        "@org_golang_google_grpc//:grpc",
+    ],
+)
+
+check_build_file()
