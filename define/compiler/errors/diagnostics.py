@@ -664,13 +664,6 @@ class InvalidGlobalNamePathCharacterDiagnostic(InvalidNameCharactersDiagnostic):
     )
 
 
-class GlobalNamePathMissingLeadingSlashDiagnostic(Diagnostic):
-    """Diagnostic for when a global path does not start with '/'."""
-
-    path: str
-    message_format: ClassVar[str] = "global name path '{self.path}' must start with '/'"
-
-
 class GlobalNamePathTrailingSlashDiagnostic(Diagnostic):
     """Diagnostic for when a global path ends with '/'."""
 

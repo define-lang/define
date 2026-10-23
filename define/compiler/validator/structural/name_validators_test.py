@@ -453,15 +453,6 @@ class TestGlobalNamePath:
         assert result[1].location.end_column == 15
         assert result[1].location.file_path is None
 
-    def test_missing_leading_slash(self):
-        result = _validate_global_name_path(_global_path_name("invalid/path"))
-        assert len(result) == 1
-        assert isinstance(
-            result[0], diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic
-        )
-        assert result[0].path == "invalid/path"
-        assert result[0].location.column == 10
-
     def test_bare_slash(self):
         result = _validate_global_name_path(_global_path_name("/"))
         assert len(result) == 1
@@ -497,36 +488,35 @@ class TestGlobalNamePath:
         assert result[0].location.file_path is None
 
     def test_all_diagnostic_types(self):
-        result = _validate_global_name_path(_global_path_name("Bad//2bad/"))
-        assert len(result) == 4
-        assert (
-            sum(
-                isinstance(d, diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic)
-                for d in result
-            )
-            == 1
-        )
-        assert (
-            sum(
-                isinstance(d, diagnostics.GlobalNamePathTrailingSlashDiagnostic)
-                for d in result
-            )
-            == 1
-        )
-        assert (
-            sum(
-                isinstance(d, diagnostics.GlobalNamePathEmptySegmentDiagnostic)
-                for d in result
-            )
-            == 1
-        )
-        assert (
-            sum(
-                isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-                for d in result
-            )
-            == 1
-        )
+        result = _validate_global_name_path(_global_path_name("/Bad//2bad/"))
+        assert result == [
+            diagnostics.GlobalNamePathTrailingSlashDiagnostic(
+                location=ast.SourceLocation(
+                    line=1, column=20, end_line=1, end_column=19
+                ),
+                path="/Bad//2bad/",
+            ),
+            diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+                location=ast.SourceLocation(
+                    line=1, column=11, end_line=1, end_column=11
+                ),
+                segment="Bad",
+                chars=("B",),
+            ),
+            diagnostics.GlobalNamePathEmptySegmentDiagnostic(
+                location=ast.SourceLocation(
+                    line=1, column=14, end_line=1, end_column=19
+                ),
+                path="/Bad//2bad/",
+            ),
+            diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+                location=ast.SourceLocation(
+                    line=1, column=16, end_line=1, end_column=16
+                ),
+                segment="2bad",
+                chars=("2",),
+            ),
+        ]
 
 
 class TestMultiverseNameReserved:

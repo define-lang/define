@@ -468,13 +468,7 @@ def _validate_global_name_path(
     """Validate path segments in a global name."""
     result: list[diagnostics.Diagnostic] = []
     path_name = path.name
-    if not path_name.startswith("/"):
-        result.append(
-            diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic(
-                location=path.location,
-                path=path_name,
-            )
-        )
+    # The parser accepts a global name only when its path starts with `/`.
     if path_name.endswith("/"):
         result.append(
             diagnostics.GlobalNamePathTrailingSlashDiagnostic(
