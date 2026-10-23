@@ -46,7 +46,6 @@ py_library(
         ":source_map",
         "//define/compiler:ast",
         "//define/compiler:constants",
-        "//define/compiler/parsing/lark:lark_standalone",
     ],
 )
 

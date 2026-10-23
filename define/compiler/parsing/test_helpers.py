@@ -4,59 +4,28 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.parsing import parser_comparison
+from define.compiler.parsing.native import native_parser
 
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     from define.compiler import ast
-    from define.compiler.parsing.native import native_parser
 
 
 def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
-    """Parse source into an AST Program with the parser in parser.rs, which must report no diagnostics."""
-    parser_comparison.compare(source, file_path)
-    return _program(parser_comparison.native_parse(source, file_path))
-
-
-def parse_where_lark_is_wrong(
-    source: str, file_path: PurePosixPath | None = None
-) -> ast.Program:
-    """Parse source like `parse`, for a source the Lark parser accepts by mistake."""
-    return _program(
-        parser_comparison.native_parse_where_lark_is_wrong(source, file_path)
-    )
-
-
-def parse_with_diagnostics(
-    source: str, file_path: PurePosixPath | None = None
-) -> native_parser.ParseResult:
-    """Parse source with the parser in parser.rs, and return its result."""
-    parser_comparison.compare(source, file_path)
-    return parser_comparison.native_parse(source, file_path)
-
-
-def parse_with_diagnostics_where_lark_rejects_by_mistake(
-    source: str, file_path: PurePosixPath | None = None
-) -> native_parser.ParseResult:
-    """Parse source like `parse_with_diagnostics`, for a source the Lark parser rejects by mistake."""
-    return parser_comparison.native_parse_where_lark_rejects_by_mistake(
-        source, file_path
-    )
-
-
-def parse_with_diagnostics_where_lark_diagnostics_are_wrong(
-    source: str, file_path: PurePosixPath | None = None
-) -> native_parser.ParseResult:
-    """Parse source like `parse_with_diagnostics`, for a source the Lark parser reports the wrong diagnostics for."""
-    return parser_comparison.native_parse_where_lark_diagnostics_are_wrong(
-        source, file_path
-    )
-
-
-def _program(result: native_parser.ParseResult) -> ast.Program:
+    """Parse source into an AST Program, which must have no diagnostics."""
+    result = parse_with_diagnostics(source, file_path)
     assert result.diagnostics == []
     if result.exception is not None:
         raise result.exception
     assert result.program is not None
     return result.program
+
+
+def parse_with_diagnostics(
+    source: str, file_path: PurePosixPath | None = None
+) -> native_parser.ParseResult:
+    """Parse source, and return the parser's result."""
+    # A lone surrogate in source becomes invalid UTF-8, as it would be in a
+    # file, instead of failing to encode.
+    return native_parser.parse(source.encode(errors="surrogatepass"), file_path)

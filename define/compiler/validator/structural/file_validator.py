@@ -176,7 +176,7 @@ class FileStructuralValidator:
     @staticmethod
     def _load_file(
         path: define_path.DefinePath,
-    ) -> tuple[bytes, bytes | None, validation_result.AnyValidationException | None]:
+    ) -> tuple[bytes, bytes | None, exceptions.DefineError | None]:
         """Load a Define source file and return its source, digest, and loading error."""
         posix_path = path.as_posix_path()
         try:

@@ -88,9 +88,9 @@ The `profile-compiler` workflow requires:
 - complete Python caller and callee stacks;
 - all-thread attribution under free-threaded execution;
 - source filenames, line numbers, and function names;
-- imports and startup, parse and lexing, AST transformation, reference-graph
-  validation, requirement inference and destruction contracts, guarantee
-  propagation, Particle Operation validation, and code generation;
+- imports and startup, parsing, reference-graph validation, requirement
+  inference and destruction contracts, guarantee propagation, Particle Operation
+  validation, and code generation;
 - focused workloads from every generator under `tools/generators/`; and
 - retained machine-readable evidence that can answer later questions without
   rerunning a workload.
@@ -453,7 +453,7 @@ CPU reports provide self and cumulative attributed CPU estimates, caller and
 callee relationships, and per-thread sampled CPU. CPU time can exceed wall time
 when several workers execute concurrently. Reports show how much sampled CPU had
 no resolved Python frame. Every function percentage uses all sampled CPU as its
-denominator, including filtered functions, Lark, and native-only samples.
+denominator, including filtered functions and native-only samples.
 
 Every report will include sample counts, sampling intervals, discarded-sample
 rate, profiler-pause totals, thread counts, and confidence or resolution

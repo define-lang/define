@@ -7,20 +7,15 @@ from dataclasses import dataclass, field
 
 import msgspec
 
-from define.compiler.errors import exceptions
-from define.compiler.parsing.lark import lark_standalone
-
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.errors import diagnostics, source_map
+    from define.compiler.errors import diagnostics, exceptions, source_map
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input, stats
     from define.compiler.validator.reference_graph import action_contract
-
-type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
 
 class ParticleStatementValidity(msgspec.Struct, frozen=True):
@@ -83,7 +78,7 @@ class DefinitionValidationResult(msgspec.Struct):
 class FileValidationResult:
     """Validation output for one source file."""
 
-    exception: AnyValidationException | None
+    exception: exceptions.DefineError | None
     # The digest of a file that was read from the filesystem, which lets a
     # source map read it again for diagnostics without keeping its text.
     source_digest: bytes | None
@@ -175,7 +170,7 @@ class ProgramValidationResult(msgspec.Struct):
         return [d for r in self.file_results for d in r.diagnostics]
 
     @property
-    def all_exceptions(self) -> list[AnyValidationException]:
+    def all_exceptions(self) -> list[exceptions.DefineError]:
         """All exceptions from all file results."""
         return [r.exception for r in self.file_results if r.exception is not None]
 

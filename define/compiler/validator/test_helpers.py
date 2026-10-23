@@ -12,8 +12,7 @@ from define.compiler.data_structures import define_path
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from define.compiler.errors import diagnostics
-    from define.compiler.validator import validation_result
+    from define.compiler.errors import diagnostics, exceptions
 
 
 def standard_library_file(relative_path: str) -> str:
@@ -23,7 +22,7 @@ def standard_library_file(relative_path: str) -> str:
 
 class _ValidationErrors(Protocol):
     @property
-    def all_exceptions(self) -> list[validation_result.AnyValidationException]: ...
+    def all_exceptions(self) -> list[exceptions.DefineError]: ...
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]: ...

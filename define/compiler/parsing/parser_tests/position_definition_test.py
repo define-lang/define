@@ -201,10 +201,10 @@ def test_position_definition_with_control_character(native_parse: NativeParse):
 
 
 def test_position_definition_with_control_character_in_name(
-    native_parse_lark_wrong: NativeParse,
+    native_parse: NativeParse,
 ):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        native_parse_lark_wrong("define the potential position<standard:/a\x01b>.\n")
+        native_parse("define the potential position<standard:/a\x01b>.\n")
     assert exc_info.value.char == "\x01"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 42

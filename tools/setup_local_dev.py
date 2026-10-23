@@ -14,12 +14,10 @@ from tools import runfiles
 REPO_ROOT = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 
 LARK_TARGETS = [
-    "//define/compiler/parsing/lark:lark_standalone_gen",
     "//defcl/python/lark:lark_standalone_gen",
 ]
 
 LARK_FILES = [
-    "define/compiler/parsing/lark/lark_standalone.py",
     "defcl/python/lark/lark_standalone.py",
 ]
 

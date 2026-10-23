@@ -9,12 +9,8 @@ py_library(
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/parsing:parser",
-        "//define/compiler/parsing:parser_comparison",
         "//define/compiler/parsing:test_helpers",
-        "//define/compiler/parsing/lark:lark_standalone",
         "//define/compiler/parsing/native:native_parser",
-        "@pypi//lark_cython",
         "@pypi//pytest",
     ],
 )
@@ -75,15 +71,6 @@ py_test(
     ],
 )
 
-py_library(
-    name = "test_helpers",
-    srcs = ["test_helpers.py"],
-    deps = [
-        "//define/compiler/parsing/lark:lark_standalone",
-        "@pypi//lark_cython",
-    ],
-)
-
 filegroup(
     name = "test_sources",
     testonly = True,
@@ -99,7 +86,6 @@ pyright_test(
         ":conftest",
         ":init_py",
         ":parser_tests",
-        ":test_helpers",
     ],
 )
 

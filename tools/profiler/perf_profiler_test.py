@@ -558,7 +558,7 @@ def test_cpu_percentages_include_native_and_filtered_python_samples():
     profile = _profile(
         [
             (50, 1, "compiler_work"),
-            (30, 2, "lark_work"),
+            (30, 2, "library_work"),
             (20, 2, None),
         ]
     )

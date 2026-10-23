@@ -9,7 +9,6 @@ import sys
 # parser's AST node generator, resolves the field annotations at runtime.
 from pathlib import PurePosixPath  # noqa: TC003
 from typing import (
-    TYPE_CHECKING,
     ClassVar,
     Final,
     Generic,
@@ -23,10 +22,6 @@ import msgspec
 
 from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
-
-if TYPE_CHECKING:
-    import lark_cython
-
 
 # Marks a field whose value is computed from the other fields, so that
 # constructors do not need to pass it.
@@ -50,50 +45,6 @@ class SourceLocation(msgspec.Struct, frozen=True):
     end_line: int
     end_column: int
     file_path: PurePosixPath | None = None
-
-    # We use this instead of Lark's propagate_positions because propagate_positions
-    # was very slow (it was the #1 CPU consumer in compilation, overall).
-    @classmethod
-    def from_ast_or_token(
-        cls,
-        *,
-        start: ASTNode | lark_cython.Token,
-        end: ASTNode | lark_cython.Token,
-        file_path: PurePosixPath | None = None,
-        end_column_offset: int = 0,
-    ) -> Self:
-        """Build a SourceLocation spanning ``start`` through ``end``.
-
-        Each argument is either an ``ASTNode`` (whose ``.location`` is read)
-        or a ``lark_cython.Token`` (whose lexer-set
-        ``line``/``column``/``end_line``/``end_column`` are read). When
-        ``start`` and ``end`` are the same instance, the result is that
-        item's full span.
-        """
-        if isinstance(start, ASTNode):
-            start_line = start.location.line
-            start_column = start.location.column
-        else:
-            if start.line < 0 or start.column < 0:
-                raise ValueError(f"token {start!r} has no line/column")
-            start_line = start.line
-            start_column = start.column
-        if isinstance(end, ASTNode):
-            end_line = end.location.end_line
-            end_column = end.location.end_column
-        else:
-            if end.end_line is None or end.end_column is None:
-                raise ValueError(f"token {end!r} has no end_line/end_column")
-            end_line = end.end_line
-            # A token's end_column is the column after its last character.
-            end_column = end.end_column - 1
-        return cls(
-            line=start_line,
-            column=start_column,
-            end_line=end_line,
-            end_column=end_column + end_column_offset,
-            file_path=file_path,
-        )
 
     @classmethod
     def from_definition_name(
@@ -906,8 +857,6 @@ class GlobalPathName(ASTNode):
 
     def __post_init__(self):
         """Intern the global path name."""
-        # The parser supplies the token's string value because sys.intern rejects
-        # token objects.
         self.name = sys.intern(self.name)
 
     @property

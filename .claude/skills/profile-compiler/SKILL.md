@@ -98,7 +98,7 @@ Use the analyzer's metric definitions and caveats as the authority. A critical
 path is not the busiest thread, summed thread time, or unioned wall occupancy.
 Do not assume function rows are additive, CPU time equals wall time, or a sample
 hit represents a call. CPU percentages use all sampled CPU as their denominator,
-including filtered functions, Lark, and samples without a Python frame.
+including filtered functions and samples without a Python frame.
 
 For follow-up questions, reuse retained profile artifacts when they contain the
 needed evidence. Drill into caller and callee relationships using the available

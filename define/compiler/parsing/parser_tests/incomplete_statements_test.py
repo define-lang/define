@@ -780,9 +780,9 @@ def test_create_particle_reference_single_slash_then_newline(
 
 
 def test_double_colon_in_create_reference_parses_as_global_name(
-    native_parse_lark_wrong: NativeParse,
+    native_parse: NativeParse,
 ):
-    program = native_parse_lark_wrong(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -889,9 +889,9 @@ def test_destroy_particle_reference_single_colon_then_newline(
 
 
 def test_double_colon_in_destroy_reference_parses_as_global_name(
-    native_parse_lark_wrong: NativeParse,
+    native_parse: NativeParse,
 ):
-    program = native_parse_lark_wrong(
+    program = native_parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"

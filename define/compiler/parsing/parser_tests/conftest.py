@@ -6,30 +6,13 @@ from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
-from define.compiler.parsing import parser, parser_comparison, test_helpers
+from define.compiler.parsing import test_helpers
 
 if TYPE_CHECKING:
     import pathlib
 
-    import lark_cython
-
     from define.compiler import ast
-    from define.compiler.parsing.lark import lark_standalone
     from define.compiler.parsing.native import native_parser
-
-_parser = parser.Parser()
-
-
-class Parse(Protocol):
-    """Callable that parses source, asserts no diagnostics, and returns the tree."""
-
-    def __call__(
-        self,
-        source: str,
-        file_path: pathlib.PurePosixPath | None = ...,
-    ) -> lark_standalone.Tree[lark_cython.Token]:
-        """Parse source and return the parse tree."""
-        ...
 
 
 class NativeParse(Protocol):
@@ -57,53 +40,9 @@ class NativeParseWithDiagnostics(Protocol):
 
 
 @pytest.fixture
-def p() -> parser.Parser:
-    """Return the shared parser instance used by parser tests."""
-    return _parser
-
-
-@pytest.fixture
-def parse() -> Parse:
-    """Return a parse callable that asserts no diagnostics and raises exceptions."""
-
-    def _parse(
-        source: str, file_path: pathlib.PurePosixPath | None = None
-    ) -> lark_standalone.Tree[lark_cython.Token]:
-        parser_comparison.compare(source, file_path)
-        result = _parser.parse(source, file_path=file_path)
-        assert result.diagnostics == []
-        if result.exception is not None:
-            raise result.exception
-        assert result.tree is not None
-        return result.tree
-
-    return _parse
-
-
-@pytest.fixture
-def native_parse_lark_wrong() -> NativeParse:
-    """Return a parse callable that uses the parser in parser.rs, for sources the Lark parser accepts by mistake."""
-    return test_helpers.parse_where_lark_is_wrong
-
-
-@pytest.fixture
 def native_parse_with_diagnostics() -> NativeParseWithDiagnostics:
     """Return a parse callable that uses the parser in parser.rs and returns its whole result."""
     return test_helpers.parse_with_diagnostics
-
-
-@pytest.fixture
-def native_parse_with_diagnostics_lark_rejects() -> NativeParseWithDiagnostics:
-    """Return a parse callable that uses the parser in parser.rs and returns its whole result, for sources the Lark parser rejects by mistake."""
-    return test_helpers.parse_with_diagnostics_where_lark_rejects_by_mistake
-
-
-@pytest.fixture
-def native_parse_with_diagnostics_lark_diagnostics_wrong() -> (
-    NativeParseWithDiagnostics
-):
-    """Return a parse callable that uses the parser in parser.rs and returns its whole result, for sources the Lark parser reports the wrong diagnostics for."""
-    return test_helpers.parse_with_diagnostics_where_lark_diagnostics_are_wrong
 
 
 @pytest.fixture

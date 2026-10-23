@@ -561,9 +561,9 @@ def main(
     """Generate a large, syntactically-diverse Define source file.
 
     Emits one .dfn holding a single enormous Action Statements Block plus a pool
-    of positions and actions. The bulk of validating it is the bundled lark lexer
-    and parser, so this is the parse-bound profiling shape. Longer chained
-    references also push work into reference-graph validation.
+    of positions and actions. It is mostly source for the parser to read, so it
+    is the parse-heavy profiling shape. Longer chained references also push
+    work into reference-graph validation.
 
     Scale it with --lines. The generated source validates to zero diagnostics.
     """

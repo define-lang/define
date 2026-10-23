@@ -192,7 +192,6 @@ def test_failed_expunge_is_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 def _project(tmp_path: Path) -> Path:
     repository = _repository(tmp_path)
     for path in (
-        "define/compiler/parsing/grammar.lark",
         "defcl/python/grammar.lark",
         "define/config/project/config.proto",
     ):

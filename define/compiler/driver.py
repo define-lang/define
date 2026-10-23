@@ -106,7 +106,7 @@ class CompilationResult(CompilerResult):
     """Caller-facing result retained after compilation."""
 
     all_diagnostics: list[diagnostics.Diagnostic]
-    all_exceptions: list[validation_result.AnyValidationException]
+    all_exceptions: list[exceptions.DefineError]
     entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
     file_timings: list[overall_stats.FileTiming]

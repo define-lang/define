@@ -232,9 +232,9 @@ def test_variation_selector_after_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 47
 
 
-def test_zero_width_joiner_at_end_of_name(native_parse_lark_wrong: NativeParse):
+def test_zero_width_joiner_at_end_of_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        native_parse_lark_wrong("define the potential position<standard:/a\u200d>.\n")
+        native_parse("define the potential position<standard:/a\u200d>.\n")
     assert exc_info.value.char == "\u200d"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 42
@@ -242,9 +242,9 @@ def test_zero_width_joiner_at_end_of_name(native_parse_lark_wrong: NativeParse):
     assert exc_info.value.location.end_column == 42
 
 
-def test_variation_selector_at_start_of_name(native_parse_lark_wrong: NativeParse):
+def test_variation_selector_at_start_of_name(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        native_parse_lark_wrong("define the potential position<\ufe0fstandard:/a>.\n")
+        native_parse("define the potential position<\ufe0fstandard:/a>.\n")
     assert exc_info.value.char == "\ufe0f"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 31

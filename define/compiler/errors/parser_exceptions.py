@@ -6,28 +6,13 @@
 from __future__ import annotations
 
 import unicodedata
-from typing import TYPE_CHECKING, ClassVar, Self, override
+from typing import TYPE_CHECKING, ClassVar, override
 
-from define.compiler import ast, constants
+from define.compiler import constants
 from define.compiler.errors import exceptions, source_map
 
 if TYPE_CHECKING:
-    import pathlib
-
-    from define.compiler.parsing.lark import lark_standalone
-
-
-def _single_line_location(
-    line: int, column: int, width: int, file_path: pathlib.PurePosixPath | None
-) -> ast.SourceLocation:
-    # A location with no width covers the character where something is missing.
-    return ast.SourceLocation(
-        line=line,
-        column=column,
-        end_line=line,
-        end_column=column + max(width, 1) - 1,
-        file_path=file_path,
-    )
+    from define.compiler import ast
 
 
 class DefineSyntaxError(exceptions.DefineError):
@@ -62,21 +47,6 @@ class DefineSyntaxError(exceptions.DefineError):
 class DefineTokenError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected tokens."""
 
-    @classmethod
-    def from_lark_exception(
-        cls,
-        exception: lark_standalone.UnexpectedToken,
-        file_path: pathlib.PurePosixPath | None,
-        *details: str,
-    ) -> Self:
-        """Construct a token error from a Lark exception and the error's other fields."""
-        # A token that ends a line, such as a newline, underlines no characters.
-        width = len(exception.token.value.split("\n", 1)[0])
-        return cls(
-            _single_line_location(exception.line, exception.column, width, file_path),
-            *details,
-        )
-
 
 class DefineCharError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected characters."""
@@ -87,21 +57,6 @@ class DefineCharError(DefineSyntaxError):
         """Initialize with the unexpected character."""
         super().__init__(location)
         self.char = char
-
-    @classmethod
-    def from_lark_exception(
-        cls,
-        exception: lark_standalone.UnexpectedInput,
-        char: str,
-        file_path: pathlib.PurePosixPath | None,
-    ) -> Self:
-        """Construct a character error from a Lark exception."""
-        return cls(
-            _single_line_location(
-                exception.line, exception.column, len(char), file_path
-            ),
-            char,
-        )
 
     @property
     def escaped_char(self) -> str:
@@ -152,14 +107,6 @@ class TrailingWhitespaceError(DefineCharError):
     message_format: ClassVar[str] = "Trailing whitespace is not allowed."
 
 
-class InvalidCharacterError(DefineCharError):
-    """Raised when an invalid character is encountered."""
-
-    message_format: ClassVar[str] = (
-        "Character ({escaped_char}) is not valid at this location in Define syntax."
-    )
-
-
 class InvalidLocalNameCharacter(DefineCharError):
     """Wrote something invalid where only a local name is accepted."""
 
@@ -178,14 +125,6 @@ class InvalidLiteralEscape(DefineCharError):
     message_format: ClassVar[str] = (
         'Invalid escape sequence in this literal. Only \\", \\\\, and \\n are allowed.'
     )
-
-
-# TODO: Remove this when we switch fully to the native parser, which reports
-# each of these characters with the error specific to it.
-class InvalidLiteralCharacter(DefineCharError):
-    """A forbidden file character in literal content."""
-
-    message_format: ClassVar[str] = "Invalid character in literal content."
 
 
 class InvisibleCharacterError(DefineCharError):
@@ -212,8 +151,7 @@ class InvisibleCharacterError(DefineCharError):
 # --- Token error subclasses ---
 
 # The token error subclasses don't use the suffix "Error." Instead, they are expressed
-# as the name of the problem. This is much more intuitive to type and read in the
-# parser error classification system.
+# as the name of the problem, which is much more intuitive to type and read.
 #
 # Keep these in alphabetical order.
 
@@ -367,16 +305,6 @@ class InvalidHasAParticleSyntax(DefineTokenError):
     )
 
 
-# TODO: Remove this when we switch fully to the native parser, which reports
-# MissingLiteralContentStart or MissingLiteralContentEnd instead.
-class InvalidLiteralSyntax(DefineTokenError):
-    """Literal content is missing double quotes or contains a raw newline."""
-
-    message_format: ClassVar[str] = (
-        "Invalid literal. Expected double-quoted content without raw newlines."
-    )
-
-
 class InvalidMoveStatementSyntax(DefineTokenError):
     """Expected 'to' or '::' after a position reference in a move statement."""
 
@@ -489,17 +417,6 @@ class InvalidValueSettingStatementSyntax(DefineTokenError):
         "The syntax for a value setting statement looks like:\n"
         "    set the value of position<target> to position<source>.\n"
         "The source may also be a literal."
-    )
-
-
-# TODO: Remove this when we switch fully to the native parser, which reports
-# MissingViewConstraintBlock instead.
-class InvalidViewDefinitionBlock(DefineTokenError):
-    """Wrote something nonsensical after the View Direction Statements."""
-
-    message_format: ClassVar[str] = (
-        "A view definition must contain an 'it may only contain particles where'"
-        " block after its 'it is read.' and 'it is written.' statements."
     )
 
 

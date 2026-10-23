@@ -60,9 +60,9 @@ def test_under_indented_requirement(
 
 
 def test_misindented_opener_does_not_move_its_block_contents(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "  it may only contain particles where {\n"
         + "        it has the position</child>.\n"
@@ -266,9 +266,9 @@ def test_action_statement_under_indented_after_blank_line(
 
 
 def test_trigger_conditions_block_not_indented_in_action_block(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential action<standard:/path> {\n"
         + "    define the position<run>.\n"
         + "it happens when {\n"
@@ -304,9 +304,9 @@ def test_trigger_conditions_block_not_indented_in_action_block(
 
 
 def test_trigger_conditions_block_under_indented(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential action<standard:/path> {\n"
         + "    define the position<run>.\n"
         + "  it happens when {\n"
@@ -342,9 +342,9 @@ def test_trigger_conditions_block_under_indented(
 
 
 def test_trigger_conditions_block_over_indented(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential action<standard:/path> {\n"
         + "    define the position<run>.\n"
         + "        it happens when {\n"
@@ -403,9 +403,9 @@ def test_action_close_brace_indented(
 
 
 def test_top_level_definition_indented(
-    native_parse_with_diagnostics_lark_rejects: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_rejects(
+    result = native_parse_with_diagnostics(
         "    define the potential position<standard:/path>.\n"
     )
     assert result.exception is None
@@ -444,9 +444,9 @@ def test_comment_in_action_block_not_indented(
 
 
 def test_indentation_wrong_in_several_definitions(
-    native_parse_with_diagnostics_lark_rejects: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_rejects(
+    result = native_parse_with_diagnostics(
         "  define the potential position<standard:/path>.\n"
         + "define the potential action<standard:/act> {\n"
         + "    define the position<run>.\n"
@@ -493,9 +493,9 @@ def test_indentation_wrong_in_several_definitions(
 
 
 def test_action_lines_indented_at_random(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential action<standard:/path> {\n"
         + "    define the position<run>.\n"
         + " it happens when {\n"
@@ -542,9 +542,9 @@ def test_action_lines_indented_at_random(
 
 
 def test_every_line_of_shifted_definition_is_reported(
-    native_parse_with_diagnostics_lark_rejects: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_rejects(
+    result = native_parse_with_diagnostics(
         "  define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "      # a comment\n"
         + "      it may only contain particles where {\n"

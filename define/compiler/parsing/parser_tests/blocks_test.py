@@ -325,11 +325,11 @@ def test_missing_newline_after_block_open(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 48
 
 
-def test_comment_directly_after_block_open(native_parse_lark_wrong: NativeParse):
+def test_comment_directly_after_block_open(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingSpaceBeforeCommentAfterBrace
     ) as exc_info:
-        native_parse_lark_wrong(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {# note\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</child>.\n"
@@ -342,11 +342,11 @@ def test_comment_directly_after_block_open(native_parse_lark_wrong: NativeParse)
     assert exc_info.value.location.end_column == 65
 
 
-def test_comment_directly_after_block_close(native_parse_lark_wrong: NativeParse):
+def test_comment_directly_after_block_close(native_parse: NativeParse):
     with pytest.raises(
         parser_exceptions.MissingSpaceBeforeCommentAfterBrace
     ) as exc_info:
-        native_parse_lark_wrong(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
             + "        it has the position</child>.\n"

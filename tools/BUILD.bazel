@@ -157,7 +157,6 @@ py_test(
     deps = [
         ":generate_invisible_characters",
         ":runfiles",
-        "//define/compiler/parsing:invisible_characters_data",
     ],
 )
 

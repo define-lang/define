@@ -316,9 +316,9 @@ def test_action_block_comment_after_action_close(native_parse: NativeParse):
 
 
 def test_action_block_no_indentation(
-    native_parse_with_diagnostics_lark_diagnostics_wrong: NativeParseWithDiagnostics,
+    native_parse_with_diagnostics: NativeParseWithDiagnostics,
 ):
-    result = native_parse_with_diagnostics_lark_diagnostics_wrong(
+    result = native_parse_with_diagnostics(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "define the position<run>.\n"
         + "it happens when {\n"

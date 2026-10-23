@@ -78,9 +78,9 @@ def test_double_terminator(native_parse: NativeParse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_comment_directly_after_terminator(native_parse_lark_wrong: NativeParse):
+def test_comment_directly_after_terminator(native_parse: NativeParse):
     with pytest.raises(parser_exceptions.MissingSpaceBeforeComment) as exc_info:
-        native_parse_lark_wrong(
+        native_parse(
             "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
         )
     assert exc_info.value.location.line == 1
