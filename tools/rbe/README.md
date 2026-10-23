@@ -41,10 +41,13 @@ it, or to grow the store.
 
 ## Using it
 
-Add this line to your `~/.bazelrc`:
+Add these lines to your `~/.bazelrc`:
 
 ```
 build --remote_executor=unix:///run/rbe/rbe.sock
+# Remote actions don't use local runfiles trees, and building them took most of
+# a warm build's time. Bazel still builds them for bazel run and local actions.
+build --nobuild_runfile_links
 ```
 
 Actions run as the `rbe` user, so they can't change your files.
