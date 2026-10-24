@@ -1,4 +1,4 @@
-"""Set-value requirements, guarantees, and destruction-time value state."""
+"""Value requirements, guarantees, and destruction-time value state."""
 
 from __future__ import annotations
 

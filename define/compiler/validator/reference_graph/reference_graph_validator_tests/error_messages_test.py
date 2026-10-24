@@ -1355,7 +1355,7 @@ def test_move_from_default_empty_interface_position_format(
 def test_propagated_value_requirement_format(validate_project: ValidateProject):
     files = {
         "test.dfn": (
-            "# Set-value requirements propagate through calls after a move.\n"
+            "# Value requirements propagate through calls after a move.\n"
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
             "        this particle is created.\n"
