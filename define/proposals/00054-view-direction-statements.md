@@ -21,9 +21,9 @@ parallel all you want as long as there are no writes.)
 
 In the definition of an interface view of a Value Operation or an Encoding
 Operation, you can specify one or both of: `it is read.` or `it is written.`.
-These go onto their own line before the Position Constraint Block. When both are
-specified, `it is read.` must come before `it is written.`. Each may only appear
-once.
+These go onto their own line before the View Quality Assignment Block. When both
+are specified, `it is read.` must come before `it is written.`. Each may only
+appear once.
 
 Specifying at least one of these is mandatory for views on Value Operations and
 Encoding Operations.
@@ -212,7 +212,7 @@ because we already know it's set. The problem there is just bad code and fooling
 the compiler---in the future, the compiler will make more decisions based on
 this data, such as how to parallelize operations, and if you "fool" it by not
 writing, then you're reducing the compiler's capability. Also, writing to a
-value will affect its value constraints.
+value will affect whether it satisfies its constraints.
 
 For now I intend to keep the rule in place even for read/write, because it's
 more forward-compatible to do so, but I might change my mind in the future.

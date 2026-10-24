@@ -7,8 +7,8 @@
 
 ## Problems
 
-When you first create a particle in a position that has a value constraint, what
-is the value assigned to the particle?
+When you first create a particle in a position that has a value quality, what is
+the value assigned to the particle?
 
 Define's [requirements](../spec/requirements.md) around nullity forbid accessing
 anything that is unset. Nulls in general are quite problematic across
@@ -19,7 +19,7 @@ passed into an action, we don't know if its value has been set or not.
 
 ## Solution
 
-Newly created particles that have a value constraint do not have a set value.
+Newly created particles that have a value quality do not have a set value.
 
 Value operations may not take any particle that does not have a _set_ value as
 one of their input positions (a position from which they read).

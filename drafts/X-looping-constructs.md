@@ -93,7 +93,7 @@ For your three-component construct, the compiler could:
 We introduce three constructs:
 
 1. **Bags** --- unbounded, unordered collections of particles with uniform
-   constraints.
+   quality assignments.
 2. **`for each` over bags** --- iterating over a bag's contents.
 3. **`repeat` with explicit termination** --- general-purpose looping via
    repeated action invocation.
@@ -115,7 +115,7 @@ qualities and cannot be assigned to particles.
 
 #### Syntax
 
-A bag is defined using a constraint block identical to the one used by
+A bag is defined using a quality assignment block identical to the one used by
 positions:
 
 ```
@@ -129,7 +129,7 @@ define the bag<name> {
 }
 ```
 
-A bag with no constraint block contains unconstrained particles.
+A bag with no quality assignment block can contain any particle.
 
 #### Creating Particles in Bags
 
@@ -139,7 +139,7 @@ The existing `create a particle` syntax extends to bags:
 create a particle in bag<name>.
 ```
 
-As with positions, if the bag has a constraint block, atomic creation
+As with positions, if the bag has a quality assignment block, atomic creation
 automatically assigns all required qualities to the new particle.
 
 #### Moving Particles In and Out of Bags
@@ -154,7 +154,7 @@ move a particle in bag<name> to position<x>.
 When moving out of a bag, the bag is unordered, so the specific particle moved
 is unspecified. It is an error to move a particle out of an empty bag.
 
-When moving into a bag, the particle must satisfy the bag's constraints.
+When moving into a bag, the particle must have the bag's qualities.
 
 #### Bag Emptiness
 
@@ -243,9 +243,9 @@ Requirements and Action Guarantees system handles loop verification:
 2. For `repeat`: the compiler verifies that the action's Guarantees satisfy its
    own Requirements for the next iteration. This check is O(1) regardless of
    iteration count.
-3. For `for each`: the compiler verifies that the bag's constraints satisfy the
-   action's Requirements for each item, and that any items added to the bag
-   during the action satisfy the bag's constraints.
+3. For `for each`: the compiler verifies that the bag's quality assignments
+   satisfy the action's Requirements for each item, and that any items added to
+   the bag during the action satisfy the bag's quality assignments.
 
 **A loop body with no conditionals (other than the termination condition) is
 trivially analyzable.** The action is a straight-line sequence of deterministic
@@ -484,11 +484,11 @@ at all.
 
 ### Bags Are the Minimal Unbounded Data Structure
 
-A bag is the simplest possible collection: unordered, with uniform constraints.
-This avoids the complexity of ordered sequences (which require indexing and
-ordering semantics) while providing unbounded memory. The uniform constraint
-requirement (all items have exactly the same qualities, no type narrowing) keeps
-the compiler's reasoning tractable.
+A bag is the simplest possible collection: unordered, with uniform quality
+assignments. This avoids the complexity of ordered sequences (which require
+indexing and ordering semantics) while providing unbounded memory. The uniform
+quality assignment requirement (all items have exactly the same qualities, no
+type narrowing) keeps the compiler's reasoning tractable.
 
 ### Bag Emptiness Is Sufficient for Branching
 

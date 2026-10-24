@@ -171,7 +171,7 @@ Literals may also be placed in any view that is not written to by the operation.
 
 ### Literal Parsers
 
-Literals are always assigned to something that expects a certain value type.
+Literals are always assigned to something that expects a certain value quality.
 However, implementation-wise, what really happens is that the compiler is
 expecting a particular _encoding_ that has to be valid for that type.
 
@@ -205,9 +205,9 @@ convert the representation according to the documentation of that encoding.
 
 Some approximations are avoidable, however. For example, imagine that we
 specified the number `1.000001` as a literal but put it into some encoding or
-value type that claims to only have two significant digits of accuracy. That's
-the developer making a mistake that they are probably not aware of making, so
-the compiler should throw an error in that case.
+value quality that claims to only have two significant digits of accuracy.
+That's the developer making a mistake that they are probably not aware of
+making, so the compiler should throw an error in that case.
 
 ### Selecting Destination Encodings
 
@@ -225,8 +225,8 @@ encoding specified as part of their assigned qualities.
 
 When a literal is specified as an input to an operation, conceptually what
 occurs is an ephemeral particle is created just for running that operation,
-given that literal as its set value, and assigned the value type the operation
-expects with the constraints the operation expects.
+given that literal as its set value, and assigned the value quality the
+operation expects with the constraints the operation expects.
 
 You could think of this:
 

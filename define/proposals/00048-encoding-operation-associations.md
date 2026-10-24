@@ -16,8 +16,8 @@ There are a few additional facts about encoding operations that are different
 than just encodings.
 
 For an encoding operation to work, its whole interface has to be compatible with
-the operation's constraints. With encodings, we simply _asserted_ that they were
-a representation of that value type.
+the operation's quality assignments. With encodings, we simply _asserted_ that
+they were a representation of that value quality.
 
 Another point is that this has much more concrete implementation considerations.
 Encoding operations are where "the rubber meets the road" for encodings. They

@@ -22,8 +22,8 @@ value's definition.
 
 Also, if values say what encodings they support, then you're either (a) allowing
 only one possible encoding, in which case you're logically tying a value to a
-single encoding, which is the whole problem the whole system of value types is
-trying to avoid or (b) allowing multiple potential encodings for a value and
+single encoding, which is the whole problem the whole system of value qualities
+is trying to avoid or (b) allowing multiple potential encodings for a value and
 then having to figure out at compile time which one applies. (a) is
 unacceptable. (b) might be acceptable, though, provided there's a way for the
 compiler to deterministically make that choice. Of course, (b) would still have
@@ -31,27 +31,27 @@ the problem specified in the above paragraph.
 
 In the other direction, if encodings say what values they support, then you
 _can't_ discover them automatically, because normally the programmer will just
-specify the value type, not the encoding. Also, you can't have new value types
-that use existing encodings.
+specify the value quality, not the encoding. Also, you can't have new value
+qualities that use existing encodings.
 
 ### 2: Extensibility
 
-As noted above, we have this problem of "value types with new encodings" and
-"new encodings for existing value types."
+As noted above, we have this problem of "value qualities with new encodings" and
+"new encodings for existing value qualities."
 
 Both of those are _theoretically_ possible.
 
-1. New Encodings for Existing Value Types: A library might want to support new
-   hardware for existing programs.
-2. New Value Types Re-using Existing Encodings: A new conceptual value type that
-   can never be intermixed with another value type, but behind the scenes it
-   uses the same encoding.
+1. New Encodings for Existing Value Qualities: A library might want to support
+   new hardware for existing programs.
+2. New Value Qualities Re-using Existing Encodings: A new conceptual value
+   quality that can never be intermixed with another value quality, but behind
+   the scenes it uses the same encoding.
 
 The first would allow us a useful form of extensibility to support new hardware
 without requiring direct modifications of the compiler. That's a somewhat rare
 need, but then again, _any_ extension to this system should be a rare need.
 
-I'm more skeptical of the second problem (new value types re-using existing
+I'm more skeptical of the second problem (new value qualities re-using existing
 encodings). It prevents programs translating between values that are in fact
 equivalent, which allows programmers to paint themselves into a corner and have
 to write explicit conversion operations that are not actually logically
@@ -63,7 +63,7 @@ More importantly, the second problem creates a whole system of typing somewhat
 akin to traditional type systems. The intentional design of Define is that those
 problems would be solved by global positions. Whatever we decide, we definitely
 don't want to _bake into the language_ two different ways to express the same
-logical intention. The whole value type system is intended to represent
+logical intention. The whole value quality system is intended to represent
 primitives and abstract hardware operations only, not complex typing logic. That
 logic is supposed to be through constraints or particle structure if it goes
 beyond the actual physical representation or the actual fundamental _type_ of
@@ -76,7 +76,7 @@ models for the same concept" problem.
 
 ### 3: Conflicting Associations from Libraries
 
-So let's say we do allow libraries to add new encodings and new value types,
+So let's say we do allow libraries to add new encodings and new value qualities,
 which we should. (After all, why else have this system?) Now, our naming system
 already guarantees there cannot be a _name_ conflict between existing
 encodings/values and the library's encodings/values. But what about the
@@ -167,7 +167,7 @@ Well, the compiler would have to actually load and parse every file in that
 list, and it would have to do it every time you loaded that library, even if
 your program never consumed any of those encodings. This would impose an
 automatic startup time penalty on all compilations, which could become huge as
-the number of value types and encodings grows.
+the number of value qualities and encodings grows.
 
 One of the key intentions of the design of Define is that, as much as possible,
 you only compile what you actually depend on. (We already violate this a bit by
@@ -240,9 +240,9 @@ that these are banned:
 
 In other words, `encoding` must always be a global name short form.
 
-This means that a library can declare its own value types and encodings for
-those value types, but cannot change the allowed encodings for an existing value
-type.
+This means that a library can declare its own value qualities and encodings for
+those value qualities, but cannot change the allowed encodings for an existing
+value quality.
 
 However, it is very likely that we will allow them in the future, so this
 proposal does discuss some limitations that would still have to be in place and
@@ -375,9 +375,9 @@ references, and it avoids arbitrary searches or arbitrary eager loading.
 Originally when I drafted this proposal, I allowed "my encoding, their value."
 However, when writing the Forward Compatibility section I realized I was
 introducing a one-way door. Once I allowed libraries to provide new encodings
-for existing value types, I could never walk back that decision. Also, there was
-no actual mechanism proposed for the compiler to actually _implement_ those new
-encodings, and I was wary of proposing a mechanism that had no actual
+for existing value qualities, I could never walk back that decision. Also, there
+was no actual mechanism proposed for the compiler to actually _implement_ those
+new encodings, and I was wary of proposing a mechanism that had no actual
 implementation (as one so often discovers one has done the wrong design during
 implementation).
 

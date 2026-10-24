@@ -881,7 +881,7 @@ Statement with the `name_type` of `value`.
 Proposals:
 
 - [DLP 23: Particles Define Other Positions](../proposals/00023-particles-define-other-positions.md)
-- [DLP 43: References Must Refer to Explicit Constraints](../proposals/00043-references-must-refer-to-explicit-constraints.md)
+- [DLP 43: References Must Refer to Explicit Quality Assignments](../proposals/00043-references-must-refer-to-explicit-quality-assignments.md)
 
 A position reference is a single position name or a chained name that ends with
 the name of a position.
@@ -1030,7 +1030,7 @@ Proposals:
 - [DLP 21: Defining Machines](../proposals/00021-defining-machines.md)
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 - [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
-- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
+- [DLP 37: Automatic Occupancy Requirements](../proposals/00037-automatic-occupancy-requirements.md)
 
 A potential action is defined by a quality definition statement with the type
 `action`, followed by an Action Definition Block.
@@ -1158,7 +1158,7 @@ action_statement =
 
 Proposals:
 
-- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
+- [DLP 37: Automatic Occupancy Requirements](../proposals/00037-automatic-occupancy-requirements.md)
 - [DLP 53: Unset Values](../proposals/00053-unset-values.md)
 
 Actions provide a "contract" indicating what state must be true before they are

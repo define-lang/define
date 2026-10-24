@@ -1,4 +1,4 @@
-# Define Language Proposal 37: Automatic Position Presence Constraints
+# Define Language Proposal 37: Automatic Occupancy Requirements
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
@@ -273,7 +273,8 @@ If an action accesses an inner member via a chained name, that implicitly
 creates the requirement that all positions in that chain must have a particle.
 
 For example, imagine an action that has the interface position `position<foo>`
-with the constraint `position</bar>` on it. When we look at this statement:
+with the quality assignment `position</bar>` on it. When we look at this
+statement:
 
 `create a particle in position<foo>::position</bar>::position</baz>`
 
@@ -321,7 +322,7 @@ actions.
 When an action is first assigned to a position, its interface positions are
 empty. Only after it is called do its guarantees apply.
 
-An action's trigger positions are also automatically considered constraints on
+An action's trigger positions are also automatically considered requirements on
 positions that are treated as satisfied when compiling any individual action.
 
 ### Constructor Guarantees

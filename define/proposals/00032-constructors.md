@@ -130,15 +130,15 @@ Any action with that trigger condition is referred to as a "constructor."
 
 A constructor triggers immediately after a particle is created inside of the
 position it is assigned to. This means that the particle has all qualities
-assigned to it and all constraints are enforced.
+assigned to it and all quality assignments are enforced.
 
 <!-- TODO: This will probably have to change in some way in order to get things
 set up for initial constraints, but we'll see when we get there. -->
 
 Note that _moving_ a particle into the position does not trigger a constructor.
-However, since the particle must have had that constructor as a constraint in
-order to move into the position, we can be sure that it had the same initial
-state upon its original creation.
+However, since the particle must have had that constructor as a quality
+assignment in order to move into the position, we can be sure that it had the
+same initial state upon its original creation.
 
 Constructors execute synchronously when a particle is created. However, any
 actions they trigger still execute asynchronously.
@@ -157,10 +157,11 @@ There is currently no way to refer to the particle itself within a constructor
 (the particle that the constructor was assigned to). This will be handled later,
 when we need to set initial values on particles.
 
-Constructors cannot be assigned to particles with a Quality Assignment
-Statement. A constructor must have been a constraint on a position---otherwise,
-we can't guarantee that particles actually were in a particular state during
-their init by virtue of having the constructor assigned to them.
+Constructors cannot be assigned to particles with an `assign the quality`
+statement. A constructor must have been a quality assignment on a
+position---otherwise, we can't guarantee that particles actually were in a
+particular state during their init by virtue of having the constructor assigned
+to them.
 
 ## A Real Program
 

@@ -139,7 +139,7 @@ and `position</b>` (both must be Occupied) plus whatever operation applies to
 
 - Precondition: `state[R] == Empty`, all intermediates Occupied
 - Postcondition: `state[R] = Occupied`
-- Compound: constraints assigned atomically (DLP 20), init blocks run
+- Compound: qualities assigned atomically (DLP 20), init blocks run
   synchronously (DLP 32), potentially filling child positions
 
 **`move the particle in position<R1> to position<R2>`**:
@@ -318,7 +318,7 @@ CascadePlan:
   ]
 ```
 
-During cascading destruction, position constraints are suspended (DLP 31) and
+During cascading destruction, quality assignments are suspended (DLP 31) and
 actions triggered by quality removal do NOT fire. Only explicit destructors need
 to be traced.
 
@@ -328,16 +328,16 @@ positions is in conflict.
 
 ---
 
-## 9. Interaction with Quality Constraints
+## 9. Interaction with Quality Assignments
 
-Position constraints and occupancy tracking reinforce each other:
+Quality assignments and occupancy tracking reinforce each other:
 
-- Occupied `position<x>` with constraint `it has the position</balance>` →
-  compiler knows `position<x>::position</balance>` exists
-- Atomic creation (DLP 20) traces quality assignments in constraint-list order,
-  updating the occupancy map for each init block
-- Constraint propagation: occupancy of a parent implies existence of all
-  constrained child positions
+- Occupied `position<x>` with quality assignment `it has the position</balance>`
+  → compiler knows `position<x>::position</balance>` exists
+- Atomic creation (DLP 20) traces quality assignments in Quality Assignment
+  Statement order, updating the occupancy map for each init block
+- Quality assignment propagation: occupancy of a parent implies existence of all
+  assigned child positions
 
 ---
 

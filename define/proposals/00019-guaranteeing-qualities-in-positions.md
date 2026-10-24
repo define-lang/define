@@ -72,7 +72,7 @@ define the position<name> {
 }
 ```
 
-Quality requirements are joined together with a logical AND.
+Quality Assignment Statements are joined together with a logical AND.
 
 ### Enforcement
 

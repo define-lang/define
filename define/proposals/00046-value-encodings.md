@@ -154,9 +154,9 @@ accepts all possible values for that option that that encoding accepts. (You can
 think of it as being "the constraint is identical to the one specified on the
 encoding option itself.")
 
-### Encodings as Constraints
+### Encodings as Qualities
 
-Encodings _may_ be specified as a constraint on a particle:
+Encodings _may_ be assigned as a quality of a particle:
 
 ```define
 define the position<network_integer> {
@@ -322,7 +322,7 @@ On the other hand, overflow behavior _can_ be a property of an operation. You
 _could_ have a situation in which for the same two numbers, at one point you
 want the calculation to saturate, and at another point you want the operation to
 error. Thus, that _must_ be an option related to the _operation_, not the
-encoding or value type.
+encoding or value quality.
 
 ### Why Only Integers for Options?
 

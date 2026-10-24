@@ -207,8 +207,8 @@ compatibility because we know exactly what Define programs must look like.
 
 ## Refactoring Existing Systems
 
-With just position constraints, the `has a particle` trigger condition, and
-these boolean operators, you can express almost every trigger condition in every
+With just quality assignments, the `has a particle` trigger condition, and these
+boolean operators, you can express almost every trigger condition in every
 existing programming language today, as well as some conditions that those
 languages would have a _very_ difficult time expressing.
 

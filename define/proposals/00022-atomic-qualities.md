@@ -539,16 +539,17 @@ in space, as long as it really is _exactly_ the same point in space.
 
 Originally quality implications were called "quality requirements" and the
 syntax was `this particle must have the` instead of `it also assigns the`. I
-chose that because it looked similar to the `it has the` syntax for position
-constraints, but that was a significant mistake. The AI agent that was helping
-me write the compiler became extremely confused about how "quality requirements"
-and "position constraints" were different, especially because they both
-essentially _required_ something.
+chose that because it looked similar to the `it has the` syntax for Quality
+Assignment Statements, but that was a significant mistake. The AI agent that was
+helping me write the compiler became extremely confused about how "quality
+requirements" and Quality Assignment Statements were different, especially
+because they both essentially _required_ something.
 
 One of the tricks is getting an AI or a programmer to understand that
 implications assign qualities to _this_ particle (the same one we are assigning
-the current quality to) and Position Constraint Blocks create _child_ positions.
-So I wanted a program syntax and English terminology that makes that clear.
+the current quality to) and Position Quality Assignment Blocks create _child_
+positions. So I wanted a program syntax and English terminology that makes that
+clear.
 
 The sense that I wanted to convey was: "assigning this quality to this particle
 means that we will first auto-assign another quality to this particle," and that

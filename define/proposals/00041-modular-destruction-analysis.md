@@ -151,7 +151,7 @@ as long as the state the particles are in at the end of the destructor is
 identical to the state they were in at the start.
 
 Using the system of
-[DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md),
+[DLP 37 (Automatic Occupancy Requirements)](00037-automatic-occupancy-requirements.md),
 we can translate this into a relatively simple requirement:
 
 **Destructors may not create any Automated Guarantees other than "this particle
@@ -240,7 +240,7 @@ destructor depends on (because they aren't yet populated in the Child State---a
 caller higher up the chain needs to populate them). In this case the destructor
 creates a new Automatic Requirement for the action in which it is added, which
 behaves just like a normal Automatic Requirement from
-[DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md).
+[DLP 37 (Automatic Occupancy Requirements)](00037-automatic-occupancy-requirements.md).
 It should, however, note in any error messages where the requirement comes from
 and why (ideally indicating where the particle gets destroyed).
 
@@ -278,7 +278,7 @@ generation.
 ## A Real Program
 
 Note that some syntax is imaginary below, especially around dealing with
-external state outside of the program or the specifics of value types. This
+external state outside of the program or the specifics of value qualities. This
 example demonstrates just the simplest case: a caller attaches a single
 destructor the callee has no knowledge of, and that caller knows everything
 about the Child State.

@@ -123,7 +123,7 @@ reference to `position<source>` but simply changes the value on
 `position<recipient>` to be identical to the value that is currently on
 `position<source>`.
 
-The particles in both positions must have value constraints assigned to them,
+The particles in both positions must have value qualities assigned to them,
 otherwise the compiler must throw an error.
 
 ### Memory Layout
@@ -187,7 +187,7 @@ states in a computer program, to help with analog controllers and signal
 processors, but those use cases are rare today for programmers and so they
 aren't my top priority. Define Approximately will handle these, although we
 could also handle them as an incremental improvement to Define Exactly in the
-future, by just adding some sort of different value type.
+future, by just adding some sort of different value quality.
 
 Quantum computing would also need different types of values, potentially.
 

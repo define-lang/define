@@ -119,12 +119,12 @@ We could have chosen to have a specially-named action that runs when the program
 starts. That ends up being pretty similar.
 
 We could have allowed the view point to be a global position with lots of
-different constraints on it (potentially multiple different constructors).
-However, there's no way to directly create a particle in a global position; it's
-not clear what that would even mean. I suppose we could make the view point
-position _imply_ the global position. We might do that in the future, but it
-creates too many ways to do things, and the semantics of "run this action" feel
-more natural.
+different quality assignments on it (potentially multiple different
+constructors). However, there's no way to directly create a particle in a global
+position; it's not clear what that would even mean. I suppose we could make the
+view point position _imply_ the global position. We might do that in the future,
+but it creates too many ways to do things, and the semantics of "run this
+action" feel more natural.
 
 All other options involve inventing new syntax to indicate that something is
 main, and that seemed both unnecessary and more likely to lock us into a bad

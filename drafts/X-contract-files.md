@@ -9,7 +9,7 @@
 
 ### 1: Inferred Contracts Are Invisible
 
-[DLP 37 (Automatic Position Presence Constraints)](../define/proposals/00037-automatic-position-presence-constraints.md)
+[DLP 37 (Automatic Occupancy Requirements)](../define/proposals/00037-automatic-occupancy-requirements.md)
 infers every action's Action Requirements and Action Guarantees from its Action
 Statements Block. For the action's own statements, that inference is obvious
 from reading the action.

@@ -74,7 +74,8 @@ My original syntax for this was `the position<name> is not empty.` However, I
 generally prefer that all boolean statements be positive---it makes programs
 much easier to read. So I switch it to the positive `has a particle`.
 
-This matches our `has the [quality]<name>` syntax for constraints.
+This matches our `has the [quality]<name>` syntax for Quality Assignment
+Statements.
 
 As far as actions triggering only once when their conditions become true, that's
 the only rational way to build a universe. If you want something to trigger

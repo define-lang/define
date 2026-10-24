@@ -109,81 +109,84 @@ local context where they are supposed to be referenced.
 
 ### Unnecessary Quality Assignments
 
-The compiler can sometimes detect that a quality constraint has been placed upon
-a position that is not necessary. However, this is a bit more complex, so there
-are more rules to describe.
+The compiler can sometimes detect that a quality has been assigned to a position
+that is not necessary. However, this is a bit more complex, so there are more
+rules to describe.
 
-There are a few different rules below. The rules about a constraint being alive
-override the rules about it being dead.
+There are a few different rules below. The rules about a quality assignment
+being alive override the rules about it being dead.
 
-#### Only Direct Constraints Can Be Dead
+#### Only Direct Quality Assignments Can Be Dead
 
 Only actual lines of code written inside of an action can be dead code.
-Constraints that are assigned _only_ transitively via Quality Implication
+Qualities that are assigned _only_ transitively via Quality Implication
 Statements are never dead code.
 
 #### Dead Child Positions
 
-Any directly-declared position constraint that is not referenced inside of that
-same action is dead code.
+Any directly-declared child position quality assignment that is not referenced
+inside of that same action is dead code.
 
-### Dead Value Constraints
+### Dead Value Quality Assignments
 
-Any value constraint on a position whose particle is not passed to some
+Any value quality assignment on a position whose particle is not passed to some
 statement that requires a value (either a value operation or a Value Setting
 Statement) is dead code.
 
 #### Untriggered Actions
 
 If an action is directly assigned to a particle and it can be triggered but
-never is, it is a dead constraint. For example, `action</foo>` has a trigger on
-`action</foo>::position<run>` being filled, but that position is never filled.
+never is, it is a dead quality assignment. For example, `action</foo>` has a
+trigger on `action</foo>::position<run>` being filled, but that position is
+never filled.
 
 #### The Move Use Exception
 
 When a child position is directly referenced on a particle or an action assigned
-to that particle is triggered, the matching constraint is alive both on the
-position currently holding the particle and on the position where the particle
-originated (where it was created or arrived via an Automatic Action
+to that particle is triggered, the matching quality assignment is alive both on
+the position currently holding the particle and on the position where the
+particle originated (where it was created or arrived via an Automatic Action
 Requirement).
 
 This handles cases where you move a particle from A to B and then reference
 children on B only.
 
 Whenever a value operation or value setting statement acts on a particle, that
-particle's value and encoding constraints are alive in the position where the
-particle originated (where it was created or arrived via an Automatic Action
-Requirement).
+particle's value quality and encoding quality assignments are alive in the
+position where the particle originated (where it was created or arrived via an
+Automatic Action Requirement).
 
 #### The Contracted Position Exception
 
-Satisfying the contracts of actions is sufficient to mark a constraint as alive.
+Satisfying the contracts of actions is sufficient to mark a quality assignment
+as alive.
 
-More specifically, a constraint is "alive" (overriding the rules above) on a
-position if a particle _originating_ in that position (either it arrived as an
-Action Requirement or it was created in that position) either:
+More specifically, a quality assignment is "alive" (overriding the rules above)
+on a position if a particle _originating_ in that position (either it arrived as
+an Action Requirement or it was created in that position) either:
 
 1. Is moved into (or originally created in) any contracted position that a
    callee requires occupied (has an Automatic Action Requirement on), and that
-   contracted position has that constraint.
+   contracted position has that quality assignment.
 2. Has a final position representing an Automatic Action Guarantee of this
-   position, and that final position has that constraint. (That is, it ends up
-   in a contracted position that our callers expect to be occupied.) To be
-   clear, this can happen either by the particle getting moved into that
+   position, and that final position has that quality assignment. (That is, it
+   ends up in a contracted position that our callers expect to be occupied.) To
+   be clear, this can happen either by the particle getting moved into that
    position (and then staying there at the end of the action) or being directly
    created in that position (and then staying there at the end of the action).
 
 To be clear, this means that if a particle moves to an intermediate local
-position, that does _not_ make all the constraints on that intermediate local
-position automatically "alive." For example, moving A to B to C, where A and B
-are local positions and C is a contracted position does _not_ make the
-constraints on B alive just because they are constraints on C. It would only
-make the constraints on A alive.
+position, that does _not_ make all the quality assignments on that intermediate
+local position automatically "alive." For example, moving A to B to C, where A
+and B are local positions and C is a contracted position does _not_ make the
+quality assignments on B alive just because they are quality assignments on C.
+It would only make the quality assignments on A alive.
 
-In order for the constraints on B to be alive, they would have to be referenced
-with B as the parent name. So if the constraint is `position</thing>` then the
-code would have to explicitly reference `position<b>::position</thing>` in order
-for that constraint on `position<b>` to be considered alive.
+In order for the quality assignments on B to be alive, they would have to be
+referenced with B as the parent name. So if the quality assignment is
+`position</thing>` then the code would have to explicitly reference
+`position<b>::position</thing>` in order for that quality assignment on
+`position<b>` to be considered alive.
 
 ### Dead Value Setting Statements
 
@@ -195,10 +198,10 @@ side (the one that was written to) has its value written again, it is either:
 2. Passed into a contracted position of a callee that requires the value be set,
    including a destructor that runs when the particle is destroyed.
 3. Provided as a guarantee of this action in a position with the relevant value
-   constraint.
+   quality.
 
 Points 2 and 3 are essentially the same exception as The Contracted Position
-Exception above, except applied to set values rather than constraints.
+Exception above, except applied to set values rather than quality assignments.
 
 ### Dead Value Operation Outputs
 
@@ -236,7 +239,8 @@ Imagine that we have a line of code like this:
 `create a particle in action</foo>::position<iface>::action</bar>::position<input>`
 
 What if `action</bar>` is never triggered? That makes `action</bar>` into dead
-code even though it's not a directly-written constraint on any local position.
+code even though it's not a directly-written quality assignment on any local
+position.
 
 Thus we have to expand our rules to say that any action that appears in a
 position reference is dead code if it's not triggered in this action.
@@ -290,7 +294,7 @@ just can't use an interface position as nothing other than a waypoint.
 
 Tracking the liveness of qualities assigned to global positions is much harder.
 
-Theoretically the compiler could track the liveness of every constraint
+Theoretically the compiler could track the liveness of every quality assignment
 reference it sees and report references that it finds to be dead at the end of
 compilation. This is made tricker, however, by the fact that we could compile
 something that is then consumed later by other things, so we have to be somewhat

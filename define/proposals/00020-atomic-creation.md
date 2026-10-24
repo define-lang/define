@@ -13,18 +13,18 @@ In [DLP 19](00019-guaranteeing-qualities-in-positions.md), I decided that we
 needed a syntax that, in essence, atomically creates a particle and then assigns
 qualities to it. Since nothing like that is truly "atomic," what that really
 means is we need a syntax that automatically creates a particle with no
-constraints, assigns qualities to it, and then moves it into a position that
-does have constraints.
+qualities, assigns qualities to it, and then moves it into a position that has
+constraints.
 
 ### 2: Duplication
 
 Also, in writing Define programs, one thing I discovered was that there is a lot
-of potential for human error when you write a set of constraints and then a set
-of quality-assignment statements. You write the quality name in the position
-definition, and then you have to write the same quality name again in the
-assignment statements. While we don't care about verbosity, we do care about
-unnecessary duplication that can lead to human error and difficulty in the
-correct maintenance of systems.
+of potential for human error when you write a set of Quality Assignment
+Statements and then a set of `assign the quality` statements. You write the
+quality name in the position definition, and then you have to write the same
+quality name again in the assignment statements. While we don't care about
+verbosity, we do care about unnecessary duplication that can lead to human error
+and difficulty in the correct maintenance of systems.
 
 ### 3: More Than One Way To Do It
 
@@ -41,17 +41,16 @@ position.
 
 When creating a particle, the compiler will look at the position definition and
 then go through the qualities listed in order and assign those qualities in that
-sequence. However, the `it may only contain particles where` constraint on that
-position will not be checked until the end of the block.
+sequence. However, any constraints on that position will not be checked until
+the end of the block.
 
 Conceptually, what is happening here is that a particle is being created in an
-anonymous position, and then being moved into the position that has the
-constraint. The compiler could (and perhaps should) implement this exactly that
-way.
+anonymous position, and then being moved into the position that has constraints.
+The compiler could (and perhaps should) implement this exactly that way.
 
 ### Optimization
 
-In reality, the compiler doesn't need to check the constraint after assigning
+In reality, the compiler doesn't need to check the constraints after assigning
 the qualities, because it knows for sure that the particle has exactly the
 qualities assigned.
 
@@ -64,12 +63,12 @@ concurrently would have the same outcome as applying them in sequence.
 ### Implications for Position Definitions
 
 Note that there's an important point here: this gives semantics and side effects
-to the way that position constraints are defined, because this creation syntax
+to the way that quality assignments are written, because this creation syntax
 relies on the ordering of the `it has the` statements in the position
 definition. However, these semantics and side effects apply _only_ to the
 creation statement. In other words, the compiler may choose to _check_ the
-constraint in any order. It's only _creation_ that happens in a specific order
-based on what's written in the position definition.
+quality assignments in any order. It's only _creation_ that happens in a
+specific order based on what's written in the position definition.
 
 ## A Real Program
 
@@ -87,23 +86,24 @@ create a particle in position<ball>.
 That creates a particle in `position<ball>`, assigns it the quality red, assigns
 it the quality blue, and then checks that it has the right qualities. (In
 reality, since the compiler knows exactly what it's doing, it doesn't have to
-check the constraint, in this situation.)
+check the quality assignments, in this situation.)
 
 ## Why This is the Right Solution
 
 This eliminates duplication between the position definition and creation syntax
 in almost all situations.
 
-It does _not_ create multiple ways to do the same thing, because this is the
-_only_ way you can successfully apply a quality to a constrained position.
-Trying to create the particle and then assigning it a quality will fail because
-you will momentarily have a particle without the required qualities.
+It _does_ create a bit of "more than one way to do the same thing," which we
+will have to resolve as part of future proposals. However, in practice I expect
+all or almost all quality assignment to be done via the mechanism in this
+proposal, not via `assign the quality` statements.
 
 The one thing I don't like about it is that it hides the fact that those
 qualities will be assigned in a particular order. However, the order is still
 _knowable_: it's the order listed in the position definition. It does make it
 hard to re-order the `it must have the` statements in code in the future, but I
-think that's an acceptable trade-off.
+think that's an acceptable trade-off. We also can work to minimize how much of
+Define actually depends on that order.
 
 This syntax _does_ mean that the compiler has to know the full definition of a
 position when it creates a particle in it. That should be fine, since all
@@ -168,7 +168,8 @@ assign the quality<mv:example.com:example:/blue> to the particle in position<bal
 ```
 
 As long as the assignment statements are in the same order as the position
-constraints, we could refactor this. Realistically, we have to consider
+quality assignments, we could refactor this. Realistically, we have to consider
 [DLP 19](00019-guaranteeing-qualities-in-positions.md) and this proposal to be
 tied together, because what we would have to do in order to refactor this is
-define the position constraints in that order, not re-order the assignments.
+write the position's quality assignments in that order, not re-order the
+assignments.

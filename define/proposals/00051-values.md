@@ -46,12 +46,12 @@ could you define a `value</number/natural>` that has a
 ### 6: Modularity
 
 What happens when a particle that has a value is supplied to an action, but the
-contracted position through which it arrived has no `value` constraint? How is
-the compiler supposed to behave?
+contracted position through which it arrived has no value quality? How is the
+compiler supposed to behave?
 
 ## Solution
 
-A value type is defined as a global name, like this:
+A value quality is defined as a global name, like this:
 
 ```define
 define the potential value<mv:example.com:example:/number/rational>.
@@ -66,22 +66,22 @@ separately.
 
 ### No Hierarchies
 
-Value types have no hierarchies or relationships.
+Value qualities have no hierarchies or relationships.
 
 ### No Automatic Conversion
 
-Any conversion between value types happens through explicit value operations
+Any conversion between value qualities happens through explicit value operations
 (not converters). The compiler may of course choose to implement and optimize
 those converting operations any way it wishes.
 
-### Values as Constraints
+### Values as Qualities
 
-Any given particle may have only one `value` constraint. One particle may not
-have multiple simultaneous logical meanings. There's no reasonable way to
-determine if an operation is legal other than by having the value type specified
-on the particle.
+Any given particle may have only one value quality. One particle may not have
+multiple simultaneous logical meanings. There's no reasonable way to determine
+if an operation is legal other than by having the value quality specified on the
+particle.
 
-Just to be clear, assigning a value constraint looks like this:
+Just to be clear, assigning a value quality looks like this:
 
 ```define
 define the position<foo> {
@@ -94,12 +94,12 @@ define the position<foo> {
 ### Value Operations
 
 Value operations (including `set the value of`) may only be executed on
-positions that have their value constraint explicitly specified. In other words,
-no inference is done and no cross-action analysis is ever required to determine
-the value type of a particle.
+positions that have their value quality explicitly assigned. In other words, no
+inference is done and no cross-action analysis is ever required to determine the
+value quality of a particle.
 
 When `set the value of` has positions as both the "from" and "to" position,
-those positions must have the same value type specified on them.
+those positions must have the same value quality specified on them.
 
 ### Specificity
 
@@ -148,12 +148,13 @@ define the potential action<mv:example.com:example:/copy_item_count> {
 When I thought about hierarchy, I realized that specifying an overlapping set of
 encoding operations and encodings for a value would be essentially the same as
 having a hierarchy, but be much more compositional. It's annoying if you just
-want to modify the behavior of a value type slightly, so we may need some better
-composition model (as discussed briefly in the [Concepts](../spec/concepts.md))
-but for now this system works and could be converted into some compositional
-system that removes duplication in the future, to some degree. (The thing we
-couldn't automatically migrate is realizing that two value types in two
-different universes have some overlap in their operation definitions.)
+want to modify the behavior of a value quality slightly, so we may need some
+better composition model (as discussed briefly in the
+[Concepts](../spec/concepts.md)) but for now this system works and could be
+converted into some compositional system that removes duplication in the future,
+to some degree. (The thing we couldn't automatically migrate is realizing that
+two value qualities in two different universes have some overlap in their
+operation definitions.)
 
 ### Specificity
 
@@ -161,7 +162,7 @@ The reason for choosing specificity at a high (very generic) level is me
 thinking through _why_ we have value types and what they really represent.
 Either we go all-in on having things like "signed integer" and "unsigned
 integer" or we have just one high-level type and then we infer the encodings
-based on the operation requirements and the constraints on the value type.
+based on the operation requirements and the constraints on the value quality.
 
 We'll provide constraints like `constraint</number/unsigned>` (which will just
 check `>= 0`) and `constraint</number/integer>` (which will force the rational
@@ -194,8 +195,8 @@ that has more than one value, what is the operation supposed to do? Do we now
 need some whole new syntax to handle the fact that sometimes a particle has more
 than one value? We could do it like
 `position<foo>::value<standard:/number/rational>` but why make the different
-value types special, where a particle can have only one of those but can have
-another of a _different_ value type? Super confusing.
+value qualities special, where a particle can have only one of those but can
+have another of a _different_ value quality? Super confusing.
 
 The right solution, when you want multiplicity, is child positions. And that's
 the other problem with multi-value particles: how would you know when to use
@@ -219,13 +220,13 @@ why didn't you just create separate actions anyway?
 ## Forward Compatibility
 
 I believe I've made the most restrictive choices available to me. If I change my
-mind about specificity, it's easy to add more specific value types. All the
+mind about specificity, it's easy to add more specific value qualities. All the
 other decisions are similar:
 
 - No hierarchy means no hierarchy system to continue to support.
 - The lack of automatic converters means no magical semantics to continue to
   support invisibly.
-- Requiring positions in operations to have explicit value constraints is the
+- Requiring positions in operations to have explicit value qualities is the
   strictest choice we could have made.
 - Singular values is the strictest choice we could have made.
 

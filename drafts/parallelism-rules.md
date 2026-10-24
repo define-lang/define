@@ -62,7 +62,7 @@ finalized proposal.
 
 10. **Values can change in place.** A particle has one meaning and it can be
     overwritten; we do not force a brand-new particle for every new value. One
-    value type per position (so we always merge values of the same type).
+    value quality per position (so we always merge values of the same type).
 
 11. **Operations are pure and synchronous.** An operation only reads its inputs
     and writes its outputs: no triggering actions, no outside state, no I/O.

@@ -161,8 +161,8 @@ them, because we need some way to talk about the particles we are modifying.
 
 We define a new name type, `view`, that uses only _local_ names. It is defined
 only inside of `operation` and `encoding_operation` definitions. It has syntax
-identical to a local position definition except that its constraints may not
-contain other positions or actions.
+identical to a local position definition except that its quality assignments may
+not contain other positions or actions.
 
 Collectively, these are called the "Interface Views" for the operation (similar
 to how we name an action's interface positions). They are defined only in the
@@ -214,7 +214,7 @@ Encoding Operation Interface Views must:
    operations. (In the future, we will probably allow encoding operations to say
    their view names alias to the names in logical operations so that logical
    operations can use different names where it makes sense.)
-2. Specify encodings as their only explicit constraints.
+2. Specify encodings as their only explicit quality assignments.
 3. Be defined in the same number and order as the logical operation. That is,
    there has to be one interface view definition for every interface view
    definition in the logical operation being implemented and no more. (In the
@@ -500,5 +500,5 @@ interface to the hardware (outside of writing raw Assembly) as far as I know.
 Every existing programming language's operations syntax should be translatable
 into this form. There would be some challenges with translating a language like
 Lean that defines _numbers themselves_ through inductive, recursive proofs, but
-theoretically I imagine we could have a `/number/lean/nat` value type if we
+theoretically I imagine we could have a `/number/lean/nat` value quality if we
 really had to. That could get pretty complex, but I think it would be doable.

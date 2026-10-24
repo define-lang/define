@@ -314,7 +314,8 @@ from an action-defined position into a local position, where you have no idea
 when the action-defined position was created). There was an interesting lesson
 there, though: creation has to do with positions and can reason about positions,
 but destruction always has to do with the particle, because it could have moved
-from its creation position into a position with different (looser) constraints.
+from its creation position into a position with different (looser) quality
+assignments.
 
 ## Forward Compatibility
 
