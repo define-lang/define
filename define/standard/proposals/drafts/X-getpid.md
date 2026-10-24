@@ -99,7 +99,9 @@ of the underlying systems explicitly guarantee what it will be.
 ## Solution
 
 Even though all POSIX systems have extremely similar behavior, we still create a
-separate getpid for every OS target. Thus, we have
+separate getpid for every platform. Thus, we have
+`operation</os/linux/glibc/getpid>`, `operation</os/darwin/libsystem/getpid>`,
+and `operation</os/windows/win32/get_current_process_id>`.
 
 ## A Real Program
 
