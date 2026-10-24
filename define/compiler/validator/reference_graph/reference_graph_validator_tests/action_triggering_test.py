@@ -65,7 +65,7 @@ def test_action_with_body(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_constraints_and_init(
+def test_quality_assignments_and_init(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
@@ -310,7 +310,7 @@ class TestConstructorTriggering:
         assert_no_errors(result.program_result)
         assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
-    def test_constructor_fired_via_constraint_records_edge(
+    def test_constructor_fired_via_quality_assignment_records_edge(
         self,
         validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
     ):

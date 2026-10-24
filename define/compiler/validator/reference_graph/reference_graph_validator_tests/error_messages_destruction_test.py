@@ -93,7 +93,7 @@ def test_destructor_requires_occupied_position_format(
 def test_destructor_on_particle_created_in_callee_local_position_format(
     validate_project: ValidateProject,
 ):
-    """The propagation chain names the callee-local constraint that assigned the destructor."""
+    """The propagation chain names the callee-local quality assignment that assigned the destructor."""
     files = {
         "destructor.dfn": (
             "define the potential action<my.domain.com:my_lib:/destructor> {\n"
@@ -223,7 +223,7 @@ def test_destructor_requiring_empty_position_format(
 def test_aware_destructor_requirement_surfaces_as_action_requires_format(
     validate_project: ValidateProject,
 ):
-    """When the destroying action itself knows the destructor (its target constraint declares it), an unmet destructor requirement surfaces as an ActionRequires through normal trigger propagation, whose explanation names the destruction-cascade step rather than reading as a Destruction Contract violation."""
+    """When the destroying action itself knows the destructor (its target quality assignment declares it), an unmet destructor requirement surfaces as an ActionRequires through normal trigger propagation, whose explanation names the destruction-cascade step rather than reading as a Destruction Contract violation."""
     files = {
         "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",
         "destructor.dfn": (
@@ -461,7 +461,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
 #
 # These cover the new error stacks where the destroying action could NOT see a
 # caller-attached destructor and recorded a Destruction Contract that the
-# triggering action validates. The chain identifies the constraint that assigned
+# triggering action validates. The chain identifies the quality assignment that assigned
 # the destructor before showing the Action Execution and destruction cascade.
 
 

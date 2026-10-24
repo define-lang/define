@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     )
 
 
-def test_extra_caller_constraints(
+def test_extra_caller_quality_assignments(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
@@ -188,7 +188,7 @@ def test_position_value_mismatch(
     assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
 
 
-def test_particle_qualities_in_unconstrained_position(
+def test_particle_qualities_in_position_without_assignments(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()

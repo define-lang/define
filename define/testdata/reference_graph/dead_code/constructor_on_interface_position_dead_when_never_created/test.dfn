@@ -1,5 +1,5 @@
 # The trigger particle is supplied by the caller, not created here, so its
-# constructor never runs in /test, leaving the constraint dead.
+# constructor never runs in /test, leaving the quality assignment dead.
 #
 # TODO: However, this means that actions can never demand a constructor
 # on their interface positions, so maybe we should rethink this. If a

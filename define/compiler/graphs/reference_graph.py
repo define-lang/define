@@ -147,7 +147,7 @@ class ReferenceGraph:
             self._next_definition_depth -= 1
 
     # Algorithm: Worklist-based forward propagation of topological-depth
-    # constraints.
+    # quality assignments.
     def _increase_depths_or_find_cycle(
         self, referencing_name: str, referenced_name: str
     ) -> bool:

@@ -8,12 +8,12 @@ machinery rather than a single huge Action Statements Block.
 The program is a layered directed acyclic graph of potential actions:
 
   * The root is the entry-point constructor action ``/test``. Its ``out``
-    interface position is constrained to every layer-0 action, and its
+    interface position is assigned every layer-0 action, and its
     ``this particle is created`` body creates a particle in each layer-0
     action's ``src`` and ``trigger`` interface positions, triggering it.
   * Each non-leaf action references ``fan_out`` actions in the next layer
-    through the Position Constraint Block of its ``out`` interface
-    position (``it has the action</...>``). Those constraint references
+    through the Position Quality Assignment Block of its ``out`` interface
+    position (``it has the action</...>``). Those quality assignment references
     are the reference-graph edges the post-order traversal walks. The
     target set is a circulant (``(i + k) mod width``), so every target in
     the next layer has an in-degree of exactly ``fan_out`` -- dense
@@ -24,10 +24,10 @@ The program is a layered directed acyclic graph of potential actions:
     create that particle and ``src`` is a contracted position, this both
     infers an Action Requirement (``src`` must be occupied) and records a
     Destruction Contract. A configurable fraction of actions additionally
-    constrain ``src`` to carry a destructor, so destroying it drives the
+    assign ``src`` a destructor, so destroying it drives the
     destruction cascade and destructor verification.
   * Each non-leaf action's body creates a particle in ``out`` (atomic
-    creation assigns all of its constrained target actions) and then, for
+    creation assigns all of its assigned target actions) and then, for
     each target, creates a particle in the target's ``src`` and
     ``trigger`` -- satisfying the target's requirement and triggering it.
 
@@ -264,7 +264,7 @@ def generate_source_lines(options: GraphOptions = DEFAULT_GRAPH_OPTIONS) -> list
 
     ``layers`` x ``width`` actions are emitted in ``layers`` fully-connected
     bands; each non-leaf action references ``fan_out`` actions in the next
-    band. ``destructor_fraction`` of actions constrain ``src`` to carry a
+    band. ``destructor_fraction`` of actions assign ``src`` a
     destructor.
     """
     layers = options.layers
@@ -403,7 +403,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     Emits one .dfn holding a layered directed acyclic graph of potential actions,
     all reachable from the entry-point constructor action /test, so every action
     is validated. Each action references next-layer actions through its `out`
-    interface position's constraint, and destroys the particle in its `src`
+    interface position's quality assignment, and destroys the particle in its `src`
     interface position, which infers an Action Requirement and records a
     Destruction Contract. This is the validation-bound profiling shape: guarantee
     propagation across triggers, requirement inference, and destruction-contract

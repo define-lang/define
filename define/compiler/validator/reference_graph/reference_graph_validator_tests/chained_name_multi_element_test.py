@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class TestCreateParticle:
-    def test_chain_third_element_in_position_constraints(
+    def test_chain_third_element_in_position_quality_assignments(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
@@ -25,7 +25,7 @@ class TestCreateParticle:
         )
         assert_no_errors(result.program_result)
 
-    def test_chain_third_element_not_in_position_constraints(
+    def test_chain_third_element_not_in_position_quality_assignments(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
@@ -42,7 +42,7 @@ class TestCreateParticle:
         assert all_diags[0].location.column == 65
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
-    def test_chain_third_element_position_no_constraints(
+    def test_chain_third_element_position_no_quality_assignments(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
@@ -220,7 +220,7 @@ class TestChainActionValidation:
         assert all_diags[1].location.column == 55
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
-    def test_chain_through_action_with_constrained_local_position(
+    def test_chain_through_action_with_local_position_with_qualities(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):

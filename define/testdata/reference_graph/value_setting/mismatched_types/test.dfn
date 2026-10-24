@@ -1,4 +1,4 @@
-# Different assigned value types are rejected without changing occupancy.
+# Different assigned value qualities are rejected without changing occupancy.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

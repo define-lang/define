@@ -32,7 +32,7 @@ class PropagationKind(enum.Enum):
     # The current definition's body destroyed a caller-passed particle,
     # firing a destructor; the destructor's requirements propagated up.
     DESTRUCTOR_CASCADE = enum.auto()
-    # A position constraint directly assigned a quality to a position.
+    # A position quality assignment directly assigned a quality to a position.
     QUALITY_ASSIGNED = enum.auto()
     # Creating a particle triggered one of its constructor qualities.
     CONSTRUCTOR_TRIGGER = enum.auto()

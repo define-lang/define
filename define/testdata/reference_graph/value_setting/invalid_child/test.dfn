@@ -1,4 +1,4 @@
-# Chained names must satisfy the parent position constraints.
+# Chained names must satisfy the parent position quality assignments.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

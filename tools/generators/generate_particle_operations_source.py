@@ -110,7 +110,7 @@ def _emit_header() -> list[str]:
 
 def _emit_position_pools(prefix: str, tree_depth: int, wide_children: int) -> list[str]:
     lines = [f"define the potential position<{_qualified(prefix, _ITEM)}>."]
-    # The deepest chain position is emitted first so each constraint is a
+    # The deepest chain position is emitted first so each quality assignment is a
     # back-reference to an already-defined name.
     for i in reversed(range(tree_depth)):
         name = _qualified(prefix, _depth_path(i))
@@ -168,7 +168,7 @@ def _emit_worker_action(prefix: str) -> list[str]:
         f"{_INNER_INDENT}}}",
         f"{_OUTER_INDENT}}}",
         # ``out`` requires the particle to have ``/item`` so the move below
-        # is what requires ``input``'s constraint, keeping it live.
+        # is what requires ``input``'s quality assignment, keeping it live.
         f"{_OUTER_INDENT}define the position<out> {{",
         f"{_INNER_INDENT}it may only contain particles where {{",
         f"{_DEEP_INDENT}it has the position<{_ITEM}>.",
@@ -211,15 +211,15 @@ def _emit_sink_action(prefix: str) -> list[str]:
     ]
 
 
-def _emit_constrained_interface(
-    name: str, constraint_paths: list[str], *, is_action: bool = False
+def _emit_interface_with_qualities(
+    name: str, quality_paths: list[str], *, is_action: bool = False
 ) -> list[str]:
     kind = "action" if is_action else "position"
     lines = [
         f"{_OUTER_INDENT}define the position<{name}> {{",
         f"{_INNER_INDENT}it may only contain particles where {{",
     ]
-    for path in constraint_paths:
+    for path in quality_paths:
         lines.append(f"{_DEEP_INDENT}it has the {kind}<{path}>.")
     lines.extend(
         [
@@ -426,18 +426,18 @@ def _emit_main_action_header(options: ParticleOperationOptions) -> list[str]:
         lines.append(f"{_OUTER_INDENT}define the position<result>.")
     for i in range(move_chain_length):
         lines.append(f"{_OUTER_INDENT}define the position<rung_{i}>.")
-    lines.extend(_emit_constrained_interface("tree_src", [_depth_path(0)]))
-    lines.extend(_emit_constrained_interface("tree_dst", [_depth_path(0)]))
-    lines.extend(_emit_constrained_interface("wide_src", all_children))
-    lines.extend(_emit_constrained_interface("wide_dst", all_children))
-    lines.extend(_emit_constrained_interface("side", all_children))
+    lines.extend(_emit_interface_with_qualities("tree_src", [_depth_path(0)]))
+    lines.extend(_emit_interface_with_qualities("tree_dst", [_depth_path(0)]))
+    lines.extend(_emit_interface_with_qualities("wide_src", all_children))
+    lines.extend(_emit_interface_with_qualities("wide_dst", all_children))
+    lines.extend(_emit_interface_with_qualities("side", all_children))
     if independent_move_branches > 0:
         independent_boxes = [
             _independent_box_path(branch) for branch in range(independent_move_branches)
         ]
         lines.append(f"{_OUTER_INDENT}define the position<independent_source>.")
         lines.extend(
-            _emit_constrained_interface("independent_workspace", independent_boxes)
+            _emit_interface_with_qualities("independent_workspace", independent_boxes)
         )
         lines.append(f"{_OUTER_INDENT}define the position<independent_moved_marker>.")
         for move_index in range(independent_move_chain_length - 3):
@@ -453,14 +453,16 @@ def _emit_main_action_header(options: ParticleOperationOptions) -> list[str]:
             )
     for step in range(repetitions):
         lines.extend(
-            _emit_constrained_interface(f"req_{step}", [_depth_path(0), _child_path(0)])
+            _emit_interface_with_qualities(
+                f"req_{step}", [_depth_path(0), _child_path(0)]
+            )
         )
     for pod in range(pods):
         lines.extend(
-            _emit_constrained_interface(f"wpod_{pod}", ["/worker"], is_action=True)
+            _emit_interface_with_qualities(f"wpod_{pod}", ["/worker"], is_action=True)
         )
         lines.extend(
-            _emit_constrained_interface(f"spod_{pod}", ["/sink"], is_action=True)
+            _emit_interface_with_qualities(f"spod_{pod}", ["/sink"], is_action=True)
         )
     lines.extend(
         [

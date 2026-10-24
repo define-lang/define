@@ -124,7 +124,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
     ]
 
 
-def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
+def test_cross_fqun_move_from_chained_nonexistent_local_to_position_with_qualities(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

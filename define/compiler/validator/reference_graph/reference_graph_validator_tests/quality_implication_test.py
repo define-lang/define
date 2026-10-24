@@ -203,7 +203,7 @@ def test_action_guarantee_preserves_transitive_qualities(
     assert_no_errors(result.program_result)
 
 
-def test_action_creates_particle_in_interface_position_with_implication_constraint(
+def test_action_creates_particle_in_interface_position_with_implying_quality(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

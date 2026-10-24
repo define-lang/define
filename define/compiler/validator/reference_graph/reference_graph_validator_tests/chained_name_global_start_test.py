@@ -105,7 +105,7 @@ class TestUnnecessarySelfReference:
 
 
 class TestUnknownGlobalChainStart:
-    def test_no_constraint_check_on_unknown_global(
+    def test_no_quality_assignment_check_on_unknown_global(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
@@ -122,7 +122,7 @@ class TestUnknownGlobalChainStart:
 
 
 class TestImpliedQualityChainStart:
-    def test_constructor_chain_not_in_constraints(
+    def test_constructor_chain_not_assigned(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):

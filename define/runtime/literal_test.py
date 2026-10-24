@@ -434,7 +434,7 @@ class TestAction:
 
         assert action.get_interface_position("position</iface>") is pos
 
-    def test_get_interface_position_with_value_type(self):
+    def test_get_interface_position_with_value_quality(self):
         pos = literal.LocalPosition[float]("position</iface>")
 
         class MyAction(literal.Action):

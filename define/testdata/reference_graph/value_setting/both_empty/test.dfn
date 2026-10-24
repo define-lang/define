@@ -1,4 +1,4 @@
-# Report both empty positions even when their value constraints have been used.
+# Report both empty positions even when their value qualities have been used.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</copy>.
     it happens when {

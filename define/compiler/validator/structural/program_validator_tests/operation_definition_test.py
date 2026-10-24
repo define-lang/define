@@ -81,7 +81,7 @@ def test_invalid_view_name(
     assert diagnostic.chars == ("N",)
 
 
-def test_view_position_constraint(
+def test_view_position_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -95,7 +95,7 @@ def test_view_position_constraint(
     assert diagnostic.quality_name == "position</box>"
 
 
-def test_view_action_constraint(
+def test_view_action_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -109,7 +109,7 @@ def test_view_action_constraint(
     assert diagnostic.quality_name == "action</run>"
 
 
-def test_view_missing_value_constraint(
+def test_view_missing_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -129,7 +129,7 @@ def test_view_missing_value_constraint(
     assert second.quality_name == "encoding<standard:/number/decimal/ascii>"
 
 
-def test_view_value_and_encoding_constraints(
+def test_view_value_and_encoding_quality_assignments(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -143,7 +143,7 @@ def test_view_value_and_encoding_constraints(
     assert diagnostic.quality_name == "encoding<standard:/number/decimal/ascii>"
 
 
-def test_view_multiple_value_constraints(
+def test_view_multiple_value_qualities(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -158,7 +158,7 @@ def test_view_multiple_value_constraints(
     assert diagnostic.first_assignment_line == 7
 
 
-def test_view_duplicate_constraint(
+def test_view_duplicate_quality_assignment(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()

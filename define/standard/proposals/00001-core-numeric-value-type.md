@@ -390,7 +390,7 @@ eventually).
 
 In general, my present belief is that choosing explicitness will actually
 provide us more optimization opportunities, especially when combined with
-Define's value constraint system.
+Define's constraint system.
 
 In terms of future-proofing, natural numbers seem like the easiest to
 future-proof. Their behavior has not changed in hardware in a very long time,

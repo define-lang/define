@@ -1,4 +1,4 @@
-# Value setting references keep child position constraints alive.
+# Value setting references keep child position quality assignments alive.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</parent>.
     it happens when {

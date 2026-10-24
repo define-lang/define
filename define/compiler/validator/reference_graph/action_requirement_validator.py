@@ -98,7 +98,7 @@ class ActionRequirementValidator:
         match requirement_state:
             case position_occupancy.PositionOccupancyState.OCCUPIED:
                 # We can't know exactly what qualities the particle has, but we
-                # can know the minimal set that it _must_ have according to the constraints
+                # can know the minimal set that it _must_ have according to the quality assignments
                 # the contracted position has.
                 qualities = (
                     self._position_quality_resolver.get_transitive_required_qualities(

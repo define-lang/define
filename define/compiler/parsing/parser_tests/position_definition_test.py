@@ -432,7 +432,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
-        + "    define the position<constrained_pos> {\n"
+        + "    define the position<assigned_pos> {\n"
         + "        it may only contain particles where {\n"
         + "            it has the position</child>.\n"
         + "        }\n"
@@ -445,7 +445,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
     )
     [definition] = program.definitions
     assert isinstance(definition, ast.ActionDefinition)
-    [run, empty_pos, constrained_pos] = definition.interface_positions
+    [run, empty_pos, assigned_pos] = definition.interface_positions
     assert run.typed_name.name_type == name_types.NameType.POSITION
     assert run.typed_name.name_content.name == "run"
     assert run.quality_assignment_block is None
@@ -458,16 +458,16 @@ def test_action_definition_block_with_mixed_local_position_forms(
     assert empty_pos.location == ast.SourceLocation(
         line=3, column=5, end_line=3, end_column=35
     )
-    assert constrained_pos.typed_name.name_type == name_types.NameType.POSITION
-    assert constrained_pos.typed_name.name_content.name == "constrained_pos"
-    assert constrained_pos.quality_assignment_block is not None
-    [quality_assignment] = constrained_pos.quality_assignment_block.statements
+    assert assigned_pos.typed_name.name_type == name_types.NameType.POSITION
+    assert assigned_pos.typed_name.name_content.name == "assigned_pos"
+    assert assigned_pos.quality_assignment_block is not None
+    [quality_assignment] = assigned_pos.quality_assignment_block.statements
     assert (
         quality_assignment.typed_global_name.name_type == name_types.NameType.POSITION
     )
     assert quality_assignment.typed_global_name.name_content.fqun is None
     assert quality_assignment.typed_global_name.name_content.path.name == "/child"
-    assert constrained_pos.location == ast.SourceLocation(
+    assert assigned_pos.location == ast.SourceLocation(
         line=4, column=5, end_line=8, end_column=5
     )
 
@@ -547,7 +547,7 @@ def test_action_statements_block_with_mixed_local_position_forms(
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<empty_inner>.\n"
-        + "        define the position<constrained_inner> {\n"
+        + "        define the position<assigned_inner> {\n"
         + "            it may only contain particles where {\n"
         + "                it has the action</inner_action>.\n"
         + "            }\n"
@@ -557,7 +557,7 @@ def test_action_statements_block_with_mixed_local_position_forms(
     )
     [definition] = program.definitions
     assert isinstance(definition, ast.ActionDefinition)
-    [empty_inner, constrained_inner] = definition.action_statements.statements
+    [empty_inner, assigned_inner] = definition.action_statements.statements
     assert isinstance(empty_inner, ast.LocalPositionDefinition)
     assert empty_inner.typed_name.name_type == name_types.NameType.POSITION
     assert empty_inner.typed_name.name_content.name == "empty_inner"
@@ -565,17 +565,17 @@ def test_action_statements_block_with_mixed_local_position_forms(
     assert empty_inner.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=41
     )
-    assert isinstance(constrained_inner, ast.LocalPositionDefinition)
-    assert constrained_inner.typed_name.name_type == name_types.NameType.POSITION
-    assert constrained_inner.typed_name.name_content.name == "constrained_inner"
-    assert constrained_inner.quality_assignment_block is not None
-    [quality_assignment] = constrained_inner.quality_assignment_block.statements
+    assert isinstance(assigned_inner, ast.LocalPositionDefinition)
+    assert assigned_inner.typed_name.name_type == name_types.NameType.POSITION
+    assert assigned_inner.typed_name.name_content.name == "assigned_inner"
+    assert assigned_inner.quality_assignment_block is not None
+    [quality_assignment] = assigned_inner.quality_assignment_block.statements
     assert quality_assignment.typed_global_name.name_type == name_types.NameType.ACTION
     assert quality_assignment.typed_global_name.name_content.fqun is None
     assert (
         quality_assignment.typed_global_name.name_content.path.name == "/inner_action"
     )
-    assert constrained_inner.location == ast.SourceLocation(
+    assert assigned_inner.location == ast.SourceLocation(
         line=7, column=9, end_line=11, end_column=9
     )
 

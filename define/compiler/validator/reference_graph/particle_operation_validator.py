@@ -223,7 +223,7 @@ class ParticleOperationValidator:
                 location=position.location,
                 position_name=position.source_chained_name,
             )
-        # A particle without a value quality does not meet the constraints of the
+        # A particle without a value quality does not meet the quality assignments of the
         # view looking at it, which is reported instead.
         if not is_read or particle.qualities.value_quality is None:
             return None

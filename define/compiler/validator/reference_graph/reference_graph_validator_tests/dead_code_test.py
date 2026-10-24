@@ -39,7 +39,7 @@ def test_unreferenced_child_position_on_local_is_dead(
     assert all_diags[0].location.column == 28
 
 
-def test_callee_interface_position_named_like_local_does_not_keep_local_constraint_alive(
+def test_callee_interface_position_named_like_local_does_not_keep_local_quality_assignment_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -71,7 +71,7 @@ def test_unreferenced_child_position_on_interface_is_dead(
     assert all_diags[0].location.column == 24
 
 
-def test_unresolved_constraint_is_not_reported_as_dead(
+def test_unresolved_quality_assignment_is_not_reported_as_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -140,7 +140,7 @@ def test_child_position_required_by_move_destination_through_multiple_hops_is_al
     assert_no_errors(result.program_result)
 
 
-def test_position_constraint_moved_through_locals_to_contract_is_alive(
+def test_child_position_assignment_moved_through_locals_to_contract_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -150,7 +150,7 @@ def test_position_constraint_moved_through_locals_to_contract_is_alive(
     assert action_graph(result.reference_graph_result) == []
 
 
-def test_position_constraint_moved_through_locals_to_child_contract_is_alive(
+def test_child_position_assignment_moved_through_locals_to_child_contract_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -160,7 +160,7 @@ def test_position_constraint_moved_through_locals_to_child_contract_is_alive(
     assert action_graph(result.reference_graph_result) == []
 
 
-def test_redundant_destination_constraint_on_move_filled_position_is_dead(
+def test_redundant_destination_quality_assignment_on_move_filled_position_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -175,7 +175,7 @@ def test_redundant_destination_constraint_on_move_filled_position_is_dead(
     assert all_diags[0].location.column == 28
 
 
-def test_back_and_forth_moves_do_not_make_position_constraints_alive(
+def test_back_and_forth_moves_do_not_make_child_position_assignments_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -197,7 +197,7 @@ def test_back_and_forth_moves_do_not_make_position_constraints_alive(
     assert action_graph(result.reference_graph_result) == []
 
 
-def test_constraint_on_interface_position_filled_by_create_is_alive(
+def test_quality_assignment_on_interface_position_filled_by_create_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -206,7 +206,7 @@ def test_constraint_on_interface_position_filled_by_create_is_alive(
     assert_no_errors(result.program_result)
 
 
-def test_multiple_constraints_on_guaranteed_interface_position_are_alive(
+def test_multiple_quality_assignments_on_guaranteed_interface_position_are_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -224,7 +224,7 @@ def test_child_name_on_occupied_interface_position_is_alive_with_occupied_implie
     assert_no_errors(result.program_result)
 
 
-def test_constraint_on_interface_position_filled_then_destroyed_is_dead(
+def test_quality_assignment_on_interface_position_filled_then_destroyed_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -241,7 +241,7 @@ def test_constraint_on_interface_position_filled_then_destroyed_is_dead(
     assert all_diags[0].location.column == 24
 
 
-def test_constraint_on_interface_position_filled_by_moving_new_particle_is_alive(
+def test_quality_assignment_on_interface_position_filled_by_moving_new_particle_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -250,7 +250,7 @@ def test_constraint_on_interface_position_filled_by_moving_new_particle_is_alive
     assert_no_errors(result.program_result)
 
 
-def test_constraint_on_interface_position_filled_by_moving_caller_particle_is_alive(
+def test_quality_assignment_on_interface_position_filled_by_moving_caller_particle_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -259,7 +259,7 @@ def test_constraint_on_interface_position_filled_by_moving_caller_particle_is_al
     assert_no_errors(result.program_result)
 
 
-def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_create(
+def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_requirement_is_dead_via_create(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -276,7 +276,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     assert all_diags[0].location.column == 24
 
 
-def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_local(
+def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_local(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -293,7 +293,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     assert all_diags[0].location.column == 24
 
 
-def test_unused_constraint_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_interface(
+def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_requirement_is_dead_via_move_from_interface(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -310,7 +310,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     assert all_diags[0].location.column == 24
 
 
-def test_unused_constraint_on_interface_position_whose_particle_only_has_its_value_set_is_dead(
+def test_unused_quality_assignment_on_interface_position_whose_particle_only_has_its_value_set_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -357,7 +357,7 @@ def test_one_child_position_dead_while_a_sibling_is_referenced(
     assert all_diags[0].location.column == 28
 
 
-def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
+def test_quality_assignment_that_only_provides_a_moved_quality_by_implication_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -451,7 +451,7 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
 
-def test_action_interface_occupation_requires_trigger_when_constraint_is_alive_via_guarantee(
+def test_action_interface_occupation_requires_trigger_when_quality_assignment_is_alive_via_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -1086,7 +1086,7 @@ def test_action_required_by_move_destination_is_alive(
     assert_no_errors(result.program_result)
 
 
-def test_position_constraint_moved_to_untriggered_action_contract_is_dead(
+def test_child_position_assignment_moved_to_untriggered_action_contract_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1116,7 +1116,7 @@ def test_position_constraint_moved_to_untriggered_action_contract_is_dead(
     assert action_graph(result.reference_graph_result) == []
 
 
-def test_position_constraint_moved_to_triggered_action_contract_is_alive(
+def test_child_position_assignment_moved_to_triggered_action_contract_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1126,7 +1126,7 @@ def test_position_constraint_moved_to_triggered_action_contract_is_alive(
     ]
 
 
-def test_action_constraint_moved_to_triggered_action_contract_is_alive(
+def test_child_action_assignment_moved_to_triggered_action_contract_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1137,7 +1137,7 @@ def test_action_constraint_moved_to_triggered_action_contract_is_alive(
     ]
 
 
-def test_back_and_forth_moves_do_not_make_action_constraints_alive(
+def test_back_and_forth_moves_do_not_make_child_action_assignments_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1166,7 +1166,7 @@ def test_implied_action_of_constructor_is_not_dead(
     assert_no_errors(result.program_result)
 
 
-def test_destructor_constraint_is_never_dead(
+def test_destructor_quality_assignment_is_never_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1187,7 +1187,7 @@ def test_destructor_constraint_is_never_dead(
     assert all_diags[1].location.column == 28
 
 
-def test_constructor_constraint_reached_only_by_move_is_dead(
+def test_constructor_quality_assignment_reached_only_by_move_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1259,7 +1259,7 @@ def test_dead_child_position_and_untriggered_action_on_same_position(
     assert all_diags[1].location.column == 28
 
 
-def test_interface_constraint_referenced_only_in_another_definition_is_dead(
+def test_interface_quality_assignment_referenced_only_in_another_definition_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1313,7 +1313,7 @@ def test_two_child_positions_on_one_position_are_both_dead(
     assert all_diags[1].location.column == 28
 
 
-def test_unreferenced_constraint_on_global_position_is_not_checked(
+def test_unreferenced_quality_assignment_on_global_position_is_not_checked(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -1323,7 +1323,7 @@ def test_unreferenced_constraint_on_global_position_is_not_checked(
 # --- Operation Executions ---
 
 
-def test_operation_execution_does_not_keep_child_constraints_alive(
+def test_operation_execution_does_not_keep_child_quality_assignments_alive(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()

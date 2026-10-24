@@ -41,7 +41,7 @@ class ParticleInfo(msgspec.Struct, eq=False):
     # assignment order.
     qualities: quality_assignment.QualityAssignments
     # The position where this particle was created or first arrived through an
-    # occupied Action Requirement. DLP 42 uses it to attribute constraint uses
+    # occupied Action Requirement. DLP 42 uses it to attribute quality assignment uses
     # after the particle moves. For a particle a callee created, it is where
     # the callee created it, named the way that callee wrote it, so it is not
     # one of this action's positions.

@@ -1,4 +1,4 @@
-# This confirms that the code path that handles liveness for constraints on
+# This confirms that the code path that handles liveness for quality assignments on
 # interface positions does not die when it also sees an implied position.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</implied>.

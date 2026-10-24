@@ -1,4 +1,4 @@
-# After a trigger chain move-then-return, the particle retains its original constraint qualities.
+# After a trigger chain move-then-return, the particle retains its original quality assignment qualities.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

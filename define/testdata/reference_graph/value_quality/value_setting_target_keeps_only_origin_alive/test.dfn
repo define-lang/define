@@ -1,0 +1,28 @@
+# Writing a moved value keeps only its origin quality assignment alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        define the position<target> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<copy>.
+        move the particle in position<source> to position<target>.
+        set the value of position<copy> to literal<standard:/number>"5".
+        # Any use of this written value would also keep the origin quality assignment alive, so it stays unused.
+        set the value of position<target> to position<copy>.
+    }
+}

@@ -1,9 +1,9 @@
 # When the owner leaves a destructor's required position in an error state (here by moving from it while empty), the destructor cannot be validated and is skipped rather than reported, so only the move-from-empty diagnostic surfaces.
 # The move-from-empty: the destructor's requirement on position</x> is error to
 # the owner, so it is skipped rather than reported as a violation.
-# close_file declares target's position</x> constraint but its own body never
+# close_file declares target's position</x> quality assignment but its own body never
 # references it; only the caller's move does, which is a different definition,
-# so within close_file the constraint is dead.
+# so within close_file the quality assignment is dead.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

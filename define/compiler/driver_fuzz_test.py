@@ -552,7 +552,7 @@ def _implication_chain_reference(typed_kind: str, name: str) -> str:
     return f"action<{name}>::position<_noop>"
 
 
-def _local_position_with_used_constraints(
+def _local_position_with_used_quality_assignments(
     local_name: str,
     requirements: list[tuple[str, str]],
     *,
@@ -695,7 +695,7 @@ def valid_sources(draw: st.DrawFn) -> str:
     for local_name in local_names:
         if draw(st.booleans()):
             statements.append(
-                _local_position_with_used_constraints(
+                _local_position_with_used_quality_assignments(
                     local_name, draw(_valid_reference_options()), indent="        "
                 )
             )
@@ -738,13 +738,13 @@ def position_definitions_with_implications(draw: st.DrawFn) -> str:
     name = draw(global_names())
     impl_name = draw(global_names())
     impl_kind = draw(st.sampled_from(["position", "action"]))
-    constraint_name = draw(global_names())
-    constraint_kind = draw(st.sampled_from(["position", "action"]))
+    quality_name = draw(global_names())
+    quality_kind = draw(st.sampled_from(["position", "action"]))
     return (
         f"define the potential position<{name}> {{\n"
         f"    it also assigns the {impl_kind}<{impl_name}>.\n"
         f"    it may only contain particles where {{\n"
-        f"        it has the {constraint_kind}<{constraint_name}>.\n"
+        f"        it has the {quality_kind}<{quality_name}>.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -1170,7 +1170,7 @@ def _build_same_universe_chain_project(
     )
 
 
-def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
+def _build_action_local_quality_assignments_project(root_universe: str) -> ProjectCase:
     root_files = {
         "test.dfn": _action_with_block(
             root_universe,
@@ -1178,10 +1178,10 @@ def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
             trigger_kind="constructor",
             outer_locals=[],
             inner_locals=[
-                _local_position_with_used_constraints(
+                _local_position_with_used_quality_assignments(
                     "first", [("position", "/target")], indent="        "
                 ),
-                _local_position_with_used_constraints(
+                _local_position_with_used_quality_assignments(
                     "second", [("action", "/target")], indent="        "
                 ),
             ],
@@ -1302,7 +1302,7 @@ def _build_cross_fqun_action_statements_project(
             trigger_kind="constructor",
             outer_locals=[],
             inner_locals=[
-                _local_position_with_used_constraints(
+                _local_position_with_used_quality_assignments(
                     "inner_pos",
                     [("position", _global_name(child_universe, "target.dfn"))],
                     indent="        ",
@@ -1622,8 +1622,8 @@ def _build_single_universe_project_case(
         return _build_same_universe_chain_project(
             root_universe, use_nested_entrypoint=True
         )
-    if project_kind == "action_local_constraints":
-        return _build_action_local_constraints_project(root_universe)
+    if project_kind == "action_local_quality_assignments":
+        return _build_action_local_quality_assignments_project(root_universe)
     if project_kind == "dual_type_reference":
         return _build_dual_type_reference_project(root_universe)
     if project_kind == "move_local":
@@ -1655,7 +1655,7 @@ def _build_project_case(
     if project_kind in {
         "same_universe_chain",
         "same_universe_nested_chain",
-        "action_local_constraints",
+        "action_local_quality_assignments",
         "dual_type_reference",
         "move_local",
         "destroy_local",
@@ -1694,7 +1694,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
             [
                 "same_universe_chain",
                 "same_universe_nested_chain",
-                "action_local_constraints",
+                "action_local_quality_assignments",
                 "dual_type_reference",
                 "cross_fqun",
                 "cross_fqun_nested",
@@ -1872,7 +1872,7 @@ _GLOBAL_NAME_CONTEXTS = [
     "position_def",
     "action_def",
     "potential_literal_def",
-    "literal_encoding_constraint",
+    "literal_encoding_quality_assignment",
     "constructor",
     "destructor",
     "position_req",
@@ -1898,7 +1898,7 @@ def _global_name_context_template(  # noqa: PLR0911, PLR0912 - Each context has 
             + "    it has the encoding</test>.\n"
             + "}\n"
         )
-    if context == "literal_encoding_constraint":
+    if context == "literal_encoding_quality_assignment":
         return (
             f"define the potential literal<{_PROJECT_FQUN}:/test> {{\n"
             + f"    it has the encoding<{_NAME_MARKER}>.\n"
@@ -2014,7 +2014,7 @@ def _global_name_context_template(  # noqa: PLR0911, PLR0912 - Each context has 
 
 _LOCAL_NAME_CONTEXTS = [
     "local_def_simple",
-    "local_def_constrained",
+    "local_def_with_qualities",
     "create_ref",
     "move_from_ref",
     "move_to_ref",
@@ -2035,7 +2035,7 @@ def _local_name_context_template(  # noqa: PLR0911 - Each context has its own so
                 _create_particle_statement("position<run>", indent="        ")
             ],
         )
-    if context == "local_def_constrained":
+    if context == "local_def_with_qualities":
         return _action_with_block(
             _PROJECT_FQUN,
             "test.dfn",

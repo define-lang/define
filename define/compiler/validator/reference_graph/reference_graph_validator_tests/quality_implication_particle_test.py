@@ -30,7 +30,7 @@ def test_create_in_implied_position(
     assert_no_errors(result.program_result)
 
 
-def test_duplicate_direct_constraint_triggers_action_once(
+def test_duplicate_direct_quality_assignment_triggers_action_once(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

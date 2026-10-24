@@ -13,14 +13,14 @@ broad slice of the grammar:
   * A pool of top-level potential position and potential action definitions
     in the same FQUN as the main action. Each pool position declares
     ``it has the position</g_(i+1)>`` so long chains through the pool
-    satisfy the chain-element constraint check. Pool actions consume particles
+    satisfy the chain-element quality assignment check. Pool actions consume particles
     from both their trigger and ``_noop`` positions.
   * Standalone potential position definitions in 2-part and 3-part FQUN
     forms in other universes, to exercise the multi-format FQUN parser
     path. They are not referenced from the main action because the
     validator's non-filesystem mode currently raises KeyError when
     processing a reference edge to a cross-universe target.
-  * Positions with constraint blocks, and a constructor action carrying
+  * Positions with quality assignment blocks, and a constructor action carrying
     quality implications whose ``this particle is created`` body pairs
     every create with a destroy so the constructor runs net-zero.
   * A bulk action whose body interleaves blocks rooted in three kinds of
@@ -30,7 +30,7 @@ broad slice of the grammar:
     bulk action also has a destructor action that triggers on
     ``this particle is being destroyed``.
   * Every ``ActionStatement`` kind -- inner local position definitions
-    (simple and constrained), ``create``, ``move``, and ``destroy`` --
+    (simple and with qualities), ``create``, ``move``, and ``destroy`` --
     using a mix of interface, inner-local, and implied references, plus
     chained references including very long chains (up to the configured
     maximum) rooted at implied positions. Long-chain blocks walk down
@@ -77,7 +77,7 @@ _QUAD_INDENT = "                "
 
 # Interface positions defined in the main action body. Each pairs with a
 # distinct shape so blocks can be rooted at them without all chains
-# falling through the implied ``g_0`` constraint.
+# falling through the implied ``g_0`` quality assignment.
 _INTERFACE_SIMPLE = "interface_simple"
 _INTERFACE_TO_G0 = "interface_to_g0"
 _INTERFACE_TO_G2 = "interface_to_g2"
@@ -87,7 +87,7 @@ _INTERFACE_DST = "interface_dst"
 # constructor-action-with-implications definition.
 _IMPLIED_POSITION_INDEX = 0
 _IMPLIED_INTERFACE_TO_G2_INDEX = 2
-_IMPLIED_INNER_CONSTRAINT_INDEX = 4
+_IMPLIED_INNER_QUALITY_INDEX = 4
 _POSITION_IMPLICATIONS_IMPLIED_POSITION_INDEX = 0
 _POSITION_IMPLICATIONS_IMPLIED_ACTION_INDEX = 1
 
@@ -141,7 +141,7 @@ def _emit_header() -> list[str]:
 
 def _emit_simple_position_pool(prefix: str, num_globals: int) -> list[str]:
     # Emit positions in reverse order (g_(N-1) first, g_0 last) so each
-    # ``it has the position</g_(i+1)>`` constraint is a back-reference to
+    # ``it has the position</g_(i+1)>`` quality assignment is a back-reference to
     # an already-defined name. The non-filesystem validator does not load
     # files for same-source back-references; forward references would
     # instead trigger NoProjectRootInNonFilesystemContext.
@@ -197,7 +197,7 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
     return lines
 
 
-def _emit_constrained_position(prefix: str, index: int) -> list[str]:
+def _emit_position_with_qualities(prefix: str, index: int) -> list[str]:
     name = _qualified_global_name(prefix, index)
     return [
         f"define the potential position<{name}> {{",
@@ -278,9 +278,9 @@ def _block_inner_local_simple(step: int) -> list[str]:
     ]
 
 
-def _block_inner_local_constrained(step: int) -> list[str]:
+def _block_inner_local_with_qualities(step: int) -> list[str]:
     name = f"inner_c_{step}"
-    target = _short_global_name(_IMPLIED_INNER_CONSTRAINT_INDEX)
+    target = _short_global_name(_IMPLIED_INNER_QUALITY_INDEX)
     # Inner local positions start empty and the chain rule (spec
     # "Position References") requires every intermediate position in a
     # chain to already contain a particle. Populate the inner before the
@@ -379,7 +379,7 @@ def _next_body_block(  # noqa: PLR0911 - Each branch returns one distinct body b
     if kind == 1:
         return _block_inner_local_simple(step)
     if kind == 2:
-        return _block_inner_local_constrained(step)
+        return _block_inner_local_with_qualities(step)
     if kind == 3:
         return _block_implied_action_chain(step, num_actions)
     if kind == 4:
@@ -483,7 +483,7 @@ def generate_source_lines(
     lines.append("")
     lines.extend(_emit_cross_universe_positions())
     lines.extend(_emit_simple_action_pool(fqun_prefix, num_actions))
-    lines.extend(_emit_constrained_position(fqun_prefix, num_globals))
+    lines.extend(_emit_position_with_qualities(fqun_prefix, num_globals))
     lines.extend(
         _emit_action_with_implications_and_constructor(fqun_prefix, num_globals + 1)
     )

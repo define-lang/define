@@ -246,7 +246,7 @@ class OperationArgumentsValidator:
         looked_at_qualities: Mapping[ast.OperationArgumentStatement, Collection[str]],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> codegen_input.EncodedLiteral | None:
-        """Check that the particle the argument looks at meets the constraints of the executed operation's interface view.
+        """Check that the particle the argument looks at meets the quality assignments of the executed operation's interface view.
 
         Returns the literal the argument looks at, translated into what the
         interface view requires, if it can be translated.

@@ -1,5 +1,5 @@
 # make_thing attaches a destructor in a local position and moves the particle to
-# result, whose constraints omit the destructor. The result guarantee propagates
+# result, whose quality assignments omit the destructor. The result guarantee propagates
 # the destructor to /test, where destroying result triggers it.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

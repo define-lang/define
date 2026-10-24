@@ -384,7 +384,7 @@ def test_callee_source_missing_value_quality(
     assert diagnostic.origin_position_name == "position<source>"
 
 
-def test_same_child_position_keeps_constraint_alive(
+def test_same_child_position_keeps_quality_assignment_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result

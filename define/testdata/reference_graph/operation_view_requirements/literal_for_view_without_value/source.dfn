@@ -1,4 +1,4 @@
-# view<source> has no value constraint, so a literal cannot know which value it becomes.
+# view<source> has no value quality, so a literal cannot know which value it becomes.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.

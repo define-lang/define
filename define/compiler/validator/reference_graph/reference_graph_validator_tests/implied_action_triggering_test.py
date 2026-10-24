@@ -156,7 +156,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     ]
 
 
-def test_caller_triggers_action_implied_by_constraint(
+def test_caller_triggers_action_implied_by_quality_assignment(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

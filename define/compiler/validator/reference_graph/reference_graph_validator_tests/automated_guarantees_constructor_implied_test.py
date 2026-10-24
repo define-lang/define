@@ -117,7 +117,7 @@ _PARENT_FQUN = "mv:define-lang.org:parent"
 _CHILD_FQUN = "mv:define-lang.org:child"
 
 
-def test_cross_universe_constraint_triggers_constructor(
+def test_cross_universe_quality_assignment_triggers_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -153,7 +153,7 @@ def test_cross_universe_constraint_triggers_constructor(
     assert all_diags[1].populated_at.file_path == PurePosixPath("lib/construct_b.dfn")
 
 
-def test_constructor_applies_after_non_constructor_action_in_constraints(
+def test_constructor_applies_after_non_constructor_action_in_quality_assignments(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -176,7 +176,7 @@ def test_constructor_applies_after_non_constructor_action_in_constraints(
     assert all_diags[0].populated_at.file_path == PurePosixPath("construct_bar.dfn")
 
 
-def test_constrained_constructor_assigns_implied_in_parent(
+def test_assigned_constructor_assigns_implied_in_parent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

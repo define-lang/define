@@ -140,7 +140,7 @@ def test_valid_destroy_local_position(
     assert_no_errors(result)
 
 
-def test_destroy_chained_name_not_in_constraints(
+def test_destroy_chained_name_not_assigned(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(

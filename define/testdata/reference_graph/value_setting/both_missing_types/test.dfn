@@ -1,4 +1,4 @@
-# Report both particles without assigned value types.
+# Report both particles without assigned value qualities.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

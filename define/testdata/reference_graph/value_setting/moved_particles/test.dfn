@@ -1,4 +1,4 @@
-# Assigned value types survive moves to unconstrained positions.
+# Assigned value qualities survive moves to positions without quality assignments.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</left>.
     it happens when {

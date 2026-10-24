@@ -1,4 +1,4 @@
-# Looking at a child position keeps the child position constraint alive on its parent.
+# Looking at a child position keeps the child position quality assignment alive on its parent.
 define the potential position<my.domain.com:my_lib:/child> {
     it may only contain particles where {
         it has the value<standard:/number/natural>.

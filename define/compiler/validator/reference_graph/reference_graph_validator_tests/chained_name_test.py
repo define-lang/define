@@ -461,7 +461,7 @@ class TestMoveParticle:
         assert all_diags[0].location.end_column == 79
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
-    def test_chain_not_in_constraints(
+    def test_chain_not_assigned(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):

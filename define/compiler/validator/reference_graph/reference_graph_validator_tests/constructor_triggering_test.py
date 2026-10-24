@@ -41,7 +41,7 @@ def test_non_entry(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_create_fires_constructor_via_constraint_on_local_position(
+def test_create_fires_constructor_via_quality_assignment_on_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -49,7 +49,7 @@ def test_create_fires_constructor_via_constraint_on_local_position(
     assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
-def test_create_fires_constructor_via_constraint_on_interface_position(
+def test_create_fires_constructor_via_quality_assignment_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(

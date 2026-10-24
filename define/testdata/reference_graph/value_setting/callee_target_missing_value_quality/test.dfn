@@ -1,4 +1,4 @@
-# The callee requires a value constraint even when its caller supplies a particle with a value type.
+# The callee requires a value quality even when its caller supplies a particle with a value quality.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</copy>.
     it happens when {

@@ -123,7 +123,7 @@ def test_missing_argument(
     assert diagnostic.operation_name == "encoding_operation</copy>"
 
 
-def test_missing_encoding_constraint(
+def test_missing_encoding(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
@@ -236,7 +236,7 @@ def test_missing_potential_literal(
     assert diagnostic.location.column == 50
 
 
-def test_literal_for_view_with_value_constraint(
+def test_literal_for_view_with_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()

@@ -1,4 +1,4 @@
-# Only encodings that can be read as the value type are suggested.
+# Only encodings that can be read as the value quality are suggested.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

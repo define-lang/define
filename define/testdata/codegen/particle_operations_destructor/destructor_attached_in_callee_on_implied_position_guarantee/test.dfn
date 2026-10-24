@@ -1,5 +1,5 @@
 # /maker attaches the destructor before moving the particle to an implied
-# position whose constraints do not include it.
+# position whose quality assignments do not include it.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

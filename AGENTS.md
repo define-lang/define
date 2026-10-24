@@ -108,8 +108,8 @@ See [define/spec/spec.md] for the language specification.
 - Positions are not "nested", "enclosed", "inside", "contained" or "containers"
   of other positions. They are parent names and child names, as the spec says.
 - Do not use abbreviations or acronyms for Define concepts unless the spec uses
-  them. For example, do not use "PCB" as an abbreviation for "Position
-  Constraint Block."
+  them. For example, do not use "PQAB" as an abbreviation for "Position Quality
+  Assignment Block."
 
 ## Git
 

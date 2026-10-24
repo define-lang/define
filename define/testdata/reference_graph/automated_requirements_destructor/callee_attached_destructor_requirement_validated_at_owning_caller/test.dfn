@@ -1,6 +1,6 @@
 # make_thing attaches a destructor in a local position and moves the particle into result without filling the destructor's required child; the destructor rides the guarantee to /test, which owns the result, so destroying it directly checks the requirement and reports the unmet position.
 # The particle's origin is make_thing's bare local position<result>, whose
-# constraints do not attach the destructor from /test's view, so no
+# quality assignments do not attach the destructor from /test's view, so no
 # destructor-attachment step appears.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

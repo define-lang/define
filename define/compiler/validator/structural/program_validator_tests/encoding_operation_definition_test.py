@@ -55,7 +55,7 @@ def test_unreferenced_views(
     assert second.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
 
-def test_view_missing_encoding_constraint(
+def test_view_missing_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -75,7 +75,7 @@ def test_view_missing_encoding_constraint(
     assert quality.quality_name == "position</box>"
 
 
-def test_view_value_constraint(
+def test_view_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -95,7 +95,7 @@ def test_view_value_constraint(
     assert value.quality_name == "value<standard:/number/natural>"
 
 
-def test_view_value_and_encoding_constraints(
+def test_view_value_and_encoding_quality_assignments(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -111,7 +111,7 @@ def test_view_value_and_encoding_constraints(
     assert diagnostic.quality_name == "value<standard:/number/natural>"
 
 
-def test_view_position_constraint(
+def test_view_position_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()

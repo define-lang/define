@@ -107,7 +107,7 @@ def test_action_with_local_position_definition(parse: Parse):
     )
 
 
-def test_action_with_constrained_local_position_definition(parse: Parse):
+def test_action_with_local_position_definition_with_qualities(parse: Parse):
     program = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos> {\n"

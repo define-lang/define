@@ -191,7 +191,7 @@ def test_error_from_move_to_occupied_interface_position(
     ]
 
 
-def test_error_from_constraint_violation_on_interface_position(
+def test_error_from_missing_quality_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -199,12 +199,12 @@ def test_error_from_constraint_violation_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
-    assert all_diags[0].source_position == "position<unconstrained>"
+    assert all_diags[0].source_position == "position<without_qualities>"
     assert all_diags[0].target_position == "position<item>"
     assert all_diags[0].missing_qualities == ["position</quality_a>"]
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 57
+    assert all_diags[0].location.column == 61
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]

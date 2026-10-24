@@ -1,4 +1,4 @@
-# A missing value type must be fixed on the origin position even after a move.
+# A missing value quality must be fixed on the origin position even after a move.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

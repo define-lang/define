@@ -260,7 +260,7 @@ def test_unused_implication_on_action_error(
     assert diags[0].location.column == 25
 
 
-def test_implication_used_only_in_constraint_block_is_unused(
+def test_implication_used_only_in_quality_assignment_block_is_unused(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()

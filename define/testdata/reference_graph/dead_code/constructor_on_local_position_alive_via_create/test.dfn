@@ -1,5 +1,5 @@
 # Creating a particle in box triggers its constructor, keeping the
-# constraint alive.
+# quality assignment alive.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

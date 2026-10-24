@@ -1,4 +1,4 @@
-# Setting a literal keeps the value constraint alive and preserves occupancy.
+# Setting a literal keeps the value quality alive and preserves occupancy.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</target>.
     it happens when {

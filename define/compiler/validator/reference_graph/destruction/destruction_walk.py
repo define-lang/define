@@ -224,7 +224,7 @@ class _Walk:
             else self._root.validated_destructors
         )
         # A particle keeps its own qualities across Moves, so its qualities, not
-        # the current position's constraints, decide what is below it.
+        # the current position's quality assignments, decide what is below it.
         child_names, all_destructors = (
             self._destroyed_particles.child_names_and_destructors(
                 particle.qualities.assignments

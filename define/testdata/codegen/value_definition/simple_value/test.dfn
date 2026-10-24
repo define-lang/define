@@ -1,4 +1,4 @@
-# A position can require a value type.
+# A position can require a value quality.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</item>.
     it happens when {

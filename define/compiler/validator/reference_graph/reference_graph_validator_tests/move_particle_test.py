@@ -45,7 +45,7 @@ def test_move_from_local(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_shared_interface_constraint(
+def test_shared_interface_quality_assignment(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
@@ -65,7 +65,7 @@ def test_move_from_child_to_parents_empty_sibling(
     assert_no_errors(result.program_result)
 
 
-def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
+def test_duplicate_source_definition_does_not_add_missing_quality_diagnostics(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

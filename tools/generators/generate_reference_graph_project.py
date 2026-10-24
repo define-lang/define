@@ -1,7 +1,7 @@
 """Generate a many-file Define project with heavy cross-file referencing.
 
-Each generated file defines one potential position whose Position Constraint
-Block references positions defined in deeper layers. Every such reference is a
+Each generated file defines one potential position whose Position Quality
+Assignment Block references positions defined in deeper layers. Every such reference is a
 global reference into another file, so the project exercises cross-file
 reference resolution and the reference graph rather than the contents of any
 one file.
@@ -78,14 +78,14 @@ def _definition(
     name = f"define the potential position<{universe_name}:{_definition_path(index, path_depth)}>"
     if not targets:
         return f"{name}.\n"
-    constraints = "".join(
+    quality_assignments = "".join(
         f"        it has the position<{_definition_path(target, path_depth)}>.\n"
         for target in targets
     )
     return (
         f"{name} {{\n"
         "    it may only contain particles where {\n"
-        f"{constraints}"
+        f"{quality_assignments}"
         "    }\n"
         "}\n"
     )
@@ -298,7 +298,7 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
 
     # The entry file references the first layer so validation follows references
     # through every layer; definitions no layer references are never validated.
-    entry_constraints = "".join(
+    entry_quality_assignments = "".join(
         (
             f"                it has the position<{_definition_path(target, path_depth)}>.\n"
         )
@@ -318,7 +318,7 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
         "    } and it does {\n"
         "        define the position<references> {\n"
         "            it may only contain particles where {\n"
-        f"{entry_constraints}"
+        f"{entry_quality_assignments}"
         "            }\n"
         "        }\n"
         "        create a particle in position<references>.\n"
@@ -420,7 +420,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     """Generate a many-file Define project with heavy cross-file referencing.
 
     Writes a project directory rather than one file: each file defines one
-    potential position whose Position Constraint Block references positions
+    potential position whose Position Quality Assignment Block references positions
     defined in deeper layers, so every reference is a global reference into
     another file. The other profiling sources are each a single file, so this is
     the only shape that exercises per-file parallel validation, cross-file

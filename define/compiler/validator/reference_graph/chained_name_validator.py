@@ -1,4 +1,4 @@
-"""Validate chained names against Position Constraints and Action Interface Positions."""
+"""Validate chained names against Position quality assignments and Action Interface Positions."""
 
 from __future__ import annotations
 

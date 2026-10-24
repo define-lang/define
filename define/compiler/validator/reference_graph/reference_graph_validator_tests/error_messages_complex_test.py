@@ -319,7 +319,7 @@ def test_destruction_contract_traces_every_trigger_hop(
 
     # d2 is invisible everywhere below position</carrier>, so the first caller
     # that knows it is /outer. d2 must therefore be validated at /outer, with the
-    # attachment traced back to the carrier constraint and the chain running
+    # attachment traced back to the carrier quality assignment and the chain running
     # through every trigger hop down to 'do_destruction'.
     assert d2_diag.format(result.program_result.source_map) == textwrap.dedent("""\
         File "outer.dfn", line 13, column 30

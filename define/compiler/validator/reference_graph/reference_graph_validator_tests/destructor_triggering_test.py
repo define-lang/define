@@ -58,7 +58,7 @@ def test_occupied_interface(
     assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
 
 
-def test_destroy_fires_destructor_via_constraint(
+def test_destroy_fires_destructor_via_quality_assignment(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -164,7 +164,7 @@ def test_destroy_via_chained_interface_position_fires_destructor(
     ]
 
 
-def test_destroy_after_move_into_unconstrained_position_fires_destructor(
+def test_destroy_after_move_into_position_without_qualities_fires_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

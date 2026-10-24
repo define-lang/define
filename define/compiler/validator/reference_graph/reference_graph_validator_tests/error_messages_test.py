@@ -917,7 +917,7 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
         In fact, encoding</text_encoding> cannot be set by a literal at all.""")
 
 
-def test_move_violates_constraints_error_message(
+def test_move_missing_qualities_error_message(
     validate_project: ValidateProject,
 ):
     source = (
@@ -973,7 +973,7 @@ def test_move_violates_constraints_error_message(
           action</create_noop>""")
 
 
-def test_move_violates_constraints_error_message_cross_universe(
+def test_move_missing_qualities_error_message_cross_universe(
     validate_project: ValidateProject,
 ):
     child_fqun = "mv:define-lang.org:child"
@@ -1566,7 +1566,7 @@ def test_undefined_operation_view_format(
           view<third>""")
 
 
-def test_operation_argument_violates_constraints_format(
+def test_operation_argument_missing_qualities_format(
     validate_project: ValidateProject,
 ):
     source = (
@@ -1617,7 +1617,7 @@ def test_operation_argument_violates_constraints_format(
           encoding<standard:/number/decimal/ascii>""")
 
 
-def test_operation_argument_position_violates_constraints_format(
+def test_operation_argument_position_missing_qualities_format(
     validate_project: ValidateProject,
 ):
     source = (

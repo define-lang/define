@@ -1,6 +1,6 @@
 # A requirement on a child of the trigger position propagates through the chain.
 #
-# /inner has a trigger position constrained with position</x>, and creates in
+# /inner has a trigger position assigned position</x>, and creates in
 # position<trigger_pos>::position</x>, requiring that child to be empty. /outer
 # moves its caller-provided position<source> particle into /inner's trigger
 # position. The EMPTY requirement on the trigger position's child therefore maps

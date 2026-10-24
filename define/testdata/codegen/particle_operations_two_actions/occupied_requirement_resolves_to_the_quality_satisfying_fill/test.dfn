@@ -1,0 +1,37 @@
+# Move first processes box2, which the caller moves back from Move's output
+# position. Move then processes box1. The second move.move(input, output) must
+# resolve its occupied requirement to the box1 fill, not the earlier box2 fill.
+# The quality assignment makes this a safety issue, not just ordering: only box1's
+# particle has position</a>, and the move feeds dest, which requires it. Binding
+# to the box2 fill would let the move run with box2's particle and carry it into
+# dest, violating the quality assignment.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box1> {
+            it may only contain particles where {
+                it has the position</a>.
+            }
+        }
+        define the position<box2>.
+        define the position<dest> {
+            it may only contain particles where {
+                it has the position</a>.
+            }
+        }
+        define the position<action_holder> {
+            it may only contain particles where {
+                it has the action</move>.
+            }
+        }
+        create a particle in position<action_holder>.
+        create a particle in position<box1>.
+        create a particle in position<box2>.
+        move the particle in position<box2> to position<action_holder>::action</move>::position<input>.
+        move the particle in position<action_holder>::action</move>::position<output> to position<box2>.
+        move the particle in position<box1> to position<action_holder>::action</move>::position<input>.
+        move the particle in position<action_holder>::action</move>::position<output> to position<dest>.
+        create a particle in position<dest>::position</a>.
+    }
+}

@@ -1,4 +1,4 @@
-# After trigger, a particle moved by the action's guarantee retains its constraint qualities.
+# After trigger, a particle moved by the action's guarantee retains its quality assignment qualities.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

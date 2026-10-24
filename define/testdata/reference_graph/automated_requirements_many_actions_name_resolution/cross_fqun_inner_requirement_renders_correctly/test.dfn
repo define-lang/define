@@ -1,6 +1,6 @@
 # Cross-FQUN scenario: the inner action and a position it references are in a different FQUN.
 #
-# /inner is in _DEP_FQUN, has position<item> constrained with position</x> (also in
+# /inner is in _DEP_FQUN, has position<item> assigned position</x> (also in
 # _DEP_FQUN), and creates in position<item>::position</x>. The propagated requirement's
 # position_name should use the source form from /inner's code for position</x>.
 # /test fills position<iface>::position</x>; /outer transfers that particle into
