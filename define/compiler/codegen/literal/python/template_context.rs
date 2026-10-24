@@ -6,9 +6,12 @@ use askama::Template;
 use pyo3::prelude::*;
 use std::collections::HashSet;
 
+// A class here that holds another one holds it as a `Py` reference. Taking
+// it by value would copy it, and everything inside it, every time Python
+// passes it in.
+
 /// A reference to a generated class, including its module location.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone)]
+#[pyclass(frozen, get_all)]
 pub struct ClassReference {
     pub class_name: String,
     pub module_name: String,
@@ -39,8 +42,7 @@ impl ClassReference {
 }
 
 /// A reference to a Python function, including its module location.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone)]
+#[pyclass(frozen, get_all)]
 pub struct FunctionReference {
     function_name: String,
     module_name: String,
@@ -69,13 +71,13 @@ impl FunctionReference {
 }
 
 /// A position definition class.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone, Template)]
+#[pyclass(frozen, get_all)]
+#[derive(Template)]
 #[template(path = "position_definition.j2", escape = "none")]
 pub struct PositionDefinition {
     class_name: String,
     module_name: String,
-    constraints: Vec<ClassReference>,
+    constraints: Vec<Py<ClassReference>>,
     value_type: String,
     /// The modules, other than its own, that the definition uses.
     imports: HashSet<String>,
@@ -87,7 +89,7 @@ impl PositionDefinition {
     const fn new(
         class_name: String,
         module_name: String,
-        constraints: Vec<ClassReference>,
+        constraints: Vec<Py<ClassReference>>,
         value_type: String,
         imports: HashSet<String>,
     ) -> Self {
@@ -103,14 +105,13 @@ impl PositionDefinition {
 
 /// How a position expression gets from what comes before an element in its
 /// chain to the position or action that the element names.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum ChainElement {
     PositionFromPosition {
-        class_reference: ClassReference,
+        class_reference: Py<ClassReference>,
     },
     ActionFromPosition {
-        class_reference: ClassReference,
+        class_reference: Py<ClassReference>,
     },
     /// An interface position.
     PositionFromAction {
@@ -120,19 +121,18 @@ pub enum ChainElement {
         value_type: Option<String>,
     },
     ImpliedAction {
-        class_reference: ClassReference,
+        class_reference: Py<ClassReference>,
     },
     ImpliedPosition {
-        class_reference: ClassReference,
+        class_reference: Py<ClassReference>,
     },
 }
 
 /// An expression for a position or action in generated code.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub struct PositionExpression {
     local_position_name: Option<String>,
-    chain_elements: Vec<ChainElement>,
+    chain_elements: Vec<Py<ChainElement>>,
     from_contract_particle: bool,
 }
 
@@ -141,7 +141,7 @@ impl PositionExpression {
     #[new]
     const fn new(
         local_position_name: Option<String>,
-        chain_elements: Vec<ChainElement>,
+        chain_elements: Vec<Py<ChainElement>>,
         from_contract_particle: bool,
     ) -> Self {
         Self {
@@ -153,8 +153,7 @@ impl PositionExpression {
 }
 
 /// A per-invocation contract object and the contributions it forwards.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub struct DestructionContractArgument {
     class_name: String,
     forwarded_methods: Vec<String>,
@@ -172,10 +171,10 @@ impl DestructionContractArgument {
 }
 
 /// A value that an Operation Execution Statement passes to its function.
-#[derive(Clone, FromPyObject, IntoPyObject)]
+#[derive(FromPyObject, IntoPyObject, IntoPyObjectRef)]
 pub enum OperationArgument {
     /// A position whose value is read.
-    Position(PositionExpression),
+    Position(Py<PositionExpression>),
     /// A literal already in the view's encoding.
     Literal(String),
 }
@@ -183,65 +182,64 @@ pub enum OperationArgument {
 /// A statement in an action, or in a method of its generated class. An
 /// `operation_label` is the trace label of the operation that the statement
 /// performs, if the trace records it.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum ActionStatement {
     LocalPosition {
         name: String,
         local_typed_name: String,
-        constraints: Vec<ClassReference>,
+        constraints: Vec<Py<ClassReference>>,
         value_type: String,
     },
     CreateParticle {
-        position: PositionExpression,
+        position: Py<PositionExpression>,
         operation_label: Option<String>,
     },
     MoveParticle {
-        position: PositionExpression,
-        to_position: PositionExpression,
+        position: Py<PositionExpression>,
+        to_position: Py<PositionExpression>,
         operation_label: Option<String>,
     },
     DestroyParticle {
-        position: PositionExpression,
+        position: Py<PositionExpression>,
         operation_label: Option<String>,
     },
     /// Sets the value of a particle from a literal.
     SetValue {
-        position: PositionExpression,
+        position: Py<PositionExpression>,
         value: String,
         operation_label: Option<String>,
     },
     /// Sets the value of a particle from another particle's value.
     SetValueFrom {
-        position: PositionExpression,
-        source_position: PositionExpression,
+        position: Py<PositionExpression>,
+        source_position: Py<PositionExpression>,
         operation_label: Option<String>,
     },
     /// Runs an action with its destruction contract, if it has one.
     #[pyo3(constructor = (position, destruction_contract = None))]
     RunAction {
-        position: PositionExpression,
-        destruction_contract: Option<DestructionContractArgument>,
+        position: Py<PositionExpression>,
+        destruction_contract: Option<Py<DestructionContractArgument>>,
     },
     /// Runs the Destructors for what an action left at and below a position.
     RunGuaranteedParticleDestructors {
-        action: ClassReference,
+        action: Py<ClassReference>,
         method_name: String,
-        position: PositionExpression,
+        position: Py<PositionExpression>,
     },
     /// Runs a contribution of the caller's for a contracted particle.
     ContractContribution {
-        position: PositionExpression,
+        position: Py<PositionExpression>,
         contract_method: String,
     },
     /// Calls the function of the Encoding Operation that an Operation
     /// Execution Statement executes.
     ExecuteOperation {
-        function: FunctionReference,
+        function: Py<FunctionReference>,
         arguments: Vec<OperationArgument>,
         /// The positions whose values are set, in the order the function
         /// returns them.
-        outputs: Vec<PositionExpression>,
+        outputs: Vec<Py<PositionExpression>>,
         /// The local names that hold the returned values when there is more
         /// than one.
         result_names: Vec<String>,
@@ -279,18 +277,21 @@ impl ActionStatement {
 }
 
 /// An interface position of an action definition.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone)]
+#[pyclass(frozen, get_all)]
 pub struct InterfacePosition {
     typed_name: String,
-    constraints: Vec<ClassReference>,
+    constraints: Vec<Py<ClassReference>>,
     value_type: String,
 }
 
 #[pymethods]
 impl InterfacePosition {
     #[new]
-    const fn new(typed_name: String, constraints: Vec<ClassReference>, value_type: String) -> Self {
+    const fn new(
+        typed_name: String,
+        constraints: Vec<Py<ClassReference>>,
+        value_type: String,
+    ) -> Self {
         Self {
             typed_name,
             constraints,
@@ -300,17 +301,16 @@ impl InterfacePosition {
 }
 
 /// A caller contribution applied to its contracted particle.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub struct ForwardedContribution {
     method_name: String,
-    position: Option<PositionExpression>,
+    position: Option<Py<PositionExpression>>,
 }
 
 #[pymethods]
 impl ForwardedContribution {
     #[new]
-    const fn new(method_name: String, position: Option<PositionExpression>) -> Self {
+    const fn new(method_name: String, position: Option<Py<PositionExpression>>) -> Self {
         Self {
             method_name,
             position,
@@ -319,12 +319,11 @@ impl ForwardedContribution {
 }
 
 /// One named contribution to a callee's destruction.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub struct DestructionContractMethod {
     name: String,
-    forwarded: Vec<ForwardedContribution>,
-    statements: Vec<ActionStatement>,
+    forwarded: Vec<Py<ForwardedContribution>>,
+    statements: Vec<Py<ActionStatement>>,
 }
 
 #[pymethods]
@@ -332,8 +331,8 @@ impl DestructionContractMethod {
     #[new]
     const fn new(
         name: String,
-        forwarded: Vec<ForwardedContribution>,
-        statements: Vec<ActionStatement>,
+        forwarded: Vec<Py<ForwardedContribution>>,
+        statements: Vec<Py<ActionStatement>>,
     ) -> Self {
         Self {
             name,
@@ -344,13 +343,12 @@ impl DestructionContractMethod {
 }
 
 /// Methods implementing caller-contributed destruction work.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone)]
+#[pyclass(frozen, get_all)]
 pub struct DestructionContractDefinition {
     class_name: String,
-    base: ClassReference,
+    base: Py<ClassReference>,
     forwarded_methods: Vec<String>,
-    methods: Vec<DestructionContractMethod>,
+    methods: Vec<Py<DestructionContractMethod>>,
 }
 
 #[pymethods]
@@ -358,9 +356,9 @@ impl DestructionContractDefinition {
     #[new]
     const fn new(
         class_name: String,
-        base: ClassReference,
+        base: Py<ClassReference>,
         forwarded_methods: Vec<String>,
-        methods: Vec<DestructionContractMethod>,
+        methods: Vec<Py<DestructionContractMethod>>,
     ) -> Self {
         Self {
             class_name,
@@ -373,17 +371,16 @@ impl DestructionContractDefinition {
 
 /// The method that runs the Destructors for what an action left at and below
 /// one position.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub struct GuaranteedParticleDestructors {
     method_name: String,
-    statements: Vec<ActionStatement>,
+    statements: Vec<Py<ActionStatement>>,
 }
 
 #[pymethods]
 impl GuaranteedParticleDestructors {
     #[new]
-    const fn new(method_name: String, statements: Vec<ActionStatement>) -> Self {
+    const fn new(method_name: String, statements: Vec<Py<ActionStatement>>) -> Self {
         Self {
             method_name,
             statements,
@@ -392,22 +389,22 @@ impl GuaranteedParticleDestructors {
 }
 
 /// An action definition class and the statements it runs.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone, Template)]
+#[pyclass(frozen, get_all)]
+#[derive(Template)]
 #[template(path = "action_definition.j2", escape = "none")]
 pub struct ActionDefinition {
     class_name: String,
     module_name: String,
-    statements: Vec<ActionStatement>,
-    interface_positions: Vec<InterfacePosition>,
-    implied_qualities: Vec<ClassReference>,
+    statements: Vec<Py<ActionStatement>>,
+    interface_positions: Vec<Py<InterfacePosition>>,
+    implied_qualities: Vec<Py<ClassReference>>,
     trace_operations: bool,
     /// The modules, other than its own, that the definition uses.
     imports: HashSet<String>,
     contract_class_name: Option<String>,
     contract_methods: Vec<String>,
-    contract_definitions: Vec<DestructionContractDefinition>,
-    guaranteed_particle_destructors: Vec<GuaranteedParticleDestructors>,
+    contract_definitions: Vec<Py<DestructionContractDefinition>>,
+    guaranteed_particle_destructors: Vec<Py<GuaranteedParticleDestructors>>,
 }
 
 #[pymethods]
@@ -420,15 +417,15 @@ impl ActionDefinition {
     const fn new(
         class_name: String,
         module_name: String,
-        statements: Vec<ActionStatement>,
-        interface_positions: Vec<InterfacePosition>,
-        implied_qualities: Vec<ClassReference>,
+        statements: Vec<Py<ActionStatement>>,
+        interface_positions: Vec<Py<InterfacePosition>>,
+        implied_qualities: Vec<Py<ClassReference>>,
         trace_operations: bool,
         imports: HashSet<String>,
         contract_class_name: Option<String>,
         contract_methods: Vec<String>,
-        contract_definitions: Vec<DestructionContractDefinition>,
-        guaranteed_particle_destructors: Vec<GuaranteedParticleDestructors>,
+        contract_definitions: Vec<Py<DestructionContractDefinition>>,
+        guaranteed_particle_destructors: Vec<Py<GuaranteedParticleDestructors>>,
     ) -> Self {
         Self {
             class_name,
@@ -447,8 +444,7 @@ impl ActionDefinition {
 }
 
 /// An operator written between the two values it combines.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum BinaryOperator {
     Add {},
     Subtract {},
@@ -465,16 +461,14 @@ pub enum BinaryOperator {
 }
 
 /// An operator written before the one value it applies to.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum PrefixOperator {
     Negate {},
     Not {},
 }
 
 /// An operation written as an expression over its operands.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum ExpressionOperator {
     SaturatingSubtract {},
     SaturatingDecrement {},
@@ -482,28 +476,27 @@ pub enum ExpressionOperator {
 
 /// A statement in the function of an Encoding Operation. Each operand and
 /// argument is a local name or a literal already in its view's encoding.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
+#[pyclass(frozen)]
 pub enum EncodingOperationStatement {
     BinaryOperation {
-        operator: BinaryOperator,
+        operator: Py<BinaryOperator>,
         left: String,
         right: String,
         result: String,
     },
     PrefixOperation {
-        operator: PrefixOperator,
+        operator: Py<PrefixOperator>,
         operand: String,
         result: String,
     },
     ExpressionOperation {
-        operator: ExpressionOperator,
+        operator: Py<ExpressionOperator>,
         operands: Vec<String>,
         result: String,
     },
     /// Calls the function of another Encoding Operation.
     Call {
-        function: FunctionReference,
+        function: Py<FunctionReference>,
         arguments: Vec<String>,
         /// The local names that receive the returned values.
         results: Vec<String>,
@@ -511,8 +504,7 @@ pub enum EncodingOperationStatement {
 }
 
 /// A Python local name and the type of its value.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone)]
+#[pyclass(frozen, get_all)]
 pub struct TypedLocalName {
     name: String,
     python_type: String,
@@ -527,15 +519,15 @@ impl TypedLocalName {
 }
 
 /// The function of an Encoding Operation.
-#[pyclass(frozen, from_py_object, get_all)]
-#[derive(Clone, Template)]
+#[pyclass(frozen, get_all)]
+#[derive(Template)]
 #[template(path = "encoding_operation_definition.j2", escape = "none")]
 pub struct EncodingOperationDefinition {
     function_name: String,
     module_name: String,
-    parameters: Vec<TypedLocalName>,
-    statements: Vec<EncodingOperationStatement>,
-    results: Vec<TypedLocalName>,
+    parameters: Vec<Py<TypedLocalName>>,
+    statements: Vec<Py<EncodingOperationStatement>>,
+    results: Vec<Py<TypedLocalName>>,
     /// Whether the last statement writes exactly the results, so the function
     /// returns its expression instead.
     return_last_statement: bool,
@@ -549,9 +541,9 @@ impl EncodingOperationDefinition {
     const fn new(
         function_name: String,
         module_name: String,
-        parameters: Vec<TypedLocalName>,
-        statements: Vec<EncodingOperationStatement>,
-        results: Vec<TypedLocalName>,
+        parameters: Vec<Py<TypedLocalName>>,
+        statements: Vec<Py<EncodingOperationStatement>>,
+        results: Vec<Py<TypedLocalName>>,
         return_last_statement: bool,
         imports: HashSet<String>,
     ) -> Self {

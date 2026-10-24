@@ -43,8 +43,8 @@ struct ModuleHeader {
 
 #[derive(Template)]
 #[template(path = "entry_point.j2", escape = "none")]
-struct EntryPoint {
-    entry_reference: ClassReference,
+struct EntryPoint<'a> {
+    entry_reference: &'a ClassReference,
     trace_operations: bool,
 }
 
@@ -85,9 +85,12 @@ fn render_encoding_operation(
 }
 
 #[pyfunction]
-fn render_entry_point(entry_reference: ClassReference, trace_operations: bool) -> PyResult<String> {
+fn render_entry_point(
+    entry_reference: &Bound<'_, ClassReference>,
+    trace_operations: bool,
+) -> PyResult<String> {
     render(&EntryPoint {
-        entry_reference,
+        entry_reference: entry_reference.get(),
         trace_operations,
     })
 }

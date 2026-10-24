@@ -1,7 +1,7 @@
 {% macro expression(statement, module_name) -%}
     {%- match statement -%}
         {%- when EncodingOperationStatement::BinaryOperation { operator, left, right, .. } -%}
-{{ left }} {% match operator -%}
+{{ left }} {% match operator.get() -%}
             {%- when BinaryOperator::Add {} -%}
 +
             {%- when BinaryOperator::Subtract {} -%}
@@ -28,7 +28,7 @@ or
 >=
             {%- endmatch %} {{ right }}
         {%- when EncodingOperationStatement::PrefixOperation { operator, operand, .. } -%}
-            {%- match operator -%}
+            {%- match operator.get() -%}
                 {%- when PrefixOperator::Negate {} -%}
 -
                 {%- when PrefixOperator::Not {} -%}
@@ -36,32 +36,33 @@ not{{ " " }}
             {%- endmatch -%}
 {{ operand }}
         {%- when EncodingOperationStatement::ExpressionOperation { operator, operands, .. } -%}
-            {%- match operator -%}
+            {%- match operator.get() -%}
                 {%- when ExpressionOperator::SaturatingSubtract {} -%}
 {{ operands[0] }} - {{ operands[1] }} if {{ operands[0] }} > {{ operands[1] }} else 0
                 {%- when ExpressionOperator::SaturatingDecrement {} -%}
 {{ operands[0] }} - 1 if {{ operands[0] }} > 0 else 0
             {%- endmatch -%}
         {%- when EncodingOperationStatement::Call { function, arguments, .. } -%}
-{{ function.name_in_module(module_name) }}({{ arguments|join(", ") }})
+{{ function.get().name_in_module(module_name) }}({{ arguments|join(", ") }})
     {%- endmatch -%}
 {%- endmacro -%}
 def {{ self.function_name }}(
 {%- for parameter in self.parameters -%}
-    {{ parameter.name }}: {{ parameter.python_type }}{% if !loop.last %}, {% endif %}
+    {{ parameter.get().name }}: {{ parameter.get().python_type }}{% if !loop.last %}, {% endif %}
 {%- endfor -%}
 ) -> {% if self.results.is_empty() -%}
     None
 {%- else if self.results.len() == 1 -%}
-    {{ self.results[0].python_type }}
+    {{ self.results[0].get().python_type }}
 {%- else -%}
     tuple[
     {%- for result in self.results -%}
-        {{ result.python_type }}{% if !loop.last %}, {% endif %}
+        {{ result.get().python_type }}{% if !loop.last %}, {% endif %}
     {%- endfor -%}
     ]
 {%- endif %}:
 {%- for statement in self.statements %}
+    {%- let statement = statement.get() %}
     {%- if loop.last && self.return_last_statement %}
     return {{ expression(statement, module_name) }}
     {%- else %}
@@ -77,5 +78,5 @@ def {{ self.function_name }}(
     {%- endif %}
 {%- endfor %}
 {%- if !self.results.is_empty() && !self.return_last_statement %}
-    return {% for result in self.results %}{{ result.name }}{% if !loop.last %}, {% endif %}{% endfor %}
+    return {% for result in self.results %}{{ result.get().name }}{% if !loop.last %}, {% endif %}{% endfor %}
 {%- endif %}{{ "\n" }}

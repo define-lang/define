@@ -1,10 +1,10 @@
 {% import "position_expression.j2" as expressions -%}
 {% macro operation_call(function, arguments, extra_indent, argument_indent, module_name) -%}
-{{ function.name_in_module(module_name) }}(
+{{ function.get().name_in_module(module_name) }}(
     {%- for argument in arguments %}
         {%- match argument %}
             {%- when OperationArgument::Position with (position) %}
-{{ extra_indent }}            {{ expressions::position_expression(position, argument_indent, module_name) }}.particle.value,
+{{ extra_indent }}            {{ expressions::position_expression(position.get(), argument_indent, module_name) }}.particle.value,
             {%- when OperationArgument::Literal with (value) %}
 {{ extra_indent }}            {{ value }},
         {%- endmatch %}
@@ -13,6 +13,7 @@
 {%- endmacro %}
 {% macro action_statements(statements, module_name) -%}
     {%- for statement in statements.iter() %}
+        {%- let statement = statement.get() %}
         {%- match statement %}
             {%- when ActionStatement::LocalPosition { name, local_typed_name, constraints, value_type } %}
         {{ name }} = literal.LocalPosition[{{ value_type }}](
@@ -20,29 +21,30 @@
                 {%- if !constraints.is_empty() %}
             constraints=(
                     {%- for constraint in constraints %}
-                {{ constraint.name_in_module(module_name) }},
+                {{ constraint.get().name_in_module(module_name) }},
                     {%- endfor %}
             ),
                 {%- endif %}
         )
             {%- when ActionStatement::CreateParticle { position, .. } %}
-        {{ expressions::position_expression(position, "", module_name) }}.create_particle()
+        {{ expressions::position_expression(position.get(), "", module_name) }}.create_particle()
             {%- when ActionStatement::MoveParticle { position, to_position, .. } %}
-        {{ expressions::position_expression(position, "", module_name) }}.move_particle_to(
-            {{ expressions::position_expression(to_position, "    ", module_name) }}
+        {{ expressions::position_expression(position.get(), "", module_name) }}.move_particle_to(
+            {{ expressions::position_expression(to_position.get(), "    ", module_name) }}
         )
             {%- when ActionStatement::DestroyParticle { position, .. } %}
-        {{ expressions::position_expression(position, "", module_name) }}.destroy_particle()
+        {{ expressions::position_expression(position.get(), "", module_name) }}.destroy_particle()
             {%- when ActionStatement::SetValue { position, value, .. } %}
-        {{ expressions::position_expression(position, "", module_name) }}.particle.value = {{ value }}
+        {{ expressions::position_expression(position.get(), "", module_name) }}.particle.value = {{ value }}
             {%- when ActionStatement::SetValueFrom { position, source_position, .. } %}
-        {{ expressions::position_expression(position, "", module_name) }}.particle.value = (
-            {{ expressions::position_expression(source_position, "    ", module_name) }}.particle.value
+        {{ expressions::position_expression(position.get(), "", module_name) }}.particle.value = (
+            {{ expressions::position_expression(source_position.get(), "    ", module_name) }}.particle.value
         )
             {%- when ActionStatement::RunAction { position, destruction_contract } %}
                 {%- if let Some(contract) = destruction_contract %}
+                    {%- let contract = contract.get() %}
                     {%- if !contract.forwarded_methods.is_empty() %}
-        {{ expressions::position_expression(position, "", module_name) }}.run(
+        {{ expressions::position_expression(position.get(), "", module_name) }}.run(
             {{ contract.class_name }}(
                         {%- for method in contract.forwarded_methods %}
                 destruction_contracts.{{ method }},
@@ -50,28 +52,28 @@
             ),
         )
                     {%- else %}
-        {{ expressions::position_expression(position, "", module_name) }}.run({{ contract.class_name }}())
+        {{ expressions::position_expression(position.get(), "", module_name) }}.run({{ contract.class_name }}())
                     {%- endif %}
                 {%- else %}
-        {{ expressions::position_expression(position, "", module_name) }}.run()
+        {{ expressions::position_expression(position.get(), "", module_name) }}.run()
                 {%- endif %}
             {%- when ActionStatement::RunGuaranteedParticleDestructors { action, method_name, position } %}
-        {{ action.name_in_module(module_name) }}.{{ method_name }}(
-            {{ expressions::position_expression(position, "    ", module_name) }}.particle
+        {{ action.get().name_in_module(module_name) }}.{{ method_name }}(
+            {{ expressions::position_expression(position.get(), "    ", module_name) }}.particle
         )
             {%- when ActionStatement::ContractContribution { position, contract_method } %}
         destruction_contracts.{{ contract_method }}(
-            {{ expressions::position_expression(position, "    ", module_name) }}.particle
+            {{ expressions::position_expression(position.get(), "    ", module_name) }}.particle
         )
             {%- when ActionStatement::ExecuteOperation { function, arguments, outputs, result_names, .. } %}
                 {%- if outputs.len() == 1 %}
-        {{ expressions::position_expression(outputs[0], "", module_name) }}.particle.value = {{ operation_call(function, arguments, "", "    ", module_name) }}
+        {{ expressions::position_expression(outputs[0].get(), "", module_name) }}.particle.value = {{ operation_call(function, arguments, "", "    ", module_name) }}
                 {%- else if outputs.is_empty() %}
         {{ operation_call(function, arguments, "", "    ", module_name) }}
                 {%- else %}
         {{ result_names|join(", ") }} = {{ operation_call(function, arguments, "", "    ", module_name) }}
                     {%- for (output, result_name) in outputs.iter().zip(result_names.iter()) %}
-        {{ expressions::position_expression(output, "", module_name) }}.particle.value = {{ result_name }}
+        {{ expressions::position_expression(output.get(), "", module_name) }}.particle.value = {{ result_name }}
                     {%- endfor %}
                 {%- endif %}
         {%- endmatch %}

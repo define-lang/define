@@ -7,14 +7,14 @@ particle
 self
     {%- endif -%}
     {% for element in expr.chain_elements -%}
-        {% match element -%}
+        {% match element.get() -%}
             {% when ChainElement::PositionFromPosition { class_reference } -%}
 .particle.get_position(
-{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
+{{ extra_indent }}            {{ class_reference.get().name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::ActionFromPosition { class_reference } -%}
 .particle.get_action(
-{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
+{{ extra_indent }}            {{ class_reference.get().name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::PositionFromAction { typed_name, value_type } -%}
 .get_interface_position(
@@ -22,11 +22,11 @@ self
 {{ extra_indent }}        )
             {%- when ChainElement::ImpliedAction { class_reference } -%}
 {% if !expr.from_contract_particle %}.on_particle{% endif %}.get_action(
-{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
+{{ extra_indent }}            {{ class_reference.get().name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::ImpliedPosition { class_reference } -%}
 {% if !expr.from_contract_particle %}.on_particle{% endif %}.get_position(
-{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
+{{ extra_indent }}            {{ class_reference.get().name_in_module(module_name) }}
 {{ extra_indent }}        )
         {%- endmatch -%}
     {% endfor -%}
