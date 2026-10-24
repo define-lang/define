@@ -21,7 +21,7 @@ class MoverAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<destination>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.direct_child.DirectChildPosition,
                         local.my_domain_com.my_lib.guaranteed_child.GuaranteedChildPosition,
                     ),

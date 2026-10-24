@@ -21,7 +21,7 @@ class RunnerAction(literal.Action):
     def run(self):
         wrapper = literal.LocalPosition[Never](
             "position<wrapper>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )

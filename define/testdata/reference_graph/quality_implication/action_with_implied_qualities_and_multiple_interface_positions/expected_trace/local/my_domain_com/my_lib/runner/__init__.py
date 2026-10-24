@@ -44,13 +44,13 @@ class RunnerAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<input_a>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.quality_a.QualityAPosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<input_b>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.quality_b.QualityBPosition,
                     ),
                 ),

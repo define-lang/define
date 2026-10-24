@@ -11,7 +11,7 @@ import local.my_domain_com.my_lib.target
 
 
 class InputPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.origin.OriginPosition,
         local.my_domain_com.my_lib.middle.MiddlePosition,
         local.my_domain_com.my_lib.target.TargetPosition,

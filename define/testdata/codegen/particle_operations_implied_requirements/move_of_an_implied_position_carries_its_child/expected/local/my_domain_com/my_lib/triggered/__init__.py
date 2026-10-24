@@ -36,7 +36,7 @@ class TriggeredAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<dest>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),

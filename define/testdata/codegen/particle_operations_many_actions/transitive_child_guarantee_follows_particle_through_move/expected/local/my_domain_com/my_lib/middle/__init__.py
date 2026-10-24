@@ -17,7 +17,7 @@ class MiddleAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<inner_parent>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),
@@ -28,7 +28,7 @@ class MiddleAction(literal.Action):
     def run(self):
         inner_holder = literal.LocalPosition[Never](
             "position<inner_holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )

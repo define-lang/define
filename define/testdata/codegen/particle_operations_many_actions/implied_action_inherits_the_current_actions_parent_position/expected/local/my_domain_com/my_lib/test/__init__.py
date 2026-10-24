@@ -14,7 +14,7 @@ class TestAction(literal.Action):
     def run(self):
         local_ = literal.LocalPosition[Never](
             "position<local>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.parent.ParentPosition,
             ),
         )

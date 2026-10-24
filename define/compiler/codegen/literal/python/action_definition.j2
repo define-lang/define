@@ -26,11 +26,11 @@ class {{ self.class_name }}(literal.Action):
             interface_positions=[
     {%- for iface in self.interface_positions %}
         {%- let iface = iface.get() %}
-        {%- if !iface.constraints.is_empty() %}
+        {%- if !iface.assigned_qualities.is_empty() %}
                 literal.LocalPosition[{{ iface.value_type }}](
                     "{{ iface.typed_name }}",
-                    constraints=(
-            {%- for class_reference in iface.constraints %}
+                    assigned_qualities=(
+            {%- for class_reference in iface.assigned_qualities %}
                         {{ class_reference.get().name_in_module(module_name) }},
             {%- endfor %}
                     ),

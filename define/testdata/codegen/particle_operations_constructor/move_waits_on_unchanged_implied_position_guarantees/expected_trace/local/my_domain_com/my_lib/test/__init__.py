@@ -15,14 +15,14 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.construct_a.ConstructAAction,
                 local.my_domain_com.my_lib.construct_b.ConstructBAction,
             ),
         )
         dest = literal.LocalPosition[Never](
             "position<dest>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )

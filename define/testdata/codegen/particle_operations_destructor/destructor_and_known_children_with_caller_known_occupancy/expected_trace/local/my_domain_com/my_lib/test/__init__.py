@@ -20,7 +20,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.marker_a.MarkerAPosition,
                 local.my_domain_com.my_lib.marker_b.MarkerBPosition,
                 local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition,

@@ -22,7 +22,7 @@ class MakerAction(literal.Action):
     def run(self):
         temp = literal.LocalPosition[Never](
             "position<temp>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )

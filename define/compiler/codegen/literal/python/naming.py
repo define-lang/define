@@ -189,7 +189,7 @@ class NameConverter:
     """Converts Define names to safe Python identifiers.
 
     A single instance is shared across an entire code generation run to ensure
-    consistent naming (e.g., a class name used in a constraint list matches the
+    consistent naming (e.g., a class name used in a quality assignment list matches the
     class definition).
     """
 
@@ -364,7 +364,7 @@ class NameConverter:
         )
         return ".".join(parts)
 
-    def constraints_to_class_references(
+    def assigned_quality_class_references(
         self,
         block: ast.QualityAssignmentBlock | None,
     ) -> list[renderer.ClassReference]:

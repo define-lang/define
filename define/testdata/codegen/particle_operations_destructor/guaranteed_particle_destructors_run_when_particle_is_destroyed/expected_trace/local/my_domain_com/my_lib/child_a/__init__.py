@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.fill_2
 
 
 class ChildAPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.fill_2.Fill2Action,
         local.my_domain_com.my_lib.cleanup.CleanupAction,
     )

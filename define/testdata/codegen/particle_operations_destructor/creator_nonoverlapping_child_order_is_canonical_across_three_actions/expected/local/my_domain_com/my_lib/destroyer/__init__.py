@@ -35,7 +35,7 @@ class DestroyerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<target>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.second.SecondPosition,
                         local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
                         local.my_domain_com.my_lib.fourth.FourthPosition,

@@ -34,14 +34,14 @@ class MiddleAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildAction,
                         local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<holder>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),
                 ),

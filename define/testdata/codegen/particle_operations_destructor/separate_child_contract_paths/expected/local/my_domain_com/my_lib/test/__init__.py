@@ -21,7 +21,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.left.LeftPosition,
                 local.my_domain_com.my_lib.right.RightPosition,
                 local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction,
@@ -29,13 +29,13 @@ class TestAction(literal.Action):
         )
         left_source = literal.LocalPosition[Never](
             "position<left_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         right_source = literal.LocalPosition[Never](
             "position<right_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child_destructor.ChildDestructorAction,
             ),
         )

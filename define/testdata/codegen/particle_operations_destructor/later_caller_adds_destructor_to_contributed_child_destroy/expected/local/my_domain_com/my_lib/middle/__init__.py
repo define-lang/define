@@ -36,7 +36,7 @@ class MiddleAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<target>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),

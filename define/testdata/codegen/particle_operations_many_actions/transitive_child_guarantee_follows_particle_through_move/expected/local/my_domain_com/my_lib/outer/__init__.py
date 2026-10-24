@@ -17,13 +17,13 @@ class OuterAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<destination>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),
@@ -34,7 +34,7 @@ class OuterAction(literal.Action):
     def run(self):
         middle_holder = literal.LocalPosition[Never](
             "position<middle_holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )

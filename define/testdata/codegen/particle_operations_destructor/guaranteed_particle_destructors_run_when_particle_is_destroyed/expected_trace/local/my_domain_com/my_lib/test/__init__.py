@@ -17,7 +17,7 @@ class TestAction(literal.Action):
     def run(self):
         holder = literal.LocalPosition[Never](
             "position<holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.fill_1.Fill1Action,
             ),
         )

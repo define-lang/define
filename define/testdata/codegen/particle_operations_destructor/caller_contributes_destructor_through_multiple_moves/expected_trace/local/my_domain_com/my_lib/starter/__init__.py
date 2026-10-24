@@ -45,7 +45,7 @@ class StarterAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<run>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.wrapper.WrapperAction,
                         local.my_domain_com.my_lib.crate.CratePosition,
                     ),
@@ -57,7 +57,7 @@ class StarterAction(literal.Action):
     def run(self, destruction_contracts: StarterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         gateway = literal.LocalPosition[Never](
             "position<gateway>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.wrapper.WrapperAction,
                 local.my_domain_com.my_lib.crate.CratePosition,
             ),

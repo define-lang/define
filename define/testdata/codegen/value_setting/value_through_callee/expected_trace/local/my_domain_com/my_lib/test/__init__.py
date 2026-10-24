@@ -13,7 +13,7 @@ class TestAction(literal.Action):
     def run(self):
         worker = literal.LocalPosition[Never](
             "position<worker>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.assign.AssignAction,
             ),
         )

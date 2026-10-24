@@ -16,7 +16,7 @@ class InnerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<result>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.destructor.DestructorAction,
                         local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),

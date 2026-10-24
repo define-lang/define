@@ -10,7 +10,7 @@ import local.my_domain_com.my_lib.marker
 
 
 class SharedPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.MarkerPosition,
         local.my_domain_com.my_lib.child_a.ChildAAction,
         local.my_domain_com.my_lib.child_b.ChildBAction,

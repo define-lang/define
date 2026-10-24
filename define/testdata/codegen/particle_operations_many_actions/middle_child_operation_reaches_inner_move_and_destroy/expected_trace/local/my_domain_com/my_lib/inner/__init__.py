@@ -27,13 +27,13 @@ class InnerAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<destination>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),

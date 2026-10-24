@@ -29,14 +29,14 @@ class RunnerAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.implier_one.ImplierOneAction,
                         local.my_domain_com.my_lib.implier_two.ImplierTwoAction,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<dest>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.implied.ImpliedPosition,
                     ),
                 ),

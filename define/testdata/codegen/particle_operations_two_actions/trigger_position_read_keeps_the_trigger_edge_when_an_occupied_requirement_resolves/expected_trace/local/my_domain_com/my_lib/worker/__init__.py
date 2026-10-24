@@ -16,7 +16,7 @@ class WorkerAction(literal.Action):
                 literal.LocalPosition[Never]("position<in>"),
                 literal.LocalPosition[Never](
                     "position<box>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.y.YPosition,
                     ),
                 ),

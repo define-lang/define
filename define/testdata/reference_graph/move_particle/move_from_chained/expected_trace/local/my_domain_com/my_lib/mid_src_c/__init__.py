@@ -8,6 +8,6 @@ import local.my_domain_com.my_lib.end_src_c
 
 
 class MidSrcCPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.end_src_c.EndSrcCPosition,
     )

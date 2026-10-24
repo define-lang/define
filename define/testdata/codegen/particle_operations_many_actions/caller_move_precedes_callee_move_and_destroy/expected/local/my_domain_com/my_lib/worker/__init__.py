@@ -28,7 +28,7 @@ class WorkerAction(literal.Action):
                 literal.LocalPosition[Never]("position<source>"),
                 literal.LocalPosition[Never](
                     "position<state>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.occupied.OccupiedPosition,
                         local.my_domain_com.my_lib.target.TargetPosition,
                     ),

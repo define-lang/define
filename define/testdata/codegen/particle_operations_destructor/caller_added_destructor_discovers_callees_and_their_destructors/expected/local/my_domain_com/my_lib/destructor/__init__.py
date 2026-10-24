@@ -16,20 +16,20 @@ class DestructorAction(literal.Action):
     def run(self):
         worker = literal.LocalPosition[Never](
             "position<worker>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
                 local.my_domain_com.my_lib.nested_worker.NestedWorkerAction,
             ),
         )
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         contributor = literal.LocalPosition[Never](
             "position<contributor>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction,
             ),
         )

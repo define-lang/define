@@ -13,7 +13,7 @@ class TestAction(literal.Action):
     def run(self):
         outer = literal.LocalPosition[Never](
             "position<outer>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.outer_destructor.OuterDestructorAction,
             ),
         )

@@ -55,25 +55,25 @@ class UnsetValueError(DefineRuntimeError):
     message_format: ClassVar[str] = "The particle does not have a set value."
 
 
-class UnsatisfiedConstraintError(PositionError):
-    """Raised when moving a particle to a position whose constraints are not met."""
+class MissingQualityError(PositionError):
+    """Raised when moving a particle to a position that assigns a quality the particle does not have."""
 
     message_format: ClassVar[str] = (
         "Cannot move particle to '{self.position_name}':"
-        " unsatisfied constraint '{self.constraint_name}'."
+        " the particle does not have '{self.quality_name}'."
     )
 
-    def __init__(self, position_name: str, constraint_name: str):
-        """Initialize with the destination position name and unsatisfied constraint name."""
-        self.constraint_name: str = constraint_name
+    def __init__(self, position_name: str, quality_name: str):
+        """Initialize with the destination position name and missing quality name."""
+        self.quality_name: str = quality_name
         super().__init__(position_name)
 
 
-class DuplicateConstraintError(PositionError):
-    """Raised when a position declares the same quality as a constraint twice."""
+class DuplicateQualityAssignmentError(PositionError):
+    """Raised when a position assigns the same quality twice."""
 
     message_format: ClassVar[str] = (
-        "Quality '{self.position_name}' is declared as a constraint more than once."
+        "Quality '{self.position_name}' is assigned more than once."
     )
 
 
@@ -112,9 +112,10 @@ class Particle:
 
     def assign_quality(self, quality_class: type[Quality]):
         """Assign a quality to this particle, or do nothing if already present."""
-        # A quality is set at most once; a repeat assignment (e.g. a constraint
-        # also reached through another constraint's implication) is a no-op.
-        # Genuinely duplicate constraints are rejected when a position is built.
+        # A quality is set at most once; a repeat assignment (e.g. an assigned
+        # quality also reached through another assigned quality's implication)
+        # is a no-op. Genuinely duplicate quality assignments are rejected when
+        # a position is built.
         if quality_class in self._qualities:
             return
         for implied_class in quality_class.implied_qualities:
@@ -134,15 +135,15 @@ class Particle:
         return cast("ActionType", self._qualities[action_class])
 
     def has_quality_type(self, quality_type: type[Quality]) -> bool:
-        """Return whether this particle satisfies a constraint of the given type."""
+        """Return whether this particle has a quality of the given type."""
         return quality_type in self._qualities
 
 
 class ValueParticle[ValueType](Particle):
-    """A particle whose value has the Python type of its value type's encoding.
+    """A particle whose value has the Python type of its value quality's encoding.
 
     Every particle is a ValueParticle. Code that does not know a particle's
-    value type sees it as a Particle, which has no value.
+    value quality sees it as a Particle, which has no value.
     """
 
     def __init__(self):
@@ -173,8 +174,8 @@ class Position(ABC):
         """The name of this position."""
 
     @abstractmethod
-    def _get_constraints(self) -> tuple[type[Quality], ...]:
-        """Return the constraint types for this position."""
+    def _get_assigned_qualities(self) -> tuple[type[Quality], ...]:
+        """Return the quality types this position assigns."""
 
     @property
     def has_particle(self) -> bool:
@@ -193,10 +194,10 @@ class Position(ABC):
         if self._particle is not None:
             raise ParticleExistsError(self.name)
         # Type arguments do not exist at runtime; subclasses that know the
-        # position's value type narrow the particle to it.
+        # position's value quality narrow the particle to it.
         self._particle = ValueParticle[object]()
-        for constraint_type in self._get_constraints():
-            self._particle.assign_quality(constraint_type)
+        for quality_type in self._get_assigned_qualities():
+            self._particle.assign_quality(quality_type)
 
     def move_particle_to(self, destination: Position):
         """Move the particle from this position to destination."""
@@ -204,11 +205,9 @@ class Position(ABC):
             raise NoParticleError(self.name)
         if destination._particle is not None:
             raise ParticleExistsError(destination.name)
-        for constraint_type in destination._get_constraints():
-            if not self._particle.has_quality_type(constraint_type):
-                raise UnsatisfiedConstraintError(
-                    destination.name, constraint_type.full_name()
-                )
+        for quality_type in destination._get_assigned_qualities():
+            if not self._particle.has_quality_type(quality_type):
+                raise MissingQualityError(destination.name, quality_type.full_name())
         destination._particle = self._particle
         self._particle = None
 
@@ -219,61 +218,63 @@ class Position(ABC):
         self._particle = None
 
 
-def _reject_duplicate_constraints(constraints: tuple[type[Quality], ...]):
-    """Raise if the same quality appears more than once in a constraint list."""
+def _reject_duplicate_quality_assignments(
+    assigned_qualities: tuple[type[Quality], ...],
+):
+    """Raise if the same quality is assigned more than once."""
     seen: set[type[Quality]] = set()
-    for constraint in constraints:
-        if constraint in seen:
-            raise DuplicateConstraintError(constraint.full_name())
-        seen.add(constraint)
+    for quality in assigned_qualities:
+        if quality in seen:
+            raise DuplicateQualityAssignmentError(quality.full_name())
+        seen.add(quality)
 
 
 class GlobalPosition[ValueType](Quality, Position):
-    """A globally-defined position with constraints.
+    """A globally-defined position with quality assignments.
 
     ValueType is the Python type of the position's value, or Never when the
-    position has no value constraint.
+    position has no value quality.
     """
 
-    constraints: ClassVar[tuple[type[Quality], ...]] = ()
+    assigned_qualities: ClassVar[tuple[type[Quality], ...]] = ()
     TYPE_NAME: ClassVar[str] = "position"
 
     def __init_subclass__(cls, **kwargs: object):
-        """Reject duplicate constraints when a global position class is defined."""
+        """Reject duplicate quality assignments when a global position class is defined."""
         super().__init_subclass__(**kwargs)
-        _reject_duplicate_constraints(cls.constraints)
+        _reject_duplicate_quality_assignments(cls.assigned_qualities)
 
     @property
     @override
     def particle(self) -> ValueParticle[ValueType]:
         """The particle; access raises NoParticleError if none exists."""
-        # Validation only allows a particle into this position if its value type
-        # is this position's value type.
+        # Validation only allows a particle into this position if its value quality
+        # is this position's value quality.
         return cast("ValueParticle[ValueType]", super().particle)
 
     @override
-    def _get_constraints(self) -> tuple[type[Quality], ...]:
-        """Return the constraint types from the class variable."""
-        return type(self).constraints
+    def _get_assigned_qualities(self) -> tuple[type[Quality], ...]:
+        """Return the quality types from the class variable."""
+        return type(self).assigned_qualities
 
 
 class LocalPosition[ValueType](Position):
-    """A locally-defined position with a runtime name and optional constraints.
+    """A locally-defined position with a runtime name and optional quality assignments.
 
     ValueType is the Python type of the position's value, or Never when the
-    position has no value constraint.
+    position has no value quality.
     """
 
     def __init__(
         self,
         name: str,
-        constraints: tuple[type[Quality], ...] = (),
+        assigned_qualities: tuple[type[Quality], ...] = (),
     ):
-        """Initialize a local position with its constraints."""
+        """Initialize a local position with its quality assignments."""
         super().__init__()
-        _reject_duplicate_constraints(constraints)
+        _reject_duplicate_quality_assignments(assigned_qualities)
         self._name: str = name
-        self._constraints: tuple[type[Quality], ...] = constraints
+        self._assigned_qualities: tuple[type[Quality], ...] = assigned_qualities
 
     @property
     @override
@@ -285,14 +286,14 @@ class LocalPosition[ValueType](Position):
     @override
     def particle(self) -> ValueParticle[ValueType]:
         """The particle; access raises NoParticleError if none exists."""
-        # Validation only allows a particle into this position if its value type
-        # is this position's value type.
+        # Validation only allows a particle into this position if its value quality
+        # is this position's value quality.
         return cast("ValueParticle[ValueType]", super().particle)
 
     @override
-    def _get_constraints(self) -> tuple[type[Quality], ...]:
-        """Return the constraint types for this position."""
-        return self._constraints
+    def _get_assigned_qualities(self) -> tuple[type[Quality], ...]:
+        """Return the quality types this position assigns."""
+        return self._assigned_qualities
 
 
 type DestructionContribution = Callable[[Particle], None]
@@ -356,7 +357,7 @@ def start(entry_point: type[Action], *, trace_operations: bool = False):
     _operation_trace = [] if trace_operations else None
     try:
         view_point = LocalPosition[Never](
-            "position<view_point>", constraints=(entry_point,)
+            "position<view_point>", assigned_qualities=(entry_point,)
         )
         view_point.create_particle()
         view_point.particle.get_action(entry_point).run()

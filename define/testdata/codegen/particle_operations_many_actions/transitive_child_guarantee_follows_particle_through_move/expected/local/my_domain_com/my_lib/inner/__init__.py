@@ -16,7 +16,7 @@ class InnerAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<input>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),

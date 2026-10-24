@@ -22,7 +22,7 @@ class TestAction(literal.Action):
     def run(self):
         filled = literal.LocalPosition[Never](
             "position<filled>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.fill_1.Fill1Action,
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),

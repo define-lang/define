@@ -13,13 +13,13 @@ class TestAction(literal.Action):
     def run(self):
         src = literal.LocalPosition[Never](
             "position<src>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         dest = literal.LocalPosition[Never](
             "position<dest>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )

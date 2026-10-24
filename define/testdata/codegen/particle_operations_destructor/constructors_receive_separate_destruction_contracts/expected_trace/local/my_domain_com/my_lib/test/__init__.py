@@ -17,7 +17,7 @@ class TestAction(literal.Action):
     def run(self):
         item = literal.LocalPosition[Never](
             "position<item>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.initialize.InitializeAction,
                 local.my_domain_com.my_lib.first_cleanup.FirstCleanupAction,
                 local.my_domain_com.my_lib.second_cleanup.SecondCleanupAction,

@@ -33,7 +33,7 @@ class DestroyerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<run>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
                         local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition,
                     ),
@@ -45,7 +45,7 @@ class DestroyerAction(literal.Action):
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         local_ = literal.LocalPosition[Never](
             "position<local>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
                 local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition,
             ),

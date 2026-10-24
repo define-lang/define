@@ -45,7 +45,7 @@ class MiddleAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<run>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.marker_a.MarkerAPosition,
                         local.my_domain_com.my_lib.marker_b.MarkerBPosition,
                         local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition,

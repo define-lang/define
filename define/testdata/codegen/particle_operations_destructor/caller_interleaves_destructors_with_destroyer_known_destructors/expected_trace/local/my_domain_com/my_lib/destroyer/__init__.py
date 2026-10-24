@@ -29,7 +29,7 @@ class DestroyerAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<target>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
                         local.my_domain_com.my_lib.fourth_destructor.FourthDestructorAction,
                         local.my_domain_com.my_lib.marker.MarkerPosition,

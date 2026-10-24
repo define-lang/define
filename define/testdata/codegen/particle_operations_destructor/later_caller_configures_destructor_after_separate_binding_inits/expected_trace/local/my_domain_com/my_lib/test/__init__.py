@@ -19,7 +19,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.later_destructor.LaterDestructorAction,
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,

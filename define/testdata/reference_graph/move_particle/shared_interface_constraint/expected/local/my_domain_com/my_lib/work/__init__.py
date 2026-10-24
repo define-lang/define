@@ -27,13 +27,13 @@ class WorkAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.shared.SharedPosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<dest>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.shared.SharedPosition,
                     ),
                 ),

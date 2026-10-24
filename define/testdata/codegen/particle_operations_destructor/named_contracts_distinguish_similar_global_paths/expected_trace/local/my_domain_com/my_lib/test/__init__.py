@@ -22,13 +22,13 @@ class TestAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition[Never](
             "position<first_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_child.FirstChildPosition,
             ),
         )
         second_source = literal.LocalPosition[Never](
             "position<second_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.second_child.SecondChildPosition,
             ),
         )

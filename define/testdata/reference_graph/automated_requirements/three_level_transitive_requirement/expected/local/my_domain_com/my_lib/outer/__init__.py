@@ -40,7 +40,7 @@ class OuterAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<input>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.data.DataPosition,
                     ),
                 ),
@@ -51,7 +51,7 @@ class OuterAction(literal.Action):
     def run(self, destruction_contracts: OuterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         middle_holder = literal.LocalPosition[Never](
             "position<middle_holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )

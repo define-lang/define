@@ -77,7 +77,7 @@ impl FunctionReference {
 pub struct PositionDefinition {
     class_name: String,
     module_name: String,
-    constraints: Vec<Py<ClassReference>>,
+    assigned_qualities: Vec<Py<ClassReference>>,
     value_type: String,
     /// The modules, other than its own, that the definition uses.
     imports: HashSet<String>,
@@ -89,14 +89,14 @@ impl PositionDefinition {
     const fn new(
         class_name: String,
         module_name: String,
-        constraints: Vec<Py<ClassReference>>,
+        assigned_qualities: Vec<Py<ClassReference>>,
         value_type: String,
         imports: HashSet<String>,
     ) -> Self {
         Self {
             class_name,
             module_name,
-            constraints,
+            assigned_qualities,
             value_type,
             imports,
         }
@@ -187,7 +187,7 @@ pub enum ActionStatement {
     LocalPosition {
         name: String,
         local_typed_name: String,
-        constraints: Vec<Py<ClassReference>>,
+        assigned_qualities: Vec<Py<ClassReference>>,
         value_type: String,
     },
     CreateParticle {
@@ -280,7 +280,7 @@ impl ActionStatement {
 #[pyclass(frozen, get_all)]
 pub struct InterfacePosition {
     typed_name: String,
-    constraints: Vec<Py<ClassReference>>,
+    assigned_qualities: Vec<Py<ClassReference>>,
     value_type: String,
 }
 
@@ -289,12 +289,12 @@ impl InterfacePosition {
     #[new]
     const fn new(
         typed_name: String,
-        constraints: Vec<Py<ClassReference>>,
+        assigned_qualities: Vec<Py<ClassReference>>,
         value_type: String,
     ) -> Self {
         Self {
             typed_name,
-            constraints,
+            assigned_qualities,
             value_type,
         }
     }

@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.child
 
 
 class ClassVarPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.child.ChildPosition,
     )
 
@@ -73,7 +73,7 @@ class ClassVarAction(literal.Action):
         )
         local_ = literal.LocalPosition[Never](
             "position<local>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )

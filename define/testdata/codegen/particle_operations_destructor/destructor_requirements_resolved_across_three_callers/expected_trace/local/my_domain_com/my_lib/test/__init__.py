@@ -20,7 +20,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.callee_known.CalleeKnownPosition,
                 local.my_domain_com.my_lib.middle_known.MiddleKnownPosition,
                 local.my_domain_com.my_lib.creator_known.CreatorKnownPosition,

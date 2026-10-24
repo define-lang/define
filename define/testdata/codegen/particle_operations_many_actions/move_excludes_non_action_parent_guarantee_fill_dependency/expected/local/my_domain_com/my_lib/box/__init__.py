@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.item
 
 
 class BoxPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.item.ItemPosition,
         local.my_domain_com.my_lib.destination.DestinationPosition,
     )

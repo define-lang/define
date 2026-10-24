@@ -10,7 +10,7 @@ import local.my_domain_com.my_lib.third
 
 
 class InputPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.first.FirstPosition,
         local.my_domain_com.my_lib.second.SecondPosition,
         local.my_domain_com.my_lib.third.ThirdPosition,

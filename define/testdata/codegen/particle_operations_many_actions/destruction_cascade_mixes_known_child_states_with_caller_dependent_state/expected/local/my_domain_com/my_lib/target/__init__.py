@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.known_occupied
 
 
 class TargetPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
         local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition,
     )

@@ -99,7 +99,7 @@ def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
     )
 
 
-def constrained_python_value_type(
+def assigned_python_value_type(
     block: ast.QualityAssignmentBlock | None,
 ) -> str:
     """Return the Python value type of particles with these quality assignments, or NO_VALUE when they assign no value quality."""

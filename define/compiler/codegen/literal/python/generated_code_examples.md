@@ -51,7 +51,7 @@ define the potential action<my.domain.com:my_lib:/runner> {
 ```python
 class RunnerAction(literal.Action):
     def run(self):
-        wrapper = literal.LocalPosition("position<wrapper>", constraints=(Middle,))
+        wrapper = literal.LocalPosition("position<wrapper>", assigned_qualities=(Middle,))
         wrapper.create_particle()
         wrapper.particle.get_action(MiddleAction).get_interface_position(
             "position<box>"
@@ -158,7 +158,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 class TestAction(literal.Action):
     def run(self):
         runner_parent = literal.LocalPosition(
-            "position<runner_parent>", constraints=(Runner,)
+            "position<runner_parent>", assigned_qualities=(Runner,)
         )
         runner_parent.create_particle()
         runner_parent.particle.get_action(RunnerAction).get_interface_position(
@@ -235,7 +235,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        box = literal.LocalPosition("position<box>", constraints=(Maker,))
+        box = literal.LocalPosition("position<box>", assigned_qualities=(Maker,))
         box.create_particle()
         box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
@@ -332,7 +332,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        gateway = literal.LocalPosition("position<gateway>", constraints=(Middle,))
+        gateway = literal.LocalPosition("position<gateway>", assigned_qualities=(Middle,))
         gateway.create_particle()
         gateway.particle.get_action(MiddleAction).get_interface_position(
             "position<trigger_pos>"
@@ -459,7 +459,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        box = literal.LocalPosition("position<box>", constraints=(Maker,))
+        box = literal.LocalPosition("position<box>", assigned_qualities=(Maker,))
         box.create_particle()
         box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
@@ -575,7 +575,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        box = literal.LocalPosition("position<box>", constraints=(Carrier,))
+        box = literal.LocalPosition("position<box>", assigned_qualities=(Carrier,))
         box.create_particle()
         box.particle.get_action(CarrierAction).get_interface_position(
             "position<run>"
@@ -689,7 +689,7 @@ import local.my_domain_com.my_lib.triggered
 
 class TestAction(literal.Action):
     def run(self):
-        source = literal.LocalPosition("position<source>", constraints=(A,))
+        source = literal.LocalPosition("position<source>", assigned_qualities=(A,))
         source.create_particle()
         source.particle.get_position(APosition).create_particle()
         source.move_particle_to(
@@ -820,9 +820,9 @@ import local.my_domain_com.my_lib.triggered
 class TestAction(literal.Action):
     def run(self):
         triggered_parent = literal.LocalPosition(
-            "position<triggered_parent>", constraints=(Triggered,)
+            "position<triggered_parent>", assigned_qualities=(Triggered,)
         )
-        source = literal.LocalPosition("position<source>", constraints=(A,))
+        source = literal.LocalPosition("position<source>", assigned_qualities=(A,))
         triggered_parent.create_particle()
         source.create_particle()
         source.particle.get_position(APosition).create_particle()
@@ -868,7 +868,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 class TestAction(literal.Action):
     def run(self):
         maker_parent = literal.LocalPosition(
-            "position<maker_parent>", constraints=(Maker,)
+            "position<maker_parent>", assigned_qualities=(Maker,)
         )
         maker_parent.create_particle()
         maker_parent.particle.get_action(MakerAction).get_interface_position(
@@ -1030,7 +1030,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        gateway = literal.LocalPosition("position<gateway>", constraints=(Worker,))
+        gateway = literal.LocalPosition("position<gateway>", assigned_qualities=(Worker,))
         gateway.create_particle()
         gateway.particle.get_action(WorkerAction).get_interface_position(
             "position<item>"
@@ -1107,7 +1107,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        gateway = literal.LocalPosition("position<gateway>", constraints=(Other,))
+        gateway = literal.LocalPosition("position<gateway>", assigned_qualities=(Other,))
         gateway.create_particle()
         gateway.particle.get_action(OtherAction).get_interface_position(
             "position<trigger_pos>"
@@ -1225,7 +1225,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        box = literal.LocalPosition("position<box>", constraints=(Destructor,))
+        box = literal.LocalPosition("position<box>", assigned_qualities=(Destructor,))
         box.create_particle()
         box.particle.get_action(DestructorAction).run()
         box.destroy_particle()
@@ -1294,7 +1294,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```python
 class TestAction(literal.Action):
     def run(self):
-        source = literal.LocalPosition("position<source>", constraints=(A, B))
+        source = literal.LocalPosition("position<source>", assigned_qualities=(A, B))
         destination = literal.LocalPosition("position<destination>")
         source.create_particle()
         source.particle.get_position(APosition).create_particle()
@@ -1489,7 +1489,7 @@ import local.my_domain_com.my_lib.middle
 class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
-            "position<source>", constraints=(OuterChild, MiddleChild)
+            "position<source>", assigned_qualities=(OuterChild, MiddleChild)
         )
         source.create_particle()
         source.particle.get_position(OuterChildPosition).create_particle()
@@ -1644,7 +1644,7 @@ import local.my_domain_com.my_lib.middle
 class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
-            "position<source>", constraints=(OuterChild, MiddleChild)
+            "position<source>", assigned_qualities=(OuterChild, MiddleChild)
         )
         source.create_particle()
         source.particle.get_position(OuterChildPosition).create_particle()
@@ -1844,7 +1844,7 @@ import local.my_domain_com.my_lib.worker
 
 class OuterAction(literal.Action):
     def run(self):
-        source = literal.LocalPosition("position<source>", constraints=(OuterChild,))
+        source = literal.LocalPosition("position<source>", assigned_qualities=(OuterChild,))
         source.create_particle()
         source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(self.on_particle.get_position(ItemPosition))
@@ -1966,7 +1966,7 @@ import local.my_domain_com.my_lib.other
 class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
-            "position<source>", constraints=(FirstChild, SecondChild, ThirdChild)
+            "position<source>", assigned_qualities=(FirstChild, SecondChild, ThirdChild)
         )
         source.create_particle()
         source.particle.get_position(FirstChildPosition).create_particle()
@@ -2142,10 +2142,10 @@ import local.my_domain_com.my_lib.worker
 class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
-            "position<source>", constraints=(KnownDestructor, ParentDestructor, Child)
+            "position<source>", assigned_qualities=(KnownDestructor, ParentDestructor, Child)
         )
         child_source = literal.LocalPosition(
-            "position<child_source>", constraints=(ChildDestructor,)
+            "position<child_source>", assigned_qualities=(ChildDestructor,)
         )
         source.create_particle()
         child_source.create_particle()
@@ -2323,10 +2323,10 @@ import local.my_domain_com.my_lib.worker
 class OuterAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition(
-            "position<first_source>", constraints=(FirstChild,)
+            "position<first_source>", assigned_qualities=(FirstChild,)
         )
         second_source = literal.LocalPosition(
-            "position<second_source>", constraints=(SecondChild,)
+            "position<second_source>", assigned_qualities=(SecondChild,)
         )
         first_source.create_particle()
         first_source.particle.get_position(FirstChildPosition).create_particle()
@@ -2451,10 +2451,10 @@ import local.my_domain_com.my_lib.worker
 class OuterAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition(
-            "position<first_source>", constraints=(FirstDestructor, Extra)
+            "position<first_source>", assigned_qualities=(FirstDestructor, Extra)
         )
         second_source = literal.LocalPosition(
-            "position<second_source>", constraints=(SecondDestructor, Extra)
+            "position<second_source>", assigned_qualities=(SecondDestructor, Extra)
         )
         first_source.create_particle()
         first_source.particle.get_position(ExtraPosition).create_particle()
@@ -2536,7 +2536,7 @@ _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition("position<holder>", constraints=(Left, Right))
+        holder = literal.LocalPosition("position<holder>", assigned_qualities=(Left, Right))
         holder.create_particle()
         self.get_interface_position("position<first>").move_particle_to(
             holder.particle.get_position(LeftPosition)

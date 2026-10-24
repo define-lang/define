@@ -22,14 +22,14 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
                 local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         payload_source = literal.LocalPosition[Never](
             "position<payload_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),

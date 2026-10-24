@@ -44,7 +44,7 @@ class ActAction(literal.Action):
                 literal.LocalPosition[Never]("position<iface_dest>"),
                 literal.LocalPosition[Never](
                     "position<chain_dest>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.mid_dest.MidDestPosition,
                     ),
                 ),

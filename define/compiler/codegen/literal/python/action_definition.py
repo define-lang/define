@@ -44,10 +44,10 @@ class ActionDefinitionGenerator:
             interfaces.append(
                 renderer.InterfacePosition(
                     typed_name=position.typed_name.source_typed_name,
-                    constraints=self._converter.constraints_to_class_references(
+                    assigned_qualities=self._converter.assigned_quality_class_references(
                         position.quality_assignment_block
                     ),
-                    value_type=value_types.constrained_python_value_type(
+                    value_type=value_types.assigned_python_value_type(
                         position.quality_assignment_block
                     ),
                 )
@@ -59,7 +59,7 @@ class ActionDefinitionGenerator:
         generated.imports.update(quality.module_name for quality in implied_qualities)
         for position in interfaces:
             generated.imports.update(
-                quality.module_name for quality in position.constraints
+                quality.module_name for quality in position.assigned_qualities
             )
         module_name = self._converter.module_name(definition.typed_name.name_content)
         generated.imports.discard(module_name)

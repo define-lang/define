@@ -12,7 +12,7 @@ import local.my_domain_com.my_lib.spare
 
 
 class BoxPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.fill_spare.FillSpareAction,
         local.my_domain_com.my_lib.fill_item.FillItemAction,
         local.my_domain_com.my_lib.empty_item.EmptyItemAction,

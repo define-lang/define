@@ -19,14 +19,14 @@ class TestAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition[Never](
             "position<first_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         second_source = literal.LocalPosition[Never](
             "position<second_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),

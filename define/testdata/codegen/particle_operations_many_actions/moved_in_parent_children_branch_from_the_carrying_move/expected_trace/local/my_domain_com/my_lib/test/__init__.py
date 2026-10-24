@@ -14,7 +14,7 @@ class TestAction(literal.Action):
     def run(self):
         mw = literal.LocalPosition[Never](
             "position<mw>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )

@@ -8,6 +8,6 @@ import local.a_b.cd.b
 
 
 class APosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b.cd.b.BAction,
     )

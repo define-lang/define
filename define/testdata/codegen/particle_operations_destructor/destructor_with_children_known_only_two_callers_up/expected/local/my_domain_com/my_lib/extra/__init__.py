@@ -10,7 +10,7 @@ import local.my_domain_com.my_lib.marker_b
 
 
 class ExtraPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker_a.MarkerAPosition,
         local.my_domain_com.my_lib.marker_b.MarkerBPosition,
         local.my_domain_com.my_lib.child_destruct.ChildDestructAction,

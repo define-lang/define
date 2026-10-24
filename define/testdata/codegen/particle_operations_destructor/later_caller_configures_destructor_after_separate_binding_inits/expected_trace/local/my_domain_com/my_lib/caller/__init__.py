@@ -35,7 +35,7 @@ class CallerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<run>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
                         local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
                     ),
@@ -47,14 +47,14 @@ class CallerAction(literal.Action):
     def run(self, destruction_contracts: CallerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
                 local.my_domain_com.my_lib.carrier.CarrierPosition,
             ),
         )
         carrier_source = literal.LocalPosition[Never](
             "position<carrier_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
                 local.my_domain_com.my_lib.payload.PayloadPosition,
             ),

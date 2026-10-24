@@ -21,7 +21,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_child.FirstChildPosition,
                 local.my_domain_com.my_lib.second_child.SecondChildPosition,
                 local.my_domain_com.my_lib.third_child.ThirdChildPosition,

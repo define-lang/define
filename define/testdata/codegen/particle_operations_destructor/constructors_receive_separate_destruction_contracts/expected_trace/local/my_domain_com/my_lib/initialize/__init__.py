@@ -20,13 +20,13 @@ class InitializeAction(literal.Action):
     def run(self):
         left = literal.LocalPosition[Never](
             "position<left>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
             ),
         )
         right = literal.LocalPosition[Never](
             "position<right>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
             ),
         )

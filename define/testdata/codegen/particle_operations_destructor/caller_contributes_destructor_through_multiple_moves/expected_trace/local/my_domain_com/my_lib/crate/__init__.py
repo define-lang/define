@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.outer
 
 
 class CratePosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.outer.OuterAction,
         local.my_domain_com.my_lib.carrier.CarrierPosition,
     )

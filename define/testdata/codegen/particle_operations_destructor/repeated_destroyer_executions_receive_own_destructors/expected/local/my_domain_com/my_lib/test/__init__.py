@@ -18,20 +18,20 @@ class TestAction(literal.Action):
     def run(self):
         a_only = literal.LocalPosition[Never](
             "position<a_only>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
             ),
         )
         a_and_b = literal.LocalPosition[Never](
             "position<a_and_b>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         b_only = literal.LocalPosition[Never](
             "position<b_only>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )

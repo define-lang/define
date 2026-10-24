@@ -16,7 +16,7 @@ class TestAction(literal.Action):
     def run(self):
         box = literal.LocalPosition[Never](
             "position<box>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.construct_a.ConstructAAction,
                 local.my_domain_com.my_lib.construct_b.ConstructBAction,
                 local.my_domain_com.my_lib.destruct_a.DestructAAction,

@@ -19,7 +19,7 @@ class TestAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition[Never](
             "position<first_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.direct_destructor.DirectDestructorAction,
                 local.my_domain_com.my_lib.shared_destructor.SharedDestructorAction,
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
@@ -27,7 +27,7 @@ class TestAction(literal.Action):
         )
         second_source = literal.LocalPosition[Never](
             "position<second_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.shared_destructor.SharedDestructorAction,
             ),
         )

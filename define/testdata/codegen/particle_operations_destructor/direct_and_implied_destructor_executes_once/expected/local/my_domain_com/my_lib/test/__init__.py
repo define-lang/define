@@ -20,7 +20,7 @@ class TestAction(literal.Action):
     def run(self):
         direct = literal.LocalPosition[Never](
             "position<direct>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )

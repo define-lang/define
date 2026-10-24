@@ -8,6 +8,6 @@ import local.my_domain_com.my_lib.extra
 
 
 class KnownPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.extra.ExtraPosition,
     )

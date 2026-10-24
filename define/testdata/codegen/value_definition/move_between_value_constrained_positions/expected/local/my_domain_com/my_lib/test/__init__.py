@@ -16,7 +16,7 @@ class TestAction(literal.Action):
         )
         worker = literal.LocalPosition[Never](
             "position<worker>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.provide.ProvideAction,
             ),
         )

@@ -22,7 +22,7 @@ class TestAction(literal.Action):
         )
         box = literal.LocalPosition[Never](
             "position<box>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )

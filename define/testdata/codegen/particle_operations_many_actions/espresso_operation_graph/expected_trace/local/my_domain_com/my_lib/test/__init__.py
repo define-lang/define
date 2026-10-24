@@ -15,7 +15,7 @@ class TestAction(literal.Action):
     def run(self):
         station = literal.LocalPosition[Never](
             "position<station>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.grind.GrindAction,
                 local.my_domain_com.my_lib.heat.HeatAction,
                 local.my_domain_com.my_lib.brew.BrewAction,

@@ -19,7 +19,7 @@ class TestAction(literal.Action):
         )
         gw = literal.LocalPosition[Never](
             "position<gw>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )

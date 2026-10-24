@@ -14,13 +14,13 @@ class OuterDestructorAction(literal.Action):
     def run(self):
         inner_destroyer_particle = literal.LocalPosition[Never](
             "position<inner_destroyer_particle>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction,
             ),
         )
         inner_source = literal.LocalPosition[Never](
             "position<inner_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction,
             ),
         )

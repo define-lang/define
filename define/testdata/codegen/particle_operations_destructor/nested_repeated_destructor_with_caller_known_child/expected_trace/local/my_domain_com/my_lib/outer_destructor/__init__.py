@@ -16,20 +16,20 @@ class OuterDestructorAction(literal.Action):
     def run(self):
         inner_destroyer_particle = literal.LocalPosition[Never](
             "position<inner_destroyer_particle>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction,
             ),
         )
         first_source = literal.LocalPosition[Never](
             "position<first_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.extra.ExtraPosition,
                 local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction,
             ),
         )
         second_source = literal.LocalPosition[Never](
             "position<second_source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.extra.ExtraPosition,
                 local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction,
                 local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorBAction,

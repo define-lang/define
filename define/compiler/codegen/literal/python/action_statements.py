@@ -63,8 +63,8 @@ class ActionStatementsGenerator:
             match step:
                 case ast.LocalPositionDefinition():
                     modules.update(
-                        constraint.module_name
-                        for constraint in self._converter.constraints_to_class_references(
+                        quality.module_name
+                        for quality in self._converter.assigned_quality_class_references(
                             step.quality_assignment_block
                         )
                     )
@@ -174,10 +174,10 @@ class ActionStatementsGenerator:
                         renderer.ActionStatement.LocalPosition(
                             name=name,
                             local_typed_name=statement.typed_name.source_typed_name,
-                            constraints=self._converter.constraints_to_class_references(
+                            assigned_qualities=self._converter.assigned_quality_class_references(
                                 statement.quality_assignment_block
                             ),
-                            value_type=value_types.constrained_python_value_type(
+                            value_type=value_types.assigned_python_value_type(
                                 statement.quality_assignment_block
                             ),
                         )
@@ -364,7 +364,7 @@ class ActionStatementsGenerator:
             if isinstance(looking_at, codegen_input.EncodedLiteral):
                 arguments.append(value_types.python_literal(looking_at))
                 continue
-            value_type = value_types.constrained_python_value_type(
+            value_type = value_types.assigned_python_value_type(
                 argument.interface_view.quality_assignment_block
             )
             if argument.interface_view.is_input:

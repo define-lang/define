@@ -112,7 +112,7 @@ def test_file_with_position_and_constructor_passes(
     assert runtime_result.stderr == ""
 
 
-def test_constructor_chosen_when_position_constrains_it(
+def test_constructor_chosen_when_position_assigns_it(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
     tmp_path: Path,
 ):

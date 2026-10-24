@@ -16,7 +16,7 @@ class MakerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<result>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.destruct_a.DestructAAction,
                         local.my_domain_com.my_lib.destruct_b.DestructBAction,
                     ),

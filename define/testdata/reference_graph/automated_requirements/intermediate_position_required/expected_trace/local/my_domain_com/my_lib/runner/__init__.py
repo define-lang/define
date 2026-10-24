@@ -46,7 +46,7 @@ class RunnerAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<wrap>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.mid.MidPosition,
                     ),
                 ),

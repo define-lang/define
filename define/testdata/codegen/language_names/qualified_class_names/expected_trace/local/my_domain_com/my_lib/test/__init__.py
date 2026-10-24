@@ -60,7 +60,7 @@ class TestAction(literal.Action):
         ).run()
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )

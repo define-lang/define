@@ -20,7 +20,7 @@ class TestAction(literal.Action):
     def run(self):
         carrier = literal.LocalPosition[Never](
             "position<carrier>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
                 local.my_domain_com.my_lib.second.SecondPosition,
                 local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,

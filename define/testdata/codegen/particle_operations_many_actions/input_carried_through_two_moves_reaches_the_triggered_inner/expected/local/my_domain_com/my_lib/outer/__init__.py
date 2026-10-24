@@ -33,13 +33,13 @@ class OuterAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<input>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<middle_holder>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.middle.MiddleAction,
                     ),
                 ),

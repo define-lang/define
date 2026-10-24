@@ -14,7 +14,7 @@ class TestAction(literal.Action):
     def run(self):
         box1 = literal.LocalPosition[Never](
             "position<box1>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
             ),
         )
@@ -23,13 +23,13 @@ class TestAction(literal.Action):
         )
         dest = literal.LocalPosition[Never](
             "position<dest>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
             ),
         )
         action_holder = literal.LocalPosition[Never](
             "position<action_holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.move.MoveAction,
             ),
         )

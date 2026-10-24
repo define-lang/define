@@ -17,13 +17,13 @@ class TestAction(literal.Action):
         )
         gw_a = literal.LocalPosition[Never](
             "position<gw_a>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         gw_b = literal.LocalPosition[Never](
             "position<gw_b>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.helper.HelperAction,
             ),
         )

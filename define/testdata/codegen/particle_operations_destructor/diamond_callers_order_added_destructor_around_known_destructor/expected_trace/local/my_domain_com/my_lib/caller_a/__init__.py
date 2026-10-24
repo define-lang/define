@@ -23,13 +23,13 @@ class CallerAAction(literal.Action):
     def run(self):
         destroyer_particle = literal.LocalPosition[Never](
             "position<destroyer_particle>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         carrier = literal.LocalPosition[Never](
             "position<carrier>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
             ),

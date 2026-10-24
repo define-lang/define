@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.marker
 
 
 class RightPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.destructor.DestructorAction,
         local.my_domain_com.my_lib.marker.MarkerPosition,
     )

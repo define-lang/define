@@ -8,6 +8,6 @@ import local.my_domain_com.my_lib.d
 
 
 class CPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.d.DPosition,
     )

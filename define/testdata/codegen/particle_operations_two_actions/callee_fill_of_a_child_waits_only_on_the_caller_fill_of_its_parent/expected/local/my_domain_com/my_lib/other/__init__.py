@@ -16,7 +16,7 @@ class OtherAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<output>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.a.APosition,
                     ),
                 ),

@@ -148,7 +148,7 @@ def test_later_init_configuration_does_not_change_generated_callees(
     project = tmp_path / "project"
     generated = tmp_path / "generated"
     _copy_project(case, project)
-    contributing_modules = _remove_destructor_constraints(
+    contributing_modules = _remove_destructor_quality_assignments(
         project, additional_destructor, contributing_sources
     )
     _compile_and_run_project(project, generated, monkeypatch)
@@ -173,20 +173,20 @@ def _copy_project(source: Path, destination: Path):
             shutil.copyfile(directory / file_name, destination_directory / file_name)
 
 
-def _remove_destructor_constraints(
+def _remove_destructor_quality_assignments(
     project: Path,
     additional_destructor: str,
     contributing_sources: tuple[str, ...],
 ) -> set[Path]:
     contributing_modules: set[Path] = set()
-    constraint = f"it has the action</{additional_destructor}>."
+    quality_assignment = f"it has the action</{additional_destructor}>."
     for source_name in contributing_sources:
         source = project / f"{source_name}.dfn"
         source_text = source.read_text(encoding="utf-8")
-        assert source_text.count(constraint) == 1
+        assert source_text.count(quality_assignment) == 1
         retained_lines: list[str] = []
         for line in source_text.splitlines(keepends=True):
-            if line.strip() != constraint:
+            if line.strip() != quality_assignment:
                 retained_lines.append(line)
         source.write_text("".join(retained_lines), encoding="utf-8", newline="\n")
         contributing_modules.add(

@@ -14,7 +14,7 @@ class TestAction(literal.Action):
     def run(self):
         gateway = literal.LocalPosition[Never](
             "position<gateway>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )

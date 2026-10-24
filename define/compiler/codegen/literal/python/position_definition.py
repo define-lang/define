@@ -34,12 +34,14 @@ class PositionDefinitionGenerator:
     def generate(self) -> renderer.PositionDefinition:
         """Generate template context for the position definition."""
         name_content = self._definition.typed_name.name_content
-        constraints = self._converter.constraints_to_class_references(
+        assigned_qualities = self._converter.assigned_quality_class_references(
             self._definition.quality_assignment_block,
         )
         class_name = self._converter.class_name(self._definition.typed_name)
         module_name = self._converter.module_name(name_content)
-        imports = {class_reference.module_name for class_reference in constraints}
+        imports = {
+            class_reference.module_name for class_reference in assigned_qualities
+        }
         # Classes in the definition's own module are referenced by their bare
         # names, and a module cannot import itself while it is still loading.
         imports.discard(module_name)
@@ -47,8 +49,8 @@ class PositionDefinitionGenerator:
         return renderer.PositionDefinition(
             class_name=class_name,
             module_name=module_name,
-            constraints=constraints,
-            value_type=value_types.constrained_python_value_type(
+            assigned_qualities=assigned_qualities,
+            value_type=value_types.assigned_python_value_type(
                 self._definition.quality_assignment_block
             ),
             imports=imports,

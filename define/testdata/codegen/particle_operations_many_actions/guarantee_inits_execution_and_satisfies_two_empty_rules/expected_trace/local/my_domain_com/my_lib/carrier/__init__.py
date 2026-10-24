@@ -26,13 +26,13 @@ class CarrierAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<result>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),

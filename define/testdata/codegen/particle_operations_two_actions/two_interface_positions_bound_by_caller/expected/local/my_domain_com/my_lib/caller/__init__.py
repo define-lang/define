@@ -27,13 +27,13 @@ class CallerAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<first_gateway>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition[Never](
                     "position<second_gateway>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),

@@ -16,7 +16,7 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition[Never](
             "position<source>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.box_a.BoxAPosition,
                 local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),
@@ -29,7 +29,7 @@ class TestAction(literal.Action):
         )
         workspace = literal.LocalPosition[Never](
             "position<workspace>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.box_a.BoxAPosition,
                 local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),

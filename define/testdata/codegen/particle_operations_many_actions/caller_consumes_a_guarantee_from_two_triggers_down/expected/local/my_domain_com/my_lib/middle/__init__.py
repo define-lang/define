@@ -28,7 +28,7 @@ class MiddleAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<igw>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.inner.InnerAction,
                         local.my_domain_com.my_lib.inner_result.InnerResultPosition,
                     ),

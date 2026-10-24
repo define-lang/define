@@ -18,13 +18,13 @@ class TestAction(literal.Action):
     def run(self):
         first = literal.LocalPosition[Never](
             "position<first>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.first_child.FirstChildPosition,
             ),
         )
         second = literal.LocalPosition[Never](
             "position<second>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.second_child.SecondChildPosition,
             ),
         )

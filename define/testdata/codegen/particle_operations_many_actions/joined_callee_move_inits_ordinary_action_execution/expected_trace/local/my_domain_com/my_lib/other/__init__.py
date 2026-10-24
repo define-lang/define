@@ -28,7 +28,7 @@ class OtherAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<source>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.a.APosition,
                         local.my_domain_com.my_lib.b.BPosition,
                         local.my_domain_com.my_lib.worker.WorkerAction,
@@ -36,7 +36,7 @@ class OtherAction(literal.Action):
                 ),
                 literal.LocalPosition[Never](
                     "position<destination>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.a.APosition,
                         local.my_domain_com.my_lib.b.BPosition,
                         local.my_domain_com.my_lib.worker.WorkerAction,

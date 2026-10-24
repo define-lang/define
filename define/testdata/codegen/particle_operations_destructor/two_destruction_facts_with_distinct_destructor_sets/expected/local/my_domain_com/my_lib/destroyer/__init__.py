@@ -32,7 +32,7 @@ class DestroyerAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<first>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.direct_destructor.DirectDestructorAction,
                     ),
                 ),

@@ -27,7 +27,7 @@ class TestAction(literal.Action):
     def run(self):
         trash = literal.LocalPosition[Never](
             "position<trash>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.caller_only.CallerOnlyPosition,
             ),
         )

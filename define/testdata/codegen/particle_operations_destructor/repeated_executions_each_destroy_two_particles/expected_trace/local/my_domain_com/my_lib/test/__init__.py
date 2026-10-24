@@ -18,7 +18,7 @@ class TestAction(literal.Action):
     def run(self):
         first_a = literal.LocalPosition[Never](
             "position<first_a>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
             ),
         )
@@ -27,13 +27,13 @@ class TestAction(literal.Action):
         )
         second_b = literal.LocalPosition[Never](
             "position<second_b>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         second_a_and_b = literal.LocalPosition[Never](
             "position<second_a_and_b>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),

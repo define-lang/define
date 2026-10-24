@@ -33,13 +33,13 @@ class MiddleBAction(literal.Action):
     def run(self, destruction_contracts: MiddleBDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         box = literal.LocalPosition[Never](
             "position<box>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
         destroyer_holder = literal.LocalPosition[Never](
             "position<destroyer_holder>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )

@@ -28,7 +28,7 @@ class KickOffAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger>"),
                 literal.LocalPosition[Never](
                     "position<output>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.react_a.ReactAAction,
                         local.my_domain_com.my_lib.react_b.ReactBAction,
                     ),

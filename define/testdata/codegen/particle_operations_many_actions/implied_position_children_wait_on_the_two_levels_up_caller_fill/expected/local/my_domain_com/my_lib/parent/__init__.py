@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.child2
 
 
 class ParentPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.child1.Child1Position,
         local.my_domain_com.my_lib.child2.Child2Position,
     )

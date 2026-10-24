@@ -27,7 +27,7 @@ class OuterAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<box>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.make_part.MakePartAction,
                     ),
                 ),

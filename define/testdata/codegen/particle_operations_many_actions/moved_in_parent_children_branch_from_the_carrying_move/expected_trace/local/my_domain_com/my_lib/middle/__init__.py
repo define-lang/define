@@ -36,7 +36,7 @@ class MiddleAction(literal.Action):
                 literal.LocalPosition[Never]("position<run>"),
                 literal.LocalPosition[Never](
                     "position<iface>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.parent.ParentPosition,
                     ),
                 ),
@@ -47,7 +47,7 @@ class MiddleAction(literal.Action):
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         gw = literal.LocalPosition[Never](
             "position<gw>",
-            constraints=(
+            assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )

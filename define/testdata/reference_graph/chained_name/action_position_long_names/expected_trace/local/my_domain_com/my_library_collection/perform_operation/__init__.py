@@ -38,7 +38,7 @@ class PerformOperationAction(literal.Action):
             interface_positions=[
                 literal.LocalPosition[Never](
                     "position<operation_trigger>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition,
                     ),
                 ),

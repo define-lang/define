@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.payload
 
 
 class ResultPosition(literal.GlobalPosition[Never]):
-    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+    assigned_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.middle.MiddleAction,
         local.my_domain_com.my_lib.payload.PayloadPosition,
     )

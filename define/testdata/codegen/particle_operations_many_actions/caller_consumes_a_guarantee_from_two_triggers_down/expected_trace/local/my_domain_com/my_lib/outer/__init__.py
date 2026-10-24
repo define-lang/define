@@ -27,7 +27,7 @@ class OuterAction(literal.Action):
                 literal.LocalPosition[Never]("position<trigger_pos>"),
                 literal.LocalPosition[Never](
                     "position<gw>",
-                    constraints=(
+                    assigned_qualities=(
                         local.my_domain_com.my_lib.middle.MiddleAction,
                     ),
                 ),
