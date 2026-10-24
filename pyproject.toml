@@ -7,7 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
   "click>=8.1,!=8.3.0,!=8.3.1",
   # 3 is the first Python 3-only series
-  "lark-cython",
   "msgspec",
   # 6.31 is the first version with FieldDescriptor.is_repeated
   "protobuf>=6.31",
@@ -267,7 +266,6 @@ pytest_add_cli_args = [
 branch = true
 
 [tool.uv.sources]
-lark-cython = { git = "https://github.com/define-lang/lark_cython", rev = "a524058a4336e9af3eb4223e24fbc65dbe4847d5" }
 google-re2 = { path = "vendored/re2/python", package = false }
 
 [tool.basedpyright]
@@ -307,7 +305,6 @@ dev = [
   "define",
   "build",
   "coverage",
-  "cython>=3.3.0,<3.4",
   # Directly declared so uv uses the Bazel-provided virtual package.
   "google-re2",
   "hypothesis",

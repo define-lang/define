@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-import lark_cython
 from google.protobuf import descriptor
 
 from defcl.python import exceptions
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def validate(
-    tree: lark_standalone.Tree[lark_cython.Token],
+    tree: lark_standalone.Tree[lark_standalone.Token],
     message_type: type[message.Message],
     path_name: str | os.PathLike[str] | None = None,
 ):
@@ -33,8 +32,8 @@ def validate(
     """
     msg_desc = message_type.DESCRIPTOR
     for top_level in tree.children:
-        top_level = cast("lark_standalone.Tree[lark_cython.Token]", top_level)
-        name_token = cast("lark_cython.Token", top_level.children[0])
+        top_level = cast("lark_standalone.Tree[lark_standalone.Token]", top_level)
+        name_token = cast("lark_standalone.Token", top_level.children[0])
         field_desc = msg_desc.fields_by_name.get(str(name_token))
         if field_desc is None or field_desc.message_type is None:
             raise ValueError(
@@ -42,31 +41,31 @@ def validate(
                 + f" {msg_desc.full_name} (should have been caught by proto parser)"
             )
         msg_tree = cast(
-            "lark_standalone.Tree[lark_cython.Token]", top_level.children[1]
+            "lark_standalone.Tree[lark_standalone.Token]", top_level.children[1]
         )
         _check_message(msg_tree, field_desc.message_type, path_name)
 
 
 def _check_message(
-    msg_tree: lark_standalone.Tree[lark_cython.Token],
+    msg_tree: lark_standalone.Tree[lark_standalone.Token],
     msg_desc: descriptor.Descriptor,
     path_name: str | os.PathLike[str] | None,
 ):
     """Check all fields within a message_value node."""
     for field_tree in msg_tree.children:
-        field_tree = cast("lark_standalone.Tree[lark_cython.Token]", field_tree)
-        name_token = cast("lark_cython.Token", field_tree.children[0])
+        field_tree = cast("lark_standalone.Tree[lark_standalone.Token]", field_tree)
+        name_token = cast("lark_standalone.Token", field_tree.children[0])
         field_desc = msg_desc.fields_by_name[str(name_token)]
         value_tree = cast(
-            "lark_standalone.Tree[lark_cython.Token]", field_tree.children[1]
+            "lark_standalone.Tree[lark_standalone.Token]", field_tree.children[1]
         )
         _check_field(name_token, field_desc, value_tree, path_name)
 
 
 def _check_field(
-    name_token: lark_cython.Token,
+    name_token: lark_standalone.Token,
     field_desc: descriptor.FieldDescriptor,
-    value_tree: lark_standalone.Tree[lark_cython.Token],
+    value_tree: lark_standalone.Tree[lark_standalone.Token],
     path_name: str | os.PathLike[str] | None,
 ):
     """Check a field's value against its descriptor, including repeated syntax."""
@@ -86,7 +85,7 @@ def _check_field(
             # Empty repeated fields (e.g. `[]`) produce a None child in Lark.
             if item_value is None:
                 continue  # pragma: no mutate
-            item_value = cast("lark_standalone.Tree[lark_cython.Token]", item_value)
+            item_value = cast("lark_standalone.Tree[lark_standalone.Token]", item_value)
             _check_value(name_token, field_desc, item_value, path_name)
         return
 
@@ -94,14 +93,14 @@ def _check_field(
 
 
 def _check_value(
-    name_token: lark_cython.Token,
+    name_token: lark_standalone.Token,
     field_desc: descriptor.FieldDescriptor,
-    value_tree: lark_standalone.Tree[lark_cython.Token],
+    value_tree: lark_standalone.Tree[lark_standalone.Token],
     path_name: str | os.PathLike[str] | None,
 ):
     """Check a single value against its field type."""
     child = value_tree.children[0]
-    if isinstance(child, lark_cython.Token):
+    if isinstance(child, lark_standalone.Token):
         if (
             field_desc.type == descriptor.FieldDescriptor.TYPE_ENUM
             and child.type == "INTEGER"

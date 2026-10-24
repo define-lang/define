@@ -12,9 +12,7 @@ py_library(
         "//defcl/python:__subpackages__",
         "//define/compiler:__pkg__",
     ],
-    deps = [
-        "@pypi//lark_cython",
-    ],
+    deps = ["//defcl/python/lark:lark_standalone"],
 )
 
 py_library(

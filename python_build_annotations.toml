@@ -1,3 +1,0 @@
-[[package]]
-name = "lark-cython"
-build-dependencies = [{ name = "cython" }, { name = "setuptools" }]

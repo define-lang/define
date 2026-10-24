@@ -6,15 +6,11 @@ import pathlib
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from lark_cython import standalone
-
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python.lark import lark_standalone
 
 if TYPE_CHECKING:
     import os
-
-    import lark_cython
 
 _TOKEN_ERROR_EXAMPLES: dict[type[dcl_exceptions.DclTokenError], list[str]] = {
     dcl_exceptions.MissingColonError: [
@@ -116,9 +112,7 @@ class Parser:
 
     @cached_property
     def _parser(self) -> lark_standalone.Lark:
-        return lark_standalone.Lark_StandAlone(
-            _plugins=standalone.standalone_plugins(lark_standalone)
-        )
+        return lark_standalone.Lark_StandAlone()
 
     def _classify_char_error(
         self, e: lark_standalone.UnexpectedCharacters
@@ -161,7 +155,7 @@ class Parser:
 
     def parse(
         self, text: str, path_name: str | os.PathLike[str] | None = None
-    ) -> lark_standalone.Tree[lark_cython.Token]:
+    ) -> lark_standalone.Tree[lark_standalone.Token]:
         """Parse DCL text and return the parse tree.
 
         path_name is only used for error messages.
@@ -188,7 +182,7 @@ class Parser:
 
     def parse_file(
         self, path: str | os.PathLike[str]
-    ) -> lark_standalone.Tree[lark_cython.Token]:
+    ) -> lark_standalone.Tree[lark_standalone.Token]:
         """Parse a DCL file and return the parse tree."""
         source = pathlib.Path(path).read_text(encoding="utf-8", newline="")
         return self.parse(source, path_name=path)
