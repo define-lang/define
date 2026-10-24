@@ -412,7 +412,7 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
 
 
 def test_quality_assignment_invalid_type_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as exc_info:
         parse(
             "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -428,7 +428,7 @@ def test_quality_assignment_invalid_type_keyword(parse: Parse):
 
 
 def test_quality_assignment_missing_type_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as exc_info:
         parse(
             "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"

@@ -101,7 +101,7 @@ class ParticleOperationValidator:
             self._tracker.mark_error(source)
             self._tracker.mark_error(target)
             return [
-                diagnostics.MoveViolatesConstraintsDiagnostic(
+                diagnostics.MoveMissingQualitiesDiagnostic(
                     location=target.location,
                     source_position=source.source_chained_name,
                     target_position=target.source_chained_name,
@@ -145,14 +145,14 @@ class ParticleOperationValidator:
             and target_type.full_typed_name != source_type.full_typed_name
         ):
             validation_diagnostics.append(
-                diagnostics.ValueSettingTypeMismatchDiagnostic(
+                diagnostics.ValueSettingValueQualityMismatchDiagnostic(
                     location=source.location,
                     target_position=target.source_chained_name,
                     source_position=source.source_chained_name,
-                    target_value_type=target_type.source_form_in_universe(
+                    target_value_quality=target_type.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    source_value_type=source_type.source_form_in_universe(
+                    source_value_quality=source_type.source_form_in_universe(
                         self._enclosing_fqun
                     ),
                 )
@@ -199,7 +199,7 @@ class ParticleOperationValidator:
         value_type = particle.qualities.value_type
         if value_type is None:
             validation_diagnostics.append(
-                diagnostics.ValueSettingMissingValueTypeDiagnostic(
+                diagnostics.ValueSettingMissingValueQualityDiagnostic(
                     location=position.location,
                     position_name=position.source_chained_name,
                     origin_position_name=particle.origin_position.source_form_in_universe(

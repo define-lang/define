@@ -165,7 +165,7 @@ def test_disallows_local_context(parse: Parse):
 
 
 def test_disallows_particle_quality_assignment(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as error:
         _ = parse(
             "define the potential position<mv:define-lang.org:parser:/test> {\n"
             + "    it may only contain particles where {\n"

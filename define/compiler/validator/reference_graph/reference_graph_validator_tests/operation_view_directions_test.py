@@ -189,7 +189,7 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 33

@@ -97,7 +97,7 @@ def test_value_quality_requires_global_name(parse: Parse):
 
 
 def test_quality_assignment_name_type_error_includes_value(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as error:
         _ = parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
             + "    it may only contain particles where {\n"

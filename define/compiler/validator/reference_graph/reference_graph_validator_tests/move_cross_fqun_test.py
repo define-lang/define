@@ -29,7 +29,7 @@ def test_cross_fqun_local_to_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -54,7 +54,7 @@ def test_cross_fqun_local_to_chained_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -82,7 +82,7 @@ def test_cross_fqun_chained_to_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 86
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -110,7 +110,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

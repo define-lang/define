@@ -56,7 +56,9 @@ class LiteralEncoder:
             return None, [
                 diagnostics.ValueHasNoEncodingDiagnostic(
                     location=potential_literal.location,
-                    value_type=value_type.source_form_in_universe(self._enclosing_fqun),
+                    value_quality=value_type.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
                 )
             ]
         parser = literal_parsers.LITERAL_PARSERS.get(
@@ -72,7 +74,9 @@ class LiteralEncoder:
                     literal_encoding=literal_encoding.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    value_type=value_type.source_form_in_universe(self._enclosing_fqun),
+                    value_quality=value_type.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
                     supported_encodings=_supported_encodings(value_encoding),
                 )
             ]

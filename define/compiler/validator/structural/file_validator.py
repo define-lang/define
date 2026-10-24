@@ -426,9 +426,9 @@ class DefinitionStructuralValidator:
                 name_types.NameType.ACTION,
             }:
                 self._diagnostics.append(
-                    diagnostics.ViewQualityConstraintDiagnostic(
+                    diagnostics.ViewPositionOrActionQualityDiagnostic(
                         location=quality.location,
-                        constraint_name=quality.source_typed_name,
+                        quality_name=quality.source_typed_name,
                     )
                 )
                 continue
@@ -437,9 +437,9 @@ class DefinitionStructuralValidator:
                 and quality.name_type == name_types.NameType.VALUE
             ):
                 self._diagnostics.append(
-                    diagnostics.EncodingOperationViewValueConstraintDiagnostic(
+                    diagnostics.EncodingOperationViewValueQualityDiagnostic(
                         location=quality.location,
-                        constraint_name=quality.source_typed_name,
+                        quality_name=quality.source_typed_name,
                     )
                 )
                 continue
@@ -448,9 +448,9 @@ class DefinitionStructuralValidator:
                 and quality.name_type == name_types.NameType.ENCODING
             ):
                 self._diagnostics.append(
-                    diagnostics.ValueOperationViewEncodingConstraintDiagnostic(
+                    diagnostics.ValueOperationViewEncodingDiagnostic(
                         location=quality.location,
-                        constraint_name=quality.source_typed_name,
+                        quality_name=quality.source_typed_name,
                     )
                 )
                 continue
@@ -458,19 +458,19 @@ class DefinitionStructuralValidator:
             statements.append(statement)
         self._validate_quality_assignment_statements(
             statements,
-            multiple_values_diagnostic=diagnostics.ViewMultipleValueConstraintsDiagnostic,
+            multiple_values_diagnostic=diagnostics.ViewMultipleValueQualitiesDiagnostic,
         )
         if isinstance(definition, ast.EncodingOperationDefinition):
             if name_types.NameType.ENCODING not in quality_name_types:
                 self._diagnostics.append(
-                    diagnostics.ViewMissingEncodingConstraintDiagnostic(
+                    diagnostics.ViewMissingEncodingDiagnostic(
                         location=view.typed_name.name_content.location,
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
         elif name_types.NameType.VALUE not in quality_name_types:
             self._diagnostics.append(
-                diagnostics.ViewMissingValueConstraintDiagnostic(
+                diagnostics.ViewMissingValueQualityDiagnostic(
                     location=view.typed_name.name_content.location,
                     view_name=view.typed_name.source_typed_name,
                 )
@@ -718,7 +718,7 @@ class DefinitionStructuralValidator:
         if block is not None:
             self._validate_quality_assignment_statements(
                 block.statements,
-                multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
+                multiple_values_diagnostic=diagnostics.PositionMultipleValueQualitiesDiagnostic,
             )
 
     def _validate_local_name_format_and_conflicts(
@@ -952,9 +952,7 @@ class DefinitionStructuralValidator:
         self,
         statements: Sequence[ast.QualityAssignmentStatement],
         *,
-        multiple_values_diagnostic: type[
-            diagnostics.MultipleValueConstraintsDiagnostic
-        ],
+        multiple_values_diagnostic: type[diagnostics.MultipleValueQualitiesDiagnostic],
     ):
         seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()
@@ -970,10 +968,10 @@ class DefinitionStructuralValidator:
             first_line = seen_lines.get(statement.typed_global_name)
             if first_line is not None:
                 self._diagnostics.append(
-                    diagnostics.DuplicatePositionConstraintDiagnostic(
+                    diagnostics.DuplicateQualityAssignmentDiagnostic(
                         location=statement.typed_global_name.location,
-                        constraint_name=statement.typed_global_name.source_typed_name,
-                        first_constraint_line=first_line,
+                        quality_name=statement.typed_global_name.source_typed_name,
+                        first_assignment_line=first_line,
                     )
                 )
                 continue
@@ -986,7 +984,7 @@ class DefinitionStructuralValidator:
                         multiple_values_diagnostic(
                             location=statement.typed_global_name.location,
                             first_value_name=first_value.source_typed_name,
-                            first_constraint_line=first_value.location.line,
+                            first_assignment_line=first_value.location.line,
                         )
                     )
                     continue

@@ -37,11 +37,11 @@ def test_duplicate_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 20
     assert diagnostic.location.file_path is None
-    assert diagnostic.constraint_name == "value</number>"
-    assert diagnostic.first_constraint_line == 5
+    assert diagnostic.quality_name == "value</number>"
+    assert diagnostic.first_assignment_line == 5
     assert diagnostic.location.line == 6
 
 
@@ -52,15 +52,15 @@ def test_multiple_values(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert isinstance(first, diagnostics.PositionMultipleValueConstraintsDiagnostic)
+    assert isinstance(first, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert first.location.file_path is None
-    assert isinstance(second, diagnostics.PositionMultipleValueConstraintsDiagnostic)
+    assert isinstance(second, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert second.location.column == 20
     assert second.location.file_path is None
     assert first.first_value_name == "value</number>"
     assert second.first_value_name == "value</number>"
-    assert first.first_constraint_line == 7
-    assert second.first_constraint_line == 7
+    assert first.first_assignment_line == 7
+    assert second.first_assignment_line == 7
     assert first.location.line == 8
     assert second.location.line == 9
     assert first.location.column == 20
@@ -73,12 +73,10 @@ def test_multiple_values_in_local_position(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.PositionMultipleValueConstraintsDiagnostic
-    )
+    assert isinstance(diagnostic, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.first_value_name == "value</number>"
-    assert diagnostic.first_constraint_line == 7
+    assert diagnostic.first_assignment_line == 7
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 24
 

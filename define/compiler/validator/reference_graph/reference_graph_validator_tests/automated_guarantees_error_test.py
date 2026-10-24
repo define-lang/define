@@ -198,7 +198,7 @@ def test_error_from_constraint_violation_on_interface_position(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].source_position == "position<unconstrained>"
     assert all_diags[0].target_position == "position<item>"
     assert all_diags[0].missing_qualities == ["position</quality_a>"]

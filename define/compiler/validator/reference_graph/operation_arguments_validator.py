@@ -282,7 +282,7 @@ class OperationArgumentsValidator:
                 missing.append(quality.source_form_in_universe(self._enclosing_fqun))
         if missing:
             validation_diagnostics.append(
-                diagnostics.OperationArgumentViolatesConstraintsDiagnostic(
+                diagnostics.OperationArgumentMissingQualitiesDiagnostic(
                     location=looking_at.location,
                     view_name=argument.view.source_typed_name,
                     looked_at_name=looked_at_name,

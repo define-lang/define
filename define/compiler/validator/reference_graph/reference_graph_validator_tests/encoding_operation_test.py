@@ -131,7 +131,7 @@ def test_missing_encoding_constraint(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 38
@@ -244,9 +244,9 @@ def test_literal_for_view_with_value_constraint(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.EncodingOperationViewValueConstraintDiagnostic
+        diagnostic, diagnostics.EncodingOperationViewValueQualityDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
+    assert diagnostic.quality_name == "value<standard:/number/natural>"

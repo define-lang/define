@@ -471,9 +471,7 @@ class TestMoveParticle:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 11

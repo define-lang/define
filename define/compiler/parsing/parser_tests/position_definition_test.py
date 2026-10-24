@@ -338,7 +338,9 @@ def test_position_definition_block_requires_content(parse: Parse):
 
 
 def test_quality_assignment_block_requires_statements(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
+    with pytest.raises(
+        parser_exceptions.MissingQualityAssignmentBlockContent
+    ) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -354,7 +356,7 @@ def test_quality_assignment_block_requires_statements(parse: Parse):
 def test_quality_assignment_block_with_invalid_statement_then_more_definitions(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
         parse(
             "define the potential position<my_lib:/path>.\n"
             + "define the potential position<my_lib:/path> {\n"

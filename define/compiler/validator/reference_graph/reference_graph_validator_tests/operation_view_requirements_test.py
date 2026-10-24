@@ -43,7 +43,7 @@ def test_value_mismatch(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 37
@@ -82,7 +82,7 @@ def test_literal_value_has_no_encoding(
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 42
-    assert diagnostic.value_type == "value</count>"
+    assert diagnostic.value_quality == "value</count>"
 
 
 def test_literal_for_view_without_value(
@@ -92,19 +92,17 @@ def test_literal_for_view_without_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first = result.all_diagnostics[0]
-    assert isinstance(first, diagnostics.ViewMissingValueConstraintDiagnostic)
+    assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
     assert first.location.column == 21
     assert first.view_name == "view<source>"
     second = result.all_diagnostics[1]
-    assert isinstance(
-        second, diagnostics.ValueOperationViewEncodingConstraintDiagnostic
-    )
+    assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 6
     assert second.location.column == 24
-    assert second.constraint_name == "encoding<standard:/number/decimal/ascii>"
+    assert second.quality_name == "encoding<standard:/number/decimal/ascii>"
 
 
 def test_looks_at_undefined_view(
@@ -160,7 +158,7 @@ def test_position_missing_value_type(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 35
@@ -179,7 +177,7 @@ def test_position_value_mismatch(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 38
@@ -205,7 +203,7 @@ def test_comparison_result_value_mismatch(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 20

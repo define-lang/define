@@ -488,7 +488,7 @@ def test_implication_after_trigger_conditions_block_in_action(
 
 
 def test_implication_inside_quality_assignment_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -541,7 +541,7 @@ def test_implication_inside_trigger_conditions_block(parse: Parse):
 def test_implication_inside_local_position_definition_quality_assignment_block(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<inner> {\n"

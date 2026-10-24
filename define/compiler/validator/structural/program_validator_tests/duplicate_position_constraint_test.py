@@ -30,10 +30,10 @@ def test_duplicate_constraint_in_global_position_error(
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diags[0].location.file_path is None
-    assert diags[0].constraint_name == "position</foo>"
-    assert diags[0].first_constraint_line == 4
+    assert diags[0].quality_name == "position</foo>"
+    assert diags[0].first_assignment_line == 4
     assert diags[0].location.line == 5
     assert diags[0].location.column == 20
 
@@ -45,10 +45,10 @@ def test_duplicate_constraint_in_local_position_error(
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diags[0].location.file_path is None
-    assert diags[0].constraint_name == "position</foo>"
-    assert diags[0].first_constraint_line == 5
+    assert diags[0].quality_name == "position</foo>"
+    assert diags[0].first_assignment_line == 5
     assert diags[0].location.line == 6
     assert diags[0].location.column == 24
 
@@ -60,16 +60,16 @@ def test_three_duplicates_two_errors(
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diags[1], diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diags[1].location.file_path is None
-    assert diags[0].constraint_name == "position</foo>"
-    assert diags[0].first_constraint_line == 4
+    assert diags[0].quality_name == "position</foo>"
+    assert diags[0].first_assignment_line == 4
     assert diags[0].location.line == 5
     assert diags[0].location.column == 20
-    assert diags[1].constraint_name == "position</foo>"
-    assert diags[1].first_constraint_line == 4
+    assert diags[1].quality_name == "position</foo>"
+    assert diags[1].first_assignment_line == 4
     assert diags[1].location.line == 6
     assert diags[1].location.column == 20
 
@@ -103,9 +103,9 @@ def test_duplicate_full_fqun_cross_universe_error(
     assert diags[0].location.file_path is None
     assert diags[0].config_path == ".define/project/config.defcl"
     assert diags[0].universe == "other.example.com:other_lib"
-    assert isinstance(diags[1], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diags[1], diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diags[1].location.file_path is None
-    assert diags[1].constraint_name == "position<other.example.com:other_lib:/foo>"
-    assert diags[1].first_constraint_line == 3
+    assert diags[1].quality_name == "position<other.example.com:other_lib:/foo>"
+    assert diags[1].first_assignment_line == 3
     assert diags[1].location.line == 4
     assert diags[1].location.column == 20

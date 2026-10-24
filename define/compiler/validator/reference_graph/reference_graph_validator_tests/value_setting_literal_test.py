@@ -116,7 +116,7 @@ def test_no_literal_parser(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value<standard:/number/natural>"
+    assert diagnostic.value_quality == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -142,7 +142,7 @@ def test_only_matching_encodings_suggested(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value<standard:/number/natural>"
+    assert diagnostic.value_quality == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -161,7 +161,7 @@ def test_value_has_no_encoding(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.value_type == "value</number>"
+    assert diagnostic.value_quality == "value</number>"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
 
@@ -187,7 +187,7 @@ def test_target_missing_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
@@ -268,7 +268,7 @@ def test_invalid_child(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
@@ -329,7 +329,7 @@ def test_callee_target_missing_value_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("assign.dfn")
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 26
@@ -372,7 +372,7 @@ def test_boolean_literal_sets_natural(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal<standard:/boolean>"
     assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
-    assert diagnostic.value_type == "value<standard:/number/natural>"
+    assert diagnostic.value_quality == "value<standard:/number/natural>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/binary/ascii>",
         "encoding<standard:/number/decimal/ascii>",
@@ -417,7 +417,7 @@ def test_binary_literal_sets_boolean(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal<standard:/binary>"
     assert diagnostic.literal_encoding == "encoding<standard:/binary/ascii>"
-    assert diagnostic.value_type == "value<standard:/boolean>"
+    assert diagnostic.value_quality == "value<standard:/boolean>"
     assert diagnostic.supported_encodings == ["encoding<standard:/boolean/ascii>"]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46

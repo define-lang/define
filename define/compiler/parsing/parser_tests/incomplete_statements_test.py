@@ -442,7 +442,9 @@ def test_trigger_conditions_block_truncated_after_open(parse: Parse):
 def test_quality_assignment_block_truncated_after_open_without_final_newline(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
+    with pytest.raises(
+        parser_exceptions.MissingQualityAssignmentBlockContent
+    ) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {"
@@ -1445,7 +1447,7 @@ def test_reference_name_that_is_neither_local_nor_global(parse: Parse):
 
 
 def test_quality_assignment_ends_after_it_has_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain particles where {\n"
@@ -1516,7 +1518,7 @@ def test_view_definition_truncated_after_open(parse: Parse):
 
 
 def test_view_definition_truncated_after_direction_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
+    with pytest.raises(parser_exceptions.MissingViewQualityAssignmentBlock) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<left> {\n"

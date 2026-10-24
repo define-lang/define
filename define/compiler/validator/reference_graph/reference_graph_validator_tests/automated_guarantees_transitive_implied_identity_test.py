@@ -41,7 +41,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 69
     assert all_diags[0].location.end_line == 27
@@ -80,7 +80,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 87
     assert all_diags[0].location.end_line == 26
@@ -122,7 +122,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 87
     assert all_diags[0].location.end_line == 25

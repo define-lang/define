@@ -159,7 +159,7 @@ def test_deferred_position_chain_error_format(
         File "test.dfn", line 11, column 65
             create a particle in position<pos_a>::position</pos_b>::position</wrong>.
                                                                     ^^^^^^^^^^^^^^^^
-        'position<my.domain.com:my_lib:/wrong>' must be declared as an explicit 'it has the' constraint in the definition of 'position<my.domain.com:my_lib:/pos_b>'""")
+        'position<my.domain.com:my_lib:/wrong>' must be explicitly assigned with an 'it has the' statement in the definition of 'position<my.domain.com:my_lib:/pos_b>'""")
     )
 
 
@@ -747,7 +747,7 @@ def test_value_setting_type_mismatch_format(
         File "test.dfn", line 18, column 41
             set the value of position<x> to position<y>.
                                             ^^^^^^^^^^^
-        this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/natural>.""")
+        this value setting statement has particles with two different value qualities, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/natural>.""")
     )
 
 

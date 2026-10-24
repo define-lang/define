@@ -127,39 +127,39 @@ class LocalNameConflictDiagnostic(Diagnostic):
     )
 
 
-class DuplicatePositionConstraintDiagnostic(Diagnostic):
-    """Diagnostic for when a quality constraint appears twice in the same Position Constraint Block."""
+class DuplicateQualityAssignmentDiagnostic(Diagnostic):
+    """Diagnostic for when a Quality Assignment Statement appears twice in the same Quality Assignment Block."""
 
-    constraint_name: str
-    first_constraint_line: int
+    quality_name: str
+    first_assignment_line: int
     message_format: ClassVar[str] = (
-        "duplicate quality constraint '{self.constraint_name}'; "
-        "first declared on line {self.first_constraint_line}"
+        "duplicate quality assignment '{self.quality_name}'; "
+        "first declared on line {self.first_assignment_line}"
     )
 
 
-class MultipleValueConstraintsDiagnostic(Diagnostic):
-    """Base class for a Position Constraint Block that specifies more than one value type."""
+class MultipleValueQualitiesDiagnostic(Diagnostic):
+    """Base class for a Quality Assignment Block that assigns more than one value quality."""
 
     first_value_name: str
-    first_constraint_line: int
+    first_assignment_line: int
 
 
-class PositionMultipleValueConstraintsDiagnostic(MultipleValueConstraintsDiagnostic):
-    """A position's Position Constraint Block specifies more than one value type."""
+class PositionMultipleValueQualitiesDiagnostic(MultipleValueQualitiesDiagnostic):
+    """A Position Quality Assignment Block assigns more than one value quality."""
 
     message_format: ClassVar[str] = (
-        "a position may only have one value constraint; "
-        "'{self.first_value_name}' was already declared on line {self.first_constraint_line}"
+        "a position may only have one value quality; "
+        "'{self.first_value_name}' was already declared on line {self.first_assignment_line}"
     )
 
 
-class ViewMultipleValueConstraintsDiagnostic(MultipleValueConstraintsDiagnostic):
-    """A view's constraints specify more than one value type."""
+class ViewMultipleValueQualitiesDiagnostic(MultipleValueQualitiesDiagnostic):
+    """A View Quality Assignment Block assigns more than one value quality."""
 
     message_format: ClassVar[str] = (
-        "a view may only have one value constraint; "
-        "'{self.first_value_name}' was already declared on line {self.first_constraint_line}"
+        "a view may only have one value quality; "
+        "'{self.first_value_name}' was already declared on line {self.first_assignment_line}"
     )
 
 
@@ -215,53 +215,53 @@ class UnreferencedViewDiagnostic(Diagnostic):
     )
 
 
-class ViewQualityConstraintDiagnostic(Diagnostic):
-    """Diagnostic for a view constraint that names a position or action."""
+class ViewPositionOrActionQualityDiagnostic(Diagnostic):
+    """Diagnostic for a view Quality Assignment Statement that names a position or action."""
 
-    constraint_name: str
+    quality_name: str
     message_format: ClassVar[str] = (
-        "views may only have value and encoding constraints, "
-        "but '{self.constraint_name}' is not a value or an encoding"
+        "views may only be assigned value qualities and encodings, "
+        "but '{self.quality_name}' is not a value or an encoding"
     )
 
 
-class ViewMissingValueConstraintDiagnostic(Diagnostic):
-    """Diagnostic for an interface view of a value operation without a value constraint."""
+class ViewMissingValueQualityDiagnostic(Diagnostic):
+    """Diagnostic for an interface view of a value operation without a value quality."""
 
     view_name: str
     message_format: ClassVar[str] = (
-        "'{self.view_name}' must have a value constraint, because every "
+        "'{self.view_name}' must have a value quality, because every "
         "interface view on a value operation must have one"
     )
 
 
-class ViewMissingEncodingConstraintDiagnostic(Diagnostic):
-    """Diagnostic for an interface view of an encoding operation without an encoding constraint."""
+class ViewMissingEncodingDiagnostic(Diagnostic):
+    """Diagnostic for an interface view of an encoding operation without an encoding."""
 
     view_name: str
     message_format: ClassVar[str] = (
-        "'{self.view_name}' must have an encoding constraint, because every "
+        "'{self.view_name}' must have an encoding, because every "
         "interface view on an encoding operation must have one"
     )
 
 
-class EncodingOperationViewValueConstraintDiagnostic(Diagnostic):
-    """Diagnostic for a value constraint on an interface view of an encoding operation."""
+class EncodingOperationViewValueQualityDiagnostic(Diagnostic):
+    """Diagnostic for a value quality on an interface view of an encoding operation."""
 
-    constraint_name: str
+    quality_name: str
     message_format: ClassVar[str] = (
         "interface views on an encoding operation may not have value "
-        "constraints, but '{self.constraint_name}' is a value"
+        "qualities, but '{self.quality_name}' is a value"
     )
 
 
-class ValueOperationViewEncodingConstraintDiagnostic(Diagnostic):
-    """Diagnostic for an encoding constraint on an interface view of a value operation."""
+class ValueOperationViewEncodingDiagnostic(Diagnostic):
+    """Diagnostic for an encoding on an interface view of a value operation."""
 
-    constraint_name: str
+    quality_name: str
     message_format: ClassVar[str] = (
-        "interface views on a value operation may not have encoding "
-        "constraints, but '{self.constraint_name}' is an encoding"
+        "interface views on a value operation may not have encodings, "
+        "but '{self.quality_name}' is an encoding"
     )
 
 
@@ -449,8 +449,8 @@ class LookedAtKind(enum.Enum):
     POSITION = enum.auto()
 
 
-class OperationArgumentViolatesConstraintsDiagnostic(Diagnostic):
-    """Diagnostic for a view looking at a particle that does not meet the view's constraints."""
+class OperationArgumentMissingQualitiesDiagnostic(Diagnostic):
+    """Diagnostic for a view looking at a particle that does not have the qualities the view assigns."""
 
     view_name: str
     looked_at_name: str
@@ -1010,14 +1010,14 @@ class ValueSettingEmptyPositionDiagnostic(Diagnostic):
     )
 
 
-class ValueSettingMissingValueTypeDiagnostic(Diagnostic):
-    """A particle in a Value Setting Statement has no assigned value type."""
+class ValueSettingMissingValueQualityDiagnostic(Diagnostic):
+    """A particle in a Value Setting Statement has no assigned value quality."""
 
     position_name: str
     origin_position_name: str
     message_format: ClassVar[str] = (
-        "the particle in '{self.position_name}' has no assigned value type."
-        " Set a value constraint on the position where it originated:"
+        "the particle in '{self.position_name}' has no assigned value quality."
+        " Assign a value quality to the position where it originated:"
         " '{self.origin_position_name}'."
     )
 
@@ -1041,42 +1041,43 @@ class UnsetValueDiagnostic(Diagnostic):
     )
 
 
-class ValueSettingTypeMismatchDiagnostic(Diagnostic):
-    """A Value Setting Statement uses particles with different value types."""
+class ValueSettingValueQualityMismatchDiagnostic(Diagnostic):
+    """A Value Setting Statement uses particles with different value qualities."""
 
     target_position: str
     source_position: str
-    target_value_type: str
-    source_value_type: str
+    target_value_quality: str
+    source_value_quality: str
     message_format: ClassVar[str] = (
-        "this value setting statement has particles with two different value types,"
-        " which is not allowed. {self.target_position} has {self.target_value_type}"
-        " and {self.source_position} has {self.source_value_type}."
+        "this value setting statement has particles with two different value"
+        " qualities, which is not allowed. {self.target_position} has"
+        " {self.target_value_quality} and {self.source_position} has"
+        " {self.source_value_quality}."
     )
 
 
 class LiteralCannotSetValueDiagnostic(Diagnostic):
-    """A literal's encoding cannot be read as the value type it is setting."""
+    """A literal's encoding cannot be read as the value quality it is setting."""
 
     potential_literal: str
     literal_encoding: str
-    value_type: str
+    value_quality: str
     supported_encodings: Sequence[str]
 
     @property
     def supported_encodings_advice(self) -> str:
-        """Say which literal encodings could set the value type, if any can."""
+        """Say which literal encodings could set the value quality, if any can."""
         if not self.supported_encodings:
-            return f"In fact, {self.value_type} cannot be set by a literal at all."
+            return f"In fact, {self.value_quality} cannot be set by a literal at all."
         encoding_list = "\n    ".join(self.supported_encodings)
         return (
-            f"To set a {self.value_type}, use a literal with one of these"
+            f"To set a {self.value_quality}, use a literal with one of these"
             f" encodings:\n    {encoding_list}"
         )
 
     message_format: ClassVar[str] = (
-        "{self.potential_literal} cannot set a {self.value_type}, because literals"
-        " with the {self.literal_encoding} cannot be read as {self.value_type}.\n"
+        "{self.potential_literal} cannot set a {self.value_quality}, because literals"
+        " with the {self.literal_encoding} cannot be read as {self.value_quality}.\n"
         "{self.supported_encodings_advice}"
     )
 
@@ -1109,11 +1110,11 @@ class LiteralCannotBeConvertedDiagnostic(Diagnostic):
 
 
 class ValueHasNoEncodingDiagnostic(Diagnostic):
-    """A value type has no encoding, so it can never be set."""
+    """A value quality has no encoding, so it can never be set."""
 
-    value_type: str
+    value_quality: str
     message_format: ClassVar[str] = (
-        "{self.value_type} has no encoding, so no value of this type can be set."
+        "{self.value_quality} has no encoding, so it can never be set"
     )
 
 
@@ -1131,8 +1132,8 @@ class InvalidLiteralContentDiagnostic(Diagnostic):
     )
 
 
-class MoveViolatesConstraintsDiagnostic(Diagnostic):
-    """Diagnostic for when a move's destination constraints are not satisfied."""
+class MoveMissingQualitiesDiagnostic(Diagnostic):
+    """Diagnostic for when a moved particle lacks qualities its destination assigns."""
 
     source_position: str
     target_position: str
@@ -1177,14 +1178,14 @@ class ChainedLocalNameRequiresActionDiagnostic(Diagnostic):
     )
 
 
-class ChainElementNotInConstraintsDiagnostic(Diagnostic):
-    """Diagnostic for when a chain element is not in the first position's constraints."""
+class ChainElementNotAssignedDiagnostic(Diagnostic):
+    """Diagnostic for when a chain element is not explicitly assigned to its parent name."""
 
     element_name: str
     parent_name: str
     message_format: ClassVar[str] = (
-        "'{self.element_name}' must be declared as an explicit 'it has the'"
-        " constraint in the definition of '{self.parent_name}'"
+        "'{self.element_name}' must be explicitly assigned with an 'it has the'"
+        " statement in the definition of '{self.parent_name}'"
     )
 
 

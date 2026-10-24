@@ -176,7 +176,7 @@ class ChainedNameValidator:
         declared = block.as_set if block is not None else frozenset[str]()
         if element_name not in declared:
             validation_diagnostics.append(
-                diagnostics.ChainElementNotInConstraintsDiagnostic(
+                diagnostics.ChainElementNotAssignedDiagnostic(
                     location=element.location,
                     element_name=element_name,
                     parent_name=parent_name,

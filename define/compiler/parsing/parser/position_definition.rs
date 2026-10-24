@@ -141,13 +141,13 @@ impl<'py, 'source> Parser<'py, 'source> {
                 let close = self.scanner.position;
                 return Err(self
                     .errors
-                    .missing_position_constraint_content(close, close));
+                    .missing_quality_assignment_block_content(close, close));
             }
             // The block ends where its content belongs.
             LineInBlock::Unclosed => {
                 return Err(self
                     .errors
-                    .missing_position_constraint_content(block_open_end, block_open_end));
+                    .missing_quality_assignment_block_content(block_open_end, block_open_end));
             }
         }
         let statements = self.nodes.start::<ast::QualityAssignmentStatement>();
@@ -188,17 +188,17 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         // The statement is not a Quality Assignment Statement.
         if !self.scanner.consume(IT_HAS_THE) {
-            return Err(self.invalid_position_constraint_block());
+            return Err(self.invalid_quality_assignment_block());
         }
         // The line ends, or a non-letter character comes, where the typed name
         // belongs.
         if !self.space_before_word()? {
-            return Err(self.expected_constraint_name_type());
+            return Err(self.expected_quality_assignment_name_type());
         }
         let (typed_name, full_typed_name) = self.parse_typed_global_name_reference(
             fqun,
             &ASSIGNABLE_NAME_TYPES,
-            Self::expected_constraint_name_type,
+            Self::expected_quality_assignment_name_type,
         )?;
         // There is no `.`.
         let Some(end) = self.parse_terminator()? else {
@@ -259,24 +259,23 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a statement at the scanner's position in a
-    /// position constraint block that is not a position requirement
-    /// statement.
+    /// Quality Assignment Block that is not a Quality Assignment Statement.
     #[cold]
     #[inline(never)]
-    fn invalid_position_constraint_block(&self) -> ParseError {
+    fn invalid_quality_assignment_block(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_after(IT_HAS_THE) {
             return error;
         }
         let start = self.scanner.position;
         self.errors
-            .invalid_position_constraint_block(start, self.end_of_line())
+            .invalid_quality_assignment_block(start, self.end_of_line())
     }
 
     /// Returns the error for a name type, at the scanner's position, that a
-    /// position requirement statement does not allow.
+    /// Quality Assignment Statement does not allow.
     #[cold]
     #[inline(never)]
-    fn expected_constraint_name_type(&self) -> ParseError {
+    fn expected_quality_assignment_name_type(&self) -> ParseError {
         let matched = ASSIGNABLE_NAME_TYPES
             .iter()
             .map(|&(keyword, _)| self.scanner.matching_prefix_length(keyword))
@@ -296,6 +295,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         } else {
             start.after(word).previous_column()
         };
-        self.errors.expected_constraint_name_type(start, end)
+        self.errors
+            .expected_quality_assignment_name_type(start, end)
     }
 }

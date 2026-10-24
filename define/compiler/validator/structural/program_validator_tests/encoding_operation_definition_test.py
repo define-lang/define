@@ -62,17 +62,17 @@ def test_view_missing_encoding_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     missing = result.all_diagnostics[0]
-    assert isinstance(missing, diagnostics.ViewMissingEncodingConstraintDiagnostic)
+    assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
     assert missing.location.file_path is None
     assert missing.location.line == 3
     assert missing.location.column == 21
     assert missing.view_name == "view<number>"
     quality = result.all_diagnostics[1]
-    assert isinstance(quality, diagnostics.ViewQualityConstraintDiagnostic)
+    assert isinstance(quality, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert quality.location.file_path is None
     assert quality.location.line == 6
     assert quality.location.column == 24
-    assert quality.constraint_name == "position</box>"
+    assert quality.quality_name == "position</box>"
 
 
 def test_view_value_constraint(
@@ -82,17 +82,17 @@ def test_view_value_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     missing = result.all_diagnostics[0]
-    assert isinstance(missing, diagnostics.ViewMissingEncodingConstraintDiagnostic)
+    assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
     assert missing.location.file_path is None
     assert missing.location.line == 3
     assert missing.location.column == 21
     assert missing.view_name == "view<number>"
     value = result.all_diagnostics[1]
-    assert isinstance(value, diagnostics.EncodingOperationViewValueConstraintDiagnostic)
+    assert isinstance(value, diagnostics.EncodingOperationViewValueQualityDiagnostic)
     assert value.location.file_path is None
     assert value.location.line == 6
     assert value.location.column == 24
-    assert value.constraint_name == "value<standard:/number/natural>"
+    assert value.quality_name == "value<standard:/number/natural>"
 
 
 def test_view_value_and_encoding_constraints(
@@ -103,12 +103,12 @@ def test_view_value_and_encoding_constraints(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.EncodingOperationViewValueConstraintDiagnostic
+        diagnostic, diagnostics.EncodingOperationViewValueQualityDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
+    assert diagnostic.quality_name == "value<standard:/number/natural>"
 
 
 def test_view_position_constraint(
@@ -118,11 +118,11 @@ def test_view_position_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ViewQualityConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "position</box>"
+    assert diagnostic.quality_name == "position</box>"
 
 
 def test_duplicate_view(

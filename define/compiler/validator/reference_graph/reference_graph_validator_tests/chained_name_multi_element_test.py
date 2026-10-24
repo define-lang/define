@@ -35,9 +35,7 @@ class TestCreateParticle:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
@@ -54,9 +52,7 @@ class TestCreateParticle:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/pos_c>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
@@ -234,9 +230,7 @@ class TestChainActionValidation:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<inner>"
         assert all_diags[0].location.line == 10
@@ -262,9 +256,7 @@ class TestChainActionValidation:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/leaf>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/target>"
         assert all_diags[0].location.line == 10

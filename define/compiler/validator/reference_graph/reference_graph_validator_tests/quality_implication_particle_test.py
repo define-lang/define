@@ -37,9 +37,9 @@ def test_duplicate_direct_constraint_triggers_action_once(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
-    assert all_diags[0].constraint_name == "action</requirer>"
-    assert all_diags[0].first_constraint_line == 7
+    assert isinstance(all_diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert all_diags[0].quality_name == "action</requirer>"
+    assert all_diags[0].first_assignment_line == 7
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -124,7 +124,7 @@ def test_move_into_implied_position_missing_quality(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

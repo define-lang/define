@@ -149,7 +149,7 @@ def test_destroy_chained_name_not_in_constraints(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 46
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

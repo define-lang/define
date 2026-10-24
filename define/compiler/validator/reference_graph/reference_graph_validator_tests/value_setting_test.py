@@ -30,14 +30,16 @@ def test_mismatched_types(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingTypeMismatchDiagnostic)
+    assert isinstance(
+        diagnostic, diagnostics.ValueSettingValueQualityMismatchDiagnostic
+    )
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 46
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
-    assert diagnostic.target_value_type == "value</text>"
-    assert diagnostic.source_value_type == "value<standard:/number/natural>"
+    assert diagnostic.target_value_quality == "value</text>"
+    assert diagnostic.source_value_quality == "value<standard:/number/natural>"
 
 
 def test_mismatched_type_target_is_not_reported_unset(
@@ -47,14 +49,16 @@ def test_mismatched_type_target_is_not_reported_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingTypeMismatchDiagnostic)
+    assert isinstance(
+        diagnostic, diagnostics.ValueSettingValueQualityMismatchDiagnostic
+    )
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 46
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
-    assert diagnostic.target_value_type == "value</text>"
-    assert diagnostic.source_value_type == "value<standard:/number/natural>"
+    assert diagnostic.target_value_quality == "value</text>"
+    assert diagnostic.source_value_quality == "value<standard:/number/natural>"
 
 
 def test_target_missing_type(
@@ -64,7 +68,7 @@ def test_target_missing_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 26
@@ -113,7 +117,7 @@ def test_source_missing_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 46
@@ -142,14 +146,14 @@ def test_both_missing_types(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.origin_position_name == "position<target>"
     diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 46
@@ -257,7 +261,7 @@ def test_invalid_child(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
@@ -357,7 +361,7 @@ def test_callee_target_missing_value_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("assign.dfn")
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 26
@@ -372,7 +376,7 @@ def test_callee_source_missing_value_type(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueTypeDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("assign.dfn")
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -401,7 +405,7 @@ def test_same_position_still_validates_both_chained_names(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 3
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
@@ -414,7 +418,7 @@ def test_same_position_still_validates_both_chained_names(
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 64
     diagnostic = result.all_diagnostics[2]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")

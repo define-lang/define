@@ -311,7 +311,7 @@ def test_disallows_direction_statement_after_quality_assignment_block(
 
 
 def test_requires_quality_assignment_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
+    with pytest.raises(parser_exceptions.MissingViewQualityAssignmentBlock) as error:
         parse(
             _OPERATION_PREFIX
             + "    define the view<left> {\n"
@@ -326,7 +326,7 @@ def test_requires_quality_assignment_block(parse: Parse):
 
 
 def test_requires_quality_assignment_block_after_both_directions(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
+    with pytest.raises(parser_exceptions.MissingViewQualityAssignmentBlock) as error:
         parse(
             _OPERATION_PREFIX
             + "    define the view<left> {\n"
@@ -368,7 +368,7 @@ def test_disallows_direction_statement_in_position_definition(
 
 
 def test_requires_quality_assignment(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as error:
+    with pytest.raises(parser_exceptions.MissingQualityAssignmentBlockContent) as error:
         parse(
             _OPERATION_PREFIX
             + "    define the view<left> {\n"
@@ -385,7 +385,7 @@ def test_requires_quality_assignment(parse: Parse):
 
 
 def test_disallows_literal_quality_assignment(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
+    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as error:
         parse(
             _OPERATION_PREFIX
             + "    define the view<left> {\n"
@@ -567,7 +567,7 @@ def test_requires_direction_statement_instead_of_other_text(parse: Parse):
 def test_disallows_quality_implication_after_direction_statements(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
+    with pytest.raises(parser_exceptions.MissingViewQualityAssignmentBlock) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<left> {\n"

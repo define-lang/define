@@ -178,8 +178,8 @@ class ExpectedChainSeparatorOrTerminator(DefineTokenError):
     message_format: ClassVar[str] = "Expected '::' or '.' here."
 
 
-class ExpectedConstraintNameType(DefineTokenError):
-    """Expected a quality type in a Position Constraint Block."""
+class ExpectedQualityAssignmentNameType(DefineTokenError):
+    """Expected a quality type in a Quality Assignment Statement."""
 
     message_format: ClassVar[str] = (
         "Expected 'position', 'action', 'value', or 'encoding'."
@@ -368,10 +368,10 @@ class InvalidEncodingOperationStatementsBlock(DefineTokenError):
     )
 
 
-class InvalidPositionConstraintBlock(DefineTokenError):
-    """Write something nonsensical in a position constraint block."""
+class InvalidQualityAssignmentBlock(DefineTokenError):
+    """Write something nonsensical in a Quality Assignment Block."""
 
-    message_format: ClassVar[str] = "Invalid syntax in a position constraint block."
+    message_format: ClassVar[str] = "Invalid syntax in a quality assignment block."
 
 
 class InvalidPositionDefinitionBlock(DefineTokenError):
@@ -389,7 +389,7 @@ class InvalidPositionDefinitionLocationInAction(DefineTokenError):
 
 
 class InvalidPotentialLiteralDefinitionBlock(DefineTokenError):
-    """Expected the encoding constraint of a potential literal."""
+    """Expected the encoding Quality Assignment Statement of a potential literal."""
 
     message_format: ClassVar[str] = (
         "A potential literal definition requires exactly one 'it has the encoding<...>.' statement."
@@ -551,11 +551,11 @@ class MissingPositionReference(DefineTokenError):
     )
 
 
-class MissingPositionConstraintContent(DefineTokenError):
-    """Left out syntax from a position constraint block."""
+class MissingQualityAssignmentBlockContent(DefineTokenError):
+    """Left out syntax from a Quality Assignment Block."""
 
     message_format: ClassVar[str] = (
-        "Position constraint blocks must contain at least one 'it has the' statement."
+        "Quality assignment blocks must contain at least one 'it has the' statement."
     )
 
 
@@ -616,8 +616,8 @@ class MissingValueSource(DefineTokenError):
     )
 
 
-class MissingViewConstraintBlock(DefineTokenError):
-    """Left out the position constraint block after a view's View Direction Statements."""
+class MissingViewQualityAssignmentBlock(DefineTokenError):
+    """Left out the View Quality Assignment Block after a view's View Direction Statements."""
 
     message_format: ClassVar[str] = (
         "A view definition must contain an 'it may only contain particles where'"

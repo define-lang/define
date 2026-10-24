@@ -85,7 +85,7 @@ def test_single_level_transitivity_does_not_include_unrelated(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -185,7 +185,7 @@ def test_matching_implied_but_not_matching_impliers_for_move(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -245,7 +245,7 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

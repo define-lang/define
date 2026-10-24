@@ -130,9 +130,7 @@ class TestImpliedQualityChainStart:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert (
             all_diags[0].element_name
             == "position<mv:define-lang.org:test_pos_init_chain_bad:/wrong>"
@@ -164,9 +162,7 @@ class TestImpliedQualityChainStart:
         assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
         assert all_diags[0].location.line == 6

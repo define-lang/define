@@ -149,13 +149,15 @@ impl<'py, 'source> Parser<'py, 'source> {
             // The block closes before its View Quality Assignment Block.
             LineInBlock::Close => {
                 let close = self.scanner.position;
-                return Err(self.errors.missing_view_constraint_block(close, close));
+                return Err(self
+                    .errors
+                    .missing_view_quality_assignment_block(close, close));
             }
             // The block ends before its View Quality Assignment Block.
             LineInBlock::Unclosed => {
                 return Err(self
                     .errors
-                    .missing_view_constraint_block(content_end, content_end));
+                    .missing_view_quality_assignment_block(content_end, content_end));
             }
         }
         let block_start = self.scanner.position;
@@ -395,7 +397,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let start = self.scanner.position;
         self.errors
-            .missing_view_constraint_block(start, self.end_of_line())
+            .missing_view_quality_assignment_block(start, self.end_of_line())
     }
 
     /// Returns the error for a statement at the scanner's position, after a

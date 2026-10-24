@@ -88,11 +88,11 @@ def test_view_position_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ViewQualityConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "position</box>"
+    assert diagnostic.quality_name == "position</box>"
 
 
 def test_view_action_constraint(
@@ -102,11 +102,11 @@ def test_view_action_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ViewQualityConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "action</run>"
+    assert diagnostic.quality_name == "action</run>"
 
 
 def test_view_missing_value_constraint(
@@ -116,19 +116,17 @@ def test_view_missing_value_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first = result.all_diagnostics[0]
-    assert isinstance(first, diagnostics.ViewMissingValueConstraintDiagnostic)
+    assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
     assert first.location.column == 21
     assert first.view_name == "view<number>"
     second = result.all_diagnostics[1]
-    assert isinstance(
-        second, diagnostics.ValueOperationViewEncodingConstraintDiagnostic
-    )
+    assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 6
     assert second.location.column == 24
-    assert second.constraint_name == "encoding<standard:/number/decimal/ascii>"
+    assert second.quality_name == "encoding<standard:/number/decimal/ascii>"
 
 
 def test_view_value_and_encoding_constraints(
@@ -138,13 +136,11 @@ def test_view_value_and_encoding_constraints(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.ValueOperationViewEncodingConstraintDiagnostic
-    )
+    assert isinstance(diagnostic, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.quality_name == "encoding<standard:/number/decimal/ascii>"
 
 
 def test_view_multiple_value_constraints(
@@ -154,12 +150,12 @@ def test_view_multiple_value_constraints(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ViewMultipleValueConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ViewMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 24
     assert diagnostic.first_value_name == "value<standard:/number/natural>"
-    assert diagnostic.first_constraint_line == 7
+    assert diagnostic.first_assignment_line == 7
 
 
 def test_view_duplicate_constraint(
@@ -169,12 +165,12 @@ def test_view_duplicate_constraint(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 24
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
-    assert diagnostic.first_constraint_line == 6
+    assert diagnostic.quality_name == "value<standard:/number/natural>"
+    assert diagnostic.first_assignment_line == 6
 
 
 def test_duplicate_operation(

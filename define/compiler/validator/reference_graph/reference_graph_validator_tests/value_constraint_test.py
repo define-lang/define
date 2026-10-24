@@ -41,7 +41,7 @@ def test_move_mismatched_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
@@ -57,7 +57,7 @@ def test_move_without_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
@@ -92,7 +92,7 @@ def test_action_mismatched_value(
     assert untriggered.position_name == "position<worker>"
     assert untriggered.constraint_name == "action</consume>"
     diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")

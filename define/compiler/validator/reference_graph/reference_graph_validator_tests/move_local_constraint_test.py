@@ -19,7 +19,7 @@ def test_move_violates_dest_constraints(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
@@ -37,7 +37,7 @@ def test_move_from_unconstrained_to_constrained(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 52
@@ -69,7 +69,7 @@ def test_local_move_violates_constraints_marks_error(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
@@ -96,7 +96,7 @@ def test_definition_local_to_statement_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 51
@@ -125,7 +125,7 @@ def test_statement_local_to_definition_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -154,7 +154,7 @@ def test_definition_local_to_definition_local_violates(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
