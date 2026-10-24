@@ -1,10 +1,10 @@
 """A hash-indexed trie supporting subtree reparenting and prefix scans.
 
 Keys are chained names, whose typed names form a prefix hierarchy.
-Every point operation (get/set/contains/delete) is a single tuple hash
-plus one dict probe; there is no walking the segments like a traditional trie
-data structure. A parallel ``children`` index records each parent's immediate
-child keys so that subtree moves, subtree deletes, and prefix scans are cheap
+Every point operation (get/set/contains) is a single tuple hash plus one dict
+probe; there is no walking the segments like a traditional trie data
+structure. A parallel ``children`` index records each parent's immediate child
+keys so that subtree moves, subtree deletes, and prefix scans are cheap
 dictionary operations. Retaining the keys already held by the value dictionary
 also avoids rebuilding every absolute key during descendant walks.
 
@@ -23,8 +23,6 @@ from define.compiler import chained_name
 if typing.TYPE_CHECKING:
     from collections.abc import (
         Callable,
-        Collection,
-        ItemsView,
         Iterable,
         Iterator,
     )
@@ -32,15 +30,12 @@ if typing.TYPE_CHECKING:
 
 type TrieKey = chained_name.ChainedNameTuple
 
-_MISSING: typing.Final = object()
-
 
 class DetachedSubtree[V](msgspec.Struct):
-    """A subtree detached from a trie, whose entries keep the keys they had there."""
+    """A subtree detached from a trie, whose entries keep the keys they had there, each after its parent."""
 
     key: TrieKey
     values: dict[tuple[str, ...], V]
-    children: dict[tuple[str, ...], set[tuple[str, ...]]]
 
 
 class ReparentingTrie[V]:
@@ -51,7 +46,8 @@ class ReparentingTrie[V]:
     other node has a parent. Setting a value, or moving or restoring a
     subtree to a target, creates any missing parent with a
     ``default_factory()`` value. Reads, deletes, and move-source lookups do
-    not. Deleting a key deletes all of its descendants.
+    not. Deleting a key deletes all of its descendants. A value is never
+    None.
 
     Not thread-safe. Concurrent reads and writes will produce undefined
     behavior.
@@ -70,7 +66,12 @@ class ReparentingTrie[V]:
         # moves more expensive.
         # Internal keys are plain tuples so that parent names and prefixes can
         # be sliced without tagging each one; keys leave the trie as TrieKey.
-        self._values: dict[tuple[str, ...], V] = {(): default_factory()}
+        # Deleted keys are set to None instead of being removed. The compiler
+        # deletes and re-adds the same keys over and over, and in
+        # free-threaded Python, each removal from a dict leaves behind a
+        # hole that slows down every later lookup. Keeping the keys avoids
+        # that.
+        self._values: dict[tuple[str, ...], V | None] = {(): default_factory()}
         self._children: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
 
     def get(self, key: TrieKey) -> V | None:
@@ -79,57 +80,64 @@ class ReparentingTrie[V]:
 
     def __getitem__(self, key: TrieKey) -> V:
         """Get value at key. Raises KeyError if missing."""
-        return self._values[key]
+        value = self._values[key]
+        if value is None:
+            raise KeyError(key)
+        return value
 
     def __contains__(self, key: TrieKey) -> bool:
         """Check if key has a value."""
-        return key in self._values
+        return self._values.get(key) is not None
+
+    def _place(self, key: tuple[str, ...], value: V):
+        """Set the value at key, adding key to its parent's children the first time it gets a value."""
+        if key not in self._values:
+            parent = key[:-1]
+            siblings = self._children.get(parent)
+            if siblings is None:
+                self._children[parent] = {key}
+            else:
+                siblings.add(key)
+        self._values[key] = value
 
     def _ensure_parent(self, key: tuple[str, ...]):
         """Create any missing ancestors with default values."""
         for length in range(len(key) - 1, 0, -1):
             ancestor = key[:length]
-            if ancestor in self._values:
+            if self._values.get(ancestor) is not None:
                 break
-            self._values[ancestor] = self._default_factory()
-            self._children.setdefault(ancestor[:-1], set()).add(ancestor)
+            self._place(ancestor, self._default_factory())
 
     def __setitem__(self, key: TrieKey, value: V):
         """Set value at key, creating any missing parent."""
-        self._values[key] = value
+        self._place(key, value)
         self._ensure_parent(key)
-        parent = key[:-1]
-        siblings = self._children.get(parent)
-        if siblings is None:
-            self._children[parent] = {key}
-        else:
-            siblings.add(key)
+
+    def _child_keys_with_values(
+        self, key: tuple[str, ...]
+    ) -> Iterator[tuple[str, ...]]:
+        """Yield the key of each direct child of key that has a value."""
+        for child in self._children.get(key, ()):
+            # A key without a value has no descendants with values, so walks
+            # never need to look below it.
+            if self._values[child] is not None:
+                yield child
 
     def _collect_subtree(self, root: tuple[str, ...]) -> list[tuple[str, ...]]:
-        """Return root and all of its descendant keys."""
+        """Return root and the key of each of its descendants that has a value, each after its parent."""
         result = [root]
         stack = [root]
         while stack:
             node = stack.pop()
-            for child in self._children.get(node, ()):
+            for child in self._child_keys_with_values(node):
                 result.append(child)
                 stack.append(child)
         return result
 
-    def _unlink_from_parent(self, key: tuple[str, ...]):
-        """Remove key from its parent's child set."""
-        parent = key[:-1]
-        siblings = self._children[parent]
-        siblings.discard(key)
-        if not siblings:
-            del self._children[parent]
-
     def delete_subtree(self, key: TrieKey):
         """Remove a key, which must exist, and its descendants."""
         for node in self._collect_subtree(key):
-            del self._values[node]
-            _ = self._children.pop(node, None)
-        self._unlink_from_parent(key)
+            self._values[node] = None
 
     def move_subtree(self, source: TrieKey, target: TrieKey):
         """Detach the subtree at source and reattach it at target.
@@ -138,40 +146,15 @@ class ReparentingTrie[V]:
         A missing parent of the target is created. All descendants of source
         become descendants of target.
         """
-        self._ensure_parent(target)
-
-        source_len = len(source)
-        old_keys = self._collect_subtree(source)
-        new_keys = {old: target + old[source_len:] for old in old_keys}
-        moved: list[tuple[tuple[str, ...], V, set[tuple[str, ...]] | None]] = []
-        for old in old_keys:
-            value = self._values.pop(old)
-            old_children = self._children.pop(old, None)
-            new_children = (
-                {new_keys[child] for child in old_children}
-                if old_children is not None
-                else None
-            )
-            moved.append((new_keys[old], value, new_children))
-        for new, value, new_children in moved:
-            self._values[new] = value
-            if new_children is not None:
-                self._children[new] = new_children
-
-        self._unlink_from_parent(source)
-        self._children.setdefault(target[:-1], set()).add(target)
+        self.restore_subtree(target, self.pop_subtree(source))
 
     def pop_subtree(self, key: TrieKey) -> DetachedSubtree[V]:
         """Detach the subtree at key, which must already exist, keeping its keys."""
         values: dict[tuple[str, ...], V] = {}
-        children: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
         for old in self._collect_subtree(key):
-            values[old] = self._values.pop(old)
-            old_children = self._children.pop(old, None)
-            if old_children is not None:
-                children[old] = old_children
-        self._unlink_from_parent(key)
-        return DetachedSubtree(key, values, children)
+            values[old] = typing.cast("V", self._values[old])
+            self._values[old] = None
+        return DetachedSubtree(key, values)
 
     def restore_subtree(self, target: TrieKey, subtree: DetachedSubtree[V]):
         """Consume a detached subtree and restore it at target.
@@ -181,28 +164,30 @@ class ReparentingTrie[V]:
         """
         self._ensure_parent(target)
         key_length = len(subtree.key)
-        new_keys = {old: target + old[key_length:] for old in subtree.values}
         for old, value in subtree.values.items():
-            self._values[new_keys[old]] = value
-        for old, old_children in subtree.children.items():
-            self._children[new_keys[old]] = {new_keys[child] for child in old_children}
-        self._children.setdefault(target[:-1], set()).add(target)
+            self._place(target + old[key_length:], value)
 
-    def items(self) -> ItemsView[TrieKey, V]:
+    def items(self) -> Iterator[tuple[TrieKey, V]]:
         """Yield all (key, value) pairs in the trie."""
-        return typing.cast("ItemsView[TrieKey, V]", self._values.items())
+        for key, value in self._values.items():
+            if value is not None:
+                yield chained_name.ChainedNameTuple(key), value
 
     def direct_child_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
         """Yield each direct child's full key and value in key order."""
-        for child in sorted(self._children.get(key, ())):
-            yield chained_name.ChainedNameTuple(child), self._values[child]
+        for child in sorted(self._child_keys_with_values(key)):
+            yield (
+                chained_name.ChainedNameTuple(child),
+                typing.cast("V", self._values[child]),
+            )
 
-    def child_keys(self, key: TrieKey) -> Collection[TrieKey]:
-        """Return the full key of each direct child of ``key``.
+    def child_keys(self, key: TrieKey) -> Iterator[TrieKey]:
+        """Yield the full key of each direct child of ``key``.
 
         The result must not be iterated while the trie is changed.
         """
-        return typing.cast("Collection[TrieKey]", self._children.get(key, ()))
+        for child in self._child_keys_with_values(key):
+            yield chained_name.ChainedNameTuple(child)
 
     def descendant_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
         """Yield a ``(path from key, value)`` pair for each descendant of ``key``, in unspecified order. ``key`` itself is never yielded."""
@@ -210,10 +195,10 @@ class ReparentingTrie[V]:
         pending: list[tuple[str, ...]] = [key]
         while pending:
             parent = pending.pop()
-            for child in self._children.get(parent, ()):
+            for child in self._child_keys_with_values(parent):
                 yield (
                     chained_name.ChainedNameTuple(child[name_count:]),
-                    self._values[child],
+                    typing.cast("V", self._values[child]),
                 )
                 pending.append(child)
 
@@ -236,13 +221,13 @@ class ReparentingTrie[V]:
         ]
         while pending:
             full_node, result_node = pending.pop()
-            for full_child in self._children.get(full_node, ()):
+            for full_child in self._child_keys_with_values(full_node):
                 result_child = (*result_node, full_child[-1])
                 if result_child in excluded_keys:
                     continue
                 yield (
                     chained_name.ChainedNameTuple(result_child),
-                    self._values[full_child],
+                    typing.cast("V", self._values[full_child]),
                 )
                 pending.append((full_child, result_child))
 
@@ -255,9 +240,9 @@ class ReparentingTrie[V]:
         stack: list[tuple[str, ...]] = [key]
         while stack:
             node = stack.pop()
-            parent_value = self._values[node]
-            for child in self._children.get(node, ()):
-                yield parent_value, self._values[child]
+            parent_value = typing.cast("V", self._values[node])
+            for child in self._child_keys_with_values(node):
+                yield parent_value, typing.cast("V", self._values[child])
                 stack.append(child)
 
     def existing_prefix(self, key: TrieKey) -> TrieKey:
@@ -266,7 +251,7 @@ class ReparentingTrie[V]:
         # the most common case inside of the compiler.
         for length in range(len(key), 0, -1):
             prefix = key[:length]
-            if prefix in self._values:
+            if self._values.get(prefix) is not None:
                 return chained_name.ChainedNameTuple(prefix)
         return chained_name.ChainedNameTuple(())
 
@@ -281,8 +266,8 @@ class ReparentingTrie[V]:
         """
         for length in range(len(key), 0, -1):
             prefix = key[:length]
-            value = self._values.get(prefix, _MISSING)
-            if value is not _MISSING and predicate(typing.cast("V", value)):
+            value = self._values.get(prefix)
+            if value is not None and predicate(value):
                 return chained_name.ChainedNameTuple(prefix)
         return None
 
@@ -306,8 +291,8 @@ class ReparentingTrie[V]:
             nearest_match = matches_by_depth[common_depth]
             for depth in range(common_depth + 1, len(key) + 1):
                 prefix = key[:depth]
-                value = self._values.get(prefix, _MISSING)
-                if value is not _MISSING and predicate(typing.cast("V", value)):
+                value = self._values.get(prefix)
+                if value is not None and predicate(value):
                     nearest_match = prefix
                 matches_by_depth.append(nearest_match)
             results[key] = nearest_match

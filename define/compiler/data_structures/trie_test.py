@@ -90,6 +90,82 @@ class TestDeleteSubtree:
         assert t[_key("a", "b")] == 3
 
 
+class TestDeletedKeys:
+    def test_getitem_of_deleted_key_raises(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t.delete_subtree(_key("a"))
+        assert t.get(_key("a")) is None
+        with pytest.raises(KeyError):
+            _ = t[_key("a")]
+
+    def test_reads_skip_deleted_keys(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "b")] = 2
+        t[_key("a", "b", "c")] = 3
+        t[_key("a", "d")] = 4
+        t.delete_subtree(_key("a", "b"))
+        assert sorted(t.items()) == [(_key(), 0), (_key("a"), 1), (_key("a", "d"), 4)]
+        assert list(t.direct_child_items(_key("a"))) == [(_key("a", "d"), 4)]
+        assert list(t.child_keys(_key("a"))) == [_key("a", "d")]
+        assert list(t.descendant_items(_key("a"))) == [(_key("d"), 4)]
+        assert list(
+            t.descendant_items_except(
+                _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
+            )
+        ) == [(_key("d"), 4)]
+        assert list(t.subtree_values_with_parents(_key("a"))) == [(1, 4)]
+
+    def test_prefix_searches_skip_deleted_keys(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "b")] = 2
+        t.delete_subtree(_key("a", "b"))
+        assert t.existing_prefix(_key("a", "b")) == _key("a")
+        assert t.find_longest_prefix_where(_key("a", "b"), lambda value: value > 0) == (
+            _key("a")
+        )
+        assert t.find_longest_prefixes_where(
+            [_key("a", "b")], lambda value: value > 0
+        ) == {_key("a", "b"): _key("a")}
+
+    def test_deleting_again_after_deleting_a_child(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "b")] = 2
+        t[_key("a", "c")] = 3
+        t.delete_subtree(_key("a", "b"))
+        t.delete_subtree(_key("a"))
+        assert list(t.items()) == [(_key(), 0)]
+
+    def test_setting_below_deleted_key_recreates_its_parent(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "b")] = 2
+        t.delete_subtree(_key("a"))
+        t[_key("a", "c")] = 3
+        assert sorted(t.items()) == [(_key(), 0), (_key("a"), 0), (_key("a", "c"), 3)]
+
+    def test_move_to_deleted_key_does_not_restore_its_old_children(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "old")] = 2
+        t[_key("b")] = 3
+        t[_key("b", "new")] = 4
+        t.delete_subtree(_key("a"))
+        t.move_subtree(_key("b"), _key("a"))
+        assert sorted(t.items()) == [(_key(), 0), (_key("a"), 3), (_key("a", "new"), 4)]
+
+    def test_move_back_to_source(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "x")] = 2
+        t.move_subtree(_key("a"), _key("b"))
+        t.move_subtree(_key("b"), _key("a"))
+        assert sorted(t.items()) == [(_key(), 0), (_key("a"), 1), (_key("a", "x"), 2)]
+
+
 class TestMoveSubtree:
     def test_move_leaf(self):
         t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
@@ -175,6 +251,21 @@ class TestDirectChildItems:
         t[_key("a")] = 1
         t[_key("a", "b")] = 2
         assert list(t.direct_child_items(_key())) == [(_key("a"), 1)]
+
+    def test_yields_children_in_key_order(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("b")] = 2
+        t[_key("a")] = 1
+        assert list(t.direct_child_items(_key())) == [(_key("a"), 1), (_key("b"), 2)]
+
+
+class TestChildKeys:
+    def test_yields_each_direct_child(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a")] = 1
+        t[_key("a", "b")] = 2
+        t[_key("c")] = 3
+        assert sorted(t.child_keys(_key())) == [_key("a"), _key("c")]
 
 
 class TestDescendantItems:
@@ -274,7 +365,7 @@ class TestSubtreeValuesWithParents:
 
 
 class TestPopSubtree:
-    def test_keeps_keys_values_and_children(self):
+    def test_keeps_keys_and_values(self):
         t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
         t[_key("a")] = 1
         t[_key("a", "x")] = 2
@@ -282,7 +373,6 @@ class TestPopSubtree:
         popped = t.pop_subtree(_key("a"))
         assert popped.key == _key("a")
         assert popped.values == {("a",): 1, ("a", "x"): 2, ("a", "y"): 3}
-        assert popped.children == {("a",): {("a", "x"), ("a", "y")}}
 
     def test_removes_from_source(self):
         t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
