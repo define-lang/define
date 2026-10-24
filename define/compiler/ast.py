@@ -246,7 +246,7 @@ class ValueDefinition(QualityDefinition):
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
-    constraints: PositionConstraintBlock | None = None
+    quality_assignment_block: QualityAssignmentBlock | None = None
 
     @classmethod
     def from_name(
@@ -254,7 +254,7 @@ class PositionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        constraints: PositionConstraintBlock | None = None,
+        quality_assignment_block: QualityAssignmentBlock | None = None,
     ) -> Self:
         """Initialize with a global name, wrapping it in a typed definition name."""
         return cls(
@@ -266,15 +266,18 @@ class PositionDefinition(QualityDefinition):
                 ),
             ),
             location=location,
-            constraints=constraints,
+            quality_assignment_block=quality_assignment_block,
         )
 
     @property
-    def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
-        """The typed names of this position's constraint requirements, in source order."""
-        if self.constraints is None:
+    def assigned_qualities(self) -> tuple[GlobalTypedNameReference, ...]:
+        """The typed names of the qualities this position assigns, in source order."""
+        if self.quality_assignment_block is None:
             return ()
-        return tuple(req.typed_global_name for req in self.constraints.requirements)
+        return tuple(
+            statement.typed_global_name
+            for statement in self.quality_assignment_block.statements
+        )
 
 
 class NameContent(ASTNode):
@@ -301,7 +304,7 @@ class LocalPositionDefinition(ASTNode):
     """Represents a local position definition."""
 
     typed_name: LocalTypedNameReference
-    constraints: PositionConstraintBlock | None = None
+    quality_assignment_block: QualityAssignmentBlock | None = None
 
     @classmethod
     def from_name(
@@ -309,7 +312,7 @@ class LocalPositionDefinition(ASTNode):
         *,
         local_name: LocalNameContent,
         location: SourceLocation,
-        constraints: PositionConstraintBlock | None = None,
+        quality_assignment_block: QualityAssignmentBlock | None = None,
     ) -> Self:
         """Initialize with a local name, wrapping it in a typed name."""
         return cls(
@@ -321,15 +324,18 @@ class LocalPositionDefinition(ASTNode):
                 ),
             ),
             location=location,
-            constraints=constraints,
+            quality_assignment_block=quality_assignment_block,
         )
 
     @property
-    def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
-        """The typed names of this position's constraint requirements, in source order."""
-        if self.constraints is None:
+    def assigned_qualities(self) -> tuple[GlobalTypedNameReference, ...]:
+        """The typed names of the qualities this position assigns, in source order."""
+        if self.quality_assignment_block is None:
             return ()
-        return tuple(req.typed_global_name for req in self.constraints.requirements)
+        return tuple(
+            statement.typed_global_name
+            for statement in self.quality_assignment_block.statements
+        )
 
 
 class ViewDefinition(ASTNode):
@@ -338,7 +344,7 @@ class ViewDefinition(ASTNode):
     typed_name: LocalTypedNameReference
     is_input: bool
     is_output: bool
-    constraints: PositionConstraintBlock
+    quality_assignment_block: QualityAssignmentBlock
 
     @classmethod
     def from_name(
@@ -347,7 +353,7 @@ class ViewDefinition(ASTNode):
         local_name: LocalNameContent,
         is_input: bool,
         is_output: bool,
-        constraints: PositionConstraintBlock,
+        quality_assignment_block: QualityAssignmentBlock,
         location: SourceLocation,
     ) -> Self:
         """Initialize with a local name, wrapping it in a typed name."""
@@ -361,7 +367,7 @@ class ViewDefinition(ASTNode):
             ),
             is_input=is_input,
             is_output=is_output,
-            constraints=constraints,
+            quality_assignment_block=quality_assignment_block,
             location=location,
         )
 
@@ -836,8 +842,8 @@ type OperationStatement = (
 )
 
 
-class PositionRequirementStatement(ASTNode):
-    """Represents a position requirement statement in a constraints block."""
+class QualityAssignmentStatement(ASTNode):
+    """Represents a Quality Assignment Statement."""
 
     typed_global_name: GlobalTypedNameReference
 
@@ -848,20 +854,20 @@ class QualityImplicationStatement(ASTNode):
     typed_global_name: GlobalTypedNameReference
 
 
-class PositionConstraintBlock(ASTNode):
-    """Represents a position constraint block."""
+class QualityAssignmentBlock(ASTNode):
+    """Represents a Position or View Quality Assignment Block."""
 
-    requirements: tuple[PositionRequirementStatement, ...]
-    # The full typed names that the requirements require. Only the parser
+    statements: tuple[QualityAssignmentStatement, ...]
+    # The full typed names that the statements assign. Only the parser
     # constructs this class.
     as_set: Derived[frozenset[str]]
 
     @property
-    def value_constraint(self) -> GlobalTypedNameReference | None:
-        """The first value this block requires, if any."""
-        for requirement in self.requirements:
-            if requirement.typed_global_name.name_type == name_types.NameType.VALUE:
-                return requirement.typed_global_name
+    def value_quality(self) -> GlobalTypedNameReference | None:
+        """The first value quality this block assigns, if any."""
+        for statement in self.statements:
+            if statement.typed_global_name.name_type == name_types.NameType.VALUE:
+                return statement.typed_global_name
         return None
 
 

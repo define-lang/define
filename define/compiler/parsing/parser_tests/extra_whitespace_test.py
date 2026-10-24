@@ -172,7 +172,7 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
     assert exc_info.value.location.end_column == 19
 
 
-def test_extra_space_before_local_name_in_position_requirement_statement(
+def test_extra_space_before_local_name_in_quality_assignment_statement(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.SpaceBeforeOpenAngleBracket) as exc_info:
@@ -330,7 +330,7 @@ def test_extra_space_before_position_definition_brace(parse: Parse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_extra_space_before_encoding_in_encoding_constraint(parse: Parse):
+def test_extra_space_before_encoding_in_encoding_quality_assignment(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
@@ -343,7 +343,7 @@ def test_extra_space_before_encoding_in_encoding_constraint(parse: Parse):
     assert error.value.location.end_column == 16
 
 
-def test_extra_space_in_encoding_constraint(parse: Parse):
+def test_extra_space_in_encoding_quality_assignment(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
@@ -377,7 +377,7 @@ def test_extra_space_in_view_direction_statement(parse: Parse):
     assert error.value.location.end_column == 12
 
 
-def test_extra_space_in_view_constraint_block(parse: Parse):
+def test_extra_space_in_view_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"

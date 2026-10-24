@@ -366,17 +366,17 @@ class NameConverter:
 
     def constraints_to_class_references(
         self,
-        constraints: ast.PositionConstraintBlock | None,
+        block: ast.QualityAssignmentBlock | None,
     ) -> list[renderer.ClassReference]:
-        """Extract references to the position and action classes that a position constraint block requires."""
-        if constraints is None:
+        """Extract references to the position and action classes that a Quality Assignment Block assigns."""
+        if block is None:
             return []
         # Values and encodings have no generated classes, because literals are
         # already in their values' encodings in generated code.
         return [
-            self.class_reference(requirement.typed_global_name)
-            for requirement in constraints.requirements
-            if requirement.typed_global_name.name_type in _QUALITY_NAME_TYPES
+            self.class_reference(statement.typed_global_name)
+            for statement in block.statements
+            if statement.typed_global_name.name_type in _QUALITY_NAME_TYPES
         ]
 
     def implied_qualities_to_class_references(

@@ -162,7 +162,9 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue
-            looked_at_qualities[argument] = looked_at_view.constraints.as_set
+            looked_at_qualities[argument] = (
+                looked_at_view.quality_assignment_block.as_set
+            )
             view_name = looked_at_view.typed_name.source_typed_name
             interface_view = (
                 None

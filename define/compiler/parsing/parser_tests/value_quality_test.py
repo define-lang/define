@@ -1,4 +1,4 @@
-"""Value constraint parser tests."""
+"""Value quality parser tests."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
 
 
-def test_value_constraint_short_name(parse: Parse):
+def test_value_quality_short_name(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
@@ -27,9 +27,9 @@ def test_value_constraint_short_name(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/item>"
     )
-    assert definition.constraints is not None
-    assert definition.constraints.value_constraint is not None
-    typed_name = definition.constraints.value_constraint
+    assert definition.quality_assignment_block is not None
+    assert definition.quality_assignment_block.value_quality is not None
+    typed_name = definition.quality_assignment_block.value_quality
     assert typed_name.name_type == name_types.NameType.VALUE
     assert typed_name.location == ast.SourceLocation(
         line=3, column=20, end_line=3, end_column=41
@@ -45,7 +45,7 @@ def test_value_constraint_short_name(parse: Parse):
     )
 
 
-def test_value_constraint_full_name(parse: Parse):
+def test_value_quality_full_name(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/item> {\n"
         + "    it may only contain particles where {\n"
@@ -59,9 +59,9 @@ def test_value_constraint_full_name(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/item>"
     )
-    assert definition.constraints is not None
-    assert definition.constraints.value_constraint is not None
-    typed_name = definition.constraints.value_constraint
+    assert definition.quality_assignment_block is not None
+    assert definition.quality_assignment_block.value_quality is not None
+    typed_name = definition.quality_assignment_block.value_quality
     assert typed_name.name_type == name_types.NameType.VALUE
     assert typed_name.location == ast.SourceLocation(
         line=3, column=20, end_line=3, end_column=50
@@ -81,7 +81,7 @@ def test_value_constraint_full_name(parse: Parse):
     )
 
 
-def test_value_constraint_requires_global_name(parse: Parse):
+def test_value_quality_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
         _ = parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"
@@ -96,7 +96,7 @@ def test_value_constraint_requires_global_name(parse: Parse):
     assert error.value.location.end_column == 33
 
 
-def test_constraint_name_type_error_includes_value(parse: Parse):
+def test_quality_assignment_name_type_error_includes_value(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
         _ = parse(
             "define the potential position<mv:define-lang.org:parser:/item> {\n"

@@ -478,7 +478,7 @@ def test_control_character_in_potential_position_definition_block_statement(
     assert exc_info.value.location.end_column == 11
 
 
-def test_control_character_where_position_constraint_block_open_belongs(
+def test_control_character_where_quality_assignment_block_open_belongs(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
@@ -494,7 +494,7 @@ def test_control_character_where_position_constraint_block_open_belongs(
     assert exc_info.value.location.end_column == 40
 
 
-def test_control_character_in_position_constraint_block_statement(
+def test_control_character_in_quality_assignment_block_statement(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
@@ -512,7 +512,7 @@ def test_control_character_in_position_constraint_block_statement(
     assert exc_info.value.location.end_column == 15
 
 
-def test_control_character_where_constraint_name_type_belongs(
+def test_control_character_where_quality_assignment_name_type_belongs(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
@@ -762,7 +762,7 @@ def test_control_character_after_create_particle_reference(parse: Parse):
     assert exc_info.value.location.end_column == 43
 
 
-def test_invisible_character_in_encoding_constraint_name_type(
+def test_invisible_character_in_encoding_quality_assignment_name_type(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
@@ -882,7 +882,7 @@ def test_invisible_character_in_view_direction_statement(parse: Parse):
     assert error.value.location.end_column == 14
 
 
-def test_invisible_character_in_view_constraint_block(parse: Parse):
+def test_invisible_character_in_view_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"

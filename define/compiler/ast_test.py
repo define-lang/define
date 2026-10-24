@@ -319,8 +319,8 @@ class TestCachedStrings:
         assert typed_name.source_typed_name is typed_name.full_typed_name
 
 
-class TestInterfacePositionConstraints:
-    def test_with_constraints(self):
+class TestInterfacePositionQualityAssignments:
+    def test_with_quality_assignments(self):
         action = _parse_action(
             f"define the potential action<{_FQUN}:/act> {{\n"
             "    define the position<pos_a> {\n"
@@ -343,19 +343,19 @@ class TestInterfacePositionConstraints:
             "}\n"
         )
         by_name = action.interface_positions_by_name
-        pos_a_constraints = by_name["position<pos_a>"].constraints
-        assert pos_a_constraints is not None
-        assert pos_a_constraints.as_set == frozenset({f"position<{_FQUN}:/child>"})
-        pos_b_constraints = by_name["position<pos_b>"].constraints
-        assert pos_b_constraints is not None
-        assert pos_b_constraints.as_set == frozenset(
+        pos_a_block = by_name["position<pos_a>"].quality_assignment_block
+        assert pos_a_block is not None
+        assert pos_a_block.as_set == frozenset({f"position<{_FQUN}:/child>"})
+        pos_b_block = by_name["position<pos_b>"].quality_assignment_block
+        assert pos_b_block is not None
+        assert pos_b_block.as_set == frozenset(
             {
                 f"position<{_FQUN}:/x>",
                 f"position<{_FQUN}:/y>",
             }
         )
 
-    def test_no_constraints(self):
+    def test_no_quality_assignments(self):
         action = _parse_action(
             f"define the potential action<{_FQUN}:/act> {{\n"
             "    define the position<pos_a>.\n"
@@ -367,9 +367,14 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_positions_by_name["position<pos_a>"].constraints is None
+        assert (
+            action.interface_positions_by_name[
+                "position<pos_a>"
+            ].quality_assignment_block
+            is None
+        )
 
-    def test_ignore_later_duplicate_with_different_constraints(self):
+    def test_ignore_later_duplicate_with_different_quality_assignments(self):
         action = _parse_action(
             f"define the potential action<{_FQUN}:/act> {{\n"
             "    define the position<pos_a> {\n"
@@ -390,11 +395,13 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        constraints = action.interface_positions_by_name["position<pos_a>"].constraints
-        assert constraints is not None
-        assert constraints.as_set == frozenset({f"position<{_FQUN}:/first>"})
+        block = action.interface_positions_by_name[
+            "position<pos_a>"
+        ].quality_assignment_block
+        assert block is not None
+        assert block.as_set == frozenset({f"position<{_FQUN}:/first>"})
 
-    def test_ignore_later_duplicate_that_adds_constraints(self):
+    def test_ignore_later_duplicate_that_adds_quality_assignments(self):
         action = _parse_action(
             f"define the potential action<{_FQUN}:/act> {{\n"
             "    define the position<pos_a>.\n"
@@ -411,7 +418,12 @@ class TestInterfacePositionConstraints:
             "    }\n"
             "}\n"
         )
-        assert action.interface_positions_by_name["position<pos_a>"].constraints is None
+        assert (
+            action.interface_positions_by_name[
+                "position<pos_a>"
+            ].quality_assignment_block
+            is None
+        )
 
 
 class TestActionIsDestructor:
@@ -443,8 +455,8 @@ class TestActionIsDestructor:
         assert action.is_destructor is False
 
 
-class TestPositionConstraintTypedNames:
-    def test_with_constraints(self):
+class TestAssignedQualities:
+    def test_with_quality_assignments(self):
         position = _parse_position(
             f"define the potential position<{_FQUN}:/a> {{\n"
             "    it may only contain particles where {\n"
@@ -453,18 +465,18 @@ class TestPositionConstraintTypedNames:
             "    }\n"
             "}\n"
         )
-        assert [t.full_typed_name for t in position.constraint_typed_names] == [
+        assert [t.full_typed_name for t in position.assigned_qualities] == [
             f"position<{_FQUN}:/child>",
             f"position<{_FQUN}:/other>",
         ]
 
-    def test_no_constraints(self):
+    def test_no_quality_assignments(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
-        assert position.constraint_typed_names == ()
+        assert position.assigned_qualities == ()
 
 
-class TestPositionConstraintBlockAsSet:
-    def test_holds_constraint_names(self):
+class TestQualityAssignmentBlockAsSet:
+    def test_holds_assigned_quality_names(self):
         position = _parse_position(
             f"define the potential position<{_FQUN}:/a> {{\n"
             "    it may only contain particles where {\n"
@@ -473,8 +485,8 @@ class TestPositionConstraintBlockAsSet:
             "    }\n"
             "}\n"
         )
-        assert position.constraints is not None
-        assert position.constraints.as_set == frozenset(
+        assert position.quality_assignment_block is not None
+        assert position.quality_assignment_block.as_set == frozenset(
             {f"position<{_FQUN}:/child>", f"position<{_FQUN}:/other>"}
         )
 

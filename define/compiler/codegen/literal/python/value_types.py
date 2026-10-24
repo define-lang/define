@@ -86,12 +86,12 @@ def python_value_type(value_type: ast.GlobalTypedNameReference) -> str:
     ]
 
 
-def encoded_python_value_type(constraints: ast.PositionConstraintBlock) -> str:
-    """Return the Python type that generated code uses for values that meet these encoding constraints."""
+def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
+    """Return the Python type that generated code uses for values with the encoding this block assigns."""
     # Generated code represents a value the same way in every encoding, so any
     # one encoding serves.
-    for requirement in constraints.requirements:
-        encoding = requirement.typed_global_name
+    for statement in block.statements:
+        encoding = statement.typed_global_name
         if encoding.name_type == name_types.NameType.ENCODING:
             return _ENCODING_PYTHON_TYPES[encoding.full_typed_name]
     raise ValueError(
@@ -100,9 +100,9 @@ def encoded_python_value_type(constraints: ast.PositionConstraintBlock) -> str:
 
 
 def constrained_python_value_type(
-    constraints: ast.PositionConstraintBlock | None,
+    block: ast.QualityAssignmentBlock | None,
 ) -> str:
-    """Return the Python value type of particles that meet these constraints, or NO_VALUE when they have no value constraint."""
-    if constraints is None or constraints.value_constraint is None:
+    """Return the Python value type of particles with these quality assignments, or NO_VALUE when they assign no value quality."""
+    if block is None or block.value_quality is None:
         return NO_VALUE
-    return python_value_type(constraints.value_constraint)
+    return python_value_type(block.value_quality)

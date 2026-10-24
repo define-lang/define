@@ -431,7 +431,7 @@ def test_implication_chained_name_not_allowed(parse: Parse):
 # --- Block-level placement errors ---
 
 
-def test_implication_after_constraint_block_in_potential_position(
+def test_implication_after_quality_assignment_block_in_potential_position(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
@@ -487,7 +487,7 @@ def test_implication_after_trigger_conditions_block_in_action(
     assert exc_info.value.location.end_column == 48
 
 
-def test_implication_inside_position_constraint_block(parse: Parse):
+def test_implication_inside_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -538,7 +538,7 @@ def test_implication_inside_trigger_conditions_block(parse: Parse):
     assert exc_info.value.location.end_column == 48
 
 
-def test_implication_inside_local_position_definition_constraint_block(
+def test_implication_inside_local_position_definition_quality_assignment_block(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:

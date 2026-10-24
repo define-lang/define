@@ -307,10 +307,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
         let (typed_name, source_typed_name) =
             self.local_typed_name_reference(typed_name_location, ast::NameType::Position, name)?;
-        let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (constraints, end) =
-                self.parse_position_definition_block(start, indentation, fqun)?;
-            (Some(constraints), end)
+        let (quality_assignment_block, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
+            let (block, end) = self.parse_position_definition_block(start, indentation, fqun)?;
+            (Some(block), end)
         } else {
             // There is no `.` or ` {`.
             let Some(end) = self.parse_terminator()? else {
@@ -319,9 +318,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             (None, end)
         };
         let location = self.ast.location(start, end)?;
-        let definition = self
-            .ast
-            .local_position_definition(location, typed_name, constraints)?;
+        let definition =
+            self.ast
+                .local_position_definition(location, typed_name, quality_assignment_block)?;
         Ok((definition, source_typed_name, end))
     }
 

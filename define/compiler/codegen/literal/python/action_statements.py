@@ -65,7 +65,7 @@ class ActionStatementsGenerator:
                     modules.update(
                         constraint.module_name
                         for constraint in self._converter.constraints_to_class_references(
-                            step.constraints
+                            step.quality_assignment_block
                         )
                     )
                 case ast.CreateParticleStatement():
@@ -175,10 +175,10 @@ class ActionStatementsGenerator:
                             name=name,
                             local_typed_name=statement.typed_name.source_typed_name,
                             constraints=self._converter.constraints_to_class_references(
-                                statement.constraints
+                                statement.quality_assignment_block
                             ),
                             value_type=value_types.constrained_python_value_type(
-                                statement.constraints
+                                statement.quality_assignment_block
                             ),
                         )
                     )
@@ -365,7 +365,7 @@ class ActionStatementsGenerator:
                 arguments.append(value_types.python_literal(looking_at))
                 continue
             value_type = value_types.constrained_python_value_type(
-                argument.interface_view.constraints
+                argument.interface_view.quality_assignment_block
             )
             if argument.interface_view.is_input:
                 arguments.append(positions.build(looking_at, value_type=value_type))

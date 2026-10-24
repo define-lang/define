@@ -44,11 +44,11 @@ def test_reference_edge_same_universe():
     )
     pos_def = _first_definition(result)
     assert isinstance(pos_def, ast.PositionDefinition)
-    assert pos_def.constraints is not None
-    constraint_ref = pos_def.constraints.requirements[0].typed_global_name
+    assert pos_def.quality_assignment_block is not None
+    quality_ref = pos_def.quality_assignment_block.statements[0].typed_global_name
     edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
-        global_name_reference=constraint_ref,
+        global_name_reference=quality_ref,
     )
     assert edge.target_full_typed_name == f"position<{_FQUN}:/a>"
 
@@ -63,10 +63,10 @@ def test_reference_edge_explicit_fqun():
     )
     pos_def = _first_definition(result)
     assert isinstance(pos_def, ast.PositionDefinition)
-    assert pos_def.constraints is not None
-    constraint_ref = pos_def.constraints.requirements[0].typed_global_name
+    assert pos_def.quality_assignment_block is not None
+    quality_ref = pos_def.quality_assignment_block.statements[0].typed_global_name
     edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
-        global_name_reference=constraint_ref,
+        global_name_reference=quality_ref,
     )
     assert edge.target_full_typed_name == "position<other.com:other_lib:/b>"

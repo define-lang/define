@@ -128,7 +128,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// view_definition_block =
     ///     block_open,
     ///     view_direction_statements,
-    ///     view_constraint_block,
+    ///     view_quality_assignment_block,
     ///     block_close ;
     /// ```
     fn parse_view_definition(
@@ -146,26 +146,26 @@ impl<'py, 'source> Parser<'py, 'source> {
             self.parse_view_direction_statements(block_open_end)?;
         match line {
             LineInBlock::Statement => {}
-            // The block closes before its position constraint block.
+            // The block closes before its View Quality Assignment Block.
             LineInBlock::Close => {
                 let close = self.scanner.position;
                 return Err(self.errors.missing_view_constraint_block(close, close));
             }
-            // The block ends before its position constraint block.
+            // The block ends before its View Quality Assignment Block.
             LineInBlock::Unclosed => {
                 return Err(self
                     .errors
                     .missing_view_constraint_block(content_end, content_end));
             }
         }
-        let constraints_start = self.scanner.position;
-        // The statement after the view direction statements is not a position
-        // constraint block.
+        let block_start = self.scanner.position;
+        // The statement after the view direction statements is not a View
+        // Quality Assignment Block.
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
             return Err(self.invalid_view_definition_statement());
         }
-        let constraints = self.parse_position_constraint_block(
-            constraints_start,
+        let block = self.parse_quality_assignment_block(
+            block_start,
             OPERATION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
             fqun,
         )?;
@@ -176,9 +176,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             Self::statement_instead_of_view_close,
         )?;
         let location = self.ast.location(start, end)?;
-        let definition =
-            self.ast
-                .view_definition(location, typed_name, is_input, is_output, constraints)?;
+        let definition = self
+            .ast
+            .view_definition(location, typed_name, is_input, is_output, block)?;
         Ok((definition, end))
     }
 
@@ -376,8 +376,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a statement at the scanner's position, after a
-    /// view definition block's View Direction Statements, that is not a
-    /// position constraint block.
+    /// view definition block's View Direction Statements, that is not a View
+    /// Quality Assignment Block.
     #[cold]
     #[inline(never)]
     fn invalid_view_definition_statement(&self) -> ParseError {
@@ -388,7 +388,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.misplaced_view_direction_statement() {
             return error;
         }
-        // The line begins like a position constraint block, but with extra or
+        // The line begins like a View Quality Assignment Block, but with extra or
         // missing spaces between two of its words.
         if let Some(error) = self.misspaced_words_in_any(&[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE]) {
             return error;
@@ -399,7 +399,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a statement at the scanner's position, after a
-    /// view definition's position constraint block, where the view
+    /// view definition's View Quality Assignment Block, where the view
     /// definition's `}` belongs.
     #[cold]
     #[inline(never)]

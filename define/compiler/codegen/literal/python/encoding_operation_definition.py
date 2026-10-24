@@ -336,7 +336,9 @@ class EncodingOperationDefinitionGenerator:
         for view in definition.views:
             view_local = renderer.TypedLocalName(
                 name=view_names[view.typed_name.source_typed_name],
-                python_type=value_types.encoded_python_value_type(view.constraints),
+                python_type=value_types.encoded_python_value_type(
+                    view.quality_assignment_block
+                ),
             )
             if view.is_input:
                 parameters.append(view_local)

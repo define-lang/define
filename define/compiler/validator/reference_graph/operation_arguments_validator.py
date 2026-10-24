@@ -276,10 +276,10 @@ class OperationArgumentsValidator:
         if qualities is None:
             return None
         missing: list[str] = []
-        for requirement in interface_view.constraints.requirements:
-            constraint = requirement.typed_global_name
-            if constraint.full_typed_name not in qualities:
-                missing.append(constraint.source_form_in_universe(self._enclosing_fqun))
+        for statement in interface_view.quality_assignment_block.statements:
+            quality = statement.typed_global_name
+            if quality.full_typed_name not in qualities:
+                missing.append(quality.source_form_in_universe(self._enclosing_fqun))
         if missing:
             validation_diagnostics.append(
                 diagnostics.OperationArgumentViolatesConstraintsDiagnostic(
@@ -304,11 +304,11 @@ class OperationArgumentsValidator:
         # always has the view's qualities; only that translation can fail.
         if isinstance(executed, ast.EncodingOperationDefinition):
             translated: codegen_input.EncodedLiteral | None = None
-            for requirement in interface_view.constraints.requirements:
-                constraint = requirement.typed_global_name
-                if constraint.name_type == name_types.NameType.ENCODING:
+            for statement in interface_view.quality_assignment_block.statements:
+                encoding = statement.typed_global_name
+                if encoding.name_type == name_types.NameType.ENCODING:
                     value, literal_diagnostics = (
-                        self._literal_encoder.encode_in_encoding(literal, constraint)
+                        self._literal_encoder.encode_in_encoding(literal, encoding)
                     )
                     validation_diagnostics.extend(literal_diagnostics)
                     # Generated code represents a value the same way in every
@@ -316,8 +316,8 @@ class OperationArgumentsValidator:
                     if translated is None:
                         translated = value
             return translated
-        value_type = interface_view.constraints.value_constraint
-        # Structural validation reports views without a value constraint.
+        value_type = interface_view.quality_assignment_block.value_quality
+        # Structural validation reports views without a value quality.
         if value_type is None:
             return None
         value, literal_diagnostics = self._literal_encoder.encode(literal, value_type)

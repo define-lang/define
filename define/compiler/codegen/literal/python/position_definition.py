@@ -35,7 +35,7 @@ class PositionDefinitionGenerator:
         """Generate template context for the position definition."""
         name_content = self._definition.typed_name.name_content
         constraints = self._converter.constraints_to_class_references(
-            self._definition.constraints,
+            self._definition.quality_assignment_block,
         )
         class_name = self._converter.class_name(self._definition.typed_name)
         module_name = self._converter.module_name(name_content)
@@ -49,7 +49,7 @@ class PositionDefinitionGenerator:
             module_name=module_name,
             constraints=constraints,
             value_type=value_types.constrained_python_value_type(
-                self._definition.constraints
+                self._definition.quality_assignment_block
             ),
             imports=imports,
         )

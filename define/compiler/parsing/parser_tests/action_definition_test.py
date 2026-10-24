@@ -101,7 +101,7 @@ def test_action_with_local_position_definition(parse: Parse):
     [position] = definition.interface_positions
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "my_pos"
-    assert position.constraints is None
+    assert position.quality_assignment_block is None
     assert position.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=32
     )
@@ -126,11 +126,11 @@ def test_action_with_constrained_local_position_definition(parse: Parse):
     [position] = definition.interface_positions
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "my_pos"
-    assert position.constraints is not None
-    [requirement] = position.constraints.requirements
-    assert requirement.typed_global_name.name_type == name_types.NameType.ACTION
-    assert requirement.typed_global_name.name_content.fqun is None
-    assert requirement.typed_global_name.name_content.path.name == "/do_work"
+    assert position.quality_assignment_block is not None
+    [quality_assignment] = position.quality_assignment_block.statements
+    assert quality_assignment.typed_global_name.name_type == name_types.NameType.ACTION
+    assert quality_assignment.typed_global_name.name_content.fqun is None
+    assert quality_assignment.typed_global_name.name_content.path.name == "/do_work"
     assert position.location == ast.SourceLocation(
         line=2, column=5, end_line=6, end_column=5
     )
@@ -152,13 +152,13 @@ def test_action_with_multiple_local_position_definitions(parse: Parse):
     [first_position, second_position] = definition.interface_positions
     assert first_position.typed_name.name_type == name_types.NameType.POSITION
     assert first_position.typed_name.name_content.name == "first_pos"
-    assert first_position.constraints is None
+    assert first_position.quality_assignment_block is None
     assert first_position.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     assert second_position.typed_name.name_type == name_types.NameType.POSITION
     assert second_position.typed_name.name_content.name == "second_pos"
-    assert second_position.constraints is None
+    assert second_position.quality_assignment_block is None
     assert second_position.location == ast.SourceLocation(
         line=3, column=5, end_line=3, end_column=36
     )
@@ -212,17 +212,19 @@ def test_action_with_mixed_local_position_definition_forms(parse: Parse):
     [first_position, second_position] = definition.interface_positions
     assert first_position.typed_name.name_type == name_types.NameType.POSITION
     assert first_position.typed_name.name_content.name == "first_pos"
-    assert first_position.constraints is None
+    assert first_position.quality_assignment_block is None
     assert first_position.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     assert second_position.typed_name.name_type == name_types.NameType.POSITION
     assert second_position.typed_name.name_content.name == "second_pos"
-    assert second_position.constraints is not None
-    [requirement] = second_position.constraints.requirements
-    assert requirement.typed_global_name.name_type == name_types.NameType.POSITION
-    assert requirement.typed_global_name.name_content.fqun is None
-    assert requirement.typed_global_name.name_content.path.name == "/child"
+    assert second_position.quality_assignment_block is not None
+    [quality_assignment] = second_position.quality_assignment_block.statements
+    assert (
+        quality_assignment.typed_global_name.name_type == name_types.NameType.POSITION
+    )
+    assert quality_assignment.typed_global_name.name_content.fqun is None
+    assert quality_assignment.typed_global_name.name_content.path.name == "/child"
     assert second_position.location == ast.SourceLocation(
         line=3, column=5, end_line=7, end_column=5
     )
@@ -430,7 +432,7 @@ def test_action_block_with_local_position_definition_in_action_statements(
     assert isinstance(statement, ast.LocalPositionDefinition)
     assert statement.typed_name.name_type == name_types.NameType.POSITION
     assert statement.typed_name.name_content.name == "inner_pos"
-    assert statement.constraints is None
+    assert statement.quality_assignment_block is None
     assert statement.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
@@ -456,14 +458,14 @@ def test_action_block_with_multiple_local_position_definitions_in_action_stateme
     assert isinstance(first_statement, ast.LocalPositionDefinition)
     assert first_statement.typed_name.name_type == name_types.NameType.POSITION
     assert first_statement.typed_name.name_content.name == "first_inner"
-    assert first_statement.constraints is None
+    assert first_statement.quality_assignment_block is None
     assert first_statement.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=41
     )
     assert isinstance(second_statement, ast.LocalPositionDefinition)
     assert second_statement.typed_name.name_type == name_types.NameType.POSITION
     assert second_statement.typed_name.name_content.name == "second_inner"
-    assert second_statement.constraints is None
+    assert second_statement.quality_assignment_block is None
     assert second_statement.location == ast.SourceLocation(
         line=7, column=9, end_line=7, end_column=42
     )
@@ -487,7 +489,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     [position] = definition.interface_positions
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "outer_pos"
-    assert position.constraints is None
+    assert position.quality_assignment_block is None
     assert position.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
@@ -495,7 +497,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     assert isinstance(statement, ast.LocalPositionDefinition)
     assert statement.typed_name.name_type == name_types.NameType.POSITION
     assert statement.typed_name.name_content.name == "inner_pos"
-    assert statement.constraints is None
+    assert statement.quality_assignment_block is None
     assert statement.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
@@ -1002,7 +1004,7 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     assert isinstance(position_definition, ast.LocalPositionDefinition)
     assert position_definition.typed_name.name_type == name_types.NameType.POSITION
     assert position_definition.typed_name.name_content.name == "inner_pos"
-    assert position_definition.constraints is None
+    assert position_definition.quality_assignment_block is None
     assert position_definition.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
@@ -1249,7 +1251,7 @@ def test_word_that_starts_like_action_statement_word_is_not_missing_space(
     assert exc_info.value.location.end_column == 44
 
 
-def test_position_constraint_block_missing_close_brace_followed_by_action_statement(
+def test_quality_assignment_block_missing_close_brace_followed_by_action_statement(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(

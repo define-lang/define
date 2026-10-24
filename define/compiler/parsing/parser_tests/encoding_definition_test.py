@@ -80,7 +80,7 @@ def test_encoding_definition_disallows_local_context(parse: Parse):
     assert error.value.location.end_column == 61
 
 
-def test_encoding_in_constraints(parse: Parse):
+def test_encoding_in_quality_assignments(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/test> {\n"
         + "    it may only contain particles where {\n"
@@ -94,12 +94,12 @@ def test_encoding_in_constraints(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/test>"
     )
-    assert definition.constraints is not None
-    [requirement] = definition.constraints.requirements
-    assert requirement.location == ast.SourceLocation(
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    assert quality_assignment.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
-    typed_name = requirement.typed_global_name
+    typed_name = quality_assignment.typed_global_name
     assert typed_name.name_type == name_types.NameType.ENCODING
     assert typed_name.location == ast.SourceLocation(
         line=3, column=20, end_line=3, end_column=34

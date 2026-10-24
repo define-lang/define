@@ -105,7 +105,7 @@ class DeadConstraintTracker:
         and a destructor, which is never dead because every particle is eventually
         destroyed.
         """
-        for constraint in position_definition.constraint_typed_names:
+        for constraint in position_definition.assigned_qualities:
             definition_result = definition_results.get(constraint)
             if definition_result is None:
                 continue

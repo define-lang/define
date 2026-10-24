@@ -33,7 +33,7 @@ def test_position_definition_parses(parse: Parse):
     assert definition.typed_name.location == ast.SourceLocation(
         line=1, column=22, end_line=1, end_column=62
     )
-    assert definition.constraints is None
+    assert definition.quality_assignment_block is None
 
 
 def test_position_definition_locations_have_file_path(parse: Parse):
@@ -112,7 +112,7 @@ def test_position_definition_missing_terminator_after_non_ascii_name(
     assert exc_info.value.location.end_column == 63
 
 
-def test_position_requirement_with_non_ascii_name(parse: Parse):
+def test_quality_assignment_with_non_ascii_name(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -122,10 +122,12 @@ def test_position_requirement_with_non_ascii_name(parse: Parse):
     )
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
-    assert definition.constraints is not None
-    [requirement] = definition.constraints.requirements
-    assert requirement.typed_global_name.name_content.path.name == "/\u00e9t\u00e9"
-    assert requirement.location == ast.SourceLocation(
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    assert (
+        quality_assignment.typed_global_name.name_content.path.name == "/\u00e9t\u00e9"
+    )
+    assert quality_assignment.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=34
     )
 
@@ -260,7 +262,7 @@ def test_position_definition_empty_name_at_eof(parse: Parse):
     assert exc_info.value.location.end_column == 31
 
 
-def test_position_definition_with_constraint_block(parse: Parse):
+def test_position_definition_with_quality_assignment_block(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -277,19 +279,21 @@ def test_position_definition_with_constraint_block(parse: Parse):
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
-    assert definition.constraints is not None
-    assert definition.constraints.location == ast.SourceLocation(
+    assert definition.quality_assignment_block is not None
+    assert definition.quality_assignment_block.location == ast.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
     )
-    [requirement] = definition.constraints.requirements
-    assert requirement.location == ast.SourceLocation(
+    [quality_assignment] = definition.quality_assignment_block.statements
+    assert quality_assignment.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
-    assert requirement.typed_global_name.name_type == name_types.NameType.POSITION
-    assert requirement.typed_global_name.name_content.path.name == "/child"
+    assert (
+        quality_assignment.typed_global_name.name_type == name_types.NameType.POSITION
+    )
+    assert quality_assignment.typed_global_name.name_content.path.name == "/child"
 
 
-def test_position_definition_with_multiple_requirements(parse: Parse):
+def test_position_definition_with_multiple_quality_assignments(parse: Parse):
     program = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -307,11 +311,11 @@ def test_position_definition_with_multiple_requirements(parse: Parse):
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
-    assert definition.constraints is not None
-    assert definition.constraints.location == ast.SourceLocation(
+    assert definition.quality_assignment_block is not None
+    assert definition.quality_assignment_block.location == ast.SourceLocation(
         line=2, column=5, end_line=5, end_column=5
     )
-    [first, second] = definition.constraints.requirements
+    [first, second] = definition.quality_assignment_block.statements
     assert first.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
@@ -333,7 +337,7 @@ def test_position_definition_block_requires_content(parse: Parse):
     assert exc_info.value.location.end_column == 1
 
 
-def test_position_constraint_block_requires_requirements(parse: Parse):
+def test_quality_assignment_block_requires_statements(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -347,7 +351,7 @@ def test_position_constraint_block_requires_requirements(parse: Parse):
     assert exc_info.value.location.end_column == 5
 
 
-def test_position_constraint_block_with_invalid_statement_then_more_definitions(
+def test_quality_assignment_block_with_invalid_statement_then_more_definitions(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
@@ -366,7 +370,7 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
     assert exc_info.value.location.end_column == 41
 
 
-def test_position_definition_rejects_multiple_constraint_blocks(
+def test_position_definition_rejects_multiple_quality_assignment_blocks(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
@@ -386,7 +390,7 @@ def test_position_definition_rejects_multiple_constraint_blocks(
     assert exc_info.value.location.end_column == 41
 
 
-def test_second_constraint_block_after_close_on_same_line(parse: Parse):
+def test_second_quality_assignment_block_after_close_on_same_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -403,7 +407,7 @@ def test_second_constraint_block_after_close_on_same_line(parse: Parse):
     assert exc_info.value.location.end_column == 6
 
 
-def test_second_constraint_block_on_requirement_line(parse: Parse):
+def test_second_quality_assignment_block_on_quality_assignment_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -442,23 +446,25 @@ def test_action_definition_block_with_mixed_local_position_forms(
     [run, empty_pos, constrained_pos] = definition.interface_positions
     assert run.typed_name.name_type == name_types.NameType.POSITION
     assert run.typed_name.name_content.name == "run"
-    assert run.constraints is None
+    assert run.quality_assignment_block is None
     assert run.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=29
     )
     assert empty_pos.typed_name.name_type == name_types.NameType.POSITION
     assert empty_pos.typed_name.name_content.name == "empty_pos"
-    assert empty_pos.constraints is None
+    assert empty_pos.quality_assignment_block is None
     assert empty_pos.location == ast.SourceLocation(
         line=3, column=5, end_line=3, end_column=35
     )
     assert constrained_pos.typed_name.name_type == name_types.NameType.POSITION
     assert constrained_pos.typed_name.name_content.name == "constrained_pos"
-    assert constrained_pos.constraints is not None
-    [requirement] = constrained_pos.constraints.requirements
-    assert requirement.typed_global_name.name_type == name_types.NameType.POSITION
-    assert requirement.typed_global_name.name_content.fqun is None
-    assert requirement.typed_global_name.name_content.path.name == "/child"
+    assert constrained_pos.quality_assignment_block is not None
+    [quality_assignment] = constrained_pos.quality_assignment_block.statements
+    assert (
+        quality_assignment.typed_global_name.name_type == name_types.NameType.POSITION
+    )
+    assert quality_assignment.typed_global_name.name_content.fqun is None
+    assert quality_assignment.typed_global_name.name_content.path.name == "/child"
     assert constrained_pos.location == ast.SourceLocation(
         line=4, column=5, end_line=8, end_column=5
     )
@@ -491,28 +497,38 @@ def test_action_definition_block_with_multiple_local_block_positions(
     [run, first_pos, second_pos] = definition.interface_positions
     assert run.typed_name.name_type == name_types.NameType.POSITION
     assert run.typed_name.name_content.name == "run"
-    assert run.constraints is None
+    assert run.quality_assignment_block is None
     assert run.location == ast.SourceLocation(
         line=2, column=5, end_line=2, end_column=29
     )
     assert first_pos.typed_name.name_type == name_types.NameType.POSITION
     assert first_pos.typed_name.name_content.name == "first_pos"
-    assert first_pos.constraints is not None
-    [first_requirement] = first_pos.constraints.requirements
-    assert first_requirement.typed_global_name.name_type == name_types.NameType.POSITION
-    assert first_requirement.typed_global_name.name_content.fqun is None
-    assert first_requirement.typed_global_name.name_content.path.name == "/first_child"
+    assert first_pos.quality_assignment_block is not None
+    [first_quality_assignment] = first_pos.quality_assignment_block.statements
+    assert (
+        first_quality_assignment.typed_global_name.name_type
+        == name_types.NameType.POSITION
+    )
+    assert first_quality_assignment.typed_global_name.name_content.fqun is None
+    assert (
+        first_quality_assignment.typed_global_name.name_content.path.name
+        == "/first_child"
+    )
     assert first_pos.location == ast.SourceLocation(
         line=3, column=5, end_line=7, end_column=5
     )
     assert second_pos.typed_name.name_type == name_types.NameType.POSITION
     assert second_pos.typed_name.name_content.name == "second_pos"
-    assert second_pos.constraints is not None
-    [second_requirement] = second_pos.constraints.requirements
-    assert second_requirement.typed_global_name.name_type == name_types.NameType.ACTION
-    assert second_requirement.typed_global_name.name_content.fqun is None
+    assert second_pos.quality_assignment_block is not None
+    [second_quality_assignment] = second_pos.quality_assignment_block.statements
     assert (
-        second_requirement.typed_global_name.name_content.path.name == "/second_child"
+        second_quality_assignment.typed_global_name.name_type
+        == name_types.NameType.ACTION
+    )
+    assert second_quality_assignment.typed_global_name.name_content.fqun is None
+    assert (
+        second_quality_assignment.typed_global_name.name_content.path.name
+        == "/second_child"
     )
     assert second_pos.location == ast.SourceLocation(
         line=8, column=5, end_line=12, end_column=5
@@ -543,18 +559,20 @@ def test_action_statements_block_with_mixed_local_position_forms(
     assert isinstance(empty_inner, ast.LocalPositionDefinition)
     assert empty_inner.typed_name.name_type == name_types.NameType.POSITION
     assert empty_inner.typed_name.name_content.name == "empty_inner"
-    assert empty_inner.constraints is None
+    assert empty_inner.quality_assignment_block is None
     assert empty_inner.location == ast.SourceLocation(
         line=6, column=9, end_line=6, end_column=41
     )
     assert isinstance(constrained_inner, ast.LocalPositionDefinition)
     assert constrained_inner.typed_name.name_type == name_types.NameType.POSITION
     assert constrained_inner.typed_name.name_content.name == "constrained_inner"
-    assert constrained_inner.constraints is not None
-    [requirement] = constrained_inner.constraints.requirements
-    assert requirement.typed_global_name.name_type == name_types.NameType.ACTION
-    assert requirement.typed_global_name.name_content.fqun is None
-    assert requirement.typed_global_name.name_content.path.name == "/inner_action"
+    assert constrained_inner.quality_assignment_block is not None
+    [quality_assignment] = constrained_inner.quality_assignment_block.statements
+    assert quality_assignment.typed_global_name.name_type == name_types.NameType.ACTION
+    assert quality_assignment.typed_global_name.name_content.fqun is None
+    assert (
+        quality_assignment.typed_global_name.name_content.path.name == "/inner_action"
+    )
     assert constrained_inner.location == ast.SourceLocation(
         line=7, column=9, end_line=11, end_column=9
     )
@@ -588,23 +606,33 @@ def test_action_statements_block_with_multiple_local_block_positions(
     assert isinstance(first_inner, ast.LocalPositionDefinition)
     assert first_inner.typed_name.name_type == name_types.NameType.POSITION
     assert first_inner.typed_name.name_content.name == "first_inner"
-    assert first_inner.constraints is not None
-    [first_requirement] = first_inner.constraints.requirements
-    assert first_requirement.typed_global_name.name_type == name_types.NameType.POSITION
-    assert first_requirement.typed_global_name.name_content.fqun is None
-    assert first_requirement.typed_global_name.name_content.path.name == "/first_child"
+    assert first_inner.quality_assignment_block is not None
+    [first_quality_assignment] = first_inner.quality_assignment_block.statements
+    assert (
+        first_quality_assignment.typed_global_name.name_type
+        == name_types.NameType.POSITION
+    )
+    assert first_quality_assignment.typed_global_name.name_content.fqun is None
+    assert (
+        first_quality_assignment.typed_global_name.name_content.path.name
+        == "/first_child"
+    )
     assert first_inner.location == ast.SourceLocation(
         line=6, column=9, end_line=10, end_column=9
     )
     assert isinstance(second_inner, ast.LocalPositionDefinition)
     assert second_inner.typed_name.name_type == name_types.NameType.POSITION
     assert second_inner.typed_name.name_content.name == "second_inner"
-    assert second_inner.constraints is not None
-    [second_requirement] = second_inner.constraints.requirements
-    assert second_requirement.typed_global_name.name_type == name_types.NameType.ACTION
-    assert second_requirement.typed_global_name.name_content.fqun is None
+    assert second_inner.quality_assignment_block is not None
+    [second_quality_assignment] = second_inner.quality_assignment_block.statements
     assert (
-        second_requirement.typed_global_name.name_content.path.name == "/second_child"
+        second_quality_assignment.typed_global_name.name_type
+        == name_types.NameType.ACTION
+    )
+    assert second_quality_assignment.typed_global_name.name_content.fqun is None
+    assert (
+        second_quality_assignment.typed_global_name.name_content.path.name
+        == "/second_child"
     )
     assert second_inner.location == ast.SourceLocation(
         line=11, column=9, end_line=15, end_column=9

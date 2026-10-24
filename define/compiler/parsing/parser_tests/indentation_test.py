@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     )
 
 
-def test_over_indented_requirement(
+def test_over_indented_quality_assignment(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(
@@ -38,7 +38,7 @@ def test_over_indented_requirement(
     ]
 
 
-def test_under_indented_requirement(
+def test_under_indented_quality_assignment(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(
@@ -80,7 +80,7 @@ def test_misindented_opener_does_not_move_its_block_contents(
     ]
 
 
-def test_under_indented_constraint_block_close(
+def test_under_indented_quality_assignment_block_close(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(
@@ -587,7 +587,7 @@ def test_every_line_of_shifted_definition_is_reported(
     ]
 
 
-def test_encoding_constraint_under_indented(
+def test_encoding_quality_assignment_under_indented(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(

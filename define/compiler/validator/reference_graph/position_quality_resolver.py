@@ -71,7 +71,7 @@ class PositionQualityResolver:
             )
             definition = scope.get_definition(local_name)
             return (
-                definition.constraint_typed_names,
+                definition.assigned_qualities,
                 self._local_definition_cache_key(local_name),
             )
 
@@ -90,7 +90,7 @@ class PositionQualityResolver:
             return (
                 action_def.interface_positions_by_name[
                     last_element.full_typed_name
-                ].constraint_typed_names,
+                ].assigned_qualities,
                 chained_name.position(
                     (parent.full_typed_name, last_element.full_typed_name)
                 ),
@@ -105,7 +105,7 @@ class PositionQualityResolver:
             "ast.PositionDefinition", definition_result.definition
         )
         return (
-            position_def.constraint_typed_names,
+            position_def.assigned_qualities,
             chained_name.position((last_element.full_typed_name,)),
         )
 

@@ -339,7 +339,7 @@ def test_action_and_it_does_block_missing_close_brace(
     ]
 
 
-def test_position_constraint_block_truncated_without_final_newline(
+def test_quality_assignment_block_truncated_without_final_newline(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
@@ -354,7 +354,7 @@ def test_position_constraint_block_truncated_without_final_newline(
     assert exc_info.value.location.end_column == 41
 
 
-def test_position_constraint_block_truncated_after_statement(parse: Parse):
+def test_quality_assignment_block_truncated_after_statement(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -367,7 +367,7 @@ def test_position_constraint_block_truncated_after_statement(parse: Parse):
     assert exc_info.value.location.end_column == 41
 
 
-def test_position_definition_block_truncated_after_constraint_block(
+def test_position_definition_block_truncated_after_quality_assignment_block(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
@@ -439,7 +439,7 @@ def test_trigger_conditions_block_truncated_after_open(parse: Parse):
     assert exc_info.value.location.end_column == 22
 
 
-def test_position_constraint_block_truncated_after_open_without_final_newline(
+def test_quality_assignment_block_truncated_after_open_without_final_newline(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
@@ -532,7 +532,7 @@ def test_global_position_keyword_without_name(parse: Parse):
     assert exc_info.value.location.end_column == 30
 
 
-def test_position_requirement_missing_name(parse: Parse):
+def test_quality_assignment_missing_name(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -547,7 +547,7 @@ def test_position_requirement_missing_name(parse: Parse):
     assert exc_info.value.location.end_column == 28
 
 
-def test_position_requirement_missing_name_after_type(parse: Parse):
+def test_quality_assignment_missing_name_after_type(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -562,7 +562,7 @@ def test_position_requirement_missing_name_after_type(parse: Parse):
     assert exc_info.value.location.end_column == 28
 
 
-def test_position_requirement_missing_name_after_type_with_space(
+def test_quality_assignment_missing_name_after_type_with_space(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
@@ -579,7 +579,7 @@ def test_position_requirement_missing_name_after_type_with_space(
     assert exc_info.value.location.end_column == 28
 
 
-def test_position_requirement_name_starts_and_then_newline(parse: Parse):
+def test_quality_assignment_name_starts_and_then_newline(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -595,7 +595,7 @@ def test_position_requirement_name_starts_and_then_newline(parse: Parse):
     assert exc_info.value.location.end_column == 29
 
 
-def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
+def test_quality_assignment_missing_space_after_it_has_the(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         parse(
             "define the potential action<example.com:my_lib:/path> {\n"
@@ -1444,7 +1444,7 @@ def test_reference_name_that_is_neither_local_nor_global(parse: Parse):
     assert exc_info.value.location.end_column == 41
 
 
-def test_position_requirement_ends_after_it_has_the(parse: Parse):
+def test_quality_assignment_ends_after_it_has_the(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -1474,7 +1474,7 @@ def test_potential_literal_definition_block_truncated_after_open(
     assert error.value.location.end_column == 67
 
 
-def test_potential_literal_definition_block_truncated_after_encoding_constraint(
+def test_potential_literal_definition_block_truncated_after_encoding_quality_assignment(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
@@ -1488,7 +1488,7 @@ def test_potential_literal_definition_block_truncated_after_encoding_constraint(
     assert error.value.location.end_column == 66
 
 
-def test_encoding_constraint_ends_after_it_has_the(parse: Parse):
+def test_encoding_quality_assignment_ends_after_it_has_the(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:
@@ -1528,7 +1528,7 @@ def test_view_definition_truncated_after_direction_statement(parse: Parse):
     assert error.value.location.end_column == 20
 
 
-def test_view_definition_truncated_after_constraint_block(parse: Parse):
+def test_view_definition_truncated_after_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"

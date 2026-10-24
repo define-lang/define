@@ -31,9 +31,9 @@ def test_typed_global_name_reference_short_position_name(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/root>"
     )
-    assert definition.constraints is not None
-    [requirement] = definition.constraints.requirements
-    typed_name = requirement.typed_global_name
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    typed_name = quality_assignment.typed_global_name
     assert typed_name.name_type == name_types.NameType.POSITION
     assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
     assert typed_name.full_typed_name == "position<mv:define-lang.org:parser:/child>"
@@ -65,9 +65,9 @@ def test_typed_global_name_reference_short_action_name(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/root>"
     )
-    assert definition.constraints is not None
-    [requirement] = definition.constraints.requirements
-    typed_name = requirement.typed_global_name
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    typed_name = quality_assignment.typed_global_name
     assert typed_name.name_type == name_types.NameType.ACTION
     assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
     assert typed_name.full_typed_name == "action<mv:define-lang.org:parser:/do_work>"
@@ -99,9 +99,9 @@ def test_typed_global_name_reference_full_name(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/root>"
     )
-    assert definition.constraints is not None
-    [requirement] = definition.constraints.requirements
-    typed_name = requirement.typed_global_name
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    typed_name = quality_assignment.typed_global_name
     assert typed_name.name_type == name_types.NameType.ACTION
     assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
     assert typed_name.full_typed_name == "action<mv:define-lang.org:parser:/do_work>"

@@ -19,11 +19,11 @@ _FQUN = ast.Fqun(
 
 def _make_local_def(
     name: str,
-    constraints: ast.PositionConstraintBlock | None = None,
+    quality_assignment_block: ast.QualityAssignmentBlock | None = None,
 ) -> ast.LocalPositionDefinition:
     return ast.LocalPositionDefinition.from_name(
         local_name=ast.LocalNameContent(name=name, location=_LOC),
-        constraints=constraints,
+        quality_assignment_block=quality_assignment_block,
         location=_LOC,
     )
 

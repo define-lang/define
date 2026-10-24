@@ -45,10 +45,10 @@ class ActionDefinitionGenerator:
                 renderer.InterfacePosition(
                     typed_name=position.typed_name.source_typed_name,
                     constraints=self._converter.constraints_to_class_references(
-                        position.constraints
+                        position.quality_assignment_block
                     ),
                     value_type=value_types.constrained_python_value_type(
-                        position.constraints
+                        position.quality_assignment_block
                     ),
                 )
             )

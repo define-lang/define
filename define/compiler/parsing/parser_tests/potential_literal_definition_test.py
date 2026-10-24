@@ -76,7 +76,7 @@ def test_requires_block(parse: Parse):
     assert error.value.location.end_column == 65
 
 
-def test_requires_encoding_constraint(parse: Parse):
+def test_requires_encoding_quality_assignment(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:
@@ -164,7 +164,7 @@ def test_disallows_local_context(parse: Parse):
     assert error.value.location.end_column == 74
 
 
-def test_disallows_particle_constraint(parse: Parse):
+def test_disallows_particle_quality_assignment(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
         _ = parse(
             "define the potential position<mv:define-lang.org:parser:/test> {\n"
@@ -196,7 +196,7 @@ def test_disallows_quality_implication(parse: Parse):
     assert error.value.location.end_column == 31
 
 
-def test_statement_that_is_not_an_encoding_constraint(parse: Parse):
+def test_statement_that_is_not_an_encoding_quality_assignment(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialLiteralDefinitionBlock
     ) as error:

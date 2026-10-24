@@ -1,4 +1,4 @@
-//! Potential literal definitions and their encoding constraints.
+//! Potential literal definitions and their encoding Quality Assignment Statements.
 
 use crate::ast;
 use crate::parse_error::{ParseError, ParseResult};
@@ -8,7 +8,7 @@ use crate::parser::names::FqunWithCanonicalText;
 use crate::scanner::Position;
 use terminals::{ENCODING, IT_HAS_THE};
 
-/// The one name type that an encoding constraint allows.
+/// The one name type that an encoding Quality Assignment Statement allows.
 const ENCODING_NAME_TYPE: [(&[u8], ast::NameType); 1] = [(ENCODING, ast::NameType::Encoding)];
 
 impl<'py, 'source> Parser<'py, 'source> {
@@ -24,7 +24,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     potential_literal_definition_block ;
     /// potential_literal_definition_block =
     ///     block_open,
-    ///     encoding_constraint,
+    ///     encoding_quality_assignment_statement,
     ///     block_close ;
     /// ```
     pub(crate) fn parse_potential_literal_definition(
@@ -50,14 +50,14 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .errors
                     .invalid_potential_literal_definition_block(close, close));
             }
-            // The block ends where its encoding constraint belongs.
+            // The block ends where its encoding Quality Assignment Statement belongs.
             LineInBlock::Unclosed => {
                 return Err(self
                     .errors
                     .invalid_potential_literal_definition_block(block_open_end, block_open_end));
             }
         }
-        let encoding = self.parse_encoding_constraint(&fqun)?;
+        let encoding = self.parse_encoding_quality_assignment_statement(&fqun)?;
         let end = self.parse_block_close_after_content(
             start,
             block_open_end,
@@ -71,17 +71,18 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((definition, end))
     }
 
-    /// Parses an encoding constraint, whose reference takes its default FQUN
-    /// from `fqun`, through the end of its line, and returns its encoding.
+    /// Parses an encoding Quality Assignment Statement, whose reference takes
+    /// its default FQUN from `fqun`, through the end of its line, and returns
+    /// its encoding.
     ///
     /// ```ebnf
-    /// encoding_constraint = "it has the", " ", "encoding", "<", global_name, ">", terminator ;
+    /// encoding_quality_assignment_statement = "it has the", " ", "encoding", "<", global_name, ">", terminator ;
     /// ```
-    fn parse_encoding_constraint(
+    fn parse_encoding_quality_assignment_statement(
         &mut self,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::GlobalTypedNameReference<'py>> {
-        // The statement is not an encoding constraint.
+        // The statement is not an encoding Quality Assignment Statement.
         if !self.scanner.consume(IT_HAS_THE) {
             return Err(self.invalid_potential_literal_definition_statement());
         }
@@ -106,15 +107,16 @@ impl<'py, 'source> Parser<'py, 'source> {
 // The functions that only run on an error path.
 impl<'py, 'source> Parser<'py, 'source> {
     /// Returns the error for a statement at the scanner's position in a
-    /// potential literal definition block that is not an encoding constraint.
+    /// potential literal definition block that is not an encoding Quality
+    /// Assignment Statement.
     #[cold]
     #[inline(never)]
     fn invalid_potential_literal_definition_statement(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_after(IT_HAS_THE) {
             return error;
         }
-        // The line begins like an encoding constraint, but with extra or
-        // missing spaces between two of its words.
+        // The line begins like an encoding Quality Assignment Statement, but
+        // with extra or missing spaces between two of its words.
         if let Some(error) = self.misspaced_words_in_any(&[IT_HAS_THE]) {
             return error;
         }
@@ -124,7 +126,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a name type, at the scanner's position, that is
-    /// not `encoding`, in an encoding constraint.
+    /// not `encoding`, in an encoding Quality Assignment Statement.
     #[cold]
     #[inline(never)]
     fn expected_encoding_name_type(&self) -> ParseError {

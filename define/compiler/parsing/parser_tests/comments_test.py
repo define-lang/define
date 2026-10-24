@@ -270,7 +270,7 @@ def test_empty_comment_hash_space_newline_after_statement_same_line(
     assert exc_info.value.location.end_column == 66
 
 
-def test_comment_with_trailing_whitespace_before_encoding_constraint(
+def test_comment_with_trailing_whitespace_before_encoding_quality_assignment(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:
@@ -287,7 +287,7 @@ def test_comment_with_trailing_whitespace_before_encoding_constraint(
     assert error.value.location.end_column == 11
 
 
-def test_comment_with_trailing_whitespace_after_encoding_constraint(
+def test_comment_with_trailing_whitespace_after_encoding_quality_assignment(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as error:

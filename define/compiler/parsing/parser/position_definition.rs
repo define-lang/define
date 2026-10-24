@@ -1,4 +1,4 @@
-//! Potential position definitions and their position constraint blocks.
+//! Potential position definitions and their Position Quality Assignment Blocks.
 
 use crate::ast;
 use crate::parse_error::{ParseError, ParseResult};
@@ -13,7 +13,7 @@ use terminals::{
     NAME_CONTENT_START, OPEN_BRACE, POSITION, SPACE, TERMINATOR, VALUE,
 };
 
-const CONSTRAINT_NAME_TYPES: [(&[u8], ast::NameType); 4] = [
+const ASSIGNABLE_NAME_TYPES: [(&[u8], ast::NameType); 4] = [
     (POSITION, ast::NameType::Position),
     (ACTION, ast::NameType::Action),
     (VALUE, ast::NameType::Value),
@@ -45,9 +45,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             name_content,
             name_text,
         )?;
-        let (constraints, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (constraints, end) = self.parse_position_definition_block(start, 0, &fqun)?;
-            (Some(constraints), end)
+        let (quality_assignment_block, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
+            let (block, end) = self.parse_position_definition_block(start, 0, &fqun)?;
+            (Some(block), end)
         } else {
             // There is no `.` or ` {`.
             let Some(end) = self.parse_terminator()? else {
@@ -56,21 +56,21 @@ impl<'py, 'source> Parser<'py, 'source> {
             (None, end)
         };
         let location = self.ast.location(start, end)?;
-        let definition = self
-            .ast
-            .position_definition(location, typed_name, constraints)?;
+        let definition =
+            self.ast
+                .position_definition(location, typed_name, quality_assignment_block)?;
         Ok((definition, end))
     }
 
     /// Parses the block of a position definition that begins at `start`,
     /// indented `opener_indentation` spaces, whose references take their
-    /// default FQUN from `fqun`, and returns its position constraint block
+    /// default FQUN from `fqun`, and returns its Position Quality Assignment Block
     /// with the position after its `}`.
     ///
     /// ```ebnf
     /// position_definition_block =
     ///     block_open,
-    ///     position_constraint_block,
+    ///     position_quality_assignment_block,
     ///     block_close ;
     /// ```
     pub(crate) fn parse_position_definition_block(
@@ -78,7 +78,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         opener_indentation: usize,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<(ast::PositionConstraintBlock<'py>, Position)> {
+    ) -> ParseResult<(ast::QualityAssignmentBlock<'py>, Position)> {
         let block_open_end = self.parse_block_open()?;
         match self.next_line_in_block(opener_indentation, &[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE])? {
             LineInBlock::Statement => {}
@@ -96,13 +96,13 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_position_definition_content(block_open_end, block_open_end));
             }
         };
-        let constraints_start = self.scanner.position;
-        // The block has something other than a position constraint block.
+        let block_start = self.scanner.position;
+        // The block has something other than a Position Quality Assignment Block.
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
             return Err(self.invalid_position_definition_block());
         }
-        let constraints = self.parse_position_constraint_block(
-            constraints_start,
+        let block = self.parse_quality_assignment_block(
+            block_start,
             opener_indentation + INDENTATION_WIDTH,
             fqun,
         )?;
@@ -112,27 +112,27 @@ impl<'py, 'source> Parser<'py, 'source> {
             opener_indentation,
             Self::statement_instead_of_close_brace,
         )?;
-        Ok((constraints, end))
+        Ok((block, end))
     }
 
-    /// Parses the rest of a position constraint block after its
+    /// Parses the rest of a Quality Assignment Block after its
     /// `it may only contain particles where`, given the position of its start
     /// and the indentation of its line.
     ///
     /// ```ebnf
-    /// position_constraint_block =
+    /// position_quality_assignment_block =
     ///     "it may only contain particles where",
     ///     block_open,
-    ///     position_requirement_statement,
-    ///     { position_requirement_statement },
+    ///     quality_assignment_statement,
+    ///     { quality_assignment_statement },
     ///     block_close ;
     /// ```
-    pub(crate) fn parse_position_constraint_block(
+    pub(crate) fn parse_quality_assignment_block(
         &mut self,
         start: Position,
         indentation: usize,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<ast::PositionConstraintBlock<'py>> {
+    ) -> ParseResult<ast::QualityAssignmentBlock<'py>> {
         let block_open_end = self.parse_block_open()?;
         match self.next_line_in_block(indentation, &[IT_HAS_THE])? {
             LineInBlock::Statement => {}
@@ -150,12 +150,12 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_position_constraint_content(block_open_end, block_open_end));
             }
         }
-        let requirements = self.nodes.start::<ast::PositionRequirementStatement>();
-        let required_names = self.texts.start();
+        let statements = self.nodes.start::<ast::QualityAssignmentStatement>();
+        let assigned_names = self.texts.start();
         loop {
-            let (requirement, required_name) = self.parse_position_requirement_statement(fqun)?;
-            self.nodes.push(&requirements, requirement);
-            self.texts.push(&required_names, required_name);
+            let (statement, assigned_name) = self.parse_quality_assignment_statement(fqun)?;
+            self.nodes.push(&statements, statement);
+            self.texts.push(&assigned_names, assigned_name);
             match self.next_line_in_block(indentation, &[IT_HAS_THE])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -166,27 +166,27 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let end = self.parse_block_close()?;
-        let requirements = self.nodes.finish_tuple(requirements)?;
-        let required_names = self.texts.finish_set(required_names)?;
+        let statements = self.nodes.finish_tuple(statements)?;
+        let assigned_names = self.texts.finish_set(assigned_names)?;
         let location = self.ast.location(start, end)?;
         Ok(self
             .ast
-            .position_constraint_block(location, requirements, required_names)?)
+            .quality_assignment_block(location, statements, assigned_names)?)
     }
 
-    /// Parses a position requirement statement, whose reference's default FQUN
+    /// Parses a Quality Assignment Statement, whose reference's default FQUN
     /// is `fqun`, through the end of its line, and returns it with the full
-    /// typed name that it requires.
+    /// typed name that it assigns.
     ///
     /// ```ebnf
-    /// position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
+    /// quality_assignment_statement = "it has the", " ", typed_global_name, terminator ;
     /// ```
-    fn parse_position_requirement_statement(
+    fn parse_quality_assignment_statement(
         &mut self,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<(ast::PositionRequirementStatement<'py>, Bound<'py, PyString>)> {
+    ) -> ParseResult<(ast::QualityAssignmentStatement<'py>, Bound<'py, PyString>)> {
         let start = self.scanner.position;
-        // The statement is not a position requirement statement.
+        // The statement is not a Quality Assignment Statement.
         if !self.scanner.consume(IT_HAS_THE) {
             return Err(self.invalid_position_constraint_block());
         }
@@ -197,7 +197,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let (typed_name, full_typed_name) = self.parse_typed_global_name_reference(
             fqun,
-            &CONSTRAINT_NAME_TYPES,
+            &ASSIGNABLE_NAME_TYPES,
             Self::expected_constraint_name_type,
         )?;
         // There is no `.`.
@@ -205,10 +205,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_terminator());
         };
         let location = self.ast.location(start, end)?;
-        let requirement = self
+        let statement = self
             .ast
-            .position_requirement_statement(location, typed_name)?;
-        Ok((requirement, full_typed_name))
+            .quality_assignment_statement(location, typed_name)?;
+        Ok((statement, full_typed_name))
     }
 }
 
@@ -277,7 +277,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn expected_constraint_name_type(&self) -> ParseError {
-        let matched = CONSTRAINT_NAME_TYPES
+        let matched = ASSIGNABLE_NAME_TYPES
             .iter()
             .map(|&(keyword, _)| self.scanner.matching_prefix_length(keyword))
             .max()

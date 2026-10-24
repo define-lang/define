@@ -39,7 +39,7 @@ class ChainedNameValidator:
         chain: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
-        """Validate chained name elements against their parent name's constraints.
+        """Validate chained name elements against their parent name's quality assignments.
 
         Marks the chain's occupancy state as ERROR in the tracker if validation fails.
         """
@@ -49,14 +49,14 @@ class ChainedNameValidator:
         elements = chain.typed_names
         first = elements[0]
         # An interface position at index 0 is in scope and provides its own
-        # constraints; every other parent name in the chain must be a global
+        # quality assignments; every other parent name in the chain must be a global
         # definition that we have to look up.
         index = 0
         if scope.is_defined(first):
-            self._check_chain_element_in_constraints(
+            self._check_chain_element_is_assigned(
                 chain,
                 elements[1],
-                scope.get_definition(first).constraints,
+                scope.get_definition(first).quality_assignment_block,
                 first.full_typed_name,
                 validation_diagnostics,
             )
@@ -78,10 +78,10 @@ class ChainedNameValidator:
                 return validation_diagnostics
             match parent_def:
                 case ast.PositionDefinition() as position_def:
-                    self._check_chain_element_in_constraints(
+                    self._check_chain_element_is_assigned(
                         chain,
                         child,
-                        position_def.constraints,
+                        position_def.quality_assignment_block,
                         parent.full_typed_name,
                         validation_diagnostics,
                     )
@@ -152,26 +152,28 @@ class ChainedNameValidator:
         if child_index + 1 >= len(elements):
             return 1
         next_child = elements[child_index + 1]
-        self._check_chain_element_in_constraints(
+        self._check_chain_element_is_assigned(
             chain,
             next_child,
-            action_def.interface_positions_by_name[child.full_typed_name].constraints,
+            action_def.interface_positions_by_name[
+                child.full_typed_name
+            ].quality_assignment_block,
             child.source_typed_name,
             validation_diagnostics,
         )
         return 2
 
-    def _check_chain_element_in_constraints(
+    def _check_chain_element_is_assigned(
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
-        constraints: ast.PositionConstraintBlock | None,
+        block: ast.QualityAssignmentBlock | None,
         parent_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
-        """Check that a chain element is an explicit constraint of its parent name."""
+        """Check that a chain element is explicitly assigned to its parent name."""
         element_name = element.full_typed_name
-        declared = constraints.as_set if constraints is not None else frozenset[str]()
+        declared = block.as_set if block is not None else frozenset[str]()
         if element_name not in declared:
             validation_diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(

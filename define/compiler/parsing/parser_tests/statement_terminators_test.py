@@ -24,7 +24,7 @@ def test_valid_terminator(parse: Parse):
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=1, end_column=63
     )
-    assert definition.constraints is None
+    assert definition.quality_assignment_block is None
 
 
 def test_missing_terminator(parse: Parse):
@@ -155,7 +155,7 @@ def test_trailing_space_at_end_of_source(parse: Parse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_missing_terminator_after_typed_reference_in_position_constraint(
+def test_missing_terminator_after_typed_reference_in_quality_assignment(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
@@ -182,7 +182,7 @@ def test_text_where_position_definition_terminator_belongs(parse: Parse):
     assert exc_info.value.location.end_column == 63
 
 
-def test_text_after_encoding_constraint_terminator(parse: Parse):
+def test_text_after_encoding_quality_assignment_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
         _ = parse(
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"

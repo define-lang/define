@@ -28,7 +28,7 @@ def _only_view(program: ast.Program) -> ast.ViewDefinition:
     return view
 
 
-def test_value_constraint(parse: Parse):
+def test_value_quality(parse: Parse):
     view = _only_view(
         parse(
             _OPERATION_PREFIX
@@ -41,15 +41,15 @@ def test_value_constraint(parse: Parse):
             + _OPERATION_SUFFIX
         )
     )
-    [requirement] = view.constraints.requirements
-    assert requirement.typed_global_name.name_type == name_types.NameType.VALUE
-    assert requirement.typed_global_name.name_content.path.name == "/number"
-    assert requirement.location == ast.SourceLocation(
+    [quality_assignment] = view.quality_assignment_block.statements
+    assert quality_assignment.typed_global_name.name_type == name_types.NameType.VALUE
+    assert quality_assignment.typed_global_name.name_content.path.name == "/number"
+    assert quality_assignment.location == ast.SourceLocation(
         line=5, column=13, end_line=5, end_column=38
     )
 
 
-def test_value_and_encoding_constraints(parse: Parse):
+def test_value_and_encoding_quality_assignments(parse: Parse):
     view = _only_view(
         parse(
             _OPERATION_PREFIX
@@ -63,7 +63,7 @@ def test_value_and_encoding_constraints(parse: Parse):
             + _OPERATION_SUFFIX
         )
     )
-    [value, encoding] = view.constraints.requirements
+    [value, encoding] = view.quality_assignment_block.statements
     assert value.typed_global_name.name_type == name_types.NameType.VALUE
     assert value.typed_global_name.name_content.path.name == "/number"
     assert value.location == ast.SourceLocation(
@@ -156,7 +156,7 @@ def test_blank_lines_between_direction_statements(parse: Parse):
     )
     assert view.is_input
     assert view.is_output
-    assert view.constraints.location == ast.SourceLocation(
+    assert view.quality_assignment_block.location == ast.SourceLocation(
         line=7, column=9, end_line=9, end_column=9
     )
 
@@ -289,7 +289,7 @@ def test_disallows_read_after_read_and_written(parse: Parse):
     assert error.value.location.end_column == 19
 
 
-def test_disallows_direction_statement_after_constraint_block(
+def test_disallows_direction_statement_after_quality_assignment_block(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.InvalidViewDirectionStatementOrder) as error:
@@ -310,7 +310,7 @@ def test_disallows_direction_statement_after_constraint_block(
     assert error.value.location.end_column == 22
 
 
-def test_requires_constraint_block(parse: Parse):
+def test_requires_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
         parse(
             _OPERATION_PREFIX
@@ -325,7 +325,7 @@ def test_requires_constraint_block(parse: Parse):
     assert error.value.location.end_column == 5
 
 
-def test_requires_constraint_block_after_both_directions(parse: Parse):
+def test_requires_quality_assignment_block_after_both_directions(parse: Parse):
     with pytest.raises(parser_exceptions.MissingViewConstraintBlock) as error:
         parse(
             _OPERATION_PREFIX
@@ -367,7 +367,7 @@ def test_disallows_direction_statement_in_position_definition(
     assert error.value.location.end_column == 19
 
 
-def test_requires_constraint(parse: Parse):
+def test_requires_quality_assignment(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as error:
         parse(
             _OPERATION_PREFIX
@@ -384,7 +384,7 @@ def test_requires_constraint(parse: Parse):
     assert error.value.location.end_column == 9
 
 
-def test_disallows_literal_constraint(parse: Parse):
+def test_disallows_literal_quality_assignment(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
         parse(
             _OPERATION_PREFIX
@@ -420,7 +420,7 @@ def test_disallows_quality_implication(parse: Parse):
     assert error.value.location.end_column == 41
 
 
-def test_disallows_direction_statement_after_potential_position_constraint_block(
+def test_disallows_direction_statement_after_potential_quality_assignment_block(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
@@ -438,7 +438,7 @@ def test_disallows_direction_statement_after_potential_position_constraint_block
     assert error.value.location.end_column == 15
 
 
-def test_disallows_direction_statement_after_local_position_constraint_block(
+def test_disallows_direction_statement_after_local_quality_assignment_block(
     parse: Parse,
 ):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
@@ -588,7 +588,7 @@ def test_disallows_quality_implication_after_direction_statements(
     assert error.value.location.end_column == 41
 
 
-def test_disallows_statement_after_constraint_block(parse: Parse):
+def test_disallows_statement_after_quality_assignment_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"

@@ -259,7 +259,9 @@ class DefinitionStructuralValidator:
             case ast.ActionDefinition():
                 self._validate_action_definition(self._definition)
             case ast.PositionDefinition():
-                self._validate_position_constraints(self._definition.constraints)
+                self._validate_quality_assignment_block(
+                    self._definition.quality_assignment_block
+                )
             case ast.PotentialLiteralDefinition():
                 encoding = self._definition.encoding
                 encoding_diagnostics = name_validators.validate_typed_name(
@@ -414,58 +416,58 @@ class DefinitionStructuralValidator:
         else:
             views[view.typed_name] = view
             unreferenced_views[view.typed_name] = view
-        requirements: list[ast.PositionRequirementStatement] = []
-        constraint_types: set[name_types.NameType] = set()
-        for requirement in view.constraints.requirements:
-            constraint = requirement.typed_global_name
-            if constraint.name_type in {
+        statements: list[ast.QualityAssignmentStatement] = []
+        quality_name_types: set[name_types.NameType] = set()
+        for statement in view.quality_assignment_block.statements:
+            quality = statement.typed_global_name
+            if quality.name_type in {
                 name_types.NameType.POSITION,
                 name_types.NameType.ACTION,
             }:
                 self._diagnostics.append(
                     diagnostics.ViewQualityConstraintDiagnostic(
-                        location=constraint.location,
-                        constraint_name=constraint.source_typed_name,
+                        location=quality.location,
+                        constraint_name=quality.source_typed_name,
                     )
                 )
                 continue
             if (
                 isinstance(definition, ast.EncodingOperationDefinition)
-                and constraint.name_type == name_types.NameType.VALUE
+                and quality.name_type == name_types.NameType.VALUE
             ):
                 self._diagnostics.append(
                     diagnostics.EncodingOperationViewValueConstraintDiagnostic(
-                        location=constraint.location,
-                        constraint_name=constraint.source_typed_name,
+                        location=quality.location,
+                        constraint_name=quality.source_typed_name,
                     )
                 )
                 continue
             if (
                 isinstance(definition, ast.ValueOperationDefinition)
-                and constraint.name_type == name_types.NameType.ENCODING
+                and quality.name_type == name_types.NameType.ENCODING
             ):
                 self._diagnostics.append(
                     diagnostics.ValueOperationViewEncodingConstraintDiagnostic(
-                        location=constraint.location,
-                        constraint_name=constraint.source_typed_name,
+                        location=quality.location,
+                        constraint_name=quality.source_typed_name,
                     )
                 )
                 continue
-            constraint_types.add(constraint.name_type)
-            requirements.append(requirement)
-        self._validate_position_requirements(
-            requirements,
+            quality_name_types.add(quality.name_type)
+            statements.append(statement)
+        self._validate_quality_assignment_statements(
+            statements,
             multiple_values_diagnostic=diagnostics.ViewMultipleValueConstraintsDiagnostic,
         )
         if isinstance(definition, ast.EncodingOperationDefinition):
-            if name_types.NameType.ENCODING not in constraint_types:
+            if name_types.NameType.ENCODING not in quality_name_types:
                 self._diagnostics.append(
                     diagnostics.ViewMissingEncodingConstraintDiagnostic(
                         location=view.typed_name.name_content.location,
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
-        elif name_types.NameType.VALUE not in constraint_types:
+        elif name_types.NameType.VALUE not in quality_name_types:
             self._diagnostics.append(
                 diagnostics.ViewMissingValueConstraintDiagnostic(
                     location=view.typed_name.name_content.location,
@@ -707,14 +709,14 @@ class DefinitionStructuralValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
-        self._validate_position_constraints(local_def.constraints)
+        self._validate_quality_assignment_block(local_def.quality_assignment_block)
 
-    def _validate_position_constraints(
-        self, constraints: ast.PositionConstraintBlock | None
+    def _validate_quality_assignment_block(
+        self, block: ast.QualityAssignmentBlock | None
     ):
-        if constraints is not None:
-            self._validate_position_requirements(
-                constraints.requirements,
+        if block is not None:
+            self._validate_quality_assignment_statements(
+                block.statements,
                 multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
             )
 
@@ -945,9 +947,9 @@ class DefinitionStructuralValidator:
                 )
             )
 
-    def _validate_position_requirements(
+    def _validate_quality_assignment_statements(
         self,
-        requirements: Sequence[ast.PositionRequirementStatement],
+        statements: Sequence[ast.QualityAssignmentStatement],
         *,
         multiple_values_diagnostic: type[
             diagnostics.MultipleValueConstraintsDiagnostic
@@ -957,38 +959,38 @@ class DefinitionStructuralValidator:
             typed_name_dict.TypedNameDict()
         )
         first_value: ast.GlobalTypedNameReference | None = None
-        for requirement in requirements:
+        for statement in statements:
             reference_diagnostics = name_validators.validate_typed_name(
-                requirement.typed_global_name, self._definition
+                statement.typed_global_name, self._definition
             )
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            first_line = seen_lines.get(requirement.typed_global_name)
+            first_line = seen_lines.get(statement.typed_global_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicatePositionConstraintDiagnostic(
-                        location=requirement.typed_global_name.location,
-                        constraint_name=requirement.typed_global_name.source_typed_name,
+                        location=statement.typed_global_name.location,
+                        constraint_name=statement.typed_global_name.source_typed_name,
                         first_constraint_line=first_line,
                     )
                 )
                 continue
-            seen_lines[requirement.typed_global_name] = (
-                requirement.typed_global_name.location.line
+            seen_lines[statement.typed_global_name] = (
+                statement.typed_global_name.location.line
             )
-            if requirement.typed_global_name.name_type == name_types.NameType.VALUE:
+            if statement.typed_global_name.name_type == name_types.NameType.VALUE:
                 if first_value is not None:
                     self._diagnostics.append(
                         multiple_values_diagnostic(
-                            location=requirement.typed_global_name.location,
+                            location=statement.typed_global_name.location,
                             first_value_name=first_value.source_typed_name,
                             first_constraint_line=first_value.location.line,
                         )
                     )
                     continue
-                first_value = requirement.typed_global_name
-            self._process_reference(requirement.typed_global_name)
+                first_value = statement.typed_global_name
+            self._process_reference(statement.typed_global_name)
 
     def _validate_quality_implications(
         self,
