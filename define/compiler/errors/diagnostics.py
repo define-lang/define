@@ -478,51 +478,51 @@ class OperationArgumentMissingQualitiesDiagnostic(Diagnostic):
     )
 
 
-class DeadConstraintDiagnostic(Diagnostic):
-    """Base class for an unused constraint on a local or interface position."""
+class DeadQualityAssignmentDiagnostic(Diagnostic):
+    """Base class for an unused quality assignment on a local or interface position."""
 
-    constraint_name: str
+    quality_name: str
     position_name: str
 
 
-class DeadChildPositionDiagnostic(DeadConstraintDiagnostic):
-    """Diagnostic for a position constraint on a local or interface position that is never used."""
+class DeadChildPositionDiagnostic(DeadQualityAssignmentDiagnostic):
+    """Diagnostic for a child position assignment on a local or interface position that is never used."""
 
     message_format: ClassVar[str] = (
-        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        "'{self.quality_name}' is assigned to '{self.position_name}' here, "
         "but the child position it creates is never referenced within this "
         "definition and no move requires it; either reference "
-        "'{self.position_name}::{self.constraint_name}' or remove the constraint."
+        "'{self.position_name}::{self.quality_name}' or remove the quality assignment."
     )
 
 
-class DeadValueConstraintDiagnostic(DeadConstraintDiagnostic):
-    """Diagnostic for a value constraint that is never used."""
+class DeadValueQualityAssignmentDiagnostic(DeadQualityAssignmentDiagnostic):
+    """Diagnostic for a value quality assignment that is never used."""
 
     message_format: ClassVar[str] = (
-        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        "'{self.quality_name}' is assigned to '{self.position_name}' here, "
         " but the value is never actually used on any particle created in this position. "
-        " Either use the value or remove the constraint."
+        " Either use the value or remove the quality assignment."
     )
 
 
-class DeadEncodingConstraintDiagnostic(DeadConstraintDiagnostic):
-    """Diagnostic for an encoding constraint that is never used."""
+class DeadEncodingQualityAssignmentDiagnostic(DeadQualityAssignmentDiagnostic):
+    """Diagnostic for an encoding assignment that is never used."""
 
     message_format: ClassVar[str] = (
-        "'{self.constraint_name}' is a constraint of '{self.position_name}' here,"
+        "'{self.quality_name}' is assigned to '{self.position_name}' here,"
         " but the value of a particle created in this position is never used, so"
-        " its encoding never matters. Either use the value or remove the constraint."
+        " its encoding never matters. Either use the value or remove the quality assignment."
     )
 
 
-class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
-    """Diagnostic for an action constraint on a local or interface position that is never triggered."""
+class UntriggeredActionDiagnostic(DeadQualityAssignmentDiagnostic):
+    """Diagnostic for a child action assignment on a local or interface position that is never triggered."""
 
     message_format: ClassVar[str] = (
-        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        "'{self.quality_name}' is assigned to '{self.position_name}' here, "
         "but the action it creates is never triggered within this definition and "
-        "no move requires it; either trigger it or remove the constraint."
+        "no move requires it; either trigger it or remove the quality assignment."
     )
 
 

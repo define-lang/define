@@ -671,7 +671,7 @@ def test_owner_with_error_required_position_skips_destructor_check(
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 24
     assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
-    assert all_diags[1].constraint_name == "position</x>"
+    assert all_diags[1].quality_name == "position</x>"
     assert all_diags[1].position_name == "position<target>"
     assert action_graph(result.reference_graph_result) == [
         (_CLOSE_FILE, _DESTRUCTOR),

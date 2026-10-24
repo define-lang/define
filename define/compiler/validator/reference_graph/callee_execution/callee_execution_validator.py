@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
         reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.dead_code import (
-        dead_constraint_validator,
+        dead_quality_assignment_validator,
         dead_value_write_validator,
     )
     from define.compiler.validator.reference_graph.destruction import (
@@ -61,14 +61,14 @@ class CalleeExecutionValidator:
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
         requirement_validator: action_requirement_validator.ActionRequirementValidator,
-        dead_constraint_validator: dead_constraint_validator.DeadConstraintValidator,
+        dead_quality_assignment_validator: dead_quality_assignment_validator.DeadQualityAssignmentValidator,
         dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
     ):
         """Validate callees of ``definition`` against the state ``tracker`` holds."""
         self._definition = definition
         self._tracker = tracker
         self._requirement_validator = requirement_validator
-        self._dead_constraint_validator = dead_constraint_validator
+        self._dead_quality_assignment_validator = dead_quality_assignment_validator
         self._dead_value_write_validator = dead_value_write_validator
         self._destruction_contract_validator = (
             destruction_contract_validator.DestructionContractValidator(
@@ -98,7 +98,7 @@ class CalleeExecutionValidator:
         requirements_in_caller = contract.occupancy_requirements_in_caller(
             action_chain, action_assignment
         )
-        self._dead_constraint_validator.mark_callee_contract_constraints_alive(
+        self._dead_quality_assignment_validator.mark_callee_contract_quality_assignments_alive(
             requirements_in_caller, scope
         )
         self._requirement_validator.propagate_action_requirements(

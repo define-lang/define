@@ -828,7 +828,7 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[0].location.end_line == 9
     assert all_diags[0].location.end_column == 40
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</impl>"
+    assert all_diags[0].quality_name == "action</impl>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(
         all_diags[1], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
@@ -871,5 +871,5 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[5].location.end_line == 5
     assert all_diags[5].location.end_column == 35
     assert all_diags[5].location.file_path == PurePosixPath("impl.dfn")
-    assert all_diags[5].constraint_name == "position</c>"
+    assert all_diags[5].quality_name == "position</c>"
     assert all_diags[5].position_name == "position<q>"

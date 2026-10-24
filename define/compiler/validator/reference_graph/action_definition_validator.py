@@ -28,7 +28,7 @@ from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution_validator,
 )
 from define.compiler.validator.reference_graph.dead_code import (
-    dead_constraint_validator,
+    dead_quality_assignment_validator,
     dead_value_write_validator,
 )
 from define.compiler.validator.reference_graph.destruction import (
@@ -144,10 +144,10 @@ class ActionDefinitionValidator:
         return dead_value_write_validator.DeadValueWriteValidator(self._tracker)
 
     @cached_property
-    def _dead_constraint_validator(
+    def _dead_quality_assignment_validator(
         self,
-    ) -> dead_constraint_validator.DeadConstraintValidator:
-        return dead_constraint_validator.DeadConstraintValidator(
+    ) -> dead_quality_assignment_validator.DeadQualityAssignmentValidator:
+        return dead_quality_assignment_validator.DeadQualityAssignmentValidator(
             self._definition_results,
             self._tracker,
             self._position_quality_resolver,
@@ -173,7 +173,7 @@ class ActionDefinitionValidator:
             self._validation_state,
             self._tracker,
             self._requirement_validator,
-            self._dead_constraint_validator,
+            self._dead_quality_assignment_validator,
             self._dead_value_write_validator,
         )
 
@@ -222,7 +222,7 @@ class ActionDefinitionValidator:
             if not definition.is_constructor:
                 continue
             parent_particle = self._tracker.get_occupant(position)
-            self._dead_constraint_validator.mark_action_alive(
+            self._dead_quality_assignment_validator.mark_action_alive(
                 quality, position, parent_particle
             )
             contract = self._validation_state.get_contract_or_none(quality)
@@ -277,13 +277,13 @@ class ActionDefinitionValidator:
         # A chain with no parent position starts with one of this action's
         # implied actions, which triggers on this action's parent particle.
         if parent_position is None:
-            self._dead_constraint_validator.mark_implied_action_alive(action)
+            self._dead_quality_assignment_validator.mark_implied_action_alive(action)
         else:
             parent_particle = self._tracker.get_occupant(parent_position)
-            self._dead_constraint_validator.mark_action_alive(
+            self._dead_quality_assignment_validator.mark_action_alive(
                 action, parent_position, parent_particle
             )
-        self._dead_constraint_validator.mark_contract_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_contract_position_quality_assignments_alive(
             position, particle, scope
         )
 
@@ -328,7 +328,9 @@ class ActionDefinitionValidator:
                 case ast.LocalPositionDefinition():
                     self._steps.append(stmt)
                     scope.add_definition(stmt)
-                    self._dead_constraint_validator.register_position_constraints(stmt)
+                    self._dead_quality_assignment_validator.register_position_quality_assignments(
+                        stmt
+                    )
                 case ast.CreateParticleStatement():
                     self._steps.append(stmt)
                     validity = next(validity_iter)
@@ -372,7 +374,7 @@ class ActionDefinitionValidator:
         if isinstance(stmt.source, ast.PositionReference):
             positions = (stmt.target_position, stmt.source)
         for position in positions:
-            self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+            self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
                 position
             )
             self._diagnostics.extend(
@@ -389,7 +391,7 @@ class ActionDefinitionValidator:
                 self._requirement_validator.infer_requirements_on_chain(
                     position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
                 )
-                self._dead_constraint_validator.mark_value_and_encoding_constraints_alive(
+                self._dead_quality_assignment_validator.mark_value_and_encoding_alive(
                     position
                 )
         if isinstance(stmt.source, ast.PositionReference):
@@ -538,7 +540,7 @@ class ActionDefinitionValidator:
 
         Diagnostics are added to ``statement_diagnostics``.
         """
-        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
             position
         )
         statement_diagnostics.extend(
@@ -549,9 +551,7 @@ class ActionDefinitionValidator:
         self._requirement_validator.infer_requirements_on_chain(
             position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
         )
-        self._dead_constraint_validator.mark_value_and_encoding_constraints_alive(
-            position
-        )
+        self._dead_quality_assignment_validator.mark_value_and_encoding_alive(position)
         if is_read:
             self._requirement_validator.infer_value_requirement(
                 position, inferred_at=position.location
@@ -572,7 +572,7 @@ class ActionDefinitionValidator:
     ):
         if not validity.target_ok:
             return
-        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
             stmt.target_position
         )
         self._diagnostics.extend(
@@ -604,7 +604,7 @@ class ActionDefinitionValidator:
     ):
         if not validity.target_ok:
             return
-        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
             stmt.target_position
         )
         self._diagnostics.extend(
@@ -636,13 +636,13 @@ class ActionDefinitionValidator:
             self._tracker.mark_error(stmt.source_position)
             self._tracker.mark_error(stmt.target_position)
             return
-        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
             stmt.source_position
         )
         self._diagnostics.extend(
             self._chained_name_validator.validate(stmt.source_position, scope)
         )
-        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
             stmt.target_position
         )
         self._diagnostics.extend(
@@ -750,15 +750,17 @@ class ActionDefinitionValidator:
         list[codegen_input.GuaranteedParticleDestructors],
     ]:
         scope = scope_tracker.ScopeTracker()
-        self._dead_constraint_validator.register_implied_actions(
+        self._dead_quality_assignment_validator.register_implied_actions(
             self._definition.quality_implications
         )
         for pos in self._definition.interface_positions:
-            # Skip duplicates so the first definition's constraints are preserved,
+            # Skip duplicates so the first definition's quality assignments are preserved,
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
                 scope.add_definition(pos)
-                self._dead_constraint_validator.register_position_constraints(pos)
+                self._dead_quality_assignment_validator.register_position_quality_assignments(
+                    pos
+                )
 
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
@@ -797,7 +799,7 @@ class ActionDefinitionValidator:
             guaranteed_destruction.on_destruction
         )
         self._diagnostics.extend(
-            self._dead_constraint_validator.validate(guarantees, scope)
+            self._dead_quality_assignment_validator.validate(guarantees, scope)
         )
         self._diagnostics.extend(self._dead_value_write_validator.validate(guarantees))
         return (

@@ -1,4 +1,4 @@
-"""Validate dead constraints and untriggered Actions."""
+"""Validate dead quality assignments and untriggered Actions."""
 
 from __future__ import annotations
 
@@ -10,7 +10,9 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
-from define.compiler.validator.reference_graph.dead_code import dead_constraint_tracker
+from define.compiler.validator.reference_graph.dead_code import (
+    dead_quality_assignment_tracker,
+)
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
@@ -23,8 +25,8 @@ if typing.TYPE_CHECKING:
     )
 
 
-class DeadConstraintValidator:
-    """Track constraint use during an Action and diagnose what remains unused."""
+class DeadQualityAssignmentValidator:
+    """Track quality assignment use during an Action and diagnose what remains unused."""
 
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
@@ -32,7 +34,9 @@ class DeadConstraintValidator:
     ]
     _tracker: particle_tracker.ParticleTracker
     _position_quality_resolver: position_quality_resolver.PositionQualityResolver
-    _dead_constraint_tracker: dead_constraint_tracker.DeadConstraintTracker
+    _dead_quality_assignment_tracker: (
+        dead_quality_assignment_tracker.DeadQualityAssignmentTracker
+    )
 
     def __init__(
         self,
@@ -47,7 +51,9 @@ class DeadConstraintValidator:
         self._definition_results = definition_results
         self._tracker = tracker
         self._position_quality_resolver = quality_resolver
-        self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
+        self._dead_quality_assignment_tracker = (
+            dead_quality_assignment_tracker.DeadQualityAssignmentTracker()
+        )
 
     def register_implied_actions(
         self, quality_implications: tuple[ast.QualityImplicationStatement, ...]
@@ -57,17 +63,21 @@ class DeadConstraintValidator:
             implied_action = implication.typed_global_name
             if implied_action.name_type != name_types.NameType.ACTION:
                 continue
-            self._dead_constraint_tracker.register_implied_action(implied_action)
+            self._dead_quality_assignment_tracker.register_implied_action(
+                implied_action
+            )
 
-    def register_position_constraints(self, position: ast.LocalPositionDefinition):
-        """Register constraints when a local or interface Position is declared."""
-        self._dead_constraint_tracker.register_position_constraints(
+    def register_position_quality_assignments(
+        self, position: ast.LocalPositionDefinition
+    ):
+        """Register quality assignments when a local or interface Position is declared."""
+        self._dead_quality_assignment_tracker.register_position_quality_assignments(
             position, self._definition_results
         )
 
     def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):
         """Keep an implied Action alive when it triggers on this Action's parent particle."""
-        self._dead_constraint_tracker.mark_implied_action_alive(action)
+        self._dead_quality_assignment_tracker.mark_implied_action_alive(action)
 
     def mark_action_alive(
         self,
@@ -75,15 +85,13 @@ class DeadConstraintValidator:
         position: ast.PositionReference,
         parent_particle: particle_info.ParticleInfo,
     ):
-        """Keep Action constraints alive when the Action triggers on the particle in position."""
-        self._dead_constraint_tracker.mark_action_alive(
+        """Keep child Action assignments alive when the Action triggers on the particle in position."""
+        self._dead_quality_assignment_tracker.mark_action_alive(
             action, position, _origin_position(parent_particle)
         )
 
-    def mark_value_and_encoding_constraints_alive(
-        self, position: ast.PositionReference
-    ):
-        """Keep the value and encoding constraints on a used particle's origin position alive."""
+    def mark_value_and_encoding_alive(self, position: ast.PositionReference):
+        """Keep the value quality and encoding assignments on a used particle's origin position alive."""
         particle = self._tracker.get_occupant_or_none(position)
         if particle is None:
             return
@@ -93,9 +101,9 @@ class DeadConstraintValidator:
         for quality in particle.qualities:
             if (
                 quality.name_type
-                in dead_constraint_tracker.VALUE_AND_ENCODING_NAME_TYPES
+                in dead_quality_assignment_tracker.VALUE_AND_ENCODING_NAME_TYPES
             ):
-                self._dead_constraint_tracker.mark_value_or_encoding_alive(
+                self._dead_quality_assignment_tracker.mark_value_or_encoding_alive(
                     origin_position, quality
                 )
 
@@ -107,9 +115,9 @@ class DeadConstraintValidator:
             return None
         return _origin_position(occupancy.occupant)
 
-    def mark_referenced_position_constraints_alive(self, chain: ast.PositionReference):
-        """Keep constraints alive when their child Positions are referenced."""
-        if not self._dead_constraint_tracker.has_position_constraint_candidates():
+    def mark_referenced_child_positions_alive(self, chain: ast.PositionReference):
+        """Keep child Position assignments alive when the child Positions are referenced."""
+        if not self._dead_quality_assignment_tracker.has_child_position_candidates():
             return
         parent_position_name_count: int | None = None
         for name_index, typed_name in enumerate(chain.typed_names):
@@ -117,12 +125,12 @@ class DeadConstraintValidator:
                 parent_position_name_count is not None
                 and isinstance(typed_name, ast.GlobalTypedNameReference)
                 and typed_name.name_type == name_types.NameType.POSITION
-                and self._dead_constraint_tracker.has_position_constraint_candidate(
+                and self._dead_quality_assignment_tracker.has_child_position_candidate(
                     typed_name
                 )
             ):
                 current_position = chain.position_prefix(parent_position_name_count)
-                self._dead_constraint_tracker.mark_position_alive(
+                self._dead_quality_assignment_tracker.mark_position_alive(
                     current_position,
                     self._particle_origin_position(current_position),
                     typed_name,
@@ -130,13 +138,13 @@ class DeadConstraintValidator:
             if typed_name.name_type == name_types.NameType.POSITION:
                 parent_position_name_count = name_index + 1
 
-    def mark_callee_contract_constraints_alive(
+    def mark_callee_contract_quality_assignments_alive(
         self,
         requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
         scope: scope_tracker.ScopeTracker,
     ):
-        """Keep constraints alive through occupied callee requirements."""
-        if not self._dead_constraint_tracker.has_constraint_candidates():
+        """Keep quality assignments alive through occupied callee requirements."""
+        if not self._dead_quality_assignment_tracker.has_candidates():
             return
         for requirement_in_caller in requirements_in_caller:
             if (
@@ -149,29 +157,29 @@ class DeadConstraintValidator:
             )
             if occupancy.occupant is None:
                 continue
-            self.mark_contract_position_constraints_alive(
+            self.mark_contract_position_quality_assignments_alive(
                 requirement_in_caller.caller_position, occupancy.occupant, scope
             )
 
-    def mark_contract_position_constraints_alive(
+    def mark_contract_position_quality_assignments_alive(
         self,
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Keep a particle's origin constraints alive through a contracted Position."""
-        if not self._dead_constraint_tracker.has_constraint_candidates():
+        """Keep the quality assignments on a particle's origin alive through a contracted Position."""
+        if not self._dead_quality_assignment_tracker.has_candidates():
             return
         origin_position = _origin_position(particle)
         if origin_position is None:
             return
-        constraints = self._position_quality_resolver.get_direct_required_qualities(
+        qualities = self._position_quality_resolver.get_direct_required_qualities(
             position, scope
         )
-        if constraints is None:
+        if qualities is None:
             return
-        self._dead_constraint_tracker.mark_contract_constraints_alive(
-            None, origin_position, constraints
+        self._dead_quality_assignment_tracker.mark_contract_quality_assignments_alive(
+            None, origin_position, qualities
         )
 
     def validate(
@@ -182,43 +190,41 @@ class DeadConstraintValidator:
         ],
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
-        """Check dead constraints and untriggered Actions after accounting for final guarantees."""
+        """Check dead quality assignments and untriggered Actions after accounting for final guarantees."""
         self._mark_own_contract_guarantees_alive(own_guarantees, scope)
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        for (
-            candidate
-        ) in self._dead_constraint_tracker.dead_value_and_encoding_constraints():
-            dead_constraint_diagnostic = diagnostics.DeadValueConstraintDiagnostic
-            if candidate.constraint.name_type == name_types.NameType.ENCODING:
-                dead_constraint_diagnostic = (
-                    diagnostics.DeadEncodingConstraintDiagnostic
-                )
+        for candidate in (
+            self._dead_quality_assignment_tracker.dead_value_and_encoding_assignments()
+        ):
+            dead_diagnostic = diagnostics.DeadValueQualityAssignmentDiagnostic
+            if candidate.quality.name_type == name_types.NameType.ENCODING:
+                dead_diagnostic = diagnostics.DeadEncodingQualityAssignmentDiagnostic
             validation_diagnostics.append(
-                dead_constraint_diagnostic(
-                    location=candidate.constraint.location,
-                    constraint_name=candidate.constraint.source_typed_name,
+                dead_diagnostic(
+                    location=candidate.quality.location,
+                    quality_name=candidate.quality.source_typed_name,
                     position_name=candidate.position.source_typed_name,
                 )
             )
-        for candidate in self._dead_constraint_tracker.dead_position_constraints():
+        for candidate in self._dead_quality_assignment_tracker.dead_child_positions():
             validation_diagnostics.append(
                 diagnostics.DeadChildPositionDiagnostic(
-                    location=candidate.constraint.location,
-                    constraint_name=candidate.constraint.source_typed_name,
+                    location=candidate.quality.location,
+                    quality_name=candidate.quality.source_typed_name,
                     position_name=candidate.position.source_typed_name,
                 )
             )
-        for candidate in self._dead_constraint_tracker.dead_action_constraints():
+        for candidate in self._dead_quality_assignment_tracker.dead_child_actions():
             validation_diagnostics.append(
                 diagnostics.UntriggeredActionDiagnostic(
-                    location=candidate.constraint.location,
-                    constraint_name=candidate.constraint.source_typed_name,
+                    location=candidate.quality.location,
+                    quality_name=candidate.quality.source_typed_name,
                     position_name=candidate.position.source_typed_name,
                 )
             )
         for (
             implied_action
-        ) in self._dead_constraint_tracker.untriggered_implied_actions():
+        ) in self._dead_quality_assignment_tracker.untriggered_implied_actions():
             validation_diagnostics.append(
                 diagnostics.UntriggeredImpliedActionDiagnostic(
                     location=implied_action.location,
@@ -246,8 +252,8 @@ class DeadConstraintValidator:
         ],
         scope: scope_tracker.ScopeTracker,
     ):
-        """Keep origin and final position constraints alive through this action's guarantees."""
-        if not self._dead_constraint_tracker.has_constraint_candidates():
+        """Keep origin and final position quality assignments alive through this action's guarantees."""
+        if not self._dead_quality_assignment_tracker.has_candidates():
             return
         for key, guarantee in own_guarantees.items():
             if not isinstance(
@@ -258,10 +264,10 @@ class DeadConstraintValidator:
                 ),
             ):
                 # Only a position the action guarantees to be occupied keeps
-                # constraints alive.
+                # quality assignments alive.
                 continue
             # Only a particle created in or moved into its final position
-            # keeps that position's constraints alive. One from the caller
+            # keeps that position's quality assignments alive. One from the caller
             # that never left where it started did not arrive there.
             if (
                 isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
@@ -273,14 +279,14 @@ class DeadConstraintValidator:
             particle = self._tracker.get_occupancy_info(final_position).occupant
             if particle is None:
                 continue
-            constraints = self._position_quality_resolver.get_direct_required_qualities(
+            qualities = self._position_quality_resolver.get_direct_required_qualities(
                 final_position, scope
             )
             # A position without a loaded definition was already reported.
-            if constraints is None:
+            if qualities is None:
                 continue
-            self._dead_constraint_tracker.mark_contract_constraints_alive(
-                final_position, _origin_position(particle), constraints
+            self._dead_quality_assignment_tracker.mark_contract_quality_assignments_alive(
+                final_position, _origin_position(particle), qualities
             )
 
 

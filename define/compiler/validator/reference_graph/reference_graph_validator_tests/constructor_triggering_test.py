@@ -100,7 +100,7 @@ def test_create_does_not_fire_non_constructor_action_quality(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</worker>"
+    assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
 
@@ -139,7 +139,7 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</inner>"
+    assert all_diags[0].quality_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[1].location.line == 12

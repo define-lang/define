@@ -724,7 +724,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     assert untriggered.location.end_line == 7
     assert untriggered.location.end_column == 42
     assert untriggered.location.file_path == PurePosixPath("cleanup.dfn")
-    assert untriggered.constraint_name == "action</fill_1>"
+    assert untriggered.quality_name == "action</fill_1>"
     assert untriggered.position_name == "position<dependency>"
     circular = all_diags[1]
     assert isinstance(circular, diagnostics.CircularGlobalReferenceDiagnostic)

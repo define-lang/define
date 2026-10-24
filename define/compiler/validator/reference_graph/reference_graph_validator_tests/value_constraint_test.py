@@ -90,7 +90,7 @@ def test_action_mismatched_value(
     assert untriggered.location.column == 28
     assert untriggered.location.file_path == PurePosixPath("test.dfn")
     assert untriggered.position_name == "position<worker>"
-    assert untriggered.constraint_name == "action</consume>"
+    assert untriggered.quality_name == "action</consume>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 22
@@ -123,10 +123,10 @@ def test_value_use_keeps_only_origin_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
+    assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 14
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -138,10 +138,10 @@ def test_value_setting_target_keeps_only_origin_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
+    assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     dead_write = result.all_diagnostics[1]
@@ -179,10 +179,10 @@ def test_guaranteed_value_through_local(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.line == 18
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -203,10 +203,10 @@ def test_callee_contract_keeps_only_origin_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
-    assert diagnostic.constraint_name == "value<standard:/number/natural>"
+    assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 18
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -225,9 +225,9 @@ def test_unused_local_value_is_dead(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<item>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
@@ -240,16 +240,16 @@ def test_moving_values_does_not_keep_constraints_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<source>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
     diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 28
@@ -262,9 +262,9 @@ def test_unconstrained_callee_does_not_keep_value_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<source>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 28
@@ -279,9 +279,9 @@ def test_value_read_keeps_only_interface_origin_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<moved>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 28
@@ -296,9 +296,9 @@ def test_unused_interface_value_is_dead(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<input>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 5
     assert diagnostic.location.column == 24

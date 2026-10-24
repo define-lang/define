@@ -69,7 +69,7 @@ def test_inferred_occupied_does_not_apply_constructor_guarantees(
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</construct_a>"
+    assert all_diags[0].quality_name == "action</construct_a>"
     assert all_diags[0].position_name == "position<item>"
 
 

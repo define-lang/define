@@ -77,7 +77,7 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</worker>"
+    assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
 
@@ -127,7 +127,7 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "action</inner>"
+    assert all_diags[0].quality_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[1].location.line == 10

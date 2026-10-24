@@ -20,11 +20,11 @@ def test_unused_encoding_is_dead(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadEncodingConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
-    assert diagnostic.constraint_name == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.quality_name == "encoding<standard:/number/decimal/ascii>"
     assert diagnostic.position_name == "position<number>"
 
 
@@ -56,11 +56,11 @@ def test_unconstrained_callee_does_not_keep_encoding_alive(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadEncodingConstraintDiagnostic)
+    assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 28
     assert diagnostic.location.column == 28
-    assert diagnostic.constraint_name == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.quality_name == "encoding<standard:/number/decimal/ascii>"
     assert diagnostic.position_name == "position<number>"
 
 

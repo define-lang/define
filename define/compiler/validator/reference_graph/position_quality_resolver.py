@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 
 class PositionQualityResolver:
-    """Resolve Position Constraints and their transitive Quality implications."""
+    """Resolve Position quality assignments and their transitive Quality implications."""
 
     _definition: ast.ActionDefinition
     _definition_results: typed_name_dict.TypedNameDict[
@@ -44,7 +44,7 @@ class PositionQualityResolver:
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> tuple[ast.GlobalTypedNameReference, ...] | None:
-        """Resolve the constraint Qualities required at a Position, in source order."""
+        """Resolve the Qualities assigned at a Position, in source order."""
         qualities, _ = self._get_direct_required_qualities_and_cache_key(
             position, scope
         )
@@ -58,7 +58,7 @@ class PositionQualityResolver:
         tuple[ast.GlobalTypedNameReference, ...] | None,
         chained_name.PositionReferenceTuple | None,
     ]:
-        """Resolve the constraint qualities required at a position, in source order.
+        """Resolve the qualities assigned at a position, in source order.
 
         Also returns the cache key identifying the cacheable entity (a
         global position or an action interface position), or ``None``

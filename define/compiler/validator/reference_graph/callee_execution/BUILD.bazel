@@ -39,7 +39,7 @@ py_library(
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:action_requirement_validator",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
-        "//define/compiler/validator/reference_graph/dead_code:dead_constraint_validator",
+        "//define/compiler/validator/reference_graph/dead_code:dead_quality_assignment_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",

@@ -166,6 +166,6 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].constraint_name == "position</child>"
+    assert all_diags[0].quality_name == "position</child>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
