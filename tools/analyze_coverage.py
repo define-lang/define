@@ -491,7 +491,7 @@ def format_rust_regions(regions: RustRegions, source_root: Path) -> str:
     output_lines = ["Uncovered Rust code regions:"]
     for region in regions.actionable:
         output_lines.append(
-            f"{region.source_file}:{region.start_line}:{region.start_column}-"
+            f"{region.source_file.as_posix()}:{region.start_line}:{region.start_column}-"
             + f"{region.end_line}:{region.end_column}: "
             + source_analysis.region_text(region)
         )
@@ -538,7 +538,7 @@ def _append_formatted_branches(
         origin = source_analysis.line(branch.source_file, branch.source_line)
         output_lines.extend(
             (
-                f"{branch.source_file}:{branch.source_line}:",
+                f"{branch.source_file.as_posix()}:{branch.source_line}:",
                 f"  branch source: {origin}",
             )
         )

@@ -34,7 +34,7 @@ def _compile_case(
                 trace_operations=trace_operations,
             )
             if result.has_errors():
-                print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
+                print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
                 for exc in result.all_exceptions:
                     print(f"    {exc}")
                 for diag in result.all_diagnostics:
@@ -58,7 +58,7 @@ def _run_case(
         operation_trace_file=operation_trace_file,
     )
     if runtime_result.returncode != 0:
-        print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
+        print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
         print(runtime_result.stderr)
         return False
     return True
