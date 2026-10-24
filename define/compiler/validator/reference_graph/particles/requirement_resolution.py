@@ -1,4 +1,4 @@
-"""Resolve Position Requirements against the particle state an action has built so far."""
+"""Resolve Action Requirements against the particle state an action has built so far."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class PropagatedRequirement(msgspec.Struct, frozen=True):
 
 @typing.final
 class RequirementResolver:
-    """Resolves Position Requirements against the particle state an action has built so far."""
+    """Resolves Action Requirements against the particle state an action has built so far."""
 
     def __init__(self, store: particle_state_store.ParticleStateStore):
         """Resolve requirements against ``store``."""

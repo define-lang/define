@@ -18,13 +18,11 @@ if typing.TYPE_CHECKING:
 
 
 def destructor_requirements_to_publish(
-    requirements: Iterable[action_contract.PositionOccupancyRequirement],
+    requirements: Iterable[action_contract.OccupancyRequirement],
     enclosing_fqun: ast.Fqun,
-) -> tuple[
-    list[action_contract.PositionOccupancyRequirement], list[diagnostics.Diagnostic]
-]:
+) -> tuple[list[action_contract.OccupancyRequirement], list[diagnostics.Diagnostic]]:
     """Return a Destructor's occupancy requirements that its contract may publish, and a diagnostic for each requirement that a position is empty, which a Destructor may not have."""
-    published: list[action_contract.PositionOccupancyRequirement] = []
+    published: list[action_contract.OccupancyRequirement] = []
     validation_diagnostics: list[diagnostics.Diagnostic] = []
     for requirement in requirements:
         if requirement.requires_occupied:

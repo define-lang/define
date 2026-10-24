@@ -1,7 +1,7 @@
 """Generate a Define source file with deep, independent processing pipelines.
 
 Emits a single ``.dfn`` that compiles to zero diagnostics, whose shape drives
-Position Requirements up through long chains of callers rather than stressing
+Action Requirements up through long chains of callers rather than stressing
 parse volume or graph density.
 
 Each pipeline is one application workflow:
@@ -294,7 +294,7 @@ def main(
     each processing action moves that particle into the next action's interface
     position and triggers it, and the final action moves the particle and destroys
     its temporary child particle. This is the requirement-propagation profiling
-    shape: it drives Position Requirements up through many callers and exercises
+    shape: it drives Action Requirements up through many callers and exercises
     the Fill Rule's parent-position dependency substitution, which the other shapes
     barely reach.
 

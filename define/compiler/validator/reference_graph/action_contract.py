@@ -107,7 +107,7 @@ class ActionAssignment(msgspec.Struct, frozen=True):
         )
 
 
-class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
+class ActionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     """An automatically inferred requirement on a contracted position.
 
     A contracted position is an interface position, a child of an interface
@@ -121,7 +121,7 @@ class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     # that imposed it directly, or the trigger statement it propagated through.
     inferred_at: ast.SourceLocation
     enclosing_action: ast.ActionDefinition
-    propagated_from: PositionRequirement | None = None
+    propagated_from: ActionRequirement | None = None
     # The constructor or destructor assignment that caused this requirement to
     # propagate, if relevant. Used to explain that assignment in diagnostics.
     action_assignment: ActionAssignment | None = None
@@ -147,7 +147,7 @@ class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     def propagation_chain(self) -> list[PropagationStep]:
         """Return the chain of propagation steps from this requirement down to its root cause."""
         chain: list[PropagationStep] = []
-        current: PositionRequirement | None = self
+        current: ActionRequirement | None = self
         while current is not None:
             if current.action_assignment is not None:
                 chain.append(current.action_assignment.propagation_step())
@@ -178,7 +178,7 @@ class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
         )
 
 
-class PositionOccupancyRequirement(PositionRequirement, frozen=True):
+class OccupancyRequirement(ActionRequirement, frozen=True):
     """An automatically inferred occupancy requirement."""
 
     required_state: position_occupancy.PositionOccupancyState
@@ -199,7 +199,7 @@ class PositionOccupancyRequirement(PositionRequirement, frozen=True):
         }
 
 
-class ValueRequirement(PositionRequirement, frozen=True):
+class ValueRequirement(ActionRequirement, frozen=True):
     """A contracted position must have a particle with a set value."""
 
     @staticmethod
@@ -218,10 +218,10 @@ class ValueRequirement(PositionRequirement, frozen=True):
         )
 
 
-class PositionRequirementInCaller[Requirement: PositionRequirement](
+class ActionRequirementInCaller[Requirement: ActionRequirement](
     msgspec.Struct, frozen=True
 ):
-    """A callee's Position Requirement expressed from its caller's perspective."""
+    """A callee's Action Requirement expressed from its caller's perspective."""
 
     requirement: Requirement
     caller_position: ast.PositionReference
@@ -230,10 +230,8 @@ class PositionRequirementInCaller[Requirement: PositionRequirement](
     action_assignment: ActionAssignment | None
 
 
-type OccupancyRequirementInCaller = PositionRequirementInCaller[
-    PositionOccupancyRequirement
-]
-type ValueRequirementInCaller = PositionRequirementInCaller[ValueRequirement]
+type OccupancyRequirementInCaller = ActionRequirementInCaller[OccupancyRequirement]
+type ValueRequirementInCaller = ActionRequirementInCaller[ValueRequirement]
 
 
 class PositionGuarantee(msgspec.Struct, frozen=True):
@@ -467,7 +465,7 @@ class DestructionContracts:
             for entry in self.propagation:
                 yield entry.step()
 
-    def destroyer_requirement_as_callee_requirement[Requirement: PositionRequirement](
+    def destroyer_requirement_as_callee_requirement[Requirement: ActionRequirement](
         self, requirement: Requirement
     ) -> Requirement:
         """Return ``requirement``, a requirement of the destroying action, as a requirement of the immediate callee, propagated through each action between them."""
@@ -489,7 +487,7 @@ class DestructionContracts:
 class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
-    occupancy_requirements: list[PositionOccupancyRequirement]
+    occupancy_requirements: list[OccupancyRequirement]
     value_requirements: list[ValueRequirement]
     # What the action leaves in each contracted position whose parent
     # position holds no particle it created, and in each position holding a
@@ -524,15 +522,15 @@ class ActionContract(msgspec.Struct, frozen=True):
         )
 
     @staticmethod
-    def _requirements_in_caller[Requirement: PositionRequirement](
+    def _requirements_in_caller[Requirement: ActionRequirement](
         requirements: list[Requirement],
         action_chain: ast.ActionReference,
         action_assignment: ActionAssignment | None,
-    ) -> list[PositionRequirementInCaller[Requirement]]:
-        result: list[PositionRequirementInCaller[Requirement]] = []
+    ) -> list[ActionRequirementInCaller[Requirement]]:
+        result: list[ActionRequirementInCaller[Requirement]] = []
         for requirement in requirements:
             result.append(
-                PositionRequirementInCaller(
+                ActionRequirementInCaller(
                     requirement=requirement,
                     caller_position=requirement.position.in_caller(action_chain),
                     action_assignment=action_assignment,

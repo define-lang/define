@@ -34,7 +34,7 @@ class GuaranteeGenerator:
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionOccupancyRequirement,
+            action_contract.OccupancyRequirement,
         ],
     ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Collect and sort the guarantees for every contracted key that holds a particle or whose state the action changed."""
@@ -170,7 +170,7 @@ class GuaranteeGenerator:
         state: particle_state_store.PositionState,
         requirements: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionOccupancyRequirement,
+            action_contract.OccupancyRequirement,
         ],
     ) -> action_contract.PositionGuarantee | None:
         """Build a guarantee describing ``state``, the state of ``key``, or None for an empty position the action left in the state it found it in."""

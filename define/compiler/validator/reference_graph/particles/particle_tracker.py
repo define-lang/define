@@ -332,7 +332,7 @@ class ParticleTracker:
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionOccupancyRequirement,
+            action_contract.OccupancyRequirement,
         ],
     ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Generate this block's own guarantees, for every contracted position it tracks.

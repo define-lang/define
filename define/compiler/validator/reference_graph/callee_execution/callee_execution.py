@@ -58,7 +58,7 @@ class CalleeExecution(msgspec.Struct, frozen=True):
 
     def requirement_violation(
         self,
-        requirement: action_contract.PositionRequirement,
+        requirement: action_contract.ActionRequirement,
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
@@ -168,7 +168,7 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
     @typing.override
     def requirement_violation(
         self,
-        requirement: action_contract.PositionRequirement,
+        requirement: action_contract.ActionRequirement,
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
@@ -245,7 +245,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
 
     def occupancy_at_destruction(
         self,
-        requirement: action_contract.PositionOccupancyRequirement,
+        requirement: action_contract.OccupancyRequirement,
     ) -> KnownAtDestruction | ast.PositionReference:
         """Return the occupancy that the actions up to this one recorded for the position ``requirement`` is on at the moment of destruction, or, when they recorded none, where that position was when this action triggered the callee."""
         state = self.state_at_destruction
@@ -285,25 +285,25 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
             value_state=value_state,
         )
 
-    def requirement_in_caller[Requirement: action_contract.PositionRequirement](
+    def requirement_in_caller[Requirement: action_contract.ActionRequirement](
         self, requirement: Requirement, caller_position: ast.PositionReference
-    ) -> action_contract.PositionRequirementInCaller[Requirement]:
+    ) -> action_contract.ActionRequirementInCaller[Requirement]:
         """Return ``requirement`` at ``caller_position``, a position from this action's perspective, with this execution's action assignment."""
-        return action_contract.PositionRequirementInCaller(
+        return action_contract.ActionRequirementInCaller(
             requirement=requirement,
             caller_position=caller_position,
             action_assignment=self.action_assignment,
         )
 
-    def callee_requirement_in_caller[Requirement: action_contract.PositionRequirement](
+    def callee_requirement_in_caller[Requirement: action_contract.ActionRequirement](
         self, requirement: Requirement, caller_position: ast.PositionReference
-    ) -> action_contract.PositionRequirementInCaller[Requirement]:
+    ) -> action_contract.ActionRequirementInCaller[Requirement]:
         """Return ``requirement``, one of the Destructor's, as a requirement of the callee at ``caller_position``, a position from this action's perspective."""
         return self.requirement_in_caller(
             self.requirement_of_callee(requirement), caller_position
         )
 
-    def requirement_of_destroyer[Requirement: action_contract.PositionRequirement](
+    def requirement_of_destroyer[Requirement: action_contract.ActionRequirement](
         self, requirement: Requirement
     ) -> Requirement:
         """Return ``requirement``, one of the Destructor's, as a requirement of the destroyer, propagated from the Destructor's own requirement."""
@@ -317,7 +317,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
             action_assignment=None,
         )
 
-    def requirement_of_callee[Requirement: action_contract.PositionRequirement](
+    def requirement_of_callee[Requirement: action_contract.ActionRequirement](
         self, requirement: Requirement
     ) -> Requirement:
         """Return ``requirement``, one of the Destructor's, as a requirement of the callee: the destroyer's requirement, propagated through each action between the callee and the destroyer."""
@@ -328,7 +328,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
     @typing.override
     def requirement_violation(
         self,
-        requirement: action_contract.PositionRequirement,
+        requirement: action_contract.ActionRequirement,
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
@@ -339,7 +339,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
 
     def destruction_requirement_violation(
         self,
-        requirement: action_contract.PositionRequirement,
+        requirement: action_contract.ActionRequirement,
         position: ast.PositionReference,
         definition: ast.ActionDefinition,
     ) -> diagnostics.InferredRequirementViolationDiagnostic:
@@ -414,9 +414,9 @@ def _auto_destruction_step(
     )
 
 
-def _requires_empty(requirement: action_contract.PositionRequirement) -> bool:
+def _requires_empty(requirement: action_contract.ActionRequirement) -> bool:
     return (
-        isinstance(requirement, action_contract.PositionOccupancyRequirement)
+        isinstance(requirement, action_contract.OccupancyRequirement)
         and not requirement.requires_occupied
     )
 
@@ -425,7 +425,7 @@ def _diagnostic(
     *,
     location: ast.SourceLocation,
     position_name: str,
-    requirement: action_contract.PositionRequirement,
+    requirement: action_contract.ActionRequirement,
     action_name: str,
     steps: list[action_contract.PropagationStep],
 ) -> diagnostics.InferredRequirementViolationDiagnostic:

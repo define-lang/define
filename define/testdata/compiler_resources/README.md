@@ -18,9 +18,9 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
 	--fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
-## Deep Position Requirements
+## Deep Action Requirements
 
-Checks memory usage when Position Requirements propagate through long chains of
+Checks memory usage when Action Requirements propagate through long chains of
 callers.
 
 ```sh

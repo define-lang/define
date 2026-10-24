@@ -29,7 +29,7 @@ class ActionRequirementValidator:
     _position_quality_resolver: position_quality_resolver.PositionQualityResolver
     _inferred_occupancy_requirements: dict[
         chained_name.PositionReferenceTuple,
-        action_contract.PositionOccupancyRequirement,
+        action_contract.OccupancyRequirement,
     ]
 
     def __init__(
@@ -52,14 +52,14 @@ class ActionRequirementValidator:
         self,
     ) -> dict[
         chained_name.PositionReferenceTuple,
-        action_contract.PositionOccupancyRequirement,
+        action_contract.OccupancyRequirement,
     ]:
         """The requirements inferred for this Action's contract."""
         return self._inferred_occupancy_requirements
 
     def _record_requirement(
         self,
-        requirement: action_contract.PositionOccupancyRequirement,
+        requirement: action_contract.OccupancyRequirement,
         local_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
@@ -90,7 +90,7 @@ class ActionRequirementValidator:
         self._inferred_occupancy_requirements[
             contracted_position.canonical_chained_name_tuple
         ] = requirement
-        # ERROR represents a tracker failure and is never a Position Requirement state.
+        # ERROR represents a tracker failure and is never a Action Requirement state.
         requirement_state = typing.cast(
             "typing.Literal[position_occupancy.PositionOccupancyState.OCCUPIED, position_occupancy.PositionOccupancyState.EMPTY]",
             requirement.required_state,
@@ -156,7 +156,7 @@ class ActionRequirementValidator:
         for resolved_requirement in inferred_requirements:
             contracted_position = resolved_requirement.contracted_position
             self._record_requirement(
-                action_contract.PositionOccupancyRequirement(
+                action_contract.OccupancyRequirement(
                     required_state=resolved_requirement.required_state,
                     position=contracted_position,
                     inferred_at=contracted_position.location,
@@ -203,7 +203,7 @@ class ActionRequirementValidator:
     def _requirement_violation_occupant(
         self,
         full_caller_chain: ast.PositionReference,
-        req: action_contract.PositionOccupancyRequirement,
+        req: action_contract.OccupancyRequirement,
     ) -> tuple[bool, particle_info.ParticleInfo | None]:
         occupancy = self._tracker.get_occupancy_info(full_caller_chain)
         if occupancy.has_error:
