@@ -69,10 +69,10 @@ def test_quality_membership():
 
     assert assignments.has_quality(quality) is True
     assert assignments.has_quality(_quality("other")) is False
-    assert assignments.value_type is None
+    assert assignments.value_quality is None
 
 
-def test_value_type_with_other_qualities():
+def test_value_quality_with_other_qualities():
     first = _quality("first")
     value = _quality("number", name_types.NameType.VALUE)
     last = _quality("last")
@@ -80,22 +80,22 @@ def test_value_type_with_other_qualities():
     assignments = _build((first, value, last), {last.full_typed_name: (implied,)})
 
     assert tuple(assignments) == (first, value, implied, last)
-    assert assignments.value_type is value
+    assert assignments.value_quality is value
     assert assignments.has_quality(value) is True
 
 
 def test_shared_empty_collection_is_reused():
     assert _build((), {}) is quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
-    assert quality_assignment.EMPTY_QUALITY_ASSIGNMENTS.value_type is None
+    assert quality_assignment.EMPTY_QUALITY_ASSIGNMENTS.value_quality is None
 
 
-def test_direct_assignment_value_type():
+def test_direct_assignment_value_quality():
     position = _quality("position")
     value = _quality("number", name_types.NameType.VALUE)
     assignments = quality_assignment.QualityAssignments((position, value))
 
     assert tuple(assignments) == (position, value)
-    assert assignments.value_type is value
+    assert assignments.value_quality is value
     assert assignments.has_quality(position) is True
     assert assignments.has_quality(value) is True
 

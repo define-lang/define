@@ -215,7 +215,7 @@ class ActionStatementsGenerator:
                             position=positions.build(
                                 statement.target_position,
                                 value_type=value_types.python_value_type(
-                                    statement.value_type
+                                    statement.value_quality
                                 ),
                             ),
                             value=value,
@@ -225,7 +225,7 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.PositionValueSetting():
-                    value_type = value_types.python_value_type(statement.value_type)
+                    value_type = value_types.python_value_type(statement.value_quality)
                     statements.append(
                         renderer.ActionStatement.SetValueFrom(
                             position=positions.build(

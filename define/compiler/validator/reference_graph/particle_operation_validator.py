@@ -117,42 +117,43 @@ class ParticleOperationValidator:
         particle_info.ParticleValueState,
         ast.GlobalTypedNameReference | None,
     ]:
-        """Validate occupancy and assigned value types for a Value Setting Statement.
+        """Validate occupancy and assigned value qualities for a Value Setting Statement.
 
-        Also returns the target's value type, when it is known.
+        Also returns the target's value quality, when it is known.
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        target_type = self._validate_value_setting_position(
+        target_value_quality = self._validate_value_setting_position(
             target, validation_diagnostics
         )
         if isinstance(source, ast.Literal):
             return (
                 validation_diagnostics,
                 particle_info.ParticleValueState.SET,
-                target_type,
+                target_value_quality,
             )
-        source_type = self._validate_value_setting_position(
+        source_value_quality = self._validate_value_setting_position(
             source, validation_diagnostics
         )
-        if source_type is None:
+        if source_value_quality is None:
             return (
                 validation_diagnostics,
                 particle_info.ParticleValueState.ERROR,
-                target_type,
+                target_value_quality,
             )
         if (
-            target_type is not None
-            and target_type.full_typed_name != source_type.full_typed_name
+            target_value_quality is not None
+            and target_value_quality.full_typed_name
+            != source_value_quality.full_typed_name
         ):
             validation_diagnostics.append(
                 diagnostics.ValueSettingValueQualityMismatchDiagnostic(
                     location=source.location,
                     target_position=target.source_chained_name,
                     source_position=source.source_chained_name,
-                    target_value_quality=target_type.source_form_in_universe(
+                    target_value_quality=target_value_quality.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    source_value_quality=source_type.source_form_in_universe(
+                    source_value_quality=source_value_quality.source_form_in_universe(
                         self._enclosing_fqun
                     ),
                 )
@@ -171,9 +172,9 @@ class ParticleOperationValidator:
             )
             value_state = particle_info.ParticleValueState.ERROR
             self._tracker.mark_value_error(source)
-            if target_type is not None:
+            if target_value_quality is not None:
                 self._tracker.mark_value_error(target)
-        return validation_diagnostics, value_state, target_type
+        return validation_diagnostics, value_state, target_value_quality
 
     def _validate_value_setting_position(
         self,
@@ -196,8 +197,8 @@ class ParticleOperationValidator:
                 )
             )
             return None
-        value_type = particle.qualities.value_type
-        if value_type is None:
+        value_quality = particle.qualities.value_quality
+        if value_quality is None:
             validation_diagnostics.append(
                 diagnostics.ValueSettingMissingValueQualityDiagnostic(
                     location=position.location,
@@ -207,7 +208,7 @@ class ParticleOperationValidator:
                     ),
                 )
             )
-        return value_type
+        return value_quality
 
     def validate_looked_at(
         self, position: ast.PositionReference, *, is_read: bool
@@ -222,9 +223,9 @@ class ParticleOperationValidator:
                 location=position.location,
                 position_name=position.source_chained_name,
             )
-        # A particle without a value type does not meet the constraints of the
+        # A particle without a value quality does not meet the constraints of the
         # view looking at it, which is reported instead.
-        if not is_read or particle.qualities.value_type is None:
+        if not is_read or particle.qualities.value_quality is None:
             return None
         if particle.value_state not in {
             particle_info.ParticleValueState.SET,

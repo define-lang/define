@@ -417,7 +417,7 @@ class ChildState(msgspec.Struct, frozen=True):
         if (
             left is not None
             and isinstance(left.guarantee, OccupiedByNewGuarantee)
-            and left.guarantee.qualities.value_type is not None
+            and left.guarantee.qualities.value_quality is not None
         ):
             return left.guarantee.value_effect
         return None

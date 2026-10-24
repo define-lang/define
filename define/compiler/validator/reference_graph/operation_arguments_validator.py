@@ -316,10 +316,12 @@ class OperationArgumentsValidator:
                     if translated is None:
                         translated = value
             return translated
-        value_type = interface_view.quality_assignment_block.value_quality
+        value_quality = interface_view.quality_assignment_block.value_quality
         # Structural validation reports views without a value quality.
-        if value_type is None:
+        if value_quality is None:
             return None
-        value, literal_diagnostics = self._literal_encoder.encode(literal, value_type)
+        value, literal_diagnostics = self._literal_encoder.encode(
+            literal, value_quality
+        )
         validation_diagnostics.extend(literal_diagnostics)
         return value

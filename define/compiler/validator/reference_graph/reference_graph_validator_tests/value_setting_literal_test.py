@@ -322,7 +322,7 @@ def test_callee_requires_target(
     assert diagnostic.required_empty is False
 
 
-def test_callee_target_missing_value_type(
+def test_callee_target_missing_value_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result

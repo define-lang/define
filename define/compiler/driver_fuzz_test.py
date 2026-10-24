@@ -1418,8 +1418,8 @@ def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
 
 
 def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
-    # A literal can only set a value type that has an encoding, and only
-    # built-in value types have encodings.
+    # A literal can only set a value quality that has an encoding, and only
+    # built-in value qualities have encodings.
     statements = [
         _local_position_with_requirements(
             "source", [("value", "standard:/number/natural")], indent="        "

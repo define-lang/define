@@ -79,10 +79,10 @@ def python_literal(literal: codegen_input.EncodedLiteral) -> str:
     return _ENCODING_PYTHON_LITERALS[literal.encoding](literal.content)
 
 
-def python_value_type(value_type: ast.GlobalTypedNameReference) -> str:
-    """Return the Python type that generated code uses for values of a value type."""
+def python_value_type(value_quality: ast.GlobalTypedNameReference) -> str:
+    """Return the Python type that generated code uses for values of a value quality."""
     return _ENCODING_PYTHON_TYPES[
-        constants.BUILT_IN_VALUE_ENCODINGS[value_type.full_typed_name]
+        constants.BUILT_IN_VALUE_ENCODINGS[value_quality.full_typed_name]
     ]
 
 

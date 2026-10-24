@@ -1,4 +1,4 @@
-"""Encode literals in the encoding of the value type they become."""
+"""Encode literals in the encoding of the value quality they become."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ class LiteralEncoder:
         self._enclosing_fqun = enclosing_fqun
 
     def encode(
-        self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
+        self, literal: ast.Literal, value_quality: ast.GlobalTypedNameReference
     ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         """Return the literal in the value's encoding, if it can be encoded, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
@@ -48,15 +48,15 @@ class LiteralEncoder:
         if literal_encoding is None:
             return None, []
         # TODO: Translate the literal into any encoding its target requires,
-        # instead of always using the value type's own encoding.
+        # instead of always using the value quality's own encoding.
         value_encoding = constants.BUILT_IN_VALUE_ENCODINGS.get(
-            value_type.full_typed_name
+            value_quality.full_typed_name
         )
         if value_encoding is None:
             return None, [
                 diagnostics.ValueHasNoEncodingDiagnostic(
                     location=potential_literal.location,
-                    value_quality=value_type.source_form_in_universe(
+                    value_quality=value_quality.source_form_in_universe(
                         self._enclosing_fqun
                     ),
                 )
@@ -74,7 +74,7 @@ class LiteralEncoder:
                     literal_encoding=literal_encoding.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    value_quality=value_type.source_form_in_universe(
+                    value_quality=value_quality.source_form_in_universe(
                         self._enclosing_fqun
                     ),
                     supported_encodings=_supported_encodings(value_encoding),

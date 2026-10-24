@@ -1,4 +1,4 @@
-"""Value type definition parser tests."""
+"""Value quality definition parser tests."""
 
 from __future__ import annotations
 

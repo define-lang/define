@@ -224,7 +224,7 @@ class EncodingOperationDefinition(OperationDefinition):
 
 
 class ValueDefinition(QualityDefinition):
-    """Represents a value type definition."""
+    """Represents a value quality definition."""
 
     @classmethod
     def from_name(

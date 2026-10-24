@@ -56,8 +56,8 @@ class ValueSetting(msgspec.Struct):
     """A validated Value Setting Statement."""
 
     target_position: ast.PositionReference
-    # The value type of both positions.
-    value_type: ast.GlobalTypedNameReference
+    # The value quality of both positions.
+    value_quality: ast.GlobalTypedNameReference
 
 
 class LiteralValueSetting(ValueSetting):

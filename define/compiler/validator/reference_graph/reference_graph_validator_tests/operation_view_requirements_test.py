@@ -150,7 +150,7 @@ def test_invalid_literal_content_in_action(
     assert diagnostic.reason == "'x' is not allowed in a number"
 
 
-def test_position_missing_value_type(
+def test_position_missing_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()

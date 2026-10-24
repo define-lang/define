@@ -399,7 +399,7 @@ class ActionDefinitionValidator:
                 stmt.source, inferred_at=stmt.source.location
             )
             self._dead_value_write_validator.mark_used(stmt.source)
-        value_diagnostics, value_state, target_type = (
+        value_diagnostics, value_state, target_value_quality = (
             self._operation_validator.validate_value_setting(
                 stmt.target_position, stmt.source
             )
@@ -408,11 +408,11 @@ class ActionDefinitionValidator:
         has_errors = bool(value_diagnostics)
         match stmt.source:
             case ast.Literal():
-                # A literal can only be encoded once the value type it sets is
+                # A literal can only be encoded once the value quality it sets is
                 # known.
-                if target_type is not None:
+                if target_value_quality is not None:
                     value, literal_diagnostics = self._literal_encoder.encode(
-                        stmt.source, target_type
+                        stmt.source, target_value_quality
                     )
                     self._diagnostics.extend(literal_diagnostics)
                     has_errors = has_errors or bool(literal_diagnostics)
@@ -420,17 +420,17 @@ class ActionDefinitionValidator:
                         self._steps.append(
                             codegen_input.LiteralValueSetting(
                                 target_position=stmt.target_position,
-                                value_type=target_type,
+                                value_quality=target_value_quality,
                                 value=value,
                             )
                         )
             case ast.PositionReference():
-                # Validation reports a target without a known value type.
-                if target_type is not None:
+                # Validation reports a target without a known value quality.
+                if target_value_quality is not None:
                     self._steps.append(
                         codegen_input.PositionValueSetting(
                             target_position=stmt.target_position,
-                            value_type=target_type,
+                            value_quality=target_value_quality,
                             source_position=stmt.source,
                         )
                     )
@@ -439,7 +439,7 @@ class ActionDefinitionValidator:
         # A failed statement still counts as writing its target, so later
         # reads do not report the same mistake again as an unset value.
         if has_errors:
-            if target_type is not None:
+            if target_value_quality is not None:
                 self._tracker.mark_value_error(stmt.target_position)
             return
         self._tracker.set_value(stmt.target_position, value_state)
@@ -484,7 +484,7 @@ class ActionDefinitionValidator:
             if (
                 interface_view is not None
                 and interface_view.is_output
-                and particle.qualities.value_type is not None
+                and particle.qualities.value_quality is not None
             ):
                 written_positions.append(position)
         argument_diagnostics, literal_values = (

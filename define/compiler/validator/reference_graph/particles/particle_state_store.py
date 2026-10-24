@@ -67,7 +67,7 @@ class PositionState(msgspec.Struct):
     def child_value(self) -> particle_info.ParticleValueState | None:
         """Return the value state of this position's particle as Child State records it, or None when it has none."""
         particle = self.particle
-        if particle is None or particle.qualities.value_type is None:
+        if particle is None or particle.qualities.value_quality is None:
             return None
         return particle.value_state
 

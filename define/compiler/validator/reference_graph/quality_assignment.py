@@ -85,8 +85,8 @@ class QualityAssignments:
         return self._by_name[name]
 
     @cached_property
-    def value_type(self) -> ast.GlobalTypedNameReference | None:
-        """The value type assigned to the particle."""
+    def value_quality(self) -> ast.GlobalTypedNameReference | None:
+        """The value quality assigned to the particle."""
         for quality in self.assignments:
             if quality.name_type == name_types.NameType.VALUE:
                 return quality

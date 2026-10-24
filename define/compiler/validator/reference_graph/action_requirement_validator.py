@@ -229,7 +229,7 @@ class ActionRequirementValidator:
         particle = occupancy.occupant
         if occupancy.has_error or particle is None:
             return
-        if particle.qualities.value_type is None:
+        if particle.qualities.value_quality is None:
             return
         if particle.value_state is not None:
             return

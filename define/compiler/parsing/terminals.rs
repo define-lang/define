@@ -52,7 +52,7 @@ pub const CHAIN_SEPARATOR: &[u8] = b"::";
 pub const DEFINE_THE_POTENTIAL: &[u8] = b"define the potential ";
 pub const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position";
 
-// Defining Value Types
+// Defining Value Qualities
 
 pub const DEFINE_THE_POTENTIAL_VALUE: &[u8] = b"define the potential value";
 
