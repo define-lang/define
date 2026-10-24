@@ -94,10 +94,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let Some(name_type) = self.scanner.consume_any(&POSITION_OR_ACTION) else {
             return Err(self.expected_position_or_action());
         };
-        // There is no `<`.
-        if !self.scanner.consume_byte(NAME_CONTENT_START) {
-            return Err(self.missing_open_angle_bracket());
-        }
+        self.consume_open_angle_bracket()?;
         let content_start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_name_content();
         let content_end = self.scanner.position;
@@ -242,6 +239,16 @@ impl<'py, 'source> Parser<'py, 'source> {
         )
     }
 
+    /// Consumes the `<` that starts a name's content at the scanner's
+    /// position, adding a diagnostic for any spaces before it.
+    #[inline(always)]
+    fn consume_open_angle_bracket(&mut self) -> ParseResult<()> {
+        if self.scanner.consume_byte(NAME_CONTENT_START) {
+            return Ok(());
+        }
+        self.consume_open_angle_bracket_after_spaces()
+    }
+
     /// Parses the `<`, local name, and `>` that follow the name type of a
     /// local name in a definition or a position presence statement.
     ///
@@ -249,10 +256,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// "<", local_name, ">"
     /// ```
     pub(crate) fn parse_local_name_content(&mut self) -> ParseResult<LocalNameParts<'py, 'source>> {
-        // There is no `<`.
-        if !self.scanner.consume_byte(NAME_CONTENT_START) {
-            return Err(self.missing_open_angle_bracket());
-        }
+        self.consume_open_angle_bracket()?;
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_name_content();
         let end = self.scanner.position;
@@ -346,10 +350,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     pub(crate) fn parse_global_name_content(
         &mut self,
     ) -> ParseResult<GlobalNameParts<'py, 'source>> {
-        // There is no `<`.
-        if !self.scanner.consume_byte(NAME_CONTENT_START) {
-            return Err(self.missing_open_angle_bracket());
-        }
+        self.consume_open_angle_bracket()?;
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_global_name_content();
         let end = self.scanner.position;
@@ -626,6 +627,29 @@ impl<'py, 'source> Parser<'py, 'source> {
             .invalid_local_name_character(position, position, &character)
     }
 
+    /// Consumes the spaces and then the `<` that start a name's content at the
+    /// scanner's position, adding a diagnostic for the spaces, or returns the
+    /// error for a name whose `<` is missing there.
+    #[cold]
+    #[inline(never)]
+    fn consume_open_angle_bracket_after_spaces(&mut self) -> ParseResult<()> {
+        let spaces = self.scanner.next_space_count();
+        // Spaces come between the name type and the `<`.
+        if spaces > 0 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&NAME_CONTENT_START)
+        {
+            let first_space = self.scanner.position;
+            let last_space = Position {
+                line: first_space.line,
+                column: first_space.column + spaces - 1,
+            };
+            self.diagnostics
+                .space_before_open_angle_bracket_diagnostic(first_space, last_space)?;
+            self.scanner.consume_bytes(spaces + 1);
+            return Ok(());
+        }
+        Err(self.missing_open_angle_bracket())
+    }
+
     /// Returns the error for a name whose `<` is missing at the scanner's
     /// position.
     #[cold]
@@ -635,18 +659,6 @@ impl<'py, 'source> Parser<'py, 'source> {
             return error;
         }
         let missing = self.scanner.position;
-        let line = self.scanner.rest_of_line().bytes;
-        let spaces = line.iter().take_while(|&&byte| byte == SPACE).count();
-        // Spaces come between the name type and the `<`.
-        if spaces > 0 && line.get(spaces) == Some(&NAME_CONTENT_START) {
-            let last_space = Position {
-                line: missing.line,
-                column: missing.column + spaces - 1,
-            };
-            return self
-                .errors
-                .space_before_open_angle_bracket(missing, last_space);
-        }
         self.errors.missing_open_angle_bracket(missing, missing)
     }
 

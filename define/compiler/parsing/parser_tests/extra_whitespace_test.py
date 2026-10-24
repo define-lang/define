@@ -189,29 +189,37 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
 
 
 def test_extra_space_before_local_name_in_quality_assignment_statement(
-    parse: Parse,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.SpaceBeforeOpenAngleBracket) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position  </child>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 29
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position  </child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+            location=ast.SourceLocation(line=3, column=28, end_line=3, end_column=29)
+        ),
+    ]
 
 
-def test_space_before_name_in_position_definition(parse: Parse):
-    with pytest.raises(parser_exceptions.SpaceBeforeOpenAngleBracket) as exc_info:
-        parse("define the potential position <mv:define-lang.org:parser:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 30
+def test_space_before_name_in_position_definition(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position <mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+            location=ast.SourceLocation(line=1, column=30, end_line=1, end_column=30)
+        ),
+    ]
 
 
 def test_extra_space_after_create_a_particle_in(parse: Parse):

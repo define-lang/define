@@ -268,13 +268,19 @@ def test_empty_comment_hash_space_newline_above_statement(
     ]
 
 
-def test_empty_comment_hash_only_after_statement_same_line(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>. #")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 66
-    assert exc_info.value.location.end_column == 66
+def test_empty_comment_hash_only_after_statement_same_line(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path>. #"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+            location=ast.SourceLocation(line=1, column=66, end_line=1, end_column=66)
+        ),
+    ]
 
 
 def test_empty_comment_hash_newline_after_statement_same_line(
@@ -300,15 +306,16 @@ def test_empty_comment_hash_space_after_statement_same_line(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. # "
     )
+    assert result.exception is None
+    assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=ast.SourceLocation(line=1, column=66, end_line=1, end_column=66)
         ),
+        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+            location=ast.SourceLocation(line=1, column=67, end_line=1, end_column=67)
+        ),
     ]
-    assert isinstance(result.exception, parser_exceptions.MissingNewlineAtEof)
-    assert result.exception.location == ast.SourceLocation(
-        line=1, column=67, end_line=1, end_column=67
-    )
 
 
 def test_empty_comment_hash_space_newline_after_statement_same_line(

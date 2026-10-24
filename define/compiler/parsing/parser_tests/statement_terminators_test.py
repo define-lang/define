@@ -39,25 +39,31 @@ def test_missing_terminator(parse: Parse):
     assert exc_info.value.location.end_column == 46
 
 
-def test_missing_newline_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
-        parse("define the potential position<standard:/path>.")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 47
+def test_missing_newline_after_terminator(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics("define the potential position<standard:/path>.")
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+            location=ast.SourceLocation(line=1, column=47, end_line=1, end_column=47)
+        ),
+    ]
 
 
-def test_missing_newline_after_last_definition(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/first>.\n"
-            + "define the potential position<mv:define-lang.org:parser:/second>."
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 66
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 66
+def test_missing_newline_after_last_definition(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/first>.\n"
+        + "define the potential position<mv:define-lang.org:parser:/second>."
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+            location=ast.SourceLocation(line=2, column=66, end_line=2, end_column=66)
+        ),
+    ]
 
 
 def test_missing_newline_between_global_definitions(parse: Parse):
@@ -80,15 +86,19 @@ def test_double_terminator(parse: Parse):
     assert exc_info.value.location.end_column == 64
 
 
-def test_comment_directly_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingSpaceBeforeComment) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_comment_directly_after_terminator(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
+            location=ast.SourceLocation(line=1, column=63, end_line=1, end_column=64)
+        ),
+    ]
 
 
 def test_letter_after_terminator(parse: Parse):
@@ -168,15 +178,16 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. "
     )
+    assert result.exception is None
+    assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=64)
         ),
+        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+            location=ast.SourceLocation(line=1, column=65, end_line=1, end_column=65)
+        ),
     ]
-    assert isinstance(result.exception, parser_exceptions.MissingNewlineAtEof)
-    assert result.exception.location == ast.SourceLocation(
-        line=1, column=65, end_line=1, end_column=65
-    )
 
 
 def test_missing_terminator_after_typed_reference_in_quality_assignment(

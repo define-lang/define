@@ -113,9 +113,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         // scanner back to column 1, and the source is not empty.
         if self.scanner.position.column != 1 {
             let end_of_source = self.scanner.position;
-            return Err(self
-                .errors
-                .missing_newline_at_eof(end_of_source, end_of_source));
+            self.diagnostics
+                .missing_newline_at_end_of_file_diagnostic(end_of_source, end_of_source)?;
         }
         let definitions = self.nodes.finish_tuple(definitions)?;
         let location = self.ast.location(start, end)?;

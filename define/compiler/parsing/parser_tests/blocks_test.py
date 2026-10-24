@@ -343,38 +343,42 @@ def test_missing_newline_after_block_open(parse: Parse):
     assert exc_info.value.location.end_column == 48
 
 
-def test_comment_directly_after_block_open(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingSpaceBeforeCommentAfterBrace
-    ) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {# note\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 65
+def test_comment_directly_after_block_open(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path> {# note\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=65)
+        ),
+    ]
 
 
-def test_comment_directly_after_block_close(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingSpaceBeforeCommentAfterBrace
-    ) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }# note\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 6
+def test_comment_directly_after_block_close(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }# note\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+            location=ast.SourceLocation(line=4, column=5, end_line=4, end_column=6)
+        ),
+    ]
 
 
 def test_no_space_before_brace(parse: Parse):
@@ -656,3 +660,35 @@ def test_text_after_operation_arguments_block_open(parse: Parse):
     assert error.value.location.column == 40
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 40
+
+
+def test_carriage_return_in_comment_after_block_open(parse: Parse):
+    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> { # note\r\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\r"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 72
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 72
+
+
+def test_carriage_return_in_comment_after_block_close(parse: Parse):
+    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</child>.\n"
+            + "    } # note\r\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "\r"
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 13
+    assert exc_info.value.location.end_line == 4
+    assert exc_info.value.location.end_column == 13

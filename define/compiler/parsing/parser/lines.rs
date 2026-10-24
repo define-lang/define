@@ -211,7 +211,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> ParseResult<()> {
         // A comment follows the `.` without a space between them.
         if self.scanner.next_byte_is(COMMENT_START) {
-            return Err(self.errors.missing_space_before_comment(terminator, end));
+            self.diagnostics
+                .missing_space_before_comment_after_terminator_diagnostic(terminator, end)?;
         }
         // Something other than a comment follows the `.`.
         if !self.end_line_not_at_line_feed()? {
@@ -290,9 +291,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         // A comment follows the brace without a space between them.
         if self.scanner.next_byte_is(COMMENT_START) {
-            return Err(self
-                .errors
-                .missing_space_before_comment_after_brace(brace, end));
+            self.diagnostics
+                .missing_space_before_comment_after_brace_diagnostic(brace, end)?;
         }
         self.end_line_not_at_line_feed()
     }

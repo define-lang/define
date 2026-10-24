@@ -487,12 +487,6 @@ class MissingNewlineAfterTerminator(DefineTokenError):
     message_format: ClassVar[str] = "Missing newline after statement terminator."
 
 
-class MissingNewlineAtEof(DefineTokenError):
-    """Hitting an EOF without a newline before it."""
-
-    message_format: ClassVar[str] = "Define source code files must end with a newline."
-
-
 class MissingEncodingOperationStatementsContent(DefineTokenError):
     """Left out the statements of an Encoding Operation Statements Block."""
 
@@ -569,23 +563,6 @@ class MissingPositionDefinitionContent(DefineTokenError):
     )
 
 
-class MissingSpaceBeforeComment(DefineTokenError):
-    """A comment directly after a statement terminator, without a space."""
-
-    message_format: ClassVar[str] = (
-        "A comment after a statement terminator must be separated from the '.' by"
-        + " a space."
-    )
-
-
-class MissingSpaceBeforeCommentAfterBrace(DefineTokenError):
-    """A comment directly after a { or }, without a space."""
-
-    message_format: ClassVar[str] = (
-        "'{{' or '}}' must have a space after it, before a comment."
-    )
-
-
 class MissingTerminator(DefineTokenError):
     """Forgot ."""
 
@@ -643,14 +620,6 @@ class MissingWhitespaceBeforeBrace(DefineTokenError):
     """Forgot to put a space before {."""
 
     message_format: ClassVar[str] = "Missing a space before '{{'"
-
-
-class SpaceBeforeOpenAngleBracket(DefineTokenError):
-    """Put spaces between a name type and the < of its name."""
-
-    message_format: ClassVar[str] = (
-        "A name type and the '<' that starts the name cannot have spaces between them."
-    )
 
 
 class QualityImplicationInWrongOrder(DefineTokenError):

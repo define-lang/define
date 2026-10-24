@@ -1266,6 +1266,36 @@ class TrailingWhitespaceDiagnostic(Diagnostic):
     message_format: ClassVar[str] = "lines may not end with spaces"
 
 
+class MissingSpaceBeforeCommentAfterTerminatorDiagnostic(Diagnostic):
+    """Diagnostic for a comment directly after a statement's '.'."""
+
+    message_format: ClassVar[str] = (
+        "a comment after a statement's '.' must have a space before its '#'"
+    )
+
+
+class MissingSpaceBeforeCommentAfterBraceDiagnostic(Diagnostic):
+    """Diagnostic for a comment directly after a '{' or '}'."""
+
+    message_format: ClassVar[str] = (
+        "a comment after '{{' or '}}' must have a space before its '#'"
+    )
+
+
+class MissingNewlineAtEndOfFileDiagnostic(Diagnostic):
+    """Diagnostic for a source file that does not end with a line feed."""
+
+    message_format: ClassVar[str] = "Define source files must end with a newline"
+
+
+class SpaceBeforeOpenAngleBracketDiagnostic(Diagnostic):
+    """Diagnostic for spaces between a name type and the '<' of its name."""
+
+    message_format: ClassVar[str] = (
+        "a name type and the '<' of its name may not have spaces between them"
+    )
+
+
 class InferredRequirementViolationDiagnostic(Diagnostic):
     """Diagnostic for when an automatically inferred requirement is violated.
 

@@ -58,6 +58,7 @@ py_test(
         "value_setting_literal_test.py",
         "value_setting_test.py",
         "view_definition_test.py",
+        "whitespace_recovery_test.py",
     ],
     data = [
     ],
