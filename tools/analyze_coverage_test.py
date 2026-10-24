@@ -357,7 +357,7 @@ def test_format_report_separates_low_value_branches(tmp_path: Path):
 
     assert report == (
         "Low-value final-case non-match branches:\n"
-        + f"{source_path}:2:\n"
+        + f"{source_path.as_posix()}:2:\n"
         + "  branch source: case int():\n"
         + "  uncovered outcome: pattern does not match\n"
         + "  uncovered destination: return from function 'choose'\n"
@@ -405,7 +405,7 @@ def test_format_report_describes_implicit_return_and_empty_result(tmp_path: Path
     empty_report = analyze_coverage.format_report([], [], [branch], tmp_path)
 
     assert report == (
-        f"{source_path}:1:\n"
+        f"{source_path.as_posix()}:1:\n"
         "  branch source: def choose() -> None:\n"
         "  uncovered destination: return from function 'choose'\n"
         "1 actionable uncovered branches reported; "
@@ -659,8 +659,8 @@ def test_analyze_rust_regions_reports_region_with_source_text(tmp_path: Path):
     )
     assert analyze_coverage.format_rust_regions(regions, tmp_path) == (
         "Uncovered Rust code regions:\n"
-        + f"{source_path}:2:10-2:11: b\n"
-        + f"{source_path}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
+        + f"{source_path.as_posix()}:2:10-2:11: b\n"
+        + f"{source_path.as_posix()}:1:1-3:2: fn f(a: bool, b: bool) -> bool {{ a || b }}\n"
         + "2 uncovered Rust code regions reported; "
         + "0 pyclass-generated regions omitted; 0 panic-only regions omitted; "
         + "0 Python-exception-only regions omitted."

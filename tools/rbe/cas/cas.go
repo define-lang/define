@@ -234,7 +234,7 @@ func (store *Store) evictLocked() {
 		// An action that already linked the blob keeps its inode, and one that
 		// has not yet linked it reports it missing so the client uploads it
 		// again.
-		if err := os.Remove(store.blobPath(evicted.key)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if err := removeBlob(store.blobPath(evicted.key)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			panic(fmt.Sprintf("evicting blob %s: %v", evicted.key, err))
 		}
 	}
@@ -273,7 +273,7 @@ func (store *Store) Open(key Key) (io.ReadCloser, error) {
 	if !store.Has(key) {
 		return nil, &MissingBlobsError{Keys: []Key{key}}
 	}
-	file, err := os.Open(store.blobPath(key))
+	file, err := openBlob(store.blobPath(key))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, &MissingBlobsError{Keys: []Key{key}}
 	}
@@ -323,9 +323,10 @@ func (store *Store) Directory(key Key) (*repb.Directory, error) {
 // Link hardlinks a blob to path.
 func (store *Store) Link(key Key, path string) error {
 	if key.Size == 0 && key == EmptyKey {
-		return os.WriteFile(path, nil, blobMode)
+		return writeEmptyBlob(path)
 	}
-	err := os.Link(store.blobPath(key), path)
+	blobPath := store.blobPath(key)
+	err := store.link(key, blobPath, path)
 	if errors.Is(err, fs.ErrNotExist) {
 		if _, statErr := os.Lstat(filepath.Dir(path)); statErr != nil {
 			return err
@@ -474,7 +475,7 @@ func (store *Store) adopt(tempPath string, key Key) error {
 	if err := os.Chmod(tempPath, blobMode); err != nil {
 		return err
 	}
-	if err := os.Rename(tempPath, store.blobPath(key)); err != nil {
+	if err := renameBlob(tempPath, store.blobPath(key), key); err != nil {
 		return err
 	}
 	store.mu.Lock()

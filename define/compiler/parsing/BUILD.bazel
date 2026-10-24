@@ -160,7 +160,10 @@ rust_test(
 rust_clippy_test(
     name = "clippy_test",
     size = "small",
-    tags = ["precommit"],
+    tags = [
+        "clippy",
+        "precommit",
+    ],
     targets = [
         ":parser_extension_shared",
         ":terminals",

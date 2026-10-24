@@ -401,12 +401,20 @@ To recreate the VM, remove the old one first:
     show_default=True,
     help="Port on localhost that forwards to the VM's SSH server.",
 )
-def main(
+@click.option(
+    "--rbe-port",
+    type=int,
+    default=vm.DEFAULT_RBE_PORT,
+    show_default=True,
+    help="Port on localhost that forwards to the VM's remote execution service.",
+)
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     ssh_public_key: Path,
     vcpus: int,
     memory_gib: int,
     disk_gib: int,
     ssh_port: int,
+    rbe_port: int,
 ):
     """Create the Windows VM."""
     commands = resolve_commands()
@@ -488,10 +496,15 @@ def main(
         "--cdrom",
         str(windows_iso),
         "--network",
-        # Only this host can reach the VM's SSH server, over IPv4 or IPv6.
+        # Only this host can reach the VM's SSH server and remote execution
+        # service, over IPv4 or IPv6.
         f"passt,model=virtio,portForward0=127.0.0.1:{ssh_port}:22,"
         + "portForward1.address=::1,portForward1.proto=tcp,"
-        + f"portForward1.range0.start={ssh_port},portForward1.range0.to=22",
+        + f"portForward1.range0.start={ssh_port},portForward1.range0.to=22,"
+        + f"portForward2=127.0.0.1:{rbe_port}:{vm.RBE_VM_PORT},"
+        + "portForward3.address=::1,portForward3.proto=tcp,"
+        + f"portForward3.range0.start={rbe_port},"
+        + f"portForward3.range0.to={vm.RBE_VM_PORT}",
         # The guest agent shuts Windows down reliably. Windows can ignore the
         # virtual power button, such as when its display is off.
         "--channel",

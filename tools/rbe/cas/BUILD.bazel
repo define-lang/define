@@ -3,19 +3,29 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 go_library(
     name = "cas",
-    srcs = ["cas.go"],
+    srcs = [
+        "cas.go",
+        "files_unix.go",
+        "files_windows.go",
+    ],
     importpath = "github.com/define-lang/define/tools/rbe/cas",
     visibility = ["//tools/rbe:__subpackages__"],
     deps = [
         "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:execution",
         "@org_golang_google_protobuf//proto",
-    ],
+    ] + select({
+        "@rules_go//go/platform:windows": ["@org_golang_x_sys//windows"],
+        "//conditions:default": [],
+    }),
 )
 
 go_test(
     name = "cas_test",
     size = "small",
-    srcs = ["cas_test.go"],
+    srcs = [
+        "cas_test.go",
+        "cas_windows_test.go",
+    ],
     embed = [":cas"],
     deps = ["@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:execution"],
 )

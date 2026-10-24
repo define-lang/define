@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
@@ -78,24 +77,10 @@ func New(store *cas.Store, workRoot string, slots int, deleters int) (*Executor,
 // is sent keeps it off every action's critical path.
 func (executor *Executor) delete() {
 	for directory := range executor.deletions {
-		if err := os.RemoveAll(directory); err != nil {
-			// Read-only directories that an action left behind cannot be
-			// emptied until they are writable again.
-			makeWritable(directory)
-			if err := os.RemoveAll(directory); err != nil {
-				panic(fmt.Sprintf("deleting action directory %s: %v", directory, err))
-			}
+		if err := cas.RemoveTree(directory); err != nil {
+			panic(fmt.Sprintf("deleting action directory %s: %v", directory, err))
 		}
 	}
-}
-
-func makeWritable(root string) {
-	_ = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err == nil && entry.IsDir() {
-			_ = os.Chmod(path, 0o755)
-		}
-		return nil
-	})
 }
 
 // Execute runs an action and returns its result. A *cas.MissingBlobsError
@@ -198,16 +183,22 @@ func outputPaths(command *repb.Command) []string {
 // stage builds an input tree by hardlinking its files from the store.
 func (executor *Executor) stage(rootKey cas.Key, path string) error {
 	missing := &cas.MissingBlobsError{}
-	if err := executor.stageDirectory(rootKey, path, missing); err != nil {
+	var symlinks []symlink
+	if err := executor.stageDirectory(rootKey, path, missing, &symlinks); err != nil {
 		return err
 	}
 	if len(missing.Keys) > 0 {
 		return missing
 	}
-	return nil
+	return createSymlinks(symlinks)
 }
 
-func (executor *Executor) stageDirectory(key cas.Key, path string, missing *cas.MissingBlobsError) error {
+type symlink struct {
+	target string
+	path   string
+}
+
+func (executor *Executor) stageDirectory(key cas.Key, path string, missing *cas.MissingBlobsError, symlinks *[]symlink) error {
 	directory, err := executor.store.Directory(key)
 	var missingErr *cas.MissingBlobsError
 	if errors.As(err, &missingErr) {
@@ -231,10 +222,8 @@ func (executor *Executor) stageDirectory(key cas.Key, path string, missing *cas.
 			return err
 		}
 	}
-	for _, symlink := range directory.Symlinks {
-		if err := os.Symlink(symlink.Target, filepath.Join(path, symlink.Name)); err != nil {
-			return err
-		}
+	for _, node := range directory.Symlinks {
+		*symlinks = append(*symlinks, symlink{target: node.Target, path: filepath.Join(path, node.Name)})
 	}
 	for _, child := range directory.Directories {
 		childKey, err := cas.KeyFromDigest(child.Digest)
@@ -242,37 +231,38 @@ func (executor *Executor) stageDirectory(key cas.Key, path string, missing *cas.
 			return err
 		}
 		childPath := filepath.Join(path, child.Name)
-		if err := os.Mkdir(childPath, 0o755); err != nil {
+		if err := makeInputDirectory(childPath); err != nil {
 			return err
 		}
-		if err := executor.stageDirectory(childKey, childPath, missing); err != nil {
+		if err := executor.stageDirectory(childKey, childPath, missing, symlinks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// run runs a command in its own process group and kills the whole group when
-// the command ends, so that no process it started outlives the action.
+// run runs a command and kills every process it started when the command
+// ends, so that none outlives the action.
 func run(ctx context.Context, command *repb.Command, workingDirectory string, actionDirectory string, tempDirectory string, timeout time.Duration) (int32, error) {
 	if len(command.Arguments) == 0 {
 		return 0, errors.New("command has no arguments")
 	}
-	environment := make([]string, 0, len(command.EnvironmentVariables)+1)
+	environment := make([]string, 0, len(command.EnvironmentVariables)+len(tempVariables))
 	searchPath := ""
-	hasTempDirectory := false
+	setVariables := map[string]bool{}
 	for _, variable := range command.EnvironmentVariables {
 		environment = append(environment, variable.Name+"="+variable.Value)
-		switch variable.Name {
-		case "PATH":
+		setVariables[variable.Name] = true
+		if variable.Name == "PATH" {
 			searchPath = variable.Value
-		case "TMPDIR":
-			hasTempDirectory = true
 		}
 	}
-	// Actions that share /tmp collide on fixed file names there.
-	if !hasTempDirectory {
-		environment = append(environment, "TMPDIR="+tempDirectory)
+	// Actions that share the system's temporary directory collide on fixed
+	// file names there.
+	for _, name := range tempVariables {
+		if !setVariables[name] {
+			environment = append(environment, name+"="+tempDirectory)
+		}
 	}
 	program, err := findProgram(command.Arguments[0], workingDirectory, searchPath)
 	if err != nil {
@@ -290,18 +280,18 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	defer stderr.Close()
 
 	process := &exec.Cmd{
-		Path:        program,
-		Args:        command.Arguments,
-		Env:         environment,
-		Dir:         workingDirectory,
-		Stdout:      stdout,
-		Stderr:      stderr,
-		SysProcAttr: &syscall.SysProcAttr{Setpgid: true},
+		Path:   startablePath(program),
+		Args:   command.Arguments,
+		Env:    environment,
+		Dir:    workingDirectory,
+		Stdout: stdout,
+		Stderr: stderr,
 	}
-	if err := process.Start(); err != nil {
+	tree, err := startTree(process)
+	if err != nil {
 		return 0, fmt.Errorf("starting %s: %w", command.Arguments[0], err)
 	}
-	processGroup := process.Process.Pid
+	defer tree.end()
 	waited := make(chan error, 1)
 	go func() { waited <- process.Wait() }()
 	timer := time.NewTimer(timeout)
@@ -311,21 +301,17 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	select {
 	case waitErr = <-waited:
 	case <-timer.C:
-		_ = syscall.Kill(-processGroup, syscall.SIGKILL)
+		tree.kill()
 		waitErr = <-waited
 		runErr = &TimeoutError{Timeout: timeout}
 	case <-ctx.Done():
-		_ = syscall.Kill(-processGroup, syscall.SIGKILL)
+		tree.kill()
 		<-waited
 		return 0, ctx.Err()
 	}
-	_ = syscall.Kill(-processGroup, syscall.SIGKILL)
 	var exitErr *exec.ExitError
 	if errors.As(waitErr, &exitErr) {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
-			return 128 + int32(status.Signal()), runErr
-		}
-		return int32(exitErr.ExitCode()), runErr
+		return exitCode(exitErr), runErr
 	}
 	return 0, errors.Join(waitErr, runErr)
 }
@@ -334,7 +320,7 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 // with a separator is relative to the working directory, and a bare name is
 // searched for in the command's own PATH.
 func findProgram(name string, workingDirectory string, searchPath string) (string, error) {
-	if strings.Contains(name, "/") {
+	if strings.ContainsAny(name, pathSeparators) {
 		if filepath.IsAbs(name) {
 			return name, nil
 		}
@@ -344,9 +330,10 @@ func findProgram(name string, workingDirectory string, searchPath string) (strin
 		if !filepath.IsAbs(directory) {
 			directory = filepath.Join(workingDirectory, directory)
 		}
-		candidate := filepath.Join(directory, name)
-		if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() && info.Mode()&0o111 != 0 {
-			return candidate, nil
+		for _, candidate := range programCandidates(filepath.Join(directory, name)) {
+			if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() && isExecutable(candidate, info) {
+				return candidate, nil
+			}
 		}
 	}
 	return "", fmt.Errorf("program %q is not in PATH %q", name, searchPath)
@@ -394,7 +381,7 @@ func (executor *Executor) collect(workingDirectory string, outputPaths []string)
 			result.OutputFiles = append(result.OutputFiles, &repb.OutputFile{
 				Path:         outputPath,
 				Digest:       key.Digest(),
-				IsExecutable: info.Mode()&0o111 != 0,
+				IsExecutable: isExecutable(path, info),
 			})
 		}
 	}
@@ -441,7 +428,7 @@ func (executor *Executor) collectDirectory(path string, tree *repb.Tree) (*repb.
 			directory.Files = append(directory.Files, &repb.FileNode{
 				Name:         entry.Name(),
 				Digest:       key.Digest(),
-				IsExecutable: info.Mode()&0o111 != 0,
+				IsExecutable: isExecutable(entryPath, info),
 			})
 		}
 	}

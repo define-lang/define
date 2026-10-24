@@ -49,7 +49,7 @@ def _test_targets_must_be_small_impl(ctx):
         _py_test("manual_test", size = "medium", tags = ["manual"]) +
         [("missing_test", {"kind": "sh_test", "srcs": (":missing_test.sh",)})] +
         _py_test("small_test") +
-        [("clippy_test", {"kind": "rust_clippy_test"})]
+        [("clippy_test", {"kind": "rust_clippy_test", "tags": ["clippy"]})]
     )
     asserts.equals(env, [
         'test target "large_test" must set size = "small"',
@@ -255,6 +255,21 @@ _runfiles_directory_variables_are_forbidden_test = unittest.make(
     _runfiles_directory_variables_are_forbidden_impl,
 )
 
+def _clippy_tests_must_have_the_clippy_tag_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("clippy_test", {"kind": "rust_clippy_test", "tags": ["clippy"]}),
+        ("untagged_clippy_test", {"kind": "rust_clippy_test", "tags": []}),
+    ]
+    asserts.equals(env, [
+        'rust_clippy_test "untagged_clippy_test" must have the "clippy" tag',
+    ], build_file_violations("parsing", rules))
+    return unittest.end(env)
+
+_clippy_tests_must_have_the_clippy_tag_test = unittest.make(
+    _clippy_tests_must_have_the_clippy_tag_impl,
+)
+
 def build_file_checks_test_suite(name):
     """Creates the unit tests for build_file_checks.bzl.
 
@@ -264,7 +279,8 @@ def build_file_checks_test_suite(name):
     unittest.suite(
         name,
         *[
-            partial.make(test, size = "small")
+            # --config=windows_vm skips this tag; see .bazelrc.
+            partial.make(test, size = "small", tags = ["skylib_unittest"])
             for test in [
                 _test_targets_must_be_small_test,
                 _python_targets_are_named_after_their_source_test,
@@ -279,6 +295,7 @@ def build_file_checks_test_suite(name):
                 _package_without_pyright_test_is_not_checked_for_coverage_test,
                 _codegen_testdata_requires_pyright_test_test,
                 _runfiles_directory_variables_are_forbidden_test,
+                _clippy_tests_must_have_the_clippy_tag_test,
             ]
         ]
     )

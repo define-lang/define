@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -15,7 +16,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/define-lang/define/tools/rbe/cas"
+	"github.com/define-lang/define/tools/rbe/testprogram"
 )
+
+func TestMain(m *testing.M) {
+	testprogram.Main(m)
+}
 
 func newExecutor(t *testing.T) (*Executor, *cas.Store) {
 	t.Helper()
@@ -49,14 +55,6 @@ func putDirectory(t *testing.T, store *cas.Store, directory *repb.Directory) *re
 	return key.Digest()
 }
 
-func shellCommand(script string, outputPaths ...string) *repb.Command {
-	return &repb.Command{
-		Arguments:            []string{"sh", "-c", script},
-		EnvironmentVariables: []*repb.Command_EnvironmentVariable{{Name: "PATH", Value: "/usr/bin:/bin"}},
-		OutputPaths:          outputPaths,
-	}
-}
-
 func readBlob(t *testing.T, store *cas.Store, digest *repb.Digest) string {
 	t.Helper()
 	key, err := cas.KeyFromDigest(digest)
@@ -78,10 +76,12 @@ func TestRunsCommandOnStagedInputsAndCollectsOutputs(t *testing.T) {
 	root := putDirectory(t, store, &repb.Directory{
 		Directories: []*repb.DirectoryNode{{Name: "src", Digest: source}},
 	})
-	command := shellCommand(
-		"cat src/input.txt > out/file.txt && mkdir -p out/dir/sub && echo nested > out/dir/sub/nested.txt && echo said >&2",
-		"out/file.txt", "out/dir", "out/absent",
+	command := testprogram.Command(t,
+		"copy", "src/input.txt", "out/file.txt",
+		"write", "out/dir/sub/nested.txt", "nested\n",
+		"stderr", "said\n",
 	)
+	command.OutputPaths = []string{"out/file.txt", "out/dir", "out/absent"}
 
 	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
 	if err != nil {
@@ -127,7 +127,8 @@ func TestRunsInWorkingDirectoryWithItsOwnTempDirectory(t *testing.T) {
 	root := putDirectory(t, store, &repb.Directory{
 		Directories: []*repb.DirectoryNode{{Name: "pkg", Digest: putDirectory(t, store, &repb.Directory{})}},
 	})
-	command := shellCommand(`basename "$PWD" > where && test -d "$TMPDIR" && test "$TMPDIR" != /tmp`, "where")
+	command := testprogram.Command(t, "where", "where", "checktemp", os.TempDir())
+	command.OutputPaths = []string{"where"}
 	command.WorkingDirectory = "pkg"
 
 	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
@@ -137,7 +138,7 @@ func TestRunsInWorkingDirectoryWithItsOwnTempDirectory(t *testing.T) {
 	if result.ExitCode != 0 {
 		t.Fatalf("exit code %d", result.ExitCode)
 	}
-	if contents := readBlob(t, store, result.OutputFiles[0].Digest); contents != "pkg\n" {
+	if contents := readBlob(t, store, result.OutputFiles[0].Digest); contents != "pkg" {
 		t.Fatalf("ran in %q", contents)
 	}
 }
@@ -151,7 +152,7 @@ func TestReportsMissingInputs(t *testing.T) {
 		Directories: []*repb.DirectoryNode{{Name: "dir", Digest: missingDirectory.Digest()}},
 	})
 
-	_, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, shellCommand("true"))
+	_, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, testprogram.Command(t))
 	var missingErr *cas.MissingBlobsError
 	if !errors.As(err, &missingErr) {
 		t.Fatalf("returned %v", err)
@@ -166,7 +167,7 @@ func TestTimeoutKillsTheActionAndKeepsItsOutput(t *testing.T) {
 	root := putDirectory(t, store, &repb.Directory{})
 	action := &repb.Action{InputRootDigest: root, Timeout: durationpb.New(200 * time.Millisecond)}
 
-	result, err := executor.Execute(context.Background(), action, shellCommand("echo started; exec sleep 60"))
+	result, err := executor.Execute(context.Background(), action, testprogram.Command(t, "stdout", "started\n", "sleep", "60"))
 	var timeoutErr *TimeoutError
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf("returned %v", err)
@@ -182,7 +183,7 @@ func TestNoProcessOutlivesItsAction(t *testing.T) {
 	marker := filepath.Join(t.TempDir(), "survived")
 
 	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root},
-		shellCommand("(sleep 1; touch "+marker+") &"))
+		testprogram.Command(t, "spawn", marker))
 	if err != nil || result.ExitCode != 0 {
 		t.Fatalf("result %v, %v", result, err)
 	}
@@ -192,47 +193,77 @@ func TestNoProcessOutlivesItsAction(t *testing.T) {
 	}
 }
 
-func TestReportsExitCodeAndSignal(t *testing.T) {
+func TestReportsExitCode(t *testing.T) {
 	executor, store := newExecutor(t)
 	root := putDirectory(t, store, &repb.Directory{})
-	for script, expected := range map[string]int32{"exit 3": 3, "kill -TERM $$": 128 + 15} {
-		result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, shellCommand(script))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.ExitCode != expected {
-			t.Errorf("%s exited with %d", script, result.ExitCode)
-		}
+	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, testprogram.Command(t, "exit", "3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExitCode != 3 {
+		t.Errorf("exited with %d", result.ExitCode)
+	}
+}
+
+func TestFollowsSymlinksToDirectoriesThroughOtherSymlinks(t *testing.T) {
+	executor, store := newExecutor(t)
+	// A Directory lists its symlinks by name, so "a" comes before the "b" it
+	// leads through.
+	root := putDirectory(t, store, &repb.Directory{
+		Directories: []*repb.DirectoryNode{{Name: "dir", Digest: putDirectory(t, store, &repb.Directory{
+			Files: []*repb.FileNode{{Name: "file.txt", Digest: put(t, store, "through links")}},
+		})}},
+		Symlinks: []*repb.SymlinkNode{{Name: "a", Target: "b"}, {Name: "b", Target: "dir"}},
+	})
+	command := testprogram.Command(t, "copy", "a/file.txt", "out")
+	command.OutputPaths = []string{"out"}
+
+	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExitCode != 0 {
+		t.Fatalf("exit code %d, stderr %q", result.ExitCode, readBlob(t, store, result.StderrDigest))
+	}
+	if contents := readBlob(t, store, result.OutputFiles[0].Digest); contents != "through links" {
+		t.Fatalf("output file contains %q", contents)
 	}
 }
 
 func TestFindsProgramInCommandPath(t *testing.T) {
 	directory := t.TempDir()
-	program := filepath.Join(directory, "tool")
-	if err := os.WriteFile(program, []byte("#!/bin/sh\n"), 0o755); err != nil {
+	fileName := "tool"
+	if runtime.GOOS == "windows" {
+		fileName = "tool.exe"
+	}
+	program := filepath.Join(directory, fileName)
+	if err := os.WriteFile(program, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	found, err := findProgram("tool", t.TempDir(), "/nonexistent:"+directory)
+	nonexistent := filepath.Join(t.TempDir(), "nonexistent")
+	found, err := findProgram("tool", t.TempDir(), nonexistent+string(os.PathListSeparator)+directory)
 	if err != nil || found != program {
 		t.Fatalf("found %q, %v", found, err)
 	}
-	if _, err := findProgram("tool", t.TempDir(), "/nonexistent"); err == nil || !strings.Contains(err.Error(), "tool") {
+	if _, err := findProgram("tool", t.TempDir(), nonexistent); err == nil || !strings.Contains(err.Error(), "tool") {
 		t.Fatalf("found a program that is not in PATH: %v", err)
 	}
-	relative, err := findProgram("bin/tool", "/work", "")
-	if err != nil || relative != "/work/bin/tool" {
+	work := filepath.FromSlash("/work")
+	relative, err := findProgram("bin/tool", work, "")
+	if err != nil || relative != filepath.Join(work, "bin", "tool") {
 		t.Fatalf("resolved %q, %v", relative, err)
 	}
 }
 
 func TestRejectsPathsThatLeaveTheActionDirectory(t *testing.T) {
+	work := filepath.FromSlash("/work")
 	for _, path := range []string{"../escape", "/absolute"} {
-		if _, err := resolveRelative("/work", path); err == nil {
+		if _, err := resolveRelative(work, path); err == nil {
 			t.Errorf("accepted %q", path)
 		}
 	}
-	for path, expected := range map[string]string{"": "/work", ".": "/work", "a/b": "/work/a/b"} {
-		resolved, err := resolveRelative("/work", path)
+	for path, expected := range map[string]string{"": work, ".": work, "a/b": filepath.Join(work, "a", "b")} {
+		resolved, err := resolveRelative(work, path)
 		if err != nil || resolved != expected {
 			t.Errorf("resolved %q to %q, %v", path, resolved, err)
 		}

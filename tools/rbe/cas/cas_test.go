@@ -223,3 +223,34 @@ func TestKeyFromDigestRejectsInvalidDigests(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoveTreeLeavesLinkedBlobsReadOnly(t *testing.T) {
+	store := openStore(t, t.TempDir(), 1<<20)
+	key := keyOf("linked")
+	if err := store.Put(key, []byte("linked")); err != nil {
+		t.Fatal(err)
+	}
+	tree := filepath.Join(t.TempDir(), "tree")
+	if err := os.MkdirAll(filepath.Join(tree, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Link(key, filepath.Join(tree, "sub", "file")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("sub", filepath.Join(tree, "link")); err != nil {
+		t.Fatal(err)
+	}
+	if err := RemoveTree(tree); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(tree); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("the tree is still there: %v", err)
+	}
+	info, err := os.Stat(store.blobPath(key))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&0o200 != 0 {
+		t.Fatal("removing a link made the blob writable")
+	}
+}

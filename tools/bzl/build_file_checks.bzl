@@ -179,6 +179,13 @@ def _attribute_strings(value):
         return strings
     return []
 
+def _clippy_tag_violations(calls):
+    return [
+        'rust_clippy_test "%s" must have the "clippy" tag' % call.name
+        for call in calls
+        if call.function == "rust_clippy_test" and "clippy" not in call.attributes.get("tags", [])
+    ]
+
 def _runfiles_directory_variable_violations(rules):
     violations = []
     for rule_name, rule in rules:
@@ -216,6 +223,7 @@ def build_file_violations(package_name, rules):
         _order_violations(calls) +
         _pyright_violations(calls, rules) +
         _codegen_testdata_violations(calls) +
+        _clippy_tag_violations(calls) +
         _runfiles_directory_variable_violations(rules)
     )
 

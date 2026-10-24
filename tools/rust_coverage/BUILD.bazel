@@ -18,7 +18,10 @@ rust_binary(
 rust_clippy_test(
     name = "clippy_test",
     size = "small",
-    tags = ["precommit"],
+    tags = [
+        "clippy",
+        "precommit",
+    ],
     targets = [":collect_rust_coverage"],
 )
 

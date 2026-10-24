@@ -21,7 +21,12 @@ import (
 
 	"github.com/define-lang/define/tools/rbe/cas"
 	"github.com/define-lang/define/tools/rbe/execution"
+	"github.com/define-lang/define/tools/rbe/testprogram"
 )
+
+func TestMain(m *testing.M) {
+	testprogram.Main(m)
+}
 
 type client struct {
 	connection *grpc.ClientConn
@@ -120,15 +125,10 @@ func (client *client) execute(t *testing.T, actionDigest *repb.Digest) (*repb.Ex
 	return response, operations
 }
 
-func (client *client) action(t *testing.T, script string, outputPaths ...string) *repb.Digest {
+func (client *client) action(t *testing.T, command *repb.Command) *repb.Digest {
 	t.Helper()
-	command := client.uploadMessage(t, &repb.Command{
-		Arguments:            []string{"sh", "-c", script},
-		EnvironmentVariables: []*repb.Command_EnvironmentVariable{{Name: "PATH", Value: "/usr/bin:/bin"}},
-		OutputPaths:          outputPaths,
-	})
 	return client.uploadMessage(t, &repb.Action{
-		CommandDigest:   command,
+		CommandDigest:   client.uploadMessage(t, command),
 		InputRootDigest: client.uploadMessage(t, &repb.Directory{}),
 	})
 }
@@ -228,7 +228,9 @@ func TestByteStreamWriteThenReadFromOffset(t *testing.T) {
 
 func TestExecuteRunsActionThenServesItFromTheCache(t *testing.T) {
 	client := startServer(t)
-	actionDigest := client.action(t, "echo built > out", "out")
+	command := testprogram.Command(t, "write", "out", "built\n")
+	command.OutputPaths = []string{"out"}
+	actionDigest := client.action(t, command)
 
 	response, operations := client.execute(t, actionDigest)
 	if response.Status.GetCode() != int32(codes.OK) || response.CachedResult || response.Result.ExitCode != 0 {
@@ -259,7 +261,7 @@ func TestExecuteRunsActionThenServesItFromTheCache(t *testing.T) {
 
 func TestFailedActionIsNotCached(t *testing.T) {
 	client := startServer(t)
-	actionDigest := client.action(t, "exit 1")
+	actionDigest := client.action(t, testprogram.Command(t, "exit", "1"))
 	response, _ := client.execute(t, actionDigest)
 	if response.Result.ExitCode != 1 {
 		t.Fatalf("response %v", response)

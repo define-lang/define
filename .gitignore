@@ -21,6 +21,8 @@
 
 # Bazel
 /bazel-*
+# Made by //tools/windows_vm:bazel_tools_override
+/.windows_vm/
 /vendored/re2/MODULE.bazel.lock
 /vendored/re2/bazel-*
 

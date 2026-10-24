@@ -9,14 +9,24 @@ go_binary(
 
 go_library(
     name = "rbe_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "main.go",
+        "main_unix.go",
+        "main_windows.go",
+    ],
     importpath = "github.com/define-lang/define/tools/rbe",
     deps = [
         "//tools/rbe/cas",
         "//tools/rbe/execution",
         "//tools/rbe/service",
         "@org_golang_google_grpc//:grpc",
-    ],
+    ] + select({
+        "@rules_go//go/platform:windows": [
+            "@org_golang_x_sys//windows/svc",
+            "@org_golang_x_sys//windows/svc/eventlog",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 check_build_file()

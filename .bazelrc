@@ -33,6 +33,38 @@ build:windows_cross --enable_runfiles
 build:windows_cross --@aspect_rules_js//js:use_hermetic_launcher
 common:windows_cross --repo_env=BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1
 
+# Build for Windows here, and run the tests on the Windows VM; see
+# tools/windows_vm/README.md.
+build:windows_vm --config=windows_cross
+build:windows_vm --remote_executor=grpc://localhost:2223
+# Linux Bazel has no tw.exe or xml.exe, which Windows test actions run. See
+# //tools/windows_vm:bazel_tools_override, which makes this directory.
+build:windows_vm --override_repository=bazel_tools=%workspace%/.windows_vm/bazel_tools
+# The Linux platform comes first, so that actions with no constraints of their
+# own keep running here. Test actions get the VM's platform, because their
+# default test toolchain requires the target platform's constraints.
+build:windows_vm --extra_execution_platforms=//tools/platforms:local_linux_for_windows_cross,//tools/platforms:windows_x86_64_msvc
+# The VM can run only test actions. Everything else runs here, and stays out of
+# the VM's cache.
+build:windows_vm --spawn_strategy=worker,sandboxed,local
+build:windows_vm --strategy=TestRunner=remote
+build:windows_vm --modify_execution_info=^(?!TestRunner$).*=+no-remote
+# Linux Bazel gives tests its own PATH. This is the VM's. Bazel reads a
+# backslash here as an escape, even in quotes.
+# TODO: Revisit once a Bazel release sets the default PATH from the execution
+# platform: https://github.com/bazelbuild/bazel/pull/32049. Tests here also
+# need Git's directory, which Bazel's Windows default lacks.
+build:windows_vm --test_env='PATH=C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;C:\\Program Files\\PowerShell\\7;C:\\Program Files\\Git\\cmd'
+# Linux runs these tests instead:
+# - Clippy's runner is a Linux program.
+# - Bazel runs a test tagged local only on this host.
+# - A skylib unittest's result is decided during analysis, so it is the same on
+#   every platform, but skylib picks its script for Linux here.
+# TODO: Run the clippy tests here once the rules_rust that rules_rs uses
+# builds their runner for the test's execution platform:
+# https://github.com/bazelbuild/rules_rust/pull/4278
+build:windows_vm --test_tag_filters=-clippy,-local,-skylib_unittest
+
 # Show full command lines on failure
 build --verbose_failures
 

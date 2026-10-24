@@ -5,6 +5,10 @@ action runs in its own directory, with its inputs hardlinked from a content
 store on a dedicated XFS filesystem. Every build on the machine shares its
 cache.
 
+The Windows VM also runs `rbe`, as a Windows service that runs tests; see
+[../windows_vm/README.md](../windows_vm/README.md). This README covers the Linux
+service.
+
 ## Requirements
 
 - Linux with systemd.

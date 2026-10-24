@@ -1,0 +1,13 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_library(
+    name = "testprogram",
+    testonly = True,
+    srcs = ["testprogram.go"],
+    importpath = "github.com/define-lang/define/tools/rbe/testprogram",
+    visibility = ["//tools/rbe:__subpackages__"],
+    deps = ["@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:execution"],
+)
+
+check_build_file()

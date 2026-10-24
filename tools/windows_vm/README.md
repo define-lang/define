@@ -51,6 +51,57 @@ If `define-windows` is listed, use it:
    ssh -p 2222 Administrator@localhost 'cd C:\src\define4; bazelisk build //...'
    ```
 
+## Running Tests on the VM
+
+`--config=windows_vm` builds everything on this host for Windows, as
+`--config=windows_cross` does, and runs the tests in the VM. Results, logs,
+`--test_filter` and cached results work as in any `bazelisk test`:
+
+```sh
+bazelisk test --config=windows_vm //...
+```
+
+The VM runs a remote execution service that only runs tests; every other action
+runs on this host. Linux runs these tests instead, so the VM skips them:
+
+- Clippy tests, because their runner is a Linux program.
+- Tests tagged `local`, which Bazel runs only on this host.
+- skylib unittests, tagged `skylib_unittest`, whose results don't depend on the
+  platform.
+
+### Setting it up
+
+1. Install or update the service in the VM. Run this again after changing
+   `tools/rbe`:
+
+   ```sh
+   bazelisk run //tools/windows_vm:deploy_rbe
+   ```
+
+   The service listens in the VM on port 8980, and the VM forwards
+   `localhost:2223` on this host to it. Any account on this machine can use that
+   port to run commands in the VM. A VM created before this forward existed gets
+   it from `deploy_rbe`, but only after the VM restarts, which `deploy_rbe`
+   tells you about and leaves to you.
+
+2. In each checkout that uses `--config=windows_vm`, make the `bazel_tools` that
+   it needs, and make it again after each Bazel upgrade:
+
+   ```sh
+   bazelisk run //tools/windows_vm:bazel_tools_override
+   ```
+
+   Bazel on Linux lacks `tw.exe` and `xml.exe`, which every test needs on
+   Windows (bazelbuild/bazel#19209). This copies them from the Windows release
+   of the same Bazel version into `.windows_vm/` in the checkout. Without it,
+   `--config=windows_vm` fails because the directory doesn't exist. After a
+   Bazel upgrade, it fails because Bazel "is not compatible with module
+   bazel_tools" until you run this again.
+
+The service's store and action directories are in `C:\rbe`, and it keeps up to
+30 GiB of blobs there. Its messages are in the Application event log, from the
+source `rbe`.
+
 ## Sharing the VM
 
 Several agents may use the VM at once, so:
@@ -64,6 +115,9 @@ Several agents may use the VM at once, so:
   takes 1 to 3 GB while builds run, so run only a few builds at once. When a
   build fails because the VM ran out of memory, stop idle Bazel servers in your
   own directory with `bazelisk shutdown`.
+- **The remote execution service is shared.** Every checkout's
+  `--config=windows_vm` tests run in the one service. Deploying it restarts the
+  service, which can fail other checkouts' running tests.
 
 ## Shutting the VM Down
 

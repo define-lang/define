@@ -8,6 +8,11 @@ import click
 
 DOMAIN_NAME = "define-windows"
 
+# The port in the VM that its remote execution service listens on, and the
+# port on this host that forwards to it. See deploy_rbe.py.
+RBE_VM_PORT = 8980
+DEFAULT_RBE_PORT = 2223
+
 # A session VM needs no root access, libvirt group, or file permissions for the
 # system's QEMU user.
 LIBVIRT_URI = "qemu:///session"

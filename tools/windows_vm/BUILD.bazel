@@ -4,6 +4,21 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_binary(
+    name = "bazel_tools_override",
+    srcs = ["bazel_tools_override.py"],
+    deps = ["@pypi//click"],
+)
+
+py_test(
+    name = "bazel_tools_override_test",
+    size = "small",
+    srcs = ["bazel_tools_override_test.py"],
+    deps = [
+        ":bazel_tools_override",
+    ],
+)
+
+py_binary(
     name = "create_windows_vm",
     srcs = ["create_windows_vm.py"],
     data = [
@@ -39,6 +54,27 @@ py_test(
 )
 
 py_binary(
+    name = "deploy_rbe",
+    srcs = ["deploy_rbe.py"],
+    data = ["install_rbe.ps1"],
+    env = {"INSTALL_RBE": "$(rlocationpath install_rbe.ps1)"},
+    deps = [
+        ":vm",
+        "//tools:runfiles",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "deploy_rbe_test",
+    size = "small",
+    srcs = ["deploy_rbe_test.py"],
+    deps = [
+        ":deploy_rbe",
+    ],
+)
+
+py_binary(
     name = "sync_windows_vm",
     srcs = ["sync_windows_vm.py"],
     deps = [
@@ -63,8 +99,12 @@ py_library(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":bazel_tools_override",
+        ":bazel_tools_override_test",
         ":create_windows_vm",
         ":create_windows_vm_test",
+        ":deploy_rbe",
+        ":deploy_rbe_test",
         ":sync_windows_vm",
         ":sync_windows_vm_test",
         ":vm",
