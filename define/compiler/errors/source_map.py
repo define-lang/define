@@ -35,8 +35,6 @@ def escape_invisible(text: str) -> str:
 def _format_location_with_source_line(
     location: ast.SourceLocation,
     source_line: str | None,
-    *,
-    escape_invisible_characters: bool = False,
 ) -> str:
     """Format a location with its source line, underlined with carets.
 
@@ -63,7 +61,9 @@ def _format_location_with_source_line(
         end = location.end_column - indentation
     else:
         end = len(code)
-    if escape_invisible_characters:
+    # A raw control character could change what the terminal shows, so any
+    # character that is not printable shows as its escape.
+    if not code.isprintable():
         # Escaped characters are wider, so the underline moves with them.
         start = len(escape_invisible(code[:start]))
         end = len(escape_invisible(code[:end]))
@@ -91,20 +91,14 @@ class SourceMap:
         self._in_memory_source = in_memory_source
         self._file_lines: dict[PurePosixPath, list[str] | None] = {}
 
-    def format_location(
-        self, location: ast.SourceLocation, *, escape_invisible_characters: bool = False
-    ) -> str:
+    def format_location(self, location: ast.SourceLocation) -> str:
         """Format a location with its source code, underlined with carets."""
         lines = self._source_lines(location.file_path)
         if lines is None:
             return _format_location_with_source_line(location, None)
         line_index = location.line - 1
         source_line = lines[line_index] if 0 <= line_index < len(lines) else ""
-        return _format_location_with_source_line(
-            location,
-            source_line,
-            escape_invisible_characters=escape_invisible_characters,
-        )
+        return _format_location_with_source_line(location, source_line)
 
     @functools.cached_property
     def _in_memory_lines(self) -> list[str] | None:

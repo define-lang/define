@@ -37,11 +37,7 @@ class DefineSyntaxError(exceptions.DefineError):
 
     def format(self, sources: source_map.SourceMap) -> str:
         """Format the error with the source code at its location."""
-        # A syntax error can be about an invisible character, so it must show.
-        location = sources.format_location(
-            self.location, escape_invisible_characters=True
-        )
-        return f"{location}\n{self.message}"
+        return f"{sources.format_location(self.location)}\n{self.message}"
 
 
 class DefineTokenError(DefineSyntaxError):

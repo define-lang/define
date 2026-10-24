@@ -138,18 +138,25 @@ def test_format_location_without_file_or_in_memory_source_names_location_only():
     assert sources.format_location(_location(2, 5, 39, None)) == "line 2, column 5"
 
 
-def test_format_location_shows_invisible_characters_unescaped():
-    sources = source_map.SourceMap({}, in_memory_source="a\u200dbc\n")
-    assert sources.format_location(_location(1, 3, 4, None)) == (
-        "line 1, column 3\n    a\u200dbc\n      ^^"
+def test_format_location_shows_printable_non_ascii_characters_unescaped():
+    sources = source_map.SourceMap({}, in_memory_source="caf\u00e9s\n")
+    assert sources.format_location(_location(1, 4, 5, None)) == (
+        "line 1, column 4\n    caf\u00e9s\n       ^^"
     )
 
 
 def test_format_location_escapes_invisible_characters_and_shifts_underline():
+    sources = source_map.SourceMap({}, in_memory_source="a\u200dbc\n")
+    assert sources.format_location(_location(1, 3, 4, None)) == (
+        "line 1, column 3\n    a\\u200dbc\n           ^^"
+    )
+
+
+def test_format_location_escapes_control_characters_and_shifts_underline():
     sources = source_map.SourceMap({}, in_memory_source="a\x01bc\n")
-    assert sources.format_location(
-        _location(1, 3, 4, None), escape_invisible_characters=True
-    ) == ("line 1, column 3\n    a\\x01bc\n         ^^")
+    assert sources.format_location(_location(1, 3, 4, None)) == (
+        "line 1, column 3\n    a\\x01bc\n         ^^"
+    )
 
 
 def test_format_location_counts_lines_by_newlines_only():
