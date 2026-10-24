@@ -10,30 +10,46 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.errors import parser_exceptions
+from define.compiler import ast
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
-def test_file_all_spaces(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("   ")
-    assert str(exc_info.value.char) == " "
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 1
+def test_file_all_spaces(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics("   ")
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=1, column=1, end_line=1, end_column=3)
+        ),
+    ]
+    assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=1
+    )
 
 
-def test_file_spaces_and_newlines_only(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(" \n  \n ")
-    assert str(exc_info.value.char) == " "
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_column == 1
+def test_file_spaces_and_newlines_only(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics(" \n  \n ")
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=1, column=1, end_line=1, end_column=1)
+        ),
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=2, column=1, end_line=2, end_column=2)
+        ),
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=1)
+        ),
+    ]
+    assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=1
+    )
 
 
 def test_extra_space_after_define_in_position_definition(parse: Parse):

@@ -125,20 +125,23 @@ class FileStructuralValidator:
         parser_file_path = (
             context.full_path.as_posix_path() if context.is_filesystem_context else None
         )
-        parse_result = parser.parse(source, parser_file_path)
+        # Source that is not from the filesystem need not follow the indentation
+        # rules.
+        parse_result = parser.parse(
+            source,
+            parser_file_path,
+            check_indentation=context.is_filesystem_context,
+        )
         tracker.mark_parse_finished()
 
         if parse_result.exception is not None:
-            indentation_diags: list[diagnostics.Diagnostic] = (
-                parse_result.diagnostics if context.is_filesystem_context else []
-            )
             return validation_result.FileValidationResult(
                 exception=parse_result.exception,
                 source_digest=source_digest,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
-                file_diagnostics=indentation_diags,
+                file_diagnostics=parse_result.diagnostics,
                 definition_results=[],
             )
 
@@ -167,9 +170,7 @@ class FileStructuralValidator:
             file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),
-            file_diagnostics=parse_result.diagnostics
-            if context.is_filesystem_context
-            else [],
+            file_diagnostics=parse_result.diagnostics,
             definition_results=definition_results,
         )
 

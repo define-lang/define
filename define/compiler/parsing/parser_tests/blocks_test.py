@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_empty_block_on_position(parse: Parse):
@@ -440,77 +443,103 @@ def test_quality_assignment_missing_type_keyword(parse: Parse):
 
 
 def test_whitespace_line_at_start_of_potential_position_definition_block(
-    parse: Parse,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    \n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\n"
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path> {\n"
+        + "    \n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=1,
+                end_line=2,
+                end_column=4,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 1
+    ]
 
 
-def test_whitespace_line_after_quality_assignment_block(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "    \n"
-            + "}\n"
+def test_whitespace_line_after_quality_assignment_block(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "    \n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=5,
+                column=1,
+                end_line=5,
+                end_column=4,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 1
+    ]
 
 
 def test_whitespace_line_at_start_of_quality_assignment_block(
-    parse: Parse,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        \n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\n"
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        \n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=1,
+                end_line=3,
+                end_column=8,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 1
+    ]
 
 
 def test_whitespace_line_after_quality_assignment_statement(
-    parse: Parse,
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "        \n"
-            + "    }\n"
-            + "}\n"
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "        \n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=4,
+                column=1,
+                end_line=4,
+                end_column=8,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 1
+    ]
 
 
 def test_control_character_after_potential_position_definition_block_close(

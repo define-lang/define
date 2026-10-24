@@ -165,7 +165,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Adds a diagnostic if the line at `line_start` is indented `actual`
-    /// spaces instead of `expected`.
+    /// spaces instead of `expected` and the parser checks indentation.
     #[inline(always)]
     pub(crate) fn check_indentation(
         &mut self,
@@ -173,7 +173,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         expected: usize,
         actual: usize,
     ) -> PyResult<()> {
-        if actual != expected {
+        if actual != expected && self.checks_indentation {
             self.incorrect_indentation(line_start, expected, actual)?;
         }
         Ok(())
@@ -255,17 +255,19 @@ impl<'py, 'source> Parser<'py, 'source> {
                 self.scanner.consume_bytes(leading_space_count);
                 return Ok(Some(leading_space_count));
             }
-            // The only unusual line that does not end in an error is a comment.
             LineEnd::Unusual {
                 leading_space_count,
                 length,
             } => {
                 self.end_unusual_line(leading_space_count, length)?;
-                self.check_indentation(
-                    line_start,
-                    expected_comment_indentation,
-                    leading_space_count,
-                )?;
+                // A line of only spaces has no indentation to check.
+                if leading_space_count < length {
+                    self.check_indentation(
+                        line_start,
+                        expected_comment_indentation,
+                        leading_space_count,
+                    )?;
+                }
             }
         }
         Ok(None)
@@ -331,9 +333,14 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn end_unusual_line(&mut self, leading_space_count: usize, length: usize) -> ParseResult<()> {
         let start = self.scanner.position;
         self.scanner.consume_bytes(leading_space_count);
-        // The line ends with spaces.
+        // The line ends with spaces. Only spaces can come before the end of
+        // an unusual line that has no comment.
         if !self.scanner.next_byte_is(COMMENT_START) {
-            return Err(self.errors.trailing_whitespace_error(start, start, " "));
+            let last_space = self.scanner.position.previous_column();
+            self.diagnostics
+                .trailing_whitespace_diagnostic(start, last_space)?;
+            self.scanner.consume_line_feed();
+            return Ok(());
         }
         let comment_start = self.scanner.position;
         let comment = self.scanner.consume_text(length - leading_space_count);
@@ -355,11 +362,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         // The comment ends with spaces.
         if content_length < comment.bytes.len() {
             let trailing_whitespace = comment_start.after(comment.slice(..content_length));
-            return Err(self.errors.trailing_whitespace_error(
+            self.diagnostics.trailing_whitespace_diagnostic(
                 trailing_whitespace,
-                trailing_whitespace,
-                " ",
-            ));
+                self.scanner.position.previous_column(),
+            )?;
         }
         self.scanner.consume_line_feed();
         Ok(())

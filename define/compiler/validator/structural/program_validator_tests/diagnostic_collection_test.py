@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
@@ -50,3 +51,16 @@ def test_diagnostics_in_source_order(
     assert diags[1].location.line == 2
     assert diags[1].location.column == 31
     assert diags[1].reserved_name == "standard"
+
+
+def test_non_filesystem_source_reports_trailing_space_but_not_indentation(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    [file_result] = result.file_results
+    assert file_result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=9, column=60, end_line=9, end_column=61)
+        )
+    ]

@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_valid_terminator(parse: Parse):
@@ -125,34 +128,55 @@ def test_space_before_terminator(parse: Parse):
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
-def test_trailing_space_before_newline(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("define the potential position<standard:/path>. \n")
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_column == 47
+def test_trailing_space_before_newline(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics("define the potential position<standard:/path>. \n")
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=1,
+                column=47,
+                end_line=1,
+                end_column=47,
+            )
+        )
+    ]
 
 
-def test_several_trailing_spaces_before_newline(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>.   \n")
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_column == 64
+def test_several_trailing_spaces_before_newline(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path>.   \n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=1,
+                column=64,
+                end_line=1,
+                end_column=66,
+            )
+        )
+    ]
 
 
-def test_trailing_space_at_end_of_source(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>. ")
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_column == 64
+def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path>. "
+    )
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=64)
+        ),
+    ]
+    assert isinstance(result.exception, parser_exceptions.MissingNewlineAtEof)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=65, end_line=1, end_column=65
+    )
 
 
 def test_missing_terminator_after_typed_reference_in_quality_assignment(

@@ -12,4 +12,9 @@ class ParseResult:
     @property
     def exception(self) -> parser_exceptions.DefineSyntaxError | None: ...
 
-def parse(source: bytes, file_path: pathlib.PurePosixPath | None) -> ParseResult: ...
+def parse(
+    source: bytes,
+    file_path: pathlib.PurePosixPath | None,
+    *,
+    check_indentation: bool = True,
+) -> ParseResult: ...

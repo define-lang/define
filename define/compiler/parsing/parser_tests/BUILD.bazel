@@ -50,6 +50,7 @@ py_test(
         "potential_literal_definition_test.py",
         "quality_implication_test.py",
         "statement_terminators_test.py",
+        "trailing_whitespace_test.py",
         "trigger_conditions_test.py",
         "typed_name_references_test.py",
         "value_definition_test.py",

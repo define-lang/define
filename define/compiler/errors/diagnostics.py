@@ -1259,6 +1259,12 @@ class IncorrectIndentationDiagnostic(Diagnostic):
     )
 
 
+class TrailingWhitespaceDiagnostic(Diagnostic):
+    """Diagnostic for spaces at the end of a line."""
+
+    message_format: ClassVar[str] = "lines may not end with spaces"
+
+
 class InferredRequirementViolationDiagnostic(Diagnostic):
     """Diagnostic for when an automatically inferred requirement is violated.
 

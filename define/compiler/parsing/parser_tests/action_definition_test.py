@@ -1051,81 +1051,113 @@ def test_no_space_before_and_it_does(parse: Parse):
     assert exc_info.value.location.end_column == 8
 
 
-def test_comment_trailing_space_first_in_action_block(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    # comment \n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_first_in_action_block(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    # comment \n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=14,
+                end_line=2,
+                end_column=14,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 14
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 14
+    ]
 
 
-def test_comment_trailing_space_after_quality_implication(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</q>.\n"
-            + "    # comment \n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_after_quality_implication(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</q>.\n"
+        + "    # comment \n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=14,
+                end_line=3,
+                end_column=14,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 14
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 14
+    ]
 
 
-def test_comment_trailing_space_after_interface_position(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    # comment \n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_after_interface_position(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    # comment \n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=14,
+                end_line=3,
+                end_column=14,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 14
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 14
+    ]
 
 
-def test_comment_trailing_space_before_action_close(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "    # comment \n"
-            + "}\n"
+def test_comment_trailing_space_before_action_close(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "    # comment \n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=7,
+                column=14,
+                end_line=7,
+                end_column=14,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 7
-    assert exc_info.value.location.column == 14
-    assert exc_info.value.location.end_line == 7
-    assert exc_info.value.location.end_column == 14
+    ]
 
 
 def test_text_after_action_close(parse: Parse):
@@ -1175,23 +1207,31 @@ def test_no_space_before_trigger_conditions_brace(parse: Parse):
     assert exc_info.value.location.end_column == 20
 
 
-def test_comment_trailing_space_in_action_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        # comment \n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_in_action_statements_block(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        # comment \n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=6,
+                column=18,
+                end_line=6,
+                end_column=18,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 18
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 18
+    ]
 
 
 def test_missing_space_between_words_of_trigger_conditions_block(

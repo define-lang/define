@@ -99,14 +99,6 @@ class ControlCharacterError(DefineCharError):
     message_format: ClassVar[str] = "Control character ({escaped_char}) is not allowed."
 
 
-# TODO: Trailing whitespace is always spaces, so this should not take a `char`,
-# and the parser should not have to pass it " ".
-class TrailingWhitespaceError(DefineCharError):
-    """Raised when trailing whitespace is found."""
-
-    message_format: ClassVar[str] = "Trailing whitespace is not allowed."
-
-
 class InvalidLocalNameCharacter(DefineCharError):
     """Wrote something invalid where only a local name is accepted."""
 

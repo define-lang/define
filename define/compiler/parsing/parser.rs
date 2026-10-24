@@ -52,6 +52,8 @@ pub(crate) struct Parser<'py, 'source> {
     typed_name_text_buffer: Vec<u8>,
     errors: SyntaxErrors<'py>,
     diagnostics: ParserDiagnostics<'py>,
+    /// Whether a line with the wrong indentation gets a diagnostic.
+    checks_indentation: bool,
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
@@ -59,6 +61,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         py: Python<'py>,
         source: &'source [u8],
         file_path: Option<FilePath<'py>>,
+        checks_indentation: bool,
     ) -> PyResult<Self> {
         Ok(Self {
             scanner: Scanner::new(source),
@@ -68,10 +71,11 @@ impl<'py, 'source> Parser<'py, 'source> {
             typed_name_text_buffer: Vec::new(),
             errors: SyntaxErrors::new(py, file_path.clone()),
             diagnostics: ParserDiagnostics::new(py, file_path),
+            checks_indentation,
         })
     }
 
-    /// The diagnostics that the parse found, in source order.
+    /// The diagnostics that the parse found, in the order it found them.
     pub(crate) fn into_diagnostics(self) -> PyResult<Bound<'py, PyList>> {
         self.diagnostics.into_list()
     }

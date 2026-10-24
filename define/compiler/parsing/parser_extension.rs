@@ -35,21 +35,24 @@ use pyo3::types::PyList;
 struct PythonParseResult {
     /// The `ast.Program`, unless the parse ended in `exception`.
     program: Option<Py<PyAny>>,
-    /// The diagnostics that the parse found, in source order.
+    /// The diagnostics that the parse found, in the order it found them.
     diagnostics: Py<PyList>,
     /// The `parser_exceptions.DefineSyntaxError` that ended the parse, if any.
     exception: Option<Py<PyAny>>,
 }
 
-/// Parses UTF-8 Define source code into an `ast.Program`.
+/// Parses UTF-8 Define source code into an `ast.Program`. A line with the
+/// wrong indentation gets a diagnostic only if `check_indentation`.
 #[pyfunction]
+#[pyo3(signature = (source, file_path, *, check_indentation = true))]
 fn parse<'py>(
     py: Python<'py>,
     source: &[u8],
     file_path: Option<Bound<'py, PyAny>>,
+    check_indentation: bool,
 ) -> PyResult<PythonParseResult> {
     let file_path = file_path.map(FilePath::new);
-    let mut parser = Parser::new(py, source, file_path)?;
+    let mut parser = Parser::new(py, source, file_path, check_indentation)?;
     let (program, exception) = match parser.parse_program() {
         Ok(program) => (Some(program.into_object().unbind()), None),
         Err(ParseError::Syntax(error)) => (None, Some(error.into_value(py).into_any())),

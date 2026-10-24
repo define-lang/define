@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_trigger_condition_with_local_position(parse: Parse):
@@ -249,42 +252,58 @@ def test_missing_has_a_particle(parse: Parse):
     assert exc_info.value.location.end_column == 26
 
 
-def test_comment_trailing_space_in_trigger_block(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        # comment \n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_in_trigger_block(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        # comment \n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=4,
+                column=18,
+                end_line=4,
+                end_column=18,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 18
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 18
+    ]
 
 
-def test_comment_trailing_space_after_trigger_condition(parse: Parse):
-    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "        # comment \n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_comment_trailing_space_after_trigger_condition(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "        # comment \n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.TrailingWhitespaceDiagnostic(
+            location=ast.SourceLocation(
+                line=5,
+                column=18,
+                end_line=5,
+                end_column=18,
+            )
         )
-    assert exc_info.value.char == " "
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 18
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 18
+    ]
 
 
 def test_position_presence_ends_after_the(parse: Parse):
