@@ -47,23 +47,23 @@ def test_config_failure_still_validates_same_file_cycles(
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
     assert diags[0].location.file_path is None
-    assert diags[0].location.line == 9
-    assert diags[0].location.column == 20
-    assert diags[0].cycle == [
+    assert diags[0].config_path == ".define/project/config.defcl"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert diags[0].universe == "other.example.com:other_universe"
+    assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].location.line == 9
+    assert diags[1].location.column == 20
+    assert diags[1].cycle == [
         "position<my.domain.com:my_lib:/a>",
         "position<my.domain.com:my_lib:/b>",
         "position<my.domain.com:my_lib:/a>",
     ]
-    assert isinstance(
-        diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
-    )
-    assert diags[1].location.file_path is None
-    assert diags[1].config_path == ".define/project/config.defcl"
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 29
-    assert diags[1].universe == "other.example.com:other_universe"
 
 
 def test_external_universe_without_local_deps(
@@ -422,15 +422,15 @@ def test_config_failure_keeps_standard_references(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first = result.all_diagnostics[0]
-    assert isinstance(first, diagnostics.StandardDefinitionNotFoundDiagnostic)
+    assert isinstance(first, diagnostics.NoProjectRootInNonFilesystemContextDiagnostic)
     assert first.location.file_path is None
-    assert first.location.line == 5
-    assert first.location.column == 26
-    assert first.definition_name == "value<standard:/number/missing>"
+    assert first.location.line == 4
+    assert first.location.column == 29
+    assert first.universe == "other.example.com:other_universe"
+    assert first.config_path == ".define/project/config.defcl"
     second = result.all_diagnostics[1]
-    assert isinstance(second, diagnostics.NoProjectRootInNonFilesystemContextDiagnostic)
+    assert isinstance(second, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert second.location.file_path is None
-    assert second.location.line == 4
-    assert second.location.column == 29
-    assert second.universe == "other.example.com:other_universe"
-    assert second.config_path == ".define/project/config.defcl"
+    assert second.location.line == 5
+    assert second.location.column == 26
+    assert second.definition_name == "value<standard:/number/missing>"

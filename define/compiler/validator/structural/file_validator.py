@@ -278,7 +278,7 @@ class DefinitionStructuralValidator:
         """Build a result object from the validator's private state."""
         return validation_result.DefinitionValidationResult(
             definition=self._definition,
-            _diagnostics=self._diagnostics,
+            diagnostics=self._diagnostics,
             reference_edges=self._reference_edges,
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,

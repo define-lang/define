@@ -254,7 +254,7 @@ class Driver:
         first_file = program_validation.file_results[0]
         entry_action = program_validation.entry_action
         if entry_action is None:
-            first_file.add_file_diagnostic(
+            first_file.file_diagnostics.append(
                 diagnostics.EntryPointNotConstructorDiagnostic(
                     location=first_file.definition_results[0].definition.location
                 )

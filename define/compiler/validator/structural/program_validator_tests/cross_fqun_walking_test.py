@@ -278,7 +278,7 @@ def test_sub_root_conflict_continues_validation(
     assert path_diag.path.endswith("lib/parent_target.dfn")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    sub_root_diag = result.file_results[0].diagnostics[2]
+    sub_root_diag = result.file_results[0].diagnostics[1]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.location.file_path == PurePosixPath("test.dfn")
     assert sub_root_diag.location.line == 4
@@ -287,7 +287,7 @@ def test_sub_root_conflict_continues_validation(
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.dfn"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    not_found_diag = result.file_results[0].diagnostics[1]
+    not_found_diag = result.file_results[0].diagnostics[2]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.location.file_path == PurePosixPath("test.dfn")
     assert not_found_diag.location.line == 4
@@ -536,20 +536,20 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].file_path == "wrong_type.dfn"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert isinstance(diags[0].error, config.NotProjectRootError)
+    assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].file_path == "wrong_type.dfn"
     assert (
-        diags[0].definition_name
+        diags[1].definition_name
         == "position<mv:define-lang.org:parent_universe:/wrong_type>"
     )
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 29
-    assert isinstance(diags[1], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert diags[1].location.line == 3
+    assert diags[1].location.line == 4
     assert diags[1].location.column == 29
-    assert isinstance(diags[1].error, config.NotProjectRootError)
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 

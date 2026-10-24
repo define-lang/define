@@ -95,17 +95,17 @@ def test_duplicate_full_fqun_cross_universe_error(
     assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
-    assert diags[0].location.file_path is None
-    assert diags[0].constraint_name == "position<other.example.com:other_lib:/foo>"
-    assert diags[0].first_constraint_line == 3
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 20
     assert isinstance(
-        diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+        diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
+    assert diags[0].location.file_path is None
+    assert diags[0].config_path == ".define/project/config.defcl"
+    assert diags[0].universe == "other.example.com:other_lib"
+    assert isinstance(diags[1], diagnostics.DuplicatePositionConstraintDiagnostic)
     assert diags[1].location.file_path is None
-    assert diags[1].config_path == ".define/project/config.defcl"
-    assert diags[1].universe == "other.example.com:other_lib"
+    assert diags[1].constraint_name == "position<other.example.com:other_lib:/foo>"
+    assert diags[1].first_constraint_line == 3
+    assert diags[1].location.line == 4
+    assert diags[1].location.column == 20

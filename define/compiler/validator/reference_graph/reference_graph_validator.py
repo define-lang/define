@@ -157,7 +157,7 @@ class ReferenceGraphValidator:
                 )
         definition_result = self._definition_results[definition.typed_name]
         for d in result.diagnostics:
-            definition_result.add_diagnostic(d)
+            definition_result.diagnostics.append(d)
         return result
 
     def _validate_action(
@@ -186,7 +186,7 @@ class ReferenceGraphValidator:
                 and requirement.required_state
                 == position_occupancy.PositionOccupancyState.OCCUPIED
             ):
-                definition_result.add_diagnostic(
+                definition_result.diagnostics.append(
                     diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
                         location=requirement.inferred_at,
                         position_name=requirement.position.source_chained_name,

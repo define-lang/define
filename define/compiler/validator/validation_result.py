@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import msgspec
 
@@ -49,7 +49,7 @@ class DefinitionValidationResult(msgspec.Struct):
     """Validation output for one definition within a file."""
 
     definition: ast.GlobalDefinition
-    _diagnostics: list[diagnostics.Diagnostic] = msgspec.field(default_factory=list)
+    diagnostics: list[diagnostics.Diagnostic] = msgspec.field(default_factory=list)
 
     reference_edges: list[reference_graph.ReferenceEdge] = msgspec.field(
         default_factory=list
@@ -60,18 +60,6 @@ class DefinitionValidationResult(msgspec.Struct):
     # Whether each position looked at by an Operation Argument Statement in an
     # action is valid, in source order.
     looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
-
-    def add_diagnostic(self, diagnostic: diagnostics.Diagnostic):
-        """Append a diagnostic to this definition's results."""
-        self._diagnostics.append(diagnostic)
-
-    @property
-    def diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """Diagnostics sorted by source location (line, then column)."""
-        return sorted(
-            self._diagnostics,
-            key=lambda d: (d.location.line, d.location.column),
-        )
 
 
 @dataclass
@@ -86,31 +74,18 @@ class FileValidationResult:
     root_prefix: define_path.DefinePath
     stats: stats.ValidationTimingStats
     file_diagnostics: list[diagnostics.Diagnostic]
-    _post_definition_diagnostics: list[diagnostics.Diagnostic] = field(
-        default_factory=list,
-        init=False,
-        repr=False,
-    )
     # This preserves source order, including duplicate definitions that were
     # diagnosed during file validation.
     definition_results: list[DefinitionValidationResult]
 
-    def add_file_diagnostic(self, diagnostic: diagnostics.Diagnostic):
-        """Append a non-definition diagnostic after per-definition diagnostics."""
-        self._post_definition_diagnostics.append(diagnostic)
-
     @property
     def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
-        """File-level and per-definition diagnostics as a read-only view."""
-        return (
-            list(self.file_diagnostics)
-            + [
-                diagnostic
-                for result in self.definition_results
-                for diagnostic in result.diagnostics
-            ]
-            + list(self._post_definition_diagnostics)
-        )
+        """File-level and per-definition diagnostics, sorted by source location (line, then column)."""
+        all_diagnostics = list(self.file_diagnostics)
+        for result in self.definition_results:
+            all_diagnostics.extend(result.diagnostics)
+        all_diagnostics.sort(key=lambda d: (d.location.line, d.location.column))
+        return all_diagnostics
 
     def edges_to_other_files(self) -> Iterator[reference_graph.ReferenceEdge]:
         """Yield the edges that lead to other files.

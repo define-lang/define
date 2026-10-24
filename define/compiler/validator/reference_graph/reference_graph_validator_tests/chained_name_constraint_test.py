@@ -26,35 +26,35 @@ class TestCreateParticle:
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
-        assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
-        assert diags[0].location.file_path is None
-        assert diags[0].local_name == "wrong"
-        assert diags[0].location.line == 10
-        assert diags[0].location.column == 47
         assert isinstance(
-            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
+        assert diags[0].location.file_path is None
+        assert diags[0].config_path == ".define/project/config.defcl"
+        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].location.line == 4
+        assert diags[0].location.column == 31
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
-        assert diags[1].local_name == "action<wrong>"
-        assert diags[1].preceding_name == "position<pos_a>"
+        assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
-        assert diags[2].local_name == "position<pos_end>"
-        assert diags[2].preceding_name == "action<wrong>"
+        assert diags[2].local_name == "action<wrong>"
+        assert diags[2].preceding_name == "position<pos_a>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 62
+        assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
-        assert diags[3].config_path == ".define/project/config.defcl"
-        assert diags[3].universe == "my.domain.com:my_lib"
-        assert diags[3].location.line == 4
-        assert diags[3].location.column == 31
+        assert diags[3].local_name == "position<pos_end>"
+        assert diags[3].preceding_name == "action<wrong>"
+        assert diags[3].location.line == 10
+        assert diags[3].location.column == 62
 
     def test_chain_second_element_global_not_in_constraints(
         self,
@@ -157,35 +157,35 @@ class TestCreateParticle:
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
-        assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
-        assert diags[0].location.file_path is None
-        assert diags[0].local_name == "child"
-        assert diags[0].location.line == 10
-        assert diags[0].location.column == 47
         assert isinstance(
-            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
+        assert diags[0].location.file_path is None
+        assert diags[0].config_path == ".define/project/config.defcl"
+        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].location.line == 4
+        assert diags[0].location.column == 33
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
-        assert diags[1].local_name == "action<child>"
-        assert diags[1].preceding_name == "position<pos_a>"
+        assert diags[1].local_name == "child"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
-        assert diags[2].local_name == "position<pos_end>"
-        assert diags[2].preceding_name == "action<child>"
+        assert diags[2].local_name == "action<child>"
+        assert diags[2].preceding_name == "position<pos_a>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 62
+        assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
-        assert diags[3].config_path == ".define/project/config.defcl"
-        assert diags[3].universe == "my.domain.com:my_lib"
-        assert diags[3].location.line == 4
-        assert diags[3].location.column == 33
+        assert diags[3].local_name == "position<pos_end>"
+        assert diags[3].preceding_name == "action<child>"
+        assert diags[3].location.line == 10
+        assert diags[3].location.column == 62
 
     def test_chain_second_element_skipped_when_first_undefined(
         self,
@@ -233,35 +233,35 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
-            diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
         assert diags[0].location.file_path is None
-        assert diags[0].local_name == "action<Bad>"
-        assert diags[0].preceding_name == "position<pos_a>"
-        assert diags[0].location.line == 10
-        assert diags[0].location.column == 47
-        assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
-        assert diags[1].location.file_path is None
-        assert diags[1].local_name == "Bad"
-        assert diags[1].chars == ("B",)
-        assert diags[1].location.line == 10
-        assert diags[1].location.column == 54
+        assert diags[0].config_path == ".define/project/config.defcl"
+        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].location.line == 4
+        assert diags[0].location.column == 31
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[1].location.file_path is None
+        assert diags[1].local_name == "action<Bad>"
+        assert diags[1].preceding_name == "position<pos_a>"
+        assert diags[1].location.line == 10
+        assert diags[1].location.column == 47
+        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[2].location.file_path is None
-        assert diags[2].local_name == "position<pos_end>"
-        assert diags[2].preceding_name == "action<Bad>"
+        assert diags[2].local_name == "Bad"
+        assert diags[2].chars == ("B",)
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 60
+        assert diags[2].location.column == 54
         assert isinstance(
-            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
-        assert diags[3].config_path == ".define/project/config.defcl"
-        assert diags[3].universe == "my.domain.com:my_lib"
-        assert diags[3].location.line == 4
-        assert diags[3].location.column == 31
+        assert diags[3].local_name == "position<pos_end>"
+        assert diags[3].preceding_name == "action<Bad>"
+        assert diags[3].location.line == 10
+        assert diags[3].location.column == 60
 
     def test_chain_third_element_skipped_when_second_fails(
         self,
@@ -272,32 +272,32 @@ class TestCreateParticle:
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
-        assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
-        assert diags[0].location.file_path is None
-        assert diags[0].local_name == "wrong"
-        assert diags[0].location.line == 10
-        assert diags[0].location.column == 47
         assert isinstance(
-            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
+        assert diags[0].location.file_path is None
+        assert diags[0].config_path == ".define/project/config.defcl"
+        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].location.line == 4
+        assert diags[0].location.column == 31
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
-        assert diags[1].local_name == "action<wrong>"
-        assert diags[1].preceding_name == "position<pos_a>"
+        assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
-        assert diags[2].local_name == "position<pos_c>"
-        assert diags[2].preceding_name == "action<wrong>"
+        assert diags[2].local_name == "action<wrong>"
+        assert diags[2].preceding_name == "position<pos_a>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 62
+        assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
-        assert diags[3].config_path == ".define/project/config.defcl"
-        assert diags[3].universe == "my.domain.com:my_lib"
-        assert diags[3].location.line == 4
-        assert diags[3].location.column == 31
+        assert diags[3].local_name == "position<pos_c>"
+        assert diags[3].preceding_name == "action<wrong>"
+        assert diags[3].location.line == 10
+        assert diags[3].location.column == 62

@@ -251,7 +251,7 @@ class ProgramStructuralValidator:
     ):
         definition = typing.cast("ast.ActionDefinition", entry_action_result.definition)
         for position in definition.interface_positions:
-            entry_action_result.add_diagnostic(
+            entry_action_result.diagnostics.append(
                 diagnostics.EntryPointInterfacePositionDiagnostic(
                     location=position.typed_name.location,
                     position_name=position.typed_name.source_typed_name,
@@ -362,7 +362,7 @@ class ProgramStructuralValidator:
             )
         except config.ConfigError as e:
             self._path_tracker.mark_root_failed(root_prefix)
-            result.add_file_diagnostic(
+            result.file_diagnostics.append(
                 diagnostics.ConfigLoadErrorDiagnostic(
                     location=global_name.location,
                     error=e,
@@ -424,7 +424,7 @@ class ProgramStructuralValidator:
                     if fqun in unknown_fquns:
                         continue
                     unknown_fquns.add(fqun)
-                    result.add_file_diagnostic(
+                    result.file_diagnostics.append(
                         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                             location=global_name.location,
                             universe=fqun,
@@ -478,7 +478,7 @@ class ProgramStructuralValidator:
             return self._load_root_config(constants.PROJECT_ROOT)
         except config.NotProjectRootError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-            result.add_file_diagnostic(
+            result.file_diagnostics.append(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                     location=global_name.location,
                     universe=first_edge.global_name_reference.effective_fqun.canonical,
@@ -488,7 +488,7 @@ class ProgramStructuralValidator:
             return None
         except config.ConfigError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-            result.add_file_diagnostic(
+            result.file_diagnostics.append(
                 diagnostics.ConfigLoadErrorDiagnostic(
                     location=global_name.location,
                     error=e,
@@ -547,7 +547,7 @@ class ProgramStructuralValidator:
         detected_cycle = self._reference_graph.try_add_edge(ref_edge)
         if detected_cycle is None:
             return True
-        source_definition.add_diagnostic(
+        source_definition.diagnostics.append(
             diagnostics.CircularGlobalReferenceDiagnostic(
                 location=ref_edge.global_name_reference.location,
                 cycle=detected_cycle,
@@ -580,7 +580,7 @@ class ProgramStructuralValidator:
         )
         if universe_root is None:
             fqun = typing.cast("ast.Fqun", global_name.fqun)
-            source_definition.add_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                     location=fqun.location,
                     universe=fqun.canonical,
@@ -621,7 +621,7 @@ class ProgramStructuralValidator:
         if actual_root == enclosing_root:
             return False
 
-        source_definition.add_diagnostic(
+        source_definition.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 location=edge.global_name_reference.name_content.location,
                 path=str(target_file),
@@ -653,7 +653,7 @@ class ProgramStructuralValidator:
                 self._path_tracker.mark_not_found(target_file)
             elif edge.global_name_reference in self._definition_results:
                 return
-            source_definition.add_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.StandardDefinitionNotFoundDiagnostic(
                     location=global_name.location,
                     definition_name=edge.global_name_reference.full_typed_name,
@@ -662,7 +662,7 @@ class ProgramStructuralValidator:
             return
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
-            source_definition.add_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     location=global_name.location,
                     file_path=str(target_file),
@@ -672,7 +672,7 @@ class ProgramStructuralValidator:
             return
 
         if edge.global_name_reference not in self._definition_results:
-            source_definition.add_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.ReferencedDefinitionNotFoundDiagnostic(
                     location=global_name.location,
                     file_path=str(target_file),
@@ -724,7 +724,7 @@ class ProgramStructuralValidator:
             self._path_tracker.first_tracked_file_under(root_prefix)
         )
         if conflicting_path is not None:
-            source_result.add_file_diagnostic(
+            source_result.file_diagnostics.append(
                 diagnostics.SubRootAlreadyOccupiedDiagnostic(
                     location=global_name_reference.name_content.location,
                     universe=global_name_reference.effective_fqun.canonical,
