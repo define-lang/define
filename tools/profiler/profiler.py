@@ -1258,11 +1258,11 @@ def _capture_process(session: _CaptureSession) -> int:
 def _summary_record(
     state: _CaptureState,
     launched_ns: int,
+    exited_ns: int,
     compiler_exit_status: int,
     diagnostics: str,
 ) -> schema.SummaryRecord:
     # PRF-025: Failure threshold. PRF-026: No silent partial success.
-    exited_ns = time.monotonic_ns()
     return {
         "record_type": "summary",
         "exited_ns": exited_ns,
@@ -1363,13 +1363,18 @@ def capture(  # noqa: PLR0913 - Public capture settings are all keyword-only.
             pathlib.Path(temporary_directory_name),
         ) as scheduler_event_collector:
             compiler_exit_status = _capture_process(session)
+            # Decoding the scheduler events takes seconds on large captures, so
+            # the target's exit is timed before it rather than after.
+            exited_ns = time.monotonic_ns()
             causality_result = scheduler_event_collector.finish()
         _ = diagnostics_file.seek(0)
         diagnostics = diagnostics_file.read()
         writer.append_records(
             [
                 *_causality_records(causality_result),
-                _summary_record(state, launched_ns, compiler_exit_status, diagnostics),
+                _summary_record(
+                    state, launched_ns, exited_ns, compiler_exit_status, diagnostics
+                ),
             ]
         )
 

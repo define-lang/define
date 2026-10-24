@@ -6,6 +6,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -18,6 +19,7 @@ from tools.profiler import (
     perf_test_support,
     process_events,
     profiler,
+    scheduler_events,
     schema,
     test_helpers,
     wall_analyzer,
@@ -1093,6 +1095,38 @@ def test_attachment_timeout_terminates_non_python_target(tmp_path: Path):
     assert "Python runtime: not observed" in analysis_result.output
     assert "Capture failures (1):" in analysis_result.output
     assert "Unretained observations" not in analysis_result.output
+
+
+def test_target_exit_is_timed_before_scheduler_events_are_decoded(tmp_path: Path):
+    perf_test_support.require_scheduler_events()
+    decoding_started_ns: list[int] = []
+    finish_scheduler_events = scheduler_events.Collector.finish
+
+    def time_decoding_start(
+        collector: scheduler_events.Collector,
+    ) -> scheduler_events.CaptureResult:
+        decoding_started_ns.append(time.monotonic_ns())
+        return finish_scheduler_events(collector)
+
+    with mock.patch.object(
+        scheduler_events.Collector,
+        "finish",
+        autospec=True,
+        side_effect=time_decoding_start,
+    ):
+        profile = profiler.capture(
+            command=("/bin/true",),
+            profile_path=tmp_path / "profile.jsonl",
+            workload_path=Path(__file__),
+            working_directory=tmp_path,
+            mean_interval_seconds=0.01,
+            random_seed=23,
+            attachment_timeout_seconds=1.0,
+        )
+
+    exited_ns = profile.lifecycle["exited_ns"]
+    assert exited_ns is not None
+    assert exited_ns <= decoding_started_ns[0]
 
 
 # PRF-022: Launcher safety. PRF-024: Explicit failures.

@@ -215,6 +215,7 @@ py_test(
         ":perf_test_support",
         ":process_events",
         ":profiler",
+        ":scheduler_events",
         ":schema",
         ":test_helpers",
         ":wall_analyzer",
