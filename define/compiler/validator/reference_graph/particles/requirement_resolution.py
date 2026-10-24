@@ -57,24 +57,24 @@ class RequirementResolver:
             position.starts_with_global
             or position.typed_names[0].full_typed_name in interface_position_names
         )
-        canonical_position_prefixes = (
-            chained_name.position_prefixes_before_first_action(
-                position.canonical_chained_name_tuple
-            )
-        )
         resolved_positions: list[ResolvedRequirementPosition] = []
-        for requirement_index, nearest_particle in self._requirement_indices_for_caller(
-            canonical_position_prefixes
+        # If we have touched a position, then the current action overrides any
+        # requirements from its callees.
+        for (
+            name_count,
+            nearest_particle,
+        ) in self._store.prefixes_without_known_occupancy_before_first_action(
+            position.canonical_chained_name_tuple
         ):
+            if not _caller_must_fulfill(nearest_particle):
+                continue
             # A non-contracted position contributes an Action Requirement only
             # when a parent position has a particle passed in by the caller.
             # We do this check early before constructing PositionReference objects
             # or doing any other work. This is an important performance improvement.
             if nearest_particle is None and not position_is_contracted:
                 continue
-            requirement_position = position.position_prefix(
-                len(canonical_position_prefixes[requirement_index])
-            )
+            requirement_position = position.position_prefix(name_count)
             contracted_position = _contracted_position_for_requirement(
                 requirement_position, nearest_particle
             )
@@ -178,11 +178,21 @@ class RequirementResolver:
                 if parent_position is not None
                 else None
             )
-            if (
-                nearest_particle is None
-                or nearest_particle[1].source is particle_info.ParticleSource.CALLER
-            ):
+            if _caller_must_fulfill(nearest_particle):
                 yield requirement_index, nearest_particle
+
+
+def _caller_must_fulfill(
+    nearest_particle: tuple[
+        chained_name.PositionReferenceTuple, particle_info.ParticleInfo
+    ]
+    | None,
+) -> bool:
+    """Return whether the caller must fulfill a requirement on a position whose nearest occupied position above it holds ``nearest_particle``, if any is occupied."""
+    return (
+        nearest_particle is None
+        or nearest_particle[1].source is particle_info.ParticleSource.CALLER
+    )
 
 
 def _contracted_position_for_requirement(

@@ -407,6 +407,45 @@ class ParticleStateStore:
             or node.is_in_error_chain
         )
 
+    def prefixes_without_known_occupancy_before_first_action(
+        self, chain: chained_name.ChainedNameTuple
+    ) -> Iterator[
+        tuple[
+            int,
+            tuple[chained_name.PositionReferenceTuple, particle_info.ParticleInfo]
+            | None,
+        ]
+    ]:
+        """Yield the name count of each prefix of ``chain`` before its first action that is neither known to be occupied or empty nor has error occupancy state, with the nearest occupied position above it and its particle, if any.
+
+        The store must not change during iteration.
+        """
+        nearest_occupied: (
+            tuple[chained_name.PositionReferenceTuple, particle_info.ParticleInfo]
+            | None
+        ) = None
+        is_below_error = False
+        for name_count in range(1, len(chain) + 1):
+            if chained_name.is_action_key(chain[name_count - 1]):
+                return
+            key = chained_name.position(chain[:name_count])
+            node = self._node(key)
+            if node is None:
+                # Every position above a node has a node, so the positions
+                # this walk has already passed are the ones above this one.
+                if not is_below_error:
+                    yield name_count, nearest_occupied
+                continue
+            if not (
+                node.particle is not None
+                or node.emptied_by is not None
+                or node.is_in_error_chain
+            ):
+                yield name_count, nearest_occupied
+            if node.particle is not None:
+                nearest_occupied = (key, node.particle)
+            is_below_error = node.is_in_error_chain
+
     def nearest_occupied_ancestors(
         self, keys: Sequence[chained_name.PositionReferenceTuple]
     ) -> dict[
