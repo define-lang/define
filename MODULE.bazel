@@ -69,6 +69,10 @@ local_path_override(
 # venv bin patch adds bin/python.exe and the interpreter's DLLs.
 # TODO: Remove the venv bin patch once an aspect_rules_py release includes
 # https://github.com/aspect-build/rules_py/pull/1626.
+# A Windows py_binary or py_test launcher is a Windows program named without
+# .exe, so Windows can't start it by name. The exe name patch adds .exe.
+# TODO: Remove the exe name patch once an aspect_rules_py release includes
+# https://github.com/aspect-build/rules_py/pull/1644.
 git_override(
     module_name = "aspect_rules_py",
     commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
@@ -80,6 +84,7 @@ git_override(
         "//tools/patches:aspect_rules_py_freethreaded_test_excludes.patch",
         "//tools/patches:aspect_rules_py_precompiled_stdlib.patch",
         "//tools/patches:aspect_rules_py_windows_venv_bin.patch",
+        "//tools/patches:aspect_rules_py_windows_exe_name.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
