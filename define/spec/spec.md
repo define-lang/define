@@ -844,37 +844,37 @@ terminator or a block. This block does not create a local scope.
 local_position_name = "position", "<", local_name, ">" ;
 local_position_definition = "define the", " ", local_position_name, local_position_definition_end ;
 local_position_definition_end = terminator | local_position_definition_block ;
-local_position_definition_block = block_open, position_constraint_block, block_close ;
+local_position_definition_block = block_open, position_quality_assignment_block, block_close ;
 ```
 
-### Position Constraint Block
+### Position Quality Assignment Block
 
-A Position Constraint Block starts with `it may only contain particles where`
-and then opens a block. The block must contain one or more Position Requirement
-Statements.
+A Position Quality Assignment Block starts with
+`it may only contain particles where` and then opens a block. The block must
+contain one or more Quality Assignment Statements.
 
 ```ebnf
-position_constraint_block =
+position_quality_assignment_block =
     "it may only contain particles where",
     block_open,
-    position_requirement_statement,
-    { position_requirement_statement },
+    quality_assignment_statement,
+    { quality_assignment_statement },
     block_close ;
 ```
 
-### Position Requirement Statements
+### Quality Assignment Statements
 
-A Local Position Requirement Statement starts with `it has the` followed by a
-typed name and a statement terminator.
+A Quality Assignment Statement starts with `it has the` followed by a typed name
+and a statement terminator.
 
 ```ebnf
-position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
+quality_assignment_statement = "it has the", " ", typed_global_name, terminator ;
 ```
 
 ### Values Only Appear Once
 
-A Position Constraint Block may contain only one Position Requirement Statement
-with the `name_type` of `value`.
+A Position Quality Assignment Block may contain only one Quality Assignment
+Statement with the `name_type` of `value`.
 
 ## Position References
 
@@ -897,7 +897,7 @@ Unless otherwise stated, the rules for all position references are:
 
 - The first name in the chain must have been defined _before_ it is referenced.
 - For global position or action names in the chain, those must be specified as
-  an explicit (not implied) constraint on their parent name.
+  an explicit (not implied) quality assignment on their parent name.
 - For local position names, the parent name must be an action and the local
   position must be defined in the Action Definition Block of that action.
 - Every intermediate position must already contain a particle.
@@ -921,7 +921,7 @@ Proposals:
 - [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 
-Potential positions, potential actions, and value types are referred to as
+Potential positions, potential actions, and value qualities are referred to as
 "qualities." Qualities can be assigned to particles using syntax and semantics
 described later in this spec.
 
@@ -964,18 +964,18 @@ position_definition = "define the potential", " ", fully_qualified_global_positi
 position_definition_end = terminator | potential_position_definition_block ;
 potential_position_definition_block =
     block_open,
-    position_constraint_block,
+    position_quality_assignment_block,
     block_close ;
 ```
 
-## Defining Value Types
+## Defining Value Qualities
 
 Proposals:
 
 - [DLP 51: Values](../proposals/00051-values.md)
 
-A value type is defined by a quality definition statement with the type `value`,
-followed by a terminator.
+A value quality is defined by a quality definition statement with the type
+`value`, followed by a terminator.
 
 ```ebnf
 fully_qualified_value_name = "value", "<", fully_qualified_global_name, ">" ;
@@ -1016,10 +1016,10 @@ potential_literal_definition =
     " ",
     fully_qualified_potential_literal_name,
     potential_literal_definition_block ;
-encoding_constraint = "it has the encoding", "<", global_name, ">", terminator ;
+encoding_quality_assignment_statement = "it has the encoding", "<", global_name, ">", terminator ;
 potential_literal_definition_block =
     block_open,
-    encoding_constraint,
+    encoding_quality_assignment_statement,
     block_close ;
 ```
 
@@ -1172,9 +1172,9 @@ positions.
 ### Automatic Action Requirements
 
 For each contracted position, the compiler automatically infers occupancy and
-set-value requirements for that position from the first time an Action
-Statements Block statement references that position. These inferred requirements
-are referred to as Action Requirements.
+value requirements for that position from the first time an Action Statements
+Block statement references that position. These inferred requirements are
+referred to as Action Requirements.
 
 Callers must satisfy the Action Requirements of an action before triggering it,
 or the compiler will throw an error.
@@ -1331,8 +1331,8 @@ Implication Statement at the top of the global definition.
 
 Implying a quality also does not expose that quality to consumers of the
 definition that implies it. If a line of code refers to a child name of a
-position, that child name must be listed as an explicit constraint on the
-position.
+position, that child name must be listed as an explicit quality assignment on
+the position.
 
 ### Duplicate Assignments
 
@@ -1373,24 +1373,9 @@ Proposals:
 
 - [DLP 20: Atomic Creation](../proposals/00020-atomic-creation.md)
 
-If a Create Particle Statement targets a position with a Position Constraint
-Block, the created particle is automatically assigned all required qualities
-from that block as part of the creation.
-
-#### Quality Assignment Sequence For Atomic Creation
-
-During atomic creation, qualities are assigned in the same order as their
-Position Requirement Statements appear in the Position Constraint Block.
-
-The semantics of creating a particle in a constrained position are equivalent to
-creating the particle in an unconstrained anonymous position, assigning the
-required qualities in order, and then moving the particle into the referenced
-position. In other words, the destination position's constraints are enforced
-only after all required quality assignments for that creation are complete.
-
-The compiler may choose to re-order quality assignments or perform them
-concurrently if doing so is guaranteed to produce the same result as assigning
-them in sequence.
+If a Create Particle Statement targets a position with a Position Quality
+Assignment Block, the created particle is automatically assigned all required
+qualities from that block as part of the creation.
 
 ### Initial Value
 
@@ -1398,8 +1383,7 @@ Proposals:
 
 - [DLP 53: Unset Values](../proposals/00053-unset-values.md)
 
-If the position in which the particle is created has a `value` constraint, the
-initial value is unset on the particle.
+When a particle is created with a value quality, its value starts out unset.
 
 ## Constructors
 
@@ -1421,7 +1405,9 @@ constructor_condition_statement =
 A constructor runs whenever a particle is created via a Create Particle
 Statement targeting the position to which it is assigned.
 
-Constructors run in the order in which they are assigned to a position.
+Constructors run in the order their Quality Assignment Statements appear in the
+Position Quality Assignment Block, with implied qualities assigned before the
+quality that implies them.
 
 ## Moving Particles
 
@@ -1455,7 +1441,7 @@ In a Move Particle Statement, it is an error if the `from` position reference is
 a prefix of the `to` position reference (also meaning it's an error if they are
 identical).
 
-### Destination Position Constraints Are Enforced During Moves
+### Destination Position Quality Assignments Are Enforced During Moves
 
 Proposals:
 
@@ -1463,8 +1449,8 @@ Proposals:
 - [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
 
 In a Move Particle Statement, all required qualities from the destination
-position's Position Constraint Block must be present on the particle being
-moved.
+position's Position Quality Assignment Block must be present on the particle
+being moved.
 
 It is an error if the particle being moved does not have one or more required
 qualities of the destination position.
@@ -1686,8 +1672,8 @@ Literal Parser.
 
 Wherever a literal is used, it is logically identical to:
 
-1. Defining a position with the value constraint needed in order to make the
-   line of code where the literal is specified be valid.
+1. Defining a position with the value quality needed in order to make the line
+   of code where the literal is specified be valid.
 2. Creating a particle in that position.
 3. Setting the value on that particle to the literal's value directly (not via a
    Value Setting Statement).
@@ -1715,8 +1701,8 @@ Proposals:
 
 - [DLP 53: Unset Values](../proposals/00053-unset-values.md)
 
-The particles in both positions must have a value type assigned to them, and it
-must be the same value type.
+The particles in both positions must have a value quality assigned to them, and
+it must be the same value quality.
 
 The particle on the right side of a Value Setting Statement must have a set
 value.
@@ -1755,10 +1741,10 @@ An Interface View is defined by `define the ` followed by a local typed name
 with the type `view`, followed by a View Definition Block.
 
 A View Definition Block starts with View Direction Statements, followed by a
-Position Constraint Block. Its Position Requirement Statements may not reference
-positions, actions, or encodings.
+View Quality Assignment Block. Its Quality Assignment Statements may not
+reference positions, actions, or encodings.
 
-Each Interface View on a Value Operation must have a `value` constraint.
+Each Interface View on a Value Operation must be assigned a value quality.
 
 ```ebnf
 local_view_name = "view", "<", local_name, ">" ;
@@ -1766,15 +1752,15 @@ view_definition = "define the", " ", local_view_name, view_definition_block ;
 view_definition_block =
     block_open,
     view_direction_statements,
-    view_constraint_block,
+    view_quality_assignment_block,
     block_close ;
-view_constraint_block =
+view_quality_assignment_block =
     "it may only contain particles where",
     block_open,
-    view_requirement_statement,
-    { view_requirement_statement },
+    view_quality_assignment_statement,
+    { view_quality_assignment_statement },
     block_close ;
-view_requirement_statement =
+view_quality_assignment_statement =
     "it has the", " ", ( "value" | "encoding" ), "<", global_name, ">", terminator ;
 ```
 
@@ -1868,11 +1854,11 @@ That is, within a Value Operation Statements Block, the EBNF would be modified:
 `position_reference` in `operation_argument_statement` is replaced by
 `local_view_name`.
 
-### Matching View Requirements
+### Matching View Quality Assignments
 
-The particle in the position a view is looking at must meet the constraints of
-that Interface View as though the particle were being moved into a position with
-the constraints of the Interface View.
+The particle in the position a view is looking at must have the qualities
+assigned by that Interface View, as though the particle were being moved into a
+position with the quality assignments of the Interface View.
 
 The particle being looked at by any input view must have a set value. The
 particle looked at by an output view has its value set by the operation.
@@ -1915,8 +1901,8 @@ encoding_operation_definition =
 
 ### Encoding Operation Interface Views
 
-Each Interface View on an Encoding Operation must have an `encoding` constraint,
-and may not have a `value` constraint.
+Each Interface View on an Encoding Operation must be assigned an encoding, and
+may not be assigned a value quality.
 
 ### Encoding Operation Statements Block
 
@@ -1956,10 +1942,11 @@ The following are all dead code:
   Encoding Operation definition, unless that definition contains
   `execute the encoding operation` or `execute the computer operation`.
 
-### Dead Constraints
+### Dead Quality Assignments
 
-Directly-written (not implied) constraints on local or interface positions are
-only alive according to the rules below. Otherwise, they are dead code.
+Directly-written (not implied) quality assignments on local or interface
+positions are only alive according to the rules below. Otherwise, they are dead
+code.
 
 **Origin Position**: The position in which a particle is created or where it
 first arrived in an action via an Action Requirement that required a position to
@@ -1967,41 +1954,41 @@ be occupied.
 
 #### Referencing a Child Position
 
-Any reference to a particle's direct child positions causes that position
-constraint to be alive in the origin position of the particle and the current
-position of the particle.
+Any reference to a particle's direct child positions causes that child position
+quality assignment to be alive in the origin position of the particle and the
+current position of the particle.
 
 #### Used Values & Encodings
 
 Any use of a particle in a Value Setting Statement or Operation Execution
-Statement causes that particle's value and/or encoding constraint to be alive in
-the origin position of the particle.
+Statement causes the value quality and encoding assigned to that particle's
+origin position to be alive.
 
 #### Triggering a Child Action
 
-If one of a particle's direct child actions is triggered, that action constraint
-becomes alive on the origin position of the particle and the current position of
-the particle.
+If one of a particle's direct child actions is triggered, that child action
+quality assignment becomes alive on the origin position of the particle and the
+current position of the particle.
 
 #### Aliveness Through Callee Contracts
 
 If a particle is in a callee's contracted position (a position that the callee
-requires to be occupied) at the time that action is triggered, any constraints
-on that contracted position are marked as alive on the origin position of the
-particle.
+requires to be occupied) at the time that action is triggered, any quality
+assignments on that contracted position are marked as alive on the origin
+position of the particle.
 
 #### Aliveness Through An Action's Own Contract
 
 At the end of an action, if a particle is in a position on which the current
 action guarantees to be occupied upon its completion, and the particle was
-created in or moved into that position during the action, all constraints on
-that final position are marked as alive on both that final position and the
-origin position of the particle.
+created in or moved into that position during the action, all quality
+assignments on that final position are marked as alive on both that final
+position and the origin position of the particle.
 
 #### Destructors
 
-Destructors specified as constraints on local or interface positions are always
-alive.
+Destructors specified as quality assignments on local or interface positions are
+always alive.
 
 ### Dead Interface Positions
 
@@ -2044,9 +2031,9 @@ Any constructor may be the entry point of a program. Here is what logically
 occurs from the compiler's viewpoint when starting a program:
 
 1. An anonymous position is created, called the "view point position."
-2. The view point position has exactly one constraint: it is assigned the
-   constructor that is the program's entry point. This constructor is called the
-   "entry point action."
+2. The view point position has exactly one quality assignment: it is assigned
+   the constructor that is the program's entry point. This constructor is called
+   the "entry point action."
 3. A particle is created in the view point position. This particle is called the
    "view point."
 4. This triggers the entry point action, and all code in the program executes
