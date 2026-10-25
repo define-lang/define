@@ -1,4 +1,5 @@
-# Within a value operation, a view may not look at a position.
+# Within a value operation, a view may not look at a position, so two views
+# looking at the same position are not also aliased.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -33,12 +34,12 @@ define the operation<my.domain.com:my_lib:/double> {
 
     it does {
         execute the operation</copy> {
-            with view<source> looking at view<number>.
+            with view<source> looking at position<result>.
             with view<target> looking at position<result>.
         }
         execute the operation</copy> {
-            with view<source> looking at view<result>.
-            with view<target> looking at view<number>.
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
         }
     }
 }

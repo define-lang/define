@@ -156,20 +156,6 @@ def test_duplicate_encoding_operation(
     assert diagnostic.first_definition_line == 2
 
 
-def test_looks_at_position(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-):
-    result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position<result>"
-
-
 def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):

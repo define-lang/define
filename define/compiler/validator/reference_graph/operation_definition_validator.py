@@ -154,7 +154,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         looked_at_qualities: dict[ast.OperationArgumentStatement, Collection[str]] = {}
         for argument in statement.arguments:
             looking_at = argument.looking_at
-            # Structural validation reports views looking at positions within an
+            # The parser reports views looking at positions within an
             # operation definition.
             if not isinstance(looking_at, ast.LocalTypedNameReference):
                 continue

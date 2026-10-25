@@ -7,7 +7,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
-use crate::parser::operation_execution::OperationKind;
+use crate::parser::operation_execution::{ExecutingDefinition, OperationKind};
 use crate::scanner::Position;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, IT_DOES, IT_IS_READ, IT_IS_WRITTEN,
@@ -334,7 +334,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.invalid_operation_statement(kind));
         }
         Ok(self
-            .parse_operation_execution_statement(kind, indentation, fqun)?
+            .parse_operation_execution_statement(
+                ExecutingDefinition::Operation,
+                kind,
+                indentation,
+                fqun,
+            )?
             .into())
     }
 }

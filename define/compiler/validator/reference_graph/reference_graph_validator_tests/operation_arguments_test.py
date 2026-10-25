@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -282,15 +283,18 @@ def test_invalid_argument_view_name_in_action(
     assert diagnostic.chars == ("B",)
 
 
-def test_looks_at_view_in_action(
+def test_looks_at_view_before_position_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 22
-    assert diagnostic.location.column == 37
-    assert diagnostic.view_name == "view<first>"
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentViewDiagnostic(
+            location=ast.SourceLocation(line=27, column=42, end_line=27, end_column=53),
+            view_name="view<number>",
+        ),
+        diagnostics.OperationArgumentEmptyPositionDiagnostic(
+            location=ast.SourceLocation(line=28, column=42, end_line=28, end_column=57),
+            position_name="position<number>",
+        ),
+    ]

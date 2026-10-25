@@ -1,4 +1,5 @@
-# Within an action, a view may not look at a view.
+# Within an action, a view may not look at a view, and a position that a later
+# view looks at is still checked.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -23,8 +24,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<number>.
         execute the operation</copy> {
-            with view<source> looking at position<number>.
-            with view<target> looking at view<number>.
+            with view<source> looking at view<number>.
+            with view<target> looking at position<number>.
         }
     }
 }

@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -18,32 +19,21 @@ if TYPE_CHECKING:
     )
 
 
-def test_looks_at_position(
+def test_looks_at_same_position_twice(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position<result>"
-
-
-def test_looks_at_chained_position(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-):
-    result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position</box>::position<result>"
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=37, column=42, end_line=37, end_column=57),
+            position_name="position<result>",
+        ),
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=38, column=42, end_line=38, end_column=57),
+            position_name="position<result>",
+        ),
+    ]
 
 
 def test_looks_at_undefined_view(

@@ -73,18 +73,14 @@ def test_operation_execution_with_arguments(parse: Parse):
             _OPERATION_PREFIX
             + "        execute the operation<mv:define-lang.org:parser:/other> {\n"
             + "            with view<a> looking at view<left>.\n"
-            + "            with view<b> looking at position<p>.\n"
-            + "            with view<c> looking at position</global>::position<child>.\n"
-            + '            with view<d> looking at literal</number>"12".\n'
+            + '            with view<b> looking at literal</number>"12".\n'
             + "        }\n"
             + _OPERATION_SUFFIX
         )
     )
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.name_content.path.name == "/other"
-    [view_argument, position_argument, chain_argument, literal_argument] = (
-        statement.arguments
-    )
+    [view_argument, literal_argument] = statement.arguments
     assert view_argument.view.name_type == name_types.NameType.VIEW
     assert view_argument.view.name_content.name == "a"
     assert view_argument.view.location == ast.SourceLocation(
@@ -100,16 +96,51 @@ def test_operation_execution_with_arguments(parse: Parse):
     assert view_argument.location == ast.SourceLocation(
         line=4, column=13, end_line=4, end_column=47
     )
-    assert position_argument.view.name_content.name == "b"
+    assert literal_argument.view.name_content.name == "b"
+    looking_at_literal = literal_argument.looking_at
+    assert isinstance(looking_at_literal, ast.Literal)
+    assert looking_at_literal.content == "12"
+    assert looking_at_literal.location == ast.SourceLocation(
+        line=5, column=37, end_line=5, end_column=56
+    )
+    assert literal_argument.location == ast.SourceLocation(
+        line=5, column=13, end_line=5, end_column=57
+    )
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=6, end_column=9
+    )
+
+
+def test_action_operation_execution_with_arguments(parse: Parse):
+    program = parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "            with view<b> looking at position</global>::position<child>.\n"
+        + '            with view<c> looking at literal</number>"12".\n'
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    [definition] = program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.name_content.path.name == "/other"
+    [position_argument, chain_argument, literal_argument] = statement.arguments
+    assert position_argument.view.name_content.name == "a"
     looking_at_position = position_argument.looking_at
     assert isinstance(looking_at_position, ast.PositionReference)
     [position] = looking_at_position.typed_names
     assert isinstance(position, ast.LocalTypedNameReference)
     assert position.name_content.name == "p"
     assert position_argument.location == ast.SourceLocation(
-        line=5, column=13, end_line=5, end_column=48
+        line=6, column=13, end_line=6, end_column=48
     )
-    assert chain_argument.view.name_content.name == "c"
+    assert chain_argument.view.name_content.name == "b"
     looking_at_chain = chain_argument.looking_at
     assert isinstance(looking_at_chain, ast.PositionReference)
     [parent, child] = looking_at_chain.typed_names
@@ -118,23 +149,184 @@ def test_operation_execution_with_arguments(parse: Parse):
     assert isinstance(child, ast.LocalTypedNameReference)
     assert child.name_content.name == "child"
     assert looking_at_chain.location == ast.SourceLocation(
-        line=6, column=37, end_line=6, end_column=70
+        line=7, column=37, end_line=7, end_column=70
     )
     assert chain_argument.location == ast.SourceLocation(
-        line=6, column=13, end_line=6, end_column=71
+        line=7, column=13, end_line=7, end_column=71
     )
-    assert literal_argument.view.name_content.name == "d"
+    assert literal_argument.view.name_content.name == "c"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
-    assert looking_at_literal.location == ast.SourceLocation(
-        line=7, column=37, end_line=7, end_column=56
-    )
     assert literal_argument.location == ast.SourceLocation(
-        line=7, column=13, end_line=7, end_column=57
+        line=8, column=13, end_line=8, end_column=57
     )
     assert statement.location == ast.SourceLocation(
-        line=3, column=9, end_line=8, end_column=9
+        line=5, column=9, end_line=9, end_column=9
+    )
+
+
+def test_operation_argument_looking_at_position_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
+            position_name="position<p>",
+        )
+    ]
+    assert result.program is not None
+    [statement] = _operation_statements(result.program)
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.PositionReference)
+    [position] = looking_at.typed_names
+    assert isinstance(position, ast.LocalTypedNameReference)
+    assert position.name_content.name == "p"
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=48
+    )
+
+
+def test_operation_argument_looking_at_chained_position_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position</global>::position<child>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=70),
+            position_name="position</global>::position<child>",
+        )
+    ]
+    assert result.program is not None
+    [statement] = _operation_statements(result.program)
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.PositionReference)
+    [parent, child] = looking_at.typed_names
+    assert isinstance(parent, ast.GlobalTypedNameReference)
+    assert parent.name_content.path.name == "/global"
+    assert isinstance(child, ast.LocalTypedNameReference)
+    assert child.name_content.name == "child"
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=71
+    )
+
+
+def test_operation_argument_position_name_is_its_source_form(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position <p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+            location=ast.SourceLocation(line=4, column=45, end_line=4, end_column=45)
+        ),
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=48),
+            position_name="position<p>",
+        ),
+    ]
+    assert result.program is not None
+    [statement] = _operation_statements(result.program)
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    assert isinstance(argument.looking_at, ast.PositionReference)
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=49
+    )
+
+
+def test_action_argument_looking_at_view_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentViewDiagnostic(
+            location=ast.SourceLocation(line=6, column=37, end_line=6, end_column=46),
+            view_name="view<left>",
+        )
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.LocalTypedNameReference)
+    assert looking_at.name_content.name == "left"
+    assert argument.location == ast.SourceLocation(
+        line=6, column=13, end_line=6, end_column=47
+    )
+
+
+def test_argument_looking_at_wrong_kind_does_not_stop_the_next_argument(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "            with view<b> looking at position<p>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentViewDiagnostic(
+            location=ast.SourceLocation(line=6, column=37, end_line=6, end_column=46),
+            view_name="view<left>",
+        )
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [_, position_argument] = statement.arguments
+    assert position_argument.view.name_content.name == "b"
+    assert isinstance(position_argument.looking_at, ast.PositionReference)
+    assert position_argument.location == ast.SourceLocation(
+        line=7, column=13, end_line=7, end_column=48
     )
 
 
@@ -576,3 +768,46 @@ def test_argument_source_requires_local_view_name(parse: Parse):
     assert error.value.location.column == 42
     assert error.value.location.end_line == 4
     assert error.value.location.end_column == 43
+
+
+def test_operation_argument_position_reference_with_empty_name(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.EmptyName)
+    assert result.exception.location == ast.SourceLocation(
+        line=4, column=46, end_line=4, end_column=46
+    )
+    assert result.program is None
+
+
+def test_operation_argument_position_reference_without_terminator(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
+            position_name="position<p>",
+        )
+    ]
+    assert isinstance(
+        result.exception, parser_exceptions.ExpectedChainSeparatorOrTerminator
+    )
+    assert result.exception.location == ast.SourceLocation(
+        line=4, column=48, end_line=4, end_column=48
+    )
+    assert result.program is None

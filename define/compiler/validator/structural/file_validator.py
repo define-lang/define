@@ -554,13 +554,9 @@ class DefinitionStructuralValidator:
                 return self._validate_looked_at_view(
                     looking_at, views, unreferenced_views
                 )
+            # The parser reports a position that an operation's argument
+            # looks at.
             case ast.PositionReference():
-                self._diagnostics.append(
-                    diagnostics.OperationArgumentPositionDiagnostic(
-                        location=looking_at.location,
-                        position_name=looking_at.source_chained_name,
-                    )
-                )
                 return False
 
     def _validate_looked_at_in_action(
@@ -573,13 +569,8 @@ class DefinitionStructuralValidator:
                 position_ok = self._validate_full_chained_name(looking_at, scope)
                 self._looked_at_position_validity.append(position_ok)
                 return position_ok
+            # The parser reports a view that an action's argument looks at.
             case ast.LocalTypedNameReference():
-                self._diagnostics.append(
-                    diagnostics.OperationArgumentViewDiagnostic(
-                        location=looking_at.location,
-                        view_name=looking_at.source_typed_name,
-                    )
-                )
                 return False
 
     def _check_duplicate_argument(

@@ -6,7 +6,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
-use crate::parser::operation_execution::OperationKind;
+use crate::parser::operation_execution::{ExecutingDefinition, OperationKind};
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
@@ -551,7 +551,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         if self.scanner.next_bytes_are(EXECUTE_THE) {
             return Ok(self
-                .parse_operation_execution_statement(OperationKind::Value, indentation, fqun)?
+                .parse_operation_execution_statement(
+                    ExecutingDefinition::Action,
+                    OperationKind::Value,
+                    indentation,
+                    fqun,
+                )?
                 .into());
         }
         Err(self.invalid_action_statements_block())
@@ -676,7 +681,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// terminator
     /// ```
-    fn parse_reference_terminator(&mut self) -> ParseResult<Position> {
+    pub(crate) fn parse_reference_terminator(&mut self) -> ParseResult<Position> {
         // There is no `.` or `::` after the position reference.
         let Some(end) = self.parse_terminator()? else {
             if let Some(error) = self.disallowed_character_ahead(0) {

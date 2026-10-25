@@ -118,8 +118,7 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
             _ENCODING_OPERATION_PREFIX
             + "        execute the encoding_operation<mv:define-lang.org:parser:/other> {\n"
             + "            with view<a> looking at view<left>.\n"
-            + "            with view<b> looking at position<p>.\n"
-            + '            with view<c> looking at literal</number>"12".\n'
+            + '            with view<b> looking at literal</number>"12".\n'
             + "        }\n"
             + _ENCODING_OPERATION_SUFFIX
         )
@@ -135,7 +134,7 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
     assert statement.operation.name_content.path.name == "/other"
-    [view_argument, position_argument, literal_argument] = statement.arguments
+    [view_argument, literal_argument] = statement.arguments
     assert view_argument.view.name_content.name == "a"
     looking_at_view = view_argument.looking_at
     assert isinstance(looking_at_view, ast.LocalTypedNameReference)
@@ -143,20 +142,43 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
     assert view_argument.location == ast.SourceLocation(
         line=4, column=13, end_line=4, end_column=47
     )
-    assert position_argument.view.name_content.name == "b"
-    assert isinstance(position_argument.looking_at, ast.PositionReference)
-    assert position_argument.location == ast.SourceLocation(
-        line=5, column=13, end_line=5, end_column=48
-    )
-    assert literal_argument.view.name_content.name == "c"
+    assert literal_argument.view.name_content.name == "b"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
     assert literal_argument.location == ast.SourceLocation(
-        line=6, column=13, end_line=6, end_column=57
+        line=5, column=13, end_line=5, end_column=57
     )
     assert statement.location == ast.SourceLocation(
-        line=3, column=9, end_line=7, end_column=9
+        line=3, column=9, end_line=6, end_column=9
+    )
+
+
+def test_encoding_operation_argument_looking_at_position_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "        }\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.OperationArgumentPositionDiagnostic(
+            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
+            position_name="position<p>",
+        )
+    ]
+    assert result.program is not None
+    definition = _only_encoding_operation(result.program)
+    [statement] = definition.operation_statements
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    assert isinstance(argument.looking_at, ast.PositionReference)
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=48
     )
 
 

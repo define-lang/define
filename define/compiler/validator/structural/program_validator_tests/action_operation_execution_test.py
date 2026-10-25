@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -21,18 +22,21 @@ def test_valid_arguments(
     assert_no_errors(result)
 
 
-def test_looks_at_view(
+def test_looks_at_same_view_twice(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 27
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<number>"
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentViewDiagnostic(
+            location=ast.SourceLocation(line=26, column=42, end_line=26, end_column=53),
+            view_name="view<number>",
+        ),
+        diagnostics.OperationArgumentViewDiagnostic(
+            location=ast.SourceLocation(line=27, column=42, end_line=27, end_column=53),
+            view_name="view<number>",
+        ),
+    ]
 
 
 def test_aliased_positions(

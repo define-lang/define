@@ -1,4 +1,5 @@
-# Within a value operation, a view may not look at a position.
+# Within a value operation, a view may not look at a position, and a view that
+# a later view looks at is still checked.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -17,11 +18,12 @@ define the operation<my.domain.com:my_lib:/copy> {
         execute the encoding operation.
     }
 }
+define the potential value<my.domain.com:my_lib:/other>.
 define the operation<my.domain.com:my_lib:/double> {
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/natural>.
+            it has the value</other>.
         }
     }
 

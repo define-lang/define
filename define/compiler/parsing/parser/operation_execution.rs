@@ -5,9 +5,12 @@ use crate::node_construction::NodeTuple;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
-use crate::parser::names::FqunWithCanonicalText;
+use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
+use pyo3::intern;
+use pyo3::prelude::*;
+use pyo3::types::PyString;
 use terminals::{
     ACTION, BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
     EXECUTE_THE_ENCODING_OPERATION, LITERAL, OPERATION, POSITION, SPACE_LOOKING_AT, VIEW, WITH,
@@ -25,6 +28,17 @@ pub(crate) enum OperationKind {
     Encoding,
 }
 
+/// The kind of definition that has an operation execution statement, which
+/// decides what its operation arguments may look at besides literals.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ExecutingDefinition {
+    /// An action, whose arguments may look at positions.
+    Action,
+    /// A Value Operation or an Encoding Operation, whose arguments may look at
+    /// views.
+    Operation,
+}
+
 impl OperationKind {
     /// The words of the statement that executes the implementation of an
     /// operation of this kind: `execute the encoding operation` or
@@ -38,9 +52,10 @@ impl OperationKind {
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
-    /// Parses an operation execution statement that executes an operation of
-    /// `kind`, indented `indentation` spaces, whose references take their
-    /// default FQUN from `fqun`, through the end of its last line.
+    /// Parses an operation execution statement in an `executing_definition`
+    /// that executes an operation of `kind`, indented `indentation` spaces,
+    /// whose references take their default FQUN from `fqun`, through the end
+    /// of its last line.
     ///
     /// ```ebnf
     /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
@@ -48,6 +63,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     pub(crate) fn parse_operation_execution_statement(
         &mut self,
+        executing_definition: ExecutingDefinition,
         kind: OperationKind,
         indentation: usize,
         fqun: &FqunWithCanonicalText<'py, 'source>,
@@ -72,8 +88,12 @@ impl<'py, 'source> Parser<'py, 'source> {
             )?,
         };
         if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (arguments, end) =
-                self.parse_operation_arguments_block(start, indentation, fqun)?;
+            let (arguments, end) = self.parse_operation_arguments_block(
+                executing_definition,
+                start,
+                indentation,
+                fqun,
+            )?;
             let location = self.ast.location(start, end)?;
             return Ok(self
                 .ast
@@ -92,9 +112,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Parses the operation arguments block of the operation execution
-    /// statement that begins at `start`, indented `indentation` spaces, whose
-    /// references take their default FQUN from `fqun`, and returns its
-    /// arguments with the position after its `}`.
+    /// statement in an `executing_definition` that begins at `start`, indented
+    /// `indentation` spaces, whose references take their default FQUN from
+    /// `fqun`, and returns its arguments with the position after its `}`.
     ///
     /// ```ebnf
     /// operation_arguments_block =
@@ -105,6 +125,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_operation_arguments_block(
         &mut self,
+        executing_definition: ExecutingDefinition,
         start: Position,
         indentation: usize,
         fqun: &FqunWithCanonicalText<'py, 'source>,
@@ -131,7 +152,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let arguments = self.nodes.start::<ast::OperationArgumentStatement>();
         loop {
-            let argument = self.parse_operation_argument_statement(fqun)?;
+            let argument = self.parse_operation_argument_statement(executing_definition, fqun)?;
             self.nodes.push(&arguments, argument);
             match self.next_line_in_block(indentation, &[WITH])? {
                 LineInBlock::Statement => {}
@@ -146,8 +167,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((self.nodes.finish_tuple(arguments)?, end))
     }
 
-    /// Parses an operation argument statement, whose references take their
-    /// default FQUN from `fqun`, through the end of its line.
+    /// Parses an operation argument statement in an `executing_definition`,
+    /// whose references take their default FQUN from `fqun`, through the end
+    /// of its line.
     ///
     /// ```ebnf
     /// operation_argument_statement =
@@ -155,6 +177,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_operation_argument_statement(
         &mut self,
+        executing_definition: ExecutingDefinition,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationArgumentStatement<'py>> {
         let start = self.scanner.position;
@@ -167,7 +190,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_view());
         }
-        let view = self.parse_view_reference()?;
+        let (view, _) = self.parse_view_reference()?;
         // There is no ` looking at` after the view.
         if !self.scanner.consume(SPACE_LOOKING_AT) {
             return Err(
@@ -179,37 +202,64 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !self.space_before_word()? {
             return Err(self.expected_argument_source());
         }
-        let (looking_at, end) = self.parse_operation_argument_source(fqun)?;
+        let (looking_at, end) = self.parse_operation_argument_source(executing_definition, fqun)?;
         let location = self.ast.location(start, end)?;
         Ok(self
             .ast
             .operation_argument_statement(location, view, looking_at)?)
     }
 
-    /// Parses what an operation argument's view looks at, whose references
-    /// take their default FQUN from `fqun`, and the `.` after it, and returns
-    /// it with the position after the `.`.
+    /// Parses what an operation argument's view in an `executing_definition`
+    /// looks at, whose references take their default FQUN from `fqun`, and the
+    /// `.` after it, and returns it with the position after the `.`.
     ///
     /// ```ebnf
     /// operation_argument_source = ( position_reference | local_view_name | literal ), terminator ;
     /// ```
     // An action's arguments may not look at views, and an operation's may not
-    // look at positions, but the validator reports those with diagnostics
-    // that name what the view looks at, so the parser accepts all three
-    // everywhere.
+    // look at positions. The argument is still the one that was meant, so
+    // these get diagnostics and stay in the AST.
     fn parse_operation_argument_source(
         &mut self,
+        executing_definition: ExecutingDefinition,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         ast::PositionReferenceOrLocalTypedNameReferenceOrLiteral<'py>,
         Position,
     )> {
-        if !self.scanner.next_bytes_are(VIEW) {
+        let start = self.scanner.position;
+        if self.scanner.next_bytes_are(VIEW) {
+            let (view, source_typed_name) = self.parse_view_reference()?;
+            // An action's argument looks at a view.
+            if executing_definition == ExecutingDefinition::Action {
+                let last = self.scanner.position.previous_column();
+                self.diagnostics.operation_argument_view_diagnostic(
+                    start,
+                    last,
+                    source_typed_name.to_str()?,
+                )?;
+            }
+            let end = self.parse_statement_terminator()?;
+            return Ok((view.into(), end));
+        }
+        if executing_definition == ExecutingDefinition::Action
+            || self.scanner.next_bytes_are(LITERAL)
+        {
             return self.parse_value_source(fqun, Self::expected_argument_source);
         }
-        let view = self.parse_view_reference()?;
-        let end = self.parse_statement_terminator()?;
-        Ok((view.into(), end))
+        // What the view looks at is neither a position reference, a view, nor
+        // a literal.
+        if !POSITION_OR_ACTION
+            .iter()
+            .any(|&(keyword, _)| self.scanner.next_bytes_are(keyword))
+        {
+            return Err(self.expected_argument_source());
+        }
+        let reference = self.parse_position_reference(fqun)?;
+        // An operation's argument looks at a position.
+        self.operation_argument_position_diagnostic(start, &reference)?;
+        let end = self.parse_reference_terminator()?;
+        Ok((reference.into(), end))
     }
 
     /// Parses a typed name with the name type `view`.
@@ -217,7 +267,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// local_view_name = "view", "<", local_name, ">" ;
     /// ```
-    fn parse_view_reference(&mut self) -> ParseResult<ast::LocalTypedNameReference<'py>> {
+    fn parse_view_reference(
+        &mut self,
+    ) -> ParseResult<(ast::LocalTypedNameReference<'py>, Bound<'py, PyString>)> {
         let start = self.scanner.position;
         // The name type is not `view`.
         if !self.scanner.consume(VIEW) {
@@ -225,14 +277,36 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let name = self.parse_local_name_content()?;
         let location = self.ast.location(start, self.scanner.position)?;
-        let (typed_name, _) =
-            self.local_typed_name_reference(location, ast::NameType::View, name)?;
-        Ok(typed_name)
+        Ok(self.local_typed_name_reference(location, ast::NameType::View, name)?)
     }
 }
 
 // The functions that only run on an error path.
 impl<'py, 'source> Parser<'py, 'source> {
+    /// Adds the diagnostic for an operation's argument that begins at `start`
+    /// and looks at the position `reference`, which ends at the scanner's
+    /// position.
+    #[cold]
+    #[inline(never)]
+    fn operation_argument_position_diagnostic(
+        &mut self,
+        start: Position,
+        reference: &ast::PositionReference<'py>,
+    ) -> PyResult<()> {
+        // The parser keeps only the full typed name of each part, so this
+        // joins the source typed names that the parts' nodes hold.
+        let node = &reference.0;
+        let position_name = node
+            .getattr(intern!(node.py(), "source_chained_name"))?
+            .cast_into::<PyString>()?;
+        let last = self.scanner.position.previous_column();
+        self.diagnostics.operation_argument_position_diagnostic(
+            start,
+            last,
+            position_name.to_str()?,
+        )
+    }
+
     /// Returns the error for a name type, at the scanner's position, that is
     /// not the one an operation execution statement that executes an
     /// operation of `kind` allows.

@@ -1,0 +1,30 @@
+# Within an action, a view may not look at a view, so two views looking at the
+# same view are not also aliased.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<number>.
+        }
+    }
+}

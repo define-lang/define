@@ -134,8 +134,8 @@ class OperationArgumentsValidator:
                         interface_view=interface_view, looking_at=literal_value
                     )
                 )
-            # Structural validation reports views that look at a position within
-            # an operation, or at a view within an action.
+            # The parser reports views that look at a position within an
+            # operation, or at a view within an action.
             elif isinstance(looking_at, looked_at_type):
                 arguments.append(
                     codegen_input.OperationArgument(
