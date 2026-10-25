@@ -120,6 +120,7 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
         main = "//tools/bzl:pyright_test_runner.py",
         args = [
             "$(rlocationpath //:basedpyright)",
+            "$(rlocationpath //:pyproject.toml)",
             native.package_name(),
         ],
         data = [
