@@ -18,7 +18,7 @@ bazel_dep(name = "llvm", version = "0.8.25")
 bazel_dep(name = "protobuf", version = "36.2")
 bazel_dep(name = "protovalidate", version = "1.2.2")
 bazel_dep(name = "re2", version = "2025-11-05")
-bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.6")
+bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.10")
 bazel_dep(name = "rules_buf", version = "0.5.4")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.9.1")
@@ -35,7 +35,6 @@ local_path_override(
     path = "vendored/re2",
 )
 
-# TODO: Upgrade to an aspect_rules_py release with PR #1538 and remove this override.
 # Windows free-threaded CPython's headers need Py_GIL_DISABLED defined for
 # extensions to compile for the interpreter's ABI, which this patch adds.
 # TODO: Remove the patch once an aspect_rules_py release includes
@@ -75,7 +74,7 @@ local_path_override(
 # https://github.com/aspect-build/rules_py/pull/1644.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "a75335de5bb06f0cdafb3653800a67e93f653906",
+    commit = "edfd58e83d9828b47783687fd6960c3121a7ba82",
     patch_strip = 1,
     patches = [
         "//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch",
