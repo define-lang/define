@@ -12,7 +12,7 @@ from pathlib import Path
 
 import click
 
-from define.compiler import constants, driver, overall_stats
+from define.compiler import constants, driver
 
 type _CommandFunction = Callable[..., None]
 type _ClickWrappedFunction = Callable[..., None]
@@ -53,24 +53,15 @@ def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
             "heuristic based on available CPU cores."
         ),
     )
-    @click.option(
-        "--stats",
-        type=click.Choice([m.value for m in overall_stats.StatsMode]),
-        is_flag=False,
-        flag_value=overall_stats.StatsMode.OVERALL.value,
-        default=None,
-        help="Print timing stats.",
-    )
     @click.pass_context
     @functools.wraps(f)
     def wrapper(
         ctx: click.Context,
         file: Path | None,
         max_threads: int | None,
-        stats: str | None,
         **kwargs: object,
     ):
-        f(ctx, file, max_threads, stats, **kwargs)
+        f(ctx, file, max_threads, **kwargs)
 
     return wrapper
 
@@ -87,20 +78,15 @@ def _run(
     ctx: click.Context,
     file: Path | None,
     max_threads: int | None,
-    stats: str | None,
     mode: driver.DriverMode,
     output_dir: Path | None = None,
 ):
     source = _resolve_input_source(file)
     d = driver.Driver()
-    stats_mode = overall_stats.StatsMode(stats) if stats else None
-    stats_stream = sys.stdout if stats_mode is not None else None
     code = d.run(
         file,
         mode=mode,
         error_stream=sys.stderr,
-        stats_stream=stats_stream,
-        stats_mode=stats_mode or overall_stats.StatsMode.OVERALL,
         output_dir=output_dir,
         source=source,
         max_threads=max_threads,
@@ -114,10 +100,9 @@ def validate(
     ctx: click.Context,
     file: Path | None,
     max_threads: int | None,
-    stats: str | None,
 ):
     """Validate a Define source file."""
-    _run(ctx, file, max_threads, stats, driver.DriverMode.VALIDATE)
+    _run(ctx, file, max_threads, driver.DriverMode.VALIDATE)
 
 
 @main.command("compile")
@@ -133,11 +118,10 @@ def compile_cmd(
     ctx: click.Context,
     file: Path | None,
     max_threads: int | None,
-    stats: str | None,
     out: Path,
 ):
     """Compile a Define source file."""
-    _run(ctx, file, max_threads, stats, driver.DriverMode.COMPILE, output_dir=out)
+    _run(ctx, file, max_threads, driver.DriverMode.COMPILE, output_dir=out)
 
 
 if __name__ == "__main__":  # pragma: no cover

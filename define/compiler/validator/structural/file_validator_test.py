@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 # NOTE: Tests for new syntax or diagnostics belong in program_validator_tests/,
 # not here. This file tests FileStructuralValidator internals only (edges,
-# timing stats, error handling).
+# error handling).
 
 from __future__ import annotations
 
@@ -451,16 +451,3 @@ class TestParticleReferenceEdges:
         assert result.diagnostics[1].location.line == 10
         assert result.diagnostics[1].location.column == 58
         assert _reference_edges(result) == []
-
-
-class TestFileStructuralValidatorTimingStats:
-    def test_stats_populated(self, tmp_path: Path):
-        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
-
-        assert result.stats.overall_compile > 0
-        assert result.stats.file_loading > 0
-        assert result.stats.parse > 0
-        assert result.stats.file_validation > 0

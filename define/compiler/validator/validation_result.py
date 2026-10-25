@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics, exceptions, source_map
     from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator import codegen_input, stats
+    from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
 
 
@@ -72,7 +72,6 @@ class FileValidationResult:
     source_digest: bytes | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
-    stats: stats.ValidationTimingStats
     file_diagnostics: list[diagnostics.Diagnostic]
     # This preserves source order, including duplicate definitions that were
     # diagnosed during file validation.
@@ -131,7 +130,6 @@ class ProgramValidationResult(msgspec.Struct):
 
     file_results: list[FileValidationResult]
     entry_action: ast.ActionDefinition | None
-    config_loading_time_ns: int
     definition_order: reference_graph_order.ReferenceGraphOrder
     definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],

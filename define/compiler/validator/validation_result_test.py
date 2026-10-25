@@ -7,7 +7,7 @@ from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.graphs import reference_graph
 from define.compiler.parsing import test_helpers
-from define.compiler.validator import stats, validation_result
+from define.compiler.validator import validation_result
 
 _FQUN = "my.domain.com:my_lib"
 
@@ -19,7 +19,6 @@ def _parse(source: str) -> validation_result.FileValidationResult:
         source_digest=None,
         file_path=define_path.DefinePath("test.dfn"),
         root_prefix=define_path.EMPTY,
-        stats=stats.ValidationTimingStats(),
         file_diagnostics=[],
         definition_results=[
             validation_result.DefinitionValidationResult(definition=definition)

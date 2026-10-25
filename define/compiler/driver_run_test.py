@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import constants, driver, overall_stats
+from define.compiler import constants, driver
 
 
 def _write_valid_position_project(project_root: Path, universe_name: str):
@@ -239,33 +239,6 @@ def test_multiple_errors_are_separated_by_divider(
     )
 
 
-def test_stats_stream_receives_output(
-    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.chdir(testdata_project_directory)
-    stats_stream = io.StringIO()
-    result = driver.Driver().run(
-        Path("test.dfn"),
-        stats_stream=stats_stream,
-        stats_mode=overall_stats.StatsMode.OVERALL,
-    )
-    assert result == driver.ExitCode.SUCCESS
-    output = stats_stream.getvalue()
-    assert "--- Compilation Stats ---" in output
-    assert "-- Overall --" in output
-    assert "-- Breakdown --" in output
-
-
-def test_stats_stream_none_produces_no_stats(
-    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.chdir(testdata_project_directory)
-    error_stream = io.StringIO()
-    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
-    assert result == driver.ExitCode.SUCCESS
-    assert "Compilation Stats" not in error_stream.getvalue()
-
-
 def test_compile_succeeds(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -396,21 +369,11 @@ def test_multifile_project_returns_success(
 ):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
-    stats_stream = io.StringIO()
 
-    result = driver.Driver().run(
-        Path("test.dfn"),
-        error_stream=error_stream,
-        stats_stream=stats_stream,
-        stats_mode=overall_stats.StatsMode.PER_FILE,
-    )
+    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
 
     assert result == driver.ExitCode.SUCCESS
     assert error_stream.getvalue() == ""
-    stats_output = stats_stream.getvalue()
-    assert "Files compiled:  2" in stats_output
-    assert "  test.dfn\n" in stats_output
-    assert "  dependency.dfn\n" in stats_output
 
 
 def test_reference_graph_diagnostic_returns_error(

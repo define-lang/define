@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import click.testing
 
-from define.compiler import constants, driver, main, overall_stats
+from define.compiler import constants, driver, main
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
@@ -33,49 +33,6 @@ class TestValidateSubcommand:
     def test_no_args_shows_error(self):
         result = _runner.invoke(main.main, ["validate"])
         assert result.exit_code == _USAGE_ERROR
-
-    @patch.object(
-        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
-    )
-    def test_stats_alone_passes_overall_mode(self, mock_run: MagicMock):
-        result = _runner.invoke(main.main, ["validate", "test.dfn", "--stats"])
-        assert result.exit_code == driver.ExitCode.SUCCESS
-        call_kwargs = mock_run.call_args
-        assert call_kwargs.kwargs["stats_mode"] == overall_stats.StatsMode.OVERALL
-        assert call_kwargs.kwargs["stats_stream"] is not None
-
-    @patch.object(
-        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
-    )
-    def test_stats_per_file_passes_per_file_mode(self, mock_run: MagicMock):
-        result = _runner.invoke(main.main, ["validate", "test.dfn", "--stats=per-file"])
-        assert result.exit_code == driver.ExitCode.SUCCESS
-        call_kwargs = mock_run.call_args
-        assert call_kwargs.kwargs["stats_mode"] == overall_stats.StatsMode.PER_FILE
-        assert call_kwargs.kwargs["stats_stream"] is not None
-
-    @patch.object(
-        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
-    )
-    def test_no_stats_passes_none_stream(self, mock_run: MagicMock):
-        result = _runner.invoke(main.main, ["validate", "test.dfn"])
-        assert result.exit_code == driver.ExitCode.SUCCESS
-        call_kwargs = mock_run.call_args
-        assert call_kwargs.kwargs["stats_stream"] is None
-
-    @patch.object(
-        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
-    )
-    def test_stats_without_value_before_file_uses_flag_value(self, mock_run: MagicMock):
-        result = _runner.invoke(main.main, ["validate", "test.dfn", "--stats"])
-        assert result.exit_code == driver.ExitCode.SUCCESS
-        call_kwargs = mock_run.call_args
-        assert call_kwargs.kwargs["stats_mode"] == overall_stats.StatsMode.OVERALL
-
-    def test_stats_with_non_choice_value_shows_error(self):
-        result = _runner.invoke(main.main, ["validate", "--stats", "test.dfn"])
-        assert result.exit_code == _USAGE_ERROR
-        assert "is not one of" in result.output
 
     @patch.object(
         driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
@@ -144,16 +101,6 @@ class TestCompileSubcommand:
         assert result.exit_code == driver.ExitCode.SUCCESS
         call_args = mock_run.call_args
         assert call_args.args[1] == Path("my/file.dfn")
-
-    @patch.object(
-        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
-    )
-    def test_stats_passes_overall_mode(self, mock_run: MagicMock):
-        result = _runner.invoke(main.main, ["compile", "test.dfn", "--stats"])
-        assert result.exit_code == driver.ExitCode.SUCCESS
-        call_kwargs = mock_run.call_args
-        assert call_kwargs.kwargs["stats_mode"] == overall_stats.StatsMode.OVERALL
-        assert call_kwargs.kwargs["stats_stream"] is not None
 
     @patch.object(
         driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS

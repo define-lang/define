@@ -115,7 +115,6 @@ py_library(
     deps = [
         ":ast",
         ":constants",
-        ":overall_stats",
         "//define/compiler/codegen:generator",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:exceptions",
@@ -153,7 +152,6 @@ py_test(
         ":conftest",
         ":constants",
         ":driver",
-        ":overall_stats",
         "@pypi//pytest",
     ],
 )
@@ -218,7 +216,6 @@ py_binary(
     deps = [
         ":constants",
         ":driver",
-        ":overall_stats",
         "@pypi//click",
     ],
 )
@@ -243,7 +240,6 @@ py_test(
         ":constants",
         ":driver",
         ":main",
-        ":overall_stats",
         "@pypi//click",
     ],
 )
@@ -252,30 +248,6 @@ py_library(
     name = "name_types",
     srcs = ["name_types.py"],
     visibility = [":__subpackages__"],
-)
-
-py_library(
-    name = "overall_stats",
-    srcs = ["overall_stats.py"],
-    visibility = [":__subpackages__"],
-    deps = [
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:stats",
-        "//define/compiler/validator:validation_result",
-        "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "overall_stats_test",
-    size = "small",
-    srcs = ["overall_stats_test.py"],
-    deps = [
-        ":overall_stats",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:stats",
-        "//define/compiler/validator:validation_result",
-    ],
 )
 
 # --- Type-checking ---
@@ -303,8 +275,6 @@ pyright_test(
         ":main_integration_test",
         ":main_test",
         ":name_types",
-        ":overall_stats",
-        ":overall_stats_test",
     ],
 )
 

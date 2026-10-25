@@ -24,7 +24,7 @@ from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
 from define.compiler.parsing import parser
-from define.compiler.validator import scope_tracker, stats, validation_result
+from define.compiler.validator import scope_tracker, validation_result
 from define.compiler.validator.structural import name_validators
 
 if TYPE_CHECKING:
@@ -76,17 +76,13 @@ class FileStructuralValidator:
         self, context: FileValidationContext
     ) -> validation_result.FileValidationResult:
         """Validate a single file and return the result."""
-        tracker = stats.ValidationStatsTracker()
-
         source, digest, load_error = self._load_file(context.full_path)
-        tracker.mark_file_loading_finished()
         if load_error is not None:
             return validation_result.FileValidationResult(
                 exception=load_error,
                 source_digest=digest,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
-                stats=tracker.build(),
                 file_diagnostics=[],
                 definition_results=[],
             )
@@ -94,7 +90,6 @@ class FileStructuralValidator:
             context=context,
             source=source,
             source_digest=digest,
-            tracker=tracker,
         )
 
     def validate_source(
@@ -103,15 +98,12 @@ class FileStructuralValidator:
     ) -> validation_result.FileValidationResult:
         """Validate source text without loading from the filesystem."""
         context = EmptyFileValidationContext()
-        tracker = stats.ValidationStatsTracker()
-        tracker.mark_file_loading_finished()
         return self._validate_source(
             context=context,
             # A lone surrogate becomes invalid UTF-8, as it would be in a file,
             # instead of failing to encode.
             source=source.encode(errors="surrogatepass"),
             source_digest=None,
-            tracker=tracker,
         )
 
     @staticmethod
@@ -119,7 +111,6 @@ class FileStructuralValidator:
         context: FileValidationContext,
         source: bytes,
         source_digest: bytes | None,
-        tracker: stats.ValidationStatsTracker,
     ) -> validation_result.FileValidationResult:
         """Parse and validate UTF-8 source text."""
         parser_file_path = (
@@ -132,7 +123,6 @@ class FileStructuralValidator:
             parser_file_path,
             check_indentation=context.is_filesystem_context,
         )
-        tracker.mark_parse_finished()
 
         if parse_result.exception is not None:
             return validation_result.FileValidationResult(
@@ -140,7 +130,6 @@ class FileStructuralValidator:
                 source_digest=source_digest,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
-                stats=tracker.build(),
                 file_diagnostics=parse_result.diagnostics,
                 definition_results=[],
             )
@@ -162,14 +151,12 @@ class FileStructuralValidator:
             definition_results.append(result)
             if definition.typed_name not in seen_definitions:
                 seen_definitions[definition.typed_name] = definition
-        tracker.mark_file_validation_finished()
 
         return validation_result.FileValidationResult(
             exception=None,
             source_digest=source_digest,
             file_path=context.full_path,
             root_prefix=context.root_prefix,
-            stats=tracker.build(),
             file_diagnostics=parse_result.diagnostics,
             definition_results=definition_results,
         )

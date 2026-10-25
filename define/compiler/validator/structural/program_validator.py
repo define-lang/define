@@ -8,7 +8,6 @@ per-file validation to FileStructuralValidator workers.
 from __future__ import annotations
 
 import queue
-import time
 import typing
 from concurrent.futures import ThreadPoolExecutor
 
@@ -22,7 +21,7 @@ from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
-from define.compiler.validator import stats, validation_result
+from define.compiler.validator import validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
 
 
@@ -56,15 +55,7 @@ class _FileWorkPool:
 
     def submit(self, context: file_validator.FileValidationContext):
         """Submit a file for validation. Starts immediately on a worker thread."""
-        submitted_at = time.perf_counter_ns()
-
-        def _validate() -> validation_result.FileValidationResult:
-            started_at = time.perf_counter_ns()
-            result = self._fv.validate_file(context)
-            result.stats.queue_wait = started_at - submitted_at
-            return result
-
-        future = self._executor.submit(_validate)
+        future = self._executor.submit(self._fv.validate_file, context)
         self._pending += 1
         # add_done_callback pushes from the worker thread the moment a file
         # finishes, so no completion waits on another one and collecting a
@@ -91,8 +82,6 @@ class ProgramStructuralValidator:
     Runs a single-threaded coordinator loop that submits files to a thread
     pool and processes results as they complete. All shared state is
     managed on the coordinator thread.
-
-    config_loading_time_ns stores program-level config loading time.
     """
 
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
@@ -102,7 +91,6 @@ class ProgramStructuralValidator:
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
     ]
-    _config_loading_time_ns: int
     _allow_entry_action_interface_positions: bool
 
     def __init__(
@@ -120,7 +108,6 @@ class ProgramStructuralValidator:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
         self._definition_results = typed_name_dict.TypedNameDict()
-        self._config_loading_time_ns = 0
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
         )
@@ -222,7 +209,6 @@ class ProgramStructuralValidator:
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             entry_action=entry_action,
-            config_loading_time_ns=self._config_loading_time_ns,
             definition_order=definition_order,
             definition_results=self._definition_results,
             source_map=source_map.SourceMap(file_digests, in_memory_source),
@@ -276,7 +262,6 @@ class ProgramStructuralValidator:
         submit_referenced_files: bool = True,
     ):
         """Handle a completed file: check edges, submit referenced files."""
-        started_at = time.perf_counter_ns()
         # We always want to submit referenced files first, to get background
         # work into the queue ASAP.
         if submit_referenced_files:
@@ -290,7 +275,6 @@ class ProgramStructuralValidator:
         # this file's definitions already being registered so wrong-type checks
         # don't race ahead of the completed file's real contents.
         self._validate_incoming_reference_edges(result.file_path)
-        result.stats.global_validation += time.perf_counter_ns() - started_at
 
     def _process_completed_definition(
         self,
@@ -740,18 +724,6 @@ class ProgramStructuralValidator:
         expected_fqun: str | None = None,
     ) -> config.ProjectRootConfig:
         """Load project config for a root and register it."""
-        started_at = time.perf_counter_ns()
-        try:
-            return self._do_load_root_config(root_prefix, expected_fqun)
-        finally:
-            self._config_loading_time_ns += time.perf_counter_ns() - started_at
-
-    def _do_load_root_config(
-        self,
-        root_prefix: define_path.DefinePath,
-        expected_fqun: str | None = None,
-    ) -> config.ProjectRootConfig:
-        """Load project config for a root and register it without timing side effects."""
         existing = self._path_tracker.config_for_root(root_prefix)
         if existing is not None:
             if expected_fqun and existing.fqun != expected_fqun:
@@ -806,13 +778,11 @@ def _make_config_error_result(
     error: config.ConfigError,
 ) -> validation_result.FileValidationResult:
     """Create a FileValidationResult for a config loading failure."""
-    tracker = stats.ValidationStatsTracker()
     return validation_result.FileValidationResult(
         exception=error,
         source_digest=None,
         file_path=file_path,
         root_prefix=root_prefix,
-        stats=tracker.build(),
         file_diagnostics=[],
         definition_results=[],
     )

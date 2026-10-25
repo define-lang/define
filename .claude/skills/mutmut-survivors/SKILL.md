@@ -65,8 +65,8 @@ After a broad mutmut run completes, produce a markdown report file
    - `**Mutants:**` listing every individual mutant name as a bullet list
 4. **Uninteresting mutants** section at the end, grouped by sub-category (e.g.,
    `super().__init__()` args, `typing.cast()` strings, ValueError/KeyError guard
-   text, timing/stats fields, equivalent mutants, unreachable code, type
-   narrowing). Each sub-category lists its mutant names.
+   text, equivalent mutants, unreachable code, type narrowing). Each
+   sub-category lists its mutant names.
 
 ### Uninteresting mutant categories
 
@@ -76,7 +76,6 @@ section rather than as root causes:
 - `typing.cast()` string arg mutations (runtime no-op)
 - `isinstance(...)` or `is None` checks used only for pyright type narrowing
 - ValueError/KeyError guard message text for states that can never happen
-- Timing/stats initial values and arithmetic
 - Equivalent mutants (`False` → `None` in boolean context, case-insensitive
   codec names, removing `case _: pass`, etc.)
 - Unreachable match wildcards

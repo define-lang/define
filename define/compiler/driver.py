@@ -18,15 +18,13 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TextIO
 
-from define.compiler import constants, overall_stats
+from define.compiler import constants
 from define.compiler.codegen import generator
 from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 if typing.TYPE_CHECKING:
-    import collections.abc
-
     from define.compiler import ast
     from define.compiler.validator import codegen_input as codegen_input_types
     from define.compiler.validator import validation_result
@@ -62,19 +60,11 @@ def _error_strings(
 
 
 class CompilerResult(abc.ABC):
-    """A compiler result that can report errors and validation timings."""
-
-    overall_stats: overall_stats.OverallStats
+    """A compiler result that can report errors."""
 
     @abc.abstractmethod
     def error_strings(self) -> list[str]:
         """Format errors for the command-line caller."""
-
-    @abc.abstractmethod
-    def file_timing_results(
-        self,
-    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
-        """Provide the retained per-file validation timings."""
 
 
 @dataclass
@@ -83,22 +73,11 @@ class CompilerValidationResult(CompilerResult):
 
     program_validation: validation_result.ProgramValidationResult
     codegen_input: codegen_input_types.CodegenInput
-    overall_stats: overall_stats.OverallStats
 
     @typing.override
     def error_strings(self) -> list[str]:
         """Format errors from the detailed program validation data."""
         return _error_strings(self.program_validation)
-
-    @typing.override
-    def file_timing_results(
-        self,
-    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
-        """Provide the per-file validation timings."""
-        return [
-            overall_stats.FileTiming(result.file_path, result.stats)
-            for result in self.program_validation.file_results
-        ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,8 +88,6 @@ class CompilationResult(CompilerResult):
     all_exceptions: list[exceptions.DefineError]
     entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
-    file_timings: list[overall_stats.FileTiming]
-    overall_stats: overall_stats.OverallStats
 
     @classmethod
     def from_validation_result(
@@ -123,11 +100,6 @@ class CompilationResult(CompilerResult):
             all_exceptions=program_validation.all_exceptions,
             entry_action=program_validation.entry_action,
             _error_strings=_error_strings(program_validation),
-            file_timings=[
-                overall_stats.FileTiming(file_result.file_path, file_result.stats)
-                for file_result in program_validation.file_results
-            ],
-            overall_stats=validation.overall_stats,
         )
 
     def has_errors(self) -> bool:
@@ -138,13 +110,6 @@ class CompilationResult(CompilerResult):
     def error_strings(self) -> list[str]:
         """Return errors formatted before detailed validation data was released."""
         return self._error_strings
-
-    @typing.override
-    def file_timing_results(
-        self,
-    ) -> collections.abc.Sequence[overall_stats.FileTiming]:
-        """Provide the retained per-file validation timings."""
-        return self.file_timings
 
 
 class Driver:
@@ -201,10 +166,6 @@ class Driver:
         return CompilerValidationResult(
             program_validation=program_result,
             codegen_input=reference_graph_result.codegen_input,
-            overall_stats=overall_stats.calculate_overall_stats(
-                program_result.file_results,
-                program_result.config_loading_time_ns,
-            ),
         )
 
     def compile_program(
@@ -311,8 +272,6 @@ class Driver:
         path: Path | None = None,
         mode: DriverMode = DriverMode.VALIDATE,
         error_stream: TextIO | None = None,
-        stats_stream: TextIO | None = None,
-        stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
         output_dir: Path | None = None,
         source: str | None = None,
         max_threads: int | None = None,
@@ -324,9 +283,6 @@ class Driver:
             mode: Whether to only validate or also compile.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.
-            stats_stream: Where to write timing statistics.
-                If None, no stats are printed.
-            stats_mode: Level of detail for stats output.
             output_dir: Directory to write generated files into in compile mode.
                 Required when mode is COMPILE.
             source: Source text to validate in non-filesystem mode instead of
@@ -363,13 +319,5 @@ class Driver:
 
         if all_error_strings:
             print(constants.ERROR_DIVIDER.join(all_error_strings), file=error_stream)
-
-        if stats_stream is not None:
-            stats_output = overall_stats.format_stats(
-                driver_result.overall_stats,
-                driver_result.file_timing_results(),
-                stats_mode,
-            )
-            print(stats_output, file=stats_stream, end="")
 
         return ExitCode.ERROR if all_error_strings else ExitCode.SUCCESS
