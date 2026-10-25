@@ -38,9 +38,13 @@ def run_generated_program(
     # in a working directory that long, and a test's venv and testdata can be
     # that deep. The venv's python is a link to an interpreter with a shorter
     # path, and the program doesn't need the venv, since PYTHONPATH has every
-    # import path. Nor does it depend on its working directory.
+    # import path. Nor does it depend on its working directory. From 247
+    # characters, Windows also fails to load the interpreter's DLLs unless the
+    # interpreter was started by its \\?\ path, which subprocess doesn't add.
+    interpreter = os.path.realpath(sys.executable)
     return subprocess.run(
-        [os.path.realpath(sys.executable), str(generated_dir / entry_script)],
+        [interpreter, str(generated_dir / entry_script)],
+        executable="\\\\?\\" + interpreter if os.name == "nt" else None,
         cwd=tempfile.gettempdir(),
         env=os.environ | generated_environment,
         capture_output=True,

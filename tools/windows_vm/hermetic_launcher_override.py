@@ -13,10 +13,12 @@ import click
 from tools.windows_vm import bazel_tools_override
 
 # TODO: Remove this override once a hermetic-launcher release has
-# https://github.com/hermeticbuild/hermetic-launcher/pull/87, and upgrade to it.
-# This commit is that PR's branch, on top of the merged #83, #84 and #85.
+# https://github.com/hermeticbuild/hermetic-launcher/pull/87 and
+# https://github.com/hermeticbuild/hermetic-launcher/pull/88, and upgrade to it.
+# This commit is #87's branch with #88's change on top, on top of the merged
+# #83, #84 and #85.
 _REPOSITORY = "https://github.com/mkanat/hermetic-launcher.git"
-_COMMIT = "5169496348324aed5d4a026a6fccc698665914fc"
+_COMMIT = "38fb8d44f16a7631adfdec5997eeff926648c300"
 
 _TEMPLATE_TARGET = "//runfiles-stub:runfiles-stub_x86_64-pc-windows-gnullvm"
 _TEMPLATE_NAME = "runfiles-stub-x86_64-windows.exe"

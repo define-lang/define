@@ -112,7 +112,7 @@ runs on this host. Linux runs these tests instead, so the VM skips them:
    builds the template from a hermetic-launcher commit that has them, once, into
    `~/.cache/define-windows-vm`, and puts it in `.windows_vm/` in the checkout.
    It stops being needed once a hermetic-launcher release has
-   hermeticbuild/hermetic-launcher#87.
+   hermeticbuild/hermetic-launcher#87 and hermeticbuild/hermetic-launcher#88.
 
 The service's store and action directories are in `C:\rbe`, and it keeps up to
 30 GiB of blobs there. Its messages are in the Application event log, from the
