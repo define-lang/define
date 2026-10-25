@@ -104,9 +104,14 @@ common --incompatible_objc_alwayslink_by_default
 common --incompatible_python_disallow_native_rules
 common --incompatible_remote_local_fallback_for_remote_cache
 common --incompatible_resolve_select_keys_eagerly
-# Uncomment when bazel_lib's expand_variables, which llvm's run_binary targets
-# use, rules_js's js_binary, and rules_rust's rust_analyzer_aspect stop reading
-# ctx.build_file_path.
+# TODO: Uncomment once this repo's dependencies stop reading ctx.build_file_path:
+# - bazel_lib's expand_variables, which llvm's run_binary targets use:
+#   https://github.com/bazel-contrib/bazel-lib/pull/1308
+# - rules_js's js_binary: https://github.com/aspect-build/rules_js/pull/3066
+# - rules_rust's rust_analyzer_aspect:
+#   https://github.com/bazelbuild/rules_rust/pull/4351. rules_rs pins a commit
+#   of hermeticbuild/rules_rust, so this needs that fork to merge the fix and
+#   rules_rs to update its pin.
 # common --incompatible_stop_exporting_build_file_path
 common --incompatible_stop_exporting_language_modules
 common --incompatible_strip_executable_safely
