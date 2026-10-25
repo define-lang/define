@@ -23,7 +23,7 @@ class RemoteFrame(Protocol):
 
     filename: str
     funcname: str
-    lineno: int
+    lineno: int | None
 
 
 class RemoteThread(Protocol):

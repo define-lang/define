@@ -537,6 +537,37 @@ def test_compiler_only_uses_the_runfile_relative_source_path():
     ]
 
 
+# PRF-016: Source identity.
+def test_frame_without_a_line_sorts_before_lines_of_its_file(tmp_path: Path):
+    profile = _controlled_profile()
+    profile.frames[4] = {
+        "filename": "/repo/define/compiler/codegen.py",
+        "function": "generate_module",
+        "line": None,
+    }
+    first_observation = profile.observations[0]
+    assert first_observation["status"] == "successful"
+    first_observation["threads"][0]["stack"].insert(1, 4)
+    profile_path = tmp_path / "frame-without-line.jsonl"
+    _write_records(profile_path, _wire_records(profile))
+
+    analysis = _analyze_wall(profile)
+    result = click.testing.CliRunner().invoke(
+        analyzer.main,
+        ["--profile", str(profile_path)],
+    )
+
+    assert [row.frame for row in analysis.cumulative_rows] == [
+        profile.frames[0],
+        profile.frames[1],
+        profile.frames[4],
+        profile.frames[3],
+        profile.frames[2],
+    ]
+    assert result.exit_code == 0
+    assert "codegen.py (generate_module)" in result.output
+
+
 # PRF-018: Focused analysis.
 def test_analysis_excludes_every_nonmatching_filter_dimension():
     missing_function = _analyze_wall(

@@ -215,7 +215,7 @@ def _frame_rows(
         key=lambda row: (
             -row.wall_occupancy_ns,
             row.frame["filename"],
-            row.frame["line"],
+            _line_order(row.frame),
             row.frame["function"],
         ),
     )
@@ -380,12 +380,19 @@ def _duration(duration_ns: int) -> str:
     return f"{duration_ns / 1_000_000_000:.6f} s"
 
 
+def _line_order(frame: schema.Frame) -> int:
+    # A frame without a line sorts before every line of its file.
+    line = frame["line"]
+    return -1 if line is None else line
+
+
 def _frame_text(frame: schema.Frame) -> str:
     # PRF-016: Source identity.
-    return (
-        f"{analyzer_model.display_filename(frame['filename'])}:{frame['line']} "
-        + f"({frame['function']})"
-    )
+    filename = analyzer_model.display_filename(frame["filename"])
+    line = frame["line"]
+    if line is None:
+        return f"{filename} ({frame['function']})"
+    return f"{filename}:{line} ({frame['function']})"
 
 
 def _function_text(identity: analyzer_model.FunctionIdentity) -> str:
@@ -510,7 +517,7 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int):
         key=lambda row: (
             -row.longest_span_ns,
             row.frame["filename"],
-            row.frame["line"],
+            _line_order(row.frame),
             row.frame["function"],
         ),
     )

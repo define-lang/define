@@ -262,7 +262,9 @@ class _CaptureState(msgspec.Struct):
 class _ProfileWriter(msgspec.Struct):
     # PRF-027: Incremental persistence. PRF-028: Bounded storage.
     profile_file: typing.TextIO
-    frame_ids: dict[tuple[str, str, int], int] = msgspec.field(default_factory=dict)
+    frame_ids: dict[tuple[str, str, int | None], int] = msgspec.field(
+        default_factory=dict
+    )
 
     def append_records(self, records: list[schema.ProfileRecord]):
         with _blocked_interruption_signals():

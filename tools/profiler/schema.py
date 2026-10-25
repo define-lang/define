@@ -75,7 +75,9 @@ class Frame(TypedDict):
     # PRF-015: Full stacks. PRF-016: Source identity.
     filename: str
     function: str
-    line: int
+    # The remote unwinder reports no line for some module frames while they
+    # are being imported.
+    line: int | None
 
 
 class ThreadObservation(TypedDict):
