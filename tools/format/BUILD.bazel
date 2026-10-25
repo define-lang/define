@@ -35,6 +35,9 @@ go_test(
         ":format",
         "//:dprint.jsonc",
     ],
+    # The Windows VM lacks diff, which buf runs, and gets the Linux rustfmt from
+    # the cross build. A native Windows build runs this test.
+    tags = ["no_windows_vm"],
     x_defs = {
         "dprintConfigRlocationPath": "$(rlocationpath //:dprint.jsonc)",
         "formatRlocationPath": "$(rlocationpath :format)",

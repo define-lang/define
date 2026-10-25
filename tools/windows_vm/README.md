@@ -68,6 +68,8 @@ runs on this host. Linux runs these tests instead, so the VM skips them:
 - Tests tagged `local`, which Bazel runs only on this host.
 - skylib unittests, tagged `skylib_unittest`, whose results don't depend on the
   platform.
+- Tests tagged `no_windows_vm`, which need something the cross build or the VM
+  lacks.
 
 ### Setting it up
 

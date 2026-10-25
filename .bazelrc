@@ -65,10 +65,11 @@ build:windows_vm --test_env='PATH=C:\\Windows\\system32;C:\\Windows;C:\\Windows\
 # - Bazel runs a test tagged local only on this host.
 # - A skylib unittest's result is decided during analysis, so it is the same on
 #   every platform, but skylib picks its script for Linux here.
+# - A test tagged no_windows_vm needs something the cross build or the VM lacks.
 # TODO: Run the clippy tests here once the rules_rust that rules_rs uses
 # builds their runner for the test's execution platform:
 # https://github.com/bazelbuild/rules_rust/pull/4278
-build:windows_vm --test_tag_filters=-clippy,-local,-skylib_unittest
+build:windows_vm --test_tag_filters=-clippy,-local,-skylib_unittest,-no_windows_vm
 
 # Show full command lines on failure
 build --verbose_failures
