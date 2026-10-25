@@ -2,7 +2,7 @@
 
 Each class in `_PARSER_DIAGNOSTICS` gets a `ParserDiagnostics` method that
 takes the start and end positions of its location, then the rest of its fields,
-which are all integers.
+which are integers or text.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ _PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
     diagnostics.ByteOrderMarkInCommentDiagnostic,
     diagnostics.ControlCharacterInCommentDiagnostic,
     diagnostics.InvisibleCharacterInCommentDiagnostic,
+    diagnostics.MissingTerminatorAtEndOfLineDiagnostic,
 )
 
 

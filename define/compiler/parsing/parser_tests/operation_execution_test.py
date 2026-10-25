@@ -8,10 +8,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 _OPERATION_PREFIX = (
@@ -209,17 +212,26 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
     assert error.value.location.end_column == 41
 
 
-def test_encoding_operation_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the encoding operation\n"
-            + _OPERATION_SUFFIX
+def test_encoding_operation_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the encoding operation\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=39, end_line=3, end_column=39)
         )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 39
+    ]
+    assert result.program is not None
+    [statement] = _operation_statements(result.program)
+    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=38
+    )
 
 
 def test_operation_execution_requires_terminator_or_block(parse: Parse):
@@ -301,19 +313,29 @@ def test_arguments_block_requires_argument(parse: Parse):
     assert error.value.location.end_column == 9
 
 
-def test_argument_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<p>\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
+def test_argument_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<p>\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=4, column=44, end_line=4, end_column=44)
         )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+    ]
+    assert result.program is not None
+    [statement] = _operation_statements(result.program)
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    [argument] = statement.arguments
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=43
+    )
 
 
 def test_argument_requires_local_view_name(parse: Parse):

@@ -200,10 +200,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             &ASSIGNABLE_NAME_TYPES,
             Self::expected_quality_assignment_name_type,
         )?;
-        // There is no `.`.
-        let Some(end) = self.parse_terminator()? else {
-            return Err(self.missing_terminator());
-        };
+        let end = self.parse_statement_terminator()?;
         let location = self.ast.location(start, end)?;
         let statement = self
             .ast

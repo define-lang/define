@@ -1288,6 +1288,12 @@ class MissingNewlineAtEndOfFileDiagnostic(Diagnostic):
     message_format: ClassVar[str] = "Define source files must end with a newline"
 
 
+class MissingTerminatorAtEndOfLineDiagnostic(Diagnostic):
+    """Diagnostic for a statement whose line ends where its '.' belongs."""
+
+    message_format: ClassVar[str] = "this statement must end with a '.'"
+
+
 class SpaceBeforeOpenAngleBracketDiagnostic(Diagnostic):
     """Diagnostic for spaces between a name type and the '<' of its name."""
 

@@ -205,10 +205,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let location = self.ast.location(typed_name_start, self.scanner.position)?;
         let typed_name =
             self.global_typed_name_in_definition(location, name_type, name_content, name_text)?;
-        // There is no `.`.
-        let Some(end) = self.parse_terminator()? else {
-            return Err(self.missing_terminator());
-        };
+        let end = self.parse_statement_terminator()?;
         Ok((typed_name, end))
     }
 }

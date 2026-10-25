@@ -211,7 +211,7 @@ def test_indentation_diagnostic_before_syntax_error(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "  it may only contain particles where {\n"
-        + "      it has the position</child>\n"
+        + "      it has the position</child> and more\n"
         + "  }\n"
         + "}\n"
     )

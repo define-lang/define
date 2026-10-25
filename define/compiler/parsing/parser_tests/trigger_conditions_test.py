@@ -201,21 +201,32 @@ def test_invalid_content_in_trigger_block(parse: Parse):
     assert exc_info.value.location.end_column == 16
 
 
-def test_missing_terminator_after_trigger_condition(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_trigger_condition_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=4, column=41, end_line=4, end_column=41)
         )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 41
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 41
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    condition = definition.trigger_conditions.condition
+    assert isinstance(condition, ast.PositionPresenceStatement)
+    assert condition.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=40
+    )
 
 
 def test_missing_space_before_has_a_particle(parse: Parse):

@@ -271,10 +271,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             &POSITION_OR_ACTION,
             Self::expected_position_or_action,
         )?;
-        // There is no `.`.
-        let Some(end) = self.parse_terminator()? else {
-            return Err(self.missing_terminator());
-        };
+        let end = self.parse_statement_terminator()?;
         let location = self.ast.location(start, end)?;
         let implication = self
             .ast
@@ -463,20 +460,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((condition.into(), Some(name)))
     }
 
-    /// Parses a terminator through the end of its line, and returns the
-    /// position after its `.`.
-    ///
-    /// ```ebnf
-    /// terminator
-    /// ```
-    pub(crate) fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
-        // There is no `.`.
-        let Some(end) = self.parse_terminator()? else {
-            return Err(self.missing_terminator());
-        };
-        Ok(end)
-    }
-
     /// Parses a position presence statement through the end of its line, and
     /// returns it with the source typed name of the position it names.
     ///
@@ -652,10 +635,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     {
         if self.scanner.next_bytes_are(LITERAL) {
             let literal = self.parse_literal(fqun)?;
-            // There is no `.` after the literal.
-            let Some(end) = self.parse_terminator()? else {
-                return Err(self.missing_terminator());
-            };
+            let end = self.parse_statement_terminator()?;
             return Ok((literal.into(), end));
         }
         // The value's source is neither a position reference nor a literal.

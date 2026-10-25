@@ -7,10 +7,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_value_definition(parse: Parse):
@@ -38,13 +41,25 @@ def test_value_definition_requires_global_name(parse: Parse):
     assert error.value.location.end_column == 35
 
 
-def test_value_definition_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the potential value<standard:/number/natural>\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 53
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 53
+def test_value_definition_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential value<standard:/number/natural>\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=1, column=53, end_line=1, end_column=53)
+        )
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ValueDefinition)
+    assert definition.typed_name.name_content.path.name == "/number/natural"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=52
+    )
 
 
 def test_value_definition_disallows_block(parse: Parse):

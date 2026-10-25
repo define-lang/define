@@ -200,6 +200,39 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(Some(end))
     }
 
+    /// Parses a terminator through the end of its line, and returns the
+    /// position after its `.`, or the position where its `.` belongs if the
+    /// line ends there.
+    ///
+    /// ```ebnf
+    /// terminator
+    /// ```
+    pub(crate) fn parse_statement_terminator(&mut self) -> ParseResult<Position> {
+        // There is no `.`.
+        let Some(end) = self.parse_terminator()? else {
+            return self.end_line_without_terminator();
+        };
+        Ok(end)
+    }
+
+    /// Parses the rest of the line where a statement's `.` belongs and is
+    /// missing, and returns the position where the `.` belongs.
+    #[cold]
+    fn end_line_without_terminator(&mut self) -> ParseResult<Position> {
+        let missing = self.scanner.position;
+        // The line ends, after any spaces or comment, where the `.` belongs.
+        // Nothing but a `.` can come there, so the statement is complete.
+        if self.scanner.consume_line_feed()
+            || self.scanner.is_at_end()
+            || self.end_line_not_at_line_feed()?
+        {
+            self.diagnostics
+                .missing_terminator_at_end_of_line_diagnostic(missing, missing)?;
+            return Ok(missing);
+        }
+        Err(self.missing_terminator())
+    }
+
     /// Parses the rest of the line after the `.` of the terminator at
     /// `terminator`, where `end` is the position after the `.` and no line feed
     /// follows it.
@@ -459,7 +492,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// scanner's position.
     #[cold]
     #[inline(never)]
-    pub(crate) fn missing_terminator(&self) -> ParseError {
+    fn missing_terminator(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_ahead(0) {
             return error;
         }

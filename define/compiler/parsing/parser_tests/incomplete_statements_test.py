@@ -1284,17 +1284,24 @@ def test_file_ending_where_open_angle_bracket_belongs(parse: Parse):
     assert exc_info.value.location.end_column == 30
 
 
-def test_file_ending_where_terminator_belongs(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>"
+def test_file_ending_where_terminator_belongs(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>"
+    )
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
         )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 36
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 36
+    ]
+    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert result.exception.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=41
+    )
+    assert result.program is None
 
 
 def test_file_ending_where_terminator_or_brace_belongs(parse: Parse):

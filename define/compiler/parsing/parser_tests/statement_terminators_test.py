@@ -190,22 +190,32 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     ]
 
 
-def test_missing_terminator_after_typed_reference_in_quality_assignment(
-    parse: Parse,
+def test_quality_assignment_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential position<my_lib:/hello/hello>.\n"
-            + "define the potential position<my_lib:/sub/sub> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the action<std:/path/sub>\n"
-            + "    }\n"
-            + "}\n"
+    result = parse_with_diagnostics(
+        "define the potential position<my_lib:/hello/hello>.\n"
+        + "define the potential position<my_lib:/sub/sub> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the action<std:/path/sub>\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=4, column=41, end_line=4, end_column=41)
         )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 41
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 41
+    ]
+    assert result.program is not None
+    [_, definition] = result.program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    assert quality_assignment.typed_global_name.name_content.path.name == "/path/sub"
+    assert quality_assignment.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=40
+    )
 
 
 def test_text_where_position_definition_terminator_belongs(parse: Parse):

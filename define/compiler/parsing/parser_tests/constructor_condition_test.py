@@ -79,20 +79,31 @@ def test_constructor_with_blank_lines(parse: Parse):
     )
 
 
-def test_constructor_missing_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_constructor_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=33, end_line=3, end_column=33)
         )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 33
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    condition = definition.trigger_conditions.condition
+    assert isinstance(condition, ast.ConstructorConditionStatement)
+    assert condition.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=32
+    )
 
 
 def test_constructor_followed_by_extra_content(parse: Parse):

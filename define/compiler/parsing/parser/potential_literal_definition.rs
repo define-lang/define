@@ -96,10 +96,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             &ENCODING_NAME_TYPE,
             Self::expected_encoding_name_type,
         )?;
-        // There is no `.`.
-        if self.parse_terminator()?.is_none() {
-            return Err(self.missing_terminator());
-        }
+        self.parse_statement_terminator()?;
         Ok(encoding)
     }
 }

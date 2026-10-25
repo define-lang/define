@@ -8,10 +8,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 _ACTION_PREFIX = (
@@ -341,17 +344,28 @@ def test_literal_cannot_start_position_reference(parse: Parse):
     assert error.value.location.end_column == 61
 
 
-def test_literal_missing_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> to literal</text>"a"\n'
-            + "    }\n}\n"
+def test_literal_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> to literal</text>"a"\n'
+        + "    }\n}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=5, column=61, end_line=5, end_column=61)
         )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 61
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 61
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [statement] = definition.action_statements.statements
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert statement.location == ast.SourceLocation(
+        line=5, column=9, end_line=5, end_column=60
+    )
 
 
 def test_literal_old_syntax_is_invalid(parse: Parse):

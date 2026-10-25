@@ -7,10 +7,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_potential_literal_definition(parse: Parse):
@@ -118,17 +121,27 @@ def test_encoding_requires_global_name(parse: Parse):
     assert error.value.location.end_column == 31
 
 
-def test_encoding_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse(
-            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
-            + "    it has the encoding</decimal>\n"
-            + "}\n"
+def test_encoding_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        + "    it has the encoding</decimal>\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=2, column=34, end_line=2, end_column=34)
         )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 34
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 34
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.PotentialLiteralDefinition)
+    assert definition.encoding.name_content.path.name == "/decimal"
+    assert definition.encoding.location == ast.SourceLocation(
+        line=2, column=16, end_line=2, end_column=33
+    )
 
 
 def test_disallows_multiple_encodings(parse: Parse):

@@ -8,10 +8,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 _ENCODING_OPERATION_PREFIX = (
@@ -387,17 +390,27 @@ def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
     assert error.value.location.end_column == 21
 
 
-def test_computer_operation_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the computer operation\n"
-            + _ENCODING_OPERATION_SUFFIX
+def test_computer_operation_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the computer operation\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=39, end_line=3, end_column=39)
         )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 39
+    ]
+    assert result.program is not None
+    definition = _only_encoding_operation(result.program)
+    [statement] = definition.operation_statements
+    assert isinstance(statement, ast.ComputerOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=38
+    )
 
 
 def test_encoding_operation_execution_requires_terminator_or_block(

@@ -8,10 +8,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 _OPERATION_PREFIX = "define the operation<mv:define-lang.org:parser:/add> {\n"
@@ -501,46 +504,60 @@ def test_disallows_action_context(parse: Parse):
     assert error.value.location.end_column == 27
 
 
-def test_read_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the view<left> {\n"
-            + "        it is read\n"
-            + "        it may only contain particles where {\n"
-            + "            it has the value</number>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
+def test_read_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<left> {\n"
+        + "        it is read\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=19, end_line=3, end_column=19)
         )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 19
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 19
+    ]
+    assert result.program is not None
+    view = _only_view(result.program)
+    assert view.is_input is True
+    assert view.is_output is False
 
 
-def test_written_requires_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the view<left> {\n"
-            + "        it is written\n"
-            + "        it may only contain particles where {\n"
-            + "            it has the value</number>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
+def test_written_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<left> {\n"
+        + "        it is written\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=3, column=22, end_line=3, end_column=22)
         )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 22
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 22
+    ]
+    assert result.program is not None
+    view = _only_view(result.program)
+    assert view.is_input is False
+    assert view.is_output is True
 
 
 def test_requires_direction_statement_instead_of_other_text(parse: Parse):

@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 # --- Successful parses ---
 
@@ -326,21 +329,32 @@ def test_implication_missing_close_angle(parse: Parse):
     assert exc_info.value.location.end_column == 44
 
 
-def test_implication_missing_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</required>\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
+def test_implication_without_terminator_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</required>\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+            location=ast.SourceLocation(line=2, column=44, end_line=2, end_column=44)
         )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 44
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.ActionDefinition)
+    [implication] = definition.quality_implications
+    assert implication.typed_global_name.name_content.path.name == "/required"
+    assert implication.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=43
+    )
 
 
 def test_implication_missing_newline_after_terminator(parse: Parse):
