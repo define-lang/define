@@ -14,10 +14,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.errors import parser_exceptions, source_map
+from define.compiler.errors import diagnostics, parser_exceptions, source_map
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
@@ -128,20 +131,55 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
 
 def test_invisible_character_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# a\u200bb\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
+        parse("define the potential position<mv:define-lang.org:parser:/path>.\u200b\n")
     assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
+    assert exc_info.value.location.column == 64
     assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
+    assert exc_info.value.location.end_column == 64
     assert _format(
         exc_info.value,
+        "define the potential position<mv:define-lang.org:parser:/path>.\u200b\n",
+    ) == (
+        "line 1, column 64\n"
+        + "    define the potential position<mv:define-lang.org:parser:/path>.\\u200b\n"
+        + "                                                                   ^^^^^^\n"
+        + "Invisible character U+200B ZERO WIDTH SPACE is not allowed here."
+    )
+
+
+def test_control_character_in_comment_diagnostic_message(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    source = (
+        "# a\x01b\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    result = parse_with_diagnostics(source)
+    [diagnostic] = result.diagnostics
+    assert isinstance(diagnostic, diagnostics.ControlCharacterInCommentDiagnostic)
+    assert diagnostic.format(
+        source_map.SourceMap({}, in_memory_source=source)
+    ) == textwrap.dedent("""\
+        line 1, column 4
+            # a\\x01b
+               ^^^^
+        comments may not have the control character \\x01""")
+
+
+def test_invisible_character_in_comment_diagnostic_message(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    source = (
         "# a\u200bb\n"
-        + "define the potential position<mv:define-lang.org:parser:/path>.\n",
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    result = parse_with_diagnostics(source)
+    [diagnostic] = result.diagnostics
+    assert isinstance(diagnostic, diagnostics.InvisibleCharacterInCommentDiagnostic)
+    assert diagnostic.format(
+        source_map.SourceMap({}, in_memory_source=source)
     ) == textwrap.dedent("""\
         line 1, column 4
             # a\\u200bb
                ^^^^^^
-        Invisible character U+200B ZERO WIDTH SPACE is not allowed here.""")
+        comments may not have the invisible character U+200B ZERO WIDTH SPACE""")

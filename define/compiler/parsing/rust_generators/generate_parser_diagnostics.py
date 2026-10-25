@@ -21,7 +21,18 @@ _PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
     diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic,
     diagnostics.MissingNewlineAtEndOfFileDiagnostic,
     diagnostics.SpaceBeforeOpenAngleBracketDiagnostic,
+    diagnostics.ByteOrderMarkInCommentDiagnostic,
+    diagnostics.ControlCharacterInCommentDiagnostic,
+    diagnostics.InvisibleCharacterInCommentDiagnostic,
 )
+
+
+# The type of each field's annotation, which is a string because diagnostics
+# postpones the evaluation of its annotations.
+_FIELD_TYPES: dict[object, rust_renderer.DiagnosticFieldType] = {
+    "int": rust_renderer.DiagnosticFieldType.Integer(),
+    "str": rust_renderer.DiagnosticFieldType.Text(),
+}
 
 
 def _annotation(cls: type, field: str) -> object:
@@ -35,19 +46,26 @@ def _annotation(cls: type, field: str) -> object:
 def _describe_diagnostic(
     cls: type[diagnostics.Diagnostic],
 ) -> rust_renderer.ParserDiagnostic:
-    location, *integer_fields = cls.__struct_fields__
+    location, *field_names = cls.__struct_fields__
     # The annotations are strings because diagnostics postpones their
     # evaluation.
     if location != "location" or _annotation(cls, location) != "ast.SourceLocation":
         raise ValueError(f"{cls.__name__} must have a location first")
-    for field in integer_fields:
-        annotation = _annotation(cls, field)
-        if annotation != "int":
-            raise ValueError(f"{cls.__name__}.{field} must be an int, not {annotation}")
+    fields: list[rust_renderer.DiagnosticField] = []
+    for field_name in field_names:
+        annotation = _annotation(cls, field_name)
+        field_type = _FIELD_TYPES.get(annotation)
+        if field_type is None:
+            raise ValueError(
+                f"{cls.__name__}.{field_name} must be an int or a str, not {annotation}"
+            )
+        fields.append(
+            rust_renderer.DiagnosticField(name=field_name, field_type=field_type)
+        )
     return rust_renderer.ParserDiagnostic(
         name=cls.__name__,
         snake_case_name=rust_names.snake_case_name(cls.__name__),
-        integer_fields=integer_fields,
+        fields=fields,
     )
 
 

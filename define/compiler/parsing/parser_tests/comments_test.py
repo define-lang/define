@@ -120,27 +120,35 @@ def test_non_ascii_comment_with_trailing_whitespace(
     ]
 
 
-def test_control_character_in_comment(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse(
-            "# comment with\x01control char\n"
-            + "define the potential position<standard:/path>.\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.char == "\x01"
-    assert exc_info.value.location.column == 15
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 15
+def test_control_character_in_comment(parse_with_diagnostics: ParseWithDiagnostics):
+    result = parse_with_diagnostics(
+        "# comment with\x01control char\n"
+        + "define the potential position<standard:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=15, end_line=1, end_column=15),
+            character="\x01",
+        ),
+    ]
 
 
-def test_control_character_in_inline_comment(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential position<standard:/path>. # comment\x00\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.char == "\x00"
-    assert exc_info.value.location.column == 57
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 57
+def test_control_character_in_inline_comment(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<standard:/path>. # comment\x00\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=57, end_line=1, end_column=57),
+            character="\x00",
+        ),
+    ]
 
 
 def test_comment_with_trailing_whitespace(parse_with_diagnostics: ParseWithDiagnostics):
@@ -676,3 +684,88 @@ def test_comment_with_trailing_whitespace_before_view_close(
             )
         )
     ]
+
+
+def test_disallowed_character_in_comment_does_not_stop_the_block(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    # a\x01b\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.exception is None
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=2, column=8, end_line=2, end_column=8),
+            character="\x01",
+        )
+    ]
+    assert result.program is not None
+    [definition] = result.program.definitions
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.quality_assignment_block is not None
+    [quality_assignment] = definition.quality_assignment_block.statements
+    assert quality_assignment.typed_global_name.name_content.path.name == "/child"
+    assert quality_assignment.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=36
+    )
+
+
+def test_each_disallowed_character_in_a_comment_gets_its_own_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\x01b\u200bc\ufeff\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\x01",
+        ),
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=6, end_line=1, end_column=6),
+            character="\u200b",
+        ),
+        diagnostics.ByteOrderMarkInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=8, end_line=1, end_column=8)
+        ),
+    ]
+
+
+def test_carriage_return_after_disallowed_character_in_comment_is_reported_with_it(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\x01b\r\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\x01",
+        )
+    ]
+    assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
+    assert result.exception.location == ast.SourceLocation(
+        line=1, column=6, end_line=1, end_column=6
+    )
+    assert result.program is None
+
+
+def test_carriage_return_in_comment_after_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path>. # note\r\n"
+        )
+    assert exc_info.value.char == "\r"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 71
+    assert exc_info.value.location.end_line == 1
+    assert exc_info.value.location.end_column == 71

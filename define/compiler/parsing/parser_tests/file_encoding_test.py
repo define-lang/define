@@ -11,10 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import diagnostics, parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseWithDiagnostics,
+    )
 
 
 def test_bom_at_start(parse: Parse):
@@ -157,19 +160,21 @@ def test_comment_with_variation_selector_after_visible_character(
     )
 
 
-def test_variation_selector_after_space_in_comment_is_rejected(
-    parse: Parse,
+def test_variation_selector_after_space_in_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# \ufe0f\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\ufe0f"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 3
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 3
+    result = parse_with_diagnostics(
+        "# \ufe0f\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=3, end_line=1, end_column=3),
+            character="\ufe0f",
+        ),
+    ]
 
 
 def test_invalid_utf8_in_comment(parse: Parse):
@@ -250,30 +255,42 @@ def test_variation_selector_at_start_of_name(parse: Parse):
     assert exc_info.value.location.end_column == 31
 
 
-def test_comment_with_bidi_isolates_is_rejected(parse: Parse):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# isolate-wrapped rtl text: \u2067\u05e9\u05dc\u05d5\u05dd\u2069\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\u2067"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 29
+def test_comment_with_bidi_isolates_gets_a_diagnostic_for_each(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# isolate-wrapped rtl text: \u2067\u05e9\u05dc\u05d5\u05dd\u2069\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=29, end_line=1, end_column=29),
+            character="\u2067",
+        ),
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=34, end_line=1, end_column=34),
+            character="\u2069",
+        ),
+    ]
 
 
-def test_zero_width_space_in_comment_is_rejected(parse: Parse):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# a\u200bb\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\u200b"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
+def test_zero_width_space_in_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\u200bb\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\u200b",
+        ),
+    ]
 
 
 def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
@@ -295,58 +312,71 @@ def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
     assert exc_info.value.location.end_column == 59
 
 
-def test_byte_order_mark_inside_comment_is_rejected(parse: Parse):
-    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        parse(
-            "# a\ufeffb\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\ufeff"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
-
-
-def test_c1_control_character_in_comment_is_rejected(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse(
-            "# a\u0085b\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\u0085"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
-
-
-def test_zero_width_joiner_before_space_in_comment_is_rejected(
-    parse: Parse,
+def test_byte_order_mark_inside_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
 ):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# a\u200d b\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\u200d"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
+    result = parse_with_diagnostics(
+        "# a\ufeffb\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.ByteOrderMarkInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4)
+        ),
+    ]
 
 
-def test_tag_character_after_letter_in_comment_is_rejected(parse: Parse):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse(
-            "# a\U000e0041\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.char == "\U000e0041"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 4
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 4
+def test_c1_control_character_in_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\u0085b\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.ControlCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\u0085",
+        ),
+    ]
+
+
+def test_zero_width_joiner_before_space_in_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\u200d b\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\u200d",
+        ),
+    ]
+
+
+def test_tag_character_after_letter_in_comment_gets_a_diagnostic(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    result = parse_with_diagnostics(
+        "# a\U000e0041\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert result.exception is None
+    assert result.program is not None
+    assert result.diagnostics == [
+        diagnostics.InvisibleCharacterInCommentDiagnostic(
+            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            character="\U000e0041",
+        ),
+    ]
 
 
 def test_comment_with_emoji_zwj_sequence(parse: Parse):

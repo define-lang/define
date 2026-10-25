@@ -2,7 +2,7 @@
 //! spaces between words, and the lines that open and close blocks. Nothing
 //! here builds any of the AST.
 
-use crate::characters::{self, TextKind};
+use crate::characters;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::scanner::{Position, WORD_ENDS};
@@ -344,15 +344,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let comment_start = self.scanner.position;
         let comment = self.scanner.consume_text(length - leading_space_count);
-        // The comment has a character that comments do not allow.
-        if let Some(error) = characters::first_disallowed_character(
+        characters::check_comment_characters(
             &self.errors,
+            &mut self.diagnostics,
             comment_start,
             comment.bytes,
-            TextKind::Comment,
-        ) {
-            return Err(error);
-        }
+        )?;
         // The `#` is not a space, so `rposition` always finds a byte.
         let content_length = comment
             .bytes

@@ -8,7 +8,8 @@
 
 mod invisible_ranges;
 
-use crate::parse_error::ParseError;
+use crate::parse_error::{ParseError, ParseResult};
+use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use invisible_ranges::INVISIBLE_RANGES;
@@ -35,6 +36,15 @@ pub enum TextKind {
     Comment,
 }
 
+/// Why a kind of text does not allow a character.
+#[derive(Clone, Copy)]
+enum DisallowedCharacter {
+    ByteOrderMark,
+    CarriageReturn,
+    Control,
+    Invisible,
+}
+
 /// Returns the error for the first character in `text`, which begins at
 /// `start` and has no line feed, that `kind` does not allow.
 pub fn first_disallowed_character(
@@ -43,27 +53,126 @@ pub fn first_disallowed_character(
     text: &[u8],
     kind: TextKind,
 ) -> Option<ParseError> {
+    find_disallowed(
+        start,
+        text,
+        kind,
+        |position, character, disallowed| {
+            Some(character_error(errors, position, character, disallowed))
+        },
+        |position, bytes| invalid_encoding(errors, position, bytes),
+    )
+}
+
+/// Adds a diagnostic for each byte order mark, control character, and
+/// invisible character that comments do not allow in `comment`, which begins
+/// at `start` and has no line feed, and returns the error for the first
+/// carriage return or bytes that are not valid UTF-8 in it, if it has one.
+pub fn check_comment_characters(
+    errors: &SyntaxErrors,
+    diagnostics: &mut ParserDiagnostics,
+    start: Position,
+    comment: &[u8],
+) -> ParseResult<()> {
+    let error = find_disallowed(
+        start,
+        comment,
+        TextKind::Comment,
+        |position, character, disallowed| {
+            add_comment_character_diagnostic(errors, diagnostics, position, character, disallowed)
+        },
+        |position, bytes| invalid_encoding(errors, position, bytes),
+    );
+    error.map_or(Ok(()), Err)
+}
+
+/// Calls `found` with each character in `text`, which begins at `start` and
+/// has no line feed, that `kind` does not allow, and `invalid` with the first
+/// bytes that are not valid UTF-8, and returns the first result of either.
+fn find_disallowed<'text>(
+    start: Position,
+    text: &'text [u8],
+    kind: TextKind,
+    mut found: impl FnMut(Position, &'text str, DisallowedCharacter) -> Option<ParseError>,
+    invalid: impl FnOnce(Position, &'text [u8]) -> ParseError,
+) -> Option<ParseError> {
     let mut position = start;
     // A joiner or variation selector must be next to visible characters in
     // the same text, so a character outside `text` does not count.
     let mut previous = None;
     for chunk in text.utf8_chunks() {
-        let mut characters = chunk.valid().chars().peekable();
-        while let Some(character) = characters.next() {
-            let next = characters.peek().copied();
+        let valid = chunk.valid();
+        let mut characters = valid.char_indices().peekable();
+        while let Some((index, character)) = characters.next() {
+            let next = characters.peek().map(|&(_, next)| next);
             let neighbors = Neighbors { previous, next };
-            if let Some(error) = disallowed_character(errors, position, character, kind, neighbors)
-            {
-                return Some(error);
+            if let Some(disallowed) = disallowed_character(character, kind, neighbors) {
+                let character_text = &valid[index..index + character.len_utf8()];
+                if let Some(error) = found(position, character_text, disallowed) {
+                    return Some(error);
+                }
             }
             previous = Some(character);
             position = position.next_column();
         }
         if !chunk.invalid().is_empty() {
-            return Some(invalid_encoding(errors, position, chunk.invalid()));
+            return Some(invalid(position, chunk.invalid()));
         }
     }
     None
+}
+
+/// Returns the error for `character` at `position`, which a kind of text does
+/// not allow for the reason `disallowed`.
+fn character_error(
+    errors: &SyntaxErrors,
+    position: Position,
+    character: &str,
+    disallowed: DisallowedCharacter,
+) -> ParseError {
+    match disallowed {
+        DisallowedCharacter::ByteOrderMark => {
+            errors.byte_order_mark_error(position, position, character)
+        }
+        DisallowedCharacter::CarriageReturn => {
+            errors.carriage_return_error(position, position, character)
+        }
+        DisallowedCharacter::Control => {
+            errors.control_character_error(position, position, character)
+        }
+        DisallowedCharacter::Invisible => {
+            errors.invisible_character_error(position, position, character)
+        }
+    }
+}
+
+/// Adds the diagnostic for `character` at `position` in a comment, which
+/// comments do not allow for the reason `disallowed`, and returns the error
+/// if `character` must stop the parse instead.
+fn add_comment_character_diagnostic(
+    errors: &SyntaxErrors,
+    diagnostics: &mut ParserDiagnostics,
+    position: Position,
+    character: &str,
+    disallowed: DisallowedCharacter,
+) -> Option<ParseError> {
+    let added = match disallowed {
+        DisallowedCharacter::ByteOrderMark => {
+            diagnostics.byte_order_mark_in_comment_diagnostic(position, position)
+        }
+        DisallowedCharacter::Control => {
+            diagnostics.control_character_in_comment_diagnostic(position, position, character)
+        }
+        DisallowedCharacter::Invisible => {
+            diagnostics.invisible_character_in_comment_diagnostic(position, position, character)
+        }
+        // Carriage returns come from the line endings of a whole file, so they
+        // stop the parse instead of getting a diagnostic on every line.
+        DisallowedCharacter::CarriageReturn => {
+            return Some(character_error(errors, position, character, disallowed));
+        }
+    };
+    added.err().map(ParseError::from)
 }
 
 /// The characters on either side of a character being checked, where `None`
@@ -74,29 +183,25 @@ struct Neighbors {
     next: Option<char>,
 }
 
-/// Returns the error for `character` at `position`, between `neighbors`, if
-/// `kind` does not allow it.
+/// Returns why `kind` does not allow `character` between `neighbors`, if it
+/// does not.
 fn disallowed_character(
-    errors: &SyntaxErrors,
-    position: Position,
     character: char,
     kind: TextKind,
     neighbors: Neighbors,
-) -> Option<ParseError> {
-    let mut buffer = [0; 4];
-    let text = &*character.encode_utf8(&mut buffer);
-    let error = match character {
+) -> Option<DisallowedCharacter> {
+    let disallowed = match character {
         // Most characters in comments are printable ASCII, which every kind
         // of text allows.
         ' '..='~' => return None,
-        BYTE_ORDER_MARK => errors.byte_order_mark_error(position, position, text),
-        CARRIAGE_RETURN => errors.carriage_return_error(position, position, text),
-        _ if character.is_control() => errors.control_character_error(position, position, text),
+        BYTE_ORDER_MARK => DisallowedCharacter::ByteOrderMark,
+        CARRIAGE_RETURN => DisallowedCharacter::CarriageReturn,
+        _ if character.is_control() => DisallowedCharacter::Control,
         _ if DIRECTION_MARKS.contains(&character) => {
             if kind == TextKind::Comment {
                 return None;
             }
-            errors.invisible_character_error(position, position, text)
+            DisallowedCharacter::Invisible
         }
         // Where syntax goes wrong, a variation selector or joiner is a syntax
         // error, since syntax may not have it either way.
@@ -109,7 +214,7 @@ fn disallowed_character(
             if neighbors.previous.is_some_and(is_visible) {
                 return None;
             }
-            errors.invisible_character_error(position, position, text)
+            DisallowedCharacter::Invisible
         }
         _ if JOINERS.contains(&character) => {
             let previous_allows = neighbors.previous.is_some_and(|previous| {
@@ -118,12 +223,12 @@ fn disallowed_character(
             if previous_allows && neighbors.next.is_some_and(is_visible) {
                 return None;
             }
-            errors.invisible_character_error(position, position, text)
+            DisallowedCharacter::Invisible
         }
-        _ if is_invisible(character) => errors.invisible_character_error(position, position, text),
+        _ if is_invisible(character) => DisallowedCharacter::Invisible,
         _ => return None,
     };
-    Some(error)
+    Some(disallowed)
 }
 
 /// Whether `character` is in the spec's invisible ranges, apart from the
@@ -177,7 +282,9 @@ pub fn disallowed_first_character(
         previous: None,
         next: None,
     };
-    disallowed_character(errors, position, character, TextKind::Syntax, neighbors)
+    let disallowed = disallowed_character(character, TextKind::Syntax, neighbors)?;
+    let text = &chunk.valid()[..character.len_utf8()];
+    Some(character_error(errors, position, text, disallowed))
 }
 
 /// Returns the error for the bytes at `position` that are not valid UTF-8.

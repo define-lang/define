@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import hashlib
 import typing
+import unicodedata
 from pathlib import Path
 
 if typing.TYPE_CHECKING:
@@ -30,6 +31,13 @@ def escape_invisible(text: str) -> str:
         else:
             characters.append(repr(character)[1:-1])
     return "".join(characters)
+
+
+def describe_invisible_character(character: str) -> str:
+    """Return the character's code point and, when Unicode names it, its name."""
+    code_point = f"U+{ord(character):04X}"
+    name = unicodedata.name(character, "")
+    return f"{code_point} {name}" if name else code_point
 
 
 def _format_location_with_source_line(

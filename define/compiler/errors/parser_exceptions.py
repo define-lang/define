@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import unicodedata
 from typing import TYPE_CHECKING, ClassVar, override
 
 from define.compiler import constants
@@ -125,9 +124,7 @@ class InvisibleCharacterError(DefineCharError):
     @property
     def description(self) -> str:
         """The character's code point and, when Unicode names it, its name."""
-        code_point = f"U+{ord(self.char):04X}"
-        name = unicodedata.name(self.char, "")
-        return f"{code_point} {name}" if name else code_point
+        return source_map.describe_invisible_character(self.char)
 
     @override
     def _message_fields(self) -> dict[str, object]:

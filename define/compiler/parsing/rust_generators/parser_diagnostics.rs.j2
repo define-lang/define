@@ -49,8 +49,8 @@ impl<'py> ParserDiagnostics<'py> {
         &mut self,
         start: Position,
         end: Position,
-{%- for field in diagnostic.integer_fields %}
-        {{ field }}: usize,
+{%- for field in diagnostic.fields %}
+        {{ field.name }}: {{ field.rust_type() }},
 {%- endfor %}
     ) -> PyResult<()> {
         let location = self.location(start, end)?;
@@ -59,8 +59,8 @@ impl<'py> ParserDiagnostics<'py> {
             .bind(self.py)
             .call1((
                 location.into_object(),
-{%- for field in diagnostic.integer_fields %}
-                PyInt::new(self.py, {{ field }}),
+{%- for field in diagnostic.fields %}
+                {{ field.python_value() }},
 {%- endfor %}
             ))?;
         self.diagnostics.push(diagnostic);

@@ -10,13 +10,13 @@ from typing import ClassVar, Final
 import msgspec
 
 from define.compiler import constants, name_types
+from define.compiler.errors import source_map
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler import ast, config
-    from define.compiler.errors import source_map
 
 
 # The statement that reads every input view and writes every output view of
@@ -1294,6 +1294,42 @@ class SpaceBeforeOpenAngleBracketDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "a name type and the '<' of its name may not have spaces between them"
     )
+
+
+class ByteOrderMarkInCommentDiagnostic(Diagnostic):
+    """Diagnostic for a UTF-8 byte order mark in a comment."""
+
+    message_format: ClassVar[str] = (
+        "comments may not have a UTF-8 byte order mark (U+FEFF)"
+    )
+
+
+class ControlCharacterInCommentDiagnostic(Diagnostic):
+    """Diagnostic for a control character in a comment."""
+
+    character: str
+    message_format: ClassVar[str] = (
+        "comments may not have the control character {self.escaped_character}"
+    )
+
+    @property
+    def escaped_character(self) -> str:
+        """The character as an escape sequence."""
+        return source_map.escape_invisible(self.character)
+
+
+class InvisibleCharacterInCommentDiagnostic(Diagnostic):
+    """Diagnostic for an invisible character in a comment that the Invisible Characters rule does not allow there."""
+
+    character: str
+    message_format: ClassVar[str] = (
+        "comments may not have the invisible character {self.description}"
+    )
+
+    @property
+    def description(self) -> str:
+        """The character's code point and, when Unicode names it, its name."""
+        return source_map.describe_invisible_character(self.character)
 
 
 class InferredRequirementViolationDiagnostic(Diagnostic):

@@ -151,4 +151,7 @@ class ProgramValidationResult(msgspec.Struct):
 
     def has_errors(self) -> bool:
         """Whether any file had exceptions or diagnostics."""
+        # Every diagnostic is an error, which keeps code generation from ever
+        # running on a file whose comments have characters the spec does not
+        # allow, such as the bidi controls of a Trojan Source attack.
         return bool(self.all_exceptions or self.all_diagnostics)

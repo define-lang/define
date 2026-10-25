@@ -305,24 +305,67 @@ impl SyntaxErrorsDescription {
     }
 }
 
+/// The type of a diagnostic's field after its location.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone)]
+enum DiagnosticFieldType {
+    Integer {},
+    Text {},
+}
+
+/// A diagnostic's field after its location.
+#[pyclass(frozen, from_py_object)]
+#[derive(Clone)]
+struct DiagnosticField {
+    name: String,
+    field_type: DiagnosticFieldType,
+}
+
+#[pymethods]
+impl DiagnosticField {
+    #[new]
+    const fn new(name: String, field_type: DiagnosticFieldType) -> Self {
+        Self { name, field_type }
+    }
+}
+
+impl DiagnosticField {
+    /// The Rust type of the parameter that takes the field's value.
+    const fn rust_type(&self) -> &'static str {
+        match self.field_type {
+            DiagnosticFieldType::Integer {} => "usize",
+            DiagnosticFieldType::Text {} => "&str",
+        }
+    }
+
+    /// The expression that passes the parameter's value to the diagnostic's
+    /// class.
+    fn python_value(&self) -> String {
+        match self.field_type {
+            DiagnosticFieldType::Integer {} => format!("PyInt::new(self.py, {})", self.name),
+            DiagnosticFieldType::Text {} => self.name.clone(),
+        }
+    }
+}
+
 /// A diagnostic class that the parser can report.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 struct ParserDiagnostic {
     name: String,
     snake_case_name: String,
-    /// The names of the fields after `location`, which are all integers.
-    integer_fields: Vec<String>,
+    /// The fields after `location`, in the order the class takes them.
+    fields: Vec<DiagnosticField>,
 }
 
 #[pymethods]
 impl ParserDiagnostic {
     #[new]
-    const fn new(name: String, snake_case_name: String, integer_fields: Vec<String>) -> Self {
+    const fn new(name: String, snake_case_name: String, fields: Vec<DiagnosticField>) -> Self {
         Self {
             name,
             snake_case_name,
-            integer_fields,
+            fields,
         }
     }
 }
@@ -381,9 +424,9 @@ fn render_parser_diagnostics(description: ParserDiagnosticsDescription) -> PyRes
 mod rust_renderer {
     #[pymodule_export]
     use super::{
-        AstDescription, Constructor, EnumMember, FieldEnum, FieldType, NodeClass, NodeUnion,
-        Parameter, ParserDiagnostic, ParserDiagnosticsDescription, ParserException,
-        SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
+        AstDescription, Constructor, DiagnosticField, DiagnosticFieldType, EnumMember, FieldEnum,
+        FieldType, NodeClass, NodeUnion, Parameter, ParserDiagnostic, ParserDiagnosticsDescription,
+        ParserException, SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
         render_parser_diagnostics, render_syntax_errors,
     };
 }

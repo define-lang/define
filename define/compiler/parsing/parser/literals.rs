@@ -120,6 +120,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         content: SourceText<'source>,
         start: Position,
     ) -> ParseResult<()> {
+        // TODO: Make these characters diagnostics, as they are in comments,
+        // if structural validation is merged into the parser. Until then, a
+        // literal's content must be what the spec allows for it to be part of
+        // a valid AST.
         // The literal content has a character that literal content does not
         // allow.
         if !content.is_known_ascii

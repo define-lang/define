@@ -304,6 +304,33 @@ def test_compile_source_succeeds(tmp_path: Path):
     assert generated_entry_point.stat().st_size > 0
 
 
+def test_trojan_source_bidi_override_in_comment_blocks_code_generation(tmp_path: Path):
+    error_stream = io.StringIO()
+    result = driver.Driver().run(
+        source=(
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        define the position<created>.\n"
+            "        create a particle in position<created>. # \u202e note\n"
+            "    }\n"
+            "}\n"
+        ),
+        mode=driver.DriverMode.COMPILE,
+        error_stream=error_stream,
+        output_dir=tmp_path,
+    )
+    assert result == driver.ExitCode.ERROR
+    assert list(tmp_path.iterdir()) == []
+    assert error_stream.getvalue() == (
+        "line 6, column 51\n"
+        "    create a particle in position<created>. # \\u202e note\n"
+        "                                              ^^^^^^\n"
+        "comments may not have the invisible character U+202E RIGHT-TO-LEFT OVERRIDE\n"
+    )
+
+
 def test_compile_with_errors_returns_error(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
