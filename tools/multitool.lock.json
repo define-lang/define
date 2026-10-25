@@ -139,49 +139,49 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-aarch64-unknown-linux-gnu.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-aarch64-unknown-linux-gnu.zip",
         "file": "dprint",
-        "sha256": "5d83774c7546bd7a223f243a17e7851a75b8315899d2a42268e40ebbae66c69b",
+        "sha256": "c820bfc67b0cd6f5f0fa4d00ecdcb056944c86030859f5e50151c88d9164b30d",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-x86_64-unknown-linux-gnu.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-unknown-linux-gnu.zip",
         "file": "dprint",
-        "sha256": "9c2e00cd256dfa2c03a7f568ff08d8277abc5788c7f39fcd9ef325c4642cb4b4",
+        "sha256": "f71cb7e22d6776439eba168d5cb296092d6413fea7148fe4d70684a2702a4fee",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-aarch64-apple-darwin.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-aarch64-apple-darwin.zip",
         "file": "dprint",
-        "sha256": "d2a6e67e6aa308ed13d09627e8a8e8fe2cd3f62aeb406fe653d59bcec2c25c47",
+        "sha256": "94b48820945602fb113a34343db0a9e653a8346c60966f790556dc9ce4084a92",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-x86_64-apple-darwin.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-apple-darwin.zip",
         "file": "dprint",
-        "sha256": "8a6f9d9e75e0379fb1b7fbc4a4528d33f72e050075bba7b20445be975a6d3273",
+        "sha256": "b868e1e87d2ed23217e5ea9521989c167ce8392090088bf0e1fb43be727ea752",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-aarch64-pc-windows-msvc.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-aarch64-pc-windows-msvc.zip",
         "file": "dprint.exe",
-        "sha256": "9ac56dff1efd7aee00604bfbc19c979a600d7387365ed2013dafee33e8081c4f",
+        "sha256": "a6bfe3d9146634d73fbc43d827c8793a1e09fff4e7c4ce4992048f31767499b1",
         "os": "windows",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-pc-windows-msvc.zip",
         "file": "dprint.exe",
-        "sha256": "52f59def557bdab65744d2b0cd23585843b8158d2427f7a671c35bdd080b38d0",
+        "sha256": "3beb87a2582f1e43a301efd0840565518484e53f8c7b0ad27b857eee08e0745f",
         "os": "windows",
         "cpu": "x86_64"
       }
