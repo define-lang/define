@@ -207,6 +207,7 @@ def test_builds_compiler_before_preparing_profile(
             "build",
             "-c",
             "opt",
+            "--build_runfile_links",
             "--noshow_progress",
             "--ui_event_filters=-info",
             "//define/compiler:main",

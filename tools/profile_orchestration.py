@@ -76,6 +76,10 @@ def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
             "build",
             "-c",
             "opt",
+            # The compiler runs from bazel-bin rather than through bazel run,
+            # so its runfiles tree must be built even when a bazelrc turns
+            # runfiles links off.
+            "--build_runfile_links",
             "--noshow_progress",
             "--ui_event_filters=-info",
             "//define/compiler:main",
