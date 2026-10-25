@@ -7,6 +7,7 @@ load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
 bzl_library(
     name = "ast_grep",
     srcs = ["ast_grep.bzl"],
+    deps = [":lint_batches"],
 )
 
 bzl_library(
@@ -33,10 +34,18 @@ alias(
 )
 
 bzl_library(
+    name = "lint_batches",
+    srcs = ["lint_batches.bzl"],
+)
+
+bzl_library(
     name = "linters",
     srcs = ["linters.bzl"],
     visibility = ["//visibility:public"],
-    deps = [":ast_grep"],
+    deps = [
+        ":ast_grep",
+        ":ruff",
+    ],
 )
 
 alias(
@@ -82,6 +91,12 @@ proto_lang_toolchain(
     progress_message = "Generating Python proto_library %{label}",
     runtime = "@protobuf//:protobuf_python",
     toolchain_type = "@protobuf//bazel/private:python_toolchain_type",
+)
+
+bzl_library(
+    name = "ruff",
+    srcs = ["ruff.bzl"],
+    deps = [":lint_batches"],
 )
 
 alias(

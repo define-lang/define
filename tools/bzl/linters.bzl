@@ -1,11 +1,11 @@
 """Linter rules for the codebase."""
 
-load("@aspect_rules_lint//lint:ruff.bzl", "lint_ruff_aspect")
 load("//tools/bzl:ast_grep.bzl", "lint_ast_grep_aspect")
+load("//tools/bzl:ruff.bzl", "lint_ruff_aspect")
 
 ruff = lint_ruff_aspect(
     binary = Label("@multitool//tools/ruff"),
-    configs = [Label("//:pyproject.toml")],
+    config = Label("//:pyproject.toml"),
     rule_kinds = [
         "py_binary",
         "py_library",

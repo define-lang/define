@@ -110,8 +110,9 @@ common --incompatible_objc_alwayslink_by_default
 common --incompatible_python_disallow_native_rules
 common --incompatible_remote_local_fallback_for_remote_cache
 common --incompatible_resolve_select_keys_eagerly
-# Uncomment when rules_diff (aspect_rules_lint transitive dep) supports it.
-# https://gitlab.arm.com/bazel/rules_diff/-/issues/3
+# Uncomment when bazel_lib's expand_variables, which llvm's run_binary targets
+# use, rules_js's js_binary, and rules_rust's rust_analyzer_aspect stop reading
+# ctx.build_file_path.
 # common --incompatible_stop_exporting_build_file_path
 common --incompatible_stop_exporting_language_modules
 common --incompatible_strip_executable_safely
@@ -132,9 +133,8 @@ build --@aspect_rules_py//uv/private/constraints/dep_group:dep_group=dev
 common --@aspect_rules_py//py:python_version=3.14
 build --@aspect_rules_py//py/private/interpreter:freethreaded=true
 
-# Ruff linting via aspect_rules_lint
+# Ruff linting
 build --aspects=//tools/bzl:linters.bzl%ruff
-build --@aspect_rules_lint//lint:fail_on_violation
 
 # ast-grep linting
 build --aspects=//tools/bzl:linters.bzl%ast_grep

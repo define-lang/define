@@ -14,22 +14,7 @@ ast_grep = lint_ast_grep_aspect(
 ```
 """
 
-# ast-grep can't read its paths from a file, and Windows limits a command line
-# to 32,767 characters, so a target with many sources is scanned in batches
-# whose paths fit well within that limit.
-_MAX_BATCH_PATH_CHARS = 20000
-
-def _batches(srcs):
-    batches = [[]]
-    batch_chars = 0
-    for src in srcs:
-        path_chars = len(src.path) + 1
-        if batches[-1] and batch_chars + path_chars > _MAX_BATCH_PATH_CHARS:
-            batches.append([])
-            batch_chars = 0
-        batches[-1].append(src)
-        batch_chars += path_chars
-    return batches
+load("//tools/bzl:lint_batches.bzl", "lint_batches")
 
 def _ast_grep_aspect_impl(target, ctx):
     if ctx.rule.kind not in ctx.attr._rule_kinds:
@@ -39,7 +24,7 @@ def _ast_grep_aspect_impl(target, ctx):
         return []
 
     outputs = []
-    for index, batch in enumerate(_batches(srcs)):
+    for index, batch in enumerate(lint_batches(srcs)):
         output = ctx.actions.declare_file("{}.{}.ast_grep".format(target.label.name, index))
         args = ctx.actions.args()
         args.add_all(batch)
