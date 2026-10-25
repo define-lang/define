@@ -64,9 +64,9 @@ def test_absolute_path_outside_project_root_returns_error(
 
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
-        f"Absolute path is outside the project root: {outside_path}\n"
-        f"  Resolved to: {outside_path}\n"
-        f"  Project root: {project_root}\n"
+        f"Absolute path is outside the project root: {outside_path.as_posix()}\n"
+        f"  Resolved to: {outside_path.as_posix()}\n"
+        f"  Project root: {project_root.as_posix()}\n"
         f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
     )
 
@@ -149,8 +149,8 @@ def test_relative_path_outside_project_root_returns_error(
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         "Relative path resolves to outside the project root: ../outside.dfn\n"
-        f"  Resolved to: {outside_path}\n"
-        f"  Project root: {project_root}\n"
+        f"  Resolved to: {outside_path.as_posix()}\n"
+        f"  Project root: {project_root.as_posix()}\n"
         f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
     )
 

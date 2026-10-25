@@ -39,9 +39,9 @@ class PathError(DefineError):
         self.resolved_path = resolved_path
         self.project_root = project_root
         super().__init__(
-            f"{self.label}: {input_path}\n"
-            + f"  Resolved to: {resolved_path}\n"
-            + f"  Project root: {project_root}\n"
+            f"{self.label}: {input_path.as_posix()}\n"
+            + f"  Resolved to: {resolved_path.as_posix()}\n"
+            + f"  Project root: {project_root.as_posix()}\n"
             + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
         )
 
