@@ -75,24 +75,6 @@ py_test(
 )
 
 py_binary(
-    name = "hermetic_launcher_override",
-    srcs = ["hermetic_launcher_override.py"],
-    deps = [
-        ":bazel_tools_override",
-        "@pypi//click",
-    ],
-)
-
-py_test(
-    name = "hermetic_launcher_override_test",
-    size = "small",
-    srcs = ["hermetic_launcher_override_test.py"],
-    deps = [
-        ":hermetic_launcher_override",
-    ],
-)
-
-py_binary(
     name = "sync_windows_vm",
     srcs = ["sync_windows_vm.py"],
     deps = [
@@ -123,8 +105,6 @@ pyright_test(
         ":create_windows_vm_test",
         ":deploy_rbe",
         ":deploy_rbe_test",
-        ":hermetic_launcher_override",
-        ":hermetic_launcher_override_test",
         ":sync_windows_vm",
         ":sync_windows_vm_test",
         ":vm",

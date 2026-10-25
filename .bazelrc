@@ -40,12 +40,6 @@ build:windows_vm --remote_executor=grpc://localhost:2223
 # Linux Bazel has no tw.exe or xml.exe, which Windows test actions run. See
 # //tools/windows_vm:bazel_tools_override, which makes this directory.
 build:windows_vm --override_repository=bazel_tools=%workspace%/.windows_vm/bazel_tools
-# The released Windows launcher template lacks fixes that the tests need. See
-# //tools/windows_vm:hermetic_launcher_override, which makes this directory.
-# TODO: Remove once a hermetic-launcher release has
-# https://github.com/hermeticbuild/hermetic-launcher/pull/87 and
-# https://github.com/hermeticbuild/hermetic-launcher/pull/88.
-build:windows_vm --override_repository=hermetic_launcher++non_module_dependencies+runfiles_stub_x86_64_windows=%workspace%/.windows_vm/runfiles_stub_x86_64_windows
 # The Linux platform comes first, so that actions with no constraints of their
 # own keep running here. Test actions get the VM's platform, because their
 # default test toolchain requires the target platform's constraints.

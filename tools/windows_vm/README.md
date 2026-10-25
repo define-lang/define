@@ -100,20 +100,6 @@ runs on this host. Linux runs these tests instead, so the VM skips them:
    Bazel upgrade, it fails because Bazel "is not compatible with module
    bazel_tools" until you run this again.
 
-3. In each checkout that uses `--config=windows_vm`, make the Windows launcher
-   template that it needs:
-
-   ```sh
-   bazelisk run //tools/windows_vm:hermetic_launcher_override
-   ```
-
-   Each Windows test starts through a launcher that hermetic-launcher makes from
-   a template, and the released template lacks fixes that the tests need. This
-   builds the template from a hermetic-launcher commit that has them, once, into
-   `~/.cache/define-windows-vm`, and puts it in `.windows_vm/` in the checkout.
-   It stops being needed once a hermetic-launcher release has
-   hermeticbuild/hermetic-launcher#87 and hermeticbuild/hermetic-launcher#88.
-
 The service's store and action directories are in `C:\rbe`, and it keeps up to
 30 GiB of blobs there. Its messages are in the Application event log, from the
 source `rbe`.
