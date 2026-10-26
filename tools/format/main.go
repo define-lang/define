@@ -69,6 +69,13 @@ var (
 		fixArguments:   []string{"-mode=fix", "-lint=fix"},
 		checkArguments: []string{"-mode=check", "-lint=warn"},
 	}
+	// buildifier -lint=fix succeeds even when warnings that it cannot fix
+	// remain, so formatting runs this afterward to report them. A check
+	// already reports them through buildifier's own check.
+	buildifierLint = &formatter{
+		rlocationPath: buildifierRlocationPath,
+		fixArguments:  []string{"-mode=check", "-lint=warn"},
+	}
 	dprint = &formatter{
 		rlocationPath: dprintRlocationPath,
 		// At the default log level, dprint reports every file it formats, and
@@ -99,13 +106,13 @@ var (
 )
 
 // The formatters run in this order so that their output is deterministic.
-var formatters = []*formatter{buf, buildifier, dprint, gofumpt, ruff, rustfmt}
+var formatters = []*formatter{buf, buildifier, buildifierLint, dprint, gofumpt, ruff, rustfmt}
 
 // Formatters rewrite whole files, so a file with several formatters is
 // formatted by one of them at a time, in order.
 var formattersByExtension = map[string][]*formatter{
-	".bazel": {buildifier},
-	".bzl":   {buildifier},
+	".bazel": {buildifier, buildifierLint},
+	".bzl":   {buildifier, buildifierLint},
 	".go":    {gofumpt},
 	".json":  {dprint},
 	".json5": {dprint},
@@ -125,7 +132,7 @@ var formattersByExtension = map[string][]*formatter{
 func formattersFor(path string) []*formatter {
 	name := filepath.Base(path)
 	if name == "BUILD" {
-		return []*formatter{buildifier}
+		return []*formatter{buildifier, buildifierLint}
 	}
 	return formattersByExtension[filepath.Ext(name)]
 }
@@ -170,16 +177,16 @@ func main() {
 func formatterCommands(allRunfiles *runfiles.Runfiles, workspace string, check bool, files map[*formatter][]string) []*exec.Cmd {
 	var result []*exec.Cmd
 	for _, formatter := range formatters {
-		if len(files[formatter]) == 0 {
+		arguments := formatter.fixArguments
+		if check {
+			arguments = formatter.checkArguments
+		}
+		if len(files[formatter]) == 0 || arguments == nil {
 			continue
 		}
 		tool, err := allRunfiles.Rlocation(formatter.rlocationPath)
 		if err != nil {
 			log.Fatal(err)
-		}
-		arguments := formatter.fixArguments
-		if check {
-			arguments = formatter.checkArguments
 		}
 		if len(formatter.pluginRlocationPaths) > 0 {
 			arguments = append(append([]string{}, arguments...), "--plugins")

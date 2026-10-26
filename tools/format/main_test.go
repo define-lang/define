@@ -306,6 +306,23 @@ func TestCheckReportsUnformattedGoFiles(t *testing.T) {
 	assertFiles(t, repository, map[string]string{"a.go": "package  a\n"})
 }
 
+func TestFormatReportsBuildifierWarningsThatItCannotFix(t *testing.T) {
+	// buildifier checks the docstrings only of functions with at least five
+	// statements.
+	repository := newRepository(t, map[string]string{})
+	writeFiles(t, repository, map[string]string{
+		"a.bzl": "\"\"\"A.\"\"\"\n\ndef f(x):\n    \"\"\"F.\n\n    Args:\n        x: x\n    \"\"\"\n    a  =  x\n    b = a\n    c = b\n    d = c\n    return d\n",
+	})
+	output, exitCode := runFormatIn(t, repository, repository)
+	expected := "a.bzl:4: function-docstring-return: Return value of \"f\" is not documented. (https://github.com/bazel-contrib/buildtools/blob/main/WARNINGS.md#function-docstring-return)\nbuildifier: exit status 4\n"
+	if exitCode != 1 || output != expected {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+	assertFiles(t, repository, map[string]string{
+		"a.bzl": "\"\"\"A.\"\"\"\n\ndef f(x):\n    \"\"\"F.\n\n    Args:\n        x: x\n    \"\"\"\n    a = x\n    b = a\n    c = b\n    d = c\n    return d\n",
+	})
+}
+
 func TestFormatFailsWhenAFormatterFails(t *testing.T) {
 	repository := newRepository(t, map[string]string{})
 	writeFiles(t, repository, map[string]string{"a.py": "x = (\n"})
