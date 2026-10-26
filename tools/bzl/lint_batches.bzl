@@ -10,6 +10,9 @@ def lint_batches(srcs):
 
     Args:
         srcs: the files to lint
+
+    Returns:
+        A list of lists of files, in the order of `srcs`.
     """
     batches = [[]]
     batch_chars = 0
