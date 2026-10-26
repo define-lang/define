@@ -88,25 +88,6 @@ git_override(
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
-# The MSVC toolchain's case-insensitive SDK overlays need a tool that a Windows
-# execution platform can only build with that same toolchain, so building on
-# Windows with MSVC fails with a dependency cycle. The overlay patch is
-# https://github.com/hermeticbuild/hermetic-llvm/pull/853, which omits the
-# overlays on Windows execution platforms.
-# TODO: Remove the overlay patch once an llvm release after 0.8.25 includes it.
-# The libc crate links the MSVC runtime's legacy_stdio_definitions.lib, which
-# the other patch exposes to links.
-# TODO: Remove the legacy_stdio_definitions.lib patch once an llvm release
-# includes https://github.com/hermeticbuild/hermetic-llvm/pull/864.
-single_version_override(
-    module_name = "llvm",
-    patch_strip = 1,
-    patches = [
-        "//tools/patches:llvm_msvc_legacy_stdio_definitions.patch",
-        "//tools/patches:llvm_windows_exec_sdk_case_overlays.patch",
-    ],
-)
-
 # Each tool registers one toolchain for its execution platform and one for its
 # target platform. A cross build matches both and picks the execution platform's
 # one, so a test that runs a tool on its target platform gets a binary that

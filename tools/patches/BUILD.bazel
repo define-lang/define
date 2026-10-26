@@ -9,8 +9,6 @@ exports_files([
     "aspect_rules_py_windows_venv_bin.patch",
     "aspect_rules_py_windows_venv_layout.patch",
     "bufplugin_checktest_windows_file_paths.patch",
-    "llvm_msvc_legacy_stdio_definitions.patch",
-    "llvm_windows_exec_sdk_case_overlays.patch",
     "rules_multitool_target_toolchains.patch",
     "rules_rust_coverage_collector_flag.patch",
     "rules_rust_msvc_lld_link.patch",
