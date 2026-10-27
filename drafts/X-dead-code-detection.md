@@ -16,3 +16,6 @@ We could _maybe_ track action liveness through output positions modularly in a
 way similar to Destruction Contracts. It might involve some complex bookkeeping.
 
 Any interface position that starts and ends empty is dead code.
+
+Not really dead code, but we should enforce that positions are defined as late
+as possible, to avoid there being too many different ways to write an action.

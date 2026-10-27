@@ -490,16 +490,15 @@ define the operation<mv:example.com:example:/decrement_to_zero> {
                 it has the value<standard:/boolean>.
             }
         }
-        define the view<decremented> {
-            it may only contain particles where {
-                it has the value<standard:/number/integer>.
-            }
-        }
-
         execute the logical_operation<standard:/number/equality> {
             with view<a> looking at view<a>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<is_zero>.
+        }
+        define the view<decremented> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
         }
         execute the logical_operation<standard:/number/add> {
             with view<a> looking at view<a>.
