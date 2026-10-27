@@ -146,7 +146,7 @@ When the compiler generates code, a literal needs some encoding, like an
 instruction's immediate operand or a constant in memory. DLP 52 picks it based
 on the value the literal is assigned to. But a literal in a logical operation
 execution may never be stored anywhere, and the compiler may compute it as part
-of an intermediate value that's wider than any view (DLP 55, Problem 10).
+of an intermediate value that's wider than any view (DLP 55, Problem 9).
 
 How does the compiler choose the encoding of a literal in a logical operation
 execution?

@@ -497,7 +497,8 @@ First, when an operation is defined: if an output view has constraints, then the
 range of its logical meaning, computed from the _input views'_ allowed ranges,
 must fit inside the output view's allowed range. Otherwise it's an error on the
 output view. An output view that has constraints and is in an Unknown Value
-Statement is always an error, because an unknown value fails every constraint.
+Statement (see the [Unknown Values draft](X-unknown-values.md)) is always an
+error, because an unknown value fails every constraint.
 
 Second, when an operation is executed: the range of each output view is computed
 from the ranges of whatever the _input views are looking at_ (positions and
