@@ -11,11 +11,10 @@
 
 [DLP 52 (Literals)](../define/proposals/00052-literals.md) defined literals for
 places that have a value quality: the right side of `set the value of`, and
-views that an operation doesn't write to. There, a literal is logically
-identical to a particle with "the value quality needed in order to make the line
-of code where the literal is specified be valid," and the compiler converts the
-literal's text with a parser from the literal's encoding to the destination's
-encoding.
+views that an operation doesn't write to. There, a literal is always assigned to
+something that expects a certain value quality, it becomes an ephemeral particle
+with that value quality, and the compiler converts the literal's text with a
+parser from the literal's encoding to the destination's encoding.
 
 [DLP 55 (Logical Operations)](../define/proposals/00055-logical-operations.md)
 added logical operations, and value operations use literals in logical operation
@@ -49,7 +48,7 @@ literal its meaning doesn't work here.
 ### 1: The Compiler Has to Reason About the Literal
 
 The compiler doesn't just pass a literal along. It reasons about it. A range
-check ([DLP 56](../define/proposals/00056-range-constraints.md)) needs to know
+check (see the [Range Constraints draft](X-range-constraints.md)) needs to know
 that the literal is exactly -1, and so does adding it to something, comparing it
 to something, or noticing that multiplying by a literal 1 does nothing. So while
 compiling, the compiler has to turn the literal's text into the logical value it
@@ -685,7 +684,7 @@ be allowed in places that take a particle, not in logical operation executions.
 Whether a value quality's values are whole numbers is something the compiler
 knows about the standard value qualities, but a program can't say it about its
 own value qualities. That could be a predicate in a later proposal, next to the
-minimum and maximum in DLP 56.
+minimum and maximum in the Range Constraints draft.
 
 If we ever need a literal to mean different things for different value qualities
 that hold the same logical value (like `"50"` meaning 0.5 for a percentage),
@@ -705,8 +704,8 @@ Value Statements.
 The rules in DLP 55 about which kinds of values logical operations take, and the
 special rule that the compiler knows `value<standard:/boolean>` holds truth
 values, are replaced by Logical Value Statements. The rule in DLP 52 that a
-literal gets "the value quality needed in order to make the line of code where
-the literal is specified be valid" is replaced by What a Literal Becomes, above.
+literal gets the value quality of whatever it's assigned to is replaced by What
+a Literal Becomes, above.
 
 A value quality that holds no logical value could take literals before, as long
 as the compiler had a parser for its encoding. It can't anymore. Any program
