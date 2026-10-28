@@ -5,7 +5,9 @@ on:
     branches:
       - "renovate/**"
     paths:
-      - MODULE.bazel
+      # Modules under local_path_override, such as vendored/re2, are part of the
+      # root module's dependency graph.
+      - "**/MODULE.bazel"
       # The crate extension records facts from Cargo.lock in MODULE.bazel.lock.
       - Cargo.lock
 
