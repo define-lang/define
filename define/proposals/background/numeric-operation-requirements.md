@@ -1209,9 +1209,9 @@ and the more they can express, the more they cost.
   finds which computations always give the same value by running the program on
   random values, with a probability of a false answer that can be made as small
   as needed.
-- **Affine arithmetic and zonotopes.** Affine arithmetic (Comba and Stolfi,
-  1993) represents each value as a constant plus a multiple of each of some
-  shared independent values, plus extra independent values for the error of
+- **Affine arithmetic and zonotopes.** Affine arithmetic (Comba and
+  Stolfi, 1993) represents each value as a constant plus a multiple of each of
+  some shared independent values, plus extra independent values for the error of
   nonlinear steps. Goubault and Putot built static analyses on it, with sets of
   these forms called zonotopes, in the Fluctuat analyzer for floating-point C
   and Ada code
