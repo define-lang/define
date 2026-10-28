@@ -67,6 +67,14 @@ programmer is taking decisive action by providing statements of intent.
 Finally (and this isn't the most important point, but it's still true) it
 requires more lookahead from the parser.
 
+## Comments Do Not Have Meaning
+
+The compiler (and ideally, every other Define tool in existence) must never
+assign any semantics to comments. Comments cannot influence the behavior of any
+program at compile time or runtime. If you feel the need to use a comment in
+this way, it either means some feature is missing from the language or you're
+not writing the program correctly.
+
 ## Constraints Must Be Statically Provable
 
 The compiler must be able to know whether a constraint holds, while compiling.
