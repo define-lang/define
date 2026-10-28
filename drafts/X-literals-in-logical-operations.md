@@ -525,8 +525,8 @@ define the operation<mv:example.com:example:/decrement_to_zero> {
 - The second `"0"` is given to `view<if_true>` of `standard:/choose`, which
   holds the same logical value as `view<result>`. That's written to the
   operation's `view<result>`, a natural, which holds
-  `logical_value<standard:/number/rational>`. So it becomes the rational number
-  0.
+  `logical_value<standard:/number/rational>`. So it becomes the rational
+  number 0.
 
 ### Errors
 
