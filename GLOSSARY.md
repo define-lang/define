@@ -15,6 +15,14 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   assigned like any other quality: `it has the constraint</positive>.` All of a
   position's or view's constraints must be true. Not: predicate, value
   constraint, refinement.
+- **local view**: A view defined in an Operation Statements Block with
+  `define the view<...>`, which holds an intermediate value. Not: temporary,
+  scratch view.
+- **logical operation**: A name type that expresses what a value operation does
+  logically. It is defined with `define the logical_operation<...>` and executed
+  in an Operation Statements Block with
+  `execute the logical_operation<standard:/number/add>`. The compiler knows what
+  every logical operation means.
 - **occupancy requirement**: An Action Requirement that a position contain a
   particle or be empty.
 - **particle**: A single atomic creation. It occupies one position and has the
