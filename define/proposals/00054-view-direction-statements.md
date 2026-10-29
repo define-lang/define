@@ -223,17 +223,38 @@ One thing I wondered is if we could relax aliasing rules now that we have these
 restrictions. Like, are read/read aliases okay? Should the rule become "an
 output view may not point to the same position as any other view?"
 
-I do think there are situations in which read/read aliasing could hurt us,
-though. We may want to do floating-point error analysis in the future, and those
-algorithms often assume that the two inputs have independent rounding errors.
+Well, read/read aliasing wouldn't cause us the fundamental static analysis
+issues that read/write aliasing causes (the ability for writing to one view to
+affect another). However, there are situations in which read/read aliasing could
+hurt us. For example, we likely will need to do floating-point error analysis in
+the future, and those algorithms often assume that the two inputs have
+independent rounding errors.
 
 There could also be a future in which we want to prove whole-program properties,
-like how many times a particle is read, which aliasing here would make difficult
-or intractable.
+like how many times a particle is read, which read/read aliasing would make
+difficult or intractable.
+
+Allowing read/read aliasing also creates more ways to do the same thing. It lets
+you do write both of these:
+
+```python
+multiply(a, a)
+
+b = a
+multiply(a, b)
+```
+
+Two read-only views pointing to one particle could also each need a different
+encoding when actually executed in the value operation. Then the compiler would
+then have to deal with a weird special case where one value was in two places at
+once, in a different form. There could be other situations where one particle
+carries two encodings, as an optimization, but it wouldn't be the same as the
+compiler having to consider that one particle's encodings are in two logically
+separate locations.
 
 In general, my expectation is that we will instead offer operations that
 read/write to single particles when aliasing would otherwise make sense. (That
-is, `increment_by` and `add` would be different operations.)
+is, `increment_into` and `increment` would be different operations.)
 
 ## Forward Compatibility
 
