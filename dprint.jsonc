@@ -24,7 +24,7 @@
     // renovate: depName=dprint/dprint-plugin-markdown
     "https://plugins.dprint.dev/markdown-0.28.2.wasm@77d0095123be1df7c802ef1b8875433c757f79238c26a58d1c49b8cafca44e2c",
     // renovate: depName=dprint/dprint-plugin-oxc
-    "https://plugins.dprint.dev/oxc-0.47.0.wasm@531f729b3ebf18203a07b9c2da869eef5003130ac6a8936c2eca28cf6ee8b20b",
+    "https://plugins.dprint.dev/oxc-0.48.0.wasm@ab83ae1cc1194d3791c9dd1593edd32e8f2bcef921ab47b0940d97459a04bf9a",
     // renovate: depName=kachick/dprint-plugin-sh
     "https://plugins.dprint.dev/kachick/sh-0.2.2.wasm@6e74cc650574f306cafcbd5807ec68536da5278d79294c748f3043964f8ef6d0",
     // renovate: depName=dprint/dprint-plugin-toml
