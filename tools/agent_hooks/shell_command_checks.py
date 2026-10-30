@@ -48,8 +48,12 @@ def _removed_worktree(directory: Path, arguments: Sequence[str]) -> Path | None:
     return None
 
 
-def _repository_toplevel(directory: Path, _arguments: Sequence[str]) -> Path:
-    return Path(_git(directory, "rev-parse", "--show-toplevel").strip())
+def _repository_toplevel(directory: Path, _arguments: Sequence[str]) -> Path | None:
+    try:
+        return Path(_git(directory, "rev-parse", "--show-toplevel").strip())
+    except subprocess.CalledProcessError:
+        # Outside any git repository there are no generated files to refresh.
+        return None
 
 
 def _has_bazel_output_base(worktree: Path) -> bool:
