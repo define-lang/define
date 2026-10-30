@@ -12,8 +12,6 @@ exports_files([
     "rules_multitool_target_toolchains.patch",
     "rules_rust_coverage_collector_flag.patch",
     "rules_rust_msvc_lld_link.patch",
-    "rules_rust_pyo3_cc_runtime_linkage.patch",
-    "rules_rust_pyo3_interface_library.patch",
 ])
 
 check_build_file()
