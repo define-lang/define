@@ -7,8 +7,8 @@ define the potential action<define-lang.org:fibonacci:/sequence/construct> {
         this particle is created.
     } and it does {
         create a particle in position</sequence/current>.
-        set the value of position</sequence/current> to literal<standard:/number>"1".
+        set the value of position</sequence/current> from literal<standard:/number>"1".
         create a particle in position</sequence/previous>.
-        set the value of position</sequence/previous> to literal<standard:/number>"0".
+        set the value of position</sequence/previous> from literal<standard:/number>"0".
     }
 }

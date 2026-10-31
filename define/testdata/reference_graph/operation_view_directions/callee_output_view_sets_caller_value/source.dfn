@@ -53,6 +53,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<worker>::action</run>::position<number>.
         create a particle in position<worker>::action</run>::position<trigger>.
         create a particle in position</copy>.
-        set the value of position</copy> to position<worker>::action</run>::position<number>.
+        set the value of position</copy> from position<worker>::action</run>::position<number>.
     }
 }

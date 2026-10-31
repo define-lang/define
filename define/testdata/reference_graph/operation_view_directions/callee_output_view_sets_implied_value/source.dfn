@@ -55,6 +55,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::action</fill>::position<trigger>.
         create a particle in position</copy>.
-        set the value of position</copy> to position<box>::position</value>.
+        set the value of position</copy> from position<box>::position</value>.
     }
 }

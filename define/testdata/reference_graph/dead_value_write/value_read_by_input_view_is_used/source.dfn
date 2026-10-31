@@ -33,7 +33,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<number>.
-        set the value of position<number> to literal<standard:/number>"5".
+        set the value of position<number> from literal<standard:/number>"5".
         create a particle in position</copy>.
         execute the operation</copy_value> {
             with view<source> looking at position<number>.

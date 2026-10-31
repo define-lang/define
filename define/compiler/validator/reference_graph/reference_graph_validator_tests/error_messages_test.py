@@ -722,8 +722,8 @@ def test_value_setting_type_mismatch_format(
         "        }\n"
         "        create a particle in position<x>.\n"
         "        create a particle in position<y>.\n"
-        '        set the value of position<y> to literal<standard:/number>"5".\n'
-        "        set the value of position<x> to position<y>.\n"
+        '        set the value of position<y> from literal<standard:/number>"5".\n'
+        "        set the value of position<x> from position<y>.\n"
         "    }\n"
         "}\n"
     )
@@ -739,14 +739,14 @@ def test_value_setting_type_mismatch_format(
     diagnostic = all_diags[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 18
-    assert diagnostic.location.column == 41
+    assert diagnostic.location.column == 43
     formatted = diagnostic.format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 18, column 41
-            set the value of position<x> to position<y>.
-                                            ^^^^^^^^^^^
+        File "test.dfn", line 18, column 43
+            set the value of position<x> from position<y>.
+                                              ^^^^^^^^^^^
         this value setting statement has particles with two different value qualities, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/natural>.""")
     )
 
@@ -763,7 +763,7 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
         "            }\n"
         "        }\n"
         "        create a particle in position<target>.\n"
-        '        set the value of position<target> to literal<standard:/number>"1.2.3".\n'
+        '        set the value of position<target> from literal<standard:/number>"1.2.3".\n'
         "        destroy the particle in position<target>.\n"
         "    }\n"
         "}\n"
@@ -780,9 +780,9 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 11, column 75
-            set the value of position<target> to literal<standard:/number>"1.2.3".
-                                                                              ^
+        File "test.dfn", line 11, column 77
+            set the value of position<target> from literal<standard:/number>"1.2.3".
+                                                                                ^
         '1.2.3' is not a valid value for 'literal<standard:/number>' here, because it cannot be represented as 'encoding<standard:/number/natural/ascii>': a number may have only one decimal point.""")
     )
 
@@ -799,7 +799,7 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
         "            }\n"
         "        }\n"
         "        create a particle in position<target>.\n"
-        '        set the value of position<target> to literal</text>"5".\n'
+        '        set the value of position<target> from literal</text>"5".\n'
         "        destroy the particle in position<target>.\n"
         "    }\n"
         "}\n"
@@ -816,9 +816,9 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 11, column 46
-            set the value of position<target> to literal</text>"5".
-                                                 ^^^^^^^^^^^^^^
+        File "test.dfn", line 11, column 48
+            set the value of position<target> from literal</text>"5".
+                                                   ^^^^^^^^^^^^^^
         literal</text> cannot set a value<standard:/number/natural>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/natural>.
         To set a value<standard:/number/natural>, use a literal with one of these encodings:
             encoding<standard:/binary/ascii>
@@ -1408,7 +1408,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
             "        the position<input> has a particle.\n"
             "    } and it does {\n"
             "        create a particle in position</copy>.\n"
-            "        set the value of position</copy> to position<input>.\n"
+            "        set the value of position</copy> from position<input>.\n"
             "        destroy the particle in position<input>.\n"
             "    }\n"
             "}\n"
@@ -1447,9 +1447,9 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
                 move the particle in position<input> to position<moved>::action</consume>::position<input>.
                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/consume>' infers this requirement:
-            File "consume.dfn", line 12, column 45
-                set the value of position</copy> to position<input>.
-                                                    ^^^^^^^^^^^^^^^""")
+            File "consume.dfn", line 12, column 47
+                set the value of position</copy> from position<input>.
+                                                      ^^^^^^^^^^^^^^^""")
 
 
 def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):
@@ -1480,7 +1480,7 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
             "        define the position<temporary>.\n"
             "        move the particle in position</value> to position<temporary>.\n"
             "        move the particle in position<temporary> to position</value>.\n"
-            '        set the value of position</value> to literal<standard:/number>"5".\n'
+            '        set the value of position</value> from literal<standard:/number>"5".\n'
             "    }\n"
             "}\n"
         ),
@@ -1499,7 +1499,7 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
     formatted = all_diagnostics[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "cleanup.dfn", line 9, column 26
-            set the value of position</value> to literal<standard:/number>"5".
+            set the value of position</value> from literal<standard:/number>"5".
                              ^^^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line changes the value of the particle in 'position</value>'.""")

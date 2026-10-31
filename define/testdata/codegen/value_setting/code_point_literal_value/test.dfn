@@ -8,12 +8,12 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</null>.
-        set the value of position</null> to literal<standard:/text/unicode/code_point>"0".
+        set the value of position</null> from literal<standard:/text/unicode/code_point>"0".
         create a particle in position</tab>.
-        set the value of position</tab> to literal<standard:/text/unicode/code_point>"9".
+        set the value of position</tab> from literal<standard:/text/unicode/code_point>"9".
         create a particle in position</accent>.
-        set the value of position</accent> to literal<standard:/text/unicode/code_point>"301".
+        set the value of position</accent> from literal<standard:/text/unicode/code_point>"301".
         create a particle in position</emoji>.
-        set the value of position</emoji> to literal<standard:/text/unicode/code_point>"1F600".
+        set the value of position</emoji> from literal<standard:/text/unicode/code_point>"1F600".
     }
 }

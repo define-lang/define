@@ -1688,11 +1688,11 @@ Proposals:
 
 A value may be set on a particle via a Value Setting Statement. The syntax for
 this statement is `set the value of` followed by a position reference, followed
-by `to`, another position reference or a literal, and a terminator.
+by `from`, another position reference or a literal, and a terminator.
 
 ```ebnf
 value_setting_statement =
-    "set the value of", " ", position_reference, " to ", ( position_reference | literal ), terminator ;
+    "set the value of", " ", position_reference, " from ", ( position_reference | literal ), terminator ;
 ```
 
 ### Value Setting Statement Requirements

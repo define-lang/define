@@ -54,7 +54,7 @@ def test_empty_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "there must be at least one digit"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 72
+    assert diagnostic.location.column == 74
 
 
 def test_invalid_literal_content(
@@ -71,7 +71,7 @@ def test_invalid_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "positive numbers are written without a +"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 72
+    assert diagnostic.location.column == 74
 
 
 def test_invalid_literal_in_destructor_does_not_report_changed_value(
@@ -88,7 +88,7 @@ def test_invalid_literal_in_destructor_does_not_report_changed_value(
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "positive numbers are written without a +"
     assert diagnostic.location.line == 6
-    assert diagnostic.location.column == 72
+    assert diagnostic.location.column == 74
 
 
 def test_invalid_literal_content_with_undefined_target(
@@ -123,7 +123,7 @@ def test_no_literal_parser(
         "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
 
 
 def test_only_matching_encodings_suggested(
@@ -149,7 +149,7 @@ def test_only_matching_encodings_suggested(
         "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
 
 
 def test_value_has_no_encoding(
@@ -163,7 +163,7 @@ def test_value_has_no_encoding(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.value_quality == "value</number>"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
 
 
 def test_missing_potential_literal(
@@ -177,7 +177,7 @@ def test_missing_potential_literal(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.file_path == "missing.dfn"
     assert diagnostic.location.line == 8
-    assert diagnostic.location.column == 55
+    assert diagnostic.location.column == 57
 
 
 def test_target_missing_type(
@@ -358,7 +358,7 @@ def test_invalid_boolean_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/boolean/ascii>"
     assert diagnostic.reason == "booleans are written in lowercase"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 73
+    assert diagnostic.location.column == 75
 
 
 def test_boolean_literal_sets_natural(
@@ -379,7 +379,7 @@ def test_boolean_literal_sets_natural(
         "encoding<standard:/number/hex/ascii>",
     ]
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
 
 
 def test_binary_literal(
@@ -403,7 +403,7 @@ def test_invalid_binary_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
     assert diagnostic.reason == "only the bits 0 and 1 are allowed"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 74
+    assert diagnostic.location.column == 76
 
 
 def test_binary_literal_sets_boolean(
@@ -420,7 +420,7 @@ def test_binary_literal_sets_boolean(
     assert diagnostic.value_quality == "value<standard:/boolean>"
     assert diagnostic.supported_encodings == ["encoding<standard:/boolean/ascii>"]
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
 
 
 def test_binary_literal_sets_natural(
@@ -451,7 +451,7 @@ def test_negative_decimal_literal_sets_binary(
     assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
     assert diagnostic.reason == "negative numbers are not allowed"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 72
+    assert diagnostic.location.column == 74
 
 
 def test_binary_literal_sets_integer(
@@ -475,7 +475,7 @@ def test_negative_decimal_literal_sets_natural(
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "negative numbers are not allowed"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 72
+    assert diagnostic.location.column == 74
 
 
 def test_fractional_decimal_literal_sets_integer(
@@ -492,7 +492,7 @@ def test_fractional_decimal_literal_sets_integer(
     assert diagnostic.value_encoding == "encoding<standard:/number/integer/ascii>"
     assert diagnostic.reason == "only whole numbers are allowed"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 73
+    assert diagnostic.location.column == 75
 
 
 def test_text_literal(
@@ -516,7 +516,7 @@ def test_text_literal_with_two_scalars(
     assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
     assert diagnostic.reason == "there must be exactly one scalar"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 71
+    assert diagnostic.location.column == 73
 
 
 def test_code_point_literal(
@@ -540,7 +540,7 @@ def test_invalid_code_point_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
     assert diagnostic.reason == "'U' is not allowed in a code point"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 89
+    assert diagnostic.location.column == 91
 
 
 def test_hex_literal_sets_integer(
@@ -564,4 +564,4 @@ def test_invalid_hex_literal_content(
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
     assert diagnostic.reason == "'x' is not allowed in a hex number"
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 77
+    assert diagnostic.location.column == 79

@@ -25,7 +25,7 @@ define the potential action<my.domain.com:my_lib:/keep> {
         the position<run> has a particle.
     } and it does {
         create a particle in position</kept>.
-        set the value of position</kept> to position<input>.
+        set the value of position</kept> from position<input>.
         destroy the particle in position<input>.
         destroy the particle in position<run>.
     }
@@ -42,7 +42,7 @@ define the potential action<my.domain.com:my_lib:/cleanup> {
         }
         create a particle in position<reader>.
         create a particle in position<reader>::action</keep>::position<input>.
-        set the value of position<reader>::action</keep>::position<input> to position</value>.
+        set the value of position<reader>::action</keep>::position<input> from position</value>.
         create a particle in position<reader>::action</keep>::position<run>.
     }
 }
@@ -97,7 +97,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::action</make>::position<run>.
         create a particle in position<box>::position</shell>::position</item>::position</value>.
-        set the value of position<box>::position</shell>::position</item>::position</value> to literal<standard:/number>"5".
+        set the value of position<box>::position</shell>::position</item>::position</value> from literal<standard:/number>"5".
         move the particle in position<box> to position<worker>::action</close>::position<input>.
         create a particle in position<worker>::action</close>::position<run>.
     }

@@ -10,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/keep> {
         the position<run> has a particle.
     } and it does {
         create a particle in position</kept>.
-        set the value of position</kept> to position<input>.
+        set the value of position</kept> from position<input>.
         destroy the particle in position<input>.
         destroy the particle in position<run>.
     }

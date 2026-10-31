@@ -9,8 +9,8 @@ define the potential action<my.domain.com:my_lib:/cleanup> {
             }
         }
         create a particle in position<source>.
-        set the value of position</value> to position<source>.
-        set the value of position<source> to literal<standard:/number>"5".
-        set the value of position</value> to position<source>.
+        set the value of position</value> from position<source>.
+        set the value of position<source> from literal<standard:/number>"5".
+        set the value of position</value> from position<source>.
     }
 }

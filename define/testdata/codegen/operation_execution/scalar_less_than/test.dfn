@@ -9,8 +9,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</reading>.
         create a particle in position</limit>.
         create a particle in position</below>.
-        set the value of position</reading> to literal<standard:/text>"z".
-        set the value of position</limit> to literal<standard:/text>"é".
+        set the value of position</reading> from literal<standard:/text>"z".
+        set the value of position</limit> from literal<standard:/text>"é".
         execute the operation<standard:/text/unicode/scalar/less_than> {
             with view<a> looking at position</reading>.
             with view<b> looking at position</limit>.

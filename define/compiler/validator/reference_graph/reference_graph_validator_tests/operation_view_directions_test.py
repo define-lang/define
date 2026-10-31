@@ -281,5 +281,5 @@ def test_callee_without_output_view_leaves_implied_value_unset(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 35
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<box>::position</value>"

@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</factor>.
         create a particle in position</product>.
-        set the value of position</factor> to literal<standard:/number>"3".
+        set the value of position</factor> from literal<standard:/number>"3".
         execute the operation<standard:/number/natural/multiply> {
             with view<a> looking at position</factor>.
             with view<b> looking at literal<standard:/number>"4".

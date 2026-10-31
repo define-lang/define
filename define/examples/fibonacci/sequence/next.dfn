@@ -16,7 +16,7 @@ define the potential action<define-lang.org:fibonacci:/sequence/next> {
             }
         }
         create a particle in position<temp>.
-        set the value of position<temp> to position</sequence/current>.
+        set the value of position<temp> from position</sequence/current>.
 
         # new current = current + previous (the next Fibonacci number)
         execute the operation<standard:/number/natural/add> {
@@ -26,7 +26,7 @@ define the potential action<define-lang.org:fibonacci:/sequence/next> {
         }
 
         # previous becomes the old current
-        set the value of position</sequence/previous> to position<temp>.
+        set the value of position</sequence/previous> from position<temp>.
 
         destroy the particle in position<run>.
     }

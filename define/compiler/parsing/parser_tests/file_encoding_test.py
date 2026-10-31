@@ -301,15 +301,15 @@ def test_bidi_override_in_literal_content_is_rejected(parse: Parse):
             + "    it happens when {\n"
             + "        the position<p> has a particle.\n"
             + "    } and it does {\n"
-            + '        set the value of position<p> to literal</number>"1\u202e2".\n'
+            + '        set the value of position<p> from literal</number>"1\u202e2".\n'
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.char == "\u202e"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 59
+    assert exc_info.value.location.column == 61
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 59
+    assert exc_info.value.location.end_column == 61
 
 
 def test_byte_order_mark_inside_comment_gets_a_diagnostic(
@@ -417,15 +417,15 @@ def test_direction_mark_in_literal_content_is_rejected(parse: Parse):
             + "    it happens when {\n"
             + "        the position<p> has a particle.\n"
             + "    } and it does {\n"
-            + '        set the value of position<p> to literal</number>"1\u200f2".\n'
+            + '        set the value of position<p> from literal</number>"1\u200f2".\n'
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.char == "\u200f"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 59
+    assert exc_info.value.location.column == 61
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 59
+    assert exc_info.value.location.end_column == 61
 
 
 def test_direction_mark_in_local_name_is_rejected(parse: Parse):
@@ -829,14 +829,14 @@ def test_invisible_character_after_escape_in_literal(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + '        set the value of position<dest> to literal</text>"a\\"\u202e".\n'
+            + '        set the value of position<dest> from literal</text>"a\\"\u202e".\n'
             + "    }\n}\n"
         )
     assert error.value.char == "\u202e"
     assert error.value.location.line == 5
-    assert error.value.location.column == 62
+    assert error.value.location.column == 64
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 62
+    assert error.value.location.end_column == 64
 
 
 def test_invisible_character_escaped_in_literal(parse: Parse):
@@ -846,14 +846,14 @@ def test_invisible_character_escaped_in_literal(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + '        set the value of position<dest> to literal</text>"a\\\u202e".\n'
+            + '        set the value of position<dest> from literal</text>"a\\\u202e".\n'
             + "    }\n}\n"
         )
     assert error.value.char == "\u202e"
     assert error.value.location.line == 5
-    assert error.value.location.column == 61
+    assert error.value.location.column == 63
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 61
+    assert error.value.location.end_column == 63
 
 
 def test_invisible_character_before_literal_content(parse: Parse):
@@ -863,14 +863,14 @@ def test_invisible_character_before_literal_content(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + '        set the value of position<dest> to literal</text>\u202e"a".\n'
+            + '        set the value of position<dest> from literal</text>\u202e"a".\n'
             + "    }\n}\n"
         )
     assert error.value.char == "\u202e"
     assert error.value.location.line == 5
-    assert error.value.location.column == 58
+    assert error.value.location.column == 60
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 58
+    assert error.value.location.end_column == 60
 
 
 def test_invisible_character_in_value_source_name_type(parse: Parse):
@@ -880,14 +880,14 @@ def test_invisible_character_in_value_source_name_type(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + "        set the value of position<dest> to posi\u200btion<x>.\n"
+            + "        set the value of position<dest> from posi\u200btion<x>.\n"
             + "    }\n}\n"
         )
     assert error.value.char == "\u200b"
     assert error.value.location.line == 5
-    assert error.value.location.column == 48
+    assert error.value.location.column == 50
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 48
+    assert error.value.location.end_column == 50
 
 
 def test_invisible_character_in_view_direction_statement(parse: Parse):

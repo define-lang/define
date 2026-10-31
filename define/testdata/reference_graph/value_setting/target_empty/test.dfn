@@ -11,8 +11,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<source>.
         create a particle in position</target>.
-        set the value of position<source> to literal<standard:/number>"5".
+        set the value of position<source> from literal<standard:/number>"5".
         destroy the particle in position</target>.
-        set the value of position</target> to position<source>.
+        set the value of position</target> from position<source>.
     }
 }

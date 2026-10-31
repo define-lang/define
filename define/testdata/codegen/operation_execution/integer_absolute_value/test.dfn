@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</offset>.
         create a particle in position</distance>.
-        set the value of position</offset> to literal<standard:/number>"-3".
+        set the value of position</offset> from literal<standard:/number>"-3".
         execute the operation<standard:/number/integer/absolute_value> {
             with view<value> looking at position</offset>.
             with view<result> looking at position</distance>.

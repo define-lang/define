@@ -13,9 +13,9 @@ define the potential action<define-lang.org:chess_move:/main> {
         }
         create a particle in position<from>.
         create a particle in position<from>::action</square/check>::position<file>.
-        set the value of position<from>::action</square/check>::position<file> to literal<standard:/text>"e".
+        set the value of position<from>::action</square/check>::position<file> from literal<standard:/text>"e".
         create a particle in position<from>::action</square/check>::position<rank>.
-        set the value of position<from>::action</square/check>::position<rank> to literal<standard:/text>"2".
+        set the value of position<from>::action</square/check>::position<rank> from literal<standard:/text>"2".
         create a particle in position<from>::action</square/check>::position<run>.
 
         define the position<to> {
@@ -26,9 +26,9 @@ define the potential action<define-lang.org:chess_move:/main> {
         }
         create a particle in position<to>.
         create a particle in position<to>::action</square/check>::position<file>.
-        set the value of position<to>::action</square/check>::position<file> to literal<standard:/text>"e".
+        set the value of position<to>::action</square/check>::position<file> from literal<standard:/text>"e".
         create a particle in position<to>::action</square/check>::position<rank>.
-        set the value of position<to>::action</square/check>::position<rank> to literal<standard:/text>"4".
+        set the value of position<to>::action</square/check>::position<rank> from literal<standard:/text>"4".
         create a particle in position<to>::action</square/check>::position<run>.
 
         define the position<same_file> {
@@ -73,7 +73,7 @@ define the potential action<define-lang.org:chess_move:/main> {
             }
         }
         create a particle in position<leaves_square>.
-        set the value of position<leaves_square> to position<same_square>.
+        set the value of position<leaves_square> from position<same_square>.
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position<leaves_square>.
         }

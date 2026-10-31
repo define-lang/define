@@ -798,7 +798,7 @@ class Literal(ASTNode):
 
 
 class ValueSettingStatement(ParticleStatement):
-    """Represents a 'set the value of ... to' statement."""
+    """Represents a 'set the value of ... from' statement."""
 
     source: PositionReference | Literal
 

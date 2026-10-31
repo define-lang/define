@@ -904,9 +904,7 @@ class TestLiteralContentCharacterLocation:
         [(0, "a"), (1, "\\"), (2, "b"), (3, "\\"), (4, "c"), (5, "\\"), (6, "d")],
     )
     def test_points_at_source_character(self, index: int, source_character: str):
-        literal_line = (
-            '        set the value of position<dest> to literal</text>"a\\"b\\\\c\\nd".'
-        )
+        literal_line = '        set the value of position<dest> from literal</text>"a\\"b\\\\c\\nd".'
         source = (
             f"define the potential action<{_FQUN}:/test> {{\n"
             "    it happens when {\n"

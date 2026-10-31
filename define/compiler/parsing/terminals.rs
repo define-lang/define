@@ -112,6 +112,7 @@ pub const ESCAPED_LINE_FEED: u8 = b'n';
 // Setting Values
 
 pub const SET_THE_VALUE_OF: &[u8] = b"set the value of";
+pub const SPACE_FROM: &[u8] = b" from";
 
 // Value Operations
 

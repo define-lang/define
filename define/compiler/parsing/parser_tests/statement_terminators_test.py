@@ -256,13 +256,13 @@ def test_text_after_value_setting_literal_terminator(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + '        set the value of position<dest> to literal</text>"a".x\n'
+            + '        set the value of position<dest> from literal</text>"a".x\n'
             + "    }\n}\n"
         )
     assert error.value.location.line == 5
-    assert error.value.location.column == 62
+    assert error.value.location.column == 64
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 62
+    assert error.value.location.end_column == 64
 
 
 def test_text_after_operation_execution_terminator(parse: Parse):

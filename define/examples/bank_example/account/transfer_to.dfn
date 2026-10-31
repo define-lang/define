@@ -31,15 +31,15 @@ define the potential action<define-lang.org:bank:/account/transfer_to> {
             }
         }
         create a particle in position<original_balance>.
-        set the value of position<original_balance> to position<to>::position</account/balance>.
+        set the value of position<original_balance> from position<to>::position</account/balance>.
 
         create a particle in action</account/withdraw>::position<amount>.
-        set the value of action</account/withdraw>::position<amount> to position<amount>.
+        set the value of action</account/withdraw>::position<amount> from position<amount>.
         create a particle in action</account/withdraw>::position<run>.
 
         # It's too easy to human-error this and write the wrong trigger names.
         create a particle in position<to>::action</account/deposit>::position<amount>.
-        set the value of position<to>::action</account/deposit>::position<amount> to position<amount>.
+        set the value of position<to>::action</account/deposit>::position<amount> from position<amount>.
         create a particle in position<to>::action</account/deposit>::position<run>.
 
         require that {

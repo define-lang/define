@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</reading>.
         create a particle in position</at_least>.
-        set the value of position</reading> to literal<standard:/text>"e".
+        set the value of position</reading> from literal<standard:/text>"e".
         execute the operation<standard:/text/unicode/scalar/greater_than_or_equal> {
             with view<a> looking at position</reading>.
             with view<b> looking at literal<standard:/text>"a".

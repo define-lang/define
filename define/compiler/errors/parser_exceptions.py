@@ -400,7 +400,7 @@ class InvalidValueSettingStatementSyntax(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "The syntax for a value setting statement looks like:\n"
-        "    set the value of position<target> to position<source>.\n"
+        "    set the value of position<target> from position<source>.\n"
         "The source may also be a literal."
     )
 

@@ -6,7 +6,7 @@ define the potential action<my.domain.com:my_lib:/read> {
         the position<trigger> has a particle.
     } and it does {
         create a particle in position</copy>.
-        set the value of position</copy> to position</value>.
+        set the value of position</copy> from position</value>.
         destroy the particle in position<trigger>.
     }
 }

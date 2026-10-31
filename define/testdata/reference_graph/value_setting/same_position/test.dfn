@@ -4,6 +4,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         define the position<target>.
-        set the value of position<target> to position<target>.
+        set the value of position<target> from position<target>.
     }
 }

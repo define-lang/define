@@ -15,8 +15,8 @@ use terminals::{
     ACTION, BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
     DEFINE_THE_POTENTIAL_POSITION, DESTROY_THE_PARTICLE_IN, EXECUTE_THE, IT_ALSO_ASSIGNS_THE,
     IT_HAPPENS_WHEN, LINE_FEED, LITERAL, MOVE_THE_PARTICLE_IN, POSITION, SET_THE_VALUE_OF, SPACE,
-    SPACE_AND_IT_DOES, SPACE_HAS_A_PARTICLE, SPACE_TO, TERMINATOR, THE, THE_ACTION, THE_AND_SPACE,
-    THE_POSITION, THIS_PARTICLE_IS_BEING_DESTROYED, THIS_PARTICLE_IS_CREATED,
+    SPACE_AND_IT_DOES, SPACE_FROM, SPACE_HAS_A_PARTICLE, SPACE_TO, TERMINATOR, THE, THE_ACTION,
+    THE_AND_SPACE, THE_POSITION, THIS_PARTICLE_IS_BEING_DESTROYED, THIS_PARTICLE_IS_CREATED,
 };
 
 /// How far the lines of an action definition block, which is always at the
@@ -577,7 +577,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.scanner.consume(MOVE_THE_PARTICLE_IN);
         let source = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the source position.
-        if !self.consume_to() {
+        if !self.consume_connecting_word(SPACE_TO) {
             return Err(self.missing_connecting_word(SyntaxErrors::invalid_move_statement_syntax));
         }
         let target = self.parse_statement_position_reference(fqun)?;
@@ -591,7 +591,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///
     /// ```ebnf
     /// value_setting_statement =
-    ///     "set the value of", " ", position_reference, " to ", ( position_reference | literal ), terminator ;
+    ///     "set the value of", " ", position_reference, " from ", ( position_reference | literal ), terminator ;
     /// ```
     fn parse_value_setting_statement(
         &mut self,
@@ -600,9 +600,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.scanner.consume(SET_THE_VALUE_OF);
         let target = self.parse_statement_position_reference(fqun)?;
-        // TODO: Change "to" in Value Setting Statements to "from".
-        // There is no ` to` after the target position.
-        if !self.consume_to() {
+        // There is no ` from` after the target position.
+        if !self.consume_connecting_word(SPACE_FROM) {
             return Err(
                 self.missing_connecting_word(SyntaxErrors::invalid_value_setting_statement_syntax)
             );
@@ -696,24 +695,25 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(end)
     }
 
-    /// Consumes ` to` when it is the word after a position reference.
-    fn consume_to(&mut self) -> bool {
-        let Some(after_to) = self.scanner.rest_after(SPACE_TO) else {
+    /// Consumes `word`, a connecting word with its leading space such as
+    /// ` to`, when it is the word after a position reference.
+    fn consume_connecting_word(&mut self, word: &[u8]) -> bool {
+        let Some(after_word) = self.scanner.rest_after(word) else {
             return false;
         };
-        // `to` is a whole word, not the start of another one, when a space,
-        // the end of the line, or the `.` or name type where what follows `to`
-        // belongs comes after it. A missing reference after a whole `to` is
-        // reported where the reference belongs.
+        // The connecting word is a whole word, not the start of another one,
+        // when a space, the end of the line, or the `.` or name type where
+        // what follows it belongs comes after it. A missing reference after a
+        // whole connecting word is reported where the reference belongs.
         let is_word = matches!(
-            after_to.first(),
+            after_word.first(),
             None | Some(&(SPACE | TERMINATOR | LINE_FEED))
-        ) || after_to.starts_with(LITERAL)
+        ) || after_word.starts_with(LITERAL)
             || POSITION_OR_ACTION
                 .iter()
-                .any(|&(keyword, _)| after_to.starts_with(keyword));
+                .any(|&(keyword, _)| after_word.starts_with(keyword));
         if is_word {
-            self.scanner.consume(SPACE_TO);
+            self.scanner.consume(word);
         }
         is_word
     }

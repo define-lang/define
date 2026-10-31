@@ -51,7 +51,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<first> looking at position<first>.
             with view<second> looking at position<second>.
         }
-        set the value of position</first_copy> to position<first>.
-        set the value of position</second_copy> to position<second>.
+        set the value of position</first_copy> from position<first>.
+        set the value of position</second_copy> from position<second>.
     }
 }

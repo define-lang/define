@@ -109,7 +109,7 @@ def test_copied_value_error_is_not_a_dead_write(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 24
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert diagnostic.position_name == "position<source>"
 
 

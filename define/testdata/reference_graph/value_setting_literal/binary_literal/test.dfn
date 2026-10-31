@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</bits>.
-        set the value of position</bits> to literal<standard:/binary>"1011".
+        set the value of position</bits> from literal<standard:/binary>"1011".
     }
 }

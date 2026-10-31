@@ -208,7 +208,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</bits>.
-        set the value of position</bits> to literal<standard:/binary>"1011".
+        set the value of position</bits> from literal<standard:/binary>"1011".
         create a particle in position</masked>.
         create a particle in position</combined>.
         create a particle in position</differing>.
@@ -237,7 +237,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</both>.
         create a particle in position</either>.
         create a particle in position</exactly_one>.
-        set the value of position</flag> to literal<standard:/boolean>"true".
+        set the value of position</flag> from literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position</flag>.
         }
@@ -258,8 +258,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position</count>.
         create a particle in position</offset>.
-        set the value of position</count> to literal<standard:/number/hex>"3".
-        set the value of position</offset> to literal<standard:/number>"-3".
+        set the value of position</count> from literal<standard:/number/hex>"3".
+        set the value of position</offset> from literal<standard:/number>"-3".
         create a particle in position</natural_sum>.
         create a particle in position</natural_product>.
         create a particle in position</natural_difference>.
@@ -387,7 +387,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</letter_below>.
         create a particle in position</letter_at_most>.
         create a particle in position</letter_at_least>.
-        set the value of position</letter> to literal<standard:/text>"q".
+        set the value of position</letter> from literal<standard:/text>"q".
         execute the operation<standard:/text/unicode/scalar/equal> {
             with view<a> looking at position</letter>.
             with view<b> looking at literal<standard:/text>"r".
@@ -408,6 +408,6 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/text>"r".
             with view<result> looking at position</letter_at_least>.
         }
-        set the value of position</letter> to literal<standard:/text/unicode/code_point>"71".
+        set the value of position</letter> from literal<standard:/text/unicode/code_point>"71".
     }
 }

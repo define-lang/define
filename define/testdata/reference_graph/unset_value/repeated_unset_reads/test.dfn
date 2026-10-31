@@ -14,10 +14,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<source>.
         create a particle in position</target>.
         create a particle in position</other_target>.
-        set the value of position</target> to position<source>.
-        set the value of position</other_target> to position<source>.
+        set the value of position</target> from position<source>.
+        set the value of position</other_target> from position<source>.
         move the particle in position<source> to position</moved>.
-        set the value of position</target> to position</moved>.
-        set the value of position</moved> to position</target>.
+        set the value of position</target> from position</moved>.
+        set the value of position</moved> from position</target>.
     }
 }

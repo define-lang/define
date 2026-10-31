@@ -2622,7 +2622,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</augend>.
         create a particle in position</total>.
-        set the value of position</augend> to literal<standard:/number>"3".
+        set the value of position</augend> from literal<standard:/number>"3".
         execute the operation<standard:/number/natural/add> {
             with view<a> looking at position</augend>.
             with view<b> looking at literal<standard:/number>"2".

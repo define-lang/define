@@ -12,6 +12,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<worker>.
         create a particle in position</copy>.
-        set the value of position</copy> to position<worker>::position</value>.
+        set the value of position</copy> from position<worker>::position</value>.
     }
 }
