@@ -1,5 +1,10 @@
 # Value qualities and positions may both be assigned to a position.
-define the potential value<my.domain.com:my_lib:/number>.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
 define the potential position<my.domain.com:my_lib:/other>.
 define the potential position<my.domain.com:my_lib:/test> {
     it may only contain particles where {

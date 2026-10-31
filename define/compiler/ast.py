@@ -232,21 +232,15 @@ class LogicalOperationDefinition(GlobalDefinition):
 class ValueDefinition(QualityDefinition):
     """Represents a value quality definition."""
 
-    @classmethod
-    def from_name(
-        cls, *, name: DefinitionGlobalNameContent, location: SourceLocation
-    ) -> Self:
-        """Initialize with a global name."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.VALUE,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.VALUE
-                ),
-            ),
-            location=location,
-        )
+    logical_operation_support_statements: tuple[LogicalOperationSupportStatement, ...]
+
+
+class LogicalOperationSupportStatement(ASTNode):
+    """Represents a Logical Operation Support Statement."""
+
+    logical_operation: GlobalTypedNameReference
+    may_be_read: bool
+    may_be_written: bool
 
 
 class PositionDefinition(QualityDefinition):

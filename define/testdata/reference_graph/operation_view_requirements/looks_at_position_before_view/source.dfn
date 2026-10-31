@@ -18,7 +18,12 @@ define the operation<my.domain.com:my_lib:/copy> {
         execute the encoding operation.
     }
 }
-define the potential value<my.domain.com:my_lib:/other>.
+define the potential value<my.domain.com:my_lib:/other> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
 define the operation<my.domain.com:my_lib:/double> {
     define the view<result> {
         it is written.

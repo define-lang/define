@@ -1,1 +1,24 @@
-define the potential value<standard:/number/integer>.
+define the potential value<standard:/number/integer> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/power> {
+        it may be read.
+    }
+}

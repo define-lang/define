@@ -43,7 +43,7 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
 - **value**: The logical meaning a particle holds, such as a rational number.
   Its encoding and value operations determine its behavior. A particle's value
   is either set or unset.
-- **value quality**: A quality defined with `define the potential value<...>.`
+- **value quality**: A quality defined with `define the potential value<...>`
   that names a kind of value. A particle may have only one value quality. Not:
   value type, data type, value constraint.
 - **value requirement**: An Action Requirement that a position's particle have a

@@ -1,5 +1,10 @@
 # A view may have only one value quality.
-define the potential value<my.domain.com:my_lib:/integer>.
+define the potential value<my.domain.com:my_lib:/integer> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<number> {
         it is read.

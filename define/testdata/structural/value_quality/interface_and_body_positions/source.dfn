@@ -1,6 +1,15 @@
 # Each position may specify its own value quality.
-define the potential value<my.domain.com:my_lib:/number>.
-define the potential value<my.domain.com:my_lib:/text>.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/text> {
+    it supports the logical_operation<standard:/text/equality> {
+        it may be read.
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<input> {
         it may only contain particles where {

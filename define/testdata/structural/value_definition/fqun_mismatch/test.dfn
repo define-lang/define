@@ -1,2 +1,7 @@
 # A value definition must match its project FQUN.
-define the potential value<other.org:my_lib:/test>.
+define the potential value<other.org:my_lib:/test> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}

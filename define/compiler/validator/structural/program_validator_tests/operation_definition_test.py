@@ -152,10 +152,10 @@ def test_view_multiple_value_qualities(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ViewMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 8
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 24
     assert diagnostic.first_value_name == "value<standard:/number/natural>"
-    assert diagnostic.first_assignment_line == 7
+    assert diagnostic.first_assignment_line == 12
 
 
 def test_view_duplicate_quality_assignment(

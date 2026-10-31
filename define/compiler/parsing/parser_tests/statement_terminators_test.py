@@ -240,13 +240,19 @@ def test_text_after_encoding_quality_assignment_terminator(parse: Parse):
     assert error.value.location.end_column == 35
 
 
-def test_text_after_value_definition_terminator(parse: Parse):
+def test_text_after_logical_operation_support_block_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
-        _ = parse("define the potential value<standard:/number/natural>.x\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 54
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 54
+        _ = parse(
+            "define the potential value<standard:/number/natural> {\n"
+            + "    it supports the logical_operation<standard:/number/add> {\n"
+            + "        it may be read.x\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 24
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 24
 
 
 def test_text_after_value_setting_literal_terminator(parse: Parse):

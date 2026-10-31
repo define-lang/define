@@ -192,7 +192,7 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
         diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position</value>"

@@ -56,6 +56,9 @@ pub const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position
 // Defining Value Qualities
 
 pub const DEFINE_THE_POTENTIAL_VALUE: &[u8] = b"define the potential value";
+pub const IT_SUPPORTS_THE: &[u8] = b"it supports the";
+pub const IT_MAY_BE_READ: &[u8] = b"it may be read";
+pub const IT_MAY_BE_WRITTEN: &[u8] = b"it may be written";
 
 // Defining Encodings
 

@@ -122,7 +122,11 @@ def test_comments_and_blank_lines(parse: Parse):
 
 def test_between_other_definitions(parse: Parse):
     program = parse(
-        "define the potential value<mv:define-lang.org:parser:/number>.\n"
+        "define the potential value<mv:define-lang.org:parser:/number> {\n"
+        + "    it supports the logical_operation<mv:define-lang.org:parser:/add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
         + "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
         + "        execute the encoding operation.\n"
@@ -135,7 +139,7 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(operation, ast.ValueOperationDefinition)
     assert operation.typed_name.name_content.path.name == "/add"
     assert operation.location == ast.SourceLocation(
-        line=2, column=1, end_line=6, end_column=1
+        line=6, column=1, end_line=10, end_column=1
     )
     assert isinstance(encoding, ast.EncodingDefinition)
 

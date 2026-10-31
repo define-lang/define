@@ -730,7 +730,14 @@ def test_value_setting_type_mismatch_format(
     result = validate_project(
         {
             "test.dfn": source,
-            "foo/bar.dfn": "define the potential value<my.domain.com:my_lib:/foo/bar>.\n",
+            "foo/bar.dfn": (
+                "define the potential value<my.domain.com:my_lib:/foo/bar> {\n"
+                "    it supports the logical_operation<standard:/number/add> {\n"
+                "        it may be read.\n"
+                "        it may be written.\n"
+                "    }\n"
+                "}\n"
+            ),
         },
     )
     assert result.program_result.all_exceptions == []
@@ -1420,7 +1427,14 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
             "    }\n"
             "}\n"
         ),
-        "number.dfn": ("define the potential value<my.domain.com:my_lib:/number>.\n"),
+        "number.dfn": (
+            "define the potential value<my.domain.com:my_lib:/number> {\n"
+            "    it supports the logical_operation<standard:/number/add> {\n"
+            "        it may be read.\n"
+            "        it may be written.\n"
+            "    }\n"
+            "}\n"
+        ),
     }
     result = validate_project(files)
     assert result.program_result.all_exceptions == []

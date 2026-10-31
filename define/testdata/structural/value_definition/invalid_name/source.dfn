@@ -1,2 +1,7 @@
 # Value names follow the global name rules.
-define the potential value<my.domain.com:my_lib:/bad-name>.
+define the potential value<my.domain.com:my_lib:/bad-name> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}

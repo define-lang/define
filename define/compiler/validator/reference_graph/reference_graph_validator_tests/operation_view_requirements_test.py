@@ -47,7 +47,7 @@ def test_value_mismatch(
         diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
+    assert diagnostic.location.line == 42
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
@@ -81,7 +81,7 @@ def test_literal_value_has_no_encoding(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
+    assert diagnostic.location.line == 36
     assert diagnostic.location.column == 42
     assert diagnostic.value_quality == "value</count>"
 
@@ -127,11 +127,11 @@ def test_looks_at_position_before_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=32, column=42, end_line=32, end_column=57),
+            location=ast.SourceLocation(line=37, column=42, end_line=37, end_column=57),
             position_name="position<number>",
         ),
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
-            location=ast.SourceLocation(line=33, column=42, end_line=33, end_column=53),
+            location=ast.SourceLocation(line=38, column=42, end_line=38, end_column=53),
             view_name="view<target>",
             looked_at_name="view<result>",
             looked_at_kind=diagnostics.LookedAtKind.VIEW,
@@ -187,7 +187,7 @@ def test_position_value_mismatch(
         diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 38
+    assert diagnostic.location.line == 42
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position<second>"

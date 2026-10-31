@@ -17,7 +17,11 @@ define the operation<my.domain.com:my_lib:/copy> {
         execute the encoding operation.
     }
 }
-define the potential value<my.domain.com:my_lib:/text>.
+define the potential value<my.domain.com:my_lib:/text> {
+    it supports the logical_operation<standard:/text/equality> {
+        it may be read.
+    }
+}
 define the potential position<my.domain.com:my_lib:/value> {
     it may only contain particles where {
         it has the value</text>.

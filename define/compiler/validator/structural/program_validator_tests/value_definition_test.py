@@ -53,7 +53,7 @@ def test_duplicate_value(
     assert diagnostic.definition_type == "value"
     assert diagnostic.path == "/number"
     assert diagnostic.first_definition_line == 2
-    assert diagnostic.location.line == 3
+    assert diagnostic.location.line == 8
 
 
 def test_same_name_different_quality(

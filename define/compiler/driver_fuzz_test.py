@@ -846,7 +846,13 @@ def syntactic_sources(draw: st.DrawFn) -> str:
         if kind in {"position_simple", "position"}:
             defs.append(draw(position_definitions()))
         elif kind == "value":
-            defs.append(f"define the potential value<{draw(global_names())}>.\n")
+            defs.append(
+                f"define the potential value<{draw(global_names())}> {{\n"
+                + "    it supports the logical_operation<standard:/number/add> {\n"
+                + "        it may be read.\n"
+                + "    }\n"
+                + "}\n"
+            )
         elif kind == "encoding":
             defs.append(f"define the encoding<{draw(global_names())}>.\n")
         elif kind == "potential_literal":

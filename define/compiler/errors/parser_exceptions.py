@@ -299,6 +299,16 @@ class InvalidLogicalOperationDefinitionBlock(DefineTokenError):
     )
 
 
+class InvalidLogicalOperationSupportBlock(DefineTokenError):
+    """Wrote something other than 'it may be read.' and 'it may be written.' in a Logical Operation Support Block."""
+
+    message_format: ClassVar[str] = (
+        "An 'it supports the logical_operation<...>' block must contain"
+        " 'it may be read.', 'it may be written.', or both, in that order,"
+        " with each at most once."
+    )
+
+
 class InvalidLogicalOperationViewDefinitionBlock(DefineTokenError):
     """Wrote something other than View Direction Statements in a Logical Operation View Definition."""
 
@@ -413,6 +423,15 @@ class InvalidTriggerConditionsBlock(DefineTokenError):
     message_format: ClassVar[str] = "Not a valid trigger condition statement."
 
 
+class InvalidValueDefinitionBlock(DefineTokenError):
+    """Wrote something other than a Logical Operation Support Statement in a Value Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A value definition may contain only"
+        " 'it supports the logical_operation<...>' statements."
+    )
+
+
 class InvalidValueSettingStatementSyntax(DefineTokenError):
     """Invalid target or source syntax in a Value Setting Statement."""
 
@@ -477,6 +496,15 @@ class MissingLiteralContentStart(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "A literal's content must start with '\"' right after the '>' of its typed name."
+    )
+
+
+class MissingLogicalOperationSupportStatement(DefineTokenError):
+    """Left out the Logical Operation Support Statements of a Value Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A value definition must contain at least one"
+        " 'it supports the logical_operation<...>' statement."
     )
 
 
