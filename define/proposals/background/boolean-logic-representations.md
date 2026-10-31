@@ -1258,6 +1258,18 @@ measured matters.
   to C of width ⩽ f(k) and size O(n × f(k)), where f is singly exponential." It
   leaves open "whether our upper bound result Theorem 4.2 could be modified to
   construct SDDs."
+- **Circuits and OBDDs:**
+  [Jha and Suciu, "On the Tractability of Query Compilation and Bounded Treewidth"](https://homes.cs.washington.edu/~suciu/file38_paper.pdf)
+  (ICDT 2012) measure the same graph, which they call the _expression DAG_, with
+  inputs and `and`, `or`, and `not` nodes. For a path decomposition, their
+  Corollary 2.13 says that with "an expression path decomposition of F of width
+  < k," the OBDD in the order the variables are first seen along the path "has
+  width at most 2^((k+1)2^(k+1))," so "the size of the OBDD is linear in the
+  number of Boolean variables." For a tree decomposition of width < k, their
+  Corollary 2.14 gives width at most n^(2^((k+1)2^(k+1))), "polynomial in the
+  number of variables" for a fixed k, but with k in the exponent of n. Reduced
+  OBDDs are canonical SDDs whose vtree is a chain, so these are also bounds on
+  canonical SDDs.
 
 For CNFs, this is where SDDs beat OBDDs. With n variables and treewidth k,
 Darwiche's canonical SDD has size O(n·2^k), which for a fixed k grows linearly
@@ -1289,8 +1301,80 @@ its _factor width_, and factor width is at most 2^((k + 2)·2^(k + 1)) for
 circuit treewidth k. Putting the two together, at k = 1, the bound on SDD width
 is 2^8193. (That arithmetic is this note's own, from the paper's stated bounds.)
 The bound only limits how large an SDD can be. No known lower bound says SDDs
-for circuits of small treewidth have to be that large, so the gap between a
-single and a triple exponential is open.
+for circuits of small treewidth have to be that large, so in the published
+literature, the gap between a single and a triple exponential is open.
+
+Jha and Suciu's OBDD bounds are smaller in some cases. For circuits of pathwidth
+k, an OBDD of size n·2^((k+1)·2^(k+1)) is only doubly exponential in k. For
+treewidth, their n^(2^((k+1)·2^(k+1))) is smaller than Bova and Szeider's bound
+when n is small compared with k, but it isn't of the form f(k)·n, so for a fixed
+k it grows faster than linearly in n.
+
+An unpublished result in Define's research repository,
+[Circuit Treewidth and SDD Size](https://github.com/define-lang/research/tree/main/circuit_treewidth_sdd),
+claims to close that gap for _uncompressed_ SDDs. It is AI-written and has not
+been reviewed by a human, so it's recorded here separately from the published
+bounds. Its claims:
+
+- A circuit with n inputs and a tree decomposition of width k has an
+  uncompressed SDD over its inputs alone, with no gate variables, of at most
+  n·2^(32k+65) elements. That's n·2^O(k), the same single exponential that
+  Amarilli et al. prove for d-SDNNF.
+- With a path decomposition of width k, the vtree can be left-linear, with at
+  most n·2^(24k+56) elements.
+- The dependence on k can't be much better: by Amarilli et al.'s lower bound for
+  structured DNNF, which SDDs are, some circuits of treewidth O(k) need SDDs of
+  size 2^Ω(k).
+
+How much is checked: the core construction, from a tree decomposition that
+already has the gate constraints in its bags to a valid SDD of size (n − 1)·16^b
+for bags of at most b vertices (with the constant weakened for the Lean
+version), is proven in Lean with no `sorry` and only the standard axioms. The
+step from a circuit to that kind of decomposition is proven only in English. A
+brute-force implementation checks the whole construction on about 2,000 small
+random circuits, and two AI reviews found one gap, since fixed, in the pathwidth
+proof.
+
+It doesn't change the situation for canonical SDDs, because compressing the SDD
+it builds can make it exponentially larger.
+
+A second unpublished result in the same repository,
+[Circuit Treewidth and Canonical SDD Size](https://github.com/define-lang/research/tree/main/circuit_treewidth_canonical_sdd),
+asks the same question for canonical SDDs. It is also AI-written and has not
+been reviewed by a human. It doesn't close the gap, but it claims:
+
+- **The bounds:** for a circuit with n inputs and treewidth k, the smallest
+  canonical SDD has a size between max(n/2, 2^Ω(k)) and min(n·2^(2^(2^O(k))),
+  n^(2^O(k))). The n^(2^O(k)) is a complete proof of Jha and Suciu's tree
+  argument, with a smaller exponent than the one they state. For pathwidth k,
+  the upper bound is Jha and Suciu's n·2^(2^O(k)).
+- **Why the gap is hard:** every such circuit has an uncompressed SDD of size
+  n·2^O(k), by the first result. So any lower bound for canonical SDDs beyond
+  2^O(k)·poly(n) would show that canonical SDDs are superpolynomially larger
+  than uncompressed SDDs for some functions, which is a known open question.
+- **OBDDs need doubly exponential width:** the hidden weighted bit function,
+  whose output is the input at the position given by the number of true inputs,
+  has a circuit of pathwidth at most 8·log₂ n + 13. Bryant (1991) showed that
+  its OBDDs are exponentially large under every order, so some circuits of
+  pathwidth k need OBDDs of width 2^(2^Ω(k)). That makes Jha and Suciu's
+  pathwidth bound tight up to the constant, and it answers the question Amarilli
+  et al. ask about it. Any upper bound that goes through OBDDs can't do better
+  than doubly exponential.
+- **An error in a recent preprint:** Theorems 15 and 16 of Capelli, Choi,
+  Mengel, Muñoz, and Van den Broeck,
+  ["A Canonical Generalization of OBDD"](https://arxiv.org/abs/2604.05537v1)
+  (arXiv, 2026), claim a construction for circuits of treewidth k with a single
+  exponential factor. The study gives a ten-vertex counterexample to a step of
+  the proof of Theorem 15, which refutes the proof, not the theorem. It also
+  argues that the theorems contradict the paper's own Theorem 19, if that one
+  holds.
+
+How much is checked: the hidden weighted bit circuit and the counterexample are
+proven in Lean with no `sorry` and only the standard axioms. Everything else is
+an English proof, reviewed by two AI reviewers, whose corrections were made.
+Computed sizes for the hidden weighted bit function, exact for n ≤ 7, can't tell
+whether its canonical SDDs grow polynomially or exponentially, and that's the
+open question the gap turns on.
 
 Two ways around that each give something up:
 
@@ -1525,7 +1609,12 @@ never happen.
   d-DNNFs. SDDs fall between d-DNNF and OBDDs in size, with exponential gaps on
   both sides. A CNF of treewidth w has an SDD of size O(n·2^w), while some need
   OBDDs of size Ω(n^(w/4)) under every order, but for a circuit of treewidth k,
-  the known SDD bound is triple-exponential in k, and the fast ways to check
+  the published SDD bound is triple-exponential in k. An unreviewed result in
+  Define's research repository claims n·2^O(k) for uncompressed SDDs, with its
+  core construction checked in Lean. For canonical SDDs, the published bounds
+  are that triple exponential or Jha and Suciu's OBDD bounds, which are doubly
+  exponential for pathwidth, and a second unreviewed result there claims that
+  OBDDs can't do better than doubly exponential. The fast ways to check
   treewidth are only approximate. When the order is fixed, counting live values
   is exact and takes one pass, and a circuit of width w with n inputs and m
   outputs has an OBDD of at most n·m·2^w nodes for some input order (Berman,
@@ -1603,6 +1692,13 @@ never happen.
   IEEE Transactions on Computers 35(8), 1986, and
   [Symbolic Boolean Manipulation with Ordered Binary Decision Diagrams](https://courses.e-ce.uth.gr/CE437/handouts/BDDs-Bryant-Handouts.pdf)
   (tutorial handout).
+- Bryant,
+  [On the Complexity of VLSI Implementations and Graph Representations of Boolean Functions with Application to Integer Multiplication](https://doi.org/10.1109/12.73590),
+  IEEE Transactions on Computers 40(2), 1991 (cited by the canonical SDD study,
+  not read for this note).
+- Capelli, Choi, Mengel, Muñoz, and Van den Broeck,
+  [A Canonical Generalization of OBDD](https://arxiv.org/abs/2604.05537v1),
+  arXiv, 2026 (read only through the canonical SDD study).
 - Chatterjee, Mishchenko, Brayton, Wang, and Kam,
   [Reducing Structural Bias in Technology Mapping](https://doi.org/10.1109/ICCAD.2005.1560122),
   ICCAD 2005.
@@ -1632,6 +1728,12 @@ never happen.
 - de Moura and Bjørner,
   [Z3: An Efficient SMT Solver](https://doi.org/10.1007/978-3-540-78800-3_24),
   TACAS 2008.
+- Define research repository,
+  [Circuit Treewidth and Canonical SDD Size](https://github.com/define-lang/research/tree/main/circuit_treewidth_canonical_sdd),
+  2026 (AI-written, not reviewed by a human).
+- Define research repository,
+  [Circuit Treewidth and SDD Size](https://github.com/define-lang/research/tree/main/circuit_treewidth_sdd),
+  2026 (AI-written, not reviewed by a human).
 - Delmas, A Semi-Persistent E-Graph with Native AC Canonization and Leapfrog AC
   Matching, EGRAPHS 2026
   ([program](https://pldi26.sigplan.org/program/program-egraphs-2026/)).
@@ -1662,6 +1764,9 @@ never happen.
 - Goto, Monocopy and Associative Algorithms in an Extended Lisp, University of
   Tokyo, 1974
   ([scanned copy](https://www.cs.utexas.edu/~hunt/research/hash-cons/hash-cons-papers/monocopy-goto.pdf)).
+- Jha and Suciu,
+  [On the Tractability of Query Compilation and Bounded Treewidth](https://homes.cs.washington.edu/~suciu/file38_paper.pdf),
+  ICDT 2012.
 - Koster, Bodlaender, and van Hoesel,
   [Treewidth: Computational Experiments](https://opus4.kobv.de/opus4-zib/files/664/ZR-01-38.pdf),
   ZIB-Report 01-38, 2001.

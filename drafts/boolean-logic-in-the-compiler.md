@@ -24,9 +24,39 @@ For each value operation definition, once:
    an earlier value.
 4. **Matches:** no group of statements computes one value from at most four
    other values the way a registered operation does.
+5. **Wrappers:** no value operation wraps a registered operation, only the
+   standard library wraps `and` and `not`, and value operations don't execute
+   those wrappers. These only look at the statements, not at what they compute.
 
 Each value operation is checked once, however many places execute it, so the
 total work is the sum over definitions.
+
+## Programs That Compile Have No Equalities
+
+A redundant value is an error, and the programmer has to replace it, often with
+an execution of a value operation. So in a program that compiles, no value is
+the same as any other, and the logic is a tree of executions of value operations
+instead of repeated logic. That changes what the usual work is:
+
+- **The usual job is showing that values differ.** One assignment of the boolean
+  inputs where two values disagree proves that they differ, and it's easy to
+  check. Random simulation finds such assignments for almost every pair at once,
+  so in a value operation that compiles, nearly every value ends up alone in its
+  simulation group, and no solver is needed. Only values that differ on a tiny
+  fraction of input combinations need more than simulation.
+- **Proving equality only happens on the way to an error.** DLP 57 reports only
+  the first redundant value in each value operation, so the compiler stops
+  checking that value operation after its first proof of equality. The expensive
+  part of the check runs at most once for each value operation that fails, and
+  never on one that compiles.
+- **Executions make repeated logic structural.** Where the same logic would have
+  been written twice, a program that compiles executes one value operation
+  instead. The same execution given the same values is the same node under
+  structural hashing, without any reasoning.
+
+The measurements below planted a redundancy in about 8% of the statements, so
+most of their time went to proving equalities. They're upper bounds for value
+operations that compile, not typical costs.
 
 ## Representation
 
@@ -123,10 +153,12 @@ Paruthi, Krohm, and Ganai combined in "Robust Boolean Reasoning for Equivalence
 Checking and Functional Property Verification" (IEEE TCAD 21(12), 2002).
 
 1. **Structural hashing** as the graph is built, above.
-2. **Simulation:** the compiler evaluates every node on 1,024 random
-   combinations of the boolean inputs (sixteen 64-bit words per node). Two
-   values that differ on any combination aren't the same, and every node gets a
-   signature. Constants and boolean inputs get signatures too.
+2. **Simulation:** the compiler evaluates every node on the value operation's
+   stored patterns from earlier compiles (below), and on 1,024 combinations of
+   the boolean inputs from a random generator with a fixed seed (sixteen 64-bit
+   words per node). Two values that differ on any combination aren't the same,
+   and every node gets a signature. Constants and boolean inputs get signatures
+   too.
 3. **Proving candidates, in statement order:** for each node, the candidates are
    the constants, the boolean inputs, and the earlier nodes with the same
    signature. Each candidate pair goes to the first of these that decides it:
@@ -142,9 +174,10 @@ Checking and Functional Property Verification" (IEEE TCAD 21(12), 2002).
    - **SAT without a limit,** if the OBDDs get too large.
 4. **Counterexamples:** an assignment that shows two nodes differ becomes a new
    simulation pattern, which splits other candidates that it separates too.
-5. **Merging:** a node proved the same as a candidate is a redundant value. The
-   compiler reports the first one in statement order, along with what it's the
-   same as.
+5. **Stopping:** a node proved the same as a candidate is a redundant value. The
+   compiler reports it, along with what it's the same as, and stops checking
+   that value operation. Since the candidates are checked in statement order,
+   it's the first one.
 
 The methods cover each other's worst cases. SAT alone timed out on parity in a
 different input order from 48 inputs, while OBDDs decide it in milliseconds in
@@ -180,6 +213,40 @@ With executions of boolean value operations, the fallback does one table lookup
 per execution for each combination instead of one bitwise `and` per 64
 combinations, so its worst case is larger than the measured one. That's argued,
 not measured.
+
+## Checking Again on Later Compiles
+
+### Stored Patterns
+
+When a value operation compiles, the compiler stores the assignments that the
+solvers found, the ones that showed two of its values differ, with the value
+operation. The random patterns don't need storing, because they come from a
+fixed seed. On a later compile of the same value operation, simulating with the
+stored patterns separates every value again, with no solver, in time
+proportional to the number of statements times the number of patterns.
+
+Few patterns ever need storing. Each pattern that's kept splits at least one
+group of values that simulation couldn't tell apart, and a value operation with
+`n` values can only be split `n - 1` times, so at most 255 assignments of at
+most twenty bits each are needed for 256 statements.
+
+Stored patterns can't change the answer, because the check is exact either way.
+They only move work out of the solver. If a value operation changes, its old
+patterns are still valid assignments of its boolean inputs, as long as it has
+the same ones, and still usually separate most of its values.
+
+### What a Caller Depends On
+
+A value operation's check depends on what each boolean value operation it
+executes computes, not on how that value operation is written. So the compiler
+records a hash of each boolean value operation's truth tables, and checks a
+value operation again only when its own statements change or the hash of
+something it executes changes. Rewriting a boolean value operation without
+changing what it computes doesn't check anything that executes it again.
+
+Matches also depend on the registered operations, so a change to which
+operations are registered, or to what one computes, checks matches again in
+every value operation they apply to, but not redundant values.
 
 ## Counting Boolean Inputs
 
@@ -259,6 +326,11 @@ without that, 1.8M nodes took 334 s instead of 21 s.
   operation applied to values the operation already has. Whether that's
   affordable, and whether the four-read-view limit would still be needed, is
   being investigated.
+- **Measuring value operations that compile.** The workloads planted
+  redundancies, so they mostly measured proving equality. How long the check
+  takes on value operations with no redundant values, with stopping at the first
+  one, with stored patterns, and with checking again only when what an executed
+  value operation computes changes, hasn't been measured.
 - **Measuring references.** The generated workloads copied executed value
   operations into the caller. How SAT sweeping with references and abstraction
   refinement compares with copying hasn't been measured.
