@@ -215,6 +215,15 @@ class UnreferencedViewDiagnostic(Diagnostic):
     )
 
 
+class LogicalOperationWithoutOutputViewDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation that has no output view."""
+
+    message_format: ClassVar[str] = (
+        "a logical operation must have at least one output view; "
+        "add 'it is written.' to one of its views"
+    )
+
+
 class ViewPositionOrActionQualityDiagnostic(Diagnostic):
     """Diagnostic for a view Quality Assignment Statement that names a position or action."""
 

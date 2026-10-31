@@ -1,0 +1,7 @@
+# A view name must be a valid local name.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<Number> {
+        it is read.
+        it is written.
+    }
+}

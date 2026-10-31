@@ -260,6 +260,8 @@ class DefinitionStructuralValidator:
                     self._process_reference(encoding)
             case ast.OperationDefinition():
                 self._validate_operation_definition(self._definition)
+            case ast.LogicalOperationDefinition():
+                self._validate_logical_operation_definition(self._definition)
             case _:
                 pass
         return self.build_result()
@@ -390,19 +392,7 @@ class DefinitionStructuralValidator:
             ast.LocalTypedNameReference, ast.ViewDefinition
         ],
     ):
-        self._diagnostics.extend(
-            name_validators.validate_local_name_format(view.typed_name.name_content)
-        )
-        if view.typed_name in views:
-            self._diagnostics.append(
-                diagnostics.LocalNameConflictDiagnostic(
-                    location=view.typed_name.name_content.location,
-                    local_name=view.typed_name.name_content.name,
-                    first_definition_line=views[view.typed_name].location.line,
-                )
-            )
-        else:
-            views[view.typed_name] = view
+        if self._validate_view_name(view, views):
             unreferenced_views[view.typed_name] = view
         statements: list[ast.QualityAssignmentStatement] = []
         quality_name_types: set[name_types.NameType] = set()
@@ -462,6 +452,49 @@ class DefinitionStructuralValidator:
                     view_name=view.typed_name.source_typed_name,
                 )
             )
+
+    def _validate_logical_operation_definition(
+        self, definition: ast.LogicalOperationDefinition
+    ):
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.LogicalOperationViewDefinition
+        ] = typed_name_dict.TypedNameDict()
+        has_output_view = False
+        for view in definition.views:
+            _ = self._validate_view_name(view, views)
+            has_output_view = has_output_view or view.is_output
+        if not has_output_view:
+            self._diagnostics.append(
+                diagnostics.LogicalOperationWithoutOutputViewDiagnostic(
+                    location=definition.typed_name.location
+                )
+            )
+
+    def _validate_view_name[
+        ViewT: (ast.ViewDefinition, ast.LogicalOperationViewDefinition)
+    ](
+        self,
+        view: ViewT,
+        views: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, ViewT],
+    ) -> bool:
+        """Validate the name of a view and add it to `views` if no earlier view has its name.
+
+        Returns whether it was added.
+        """
+        self._diagnostics.extend(
+            name_validators.validate_local_name_format(view.typed_name.name_content)
+        )
+        if view.typed_name in views:
+            self._diagnostics.append(
+                diagnostics.LocalNameConflictDiagnostic(
+                    location=view.typed_name.name_content.location,
+                    local_name=view.typed_name.name_content.name,
+                    first_definition_line=views[view.typed_name].location.line,
+                )
+            )
+            return False
+        views[view.typed_name] = view
+        return True
 
     def _validate_operation_execution(
         self,
