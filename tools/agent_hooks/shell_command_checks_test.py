@@ -197,6 +197,7 @@ def _project(tmp_path: Path) -> Path:
         "define/compiler/parsing/parser.rs",
         "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
         "MODULE.bazel.lock",
+        "tools/setup_local_dev.py",
     ):
         (repository / path).parent.mkdir(parents=True, exist_ok=True)
         _ = (repository / path).write_text("\n", encoding="utf-8", newline="\n")
@@ -282,6 +283,16 @@ def test_uv_run_outside_a_git_repository_does_nothing(
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
 
     assert _run_hook(monkeypatch, tmp_path, "cd outside && uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
+
+
+def test_uv_run_in_a_repository_without_setup_local_dev_does_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _repository(tmp_path)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert _run_hook(monkeypatch, repository, "uv run x.py") == ""
     assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 

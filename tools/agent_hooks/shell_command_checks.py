@@ -1,9 +1,9 @@
 """Claude Code and Codex hook for shell commands that remove worktrees or run uv.
 
 Before `git worktree remove`, it expunges the worktree's Bazel output base, so
-that no output base or Bazel server is left behind. Before `uv run`, it
-runs `setup_local_dev` when the Bazel-generated files that it copies into the
-source tree may be out of date.
+that no output base or Bazel server is left behind. Before `uv run` in a
+repository that has `setup_local_dev`, it runs `setup_local_dev` when the
+Bazel-generated files that it copies into the source tree may be out of date.
 """
 
 from __future__ import annotations
@@ -48,12 +48,19 @@ def _removed_worktree(directory: Path, arguments: Sequence[str]) -> Path | None:
     return None
 
 
-def _repository_toplevel(directory: Path, _arguments: Sequence[str]) -> Path | None:
+def _setup_local_dev_repository(
+    directory: Path, _arguments: Sequence[str]
+) -> Path | None:
     try:
-        return Path(_git(directory, "rev-parse", "--show-toplevel").strip())
+        repository = Path(_git(directory, "rev-parse", "--show-toplevel").strip())
     except subprocess.CalledProcessError:
         # Outside any git repository there are no generated files to refresh.
         return None
+    # Agents also run uv in other repositories, where running setup_local_dev
+    # fails and leaves a Bazel server behind.
+    if not (repository / "tools" / "setup_local_dev.py").is_file():
+        return None
+    return repository
 
 
 def _has_bazel_output_base(worktree: Path) -> bool:
@@ -119,7 +126,7 @@ _SHELL_COMMAND_CHECKS = (
     _ShellCommandCheck(
         program="uv",
         subcommand=("run",),
-        finds_directory=_repository_toplevel,
+        finds_directory=_setup_local_dev_repository,
         needs_run=_generated_files_may_be_stale,
         command=("bazelisk", "run", *_BAZEL_FLAGS, "//tools:setup_local_dev"),
         shows_agent_failure_output=True,
