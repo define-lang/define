@@ -42,6 +42,7 @@ py_test(
         "incomplete_statements_test.py",
         "indentation_test.py",
         "local_name_format_test.py",
+        "logical_operation_definition_test.py",
         "move_particle_test.py",
         "multiple_definitions_test.py",
         "operation_definition_test.py",

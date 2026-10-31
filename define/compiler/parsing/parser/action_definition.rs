@@ -93,14 +93,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::ActionDefinition<'py>, Position)> {
-        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
-        let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.global_typed_name_in_definition(
-            typed_name_location,
-            ast::NameType::Action,
-            name_content,
-            name_text,
-        )?;
+        let (typed_name, fqun) =
+            self.parse_global_typed_name_in_definition(typed_name_start, ast::NameType::Action)?;
         let block_open_end = self.parse_block_open()?;
         // `content_end` is where the block's content ends so far, for the
         // error when the block ends before its trigger conditions block.

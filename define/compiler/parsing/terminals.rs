@@ -23,6 +23,7 @@ pub const ENCODING: &[u8] = b"encoding";
 pub const LITERAL: &[u8] = b"literal";
 pub const OPERATION: &[u8] = b"operation";
 pub const ENCODING_OPERATION: &[u8] = b"encoding_operation";
+pub const LOGICAL_OPERATION: &[u8] = b"logical_operation";
 pub const VIEW: &[u8] = b"view";
 
 // Statements
@@ -113,6 +114,10 @@ pub const ESCAPED_LINE_FEED: u8 = b'n';
 
 pub const SET_THE_VALUE_OF: &[u8] = b"set the value of";
 pub const SPACE_FROM: &[u8] = b" from";
+
+// Logical Operations
+
+pub const DEFINE_THE_LOGICAL_OPERATION: &[u8] = b"define the logical_operation";
 
 // Value Operations
 

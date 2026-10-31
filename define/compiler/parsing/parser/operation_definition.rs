@@ -21,7 +21,7 @@ const OPERATION_DEFINITION_BLOCK_INDENTATION: usize = INDENTATION_WIDTH;
 /// have.
 const OPERATION_DEFINITION_STATEMENT_STARTS: [&[u8]; 2] = [DEFINE_THE_VIEW, IT_DOES];
 /// The words that begin each View Direction Statement.
-const VIEW_DIRECTION_STATEMENT_STARTS: [&[u8]; 2] = [IT_IS_READ, IT_IS_WRITTEN];
+pub(crate) const VIEW_DIRECTION_STATEMENT_STARTS: [&[u8]; 2] = [IT_IS_READ, IT_IS_WRITTEN];
 /// The words that begin each statement a view definition block may have.
 const VIEW_DEFINITION_STATEMENT_STARTS: [&[u8]; 3] = [
     IT_IS_READ,
@@ -48,18 +48,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::GlobalDefinition<'py>, Position)> {
-        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
-        let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
         let name_type = match kind {
             OperationKind::Value => ast::NameType::Operation,
             OperationKind::Encoding => ast::NameType::EncodingOperation,
         };
-        let typed_name = self.global_typed_name_in_definition(
-            typed_name_location,
-            name_type,
-            name_content,
-            name_text,
-        )?;
+        let (typed_name, fqun) =
+            self.parse_global_typed_name_in_definition(typed_name_start, name_type)?;
         let block_open_end = self.parse_block_open()?;
         let (views, line, content_end) = self.parse_interface_views(block_open_end, &fqun)?;
         let statements = self.parse_operation_statements_block(kind, line, content_end, &fqun)?;
@@ -142,8 +136,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         let (typed_name, _) =
             self.local_typed_name_reference(typed_name_location, ast::NameType::View, name)?;
         let block_open_end = self.parse_block_open()?;
-        let (is_input, is_output, line, content_end) =
-            self.parse_view_direction_statements(block_open_end)?;
+        let (is_input, is_output, line, content_end) = self
+            .parse_view_direction_statements(block_open_end, &VIEW_DEFINITION_STATEMENT_STARTS)?;
         match line {
             LineInBlock::Statement => {}
             // The block closes before its View Quality Assignment Block.
@@ -185,44 +179,44 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Parses the View Direction Statements at the start of a view definition
-    /// block, after its `{` at `block_open_end`. Returns whether the view is
-    /// read and whether it is written, with the line in the block after them
-    /// and where the block's content ends before that line.
+    /// block, after its `{` at `block_open_end`, whose statements begin with
+    /// one of `statement_starts`. Returns whether the view is read and whether
+    /// it is written, with the line in the block after them and where the
+    /// block's content ends before that line.
     ///
     /// ```ebnf
     /// view_direction_statements =
     ///     ( "it is read", terminator, [ "it is written", terminator ] )
     ///     | ( "it is written", terminator ) ;
     /// ```
-    fn parse_view_direction_statements(
+    pub(crate) fn parse_view_direction_statements(
         &mut self,
         block_open_end: Position,
+        statement_starts: &[&[u8]],
     ) -> ParseResult<(bool, bool, LineInBlock, Position)> {
-        let mut line = self.next_line_in_block(
-            OPERATION_DEFINITION_BLOCK_INDENTATION,
-            &VIEW_DEFINITION_STATEMENT_STARTS,
-        )?;
+        let mut line =
+            self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)?;
         let mut content_end = block_open_end;
         let is_input = matches!(line, LineInBlock::Statement) && self.scanner.consume(IT_IS_READ);
         if is_input {
             content_end = self.parse_statement_terminator()?;
-            line = self.next_line_in_block(
-                OPERATION_DEFINITION_BLOCK_INDENTATION,
-                &VIEW_DEFINITION_STATEMENT_STARTS,
-            )?;
+            line =
+                self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)?;
         }
         let is_output =
             matches!(line, LineInBlock::Statement) && self.scanner.consume(IT_IS_WRITTEN);
         if is_output {
             content_end = self.parse_statement_terminator()?;
-            line = self.next_line_in_block(
-                OPERATION_DEFINITION_BLOCK_INDENTATION,
-                &VIEW_DEFINITION_STATEMENT_STARTS,
-            )?;
+            line =
+                self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)?;
         }
         // The view has no View Direction Statements.
         if !is_input && !is_output {
-            return Err(self.missing_view_direction_statement(&line, block_open_end));
+            return Err(self.missing_view_direction_statement(
+                &line,
+                block_open_end,
+                statement_starts,
+            ));
         }
         Ok((is_input, is_output, line, content_end))
     }
@@ -348,13 +342,15 @@ impl<'py, 'source> Parser<'py, 'source> {
 impl<'py, 'source> Parser<'py, 'source> {
     /// Returns the error for a view definition block whose first line, `line`,
     /// is not a View Direction Statement, where the block's `{` ends at
-    /// `block_open_end`.
+    /// `block_open_end` and its statements begin with one of
+    /// `statement_starts`.
     #[cold]
     #[inline(never)]
     fn missing_view_direction_statement(
         &self,
         line: &LineInBlock,
         block_open_end: Position,
+        statement_starts: &[&[u8]],
     ) -> ParseError {
         let start = self.scanner.position;
         match line {
@@ -365,15 +361,12 @@ impl<'py, 'source> Parser<'py, 'source> {
                 .errors
                 .missing_view_direction_statement(block_open_end, block_open_end),
             LineInBlock::Statement => {
-                if let Some(error) =
-                    self.disallowed_character_after_any(&VIEW_DEFINITION_STATEMENT_STARTS)
-                {
+                if let Some(error) = self.disallowed_character_after_any(statement_starts) {
                     return error;
                 }
                 // The line begins like a statement of the block, but with extra
                 // or missing spaces between two of its words.
-                if let Some(error) = self.misspaced_words_in_any(&VIEW_DEFINITION_STATEMENT_STARTS)
-                {
+                if let Some(error) = self.misspaced_words_in_any(statement_starts) {
                     return error;
                 }
                 self.errors
@@ -421,7 +414,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// position, which is somewhere other than where View Direction Statements
     /// belong, if one is there.
     #[cold]
-    fn misplaced_view_direction_statement(&self) -> Option<ParseError> {
+    pub(crate) fn misplaced_view_direction_statement(&self) -> Option<ParseError> {
         if !VIEW_DIRECTION_STATEMENT_STARTS
             .iter()
             .any(|statement| self.scanner.next_bytes_are(statement))

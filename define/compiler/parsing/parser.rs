@@ -5,6 +5,7 @@ mod encoding_definition;
 mod errors;
 mod lines;
 mod literals;
+mod logical_operation_definition;
 mod names;
 mod operation_definition;
 mod operation_execution;
@@ -24,14 +25,15 @@ use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
 use terminals::{
-    ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION, DEFINE_THE_OPERATION,
-    DEFINE_THE_POTENTIAL, DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL,
-    DEFINE_THE_POTENTIAL_POSITION, DEFINE_THE_POTENTIAL_VALUE, ENCODING, ENCODING_OPERATION,
-    LITERAL, OPERATION, POSITION, VALUE,
+    ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION,
+    DEFINE_THE_LOGICAL_OPERATION, DEFINE_THE_OPERATION, DEFINE_THE_POTENTIAL,
+    DEFINE_THE_POTENTIAL_ACTION, DEFINE_THE_POTENTIAL_LITERAL, DEFINE_THE_POTENTIAL_POSITION,
+    DEFINE_THE_POTENTIAL_VALUE, ENCODING, ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION,
+    OPERATION, POSITION, VALUE,
 };
 
 /// The words that begin each global definition.
-const GLOBAL_DEFINITION_STARTS: [&[u8]; 7] = [
+const GLOBAL_DEFINITION_STARTS: [&[u8]; 8] = [
     DEFINE_THE_POTENTIAL_POSITION,
     DEFINE_THE_POTENTIAL_ACTION,
     DEFINE_THE_POTENTIAL_VALUE,
@@ -39,6 +41,7 @@ const GLOBAL_DEFINITION_STARTS: [&[u8]; 7] = [
     DEFINE_THE_ENCODING,
     DEFINE_THE_OPERATION,
     DEFINE_THE_ENCODING_OPERATION,
+    DEFINE_THE_LOGICAL_OPERATION,
 ];
 pub(crate) struct Parser<'py, 'source> {
     scanner: Scanner<'source>,
@@ -130,7 +133,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     | encoding_definition
     ///     | potential_literal_definition
     ///     | operation_definition
-    ///     | encoding_operation_definition ;
+    ///     | encoding_operation_definition
+    ///     | logical_operation_definition ;
     /// ```
     fn parse_definition(&mut self) -> ParseResult<(ast::GlobalDefinition<'py>, Position)> {
         let start = self.scanner.position;
@@ -185,6 +189,14 @@ impl<'py, 'source> Parser<'py, 'source> {
             let (definition, end) = self.parse_encoding_definition(start, typed_name_start)?;
             return Ok((definition.into(), end));
         }
+        if let Some(typed_name_start) = self
+            .scanner
+            .consume_definition_start(DEFINE_THE, LOGICAL_OPERATION)
+        {
+            let (definition, end) =
+                self.parse_logical_operation_definition(start, typed_name_start)?;
+            return Ok((definition.into(), end));
+        }
         // The text does not begin a global definition.
         Err(self.expected_global_definition())
     }
@@ -201,10 +213,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         typed_name_start: Position,
         name_type: ast::NameType,
     ) -> ParseResult<(ast::GlobalTypedNameInDefinition<'py>, Position)> {
-        let (name_content, name_text, _) = self.parse_global_name_definition_content()?;
-        let location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name =
-            self.global_typed_name_in_definition(location, name_type, name_content, name_text)?;
+        let (typed_name, _) =
+            self.parse_global_typed_name_in_definition(typed_name_start, name_type)?;
         let end = self.parse_statement_terminator()?;
         Ok((typed_name, end))
     }

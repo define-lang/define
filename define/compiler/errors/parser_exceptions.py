@@ -192,7 +192,8 @@ class ExpectedGlobalDefinition(DefineTokenError):
         + "    - define the potential literal\n"
         + "    - define the encoding\n"
         + "    - define the operation\n"
-        + "    - define the encoding_operation"
+        + "    - define the encoding_operation\n"
+        + "    - define the logical_operation"
     )
 
 
@@ -287,6 +288,23 @@ class InvalidHasAParticleSyntax(DefineTokenError):
         "The syntax for a particle presence check looks like:\n"
         "    the position<foo> has a particle.\n"
         "Expected 'has a particle' here."
+    )
+
+
+class InvalidLogicalOperationDefinitionBlock(DefineTokenError):
+    """Wrote something other than a view definition in a Logical Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A logical operation definition may contain only 'define the view' definitions."
+    )
+
+
+class InvalidLogicalOperationViewDefinitionBlock(DefineTokenError):
+    """Wrote something other than View Direction Statements in a Logical Operation View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A view definition in a logical operation may contain only"
+        " 'it is read.', 'it is written.', or both, in that order."
     )
 
 
@@ -459,6 +477,15 @@ class MissingLiteralContentStart(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "A literal's content must start with '\"' right after the '>' of its typed name."
+    )
+
+
+class MissingLogicalOperationViewDefinition(DefineTokenError):
+    """Left out the view definitions of a Logical Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A logical operation definition must contain at least one"
+        " 'define the view' definition."
     )
 
 

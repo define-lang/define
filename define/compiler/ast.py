@@ -223,6 +223,12 @@ class EncodingOperationDefinition(OperationDefinition):
     )
 
 
+class LogicalOperationDefinition(GlobalDefinition):
+    """Represents a logical operation definition."""
+
+    views: tuple[LogicalOperationViewDefinition, ...]
+
+
 class ValueDefinition(QualityDefinition):
     """Represents a value quality definition."""
 
@@ -370,6 +376,14 @@ class ViewDefinition(ASTNode):
             quality_assignment_block=quality_assignment_block,
             location=location,
         )
+
+
+class LogicalOperationViewDefinition(ASTNode):
+    """Represents a Logical Operation View Definition."""
+
+    typed_name: LocalTypedNameReference
+    is_input: bool
+    is_output: bool
 
 
 # Struct-generated constructors prevent automatic covariance inference.

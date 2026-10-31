@@ -15,4 +15,5 @@ class NameType(enum.StrEnum):
     LITERAL = "literal"
     OPERATION = "operation"
     ENCODING_OPERATION = "encoding_operation"
+    LOGICAL_OPERATION = "logical_operation"
     VIEW = "view"

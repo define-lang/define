@@ -179,6 +179,7 @@ def test_syntax_error_returns_error_and_prints_to_stream(
         "    - define the encoding\n"
         "    - define the operation\n"
         "    - define the encoding_operation\n"
+        "    - define the logical_operation\n"
     )
 
 
