@@ -18,8 +18,8 @@ parser from the literal's encoding to the destination's encoding.
 
 [DLP 55 (Logical Operations)](../define/proposals/00055-logical-operations.md)
 added logical operations, and value operations use literals in logical operation
-executions all the time. For example, this subtracts 1 from a natural, but stops
-at 0:
+executions all the time. For example, this subtracts 1 from a natural, and says
+whether the natural was 0:
 
 ```define
 execute the logical_operation<standard:/number/equality> {
@@ -32,18 +32,12 @@ execute the logical_operation<standard:/number/add> {
     with view<b> looking at literal<standard:/number>"-1".
     with view<result> looking at view<decremented>.
 }
-execute the logical_operation<standard:/choose> {
-    with view<condition> looking at view<is_zero>.
-    with view<if_true> looking at literal<standard:/number>"0".
-    with view<if_false> looking at view<decremented>.
-    with view<result> looking at view<result>.
-}
 ```
 
-`view<a>` and `view<result>` are naturals, and `view<decremented>` is an
-integer. But a logical operation's views have no value qualities, and nothing in
-a logical operation execution has an encoding yet. So the way DLP 52 gives a
-literal its meaning doesn't work here.
+`view<a>` is a natural, `view<decremented>` is an integer, and `view<is_zero>`
+is a boolean. But a logical operation's views have no value qualities, and
+nothing in a logical operation execution has an encoding yet. So the way DLP 52
+gives a literal its meaning doesn't work here.
 
 ### 1: The Compiler Has to Reason About the Literal
 
@@ -52,7 +46,7 @@ check (see the [Range Constraints draft](X-range-constraints.md)) needs to know
 that the literal is exactly -1, and so does adding it to something, comparing it
 to something, or noticing that multiplying by a literal 1 does nothing. So while
 compiling, the compiler has to turn the literal's text into the logical value it
-stands for: a number or a truth value.
+stands for: a number or a boolean value.
 
 That translation has to be exact. `"0.1"` has to be exactly one tenth, even
 though no binary floating-point encoding can hold that. It also has to be able
@@ -82,7 +76,7 @@ Where does the way to read a literal's text come from?
 DLP 55 says that a view's value quality "says what kind of values it holds," but
 the definition of a potential value only lists the logical operations it
 supports. Nothing says that `standard:/number/natural` holds numbers, or that
-`standard:/boolean` holds truth values, except indirectly, through the logical
+`standard:/boolean` holds boolean values, except indirectly, through the logical
 operations they support. So a literal that has to become a value of some value
 quality has nothing to look at to know what kind of value that is.
 
@@ -99,12 +93,11 @@ two places a literal's value quality could come from:
   which isn't a natural.
 - The view that the logical operation's result goes to. That makes -1 an
   integer, which is right. But the result of `standard:/number/equality` is a
-  truth value even though it compares numbers, so that doesn't work for the
-  literal 0 that's compared to `view<a>`. And `view<condition>` of
-  `standard:/choose` is a truth value even when it picks between numbers.
+  boolean value even though it compares numbers, so that doesn't work for the
+  literal 0 that's compared to `view<a>`.
 
 Some literals have no other view to go by at all, like the exponent of
-`standard:/number/power`, which DLP 55 already requires to be a literal natural.
+`standard:/number/power`, which DLP 58 already requires to be a literal natural.
 
 Where does a literal in a logical operation execution get its value quality, if
 it needs one?
@@ -123,10 +116,10 @@ compute?
 
 ### 6: Literals That Are More Than One Value
 
-Some things people want to write as literals aren't one number or one truth
+Some things people want to write as literals aren't one number or one boolean
 value, like a date, an IP address, or an amount of money in some currency. In
 Define, those are more likely several values on child particles. But logical
-operations only take numbers and truth values, and a literal in a logical
+operations only take numbers and boolean values, and a literal in a logical
 operation execution stands for one value.
 
 Can a literal stand for more than one value, and if it can, what does that mean
@@ -134,7 +127,7 @@ in a logical operation execution?
 
 ### 7: The Standard Literals Aren't Defined
 
-DLP 55 uses `literal<standard:/boolean>"true"`, but there's no potential literal
+DLP 56 uses `literal<standard:/boolean>"true"`, but there's no potential literal
 `standard:/boolean`. And `literal<standard:/number>` has the encoding
 `standard:/number/decimal/ascii`, which isn't defined either.
 
@@ -146,7 +139,7 @@ When the compiler generates code, a literal needs some encoding, like an
 instruction's immediate operand or a constant in memory. DLP 52 picks it based
 on the value the literal is assigned to. But a literal in a logical operation
 execution may never be stored anywhere, and the compiler may compute it as part
-of an intermediate value that's wider than any view (DLP 55, Problem 9).
+of an intermediate value that's wider than any view (DLP 55, Problem 8).
 
 How does the compiler choose the encoding of a literal in a logical operation
 execution?
@@ -162,8 +155,8 @@ decides which one it does become.
 ### Logical Values
 
 A logical value is a kind of value that logical operations work on, like numbers
-or truth values. It's the "what is this, mathematically?" part of a value, with
-no encoding, no constraints, and no particular value quality.
+or boolean values. It's the "what is this, mathematically?" part of a value,
+with no encoding, no constraints, and no particular value quality.
 
 Logical values are global names, defined in the global scope with
 `define the logical_value` followed by the name and a terminator:
@@ -178,7 +171,7 @@ This proposal defines two:
 - `logical_value<standard:/number/rational>` is the exact rational numbers.
   Every number a logical operation works on is one of these, and every
   `standard:/number` logical operation is exact on them.
-- `logical_value<standard:/boolean>` is the truth values, true and false.
+- `logical_value<standard:/boolean>` is the boolean values, true and false.
 
 Like logical operations, logical values are part of the compiler, even though
 they're names in the standard library. The compiler has to know what every
@@ -194,8 +187,13 @@ The block of a potential value may now start with a Logical Value Statement:
 ```define
 define the potential value<standard:/number/natural> {
     it holds the logical_value<standard:/number/rational>.
-    it supports the logical_operation<standard:/number/absolute_value>.
-    it supports the logical_operation<standard:/number/add>.
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
 }
 ```
 
@@ -204,25 +202,24 @@ ones is still up to the value quality. The compiler knows that naturals and
 integers are whole numbers, as it does now, and constraints say the rest.
 
 A value quality that has Logical Operation Support Statements must have a
-Logical Value Statement, and every logical operation it supports must have an
-input view that holds that logical value. A value quality with no Logical Value
-Statement has values with no logical meaning. They can still be passed around,
-set, and moved, but no logical operation can take them (except as
-`view<if_true>` and `view<if_false>` of `standard:/choose`, which never look at
-what their values are), and no literal can become one of them.
+Logical Value Statement. A logical operation that it says `it may be read.` for
+must have an input view that holds that logical value, and one that it says
+`it may be written.` for must have an output view that holds it. A value quality
+with no Logical Value Statement has values with no logical meaning. They can
+still be passed around, set, and moved, but no logical operation can take them,
+and no literal can become one of them.
 
 This replaces the rule in DLP 55 that supporting `standard:/number/add` is what
 says a value quality's values are numbers. It also replaces the special rule
-that the compiler knows `value<standard:/boolean>` is the value quality of truth
-values. Any value quality that holds `logical_value<standard:/boolean>` holds
-truth values.
+that the compiler knows `value<standard:/boolean>` is the value quality of
+boolean values. Any value quality that holds `logical_value<standard:/boolean>`
+holds boolean values.
 
 ### Logical Operation Views Say What They Hold
 
 Each view of a logical operation now has a Logical Value Statement after its
-View Direction Statements. It's either `it holds the` followed by a logical
-value name, or `it holds the same logical_value as` followed by another view of
-the same logical operation:
+View Direction Statements: `it holds the` followed by a logical value name and a
+terminator.
 
 ```define
 define the logical_operation<standard:/number/less_than> {
@@ -239,41 +236,13 @@ define the logical_operation<standard:/number/less_than> {
         it holds the logical_value<standard:/boolean>.
     }
 }
-
-define the logical_operation<standard:/choose> {
-    define the view<condition> {
-        it is read.
-        it holds the logical_value<standard:/boolean>.
-    }
-    define the view<if_true> {
-        it is read.
-        it holds the same logical_value as view<result>.
-    }
-    define the view<if_false> {
-        it is read.
-        it holds the same logical_value as view<result>.
-    }
-    define the view<result> {
-        it is written.
-    }
-}
 ```
-
-`it holds the same logical_value as` is only for logical operations that work on
-any logical value, like `standard:/choose`. The view it names must be the
-logical operation's output view, and that output view has no Logical Value
-Statement of its own. Its logical value is whatever the logical value of the
-view it's written to is, in each execution.
-
-That always works out, because a logical operation's output view always looks at
-a view of the value operation (a local view or an output view), and that view
-always has a value quality.
 
 When a logical operation's view looks at a view of the value operation, the
 value quality of the value operation's view must hold the same logical value as
 the logical operation's view. This replaces the rules in DLP 55 that the
-`standard:/number` logical operations only take numbers and that
-`view<condition>` of `standard:/choose` must look at a truth value. It's in
+`standard:/number` logical operations only take numbers and that the
+`standard:/boolean` logical operations only take boolean values. It's in
 addition to the rule that the value quality must support the logical operation.
 
 ### Potential Literals Say What They Can Become
@@ -311,9 +280,7 @@ become:
 - In a value operation execution, it's the logical value of the value quality of
   the view the literal is given to.
 - In a logical operation execution, it's the logical value of the logical
-  operation's view that the literal is given to. If that view holds the same
-  logical value as the output view, it's the logical value of the view the
-  output view is written to.
+  operation's view that the literal is given to.
 - In the definition of a value quality (like the limits of predicates in DLP
   56), it's the logical value of the value quality being defined.
 
@@ -385,7 +352,7 @@ tenth and `"-0"` is 0. Nothing else is valid: no `+`, no spaces, no exponents,
 and no separators like `_` or `,`.
 
 Text in `standard:/boolean/ascii` is exactly `true` or `false`, and it becomes
-that truth value.
+that boolean value.
 
 ## A Real Program
 
@@ -400,31 +367,87 @@ define the logical_value<standard:/number/rational>.
 
 define the potential value<standard:/boolean> {
     it holds the logical_value<standard:/boolean>.
-    it supports the logical_operation<standard:/boolean/equality>.
+    it supports the logical_operation<standard:/boolean/and> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/boolean/not> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be written.
+    }
 }
 
 define the potential value<standard:/number/integer> {
     it holds the logical_value<standard:/number/rational>.
-    it supports the logical_operation<standard:/number/absolute_value>.
-    it supports the logical_operation<standard:/number/add>.
-    it supports the logical_operation<standard:/number/equality>.
-    it supports the logical_operation<standard:/number/less_than>.
-    it supports the logical_operation<standard:/number/minimum>.
-    it supports the logical_operation<standard:/number/multiply>.
-    it supports the logical_operation<standard:/number/negate>.
-    it supports the logical_operation<standard:/number/power>.
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/power> {
+        it may be read.
+        it may be written.
+    }
 }
 
 define the potential value<standard:/number/natural> {
     it holds the logical_value<standard:/number/rational>.
-    it supports the logical_operation<standard:/number/absolute_value>.
-    it supports the logical_operation<standard:/number/add>.
-    it supports the logical_operation<standard:/number/equality>.
-    it supports the logical_operation<standard:/number/less_than>.
-    it supports the logical_operation<standard:/number/minimum>.
-    it supports the logical_operation<standard:/number/multiply>.
-    it supports the logical_operation<standard:/number/negate>.
-    it supports the logical_operation<standard:/number/power>.
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/power> {
+        it may be read.
+        it may be written.
+    }
 }
 
 define the logical_operation<standard:/number/add> {
@@ -460,72 +483,56 @@ define the logical_operation<standard:/number/equality> {
 
 Every other `standard:/number` logical operation is like `standard:/number/add`,
 except that `standard:/number/less_than` is like `standard:/number/equality`.
-`standard:/boolean/equality` is like `standard:/number/equality`, with
-`logical_value<standard:/boolean>` for `view<a>` and `view<b>`.
-`standard:/choose` is as shown in the Solution.
+Every view of the `standard:/boolean` logical operations holds
+`logical_value<standard:/boolean>`.
 
-### Decrementing to Zero
+### Decrementing
 
 The example from the Problems, as a whole operation:
 
 ```define
-define the operation<mv:example.com:example:/decrement_to_zero> {
+define the operation<mv:example.com:example:/decrement> {
     define the view<a> {
         it is read.
         it may only contain particles where {
             it has the value<standard:/number/natural>.
         }
     }
-    define the view<result> {
+    define the view<decremented> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/natural>.
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<is_zero> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/boolean>.
         }
     }
 
     it does {
-        define the view<is_zero> {
-            it may only contain particles where {
-                it has the value<standard:/boolean>.
-            }
-        }
         execute the logical_operation<standard:/number/equality> {
             with view<a> looking at view<a>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<is_zero>.
-        }
-        define the view<decremented> {
-            it may only contain particles where {
-                it has the value<standard:/number/integer>.
-            }
         }
         execute the logical_operation<standard:/number/add> {
             with view<a> looking at view<a>.
             with view<b> looking at literal<standard:/number>"-1".
             with view<result> looking at view<decremented>.
         }
-        execute the logical_operation<standard:/choose> {
-            with view<condition> looking at view<is_zero>.
-            with view<if_true> looking at literal<standard:/number>"0".
-            with view<if_false> looking at view<decremented>.
-            with view<result> looking at view<result>.
-        }
     }
 }
 ```
 
-- The first `"0"` is given to `view<b>` of `standard:/number/equality`, which
-  holds `logical_value<standard:/number/rational>`, so it becomes the rational
-  number 0. The equality's result is a truth value, but that doesn't matter.
+- `"0"` is given to `view<b>` of `standard:/number/equality`, which holds
+  `logical_value<standard:/number/rational>`, so it becomes the rational
+  number 0. The equality's result is a boolean value, but that doesn't matter.
 - `"-1"` is given to `view<b>` of `standard:/number/add`, so it becomes the
   rational number -1. It doesn't matter that `view<a>` is a natural and -1
   isn't. What's checked is that every possible result is an integer, because
   it's written to `view<decremented>`.
-- The second `"0"` is given to `view<if_true>` of `standard:/choose`, which
-  holds the same logical value as `view<result>`. That's written to the
-  operation's `view<result>`, a natural, which holds
-  `logical_value<standard:/number/rational>`. So it becomes the rational
-  number 0.
 
 ### Errors
 
@@ -581,7 +588,8 @@ can become different kinds of values in different places. The text `"5"` is the
 number 5 today, and when Define has strings, the same
 `literal<standard:/number>"5"` can become a string where a string is needed.
 Adding that conversion won't change what any existing literal means, because
-every existing literal is used in a place that needs a number or a truth value.
+every existing literal is used in a place that needs a number or a boolean
+value.
 
 It's also what DLP 52 already does. DLP 52 converts from the literal's encoding
 to the destination's encoding. This proposal puts a logical value between those
@@ -603,7 +611,7 @@ Giving a literal in a logical operation execution a value quality would mean
 checking the literal against it, and that rejects correct programs, like adding
 -3 to an integer that's always at least 3 and writing the result to a natural
 (Problem 5). It would also mean inferring a value quality, which there's no good
-rule for. Without one, a literal is just a number or a truth value, and the
+rule for. Without one, a literal is just a number or a boolean value, and the
 check that already happens where results are written catches every literal that
 would make a result invalid.
 
@@ -636,21 +644,11 @@ statement that the compiler, the reader, and every literal can look at. The
 support statements still say which logical operations a value quality allows,
 which is a separate question.
 
-### Why "The Same Logical Value As"?
-
-`standard:/choose` picks between two values of any kind. Without a way to say
-that its views hold the same logical value as its result, it would need a
-separate logical operation for every logical value, or its views would have to
-hold no logical value, and then a literal given to `view<if_true>` couldn't
-become anything. Only allowing it to name the output view keeps it simple: the
-output view is always written to a value operation's view, so its logical value
-is always known.
-
 ### Why Potential Literals List What They Can Become
 
 A potential literal could just get every conversion the compiler has for its
 encoding. But listing them means that a reader can see what a literal can be
-used for without knowing the compiler, and that a mistake like giving a truth
+used for without knowing the compiler, and that a mistake like giving a boolean
 value literal to a number shows up as a clear error on the literal.
 
 ## Forward Compatibility
@@ -702,7 +700,7 @@ needs a Logical Value Statement. Every logical operation's views need Logical
 Value Statements.
 
 The rules in DLP 55 about which kinds of values logical operations take, and the
-special rule that the compiler knows `value<standard:/boolean>` holds truth
+special rule that the compiler knows `value<standard:/boolean>` holds boolean
 values, are replaced by Logical Value Statements. The rule in DLP 52 that a
 literal gets the value quality of whatever it's assigned to is replaced by What
 a Literal Becomes, above.

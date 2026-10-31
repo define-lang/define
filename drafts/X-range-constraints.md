@@ -225,21 +225,7 @@ level.
 How can the compiler know the ranges of results through many levels of
 operations, precisely, without the cost getting out of hand?
 
-### 12: Values Picked by a Condition
-
-`standard:/choose` doesn't skip anything. Both `view<if_true>` and
-`view<if_false>` are computed, and then one of them is picked. So a value can be
-outside the range a program needs, as long as it's never picked when it is. For
-example, to subtract 1 from a natural but stop at 0, a program can compute the
-natural minus 1 as an integer, which is -1 when the natural is 0, and pick 0
-instead when the natural is 0. The result is never negative. But if the compiler
-computes the range of a `standard:/choose` as the range covering both of its
-inputs, the result's range includes -1, and the program can't put it in a
-natural.
-
-How can the compiler know the range of a value that a condition picks?
-
-### 13: Operands That Depend on the Same Value
+### 12: Operands That Depend on the Same Value
 
 The range of a logical operation's result depends on more than the ranges of its
 inputs. It also depends on how the inputs are related. If `x` is 0 to 10, then
@@ -478,12 +464,10 @@ the most care, since negative endpoints can flip which one is the highest.)
 and with an even exponent it's never negative: a value from -3 to 5 squared is 0
 to 25.
 
-`standard:/choose` gives a range that covers the range of `view<if_true>` when
-its condition is true and the range of `view<if_false>` when its condition is
-false (see Narrowing by a Condition, below). A Value Setting Statement keeps the
-range of whatever it sets the value from. `standard:/number/less_than` and the
-equalities produce truth values, which have no order, so range constraints don't
-apply to them.
+A Value Setting Statement keeps the range of whatever it sets the value from.
+`standard:/number/less_than`, `standard:/number/equality`, and the logical
+operations on boolean values produce boolean values, which have no order, so
+range constraints don't apply to them.
 
 When an Operation Statements Block has more than one statement, the compiler
 computes the range of each statement in order, using the ranges from the earlier
@@ -523,9 +507,8 @@ That's practical because of how Define works:
 
 - Define doesn't allow recursion, so the operations that an execution can lead
   to always end.
-- An Operation Statements Block has no loops and no branches.
-  (`standard:/choose` picks a value. It doesn't skip any statements.) So going
-  through it with ranges is a single pass, from top to bottom.
+- An Operation Statements Block has no loops and no branches. So going through
+  it with ranges is a single pass, from top to bottom.
 - Views can't alias, so the range in one view can never change through another
   view.
 - Ranges aren't carried from one statement of an action to the next (see Why the
@@ -561,13 +544,11 @@ independent values. Then:
 - A Value Setting Statement keeps the formula.
 - Executing a value operation passes the formulas on to the views of the
   operation being executed.
-- Every other logical operation (`standard:/number/multiply` of two values that
-  aren't just numbers, `standard:/number/minimum`,
-  `standard:/number/absolute_value`, `standard:/number/power`, and
-  `standard:/choose`) isn't linear. The compiler computes the range of its
-  result with the rules above, and the result is a new independent value with
-  that range. (The one exception is a `standard:/choose` whose condition can
-  only be true, or only false. Its result is the formula of the view it picks.)
+- Every other logical operation on numbers (`standard:/number/multiply` of two
+  values that aren't just numbers, `standard:/number/minimum`,
+  `standard:/number/absolute_value`, and `standard:/number/power`) isn't linear.
+  The compiler computes the range of its result with the rules above, and the
+  result is a new independent value with that range.
 
 The range of a formula is the number plus the range of each of its terms. Every
 independent value can be anywhere in its own range, no matter what the others
@@ -593,47 +574,10 @@ and it has extra terms for rounding errors. Ours keeps only the exact
 relationships, so it never has to approximate anything except a nonlinear
 result's range, which it computes the same way intervals do.
 
-### Narrowing by a Condition
+### Subtracting From Naturals
 
-When `standard:/number/less_than` or `standard:/number/equality` produces a
-truth value, the compiler remembers which comparison of two formulas it came
-from. A Value Setting Statement and executing a value operation pass that on,
-the same way they pass on formulas. A `standard:/choose` that picks the literal
-false when its condition is true and the literal true when it's false (a "not")
-produces the opposite comparison.
-
-When a `standard:/choose`'s condition came from a comparison, the compiler
-computes the range of `view<if_true>` knowing that the comparison is true, and
-the range of `view<if_false>` knowing that it's false. The range of the result
-covers those two ranges.
-
-Every comparison is between two formulas, so it's a fact about the independent
-values in them, like "x is less than y" or "x is 0." Knowing one such fact, the
-range of a formula is still exact, and finding it has a fixed solution. To find
-the smallest value, the compiler starts with every independent value at the end
-of its range that makes the formula smallest. If the comparison isn't true
-there, it moves independent values toward making it true, starting with the ones
-that change the formula the least for how much they change the comparison, until
-it's true. The largest value works the same way. If the comparison can't be true
-anywhere, that view is never picked. This takes time proportional to the number
-of independent values involved, times its logarithm. There's no search.
-
-A few details make this work for integers:
-
-- When both sides of `standard:/number/less_than` can only be integers, "less
-  than" means "at most one less than." When either side might not be an integer,
-  the compiler uses "at most" instead. That range might include the one value it
-  can't be, but it's never too narrow.
-- When the formula is an integer, the compiler rounds the ends of its range
-  inward to integers. When every number multiplying an independent value in the
-  comparison is 1 or -1, like in any comparison of two independent values, or of
-  an independent value and a number, that's exactly the range.
-- Knowing that two values aren't equal only narrows a range when the value it
-  excludes is at one end of it. A natural that isn't 0 is at least 1, but an
-  integer from -5 to 5 that isn't 0 is still -5 to 5 (see Forward
-  Compatibility).
-
-For example, this subtracts 1 from a natural, but stops at 0:
+For example, this subtracts 1 from a natural, but stops at 0. It's the maximum
+of a - 1 and 0, which is the negation of the minimum of 1 - a and 0:
 
 ```define
 define the operation<mv:example.com:example:/decrement_to_zero> {
@@ -651,41 +595,90 @@ define the operation<mv:example.com:example:/decrement_to_zero> {
     }
 
     it does {
-        define the view<is_zero> {
+        define the view<negated_a> {
             it may only contain particles where {
-                it has the value<standard:/boolean>.
+                it has the value<standard:/number/integer>.
             }
         }
-        execute the logical_operation<standard:/number/equality> {
+        execute the logical_operation<standard:/number/negate> {
             with view<a> looking at view<a>.
-            with view<b> looking at literal<standard:/number>"0".
-            with view<result> looking at view<is_zero>.
+            with view<result> looking at view<negated_a>.
         }
-        define the view<decremented> {
+        define the view<one_minus_a> {
             it may only contain particles where {
                 it has the value<standard:/number/integer>.
             }
         }
         execute the logical_operation<standard:/number/add> {
-            with view<a> looking at view<a>.
-            with view<b> looking at literal<standard:/number>"-1".
-            with view<result> looking at view<decremented>.
+            with view<a> looking at view<negated_a>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<one_minus_a>.
         }
-        execute the logical_operation<standard:/choose> {
-            with view<condition> looking at view<is_zero>.
-            with view<if_true> looking at literal<standard:/number>"0".
-            with view<if_false> looking at view<decremented>.
+        define the view<smaller> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the logical_operation<standard:/number/minimum> {
+            with view<a> looking at view<one_minus_a>.
+            with view<b> looking at literal<standard:/number>"0".
+            with view<result> looking at view<smaller>.
+        }
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<smaller>.
             with view<result> looking at view<result>.
         }
     }
 }
 ```
 
-`view<decremented>` is the formula a - 1, so it can be -1, and it has to be an
-integer. But `standard:/choose` only picks it when a isn't 0. A natural that
-isn't 0 is at least 1, so then a - 1 is at least 0. The range of the result
-covers 0 and a - 1 for an a of at least 1, which is never negative, so it fits
-in a natural.
+`view<one_minus_a>` is the formula 1 - a, so it can be 1, and it has to be an
+integer. But the minimum of it and 0 is never more than 0, so its negation is
+never negative, and it fits in a natural.
+
+Writing a difference of naturals straight to a natural is an error, because it
+can be negative:
+
+```define
+define the operation<mv:example.com:example:/bad_subtract> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        define the view<negated_b> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<negated_b>.
+        }
+        # Error: a + -b can be negative, which is not a natural.
+        execute the logical_operation<standard:/number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<negated_b>.
+            with view<result> looking at view<result>.
+        }
+    }
+}
+```
 
 ### Incrementing
 
@@ -717,14 +710,31 @@ operation for any position that doesn't have a maximum, which is most counters.
 
 ```define
 define the potential value<standard:/number/natural> {
-        it supports the logical_operation<standard:/number/absolute_value>.
-    it supports the logical_operation<standard:/number/add>.
-    it supports the logical_operation<standard:/number/equality>.
-    it supports the logical_operation<standard:/number/less_than>.
-
-    it supports the logical_operation<standard:/number/minimum>.
-    it supports the logical_operation<standard:/number/multiply>.
-    it supports the logical_operation<standard:/number/negate>.
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
     it may have the predicates {
         it has the maximum value {
             highest allowed is infinite.
@@ -736,14 +746,32 @@ define the potential value<standard:/number/natural> {
 }
 
 define the potential value<standard:/number/integer> {
-        it supports the logical_operation<standard:/number/absolute_value>.
-    it supports the logical_operation<standard:/number/add>.
-    it supports the logical_operation<standard:/number/equality>.
-    it supports the logical_operation<standard:/number/less_than>.
-
-    it supports the logical_operation<standard:/number/minimum>.
-    it supports the logical_operation<standard:/number/multiply>.
-    it supports the logical_operation<standard:/number/negate>.
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
     it may have the predicates {
         it has the maximum value {
             highest allowed is infinite.
@@ -755,7 +783,20 @@ define the potential value<standard:/number/integer> {
 }
 
 define the potential value<standard:/boolean> {
-    it supports the logical_operation<standard:/boolean/equality>.
+    it supports the logical_operation<standard:/boolean/and> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/boolean/not> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/equality> {
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/less_than> {
+        it may be written.
+    }
 }
 
 define the potential literal<standard:/number> {
@@ -904,14 +945,13 @@ define the potential action<mv:example.com:example:/errors> {
 The most important decision here is what we _don't_ do: there's no SMT solver
 and no general proof search. Every check in this proposal compares two
 endpoints, and every logical operation is a fixed computation on endpoints and
-linear formulas. Narrowing by a condition has a fixed computation too. There are
-no quantifiers, no constraint can refer to another constraint, and we never ask
-"does there exist a value such that..." We only ever compute a range and compare
-it. So checking is always decidable, it takes time that's linear in the number
-of logical operations the program's statements perform, and it takes the same
-amount of time every time. No timeouts, no "it compiled yesterday." And
-programmers can predict exactly what the compiler will say: if you can add up
-the endpoints, you can do what the compiler does.
+linear formulas. There are no quantifiers, no constraint can refer to another
+constraint, and we never ask "does there exist a value such that..." We only
+ever compute a range and compare it. So checking is always decidable, it takes
+time that's linear in the number of logical operations the program's statements
+perform, and it takes the same amount of time every time. No timeouts, no "it
+compiled yesterday." And programmers can predict exactly what the compiler will
+say: if you can add up the endpoints, you can do what the compiler does.
 
 What about multiplication? [The requirements](../define/spec/requirements.md)
 warn about nonlinear arithmetic, because `x * y = z` is hard for a solver. But
@@ -942,8 +982,8 @@ compiles depend on a number the programmer can't see.
 Define's value operations don't need summaries. With no recursion, no loops, no
 branches, and no aliasing, going through an operation's statements with ranges
 is exactly as much work as running it once. Every logical operation gets its
-exact interval rule, so a minimum, an absolute value, a `standard:/choose`, or a
-view multiplied by itself all give precise ranges where they're executed.
+exact interval rule, so a minimum, an absolute value, or a view multiplied by
+itself all give precise ranges where they're executed.
 
 The cost is that checking time is linear in how much work each statement does,
 not in how long the program's text is. Those are only different for a program
@@ -960,7 +1000,7 @@ belongs in the proposal that adds loops.
 ### Why Track Linear Relationships?
 
 Intervals alone lose precision whenever a value is used more than once (Problem
-13). Within one execution, tracking linear relationships fixes that for
+12). Within one execution, tracking linear relationships fixes that for
 everything linear, and it's cheap: it's the same kind of bookkeeping as
 intervals, just with a list of terms instead of two endpoints.
 
@@ -978,37 +1018,6 @@ We stop at linear relationships because they stay exact and simple to explain.
 Following relationships through nonlinear operations means approximating them,
 and then whether a program compiles would depend on how good the approximation
 is.
-
-### Why `standard:/choose` Uses Its Condition
-
-Without it, the obvious way to guard a computation doesn't work (Problem 12). A
-program that only wants a value when some condition holds has to find another
-way to write it, like DLP 55's saturating subtraction, which uses
-`standard:/number/minimum`. That isn't always possible. Once Define has
-division, a program that divides by a value that might be 0 has to replace the 0
-with something else first, and the only way to know the replacement worked is to
-use the condition.
-
-This is how compilers have handled conditions for a long time. ABCD, which
-removes array bounds checks in just-in-time compilers, adds a new name for a
-value after each branch that tests it, so the facts from the test belong to that
-name. LLVM's ConstraintElimination pass uses the conditions that must have been
-true to reach a point in the program to prove that comparisons there are always
-true or always false. Define's `standard:/choose` is simpler than either,
-because there's only one condition, and it applies to exactly two values.
-
-It stays within the rules of Why Track Linear Relationships?: everything the
-compiler learns stays within one execution, and the range is exact for every
-comparison between two values. It's still easy to predict, too: a value that a
-condition picks has the range it can have when the condition is true.
-
-It does have a cost. Define should have only one way to do each thing, and
-narrowing by a condition gives some compositions a second way. A saturating
-subtraction of two naturals can now be written with `standard:/choose` and a
-comparison, as well as with DLP 55's `standard:/number/minimum`. Compositions of
-logical operations already allow more than one way to write many things, but
-this makes a second way work where it didn't before. We still need to address
-this.
 
 ### Composed Constraints, Not Wrapper Types
 
@@ -1192,7 +1201,6 @@ Define has division, a program will need to show that a divisor isn't 0, and for
 an integer that can be negative, that needs either a predicate that excludes a
 value or a range made of separate pieces. (What About Boolean Conditions Later?
 shows that any condition on one value comes down to a sorted list of ranges.)
-Then Narrowing by a Condition can use "isn't equal" for any value.
 
 Some operations aren't linear, but are a linear formula plus an error that stays
 within a known range, like rounding to a floating-point precision (within half
