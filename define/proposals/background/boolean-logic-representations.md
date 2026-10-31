@@ -1338,6 +1338,49 @@ and an exact check is exponential in the worst case. Packing the work into
 machine words speeds either one up by a constant factor, which doesn't change
 how it grows with `k`.
 
+### Width Along a Fixed Order
+
+When the order of a circuit's gates is already fixed, as it is by the order of
+statements in a program, a simpler width is easy to measure exactly: at each
+point between two gates, count the values already computed (or read from an
+input) that a later gate still uses. That's the number of values that are _live_
+there, as in register allocation, and it takes one pass.
+[Berman, "Circuit Width, Register Allocation, and Ordered Binary Decision Diagrams"](https://doi.org/10.1109/43.85742)
+(IEEE Transactions on Computer-Aided Design 10(8), 1991) relates that kind of
+width to OBDD size. Its abstract says: "if e has n inputs, m outputs, and width
+w(e) then there is a variable ordering for which the DAG-based representation
+for e has at most n × m × 2^w(e) nodes. Since the width of a circuit is closely
+related to the number of registers required to evaluate the circuit, our result
+shows that register allocation techniques can be used to compute good variable
+orderings." (Only the abstract was read for this note, so the paper's exact
+definition of width isn't quoted here.)
+
+The reason is short. Order the inputs by where each is first used, and cut the
+circuit just before an input's first use. Everything after the cut depends only
+on the live values there and on the inputs not used yet. So with at most `w`
+live values, fixing the earlier inputs leaves at most 2^w different functions
+for the rest, and the reduced OBDD has at most 2^w nodes at that level. (That
+argument is this note's own.) The OBDD is canonical for its input order, so two
+values built with the same input order are equal exactly when they're the same
+node.
+
+This width is at least the pathwidth of the circuit's graph, and it can be
+larger, because it's measured for one order instead of the best one. Finding the
+order with the fewest live values is the pathwidth problem again. An `and` of n
+inputs written as a balanced tree keeps about log n values live, even though its
+OBDD has n nodes.
+
+Past a limit on `w`, the same equality can be decided by SAT instead, with the
+miter from [Checking Two Whole Circuits](#checking-two-whole-circuits). Run to
+completion, both give the same answer, so the limit changes how long the check
+takes, not what it decides. SAT doesn't give a canonical form, so finding equal
+values among many takes the simulation and grouping of
+[SAT Sweeping](#sat-sweeping) instead of a hash table. Replacing values past the
+limit with new independent inputs, the way the read-once approach copies inputs,
+is different: an equality it finds is real, because putting the real values back
+can't make two equal results differ, but it misses some equalities, and which
+ones depends on where the limit cut.
+
 ### Checking That a Formula Is in a Form
 
 If a language required programmers to write formulas in one of these forms, the
@@ -1483,7 +1526,10 @@ never happen.
   both sides. A CNF of treewidth w has an SDD of size O(n·2^w), while some need
   OBDDs of size Ω(n^(w/4)) under every order, but for a circuit of treewidth k,
   the known SDD bound is triple-exponential in k, and the fast ways to check
-  treewidth are only approximate.
+  treewidth are only approximate. When the order is fixed, counting live values
+  is exact and takes one pass, and a circuit of width w with n inputs and m
+  outputs has an OBDD of at most n·m·2^w nodes for some input order (Berman,
+  1991). Past a limit on the width, SAT gives the same answers more slowly.
 - Dafny, through Boogie, keeps verification conditions small with passive form
   and a variable for each block, the same idea as Tseitin's variable for each
   gate. Z3 encodes boolean structure with a variable for each gate internally.
@@ -1526,6 +1572,10 @@ never happen.
   [`abcRefactor.c`](https://github.com/berkeley-abc/abc/blob/master/src/base/abci/abcRefactor.c),
   and
   [`kitIsop.c`](https://github.com/berkeley-abc/abc/blob/master/src/bool/kit/kitIsop.c).
+- Berman,
+  [Circuit Width, Register Allocation, and Ordered Binary Decision Diagrams](https://doi.org/10.1109/43.85742),
+  IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems
+  10(8), 1991 (abstract only).
 - Biere, [AIGER](https://fmv.jku.at/aiger/) and
   [The AIGER And-Inverter Graph (AIG) Format](https://fmv.jku.at/papers/Biere-FMV-TR-07-1.pdf), 2007.
 - Bodlaender,
