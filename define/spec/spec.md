@@ -198,6 +198,7 @@ Proposals:
 - [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 - [DLP 52: Literals](../proposals/00052-literals.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
 
 Define reserves all words and symbols for its own use in syntax.
 
@@ -213,12 +214,13 @@ The valid name types are currently:
 - `literal`
 - `operation`
 - `encoding_operation`
+- `logical_operation`
 - `view`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
 name_type  = "position" | "action" | "value" | "encoding" | "literal" | "operation"
-    | "encoding_operation" | "view" ;
+    | "encoding_operation" | "logical_operation" | "view" ;
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -682,6 +684,7 @@ Proposals:
 - [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 - [DLP 52: Literals](../proposals/00052-literals.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
 
 A Define program's source consists of one or more global definitions.
 
@@ -692,7 +695,8 @@ global_definition =
     | encoding_definition
     | potential_literal_definition
     | operation_definition
-    | encoding_operation_definition ;
+    | encoding_operation_definition
+    | logical_operation_definition ;
 ```
 
 ## Statements
@@ -973,13 +977,50 @@ potential_position_definition_block =
 Proposals:
 
 - [DLP 51: Values](../proposals/00051-values.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
 
 A value quality is defined by a quality definition statement with the type
-`value`, followed by a terminator.
+`value`, followed by a Value Definition Block. The Value Definition Block
+contains one or more Logical Operation Support Statements.
 
 ```ebnf
 fully_qualified_value_name = "value", "<", fully_qualified_global_name, ">" ;
-value_definition = "define the potential", " ", fully_qualified_value_name, terminator ;
+value_definition = "define the potential", " ", fully_qualified_value_name, value_definition_block ;
+value_definition_block =
+    block_open,
+    logical_operation_support_statement,
+    { logical_operation_support_statement },
+    block_close ;
+```
+
+### Logical Operation Support Statements
+
+A Logical Operation Support Statement says that a logical operation may operate
+on views that have this value quality. It starts with `it supports the` followed
+by a logical operation name and a Logical Operation Support Block.
+
+A Logical Operation Support Block contains one or both of `it may be read.` and
+`it may be written.`, in that order, on separate lines.
+
+- `it may be read.` means that an input view of the logical operation may look
+  at a view with this value quality.
+- `it may be written.` means that an output view of the logical operation may
+  look at a view with this value quality.
+
+Logical Operation Support Statements must be in alphabetical order by the name
+of the logical operation, and each logical operation may be listed only once in
+a Value Definition Block.
+
+```ebnf
+logical_operation_support_statement =
+    "it supports the", " ", logical_operation_name, logical_operation_support_block ;
+logical_operation_support_block =
+    block_open,
+    (
+        ( "it may be read", terminator, [ "it may be written", terminator ] )
+        | ( "it may be written", terminator )
+    ),
+    block_close ;
 ```
 
 ## Defining Encodings
@@ -1710,12 +1751,57 @@ value.
 The positions on the left and right side of the Value Setting Statement may not
 be the same position.
 
+## Logical Operations
+
+Proposals:
+
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
+
+A logical operation is defined by `define the ` followed by a global typed name
+with the type `logical_operation`, followed by a Logical Operation Definition
+Block.
+
+A Logical Operation Definition Block contains one or more Logical Operation View
+Definitions. A Logical Operation View Definition is `define the ` followed by a
+local view name and a block that contains only
+[View Direction Statements](#view-direction-statements). They follow the same
+rules as in an Interface View: one or both of `it is read.` and
+`it is written.`, in that order.
+
+A logical operation must have at least one output view.
+
+```ebnf
+fully_qualified_logical_operation_name =
+    "logical_operation", "<", fully_qualified_global_name, ">" ;
+logical_operation_definition =
+    "define the", " ",
+    fully_qualified_logical_operation_name,
+    logical_operation_definition_block ;
+logical_operation_definition_block =
+    block_open,
+    logical_operation_view_definition,
+    { logical_operation_view_definition },
+    block_close ;
+logical_operation_view_definition =
+    "define the", " ", local_view_name, block_open, view_direction_statements, block_close ;
+```
+
+### The Compiler Knows Every Logical Operation
+
+The compiler throws an error if a program uses a logical operation that the
+compiler does not know about the existence of.
+
+The compiler must also know how to translate every literal that a Logical
+Operation Execution Statement could look at for that logical operation. This
+limits what literal types are valid for logical operations.
+
 ## Value Operations
 
 Proposals:
 
 - [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 54: View Direction Statements](../proposals/00054-view-direction-statements.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
 
 A value operation is defined by `define the ` followed by a global typed name
 with the type `operation`, followed by an Operation Definition Block.
@@ -1783,30 +1869,105 @@ view_direction_statements =
 
 An operation statements block starts with `it does` followed by a block.
 
-This block may contain only two types of statements:
+This block may contain only these types of statements:
 
-1. Value Operation Execution Statements
-2. The statement `execute the encoding operation.` which determines and executes
-   the correct Encoding Operation for this Value Operation.
+1. Local View Definitions
+2. Value Operation Execution Statements
+3. Logical Operation Execution Statements
+4. View Setting Statements
 
 ```ebnf
 operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
 operation_statements_contents = operation_statement, { operation_statement } ;
-operation_statement = operation_execution_statement | encoding_operation_execution_statement ;
-encoding_operation_execution_statement = "execute the encoding operation", terminator ;
+operation_statement =
+    local_view_definition
+    | operation_execution_statement
+    | logical_operation_execution_statement
+    | view_setting_statement ;
 ```
 
-### Operations Must Obey Their Directions
+### Local Views
 
-Input views must be read in the Operation Statements Block, and output views
-must be written to. The statements `execute the encoding operation.` and
-`execute the computer operation.` are considered to read from all input views
-and write to all output views.
+A Local View Definition is `define the ` followed by a local view name and a
+block that contains only a View Quality Assignment Block. Its Quality Assignment
+Statements may not reference positions, actions, or encodings.
 
-Value Operations executed in an Operation Statements Block must not write to any
-input-only view. They also may not read from any output-only view unless an
-earlier statement has already written to that view within the current Operation
-Statements Block.
+Each local view must be assigned a single value quality. It has no View
+Direction Statements, instead, it is always both read and written. It must be
+defined before any statement that refers to it.
+
+A local view does not create a particle or look at a particle; it is an
+intermediate representation internal to a value operation that the compiler may
+represent however is most efficient.
+
+```ebnf
+local_view_definition =
+    "define the", " ", local_view_name, block_open, view_quality_assignment_block, block_close ;
+```
+
+### Single Assignment
+
+Within an Operation Statements Block, any given view may refer to only one
+concrete value throughout the lifetime of the operation. Views must be written
+and read according to this table:
+
+| View                       | Written by            | Read by                    |
+| -------------------------- | --------------------- | -------------------------- |
+| Input-only interface view  | No statement          | Any statement              |
+| Output-only interface view | Exactly one statement | Statements after that one  |
+| Read/write interface view  | Exactly one statement | Statements before that one |
+| Local view                 | Exactly one statement | Statements after that one  |
+
+Every view must be written by exactly the number of statements in the "Written
+by" column, and may only be read by statements in the "Read by" column. Every
+input view and every local view must be read by at least one of those
+statements.
+
+There is one exception: an Operation Execution Statement may pass a read/write
+interface view of the current operation to a read/write interface view of the
+executed operation. That statement counts as both a statement that reads the
+read/write interface view and the one statement that writes it, so no later
+statement may read or write it.
+
+### View Setting Statements
+
+A View Setting Statement is a Value Setting Statement whose source and target
+are views. It may only appear in the Operation Statements Block of a Value
+Operation.
+
+A View Setting Statement follows the same rules as a Value Setting Statement. In
+particular, both views must have the same value quality. A View Setting
+Statement reads from its source and writes to its target. The source of a View
+Setting Statement may not be a literal.
+
+```ebnf
+view_setting_statement =
+    "set the value of", " ", local_view_name, " from ", local_view_name, terminator ;
+```
+
+#### View Setting Statement Restrictions
+
+View Setting Statements are only allowed when they follow these rules. In these
+rules, "source" and "target" mean the names of the views, not the values in
+them.
+
+When the target of a View Setting Statement is a local view, the source and the
+target must both be looked at by the same Logical Operation Execution Statement
+or Operation Execution Statement. That statement must be the next statement
+after the View Setting Statement, other than any View Setting Statements that
+directly follow it.
+
+When the target is a read/write interface view, the source must be a local view
+written by a Logical Operation Execution Statement or Operation Execution
+Statement that also read that same read/write interface view. The View Setting
+Statement must come immediately after that statement, other than any View
+Setting Statements that directly follow it.
+
+The target of a View Setting Statement must not be an input-only or output-only
+interface view.
+
+The source of a View Setting Statement must not have been the target of another
+View Setting Statement.
 
 ## Executing Value Operations
 
@@ -1867,14 +2028,63 @@ Output views may not look at a literal.
 
 ### Views May Not Alias
 
-The same position may not be specified as the position that more than one view
-is looking at in any given Operation Arguments Block.
+The same position or view may not be specified as the position or view that more
+than one view is looking at in any given Operation Arguments Block.
 
 ### Code Generation for Value Operations
 
-For each executed value operation, the compiler determines the correct Encoding
-Operation based on the encodings of any input views, and that Encoding Operation
-is what occurs at runtime in the program.
+Proposals:
+
+- [DLP 48: Encoding Operation Associations](../proposals/00048-encoding-operation-associations.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
+
+Encoding Operations are associated with logical operations. An Encoding
+Operation associated with a logical operation must have the same views as the
+logical operation, with the same names and directions, in the same order.
+
+For each executed value operation, the compiler compiles the value operation's
+statements, choosing an Encoding Operation for each Logical Operation Execution
+Statement based on the encodings of what its views look at. That Encoding
+Operation is what occurs at runtime in the program.
+
+<!-- TODO: Require full formal verification that encoding operations match the logic? -->
+
+The compiler trusts that an Encoding Operation implements the meaning of the
+logical operation it is associated with. If it does not, that is a soundness
+error in that Encoding Operation or in the compiler's implementation of the
+logical operation.
+
+The compiler may, of course, choose to optimize the runtime code in any way,
+provided the program remains sound.
+
+## Executing Logical Operations
+
+Proposals:
+
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
+
+A Logical Operation Execution Statement has the syntax `execute the` followed by
+the typed global name of a logical operation, followed by an Operation Arguments
+Block. It may only appear in the Operation Statements Block of a Value
+Operation.
+
+Its Operation Arguments Block follows all the rules of any other Operation
+Arguments Block, with the logical operation's views in place of the Interface
+Views of a Value Operation. Logical operations have no value qualities or
+encodings, so there is no matching of view quality assignments. Instead, the
+value quality of every view that it looks at must support the logical operation
+with a Logical Operation Support Statement:
+
+- A view looked at by an input view of the logical operation must have a value
+  quality that supports the logical operation with `it may be read.`
+- A view looked at by an output view of the logical operation must have a value
+  quality that supports the logical operation with `it may be written.`
+
+```ebnf
+logical_operation_name = "logical_operation", "<", global_name, ">" ;
+logical_operation_execution_statement =
+    "execute the", " ", logical_operation_name, operation_arguments_block ;
+```
 
 ## Encoding Operations
 
@@ -1912,6 +2122,11 @@ An Encoding Operation Statements Block may contain only two types of statements:
 2. The statement `execute the computer operation.` which executes native code
    that the compiler understands how to execute for this Encoding Operation.
 
+The statement `execute the computer operation.` is considered to read from all
+input views and write to all output views. For
+[Single Assignment](#single-assignment), it counts as both a statement that
+reads each read/write interface view and the one statement that writes it.
+
 An Encoding Operation Execution Statement is identical to an Operation Execution
 Statement, except that it uses `encoding_operation` instead of `operation`.
 
@@ -1938,9 +2153,6 @@ The following are all dead code:
 - A local position never referenced within the block where it is defined.
 - An implied quality that is not referenced within the action that implies it.
 - An implied action that is not triggered within the action that implies it.
-- An interface view that is never referenced within its Value Operation or
-  Encoding Operation definition, unless that definition contains
-  `execute the encoding operation` or `execute the computer operation`.
 
 ### Dead Quality Assignments
 
