@@ -157,7 +157,7 @@ define the potential action<define-lang.org:counter:/main> {
         }
 
         create a particle in position<first>.
-        set the value of position<first> to literal<standard:/integer>"3".
+        set the value of position<first> from literal<standard:/integer>"3".
         create a particle in position<total>.
 
         execute the operation<standard:/number/integer/add> {

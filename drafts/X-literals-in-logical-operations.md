@@ -570,7 +570,7 @@ define the potential value<mv:example.com:example:/photo>.
 
 # Error: value<mv:example.com:example:/photo> holds no logical value, so no
 # literal can become one of its values.
-set the value of position<photo> to literal<standard:/number>"5".
+set the value of position<photo> from literal<standard:/number>"5".
 ```
 
 ## Why This is the Right Solution

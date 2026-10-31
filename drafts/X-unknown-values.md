@@ -60,14 +60,14 @@ An operation says that its result is a value the compiler can't know anything
 about with an Unknown Value Statement:
 
 ```define
-set the value of view<result> to an unknown value.
+set the value of view<result> from an unknown value.
 ```
 
 If the unknown value depends on other views, the statement lists them in a block
 after `based on`:
 
 ```define
-set the value of view<result> to an unknown value based on {
+set the value of view<result> from an unknown value based on {
     the view<socket>.
     the view<length>.
 }
@@ -139,7 +139,7 @@ define the operation<mv:example.com:example:/read_temperature> {
     it does {
         # The Encoding Operation reads a sensor, so the compiler can't know
         # anything about the result.
-        set the value of view<result> to an unknown value.
+        set the value of view<result> from an unknown value.
     }
 }
 ```
@@ -169,7 +169,7 @@ define the operation<mv:example.com:example:/bad_unknown> {
     it does {
         # Error: value<standard:/number/natural> doesn't say
         # "it may be unknown."
-        set the value of view<result> to an unknown value.
+        set the value of view<result> from an unknown value.
     }
 }
 
@@ -190,7 +190,7 @@ define the operation<mv:example.com:example:/bad_read_sensor> {
 
     it does {
         # This needs to say "based on" and list view<sensor_id>.
-        set the value of view<result> to an unknown value.
+        set the value of view<result> from an unknown value.
     }
 }
 ```

@@ -646,7 +646,7 @@ define the potential action<define-lang.org:trace:/trace/start> {
         }
         create a particle in position<random>.
         create a particle in position<random>::action<standard:/os/linux/random/get_bytes>::position<byte_count>.
-        set the value of position<random>::action<standard:/os/linux/random/get_bytes>::position<byte_count> to literal<standard:/number>"16".
+        set the value of position<random>::action<standard:/os/linux/random/get_bytes>::position<byte_count> from literal<standard:/number>"16".
         create a particle in position<random>::action<standard:/os/linux/random/get_bytes>::position<run>.
 
         move the particle in position<random>::action<standard:/os/linux/random/get_bytes>::position<bytes> to position</trace/id>.

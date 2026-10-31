@@ -26,7 +26,7 @@ define the potential action<mv:example.com:example:/battery/charge> {
         the position<percent_charged> has a particle.
     } and it does {
         # Nothing stops this, even though no battery can be 150% charged.
-        set the value of position<percent_charged> to literal<standard:/number>"150".
+        set the value of position<percent_charged> from literal<standard:/number>"150".
     }
 }
 ```
@@ -429,7 +429,7 @@ computed from the view's logical meaning, as described below.
 
 The checks are:
 
-1. In a Value Setting Statement (`set the value of X to Y`), the range of `Y`
+1. In a Value Setting Statement (`set the value of X from Y`), the range of `Y`
    must fit inside the allowed range of `X`.
 2. In a Move Particle Statement, the source position's allowed range must fit
    inside the destination position's allowed range. If the compiler knows the
@@ -857,7 +857,7 @@ define the potential action<mv:example.com:example:/battery/report> {
 
         create a particle in position<charging_gain>.
         # Fine: 5 is between 0 and 9.
-        set the value of position<charging_gain> to literal<standard:/number>"5".
+        set the value of position<charging_gain> from literal<standard:/number>"5".
 
         create a particle in position<projected>.
         # Fine: 0-100 plus 0-9 is 0-109, and position<projected> has no
@@ -871,7 +871,7 @@ define the potential action<mv:example.com:example:/battery/report> {
         create a particle in position<capped>.
         # Error: position<projected> is any natural, which does not fit inside
         # 0-100.
-        set the value of position<capped> to position<projected>.
+        set the value of position<capped> from position<projected>.
 
                         # Fine: the minimum of 0-100 and 0-9 is 0-9, which fits inside 0-100.
         execute the operation<standard:/number/natural/minimum> {
@@ -885,7 +885,7 @@ define the potential action<mv:example.com:example:/battery/report> {
 
         # Error: 0-100 does not fit inside 0-20, even though position<capped>
         # was just set from something that was 0-9.
-        set the value of position<warning_level> to position<capped>.
+        set the value of position<warning_level> from position<capped>.
     }
 }
 ```

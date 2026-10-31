@@ -516,7 +516,7 @@ A View Setting Statement may now appear in an Operation Statements Block. It is
 simply a Value Setting Statement with views instead of positions:
 
 ```define
-set the value of view<local> to view<input>.
+set the value of view<local> from view<input>.
 ```
 
 Conceptually, this is the logical "identity" operation ("these two values are
@@ -538,7 +538,7 @@ View Setting Statements have only two purposes:
 2. Writing back to a read/write interface view after reading from it in an
    operation and writing that operation's result to a local view. (Like adding
    `1` to `view<value>` and storing it in `view<sum>`, and then doing
-   `set the value of view<value> to view<sum>.`)
+   `set the value of view<value> from view<sum>.`)
 
 No other uses of View Setting Statements are allowed. This gives us a few rules.
 
@@ -593,7 +593,7 @@ define the operation<mv:example.com:example:/square> {
                 it has the value<standard:/number/integer>.
             }
         }
-        set the value of view<copy_of_a> to view<a>.
+        set the value of view<copy_of_a> from view<a>.
         # view<a> and view<b> look at two different views, so they don't
         # alias, even though they have the same value.
         execute the logical_operation<standard:/number/multiply> {
@@ -799,7 +799,7 @@ define the operation<standard:/number/natural/increment> {
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<sum>.
         }
-        set the value of view<value> to view<sum>.
+        set the value of view<value> from view<sum>.
     }
 }
 
@@ -1208,7 +1208,7 @@ define the operation<mv:example.com:example:/bad_read_after_write> {
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<sum>.
         }
-        set the value of view<value> to view<sum>.
+        set the value of view<value> from view<sum>.
         # Error: view<value> was written by the statement above, so reading it
         # here could mean either value.
         execute the logical_operation<standard:/number/add> {

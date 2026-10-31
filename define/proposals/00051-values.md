@@ -134,7 +134,7 @@ define the potential action<mv:example.com:example:/copy_item_count> {
     it happens when {
         the position<item_count> has a particle.
     } and it does {
-        set the value of position<quantity> to position<item_count>.
+        set the value of position<quantity> from position<item_count>.
     }
 }
 ```

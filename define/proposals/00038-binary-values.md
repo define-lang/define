@@ -115,7 +115,7 @@ that does not have a value, the particle does not lose its value.
 
 A value may be set on a particle via this syntax in an Action Statements Block:
 
-`set the value of position<recipient> to position<source>.`
+`set the value of position<recipient> from position<source>.`
 
 This is called a Value Setting Statement. It makes `position<recipient>` have
 the same value that is currently in `position<source>`. It does not create a
@@ -153,7 +153,7 @@ define the potential action<example.com:example:/set_value> {
     it happens when {
         the position<has_a_value> has a particle.
     } and it does {
-        set the value of position<recipient> to position<has_a_value>.
+        set the value of position<recipient> from position<has_a_value>.
     }
 }
 ```

@@ -273,7 +273,7 @@ define the potential action<define-lang.org:menu:/menu/read_key> {
             }
         }
         create a particle in position<lowercase_key>.
-        set the value of position<lowercase_key> to position</menu/key>.
+        set the value of position<lowercase_key> from position</menu/key>.
         execute the operation<standard:/text/unicode/scalar/lowercase_simple> {
             with view<value> looking at position<lowercase_key>.
         }
