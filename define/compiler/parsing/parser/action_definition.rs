@@ -600,6 +600,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.scanner.consume(SET_THE_VALUE_OF);
         let target = self.parse_statement_position_reference(fqun)?;
+        // TODO: Change "to" in Value Setting Statements to "from".
         // There is no ` to` after the target position.
         if !self.consume_to() {
             return Err(
