@@ -183,10 +183,10 @@ of logical operations, it's three steps:
 
 1. add a and b
 2. compare the sum to 255
-3. use that truth value to pick either the sum or 255.
+3. use that boolean value to pick either the sum or 255.
 
-When the third step happens, the sum and the truth value both have to exist, but
-there's only one output view. (Plus, as before, the truth value is a
+When the third step happens, the sum and the boolean value both have to exist,
+but there's only one output view. (Plus, as before, the boolean value is a
 `value<standard:/boolean>`, not a number at all.)
 
 There's also an issue when it comes to precision. Sometimes an intermediate
