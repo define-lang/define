@@ -138,7 +138,7 @@ class PathTracker[T]:
                 node.first_file = path
 
     def set_result(self, path: define_path.DefinePath, result: T):
-        """Store the completed result for a previously-started path."""
+        """Store the completed result for a path."""
         self._results[path] = result
 
     def get_result(self, path: define_path.DefinePath) -> T:

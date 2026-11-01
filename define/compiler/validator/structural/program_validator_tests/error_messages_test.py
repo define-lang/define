@@ -31,11 +31,7 @@ if TYPE_CHECKING:
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -188,11 +184,7 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -214,11 +206,7 @@ def test_duplicate_logical_operation_support_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -243,11 +231,7 @@ def test_logical_operation_support_order_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -266,11 +250,7 @@ def test_non_filesystem_diagnostics_have_no_file_name():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     assert diags[0].location.file_path is None
@@ -294,11 +274,7 @@ def test_move_to_same_position_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -323,11 +299,7 @@ def test_invalid_local_name_character_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -351,11 +323,7 @@ def test_invalid_local_name_characters_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -463,11 +431,7 @@ def test_not_project_root_error_message_for_project_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.NotProjectRootError)
@@ -547,11 +511,9 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"), max_workers=1)
-        .file_results
-    )
+    results = program_validator.validate_program(
+        PurePosixPath("test.dfn"), max_workers=1
+    ).file_results
     assert len(results) == 2
     assert results[0].file_path == define_path.DefinePath("test.dfn")
     assert results[0].diagnostics == []
@@ -591,11 +553,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.ConfigSyntaxError)
@@ -617,11 +575,7 @@ def test_config_validation_error_message(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.ConfigValidationError)

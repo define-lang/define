@@ -5,7 +5,7 @@ import pytest
 
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
-from define.compiler.validator.structural import path_tracker
+from define.compiler.validator.structural.resolver import path_tracker
 
 
 class TestPathTracker:

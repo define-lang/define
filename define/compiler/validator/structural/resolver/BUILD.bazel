@@ -1,0 +1,91 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "filesystem_reference_resolver",
+    srcs = ["filesystem_reference_resolver.py"],
+    visibility = ["//define/compiler/validator/structural:__pkg__"],
+    deps = [
+        ":reference_resolver",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator/structural:file_validator",
+    ],
+)
+
+py_library(
+    name = "non_filesystem_reference_resolver",
+    srcs = ["non_filesystem_reference_resolver.py"],
+    visibility = ["//define/compiler/validator/structural:__pkg__"],
+    deps = [
+        ":reference_resolver",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:file_validator",
+    ],
+)
+
+py_library(
+    name = "path_tracker",
+    srcs = ["path_tracker.py"],
+    deps = [
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "path_tracker_test",
+    size = "small",
+    srcs = ["path_tracker_test.py"],
+    deps = [
+        ":path_tracker",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "reference_resolver",
+    srcs = ["reference_resolver.py"],
+    visibility = ["//define/compiler/validator/structural:__pkg__"],
+    deps = [
+        ":path_tracker",
+        "//define/compiler:ast",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:exceptions",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:file_validator",
+        "@pypi//msgspec",
+    ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":filesystem_reference_resolver",
+        ":non_filesystem_reference_resolver",
+        ":path_tracker",
+        ":path_tracker_test",
+        ":reference_resolver",
+    ],
+)
+
+check_build_file()

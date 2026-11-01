@@ -53,13 +53,9 @@ def test_parse_error_populates_exception(
 
 
 def test_non_filesystem_parse_error_returns_single_result():
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(
-            "defin the potential position<my.domain.com:my_lib:/bad>.\n"
-        )
-        .file_results
-    )
+    results = program_validator.validate_program_non_filesystem(
+        "defin the potential position<my.domain.com:my_lib:/bad>.\n"
+    ).file_results
 
     assert len(results) == 1
     result = results[0]
@@ -148,11 +144,7 @@ def test_config_error_populates_exception_and_root_prefix(
         newline="\n",
     )
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(relative_path)
-        .file_results
-    )
+    results = program_validator.validate_program(relative_path).file_results
     assert len(results) == 1
     result = results[0]
 
@@ -167,11 +159,7 @@ def test_file_not_found_populates_exception(
     validator_test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     relative_path = PurePosixPath("nonexistent.dfn")
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(relative_path)
-        .file_results
-    )
+    results = program_validator.validate_program(relative_path).file_results
     assert len(results) == 1
     result = results[0]
 

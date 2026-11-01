@@ -70,31 +70,6 @@ py_test(
 )
 
 py_library(
-    name = "path_tracker",
-    srcs = ["path_tracker.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:config",
-        "//define/compiler:constants",
-        "//define/compiler/data_structures:define_path",
-        "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "path_tracker_test",
-    size = "small",
-    srcs = ["path_tracker_test.py"],
-    deps = [
-        ":path_tracker",
-        "//define/compiler:config",
-        "//define/compiler:constants",
-        "//define/compiler/data_structures:define_path",
-        "@pypi//pytest",
-    ],
-)
-
-py_library(
     name = "program_validator",
     srcs = ["program_validator.py"],
     visibility = [
@@ -104,7 +79,6 @@ py_library(
     ],
     deps = [
         ":file_validator",
-        ":reference_resolver",
         ":work_pool",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
@@ -113,26 +87,9 @@ py_library(
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:validation_result",
-    ],
-)
-
-py_library(
-    name = "reference_resolver",
-    srcs = ["reference_resolver.py"],
-    deps = [
-        ":file_validator",
-        ":path_tracker",
-        ":work_pool",
-        "//define/compiler:ast",
-        "//define/compiler:config",
-        "//define/compiler:constants",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:exceptions",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/validator:validation_result",
-        "@pypi//msgspec",
+        "//define/compiler/validator/structural/resolver:filesystem_reference_resolver",
+        "//define/compiler/validator/structural/resolver:non_filesystem_reference_resolver",
+        "//define/compiler/validator/structural/resolver:reference_resolver",
     ],
 )
 
@@ -165,10 +122,7 @@ pyright_test(
         ":file_validator_test",
         ":name_validators",
         ":name_validators_test",
-        ":path_tracker",
-        ":path_tracker_test",
         ":program_validator",
-        ":reference_resolver",
         ":structural",
         ":work_pool",
         ":work_pool_test",
