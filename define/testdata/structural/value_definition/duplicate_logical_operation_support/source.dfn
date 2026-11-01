@@ -1,0 +1,9 @@
+# Each logical operation may be listed only once in a value definition.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be written.
+    }
+}

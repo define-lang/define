@@ -68,13 +68,15 @@ def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
     # Literals are already in their values' encodings in generated code, so
     # values, encodings, and Potential Literals need no code of their own.
     # Executing a Value Operation runs the Encoding Operation that performs it,
-    # so Value Operations need no code either.
+    # so Value Operations need no code either. Logical operations are part of
+    # the compiler, not of the generated program.
     return not isinstance(
         definition,
         ast.ValueDefinition
         | ast.EncodingDefinition
         | ast.PotentialLiteralDefinition
-        | ast.ValueOperationDefinition,
+        | ast.ValueOperationDefinition
+        | ast.LogicalOperationDefinition,
     )
 
 

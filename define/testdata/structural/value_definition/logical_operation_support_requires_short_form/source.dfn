@@ -1,0 +1,11 @@
+# A reference to a logical operation in the same universe must use short form.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<my.domain.com:my_lib:/add> {
+        it may be read.
+    }
+}

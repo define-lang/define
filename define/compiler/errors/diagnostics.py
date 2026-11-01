@@ -224,6 +224,31 @@ class LogicalOperationWithoutOutputViewDiagnostic(Diagnostic):
     )
 
 
+class DuplicateLogicalOperationSupportDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation listed in more than one Logical Operation Support Statement of a value definition."""
+
+    logical_operation_name: str
+    first_support_line: int
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' is already supported on line "
+        "{self.first_support_line}; each logical operation may be listed only "
+        "once in a value definition"
+    )
+
+
+class LogicalOperationSupportOrderDiagnostic(Diagnostic):
+    """Diagnostic for a Logical Operation Support Statement that is out of alphabetical order."""
+
+    logical_operation_name: str
+    logical_operation_name_it_must_precede: str
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' is out of order; Logical Operation "
+        "Support Statements must be in alphabetical order by logical operation "
+        "name, so it must come before "
+        "'{self.logical_operation_name_it_must_precede}'"
+    )
+
+
 class ViewPositionOrActionQualityDiagnostic(Diagnostic):
     """Diagnostic for a view Quality Assignment Statement that names a position or action."""
 

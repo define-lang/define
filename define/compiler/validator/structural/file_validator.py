@@ -262,6 +262,10 @@ class DefinitionStructuralValidator:
                 self._validate_operation_definition(self._definition)
             case ast.LogicalOperationDefinition():
                 self._validate_logical_operation_definition(self._definition)
+            case ast.ValueDefinition():
+                self._validate_logical_operation_support_statements(
+                    self._definition.logical_operation_support_statements
+                )
             case _:
                 pass
         return self.build_result()
@@ -469,6 +473,49 @@ class DefinitionStructuralValidator:
                     location=definition.typed_name.location
                 )
             )
+
+    def _validate_logical_operation_support_statements(
+        self, statements: Sequence[ast.LogicalOperationSupportStatement]
+    ):
+        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
+            typed_name_dict.TypedNameDict()
+        )
+        greatest_name: str | None = None
+        for statement in statements:
+            logical_operation = statement.logical_operation
+            reference_diagnostics = name_validators.validate_typed_name(
+                logical_operation, self._definition
+            )
+            self._diagnostics.extend(reference_diagnostics)
+            if reference_diagnostics:
+                continue
+            first_line = seen_lines.get(logical_operation)
+            if first_line is not None:
+                self._diagnostics.append(
+                    diagnostics.DuplicateLogicalOperationSupportDiagnostic(
+                        location=logical_operation.location,
+                        logical_operation_name=logical_operation.source_typed_name,
+                        first_support_line=first_line,
+                    )
+                )
+                continue
+            seen_lines[logical_operation] = logical_operation.location.line
+            # Comparing full typed names keeps the order the same whether or
+            # not a reference is written in short form.
+            name = logical_operation.full_typed_name
+            if greatest_name is not None and name < greatest_name:
+                self._diagnostics.append(
+                    diagnostics.LogicalOperationSupportOrderDiagnostic(
+                        location=logical_operation.location,
+                        logical_operation_name=name,
+                        logical_operation_name_it_must_precede=greatest_name,
+                    )
+                )
+            else:
+                greatest_name = name
+            # TODO: Resolve these references when compiling the library that
+            # holds the value definition. Programs that only use the value do
+            # not need to load the logical operations it supports.
 
     def _validate_view_name[
         ViewT: (ast.ViewDefinition, ast.LogicalOperationViewDefinition)

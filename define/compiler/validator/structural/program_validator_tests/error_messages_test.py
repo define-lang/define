@@ -203,6 +203,64 @@ def test_duplicate_definition_format():
         duplicate position definition for path '/same'; first defined on line 1""")
 
 
+def test_duplicate_logical_operation_support_format():
+    source = (
+        "define the potential value<my.domain.com:my_lib:/number> {\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be written.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 5, column 21
+            it supports the logical_operation<standard:/number/add> {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'logical_operation<standard:/number/add>' is already supported on line 2; each logical operation may be listed only once in a value definition""")
+    )
+
+
+def test_logical_operation_support_order_format():
+    source = (
+        "define the potential value<my.domain.com:my_lib:/number> {\n"
+        "    it supports the logical_operation<standard:/text/equality> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 5, column 21
+            it supports the logical_operation<standard:/number/add> {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'logical_operation<standard:/number/add>' is out of order; Logical Operation Support Statements must be in alphabetical order by logical operation name, so it must come before 'logical_operation<standard:/text/equality>'""")
+    )
+
+
 def test_non_filesystem_diagnostics_have_no_file_name():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"

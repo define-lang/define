@@ -1,0 +1,11 @@
+define the logical_operation<standard:/number/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}

@@ -1,3 +1,14 @@
+define the logical_operation<standard:/boolean/and> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
 define the operation<standard:/boolean/and> {
     define the view<a> {
         it is read.

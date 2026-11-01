@@ -1,5 +1,5 @@
 define the potential value<standard:/text/unicode/scalar> {
-    it supports the logical_operation<standard:/text/equality> {
+    it supports the logical_operation</text/equality> {
         it may be read.
     }
 }

@@ -88,3 +88,67 @@ def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.expected == "my.domain.com:my_lib"
     assert diagnostic.actual == "other.org:my_lib"
+
+
+def test_logical_operation_support(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
+
+
+def test_duplicate_logical_operation_support(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.DuplicateLogicalOperationSupportDiagnostic(
+            location=ast.SourceLocation(line=6, column=21, end_line=6, end_column=59),
+            logical_operation_name="logical_operation<standard:/number/add>",
+            first_support_line=3,
+        )
+    ]
+
+
+def test_logical_operation_support_out_of_order(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.LogicalOperationSupportOrderDiagnostic(
+            location=ast.SourceLocation(line=6, column=21, end_line=6, end_column=60),
+            logical_operation_name="logical_operation<standard:/boolean/and>",
+            logical_operation_name_it_must_precede=(
+                "logical_operation<standard:/text/equality>"
+            ),
+        ),
+        diagnostics.LogicalOperationSupportOrderDiagnostic(
+            location=ast.SourceLocation(line=9, column=21, end_line=9, end_column=59),
+            logical_operation_name="logical_operation<standard:/number/add>",
+            logical_operation_name_it_must_precede=(
+                "logical_operation<standard:/text/equality>"
+            ),
+        ),
+    ]
+
+
+def test_logical_operation_support_order_uses_full_names(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
+
+
+def test_logical_operation_support_requires_short_form(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=ast.SourceLocation(line=8, column=39, end_line=8, end_column=58),
+            fqun="my.domain.com:my_lib",
+        )
+    ]
