@@ -115,7 +115,7 @@ def test_reference_to_value_file(
 ):
     result = validate_testdata_structural()
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 3
     value_definitions = result.file_results[1].definition_results
     assert len(value_definitions) == 1
     assert isinstance(value_definitions[0].definition, ast.ValueDefinition)
@@ -141,4 +141,4 @@ def test_cross_universe_value(
 ):
     result = validate_testdata_structural()
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 3

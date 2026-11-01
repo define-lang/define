@@ -405,12 +405,13 @@ def test_non_filesystem_cross_universe_back_reference(
 def test_standard_reference_loads_its_standard_file_non_filesystem(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    result = validate_testdata_structural_non_filesystem()
+    result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert_no_errors(result)
     assert [str(file_result.file_path) for file_result in result.file_results] == [
         "<string>",
         standard_library_file("number/natural.dfn"),
         "target.dfn",
+        standard_library_file("number/add.dfn"),
         "leaf.dfn",
     ]
 

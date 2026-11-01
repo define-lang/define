@@ -1,0 +1,6 @@
+# A Logical Operation Support Statement must name a logical operation whose file exists.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation</missing> {
+        it may be read.
+    }
+}

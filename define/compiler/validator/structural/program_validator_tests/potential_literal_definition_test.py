@@ -43,7 +43,7 @@ def test_same_name_different_types(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.definition_results) == 3
+    assert len(result.definition_results) == 4
 
 
 def test_cross_universe_encoding(

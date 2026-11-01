@@ -1,0 +1,6 @@
+# A Logical Operation Support Statement must name a logical operation that exists.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/text/unicode/scalar> {
+        it may be read.
+    }
+}

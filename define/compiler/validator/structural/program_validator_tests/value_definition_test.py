@@ -152,3 +152,35 @@ def test_logical_operation_support_requires_short_form(
             fqun="my.domain.com:my_lib",
         )
     ]
+
+
+def test_wrong_logical_operation_definition_type(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.StandardDefinitionNotFoundDiagnostic(
+            location=ast.SourceLocation(line=3, column=39, end_line=3, end_column=67),
+            definition_name="logical_operation<standard:/text/unicode/scalar>",
+        )
+    ]
+
+
+def test_missing_logical_operation_file(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ReferencedFileNotFoundDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=39,
+                end_line=3,
+                end_column=46,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            file_path="missing.dfn",
+        )
+    ]

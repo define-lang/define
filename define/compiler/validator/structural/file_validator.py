@@ -553,9 +553,7 @@ class DefinitionStructuralValidator:
                 )
             else:
                 greatest_name = name
-            # TODO: Resolve these references when compiling the library that
-            # holds the value definition. Programs that only use the value do
-            # not need to load the logical operations it supports.
+            self._process_reference(logical_operation)
 
     def _validate_view_name[
         ViewT: (ast.ViewDefinition, ast.LogicalOperationViewDefinition)
