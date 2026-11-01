@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config
-from define.compiler.data_structures import define_path, typed_name_dict
+from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.parsing import test_helpers
 from define.compiler.validator import validation_result
@@ -42,6 +42,16 @@ def _parse_program(source: str) -> ast.Program:
     return test_helpers.parse(source, PurePosixPath("/test.dfn"))
 
 
+def _load_and_validate_every_definition(
+    context: file_validator.FileValidationContext,
+) -> validation_result.FileValidationResult:
+    loaded_file = file_validator.FileStructuralValidator().load_file(context)
+    definition_results: list[validation_result.DefinitionValidationResult] = []
+    for definition in loaded_file.definitions.values():
+        definition_results.append(loaded_file.validate_definition(definition))
+    return loaded_file.build_file_validation_result(definition_results)
+
+
 def _reference_edges(
     result: validation_result.FileValidationResult,
 ) -> list[reference_graph.ReferenceEdge]:
@@ -57,7 +67,7 @@ class TestFileStructuralValidatorSuccess:
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.exception is None
         assert result.diagnostics == []
@@ -81,7 +91,7 @@ class TestFileStructuralValidatorSuccess:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.exception is None
         assert result.diagnostics == []
@@ -92,7 +102,7 @@ class TestFileStructuralValidatorSuccess:
 class TestFileStructuralValidatorErrors:
     def test_file_not_found(self, tmp_path: Path):
         ctx = _make_context(tmp_path, file_name="nonexistent.dfn")
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
         assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.dfn")
@@ -104,7 +114,7 @@ class TestFileStructuralValidatorErrors:
             "not valid define syntax\n", encoding="utf-8", newline="\n"
         )
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.exception is not None
         assert result.definition_results == []
@@ -112,7 +122,7 @@ class TestFileStructuralValidatorErrors:
     def test_encoding_error(self, tmp_path: Path):
         (tmp_path / "test.dfn").write_bytes(b"\x80\x81\x82")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
         assert result.exception.location.line == 1
@@ -124,7 +134,7 @@ class TestFileStructuralValidatorErrors:
             b"# first line\n# second line\n# third\x80rest\n"
         )
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
         assert result.exception.location.line == 3
@@ -139,7 +149,7 @@ class TestFileStructuralValidatorDiagnostics:
         source = "define the potential position<my.domain.com:my_lib:/wrong_path>.\n"
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.PathMismatchDiagnostic,
@@ -149,7 +159,7 @@ class TestFileStructuralValidatorDiagnostics:
         source = "define the potential position<other.domain.com:other_lib:/test>.\n"
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.FqunMismatchDiagnostic,
@@ -162,18 +172,15 @@ class TestFileStructuralValidatorDiagnostics:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
         assert [
-            definition_result.definition.typed_name.source_typed_name
+            definition_result.definition.location.line
             for definition_result in result.definition_results
-        ] == [
-            "position<my.domain.com:my_lib:/test>",
-            "position<my.domain.com:my_lib:/test>",
-        ]
+        ] == [1]
 
 
 class TestDefinitionStructuralValidator:
@@ -183,7 +190,6 @@ class TestDefinitionStructuralValidator:
         validator = file_validator.DefinitionStructuralValidator(
             definition=program.definitions[0],
             context=_make_context(tmp_path),
-            seen_definitions=typed_name_dict.TypedNameDict(),
         )
 
         result = validator.validate_definition()
@@ -192,65 +198,36 @@ class TestDefinitionStructuralValidator:
         assert result.definition == program.definitions[0]
         assert result.diagnostics == []
 
-    def test_duplicate_definition_result_still_carries_definition(self, tmp_path: Path):
+
+class TestLoadedFile:
+    def test_definitions_hold_the_first_of_duplicates(self, tmp_path: Path):
         source = (
             "define the potential position<my.domain.com:my_lib:/test>.\n"
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
-        program = _parse_program(source)
-        seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
-        ] = typed_name_dict.TypedNameDict()
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
+        loaded_file = file_validator.FileStructuralValidator().load_file(
+            _make_context(tmp_path)
+        )
 
-        first_result = file_validator.DefinitionStructuralValidator(
-            definition=program.definitions[0],
-            context=_make_context(tmp_path),
-            seen_definitions=seen_definitions,
-        ).validate_definition()
-        seen_definitions[program.definitions[0].typed_name] = program.definitions[0]
-        second_result = file_validator.DefinitionStructuralValidator(
-            definition=program.definitions[1],
-            context=_make_context(tmp_path),
-            seen_definitions=seen_definitions,
-        ).validate_definition()
+        assert [
+            definition.location.line for definition in loaded_file.definitions.values()
+        ] == [1]
 
-        assert first_result.definition == program.definitions[0]
-        assert first_result.diagnostics == []
-        assert second_result.definition == program.definitions[1]
-        assert [type(d) for d in second_result.diagnostics] == [
-            diagnostics.DuplicateDefinitionDiagnostic,
-        ]
-
-    def test_sequential_validation_returns_definition_results(self, tmp_path: Path):
+    def test_loading_validates_no_definition(self, tmp_path: Path):
         source = (
-            "define the potential position<my.domain.com:my_lib:/test>.\n"
-            "define the potential position<my.domain.com:my_lib:/test>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the position<my.domain.com:my_lib:/Bad>.\n"
+            "    }\n"
+            "}\n"
         )
-        program = _parse_program(source)
-        seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
-        ] = typed_name_dict.TypedNameDict()
-        results: list[validation_result.DefinitionValidationResult] = []
-
-        for definition in program.definitions:
-            result = file_validator.DefinitionStructuralValidator(
-                definition=definition,
-                context=_make_context(tmp_path),
-                seen_definitions=seen_definitions,
-            ).validate_definition()
-            results.append(result)
-            seen_definitions[definition.typed_name] = definition
-
-        assert len(results) == 2
-        assert all(
-            isinstance(result, validation_result.DefinitionValidationResult)
-            for result in results
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
+        loaded_file = file_validator.FileStructuralValidator().load_file(
+            _make_context(tmp_path)
         )
-        assert tuple(result.definition for result in results) == program.definitions
-        assert results[0].diagnostics == []
-        assert [type(d) for d in results[1].diagnostics] == [
-            diagnostics.DuplicateDefinitionDiagnostic,
-        ]
+
+        assert loaded_file.file_diagnostics == []
 
 
 class TestFileStructuralValidatorReferenceDiscovery:
@@ -264,7 +241,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         edges = _reference_edges(result)
         assert len(edges) == 1
@@ -293,7 +270,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
                 "other.domain.com:other_lib": define_path.DefinePath("deps/other")
             },
         )
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         edges = _reference_edges(result)
         assert len(edges) == 1
@@ -317,7 +294,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.ExternalUniverseNotConfiguredDiagnostic,
@@ -335,7 +312,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert len(_reference_edges(result)) == 2
 
@@ -360,7 +337,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.diagnostics == []
         edges = _reference_edges(result)
@@ -390,7 +367,7 @@ class TestParticleReferenceEdges:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.diagnostics == []
         assert len(_reference_edges(result)) == 2
@@ -409,7 +386,7 @@ class TestParticleReferenceEdges:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert result.diagnostics == []
         assert _reference_edges(result) == []
@@ -431,7 +408,7 @@ class TestParticleReferenceEdges:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
-        result = file_validator.FileStructuralValidator().validate_file(ctx)
+        result = _load_and_validate_every_definition(ctx)
 
         assert len(result.diagnostics) == 2
         assert isinstance(

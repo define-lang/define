@@ -1,0 +1,13 @@
+# second_child_reference.dfn references the lib sub-root under a second
+# universe name, which fails the lib sub-root's config. Its reference comes
+# first here so that, with one worker, the failure happens after lib/a.dfn and
+# lib/b.dfn are submitted but before /a and /b are validated. Their references
+# to each other then lead into the failed sub-root and are not followed, but
+# they still form a cycle.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position</second_child_reference>.
+        it has the position<mv:define-lang.org:child_universe:/a>.
+        it has the position<mv:define-lang.org:child_universe:/b>.
+    }
+}

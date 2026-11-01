@@ -2,19 +2,19 @@
 
 ProgramStructuralValidator orchestrates per-file validation using a thread pool.
 It manages all shared state on the main thread and delegates pure
-per-file validation to FileStructuralValidator workers. It registers the
-definitions that files hold and the references between them, while its
-ReferenceResolver finds and validates the files that references lead to.
+per-file validation to FileStructuralValidator workers. It validates only
+the entry file's definitions and the definitions they reference, directly or
+indirectly, while its ReferenceResolver finds and loads the files that
+references lead to.
 """
 
 from __future__ import annotations
 
+import functools
 import typing
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    from define.compiler.data_structures import define_path
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
@@ -31,9 +31,9 @@ from define.compiler.validator.structural import (
 class ProgramStructuralValidator:
     """Coordinates parallel validation of a Define program.
 
-    Registers the definitions of validated files and the references between
-    them, as files complete on a thread pool. All shared state is managed on
-    the coordinator thread.
+    Validates definitions on a thread pool as references reach them, and
+    registers them and the references between them. All shared state is
+    managed on the coordinator thread.
     """
 
     _resolver: reference_resolver.ReferenceResolver
@@ -42,6 +42,8 @@ class ProgramStructuralValidator:
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
     ]
+    # The full typed names of definitions submitted for validation.
+    _requested_definition_names: set[str]
     _allow_entry_action_interface_positions: bool
 
     def __init__(
@@ -56,9 +58,9 @@ class ProgramStructuralValidator:
         must remain false when validating a program for code generation.
         """
         self._definition_results = typed_name_dict.TypedNameDict()
+        self._requested_definition_names = set()
         self._resolver = reference_resolver.ReferenceResolver(
-            handle_validated_file=self._process_completed_result,
-            registered_definitions=self._definition_results,
+            handle_referenced_definition=self._request_definition,
         )
         self._reference_graph = reference_graph.ReferenceGraph()
         self._allow_entry_action_interface_positions = (
@@ -71,14 +73,15 @@ class ProgramStructuralValidator:
         max_workers: int | None = None,
     ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
-        entry_context = self._resolver.entry_file_context(path)
-        if entry_context is not None:
+        entry_file = self._resolver.load_entry_file(path)
+        if entry_file is not None:
             with work_pool.WorkPool(max_workers=max_workers) as pool:
-                self._resolver.submit_entry_file(entry_context, pool)
+                for definition in entry_file.definitions.values():
+                    self._request_definition(entry_file, definition, pool)
                 pool.run_until_idle()
 
         return self._build_program_result(
-            self._resolver.completed_file_results(), in_memory_source=None
+            self._resolver.completed_files(), in_memory_source=None
         )
 
     def validate_program_non_filesystem(
@@ -87,30 +90,50 @@ class ProgramStructuralValidator:
         max_workers: int | None = None,
     ) -> validation_result.ProgramValidationResult:
         """Validate a program from source text, loading config only when needed."""
-        result = file_validator.FileStructuralValidator().validate_source(source)
-        if result.exception is not None:
-            return self._build_program_result([result], in_memory_source=source)
+        source_file = file_validator.FileStructuralValidator().load_source(source)
+        if source_file.exception is not None:
+            return self._build_program_result([source_file], in_memory_source=source)
 
-        self._resolver.add_source_result(result)
+        self._resolver.add_source_file(source_file)
+        # Resolving the source's references needs every one of its reference
+        # edges, so its definitions are validated before any other work.
+        source_definition_results: list[
+            validation_result.DefinitionValidationResult
+        ] = []
+        for definition in source_file.definitions.values():
+            self._requested_definition_names.add(definition.typed_name.full_typed_name)
+            source_definition_results.append(
+                source_file.validate_definition(definition)
+            )
 
         with work_pool.WorkPool(max_workers=max_workers) as pool:
-            self._resolver.resolve_non_filesystem_references(result, pool)
-            self._process_completed_result(result)
+            self._resolver.resolve_non_filesystem_references(
+                source_file, source_definition_results, pool
+            )
+            for definition_result in source_definition_results:
+                self._register_definition(source_file, definition_result, pool)
             pool.run_until_idle()
         return self._build_program_result(
-            self._resolver.completed_file_results(),
+            self._resolver.completed_files(),
             in_memory_source=source,
             select_last_constructor=True,
         )
 
     def _build_program_result(
         self,
-        file_results: list[validation_result.FileValidationResult],
+        loaded_files: list[file_validator.LoadedFile],
         *,
         in_memory_source: str | None,
         select_last_constructor: bool = False,
     ) -> validation_result.ProgramValidationResult:
         """Validate the entry action and assemble the program result."""
+        file_results: list[validation_result.FileValidationResult] = []
+        for loaded_file in loaded_files:
+            file_results.append(
+                loaded_file.build_file_validation_result(
+                    self._validated_definition_results(loaded_file)
+                )
+            )
         entry_action_result = self._select_entry_action(
             file_results[0], select_last_constructor=select_last_constructor
         )
@@ -148,6 +171,24 @@ class ProgramStructuralValidator:
             source_map=source_map.SourceMap(file_digests, in_memory_source),
         )
 
+    def _validated_definition_results(
+        self, loaded_file: file_validator.LoadedFile
+    ) -> list[validation_result.DefinitionValidationResult]:
+        """Return the results of a file's validated definitions, in source order."""
+        definition_results: list[validation_result.DefinitionValidationResult] = []
+        for definition in loaded_file.definitions.values():
+            definition_result = self._definition_results.get(definition.typed_name)
+            # Two files can define the same typed name when a definition's path
+            # does not match its file. Only the first of them to be requested
+            # is validated, so the result for this typed name may be for a
+            # definition in a different file.
+            if (
+                definition_result is not None
+                and definition_result.definition is definition
+            ):
+                definition_results.append(definition_result)
+        return definition_results
+
     @staticmethod
     def _select_entry_action(
         entry_file_result: validation_result.FileValidationResult,
@@ -178,79 +219,66 @@ class ProgramStructuralValidator:
                 )
             )
 
-    def _process_completed_result(
+    def _request_definition(
         self,
-        result: validation_result.FileValidationResult,
+        loaded_file: file_validator.LoadedFile,
+        definition: ast.GlobalDefinition,
+        pool: work_pool.WorkPool,
     ):
-        """Handle a completed file: register its definitions and follow their edges."""
-        for definition_result in result.definition_results:
-            self._process_completed_definition(result, definition_result)
-
-    def _process_completed_definition(
-        self,
-        result: validation_result.FileValidationResult,
-        definition_result: validation_result.DefinitionValidationResult,
-    ):
-        """Handle one completed definition from a file result."""
-        typed_name = definition_result.definition.typed_name
-        # FileStructuralValidator preserves duplicate definitions in source order so
-        # the later ones can still return diagnostics. Originally, I tried
-        # to make all the later checks still run on duplicates, but it gets
-        # into too much complexity. We do still submit referenced files from
-        # duplicates, above, but that's it.
-        if typed_name in self._definition_results:
+        """Submit a definition for validation unless it was already requested."""
+        definition_name = definition.typed_name.full_typed_name
+        if definition_name in self._requested_definition_names:
             return
-        self._definition_results[typed_name] = definition_result
-        self._reference_graph.add_definition(definition_result.definition)
-        self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
+        self._requested_definition_names.add(definition_name)
+        pool.submit(
+            loaded_file.validate_definition,
+            definition,
+            handle_result=functools.partial(
+                self._process_validated_definition, loaded_file
+            ),
+        )
 
-    def _validate_outgoing_reference_edges(
+    def _process_validated_definition(
         self,
-        enclosing_root: define_path.DefinePath,
-        source_definition: validation_result.DefinitionValidationResult,
+        loaded_file: file_validator.LoadedFile,
+        definition_result: validation_result.DefinitionValidationResult,
+        pool: work_pool.WorkPool,
     ):
-        """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
-        for ref_edge in source_definition.reference_edges:
-            # A definition from the supplied source has no file path to resolve.
-            if self._references_non_filesystem_definition(ref_edge):
-                _ = self._add_reference_edge(ref_edge, source_definition)
-                continue
-            target_file = self._resolver.resolve_target_file(
-                ref_edge.global_name_reference.name_content,
-                enclosing_root,
-                source_definition,
-            )
-            if target_file is None:
-                continue
+        # Submitting every referenced file before following any reference gets
+        # background work into the queue ASAP, and loads the sub-root configs
+        # that each reference is checked against.
+        self._resolver.submit_referenced_files(loaded_file, definition_result, pool)
+        self._register_definition(loaded_file, definition_result, pool)
 
-            if not self._add_reference_edge(ref_edge, source_definition):
-                continue
-            self._resolver.find_referenced_definition(
-                ref_edge, target_file, enclosing_root, source_definition
-            )
+    def _register_definition(
+        self,
+        loaded_file: file_validator.LoadedFile,
+        definition_result: validation_result.DefinitionValidationResult,
+        pool: work_pool.WorkPool,
+    ):
+        """Register a validated definition and follow its references."""
+        self._definition_results[definition_result.definition.typed_name] = (
+            definition_result
+        )
+        self._reference_graph.add_definition(definition_result.definition)
+        for edge in definition_result.reference_edges:
+            if self._add_reference_edge(edge, definition_result):
+                self._resolver.follow_reference(
+                    loaded_file, edge, definition_result, pool
+                )
 
     def _add_reference_edge(
         self,
-        ref_edge: reference_graph.ReferenceEdge,
+        edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
-        detected_cycle = self._reference_graph.try_add_edge(ref_edge)
+        detected_cycle = self._reference_graph.try_add_edge(edge)
         if detected_cycle is None:
             return True
         source_definition.diagnostics.append(
             diagnostics.CircularGlobalReferenceDiagnostic(
-                location=ref_edge.global_name_reference.location,
+                location=edge.global_name_reference.location,
                 cycle=detected_cycle,
             )
         )
         return False
-
-    def _references_non_filesystem_definition(
-        self,
-        edge: reference_graph.ReferenceEdge,
-    ) -> bool:
-        referenced_definition = self._definition_results.get(edge.global_name_reference)
-        return (
-            referenced_definition is not None
-            and referenced_definition.definition.location.file_path is None
-        )

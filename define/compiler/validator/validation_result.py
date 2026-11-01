@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Sequence
 
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
@@ -73,8 +73,7 @@ class FileValidationResult:
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     file_diagnostics: list[diagnostics.Diagnostic]
-    # This preserves source order, including duplicate definitions that were
-    # diagnosed during file validation.
+    # The file's validated definitions, in source order.
     definition_results: list[DefinitionValidationResult]
 
     @property
@@ -85,44 +84,6 @@ class FileValidationResult:
             all_diagnostics.extend(result.diagnostics)
         all_diagnostics.sort(key=lambda d: (d.location.line, d.location.column))
         return all_diagnostics
-
-    def edges_to_other_files(self) -> Iterator[reference_graph.ReferenceEdge]:
-        """Yield the edges that lead to other files.
-
-        An edge leads to another file unless its target is the enclosing
-        definition or a definition that appeared earlier in the same file.
-        """
-        seen_targets: set[str] = set()
-        for definition_result in self.definition_results:
-            seen_targets.add(definition_result.definition.typed_name.full_typed_name)
-            for edge in definition_result.reference_edges:
-                if edge.target_full_typed_name not in seen_targets:
-                    yield edge
-
-    def first_edge_per_referenced_file(
-        self,
-    ) -> Iterator[reference_graph.ReferenceEdge]:
-        """Yield each definition's first edge per referenced file.
-
-        Within one definition, only the first reference to a given file drives
-        file loading and its diagnostics, no matter which definition type the
-        references name.
-        """
-        seen_targets: set[str] = set()
-        for definition_result in self.definition_results:
-            seen_targets.add(definition_result.definition.typed_name.full_typed_name)
-            seen_files: set[tuple[str, str]] = set()
-            for edge in definition_result.reference_edges:
-                if edge.target_full_typed_name in seen_targets:
-                    continue
-                referenced_file = (
-                    edge.global_name_reference.effective_fqun.canonical,
-                    edge.global_name_reference.name_content.path.name,
-                )
-                if referenced_file in seen_files:
-                    continue
-                seen_files.add(referenced_file)
-                yield edge
 
 
 class ProgramValidationResult(msgspec.Struct):

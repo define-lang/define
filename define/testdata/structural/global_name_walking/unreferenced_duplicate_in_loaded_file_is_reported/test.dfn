@@ -1,0 +1,6 @@
+# Checks of a loaded file as a whole cover even its unreferenced definitions.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+    }
+}

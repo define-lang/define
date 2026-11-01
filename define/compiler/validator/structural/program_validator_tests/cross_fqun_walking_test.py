@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config
+from define.compiler import ast, config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -179,6 +179,45 @@ def test_already_loaded_root_fqun_mismatch(
     assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
     assert diags[0].error.sub_root_path == "lib"
     assert result.file_results[1].diagnostics == []
+
+
+def test_cycle_in_sub_root_reported_after_its_config_fails(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    second_child = "mv:define-lang.org:second_child"
+    result = validate_testdata_structural(max_workers=1)
+    assert result.all_exceptions == []
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("second_child_reference.dfn"),
+        define_path.DefinePath("lib/a.dfn"),
+        define_path.DefinePath("lib/b.dfn"),
+    ]
+    assert result.file_results[0].diagnostics == []
+    config_diags = result.file_results[1].diagnostics
+    assert len(config_diags) == 1
+    assert isinstance(config_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert config_diags[0].location.file_path == PurePosixPath(
+        "second_child_reference.dfn"
+    )
+    assert config_diags[0].location.line == 3
+    assert config_diags[0].location.column == 29
+    assert isinstance(config_diags[0].error, config.SubRootFqunMismatchError)
+    assert config_diags[0].error.expected_fqun == second_child
+    assert config_diags[0].error.actual_fqun == _CHILD_UNIVERSE
+    assert config_diags[0].error.sub_root_path == "lib"
+    assert result.file_results[2].diagnostics == []
+    cycle_diags = result.file_results[3].diagnostics
+    assert len(cycle_diags) == 1
+    assert isinstance(cycle_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert cycle_diags[0].location.file_path == PurePosixPath("lib/b.dfn")
+    assert cycle_diags[0].location.line == 3
+    assert cycle_diags[0].location.column == 20
+    assert cycle_diags[0].cycle == [
+        "position<mv:define-lang.org:child_universe:/a>",
+        "position<mv:define-lang.org:child_universe:/b>",
+        "position<mv:define-lang.org:child_universe:/a>",
+    ]
 
 
 def test_sub_root_conflict(
@@ -655,3 +694,68 @@ def test_same_path_in_two_known_universes_walks_into_both_sub_roots(
     assert result.file_results[4].file_path == define_path.DefinePath(
         "lib_y/y_child.dfn"
     )
+
+
+def test_unknown_universe_reported_once_for_same_file_references(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    foreign_universe = "mv:define-lang.org:other_lib"
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.FqunMismatchDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=31,
+                end_line=2,
+                end_column=58,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            expected=_PARENT_UNIVERSE,
+            actual=foreign_universe,
+        ),
+        diagnostics.PathMismatchDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=60,
+                end_line=2,
+                end_column=61,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            expected_path="/test",
+            actual_path="/a",
+        ),
+        diagnostics.FqunMismatchDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=31,
+                end_line=3,
+                end_column=58,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            expected=_PARENT_UNIVERSE,
+            actual=foreign_universe,
+        ),
+        diagnostics.PathMismatchDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=60,
+                end_line=3,
+                end_column=61,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            expected_path="/test",
+            actual_path="/b",
+        ),
+        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=ast.SourceLocation(
+                line=6,
+                column=29,
+                end_line=6,
+                end_column=56,
+                file_path=PurePosixPath("test.dfn"),
+            ),
+            universe=foreign_universe,
+            current_universe_name=_PARENT_UNIVERSE,
+        ),
+    ]

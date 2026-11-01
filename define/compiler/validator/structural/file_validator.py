@@ -1,7 +1,7 @@
-"""Pure per-file validation for the Define language.
+"""Pure per-file and per-definition validation for the Define language.
 
-FileStructuralValidator is a stateless worker that processes one file at a time.
-It takes immutable inputs and produces immutable outputs, with no access
+FileStructuralValidator is a stateless worker that loads one file at a time,
+and a LoadedFile validates one of its definitions at a time. Neither has access
 to shared mutable state.
 """
 
@@ -64,41 +64,94 @@ class EmptyFileValidationContext(FileValidationContext, frozen=True, dict=True):
         return None
 
 
-class FileStructuralValidator:
-    """Stateless per-file validator.
+type FileDefinitions = typed_name_dict.TypedNameDict[
+    ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]], ast.GlobalDefinition
+]
 
-    Processes one file: reads from disk, parses, transforms, and validates
-    local rules. Produces a FileValidationResult with reference edges for
-    the coordinator to process.
+
+class LoadedFile(msgspec.Struct):
+    """A parsed file, whose definitions are validated only when requested."""
+
+    context: FileValidationContext
+    exception: exceptions.DefineError | None
+    # The digest of a file that was read from the filesystem, which lets a
+    # source map read it again for diagnostics without keeping its text.
+    source_digest: bytes | None
+    file_diagnostics: list[diagnostics.Diagnostic]
+    # The first definition of each typed name in the file. It does not change
+    # after loading, so definitions can be validated concurrently.
+    definitions: FileDefinitions
+
+    def earlier_definition(
+        self,
+        reference: ast.GlobalTypedNameReference,
+        referencing_definition: ast.GlobalDefinition,
+    ) -> ast.GlobalDefinition | None:
+        """Return the file's definition of a referenced name if it comes before the referencing definition."""
+        definition = self.definitions.get(reference)
+        if definition is None:
+            return None
+        location = definition.location
+        referencing_location = referencing_definition.location
+        if (location.line, location.column) < (
+            referencing_location.line,
+            referencing_location.column,
+        ):
+            return definition
+        return None
+
+    def build_file_validation_result(
+        self, definition_results: list[validation_result.DefinitionValidationResult]
+    ) -> validation_result.FileValidationResult:
+        """Return the file's result, given the results of its validated definitions in source order."""
+        return validation_result.FileValidationResult(
+            exception=self.exception,
+            source_digest=self.source_digest,
+            file_path=self.context.full_path,
+            root_prefix=self.context.root_prefix,
+            file_diagnostics=self.file_diagnostics,
+            definition_results=definition_results,
+        )
+
+    def validate_definition(
+        self, definition: ast.GlobalDefinition
+    ) -> validation_result.DefinitionValidationResult:
+        """Validate one of the file's definitions."""
+        return DefinitionStructuralValidator(
+            definition=definition,
+            context=self.context,
+        ).validate_definition()
+
+
+class FileStructuralValidator:
+    """Stateless per-file loader.
+
+    Processes one file: reads from disk, parses, and checks the rules that
+    concern the file as a whole. Its definitions are validated separately,
+    only when something requests them.
     """
 
-    def validate_file(
-        self, context: FileValidationContext
-    ) -> validation_result.FileValidationResult:
-        """Validate a single file and return the result."""
+    def load_file(self, context: FileValidationContext) -> LoadedFile:
+        """Load and parse a single file."""
         source, digest, load_error = self._load_file(context.full_path)
         if load_error is not None:
-            return validation_result.FileValidationResult(
+            return LoadedFile(
+                context=context,
                 exception=load_error,
                 source_digest=digest,
-                file_path=context.full_path,
-                root_prefix=context.root_prefix,
                 file_diagnostics=[],
-                definition_results=[],
+                definitions=typed_name_dict.TypedNameDict(),
             )
-        return self._validate_source(
+        return self._load_source(
             context=context,
             source=source,
             source_digest=digest,
         )
 
-    def validate_source(
-        self,
-        source: str,
-    ) -> validation_result.FileValidationResult:
-        """Validate source text without loading from the filesystem."""
+    def load_source(self, source: str) -> LoadedFile:
+        """Parse source text without loading from the filesystem."""
         context = EmptyFileValidationContext()
-        return self._validate_source(
+        return self._load_source(
             context=context,
             # A lone surrogate becomes invalid UTF-8, as it would be in a file,
             # instead of failing to encode.
@@ -107,58 +160,60 @@ class FileStructuralValidator:
         )
 
     @staticmethod
-    def _validate_source(
+    def _load_source(
         context: FileValidationContext,
         source: bytes,
         source_digest: bytes | None,
-    ) -> validation_result.FileValidationResult:
-        """Parse and validate UTF-8 source text."""
+    ) -> LoadedFile:
+        """Parse UTF-8 source text and check the rules that concern the whole file."""
         parser_file_path = (
             context.full_path.as_posix_path() if context.is_filesystem_context else None
         )
-        # Source that is not from the filesystem need not follow the indentation
-        # rules.
         parse_result = parser.parse(
             source,
             parser_file_path,
+            # Source that is not from the filesystem need not follow the indentation
+            # rules.
             check_indentation=context.is_filesystem_context,
         )
 
         if parse_result.exception is not None:
-            return validation_result.FileValidationResult(
+            return LoadedFile(
+                context=context,
                 exception=parse_result.exception,
                 source_digest=source_digest,
-                file_path=context.full_path,
-                root_prefix=context.root_prefix,
                 file_diagnostics=parse_result.diagnostics,
-                definition_results=[],
+                definitions=typed_name_dict.TypedNameDict(),
             )
 
         if parse_result.program is None:
             raise ValueError("parse produced no program despite reporting no exception")
         program = parse_result.program
 
-        seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
-        ] = typed_name_dict.TypedNameDict()
-        definition_results: list[validation_result.DefinitionValidationResult] = []
+        file_diagnostics = parse_result.diagnostics
+        definitions: FileDefinitions = typed_name_dict.TypedNameDict()
         for definition in program.definitions:
-            result = DefinitionStructuralValidator(
-                definition=definition,
-                context=context,
-                seen_definitions=seen_definitions,
-            ).validate_definition()
-            definition_results.append(result)
-            if definition.typed_name not in seen_definitions:
-                seen_definitions[definition.typed_name] = definition
+            file_diagnostics.extend(_path_mismatch_diagnostics(definition, context))
+            file_diagnostics.extend(_fqun_mismatch_diagnostics(definition, context))
+            first_definition = definitions.get(definition.typed_name)
+            if first_definition is None:
+                definitions[definition.typed_name] = definition
+                continue
+            file_diagnostics.append(
+                diagnostics.DuplicateDefinitionDiagnostic(
+                    location=definition.location,
+                    definition_type=definition.typed_name.name_type.value,
+                    path=definition.typed_name.name_content.path.name,
+                    first_definition_line=first_definition.location.line,
+                )
+            )
 
-        return validation_result.FileValidationResult(
+        return LoadedFile(
+            context=context,
             exception=None,
             source_digest=source_digest,
-            file_path=context.full_path,
-            root_prefix=context.root_prefix,
-            file_diagnostics=parse_result.diagnostics,
-            definition_results=definition_results,
+            file_diagnostics=file_diagnostics,
+            definitions=definitions,
         )
 
     @staticmethod
@@ -180,6 +235,43 @@ class FileStructuralValidator:
         return source, source_map.source_digest(source), None
 
 
+def _path_mismatch_diagnostics(
+    definition: ast.GlobalDefinition, context: FileValidationContext
+) -> list[diagnostics.Diagnostic]:
+    if context.expected_definition_path is None:
+        return []
+    definition_path = definition.typed_name.name_content.path.name
+    expected_path = str(context.expected_definition_path.as_absolute_path())
+    if definition_path == expected_path:
+        return []
+    return [
+        diagnostics.PathMismatchDiagnostic(
+            location=definition.typed_name.name_content.path.location,
+            expected_path=expected_path,
+            actual_path=definition_path,
+        )
+    ]
+
+
+def _fqun_mismatch_diagnostics(
+    definition: ast.GlobalDefinition, context: FileValidationContext
+) -> list[diagnostics.Diagnostic]:
+    root_config = context.root_config
+    expected_fqun = "" if root_config is None else root_config.fqun
+    if not expected_fqun:
+        return []
+    actual = definition.typed_name.name_content.fqun.canonical
+    if actual == expected_fqun:
+        return []
+    return [
+        diagnostics.FqunMismatchDiagnostic(
+            location=definition.typed_name.name_content.fqun.location,
+            expected=expected_fqun,
+            actual=actual,
+        )
+    ]
+
+
 class DefinitionStructuralValidator:
     """Validates one definition within a single file.
 
@@ -193,9 +285,6 @@ class DefinitionStructuralValidator:
     _seen_edge_targets: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
-    _seen_definitions: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
-    ]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
@@ -209,9 +298,6 @@ class DefinitionStructuralValidator:
         self,
         definition: ast.GlobalDefinition,
         context: FileValidationContext,
-        seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
-        ],
     ):
         """Initialize per-definition validation state from file-level state."""
         self._definition = definition
@@ -221,7 +307,6 @@ class DefinitionStructuralValidator:
         self._seen_edge_targets = set()
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
-        self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
@@ -239,9 +324,6 @@ class DefinitionStructuralValidator:
                 ),
             )
         )
-        self._validate_path_matches_file()
-        self._validate_fqun_matches_expected()
-        self._validate_not_duplicate_in_file()
 
         match self._definition:
             case ast.ActionDefinition():
@@ -279,48 +361,6 @@ class DefinitionStructuralValidator:
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,
         )
-
-    def _validate_path_matches_file(self):
-        if self._context.expected_definition_path is None:
-            return
-        definition_path = self._definition.typed_name.name_content.path.name
-        expected_path = str(self._context.expected_definition_path.as_absolute_path())
-        if definition_path != expected_path:
-            self._diagnostics.append(
-                diagnostics.PathMismatchDiagnostic(
-                    location=self._definition.typed_name.name_content.path.location,
-                    expected_path=expected_path,
-                    actual_path=definition_path,
-                )
-            )
-
-    def _validate_fqun_matches_expected(self):
-        root_config = self._context.root_config
-        expected_fqun = "" if root_config is None else root_config.fqun
-        if not expected_fqun:
-            return
-        actual = self._definition.typed_name.name_content.fqun.canonical
-        if actual != expected_fqun:
-            self._diagnostics.append(
-                diagnostics.FqunMismatchDiagnostic(
-                    location=self._definition.typed_name.name_content.fqun.location,
-                    expected=expected_fqun,
-                    actual=actual,
-                )
-            )
-
-    def _validate_not_duplicate_in_file(self):
-        """Check for within-file duplicates."""
-        if self._definition.typed_name in self._seen_definitions:
-            first_def = self._seen_definitions[self._definition.typed_name]
-            self._diagnostics.append(
-                diagnostics.DuplicateDefinitionDiagnostic(
-                    location=self._definition.location,
-                    definition_type=self._definition.typed_name.name_type.value,
-                    path=self._definition.typed_name.name_content.path.name,
-                    first_definition_line=first_def.location.line,
-                )
-            )
 
     def _validate_action_definition(
         self,
@@ -1106,10 +1146,6 @@ class DefinitionStructuralValidator:
         """Record a reference edge for a global name reference."""
         global_name = typed_global_name.name_content
 
-        is_self_reference = (
-            typed_global_name.full_typed_name
-            == self._definition.typed_name.source_typed_name
-        )
         # Only the first reference site per target emits an edge; downstream
         # per-target diagnostics (missing file, cycle, wrong type) then fire
         # once per (definition, target) pair instead of once per source line.
@@ -1117,16 +1153,10 @@ class DefinitionStructuralValidator:
             return
         self._seen_edge_targets.add(typed_global_name.full_typed_name)
 
-        is_same_file_reference = (
-            typed_global_name in self._seen_definitions or is_self_reference
-        )
-        # Process a cross-FQUN reference in a filesystem context. References
-        # that resolve within this same file skip the sub-root check so that
-        # they still get edges for same-file validation.
+        # Process a cross-FQUN reference in a filesystem context.
         if (
             global_name.fqun is not None
             and config.universe_needs_configuration(global_name.fqun.canonical)
-            and not is_same_file_reference
             and self._context.is_filesystem_context
         ):
             root_config = self._context.root_config
