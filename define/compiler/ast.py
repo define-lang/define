@@ -1106,6 +1106,13 @@ class DefinitionGlobalNameContent(GlobalNameContent[Fqun]):
 class ReferenceGlobalNameContent(GlobalNameContent[Fqun | None]):
     """Represents a global name at a reference site."""
 
+    @property
+    def source_fqun(self) -> str | None:
+        """The FQUN written in the reference, or None for a short-form reference."""
+        if self.fqun is None:
+            return None
+        return self.fqun.canonical
+
 
 class GlobalTypedNameInDefinition(GlobalTypedName[DefinitionGlobalNameContent]):
     """Represents a typed global name at a definition site."""

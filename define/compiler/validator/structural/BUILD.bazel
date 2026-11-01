@@ -105,7 +105,26 @@ py_library(
     ],
     deps = [
         ":file_validator",
+        ":reference_resolver",
+        ":work_pool",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:source_map",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/graphs:reference_graph_order",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "reference_resolver",
+    srcs = ["reference_resolver.py"],
+    deps = [
+        ":file_validator",
         ":path_tracker",
+        ":work_pool",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
@@ -113,9 +132,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:exceptions",
-        "//define/compiler/errors:source_map",
         "//define/compiler/graphs:reference_graph",
-        "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:validation_result",
         "@pypi//msgspec",
     ],
@@ -124,6 +141,21 @@ py_library(
 py_library(
     name = "structural",
     srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "work_pool",
+    srcs = ["work_pool.py"],
+)
+
+py_test(
+    name = "work_pool_test",
+    size = "small",
+    srcs = ["work_pool_test.py"],
+    deps = [
+        ":work_pool",
+        "@pypi//pytest",
+    ],
 )
 
 # --- Type-checking ---
@@ -138,7 +170,10 @@ pyright_test(
         ":path_tracker",
         ":path_tracker_test",
         ":program_validator",
+        ":reference_resolver",
         ":structural",
+        ":work_pool",
+        ":work_pool_test",
     ],
 )
 
