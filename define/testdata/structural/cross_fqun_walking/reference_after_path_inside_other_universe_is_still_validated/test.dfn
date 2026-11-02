@@ -1,3 +1,5 @@
+# A reference into another universe's sub-root does not stop the references
+# after it from being validated.
 define the potential position<mv:define-lang.org:parent_universe:/test> {
     it may only contain particles where {
         it has the position</lib/parent_target>.

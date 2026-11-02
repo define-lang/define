@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:child_universe"
+      path: "p"
+    },
+    {
+      universe_name: "mv:define-lang.org:outer_lib"
+      path: "p/lib"
+    }
+  ]
+}

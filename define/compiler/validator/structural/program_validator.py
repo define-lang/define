@@ -17,8 +17,6 @@ import typing
 if typing.TYPE_CHECKING:
     import pathlib
 
-    from define.compiler.validator.structural.resolver import reference_resolver
-
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics, source_map
@@ -28,6 +26,7 @@ from define.compiler.validator.structural import file_validator, work_pool
 from define.compiler.validator.structural.resolver import (
     filesystem_reference_resolver,
     non_filesystem_reference_resolver,
+    reference_resolver,
 )
 
 
@@ -81,15 +80,13 @@ def validate_program_non_filesystem(
     if source_file.exception is not None:
         return program_validation.build_program_result(in_memory_source=source)
 
-    # Resolving the source's references needs every one of its reference
-    # edges, so its definitions are validated before any other work.
+    # TODO: Request these on the pool like the entry file's definitions.
+    # Nothing needs them validated before any other work any more, but which
+    # reference reports a cycle would then depend on completion order.
     source_definition_results = program_validation.validate_source_definitions(
         source_file
     )
     with work_pool.WorkPool(max_workers=max_workers) as pool:
-        program_validation.load_files(
-            resolver.files_referenced_by_source(source_definition_results), pool
-        )
         for definition_result in source_definition_results:
             program_validation.register_definition(source_file, definition_result, pool)
         pool.run_until_idle()
@@ -195,6 +192,7 @@ class _ProgramValidationRun:
             entry_action=entry_action,
             definition_order=definition_order,
             definition_results=self._definition_results,
+            config_errors=self._resolver.config_errors(),
             source_map=source_map.SourceMap(file_digests, in_memory_source),
         )
 
@@ -241,26 +239,7 @@ class _ProgramValidationRun:
         definition_result: validation_result.DefinitionValidationResult,
         pool: work_pool.WorkPool,
     ):
-        # Submitting every referenced file before following any reference gets
-        # background work into the queue ASAP, and loads the sub-root configs
-        # that each reference is checked against.
-        self.load_files(
-            self._resolver.files_to_load(loaded_file, definition_result), pool
-        )
         self.register_definition(loaded_file, definition_result, pool)
-
-    def load_files(
-        self,
-        contexts: list[file_validator.FileValidationContext],
-        pool: work_pool.WorkPool,
-    ):
-        """Load files on the pool, and request the definitions that references waiting on them reach."""
-        for context in contexts:
-            pool.submit(
-                self._file_validator.load_file,
-                context,
-                handle_result=self._process_loaded_file,
-            )
 
     def _process_loaded_file(
         self, loaded_file: file_validator.LoadedFile, pool: work_pool.WorkPool
@@ -284,13 +263,34 @@ class _ProgramValidationRun:
         for edge in definition_result.reference_edges:
             if not self._add_reference_edge(edge, definition_result):
                 continue
-            reached_definition = self._resolver.follow_reference(
-                loaded_file, edge, definition_result
+            # A definition can reference only definitions that come before it
+            # in its own file.
+            same_file_definition = loaded_file.earlier_definition(
+                edge.global_name_reference, definition_result.definition
             )
-            if reached_definition is not None:
-                self.request_definition(
-                    reached_definition.loaded_file, reached_definition.definition, pool
-                )
+            if same_file_definition is not None:
+                self.request_definition(loaded_file, same_file_definition, pool)
+                continue
+            match self._resolver.validate_reference(
+                loaded_file, edge, definition_result
+            ):
+                case reference_resolver.ReachedDefinition() as reached_definition:
+                    self.request_definition(
+                        reached_definition.loaded_file,
+                        reached_definition.definition,
+                        pool,
+                    )
+                case file_validator.FileValidationContext() as file_to_load:
+                    pool.submit(
+                        self._file_validator.load_file,
+                        file_to_load,
+                        handle_result=self._process_loaded_file,
+                    )
+                case None:
+                    # Nothing to do for this reference now: it waits for a
+                    # file that is already loading, or it was reported or
+                    # skipped.
+                    pass
 
     def _add_reference_edge(
         self,

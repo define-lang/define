@@ -346,6 +346,33 @@ def test_unreferenced_definition_in_loaded_file_is_not_validated(
     ] == ["position<my.domain.com:my_lib:/target>"]
 
 
+def test_reference_to_earlier_definition_with_mismatched_path_reaches_it(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("x.dfn"),
+    ]
+    assert result.file_results[0].diagnostics == []
+    diags = result.file_results[1].diagnostics
+    assert len(diags) == 2
+    path_diag = diags[0]
+    assert isinstance(path_diag, diagnostics.PathMismatchDiagnostic)
+    assert path_diag.location.file_path == PurePosixPath("x.dfn")
+    assert path_diag.location.line == 1
+    assert path_diag.location.column == 52
+    assert path_diag.expected_path == "/x"
+    assert path_diag.actual_path == "/y"
+    not_found_diag = diags[1]
+    assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert not_found_diag.location.file_path == PurePosixPath("x.dfn")
+    assert not_found_diag.location.line == 3
+    assert not_found_diag.location.column == 29
+    assert not_found_diag.file_path == "missing.dfn"
+
+
 def test_unreferenced_duplicate_in_loaded_file_is_reported(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

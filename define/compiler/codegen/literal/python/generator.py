@@ -182,6 +182,9 @@ class _DefinitionGenerator:
     ) -> tuple[renderer.ActionDefinition, set[Path]]:
         """Generate every definition with bounded worker concurrency."""
         package_dirs: set[Path] = set()
+        # TODO: Generate only the definitions that the entry point reaches.
+        # The order holds every validated definition, which includes entry
+        # file definitions that the entry point never references.
         for package_dir in reference_graph_executor.process_definitions(
             self._codegen_input.definition_order,
             self._generate_definition,

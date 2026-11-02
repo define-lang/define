@@ -18,6 +18,11 @@ class _ProjectRootNode(msgspec.Struct, eq=False):
     children: dict[str, _ProjectRootNode] | None = None
     failed: bool = False
     project_root: tuple[define_path.DefinePath, config.ProjectRootConfig] | None = None
+    # The sub-root that a loaded project's local dependency declares at this
+    # path, which may not be loaded yet.
+    declared_sub_root: (
+        tuple[define_path.DefinePath, config.LocalDependencyEntry] | None
+    ) = None
 
     def get_child(self, part: str) -> _ProjectRootNode | None:
         if self.children is None:
@@ -34,19 +39,15 @@ class _ProjectRootNode(msgspec.Struct, eq=False):
         return child
 
 
-@final
-class _TrackedFileNode(msgspec.Struct, eq=False):
-    children: dict[str, _TrackedFileNode] | None = None
-    first_file: define_path.DefinePath | None = None
-
-
 class PathTracker[T]:
     """Tracks file paths encountered during validation and their results.
 
-    Manages three concerns:
+    Manages four concerns:
     - Mapping from file paths to validation results (with an in-progress sentinel).
     - Tracking paths that were referenced but could not be loaded.
     - Mapping project root paths to their resolved config for prefix-based lookups.
+    - Recording the sub-root paths that loaded projects' local dependencies
+      declare.
 
     Type parameter T is the result type stored per path (e.g. LoadedFile).
     """
@@ -56,7 +57,6 @@ class PathTracker[T]:
         self._results: dict[define_path.DefinePath, T | None] = {}
         self._not_found: set[define_path.DefinePath] = set()
         self._project_roots: _ProjectRootNode = _ProjectRootNode()
-        self._tracked_files: _TrackedFileNode = _TrackedFileNode()
         self._fqun_to_root: dict[str, define_path.DefinePath] = {}
 
     def _get_project_root_node(
@@ -75,20 +75,6 @@ class PathTracker[T]:
         node = self._project_roots
         for part in path.parts:
             node = node.get_or_create_child(part)
-        return node
-
-    def _get_tracked_file_node(
-        self, path: define_path.DefinePath
-    ) -> _TrackedFileNode | None:
-        node = self._tracked_files
-        for part in path.parts:
-            children = node.children
-            if children is None:
-                return None
-            child = children.get(part)
-            if child is None:
-                return None
-            node = child
         return node
 
     def _project_root_for_path(
@@ -119,23 +105,6 @@ class PathTracker[T]:
     def mark_in_progress(self, path: define_path.DefinePath):
         """Record that validation of this path has begun."""
         self._results[path] = None
-        node = self._tracked_files
-        if node.first_file is None:
-            node.first_file = path
-        parts = path.parts
-        del parts[-1]
-        for part in parts:
-            children = node.children
-            if children is None:
-                children = {}
-                node.children = children
-            child = children.get(part)
-            if child is None:
-                child = _TrackedFileNode()
-                children[part] = child
-            node = child
-            if node.first_file is None:
-                node.first_file = path
 
     def set_result(self, path: define_path.DefinePath, result: T):
         """Store the completed result for a path."""
@@ -173,6 +142,11 @@ class PathTracker[T]:
     def mark_root_failed(self, root: define_path.DefinePath):
         """Record that a project root's config failed to load."""
         self._get_or_create_project_root_node(root).failed = True
+
+    def is_failed_root(self, root: define_path.DefinePath) -> bool:
+        """Return True if this exact project root has a known-bad config."""
+        node = self._get_project_root_node(root)
+        return node is not None and node.failed
 
     def is_under_failed_root(self, path: define_path.DefinePath) -> bool:
         """Return True if path is under a root with a known-bad config."""
@@ -214,10 +188,41 @@ class PathTracker[T]:
         node.project_root = (root, root_config)
         self._fqun_to_root[root_config.fqun] = root
 
-    def project_root_loaded(self, root: define_path.DefinePath) -> bool:
-        """Return True if a project root has been registered at this path."""
-        node = self._get_project_root_node(root)
-        return node is not None and node.project_root is not None
+    def declare_sub_root(
+        self,
+        sub_root_path: define_path.DefinePath,
+        entry: config.LocalDependencyEntry,
+    ) -> config.LocalDependencyEntry | None:
+        """Record that a local dependency declares a sub-root at a path, unless one already does.
+
+        The first declaration of a path wins. Returns the entry that already
+        declares the path, if one does.
+        """
+        node = self._get_or_create_project_root_node(sub_root_path)
+        if node.declared_sub_root is not None:
+            return node.declared_sub_root[1]
+        node.declared_sub_root = (sub_root_path, entry)
+        return None
+
+    def declared_sub_root_containing(
+        self, root: define_path.DefinePath, path: define_path.DefinePath
+    ) -> tuple[define_path.DefinePath, config.LocalDependencyEntry] | None:
+        """Return the sub-root declared between a loaded project root and a path in it, if there is one.
+
+        A path in a more deeply declared sub-root is also in this one.
+        """
+        # The root's config is loaded, so the root has a node.
+        node = cast("_ProjectRootNode", self._get_project_root_node(root))
+        parts = path.parts
+        del parts[-1]
+        for part in parts[len(root.parts) :]:
+            child = node.get_child(part)
+            if child is None:
+                return None
+            node = child
+            if node.declared_sub_root is not None:
+                return node.declared_sub_root
+        return None
 
     def root_for_fqun(self, fqun: str) -> define_path.DefinePath | None:
         """Return the root path registered for a given FQUN, or None."""
@@ -231,11 +236,6 @@ class PathTracker[T]:
         if node is None or node.project_root is None:
             return None
         return node.project_root[1]
-
-    def fqun_for_root(self, root: define_path.DefinePath) -> str | None:
-        """Return the FQUN registered for an exact project root path, or None."""
-        root_config = self.config_for_root(root)
-        return None if root_config is None else root_config.fqun
 
     def universe_root(
         self, fqun: str | None, referencing_root: define_path.DefinePath
@@ -286,16 +286,3 @@ class PathTracker[T]:
         At least one project root must be registered.
         """
         return self._project_root_for_path(path)[0]
-
-    def first_tracked_file_under(
-        self, sub_root_path: define_path.DefinePath
-    ) -> tuple[define_path.DefinePath, str] | tuple[None, None]:
-        """Find the first tracked file under sub_root_path and its owning universe.
-
-        Returns (file_path, owner_universe) or None.
-        """
-        node = self._get_tracked_file_node(sub_root_path)
-        if node is None or node.first_file is None:
-            return (None, None)
-        file_path = node.first_file
-        return (file_path, self._project_root_for_path(file_path)[1].fqun)

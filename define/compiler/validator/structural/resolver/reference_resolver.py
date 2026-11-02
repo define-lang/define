@@ -42,79 +42,93 @@ class ReferenceResolver:
 
     _path_tracker: path_tracker.PathTracker[file_validator.LoadedFile]
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
+    # The project roots and universes whose local dependency declares a
+    # sub-root path that another one already declared, so the project cannot
+    # use that universe.
+    _disabled_universes: set[tuple[define_path.DefinePath, str]]
+    _config_errors: list[config.ConfigError]
 
     def __init__(self):
         """Initialize with no files loaded."""
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
+        self._disabled_universes = set()
+        self._config_errors = []
 
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
-    def files_to_load(
-        self,
-        loaded_file: file_validator.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
-    ) -> list[file_validator.FileValidationContext]:
-        """Return the files that a validated definition's edges lead to and that are not loaded yet."""
-        contexts: list[file_validator.FileValidationContext] = []
-        for edge in definition_result.reference_edges:
-            context = self._file_to_load(loaded_file, edge, definition_result)
-            if context is not None:
-                contexts.append(context)
-        return contexts
+    def config_errors(self) -> list[config.ConfigError]:
+        """Return the errors in loaded configs that did not keep their projects from loading."""
+        return self._config_errors
 
-    def _file_to_load(
-        self,
-        loaded_file: file_validator.LoadedFile,
-        edge: reference_graph.ReferenceEdge,
-        definition_result: validation_result.DefinitionValidationResult,
-    ) -> file_validator.FileValidationContext | None:
-        """Return the file that one of a validated definition's edges leads to, if it is not loaded yet."""
-        if (
-            loaded_file.earlier_definition(
-                edge.global_name_reference, definition_result.definition
-            )
-            is not None
-        ):
-            return None
-        return self._referenced_file_to_load(loaded_file, edge)
-
-    def follow_reference(
+    def validate_reference(
         self,
         loaded_file: file_validator.LoadedFile,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> ReachedDefinition | None:
-        """Return the definition that an edge names, or report why it cannot be found.
+    ) -> ReachedDefinition | file_validator.FileValidationContext | None:
+        """Validate an edge, and return the definition it names if its file is loaded.
 
-        If the target file has not finished loading, the edge waits for it, and
-        add_loaded_file returns the definition instead.
+        The edge must not name an earlier definition in its own file.
+
+        If the target file is not loaded yet, the rest of the validation
+        happens when it loads, add_loaded_file returns the definition instead,
+        and this returns the file if the caller must load it.
         """
-        enclosing_root = loaded_file.context.root_prefix
-        target_file = edge.global_name_reference.name_content.path.file_path(
-            self._universe_root(edge, enclosing_root)
-        )
-        if self._path_tracker.is_under_failed_root(target_file):
+        target = self._validate_target_file(loaded_file, edge, source_definition)
+        if target is None:
             return None
-        if self._check_if_current_universe_path_in_a_subroot(
-            edge, target_file, enclosing_root, source_definition
-        ):
-            return None
+        target_file = target.full_path
 
         # With the thread pool, work completes in arbitrary order. If files
         # A and C both reference file B, and B finishes loading before A's
         # definitions are processed, then target_loaded_file is already
         # available when processing A's edges.
         target_loaded_file = self._path_tracker.try_get_result(target_file)
-        if target_loaded_file is None:
-            self._deferred_edges.setdefault(target_file, []).append(
-                _DeferredReferenceEdge(edge, source_definition)
+        if target_loaded_file is not None:
+            return self._validate_reference_against_target(
+                edge, target_loaded_file, source_definition
             )
+        self._deferred_edges.setdefault(target_file, []).append(
+            _DeferredReferenceEdge(edge, source_definition)
+        )
+        if self._path_tracker.is_tracked(target_file):
             return None
-        return self._validate_reference_against_target(
-            edge, target_file, target_loaded_file, source_definition
+        self._path_tracker.mark_in_progress(target_file)
+        return target
+
+    def _validate_target_file(
+        self,
+        loaded_file: file_validator.LoadedFile,
+        edge: reference_graph.ReferenceEdge,
+        source_definition: validation_result.DefinitionValidationResult,
+    ) -> file_validator.FileValidationContext | None:
+        """Validate the file an edge names, and return it, or None if the edge cannot resolve in it.
+
+        Reports why the edge cannot resolve in the file, unless that was
+        already reported elsewhere.
+        """
+        target_root = self._universe_root(edge, loaded_file.context.root_prefix)
+        # The config error for a disabled universe was already reported.
+        if target_root is None:
+            return None
+        target_file_path = edge.global_name_reference.name_content.path.file_path()
+        target_file = target_root / target_file_path
+        if self._path_tracker.is_under_failed_root(target_file):
+            return None
+        target_root_config = self._target_root_config(loaded_file, edge, target_root)
+        if target_root_config is None:
+            return None
+        if self._check_target_in_declared_sub_root(
+            edge, target_root, target_file, source_definition
+        ):
+            return None
+        return file_validator.FileValidationContext(
+            file_path=target_file_path,
+            root_prefix=target_root,
+            root_config=target_root_config,
         )
 
     def add_loaded_file(
@@ -143,7 +157,6 @@ class ReferenceResolver:
         for deferred_edge in self._deferred_edges.pop(completed_file, []):
             reached_definition = self._validate_reference_against_target(
                 deferred_edge.edge,
-                completed_file,
                 loaded_file,
                 deferred_edge.source_definition,
             )
@@ -151,98 +164,73 @@ class ReferenceResolver:
                 reached_definitions.append(reached_definition)
         return reached_definitions
 
-    def _referenced_file_to_load(
+    def _target_root_config(
         self,
         referencing_file: file_validator.LoadedFile,
         edge: reference_graph.ReferenceEdge,
-    ) -> file_validator.FileValidationContext | None:
-        """Return the file that an edge leads to, if it is not loaded or loading yet.
+        target_root: define_path.DefinePath,
+    ) -> config.ProjectRootConfig | None:
+        """Return the config of the project root that an edge leads into, loading it if needed.
 
-        Marks the file as loading, so the caller must load it.
+        Returns None, after reporting why, if the config cannot load.
         """
-        root_prefix = self._universe_root(edge, referencing_file.context.root_prefix)
-        global_name = edge.global_name_reference.name_content
-        file_path = global_name.path.file_path()
-        full_path = root_prefix / file_path
-        if self._path_tracker.is_tracked(full_path):
-            return None
-        if self._path_tracker.is_under_failed_root(full_path):
-            return None
-
-        self._check_existing_root_conflicts_for_first_subroot_load(
-            root_prefix=root_prefix,
-            global_name_reference=edge.global_name_reference,
-            referencing_file=referencing_file,
-        )
-
+        existing = self._path_tracker.config_for_root(target_root)
+        if existing is not None:
+            return existing
         try:
-            root_config = self._load_root_config(
-                root_prefix, edge.global_name_reference.effective_fqun.canonical
+            return self._load_root_config(
+                target_root, edge.global_name_reference.effective_fqun.canonical
             )
         except config.ConfigError as e:
-            self._path_tracker.mark_root_failed(root_prefix)
+            self._path_tracker.mark_root_failed(target_root)
             referencing_file.file_diagnostics.append(
                 diagnostics.ConfigLoadErrorDiagnostic(
-                    location=global_name.location,
+                    location=edge.global_name_reference.name_content.location,
                     error=e,
                 )
             )
             return None
 
-        self._path_tracker.mark_in_progress(full_path)
-        return file_validator.FileValidationContext(
-            file_path=file_path,
-            root_prefix=root_prefix,
-            root_config=root_config,
-        )
-
     def _universe_root(
         self,
         edge: reference_graph.ReferenceEdge,
         referencing_root: define_path.DefinePath,
-    ) -> define_path.DefinePath:
+    ) -> define_path.DefinePath | None:
+        """Return the root of the universe an edge names, or None if the referencing project cannot use it."""
+        fqun = edge.global_name_reference.name_content.source_fqun
+        if fqun is not None and (referencing_root, fqun) in self._disabled_universes:
+            return None
         # Edges with an explicit FQUN only exist when file validation found the
         # FQUN in the enclosing root's local deps, or when the universe needs
         # no configuration, so the universe always has a root.
         return typing.cast(
             "define_path.DefinePath",
-            self._path_tracker.universe_root(
-                edge.global_name_reference.name_content.source_fqun,
-                referencing_root,
-            ),
+            self._path_tracker.universe_root(fqun, referencing_root),
         )
 
-    def _check_if_current_universe_path_in_a_subroot(
+    def _check_target_in_declared_sub_root(
         self,
         edge: reference_graph.ReferenceEdge,
+        target_root: define_path.DefinePath,
         target_file: define_path.DefinePath,
-        enclosing_root: define_path.DefinePath,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
-        """Check if a same-universe reference lands inside another universe's sub-root.
+        """Check if a reference leads into a sub-root that the target universe's project declares.
 
         Returns True (and appends a diagnostic) when the edge should be skipped.
         """
-        # This check is only for current-universe references.
-        if edge.global_name_reference.name_content.fqun is not None:
+        declared_sub_root = self._path_tracker.declared_sub_root_containing(
+            target_root, target_file
+        )
+        if declared_sub_root is None:
             return False
-
-        # When config failed to load, we have no sub-root information to check
-        # against. This happens in non-filesystem mode when the root project
-        # config is missing.
-        if not self._path_tracker.project_root_loaded(enclosing_root):
-            return False
-
-        actual_root = self._path_tracker.find_enclosing_root(target_file)
-        if actual_root == enclosing_root:
-            return False
-
+        sub_root_path, entry = declared_sub_root
         source_definition.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 location=edge.global_name_reference.name_content.location,
                 path=str(target_file),
-                other_universe=self._path_tracker.fqun_for_root(actual_root) or "",
-                sub_root_path=str(actual_root),
+                other_universe=entry.universe,
+                sub_root_path=str(sub_root_path),
             )
         )
         return True
@@ -250,11 +238,11 @@ class ReferenceResolver:
     def _validate_reference_against_target(
         self,
         edge: reference_graph.ReferenceEdge,
-        target_file: define_path.DefinePath,
         target_loaded_file: file_validator.LoadedFile,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> ReachedDefinition | None:
         """Validate a reference edge against a loaded target file, and return the definition it names."""
+        target_file = target_loaded_file.context.full_path
         global_name = edge.global_name_reference.name_content
         target_exception = target_loaded_file.exception
         target_definition = target_loaded_file.definitions.get(
@@ -312,46 +300,12 @@ class ReferenceResolver:
             return None
         return ReachedDefinition(target_loaded_file, target_definition)
 
-    def _check_existing_root_conflicts_for_first_subroot_load(
-        self,
-        root_prefix: define_path.DefinePath,
-        global_name_reference: ast.GlobalTypedNameReference,
-        referencing_file: file_validator.LoadedFile,
-    ):
-        """Check SubRootAlreadyOccupied for referenced files entering a new sub-root."""
-        if self._path_tracker.project_root_loaded(root_prefix):
-            return
-
-        conflicting_path, existing_universe = (
-            self._path_tracker.first_tracked_file_under(root_prefix)
-        )
-        if conflicting_path is not None:
-            referencing_file.file_diagnostics.append(
-                diagnostics.SubRootAlreadyOccupiedDiagnostic(
-                    location=global_name_reference.name_content.location,
-                    universe=global_name_reference.effective_fqun.canonical,
-                    sub_root_path=str(root_prefix),
-                    existing_file=str(conflicting_path),
-                    existing_universe=existing_universe or "",
-                )
-            )
-
     def _load_root_config(
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
     ) -> config.ProjectRootConfig:
         """Load project config for a root and register it."""
-        existing = self._path_tracker.config_for_root(root_prefix)
-        if existing is not None:
-            if expected_fqun and existing.fqun != expected_fqun:
-                raise config.SubRootFqunMismatchError(
-                    expected_fqun=expected_fqun,
-                    actual_fqun=existing.fqun,
-                    sub_root_path=str(root_prefix),
-                )
-            return existing
-
         # The standard universe ships with the compiler, so its root has no
         # config file.
         # TODO: Remove this special case once the Define Standard Library
@@ -373,4 +327,29 @@ class ReferenceResolver:
                 config_subpath=config.CONFIG_PATH,
             )
         self._path_tracker.register_project_root(root_prefix, root_config)
+        self._declare_sub_roots(root_prefix, root_config)
         return root_config
+
+    def _declare_sub_roots(
+        self, root_prefix: define_path.DefinePath, root_config: config.ProjectRootConfig
+    ):
+        """Record the sub-roots that a loaded project's local dependencies declare."""
+        deps_path = (root_prefix / config.LOCAL_DEPS_PATH).as_posix_path()
+        for universe, location in root_config.sub_roots.items():
+            entry = config.LocalDependencyEntry(deps_path, universe, str(location))
+            sub_root_path = root_prefix / location
+            if universe == root_config.fqun:
+                self._disabled_universes.add((root_prefix, universe))
+                self._config_errors.append(
+                    config.LocalDependencyOnOwnUniverseError(entry)
+                )
+                continue
+            existing_entry = self._path_tracker.declare_sub_root(sub_root_path, entry)
+            if existing_entry is None:
+                continue
+            self._disabled_universes.add((root_prefix, universe))
+            self._config_errors.append(
+                config.SubRootPathAlreadyDeclaredError(
+                    str(sub_root_path), entry, existing_entry
+                )
+            )

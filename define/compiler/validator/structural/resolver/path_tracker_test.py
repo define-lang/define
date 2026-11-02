@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
+from pathlib import PurePosixPath
+
 import pytest
 
 from define.compiler import config, constants
@@ -58,37 +60,6 @@ class TestPathTracker:
 
 
 class TestSubRootTracking:
-    def test_project_root_loaded_false_when_not_registered(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.project_root_loaded(define_path.DefinePath("ext/dep"))
-
-    def test_project_root_loaded_true_after_register(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="my.universe", sub_roots={}),
-        )
-        assert tracker.project_root_loaded(define_path.EMPTY)
-
-    def test_register_and_fqun_for_root_empty_path(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="my.universe",
-                sub_roots={"dep": define_path.DefinePath("ext/dep")},
-            ),
-        )
-        assert tracker.fqun_for_root(define_path.EMPTY) == "my.universe"
-
-    def test_register_and_fqun_for_root_non_empty(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root = define_path.DefinePath("ext/dep")
-        tracker.register_project_root(
-            root, config.ProjectRootConfig(fqun="dep.universe", sub_roots={})
-        )
-        assert tracker.fqun_for_root(root) == "dep.universe"
-
     def test_root_for_fqun_returns_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
@@ -111,10 +82,6 @@ class TestSubRootTracking:
     def test_root_for_fqun_returns_none_when_empty(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         assert tracker.root_for_fqun("my.universe") is None
-
-    def test_fqun_for_root_none_when_not_registered(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert tracker.fqun_for_root(define_path.DefinePath("ext/dep")) is None
 
     def test_config_for_root_returns_registered_config(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
@@ -233,51 +200,46 @@ class TestConflictDetection:
             define_path.DefinePath("lib/inner/x.dfn")
         ) == define_path.DefinePath("lib/inner")
 
-    def test_first_tracked_file_under_no_files(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
-        )
-        assert tracker.first_tracked_file_under(define_path.DefinePath("lib")) == (
-            None,
-            None,
-        )
 
-    def test_first_tracked_file_under_finds_conflict(self):
+class TestSubRootDeclarations:
+    def test_first_declaration_of_a_path_wins(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+        first = config.LocalDependencyEntry(
+            PurePosixPath(".define/deps/local.defcl"), "first.universe", "lib"
         )
-        tracker.mark_in_progress(define_path.DefinePath("lib/target.dfn"))
-        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
-        assert result == (define_path.DefinePath("lib/target.dfn"), "root.uni")
+        second = config.LocalDependencyEntry(
+            PurePosixPath(".define/deps/local.defcl"), "second.universe", "lib"
+        )
+        sub_root = define_path.DefinePath("lib")
+        assert tracker.declare_sub_root(sub_root, first) is None
+        assert tracker.declare_sub_root(sub_root, second) == first
+        assert tracker.declared_sub_root_containing(
+            define_path.EMPTY, define_path.DefinePath("lib/x.dfn")
+        ) == (sub_root, first)
 
-    def test_first_tracked_file_under_returns_first_match(self):
+    def test_path_in_a_directory_under_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+        entry = config.LocalDependencyEntry(
+            PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
         )
-        tracker.mark_in_progress(define_path.DefinePath("lib/first.dfn"))
-        tracker.mark_in_progress(define_path.DefinePath("lib/second.dfn"))
-        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
-        assert result == (define_path.DefinePath("lib/first.dfn"), "root.uni")
+        sub_root = define_path.DefinePath("a/b")
+        tracker.declare_sub_root(sub_root, entry)
+        assert tracker.declared_sub_root_containing(
+            define_path.EMPTY, define_path.DefinePath("a/b/c/x.dfn")
+        ) == (sub_root, entry)
 
-    def test_first_tracked_file_under_returns_nested_sub_root_owner(self):
+    def test_path_beside_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+        entry = config.LocalDependencyEntry(
+            PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
         )
-        tracker.register_project_root(
-            define_path.DefinePath("lib/inner"),
-            config.ProjectRootConfig(fqun="inner.uni", sub_roots={}),
+        tracker.declare_sub_root(define_path.DefinePath("a/b"), entry)
+        assert (
+            tracker.declared_sub_root_containing(
+                define_path.EMPTY, define_path.DefinePath("a/c/x.dfn")
+            )
+            is None
         )
-        tracker.mark_in_progress(define_path.DefinePath("lib/inner/x.dfn"))
-        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
-        assert result == (define_path.DefinePath("lib/inner/x.dfn"), "inner.uni")
 
 
 class TestUniverseRoot:

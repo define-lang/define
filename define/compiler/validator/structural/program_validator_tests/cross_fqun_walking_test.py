@@ -161,32 +161,45 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert diags[0].error.sub_root_path == "lib"
 
 
-def test_already_loaded_root_fqun_mismatch(
+def test_second_universe_declared_at_same_sub_root_path(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    second_child = "mv:define-lang.org:second_child"
-    result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 2
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
-    assert diags[0].error.expected_fqun == second_child
-    assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
-    assert diags[0].error.sub_root_path == "lib"
-    assert result.file_results[1].diagnostics == []
+    deps_path = PurePosixPath(".define/deps/local.defcl")
+    result = validate_testdata_structural()
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.SubRootPathAlreadyDeclaredError)
+    assert error.sub_root_path == "lib"
+    assert error.entry == config.LocalDependencyEntry(
+        deps_path, "mv:define-lang.org:second_child", "lib"
+    )
+    assert error.existing_entry == config.LocalDependencyEntry(
+        deps_path, _CHILD_UNIVERSE, "lib"
+    )
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("lib/target.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
-def test_cycle_in_sub_root_reported_after_its_config_fails(
+def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    second_child = "mv:define-lang.org:second_child"
+    deps_path = PurePosixPath(".define/deps/local.defcl")
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.SubRootPathAlreadyDeclaredError)
+    assert error.sub_root_path == "lib"
+    assert error.entry == config.LocalDependencyEntry(
+        deps_path, "mv:define-lang.org:second_child", "lib"
+    )
+    assert error.existing_entry == config.LocalDependencyEntry(
+        deps_path, _CHILD_UNIVERSE, "lib"
+    )
+    assert result.all_exceptions == [error]
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("second_child_reference.dfn"),
@@ -194,18 +207,7 @@ def test_cycle_in_sub_root_reported_after_its_config_fails(
         define_path.DefinePath("lib/b.dfn"),
     ]
     assert result.file_results[0].diagnostics == []
-    config_diags = result.file_results[1].diagnostics
-    assert len(config_diags) == 1
-    assert isinstance(config_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert config_diags[0].location.file_path == PurePosixPath(
-        "second_child_reference.dfn"
-    )
-    assert config_diags[0].location.line == 3
-    assert config_diags[0].location.column == 29
-    assert isinstance(config_diags[0].error, config.SubRootFqunMismatchError)
-    assert config_diags[0].error.expected_fqun == second_child
-    assert config_diags[0].error.actual_fqun == _CHILD_UNIVERSE
-    assert config_diags[0].error.sub_root_path == "lib"
+    assert result.file_results[1].diagnostics == []
     assert result.file_results[2].diagnostics == []
     cycle_diags = result.file_results[3].diagnostics
     assert len(cycle_diags) == 1
@@ -220,50 +222,87 @@ def test_cycle_in_sub_root_reported_after_its_config_fails(
     ]
 
 
-def test_sub_root_conflict(
+def test_path_inside_other_universe_before_its_sub_root_loads(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
     assert result.all_exceptions == []
-    assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
-    assert len(result.file_results[0].diagnostics) == 2
-    path_diag = result.file_results[0].diagnostics[0]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("lib/sub_root_target.dfn"),
+    ]
+    assert result.file_results[1].diagnostics == []
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    path_diag = diags[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.file_path == PurePosixPath("test.dfn")
-    assert path_diag.path == "lib/parent_target.dfn"
-    assert path_diag.location.line == 3
+    assert path_diag.location.line == 5
     assert path_diag.location.column == 29
-    assert path_diag.path.endswith("lib/parent_target.dfn")
+    assert path_diag.path == "lib/parent_target.dfn"
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    sub_root_diag = result.file_results[0].diagnostics[1]
-    assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
-    assert sub_root_diag.location.file_path == PurePosixPath("test.dfn")
-    assert sub_root_diag.location.line == 4
-    assert sub_root_diag.location.column == 29
-    assert sub_root_diag.universe == _CHILD_UNIVERSE
-    assert sub_root_diag.sub_root_path == "lib"
-    assert sub_root_diag.existing_file == "lib/parent_target.dfn"
-    assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    assert result.file_results[1].file_path == define_path.DefinePath(
-        "lib/parent_target.dfn"
+
+
+def test_sub_root_path_declared_by_outer_project_wins(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.SubRootPathAlreadyDeclaredError)
+    assert error.sub_root_path == "p/lib"
+    assert error.entry == config.LocalDependencyEntry(
+        PurePosixPath("p/.define/deps/local.defcl"),
+        "mv:define-lang.org:inner_lib",
+        "lib",
     )
-    assert result.file_results[1].exception is None
-    assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == define_path.DefinePath(
-        "lib/sub_root_target.dfn"
+    assert error.existing_entry == config.LocalDependencyEntry(
+        PurePosixPath(".define/deps/local.defcl"),
+        "mv:define-lang.org:outer_lib",
+        "p/lib",
     )
-    assert result.file_results[2].exception is None
-    assert result.file_results[2].diagnostics == []
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("p/target.dfn"),
+    ]
+    assert result.all_diagnostics == []
+
+
+def test_reference_naming_universe_into_its_declared_sub_root(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+    ]
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    path_diag = diags[0]
+    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert path_diag.location.file_path == PurePosixPath("test.dfn")
+    assert path_diag.location.line == 5
+    assert path_diag.location.column == 29
+    assert path_diag.path == "lib/inner/x.dfn"
+    assert path_diag.other_universe == "mv:define-lang.org:grandchild"
+    assert path_diag.sub_root_path == "lib/inner"
 
 
 def test_sub_root_is_current_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.LocalDependencyOnOwnUniverseError)
+    assert error.entry == config.LocalDependencyEntry(
+        PurePosixPath(".define/deps/local.defcl"),
+        "mv:define-lang.org:test_parent",
+        "lib",
+    )
+    assert result.all_exceptions == [error]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
@@ -299,44 +338,30 @@ def test_sub_root_is_current_universe(
     assert all_diags[2].location.file_path == PurePosixPath("lib/target.dfn")
 
 
-def test_sub_root_conflict_continues_validation(
+def test_reference_after_path_inside_other_universe_is_still_validated(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
     assert result.all_exceptions == []
-    assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
-    assert len(result.file_results[0].diagnostics) == 3
-    path_diag = result.file_results[0].diagnostics[0]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+    ]
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    path_diag = diags[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.file_path == PurePosixPath("test.dfn")
-    assert path_diag.path == "lib/parent_target.dfn"
-    assert path_diag.location.line == 3
+    assert path_diag.location.line == 5
     assert path_diag.location.column == 29
-    assert path_diag.path.endswith("lib/parent_target.dfn")
+    assert path_diag.path == "lib/parent_target.dfn"
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    sub_root_diag = result.file_results[0].diagnostics[1]
-    assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
-    assert sub_root_diag.location.file_path == PurePosixPath("test.dfn")
-    assert sub_root_diag.location.line == 4
-    assert sub_root_diag.location.column == 29
-    assert sub_root_diag.universe == _CHILD_UNIVERSE
-    assert sub_root_diag.sub_root_path == "lib"
-    assert sub_root_diag.existing_file == "lib/parent_target.dfn"
-    assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    not_found_diag = result.file_results[0].diagnostics[2]
+    not_found_diag = diags[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.location.file_path == PurePosixPath("test.dfn")
-    assert not_found_diag.location.line == 4
+    assert not_found_diag.location.line == 6
     assert not_found_diag.location.column == 29
     assert not_found_diag.file_path == "lib/missing_target.dfn"
-    assert result.file_results[1].file_path == define_path.DefinePath(
-        "lib/parent_target.dfn"
-    )
-    assert result.file_results[1].exception is None
-    assert result.file_results[1].diagnostics == []
 
 
 def test_path_inside_other_universe(
@@ -344,7 +369,7 @@ def test_path_inside_other_universe(
 ):
     result = validate_testdata_structural()
     assert result.all_exceptions == []
-    assert len(result.file_results) == 3
+    assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
@@ -366,11 +391,6 @@ def test_path_inside_other_universe(
     )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == define_path.DefinePath(
-        "lib/parent_target.dfn"
-    )
-    assert result.file_results[2].exception is None
-    assert result.file_results[2].diagnostics == []
 
 
 def test_path_inside_other_universe_skips_further_validation(

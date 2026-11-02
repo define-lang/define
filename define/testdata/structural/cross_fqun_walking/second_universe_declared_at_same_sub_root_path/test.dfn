@@ -1,3 +1,5 @@
+# The local deps declare two universes at lib. The first declaration wins, so
+# the reference to second_child is not followed.
 define the potential position<mv:define-lang.org:parent_universe:/test> {
     it may only contain particles where {
         it has the position<mv:define-lang.org:child_universe:/target>.

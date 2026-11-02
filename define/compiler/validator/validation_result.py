@@ -10,7 +10,7 @@ import msgspec
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import ast
+    from define.compiler import ast, config
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics, exceptions, source_map
     from define.compiler.graphs import reference_graph, reference_graph_order
@@ -96,6 +96,10 @@ class ProgramValidationResult(msgspec.Struct):
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,
     ]
+    # Errors in loaded configs that did not keep their projects from loading.
+    # TODO: Remove this once defcl diagnostics can point at locations in
+    # config files, and report these as diagnostics instead.
+    config_errors: list[config.ConfigError]
     source_map: source_map.SourceMap
 
     @property
@@ -105,8 +109,11 @@ class ProgramValidationResult(msgspec.Struct):
 
     @property
     def all_exceptions(self) -> list[exceptions.DefineError]:
-        """All exceptions from all file results."""
-        return [r.exception for r in self.file_results if r.exception is not None]
+        """All exceptions from all file results, and the config errors."""
+        file_exceptions: list[exceptions.DefineError] = [
+            r.exception for r in self.file_results if r.exception is not None
+        ]
+        return file_exceptions + self.config_errors
 
     def has_errors(self) -> bool:
         """Whether any file had exceptions or diagnostics."""

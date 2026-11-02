@@ -837,21 +837,6 @@ class ConfigLoadErrorDiagnostic(Diagnostic):
     )
 
 
-class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
-    """Diagnostic for when a sub-root path already has files loaded under a different universe."""
-
-    universe: str
-    sub_root_path: str
-    existing_file: str
-    existing_universe: str
-    message_format: ClassVar[str] = (
-        "attempted to load the universe '{self.universe}' in "
-        "'{self.sub_root_path}' but '{self.existing_file}' was already "
-        "registered as having the universe '{self.existing_universe}' ; "
-        "two different universes cannot occupy '{self.sub_root_path}'"
-    )
-
-
 class PathInsideOtherUniverseDiagnostic(Diagnostic):
     """Diagnostic for when a path being loaded falls inside a different universe's sub-root."""
 

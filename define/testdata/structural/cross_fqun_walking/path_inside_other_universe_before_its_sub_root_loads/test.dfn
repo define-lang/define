@@ -1,3 +1,5 @@
+# The reference into lib comes before anything loads lib's own config, and is
+# still checked against lib's declaration in this project's local deps.
 define the potential position<mv:define-lang.org:parent_universe:/test> {
     it may only contain particles where {
         it has the position</lib/parent_target>.

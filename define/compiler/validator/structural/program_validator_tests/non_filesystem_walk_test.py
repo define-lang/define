@@ -409,10 +409,10 @@ def test_standard_reference_loads_its_standard_file_non_filesystem(
     assert_no_errors(result)
     assert [str(file_result.file_path) for file_result in result.file_results] == [
         "<string>",
-        standard_library_file("number/natural.dfn"),
         "target.dfn",
-        standard_library_file("number/add.dfn"),
+        standard_library_file("number/natural.dfn"),
         "leaf.dfn",
+        standard_library_file("number/add.dfn"),
     ]
 
 
