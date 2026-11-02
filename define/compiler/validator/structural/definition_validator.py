@@ -163,6 +163,10 @@ class DefinitionStructuralValidator:
                     | ast.ComputerOperationExecutionStatement()
                 ):
                     executes_all_views = True
+                case ast.LogicalOperationExecutionStatement():
+                    raise NotImplementedError(
+                        "Logical Operation Execution Statements are not validated yet."
+                    )
         # The encoding operation or computer operation receives every interface
         # view, so executing it references all of them.
         if executes_all_views:

@@ -43,6 +43,7 @@ py_test(
         "indentation_test.py",
         "local_name_format_test.py",
         "logical_operation_definition_test.py",
+        "logical_operation_execution_test.py",
         "move_particle_test.py",
         "multiple_definitions_test.py",
         "operation_definition_test.py",

@@ -209,6 +209,12 @@ class ExpectedEncodingOperation(DefineTokenError):
     message_format: ClassVar[str] = "Expected 'encoding_operation'."
 
 
+class ExpectedOperationOrLogicalOperation(DefineTokenError):
+    """Expected an operation or logical operation name in an Operation Statements Block."""
+
+    message_format: ClassVar[str] = "Expected 'operation' or 'logical_operation'."
+
+
 class ExpectedPositionOrAction(DefineTokenError):
     """Expected a position or action reference."""
 
@@ -375,7 +381,8 @@ class InvalidOperationStatementsBlock(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
-        " 'execute the operation<...>' or 'execute the encoding operation.' statements."
+        " 'execute the operation<...>', 'execute the logical_operation<...>',"
+        " or 'execute the encoding operation.' statements."
     )
 
 
@@ -581,7 +588,8 @@ class MissingOperationStatementsContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain at least one"
-        " 'execute the operation<...>' or 'execute the encoding operation.' statement."
+        " 'execute the operation<...>', 'execute the logical_operation<...>',"
+        " or 'execute the encoding operation.' statement."
     )
 
 

@@ -988,6 +988,24 @@ def test_invisible_character_in_operation_name_type(parse: Parse):
     assert error.value.location.end_column == 26
 
 
+def test_invisible_character_in_action_operation_name_type(parse: Parse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        execute the opera\u200btion</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.char == "\u200b"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 26
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 26
+
+
 def test_invisible_character_in_encoding_operation_name_type(parse: Parse):
     with pytest.raises(parser_exceptions.InvisibleCharacterError) as error:
         parse(

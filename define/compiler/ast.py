@@ -835,6 +835,13 @@ class OperationExecutionStatement(ASTNode):
     arguments: tuple[OperationArgumentStatement, ...]
 
 
+class LogicalOperationExecutionStatement(ASTNode):
+    """Represents an 'execute the logical_operation<...>' statement."""
+
+    logical_operation: GlobalTypedNameReference
+    arguments: tuple[OperationArgumentStatement, ...]
+
+
 class EncodingOperationExecutionStatement(ASTNode):
     """Represents the 'execute the encoding operation' statement."""
 
@@ -845,6 +852,7 @@ class ComputerOperationExecutionStatement(ASTNode):
 
 type OperationStatement = (
     OperationExecutionStatement
+    | LogicalOperationExecutionStatement
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement
 )

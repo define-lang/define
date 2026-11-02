@@ -137,6 +137,10 @@ pub const EXECUTE_THE: &[u8] = b"execute the";
 pub const WITH: &[u8] = b"with";
 pub const SPACE_LOOKING_AT: &[u8] = b" looking at";
 
+// Executing Logical Operations
+
+pub const EXECUTE_THE_LOGICAL_OPERATION: &[u8] = b"execute the logical_operation";
+
 // Encoding Operations
 
 pub const DEFINE_THE_ENCODING_OPERATION: &[u8] = b"define the encoding_operation";

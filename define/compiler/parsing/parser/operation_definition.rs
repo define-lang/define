@@ -10,8 +10,8 @@ use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::{ExecutingDefinition, OperationKind};
 use crate::scanner::Position;
 use terminals::{
-    DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, IT_DOES, IT_IS_READ, IT_IS_WRITTEN,
-    IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, VIEW,
+    DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
+    IT_IS_WRITTEN, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, VIEW,
 };
 
 /// How far the lines of an operation definition block, which is always at
@@ -293,7 +293,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// default FQUN from `fqun`, through the end of its last line.
     ///
     /// ```ebnf
-    /// operation_statement = operation_execution_statement | encoding_operation_execution_statement ;
+    /// operation_statement =
+    ///     operation_execution_statement
+    ///     | logical_operation_execution_statement
+    ///     | encoding_operation_execution_statement ;
     /// encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
     /// encoding_operation_execution_statement = "execute the encoding operation", terminator ;
     /// computer_operation_execution_statement = "execute the computer operation", terminator ;
@@ -305,6 +308,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationStatement<'py>> {
         let start = self.scanner.position;
+        // TODO: Remove `execute the encoding operation.` from Value
+        // Operations, which DLP 55 replaced with Logical Operation Execution
+        // Statements, once codegen compiles a Value Operation's statements.
         if self
             .scanner
             .consume(kind.implementation_execution_statement())
@@ -326,6 +332,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         // statement that executes the operation's implementation.
         if !self.scanner.next_bytes_are(EXECUTE_THE) {
             return Err(self.invalid_operation_statement(kind));
+        }
+        if matches!(kind, OperationKind::Value)
+            && self.scanner.next_bytes_are(EXECUTE_THE_LOGICAL_OPERATION)
+        {
+            return Ok(self
+                .parse_logical_operation_execution_statement(indentation, fqun)?
+                .into());
         }
         Ok(self
             .parse_operation_execution_statement(
