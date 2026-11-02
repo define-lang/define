@@ -149,24 +149,31 @@ class DefinitionStructuralValidator:
         for view in definition.views:
             self._validate_view_definition(definition, view, views, unreferenced_views)
         executes_all_views = False
+
+        def validate_looked_at(
+            looking_at: ast.PositionReference | ast.LocalTypedNameReference,
+        ) -> bool:
+            return self._validate_looked_at_in_operation(
+                looking_at, views, unreferenced_views
+            )
+
         for statement in definition.operation_statements:
             match statement:
                 case ast.OperationExecutionStatement():
-                    self._validate_operation_execution(
-                        statement,
-                        lambda looking_at: self._validate_looked_at_in_operation(
-                            looking_at, views, unreferenced_views
-                        ),
+                    self._validate_execution(
+                        statement.operation, statement.arguments, validate_looked_at
+                    )
+                case ast.LogicalOperationExecutionStatement():
+                    self._validate_execution(
+                        statement.logical_operation,
+                        statement.arguments,
+                        validate_looked_at,
                     )
                 case (
                     ast.EncodingOperationExecutionStatement()
                     | ast.ComputerOperationExecutionStatement()
                 ):
                     executes_all_views = True
-                case ast.LogicalOperationExecutionStatement():
-                    raise NotImplementedError(
-                        "Logical Operation Execution Statements are not validated yet."
-                    )
         # The encoding operation or computer operation receives every interface
         # view, so executing it references all of them.
         if executes_all_views:
@@ -336,25 +343,26 @@ class DefinitionStructuralValidator:
         views[view.typed_name] = view
         return True
 
-    def _validate_operation_execution(
+    def _validate_execution(
         self,
-        statement: ast.OperationExecutionStatement,
+        executed: ast.GlobalTypedNameReference,
+        arguments: Sequence[ast.OperationArgumentStatement],
         validate_looked_at: Callable[
             [ast.PositionReference | ast.LocalTypedNameReference], bool
         ],
     ):
-        """Validate an Operation Execution Statement.
+        """Validate an Operation Execution Statement or a Logical Operation Execution Statement.
 
         validate_looked_at validates a looked-at position or view and returns
         whether it is valid to check for aliasing.
         """
-        operation_diagnostics = name_validators.validate_typed_name(
-            statement.operation, self._definition
+        executed_diagnostics = name_validators.validate_typed_name(
+            executed, self._definition
         )
-        self._diagnostics.extend(operation_diagnostics)
-        if not operation_diagnostics:
-            self._process_reference(statement.operation)
-        self._validate_operation_arguments(statement.arguments, validate_looked_at)
+        self._diagnostics.extend(executed_diagnostics)
+        if not executed_diagnostics:
+            self._process_reference(executed)
+        self._validate_operation_arguments(arguments, validate_looked_at)
 
     def _validate_operation_arguments(
         self,
@@ -509,8 +517,9 @@ class DefinitionStructuralValidator:
                 case ast.DestroyParticleStatement():
                     self._validate_destroy_particle(stmt, scope)
                 case ast.OperationExecutionStatement():
-                    self._validate_operation_execution(
-                        stmt,
+                    self._validate_execution(
+                        stmt.operation,
+                        stmt.arguments,
                         lambda looking_at: self._validate_looked_at_in_action(
                             looking_at, scope
                         ),

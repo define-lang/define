@@ -1,0 +1,30 @@
+# view<value> is passed twice.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<value> looking at view<number>.
+            with view<value> looking at view<negated>.
+        }
+    }
+}
