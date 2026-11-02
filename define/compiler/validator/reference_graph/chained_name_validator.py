@@ -63,7 +63,7 @@ class ChainedNameValidator:
             index = 1
 
         while index < len(elements) - 1:
-            # The file_validator rejects any non-first local in a chain unless
+            # The definition_validator rejects any non-first local in a chain unless
             # it follows a global action, and _validate_action_chain_step
             # consumes that local along with the global, so parent is always
             # global here.

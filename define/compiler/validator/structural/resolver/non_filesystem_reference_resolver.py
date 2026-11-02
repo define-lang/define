@@ -15,7 +15,10 @@ from define.compiler.validator.structural.resolver import reference_resolver
 if typing.TYPE_CHECKING:
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
-    from define.compiler.validator.structural import file_validator
+    from define.compiler.validator.structural import (
+        file_validation_context,
+        file_validator,
+    )
 
 
 @typing.final
@@ -49,7 +52,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         source_definition: validation_result.DefinitionValidationResult,
     ) -> (
         reference_resolver.ReachedDefinition
-        | file_validator.FileValidationContext
+        | file_validation_context.FileValidationContext
         | None
     ):
         if loaded_file is self._source_file:

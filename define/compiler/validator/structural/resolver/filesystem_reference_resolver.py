@@ -6,7 +6,10 @@ import typing
 
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
-from define.compiler.validator.structural import file_validator
+from define.compiler.validator.structural import (
+    file_validation_context,
+    file_validator,
+)
 from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
@@ -36,7 +39,7 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             )
             return None
         entry_file = file_validator.FileStructuralValidator().load_file(
-            file_validator.FileValidationContext(
+            file_validation_context.FileValidationContext(
                 file_path=file_path,
                 root_prefix=root_prefix,
                 root_config=root_config,
@@ -54,7 +57,7 @@ def _make_config_error_file(
 ) -> file_validator.LoadedFile:
     """Create a LoadedFile for a file whose project config failed to load."""
     return file_validator.LoadedFile(
-        context=file_validator.FileValidationContext(
+        context=file_validation_context.FileValidationContext(
             file_path=file_path, root_prefix=root_prefix
         ),
         exception=error,

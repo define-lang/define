@@ -7,19 +7,20 @@ from __future__ import annotations
 
 import hashlib
 import types
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from define.compiler import config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, exceptions, parser_exceptions
-from define.compiler.parsing import test_helpers
-from define.compiler.validator import validation_result
-from define.compiler.validator.structural import file_validator
+from define.compiler.validator.structural import (
+    file_validation_context,
+    file_validator,
+)
 
 if TYPE_CHECKING:
-    from define.compiler import ast
     from define.compiler.graphs import reference_graph
+    from define.compiler.validator import validation_result
 
 
 def _make_context(
@@ -27,8 +28,8 @@ def _make_context(
     file_name: str = "test.dfn",
     fqun: str = "my.domain.com:my_lib",
     sub_root_mappings: dict[str, define_path.DefinePath] | None = None,
-) -> file_validator.FileValidationContext:
-    return file_validator.FileValidationContext(
+) -> file_validation_context.FileValidationContext:
+    return file_validation_context.FileValidationContext(
         file_path=define_path.DefinePath(file_name),
         root_prefix=define_path.DefinePath(str(tmp_path)),
         root_config=config.ProjectRootConfig(
@@ -38,12 +39,8 @@ def _make_context(
     )
 
 
-def _parse_program(source: str) -> ast.Program:
-    return test_helpers.parse(source, PurePosixPath("/test.dfn"))
-
-
 def _load_and_validate_every_definition(
-    context: file_validator.FileValidationContext,
+    context: file_validation_context.FileValidationContext,
 ) -> validation_result.FileValidationResult:
     loaded_file = file_validator.FileStructuralValidator().load_file(context)
     definition_results: list[validation_result.DefinitionValidationResult] = []
@@ -181,22 +178,6 @@ class TestFileStructuralValidatorDiagnostics:
             definition_result.definition.location.line
             for definition_result in result.definition_results
         ] == [1]
-
-
-class TestDefinitionStructuralValidator:
-    def test_validate_definition_returns_result_object(self, tmp_path: Path):
-        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        program = _parse_program(source)
-        validator = file_validator.DefinitionStructuralValidator(
-            definition=program.definitions[0],
-            context=_make_context(tmp_path),
-        )
-
-        result = validator.validate_definition()
-
-        assert isinstance(result, validation_result.DefinitionValidationResult)
-        assert result.definition == program.definitions[0]
-        assert result.diagnostics == []
 
 
 class TestLoadedFile:

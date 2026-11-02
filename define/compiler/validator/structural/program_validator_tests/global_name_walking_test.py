@@ -13,12 +13,17 @@ from unittest import mock
 from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.structural import file_validator
+from define.compiler.validator.structural import (
+    file_validator,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateTestdataStructural,
+    )
+    from define.compiler.validator.structural import (
+        file_validation_context,
     )
 
 
@@ -143,7 +148,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
 
     def recording_load_file(
         self: file_validator.FileStructuralValidator,
-        context: file_validator.FileValidationContext,
+        context: file_validation_context.FileValidationContext,
     ):
         loaded_paths.append(str(context.full_path))
         return original_load_file(self, context)

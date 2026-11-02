@@ -8,7 +8,9 @@ import msgspec
 
 from define.compiler import config, constants
 from define.compiler.errors import diagnostics, exceptions
-from define.compiler.validator.structural import file_validator
+from define.compiler.validator.structural import (
+    file_validation_context,
+)
 from define.compiler.validator.structural.resolver import path_tracker
 
 if typing.TYPE_CHECKING:
@@ -16,6 +18,9 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
+    from define.compiler.validator.structural import (
+        file_validator,
+    )
 
 
 class ReachedDefinition(msgspec.Struct):
@@ -68,7 +73,7 @@ class ReferenceResolver:
         loaded_file: file_validator.LoadedFile,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> ReachedDefinition | file_validator.FileValidationContext | None:
+    ) -> ReachedDefinition | file_validation_context.FileValidationContext | None:
         """Validate an edge, and return the definition it names if its file is loaded.
 
         The edge must not name an earlier definition in its own file.
@@ -104,7 +109,7 @@ class ReferenceResolver:
         loaded_file: file_validator.LoadedFile,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> file_validator.FileValidationContext | None:
+    ) -> file_validation_context.FileValidationContext | None:
         """Validate the file an edge names, and return it, or None if the edge cannot resolve in it.
 
         Reports why the edge cannot resolve in the file, unless that was
@@ -125,7 +130,7 @@ class ReferenceResolver:
             edge, target_root, target_file, source_definition
         ):
             return None
-        return file_validator.FileValidationContext(
+        return file_validation_context.FileValidationContext(
             file_path=target_file_path,
             root_prefix=target_root,
             root_config=target_root_config,

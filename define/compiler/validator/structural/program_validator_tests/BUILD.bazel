@@ -103,6 +103,7 @@ py_test(
         "//define/compiler/errors:parser_exceptions",
         "//define/compiler/errors:source_map",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",

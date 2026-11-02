@@ -22,7 +22,11 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
-from define.compiler.validator.structural import file_validator, work_pool
+from define.compiler.validator.structural import (
+    file_validation_context,
+    file_validator,
+    work_pool,
+)
 from define.compiler.validator.structural.resolver import (
     filesystem_reference_resolver,
     non_filesystem_reference_resolver,
@@ -280,7 +284,7 @@ class _ProgramValidationRun:
                         reached_definition.definition,
                         pool,
                     )
-                case file_validator.FileValidationContext() as file_to_load:
+                case file_validation_context.FileValidationContext() as file_to_load:
                     pool.submit(
                         self._file_validator.load_file,
                         file_to_load,
