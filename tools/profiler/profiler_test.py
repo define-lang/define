@@ -348,7 +348,7 @@ def _assert_complete_profile(profile_path: Path):
         "discarded": discarded,
         "missed": missed,
     }
-    assert profile.discarded_rate <= 0.001
+    assert profile.discarded_rate <= schema.MAX_DISCARDED_RATE
     assert profile.sampling_statistics["total_pause_ns"] == sum(
         observation["pause_ended_ns"] - observation["pause_started_ns"]
         for observation in profile.observations

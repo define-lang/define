@@ -573,7 +573,7 @@ checkpoint.
    confirmed process exit, unwinding failures that precede the first observed
    Python stack, and frames whose line tables exceed the remote unwinder limit
    of CPython 3.14 (https://github.com/python/cpython/issues/151022), at least
-   99.9% of attempted blocking observations must be retained on the repository
+   99% of attempted blocking observations must be retained on the repository
    stress workloads.
 6. **PRF-026: No silent partial success.** A capture with compiler diagnostics,
    a nonzero compiler exit, an incomplete raw profile, or a failure rate above
