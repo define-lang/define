@@ -385,7 +385,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     )
 
 
-def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
+def test_sub_root_fqun_mismatch_error_message(
     validate_project: ValidateProject,
 ):
     parent_universe = "mv:define-lang.org:parent"
@@ -407,24 +407,50 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         local_deps={child_universe: "lib"},
         sub_roots={"lib": wrong_child_universe},
     )
-    results = result.program_result.file_results
-    assert len(results) == 1
-    assert results[0].exception is None
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
-
-    formatted = diags[0].format(result.program_result.source_map)
+    program_result = result.program_result
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.SubRootFqunMismatchError)
     assert (
-        formatted
-        == textwrap.dedent("""\
-        File "test.dfn", line 3, column 29
-            it has the position<mv:define-lang.org:child:/target>.
-                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        an error occurred while loading the project configuration:
-        Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'""")
+        str(error)
+        == "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
+
+
+def test_config_load_error_format_for_supplied_source_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    deps_path = tmp_path / ".define" / "deps" / "local.defcl"
+    deps_path.parent.mkdir(parents=True)
+    _ = deps_path.write_text(
+        "deps: {\n  local: [\n    {}\n  ]\n}\n", encoding="utf-8", newline="\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    assert len(program_result.all_diagnostics) == 1
+    diagnostic = program_result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ConfigLoadErrorDiagnostic)
+
+    formatted = diagnostic.format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 3, column 29
+            it has the position<other.example.com:other_universe:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        an error occurred while loading the project configuration:
+        File ".define/deps/local.defcl"
+        Invalid configuration:
+          - deps.local.universe_name: value is required
+          - deps.local.path: value is required""")
 
 
 def test_not_project_root_error_message_for_project_root(
@@ -462,14 +488,13 @@ def test_not_project_root_error_message_for_subroot(
         local_deps={child_universe: "lib"},
         max_workers=1,
     )
-    results = result.program_result.file_results
-    assert len(results) == 1
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.NotProjectRootError)
+    program_result = result.program_result
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
     assert (
-        str(diags[0].error)
+        str(error)
         == textwrap.dedent("""\
         The referenced subroot (lib) is not a valid project root: lib/.define/project/config.defcl not found.
         A project root is any directory containing lib/.define/project/config.defcl.
@@ -511,19 +536,15 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.validate_program(
+    program_result = program_validator.validate_program(
         PurePosixPath("test.dfn"), max_workers=1
-    ).file_results
-    assert len(results) == 2
-    assert results[0].file_path == define_path.DefinePath("test.dfn")
-    assert results[0].diagnostics == []
-    assert results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    diags = results[1].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.DuplicateFqunError)
+    )
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.DuplicateFqunError)
     assert (
-        str(diags[0].error)
+        str(error)
         == textwrap.dedent("""\
         Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
     )

@@ -123,7 +123,7 @@ class ReferenceResolver:
         target_file = target_root / target_file_path
         if self._path_tracker.is_under_failed_root(target_file):
             return None
-        target_root_config = self._target_root_config(loaded_file, edge, target_root)
+        target_root_config = self._target_root_config(edge, target_root)
         if target_root_config is None:
             return None
         if self._check_target_in_declared_sub_root(
@@ -171,13 +171,13 @@ class ReferenceResolver:
 
     def _target_root_config(
         self,
-        referencing_file: file_validator.LoadedFile,
         edge: reference_graph.ReferenceEdge,
         target_root: define_path.DefinePath,
     ) -> config.ProjectRootConfig | None:
         """Return the config of the project root that an edge leads into, loading it if needed.
 
-        Returns None, after reporting why, if the config cannot load.
+        Returns None, after recording the config error, if the config cannot
+        load.
         """
         existing = self._path_tracker.config_for_root(target_root)
         if existing is not None:
@@ -188,12 +188,9 @@ class ReferenceResolver:
             )
         except config.ConfigError as e:
             self._path_tracker.mark_root_failed(target_root)
-            referencing_file.file_diagnostics.append(
-                diagnostics.ConfigLoadErrorDiagnostic(
-                    location=edge.global_name_reference.name_content.location,
-                    error=e,
-                )
-            )
+            # The error is in the config, not at the reference, so it is
+            # reported once, however many references lead into the root.
+            self._config_errors.append(e)
             return None
 
     def _universe_root(

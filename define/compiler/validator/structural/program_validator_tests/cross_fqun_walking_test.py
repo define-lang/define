@@ -36,24 +36,23 @@ def test_references_across_fquns(
 def test_sub_root_redeclares_parent_fqun(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    parent_fqun = "mv:define-lang.org:parent"
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
-    all_diags = result.all_diagnostics
-    assert len(all_diags) == 1
-    diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
-    assert diag.location.file_path == PurePosixPath("lib/target.dfn")
-    assert diag.location.line == 3
-    assert diag.location.column == 29
-    assert isinstance(diag.error, config.DuplicateFqunError)
-    assert diag.error.fqun == parent_fqun
-    assert diag.error.existing_config == define_path.DefinePath(
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.DuplicateFqunError)
+    assert error.fqun == "mv:define-lang.org:parent"
+    assert error.existing_config == define_path.DefinePath(
         ".define/project/config.defcl"
     )
-    assert diag.error.new_config == define_path.DefinePath(
+    assert error.new_config == define_path.DefinePath(
         "lib/nested/.define/project/config.defcl"
     )
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("lib/target.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
 def test_cross_fqun_walks_into_sub_root(
@@ -116,49 +115,50 @@ def test_cross_fqun_sub_root_missing_config(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 1
-    assert result.file_results[0].exception is None
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.NotProjectRootError)
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
+    assert error.root == "lib"
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
-def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
+def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_error(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
-    all_diags = result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 29
-    assert isinstance(all_diags[0].error, config.NotProjectRootError)
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
+    assert error.root == "lib"
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("other.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
 def test_cross_fqun_sub_root_fqun_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    actual_child = "mv:define-lang.org:actual_child"
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
-    assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
-    assert diags[0].error.actual_fqun == actual_child
-    assert diags[0].error.sub_root_path == "lib"
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.SubRootFqunMismatchError)
+    assert error.expected_fqun == _CHILD_UNIVERSE
+    assert error.actual_fqun == "mv:define-lang.org:actual_child"
+    assert error.sub_root_path == "lib"
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
 def test_second_universe_declared_at_same_sub_root_path(
@@ -526,22 +526,17 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.NotProjectRootError)
-    assert result.file_results[1].file_path == define_path.DefinePath(
-        "lib_a/target_a.dfn"
-    )
-    assert result.file_results[1].exception is None
-    assert result.file_results[1].diagnostics == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib_b/.define/project/config.defcl")
+    assert error.root == "lib_b"
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("lib_a/target_a.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
 def test_partial_local_deps_missing_still_validates_configured_sub_roots(
@@ -572,43 +567,42 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.NotProjectRootError)
-    assert result.file_results[1].file_path == define_path.DefinePath("local.dfn")
-    assert result.file_results[1].diagnostics == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
+    assert error.root == "lib"
+    assert result.all_exceptions == [error]
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("local.dfn"),
+    ]
+    assert result.all_diagnostics == []
 
 
 def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
+    assert error.root == "lib"
+    assert result.all_exceptions == [error]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
-    assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.NotProjectRootError)
-    assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert diags[1].file_path == "wrong_type.dfn"
+    assert diags[0].file_path == "wrong_type.dfn"
     assert (
-        diags[1].definition_name
+        diags[0].definition_name
         == "position<mv:define-lang.org:parent_universe:/wrong_type>"
     )
-    assert diags[1].location.line == 4
-    assert diags[1].location.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 
