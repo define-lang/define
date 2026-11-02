@@ -84,15 +84,9 @@ def validate_program_non_filesystem(
     if source_file.exception is not None:
         return program_validation.build_program_result(in_memory_source=source)
 
-    # TODO: Request these on the pool like the entry file's definitions.
-    # Nothing needs them validated before any other work any more, but which
-    # reference reports a cycle would then depend on completion order.
-    source_definition_results = program_validation.validate_source_definitions(
-        source_file
-    )
     with work_pool.WorkPool(max_workers=max_workers) as pool:
-        for definition_result in source_definition_results:
-            program_validation.register_definition(source_file, definition_result, pool)
+        for definition in source_file.definitions.values():
+            program_validation.request_definition(source_file, definition, pool)
         pool.run_until_idle()
     return program_validation.build_program_result(
         in_memory_source=source, select_last_constructor=True
@@ -133,20 +127,6 @@ class _ProgramValidationRun:
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
         )
-
-    def validate_source_definitions(
-        self, source_file: file_validator.LoadedFile
-    ) -> list[validation_result.DefinitionValidationResult]:
-        """Validate every definition of the supplied source on this thread."""
-        source_definition_results: list[
-            validation_result.DefinitionValidationResult
-        ] = []
-        for definition in source_file.definitions.values():
-            self._requested_definition_names.add(definition.typed_name.full_typed_name)
-            source_definition_results.append(
-                source_file.validate_definition(definition)
-            )
-        return source_definition_results
 
     def build_program_result(
         self,
@@ -232,18 +212,8 @@ class _ProgramValidationRun:
         pool.submit(
             loaded_file.validate_definition,
             definition,
-            handle_result=functools.partial(
-                self._process_validated_definition, loaded_file
-            ),
+            handle_result=functools.partial(self._register_definition, loaded_file),
         )
-
-    def _process_validated_definition(
-        self,
-        loaded_file: file_validator.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
-        pool: work_pool.WorkPool,
-    ):
-        self.register_definition(loaded_file, definition_result, pool)
 
     def _process_loaded_file(
         self, loaded_file: file_validator.LoadedFile, pool: work_pool.WorkPool
@@ -253,7 +223,7 @@ class _ProgramValidationRun:
                 reached_definition.loaded_file, reached_definition.definition, pool
             )
 
-    def register_definition(
+    def _register_definition(
         self,
         loaded_file: file_validator.LoadedFile,
         definition_result: validation_result.DefinitionValidationResult,

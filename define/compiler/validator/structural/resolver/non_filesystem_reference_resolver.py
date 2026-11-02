@@ -58,10 +58,16 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         if loaded_file is self._source_file:
             if not self._source_reference_resolvable(edge):
                 return None
-        # A definition from the supplied source has no file path to resolve,
-        # and was validated before any other definition.
-        elif edge.global_name_reference in self._source_file.definitions:
-            return None
+        else:
+            # A definition from the supplied source has no file path to
+            # resolve.
+            source_definition_reached = self._source_file.definitions.get(
+                edge.global_name_reference
+            )
+            if source_definition_reached is not None:
+                return reference_resolver.ReachedDefinition(
+                    self._source_file, source_definition_reached
+                )
         return super().validate_reference(loaded_file, edge, source_definition)
 
     def _source_reference_resolvable(self, edge: reference_graph.ReferenceEdge) -> bool:

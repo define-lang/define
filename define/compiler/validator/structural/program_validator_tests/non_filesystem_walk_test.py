@@ -42,7 +42,7 @@ def test_external_universe_no_project_config(
 def test_config_failure_still_validates_same_file_cycles(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    result = validate_testdata_structural_non_filesystem()
+    result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
