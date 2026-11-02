@@ -65,7 +65,16 @@ implementation) to implement equality. However, if we expose every possible
 logic gate as a core primitive of Define, there become too many ways to write
 the same core logic.
 
-### 5: Representations of Boolean Expressions in Compilers
+### 5: Only One Way to Write Boolean Logic
+
+One of our goals with Define is to say "there is only one way to write a valid
+program." For Boolean logic, the first and most critical step toward that is
+knowing what the minimal core of logical operations are. Once we know that, we
+can (in later proposals) force all programs to be based on them. But we have to
+know what the base set is, first, in order to reason about how we would
+eliminate the different ways of doing the same thing.
+
+### 6: Representations of Boolean Expressions in Compilers
 
 In compilers and formal verification systems, there have traditionally been a
 few different options for how to represent boolean logic conceptually in the
