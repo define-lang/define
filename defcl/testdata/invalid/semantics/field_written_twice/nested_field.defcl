@@ -1,0 +1,9 @@
+project: {
+    dependencies: [
+        { universe: "lib1" },
+        {
+            universe: "lib2"
+            universe: "lib3"
+        }
+    ]
+}

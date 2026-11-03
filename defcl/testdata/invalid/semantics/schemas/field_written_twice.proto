@@ -1,0 +1,14 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message FieldWrittenTwiceFile {
+  Project project = 1;
+  message Project {
+    string universe_name = 1;
+    repeated Dependency dependencies = 2;
+  }
+  message Dependency {
+    string universe = 1;
+  }
+}

@@ -4,6 +4,17 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 proto_library(
+    name = "field_written_twice_proto",
+    srcs = ["field_written_twice.proto"],
+)
+
+py_proto_library(
+    name = "field_written_twice_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":field_written_twice_proto"],
+)
+
+proto_library(
     name = "integer_enum_proto",
     srcs = ["integer_enum.proto"],
 )

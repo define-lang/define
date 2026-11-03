@@ -31,9 +31,11 @@ def validate(
         path_name: Optional file path for error messages.
     """
     msg_desc = message_type.DESCRIPTOR
+    written_field_names: set[str] = set()
     for top_level in tree.children:
         top_level = cast("lark_standalone.Tree[lark_standalone.Token]", top_level)
         name_token = cast("lark_standalone.Token", top_level.children[0])
+        _check_written_once(name_token, written_field_names, path_name)
         field_desc = msg_desc.fields_by_name.get(str(name_token))
         if field_desc is None or field_desc.message_type is None:
             raise ValueError(
@@ -52,14 +54,33 @@ def _check_message(
     path_name: str | os.PathLike[str] | None,
 ):
     """Check all fields within a message_value node."""
+    written_field_names: set[str] = set()
     for field_tree in msg_tree.children:
         field_tree = cast("lark_standalone.Tree[lark_standalone.Token]", field_tree)
         name_token = cast("lark_standalone.Token", field_tree.children[0])
+        _check_written_once(name_token, written_field_names, path_name)
         field_desc = msg_desc.fields_by_name[str(name_token)]
         value_tree = cast(
             "lark_standalone.Tree[lark_standalone.Token]", field_tree.children[1]
         )
         _check_field(name_token, field_desc, value_tree, path_name)
+
+
+def _check_written_once(
+    name_token: lark_standalone.Token,
+    written_field_names: set[str],
+    path_name: str | os.PathLike[str] | None,
+):
+    """Check that a message has not already written a field, then record it."""
+    field_name = str(name_token)
+    if field_name in written_field_names:
+        raise exceptions.FieldWrittenTwiceError(
+            name_token.line or 0,
+            name_token.column or 0,
+            field_name,
+            path_name,
+        )
+    written_field_names.add(field_name)
 
 
 def _check_field(

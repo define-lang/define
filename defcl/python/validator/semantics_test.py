@@ -7,6 +7,7 @@ import pytest
 from defcl.python import exceptions
 from defcl.python.validator import semantics, syntax
 from defcl.testdata.invalid.semantics.schemas import (
+    field_written_twice_pb2,
     integer_enum_pb2,
     nested_integer_enum_pb2,
     nested_no_brackets_message_pb2,
@@ -146,7 +147,81 @@ class TestRepeatedFieldWithoutBrackets:
         assert exc_info.value.field_name == "dependencies"
 
 
+class TestFieldWrittenTwice:
+    def test_repeated_field_written_twice(self):
+        path = _INVALID_SEMANTICS_PATH / "field_written_twice" / "repeated_field.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.FieldWrittenTwiceError) as exc_info:
+            semantics.validate(
+                tree,
+                field_written_twice_pb2.FieldWrittenTwiceFile,
+                path_name=path,
+            )
+        assert exc_info.value.line == 3
+        assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "dependencies"
+
+    def test_scalar_field_written_twice(self):
+        path = _INVALID_SEMANTICS_PATH / "field_written_twice" / "scalar_field.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.FieldWrittenTwiceError) as exc_info:
+            semantics.validate(
+                tree,
+                field_written_twice_pb2.FieldWrittenTwiceFile,
+                path_name=path,
+            )
+        assert exc_info.value.line == 3
+        assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "universe_name"
+
+    def test_top_level_message_written_twice(self):
+        path = (
+            _INVALID_SEMANTICS_PATH / "field_written_twice" / "top_level_message.defcl"
+        )
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.FieldWrittenTwiceError) as exc_info:
+            semantics.validate(
+                tree,
+                field_written_twice_pb2.FieldWrittenTwiceFile,
+                path_name=path,
+            )
+        assert exc_info.value.line == 4
+        assert exc_info.value.column == 1
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "project"
+
+    def test_field_written_twice_in_repeated_message(self):
+        path = _INVALID_SEMANTICS_PATH / "field_written_twice" / "nested_field.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.FieldWrittenTwiceError) as exc_info:
+            semantics.validate(
+                tree,
+                field_written_twice_pb2.FieldWrittenTwiceFile,
+                path_name=path,
+            )
+        assert exc_info.value.line == 6
+        assert exc_info.value.column == 13
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "universe"
+
+
 class TestErrorMessages:
+    def test_field_written_twice_error_with_path(self):
+        path = _INVALID_SEMANTICS_PATH / "field_written_twice" / "scalar_field.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.FieldWrittenTwiceError) as exc_info:
+            semantics.validate(
+                tree,
+                field_written_twice_pb2.FieldWrittenTwiceFile,
+                path_name=path,
+            )
+        assert str(exc_info.value) == (
+            f'File "{path}", line 3, column 5\n'
+            "universe_name: Field is already written in this message"
+        )
+
     def test_integer_enum_error_with_path(self):
         path = _INVALID_SEMANTICS_PATH / "enums" / "integer_enum.defcl"
         tree = _parser.parse_file(path)

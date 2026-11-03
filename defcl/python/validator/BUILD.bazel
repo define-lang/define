@@ -23,6 +23,7 @@ py_test(
         ":semantics",
         ":syntax",
         "//defcl/python:exceptions",
+        "//defcl/testdata/invalid/semantics/schemas:field_written_twice_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:nested_integer_enum_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:nested_no_brackets_message_proto_py",

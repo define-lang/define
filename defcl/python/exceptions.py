@@ -222,6 +222,26 @@ class RepeatedFieldWithoutBracketsError(DclSyntaxError):
         self.field_name = field_name
 
 
+class FieldWrittenTwiceError(DclSyntaxError):
+    """Raised when a field name appears more than once in the same message."""
+
+    label_format: ClassVar[str] = (
+        "{self.field_name}: Field is already written in this message"
+    )
+    field_name: str
+
+    def __init__(
+        self,
+        line: int,
+        column: int,
+        field_name: str,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
+        """Initialize with the field name that is written again."""
+        super().__init__("", line, column, path_name)
+        self.field_name = field_name
+
+
 class MissingTrailingNewlineError(DclSyntaxError):
     """Raised when a file does not end with a newline."""
 
