@@ -1,6 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
-load("@rules_rust//extensions/pyo3:defs.bzl", "rust_pyo3_toolchain")
+load("@rules_rust_pyo3//:defs.bzl", "rust_pyo3_toolchain")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
 
@@ -135,7 +135,7 @@ rust_pyo3_toolchain(
 toolchain(
     name = "rust_pyo3_toolchain",
     toolchain = ":rust_pyo3",
-    toolchain_type = "@rules_rust//extensions/pyo3:rust_toolchain_type",
+    toolchain_type = "@rules_rust_pyo3//:rust_toolchain_type",
 )
 
 bzl_library(
