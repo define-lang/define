@@ -22,6 +22,7 @@ DCL is based on textproto, but with the following key differences:
 - DCL enforces stricter formatting rules for consistency
 - DCL requires schema validation: unknown field names are errors
 - DCL enforces that all top-level fields must be of type Message.
+- DCL allows a field name only once in a message, even for repeated fields.
 
 Any valid DCL file is also a valid textproto file, and can be parsed by standard
 textproto parsers. However, a textproto parser will accept many files that DCL
@@ -319,9 +320,9 @@ project: <
 
 ### Repeated Field Syntax
 
-Repeated fields must always use the list syntax with square brackets `[]`. This
-applies to both repeated message values and repeated scalar literals (strings,
-numbers, enums).
+Repeated fields must be written as a single list using square brackets `[]`.
+This applies to both repeated message values and repeated scalar literals
+(strings, numbers, enums).
 
 ```ebnf
 repeated_value = "[", [ WHITESPACE ], [ value_list ], [ WHITESPACE ], "]" ;
@@ -371,6 +372,19 @@ Invalid (repeated scalar without brackets):
 tags: "tag1"
 tags: "tag2"
 tags: "tag3"
+```
+
+Invalid (repeated field written more than once, even with brackets):
+
+```
+tags: ["tag1", "tag2"]
+tags: ["tag3"]
+```
+
+Write it as one list instead:
+
+```
+tags: ["tag1", "tag2", "tag3"]
 ```
 
 ## Schema Restrictions
