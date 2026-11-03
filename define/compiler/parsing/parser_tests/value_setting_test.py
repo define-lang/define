@@ -29,7 +29,7 @@ def test_action_statements_block_with_value_setting_local_positions(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<source> to position<dest>.\n"
+        + "        set the value of position<source> from position<dest>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -47,7 +47,7 @@ def test_action_statements_block_with_value_setting_local_positions(
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.name == "dest"
     assert statement.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=60
+        line=6, column=9, end_line=6, end_column=62
     )
 
 
@@ -60,7 +60,7 @@ def test_action_statements_block_with_value_setting_short_global_positions(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position</source> to position</dest>.\n"
+        + "        set the value of position</source> from position</dest>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -80,7 +80,7 @@ def test_action_statements_block_with_value_setting_short_global_positions(
     assert dest.name_content.fqun is None
     assert dest.name_content.path.name == "/dest"
     assert statement.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=62
+        line=6, column=9, end_line=6, end_column=64
     )
 
 
@@ -93,7 +93,7 @@ def test_action_statements_block_with_value_setting_full_global_positions(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<mv:define-lang.org:parser:/source> to position<mv:define-lang.org:parser:/dest>.\n"
+        + "        set the value of position<mv:define-lang.org:parser:/source> from position<mv:define-lang.org:parser:/dest>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -125,7 +125,7 @@ def test_action_statements_block_with_value_setting_full_global_positions(
     assert dest_fqun.universe.name == "parser"
     assert dest.name_content.path.name == "/dest"
     assert statement.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=114
+        line=6, column=9, end_line=6, end_column=116
     )
 
 
@@ -138,7 +138,7 @@ def test_action_statements_block_with_value_setting_chained_target(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<src>::action</deposit>::position<inner> to position<dest>.\n"
+        + "        set the value of position<src>::action</deposit>::position<inner> from position<dest>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -176,7 +176,7 @@ def test_action_statements_block_with_value_setting_chained_source(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<src> to position<dest>::action</deposit>::position<inner>.\n"
+        + "        set the value of position<src> from position<dest>::action</deposit>::position<inner>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -202,7 +202,7 @@ def test_action_statements_block_with_value_setting_chained_source(
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
     assert source.location == ast.SourceLocation(
-        line=6, column=43, end_line=6, end_column=91
+        line=6, column=45, end_line=6, end_column=93
     )
 
 
@@ -215,7 +215,7 @@ def test_action_statements_block_with_value_setting_both_chained(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<src>::action</a1> to position<dest>::action</a2>.\n"
+        + "        set the value of position<src>::action</a1> from position<dest>::action</a2>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -245,7 +245,7 @@ def test_action_statements_block_with_value_setting_both_chained(
     assert a2.name_content.fqun is None
     assert a2.name_content.path.name == "/a2"
     assert source.location == ast.SourceLocation(
-        line=6, column=56, end_line=6, end_column=82
+        line=6, column=58, end_line=6, end_column=84
     )
 
 
@@ -259,7 +259,7 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        create a particle in position<run>.\n"
-        + "        set the value of position<run> to position<done>.\n"
+        + "        set the value of position<run> from position<done>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -287,7 +287,7 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
     assert done.name_type == name_types.NameType.POSITION
     assert done.name_content.name == "done"
     assert value_setting_statement.location == ast.SourceLocation(
-        line=7, column=9, end_line=7, end_column=57
+        line=7, column=9, end_line=7, end_column=59
     )
 
 
@@ -300,7 +300,7 @@ def test_action_statements_block_with_value_setting_mixed_local_and_global(
         + "    it happens when {\n"
         + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        set the value of position<local_src> to position</global_dest>.\n"
+        + "        set the value of position<local_src> from position</global_dest>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -319,7 +319,7 @@ def test_action_statements_block_with_value_setting_mixed_local_and_global(
     assert global_dest.name_content.fqun is None
     assert global_dest.name_content.path.name == "/global_dest"
     assert statement.location == ast.SourceLocation(
-        line=6, column=9, end_line=6, end_column=71
+        line=6, column=9, end_line=6, end_column=73
     )
 
 
@@ -331,7 +331,7 @@ _ACTION_PREFIX = (
 )
 
 
-def test_missing_to(parse: Parse):
+def test_missing_from(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
         parse(
             _ACTION_PREFIX + "        set the value of position<dest>.\n" + "    }\n}\n"
@@ -346,13 +346,13 @@ def test_missing_source(parse: Parse):
     with pytest.raises(parser_exceptions.MissingValueSource) as error:
         parse(
             _ACTION_PREFIX
-            + "        set the value of position<dest> to .\n"
+            + "        set the value of position<dest> from .\n"
             + "    }\n}\n"
         )
     assert error.value.location.line == 5
-    assert error.value.location.column == 44
+    assert error.value.location.column == 46
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 44
+    assert error.value.location.end_column == 46
 
 
 def test_missing_target(parse: Parse):
@@ -368,25 +368,25 @@ def test_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedChainSeparatorOrTerminator) as error:
         parse(
             _ACTION_PREFIX
-            + "        set the value of position<dest> to position<src>\n"
+            + "        set the value of position<dest> from position<src>\n"
             + "    }\n}\n"
         )
     assert error.value.location.line == 5
-    assert error.value.location.column == 57
+    assert error.value.location.column == 59
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 57
+    assert error.value.location.end_column == 59
 
 
 def test_value_setting_outside_action(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        parse("set the value of position<dest> to position<src>.\n")
+        parse("set the value of position<dest> from position<src>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
     assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 49
+    assert error.value.location.end_column == 51
 
 
-def test_missing_to_at_eof(parse: Parse):
+def test_missing_from_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
         parse(_ACTION_PREFIX + "        set the value of position<dest>")
     assert error.value.location.line == 5
@@ -395,7 +395,7 @@ def test_missing_to_at_eof(parse: Parse):
     assert error.value.location.end_column == 40
 
 
-def test_missing_to_after_chained_target(parse: Parse):
+def test_missing_from_after_chained_target(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
         parse(
             _ACTION_PREFIX
@@ -408,7 +408,7 @@ def test_missing_to_after_chained_target(parse: Parse):
     assert error.value.location.end_column == 57
 
 
-def test_missing_to_during_transformation(
+def test_missing_from_during_transformation(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics(
@@ -430,7 +430,7 @@ def test_missing_move_to_after_value_setting(
 ):
     result = parse_with_diagnostics(
         _ACTION_PREFIX
-        + "        set the value of position<dest> to position<src>.\n"
+        + "        set the value of position<dest> from position<src>.\n"
         + "        move the particle in position<src>.\n"
         + "    }\n}\n"
     )
@@ -441,7 +441,7 @@ def test_missing_move_to_after_value_setting(
     )
 
 
-def test_extra_space_after_to_in_value_setting(parse: Parse):
+def test_extra_space_after_from_in_value_setting(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -449,17 +449,17 @@ def test_extra_space_after_to_in_value_setting(parse: Parse):
             + "    it happens when {\n"
             + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        set the value of position<run> to  position<run>.\n"
+            + "        set the value of position<run> from  position<run>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 42
+    assert exc_info.value.location.column == 44
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 43
+    assert exc_info.value.location.end_column == 45
 
 
-def test_value_setting_ends_after_to(parse: Parse):
+def test_value_setting_ends_after_from(parse: Parse):
     with pytest.raises(parser_exceptions.MissingValueSource) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -467,14 +467,14 @@ def test_value_setting_ends_after_to(parse: Parse):
             + "    it happens when {\n"
             + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        set the value of position<run> to\n"
+            + "        set the value of position<run> from\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 42
+    assert exc_info.value.location.column == 44
     assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 42
+    assert exc_info.value.location.end_column == 44
 
 
 def test_value_source_with_other_name_type(parse: Parse):
@@ -484,10 +484,10 @@ def test_value_source_with_other_name_type(parse: Parse):
             + "    it happens when {\n"
             + "        this particle is created.\n"
             + "    } and it does {\n"
-            + "        set the value of position<dest> to value</x>.\n"
+            + "        set the value of position<dest> from value</x>.\n"
             + "    }\n}\n"
         )
     assert error.value.location.line == 5
-    assert error.value.location.column == 44
+    assert error.value.location.column == 46
     assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 48
+    assert error.value.location.end_column == 50

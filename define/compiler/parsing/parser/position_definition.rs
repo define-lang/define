@@ -37,14 +37,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
     ) -> ParseResult<(ast::PositionDefinition<'py>, Position)> {
-        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
-        let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let typed_name = self.global_typed_name_in_definition(
-            typed_name_location,
-            ast::NameType::Position,
-            name_content,
-            name_text,
-        )?;
+        let (typed_name, fqun) =
+            self.parse_global_typed_name_in_definition(typed_name_start, ast::NameType::Position)?;
         let (quality_assignment_block, end) = if self.scanner.next_bytes_are(BLOCK_OPEN) {
             let (block, end) = self.parse_position_definition_block(start, 0, &fqun)?;
             (Some(block), end)

@@ -8,7 +8,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         define the position<dest>.
-        set the value of position<dest> to literal</test>"hello".
-        set the value of position<dest> to literal</test>"".
+        set the value of position<dest> from literal</test>"hello".
+        set the value of position<dest> from literal</test>"".
     }
 }

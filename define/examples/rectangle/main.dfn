@@ -22,9 +22,9 @@ define the potential action<define-lang.org:rectangle:/main> {
 
         # We start off as a square.
         create a particle in position<width>.
-        set the value of position<width> to literal<standard:/number>"5".
+        set the value of position<width> from literal<standard:/number>"5".
         create a particle in position<height>.
-        set the value of position<height> to position<width>.
+        set the value of position<height> from position<width>.
 
         # position<area> is now 25.
         create a particle in position<area>.
@@ -49,8 +49,8 @@ define the potential action<define-lang.org:rectangle:/main> {
         }
 
         # Or we could make a rectangle.
-        set the value of position<width> to literal<standard:/number>"10".
-        set the value of position<height> to literal<standard:/number>"5".
+        set the value of position<width> from literal<standard:/number>"10".
+        set the value of position<height> from literal<standard:/number>"5".
 
         # After this, position<area> will contain 50.
         execute the operation<standard:/number/natural/multiply> {

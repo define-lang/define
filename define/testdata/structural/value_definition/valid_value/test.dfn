@@ -1,2 +1,7 @@
 # A value definition needs no action or quality assignments.
-define the potential value<my.domain.com:my_lib:/test>.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}

@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         the position<run> has a particle.
     } and it does {
         define the position<temporary>.
-        set the value of position<temporary> to position<input>.
-        set the value of position<result> to position<temporary>.
+        set the value of position<temporary> from position<input>.
+        set the value of position<result> from position<temporary>.
     }
 }

@@ -31,11 +31,7 @@ if TYPE_CHECKING:
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -188,11 +184,7 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -203,16 +195,62 @@ def test_duplicate_definition_format():
         duplicate position definition for path '/same'; first defined on line 1""")
 
 
+def test_duplicate_logical_operation_support_format():
+    source = (
+        "define the potential value<my.domain.com:my_lib:/number> {\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be written.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 5, column 21
+            it supports the logical_operation<standard:/number/add> {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'logical_operation<standard:/number/add>' is already supported on line 2; each logical operation may be listed only once in a value definition""")
+    )
+
+
+def test_logical_operation_support_order_format():
+    source = (
+        "define the potential value<my.domain.com:my_lib:/number> {\n"
+        "    it supports the logical_operation<standard:/text/equality> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "    it supports the logical_operation<standard:/number/add> {\n"
+        "        it may be read.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 5, column 21
+            it supports the logical_operation<standard:/number/add> {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'logical_operation<standard:/number/add>' is out of order; Logical Operation Support Statements must be in alphabetical order by logical operation name, so it must come before 'logical_operation<standard:/text/equality>'""")
+    )
+
+
 def test_non_filesystem_diagnostics_have_no_file_name():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     assert diags[0].location.file_path is None
@@ -236,11 +274,7 @@ def test_move_to_same_position_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
@@ -265,11 +299,7 @@ def test_invalid_local_name_character_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -293,11 +323,7 @@ def test_invalid_local_name_characters_format():
         "    }\n"
         "}\n"
     )
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -359,7 +385,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     )
 
 
-def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
+def test_sub_root_fqun_mismatch_error_message(
     validate_project: ValidateProject,
 ):
     parent_universe = "mv:define-lang.org:parent"
@@ -381,35 +407,57 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         local_deps={child_universe: "lib"},
         sub_roots={"lib": wrong_child_universe},
     )
-    results = result.program_result.file_results
-    assert len(results) == 1
-    assert results[0].exception is None
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
-
-    formatted = diags[0].format(result.program_result.source_map)
+    program_result = result.program_result
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.SubRootFqunMismatchError)
     assert (
-        formatted
-        == textwrap.dedent("""\
-        File "test.dfn", line 3, column 29
-            it has the position<mv:define-lang.org:child:/target>.
-                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        an error occurred while loading the project configuration:
-        Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'""")
+        str(error)
+        == "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
+
+
+def test_config_load_error_format_for_supplied_source_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    deps_path = tmp_path / ".define" / "deps" / "local.defcl"
+    deps_path.parent.mkdir(parents=True)
+    _ = deps_path.write_text(
+        "deps: {\n  local: [\n    {}\n  ]\n}\n", encoding="utf-8", newline="\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    assert len(program_result.all_diagnostics) == 1
+    diagnostic = program_result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ConfigLoadErrorDiagnostic)
+
+    formatted = diagnostic.format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 3, column 29
+            it has the position<other.example.com:other_universe:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        an error occurred while loading the project configuration:
+        File ".define/deps/local.defcl"
+        Invalid configuration:
+          - deps.local.universe_name: value is required
+          - deps.local.path: value is required""")
 
 
 def test_not_project_root_error_message_for_project_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.NotProjectRootError)
@@ -440,14 +488,13 @@ def test_not_project_root_error_message_for_subroot(
         local_deps={child_universe: "lib"},
         max_workers=1,
     )
-    results = result.program_result.file_results
-    assert len(results) == 1
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.NotProjectRootError)
+    program_result = result.program_result
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
     assert (
-        str(diags[0].error)
+        str(error)
         == textwrap.dedent("""\
         The referenced subroot (lib) is not a valid project root: lib/.define/project/config.defcl not found.
         A project root is any directory containing lib/.define/project/config.defcl.
@@ -489,21 +536,15 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"), max_workers=1)
-        .file_results
+    program_result = program_validator.validate_program(
+        PurePosixPath("test.dfn"), max_workers=1
     )
-    assert len(results) == 2
-    assert results[0].file_path == define_path.DefinePath("test.dfn")
-    assert results[0].diagnostics == []
-    assert results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    diags = results[1].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert isinstance(diags[0].error, config.DuplicateFqunError)
+    assert program_result.all_diagnostics == []
+    assert len(program_result.config_errors) == 1
+    error = program_result.config_errors[0]
+    assert isinstance(error, config.DuplicateFqunError)
     assert (
-        str(diags[0].error)
+        str(error)
         == textwrap.dedent("""\
         Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
     )
@@ -533,11 +574,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.ConfigSyntaxError)
@@ -559,11 +596,7 @@ def test_config_validation_error_message(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.dfn"))
-        .file_results
-    )
+    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, config.ConfigValidationError)

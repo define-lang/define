@@ -1,5 +1,10 @@
 # Value references within the same FQUN require short form.
-define the potential value<my.domain.com:my_lib:/number>.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
 define the potential position<my.domain.com:my_lib:/test> {
     it may only contain particles where {
         it has the value<my.domain.com:my_lib:/number>.

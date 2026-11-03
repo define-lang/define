@@ -86,13 +86,10 @@ def validate_project(
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content, encoding="utf-8", newline="\n")
         monkeypatch.chdir(tmp_path)
-        structural_result = program_validator.ProgramStructuralValidator(
-            allow_entry_action_interface_positions=(
-                allow_entry_action_interface_positions
-            ),
-        ).validate_program(
+        structural_result = program_validator.validate_program(
             PurePosixPath(entry_file),
             max_workers=max_workers,
+            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
         )
         return _run_reference_graph_validation(
             structural_result,
@@ -185,11 +182,11 @@ def validate_testdata_structural_non_filesystem(
         allow_entry_action_interface_positions: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        return program_validator.ProgramStructuralValidator(
-            allow_entry_action_interface_positions=(
-                allow_entry_action_interface_positions
-            ),
-        ).validate_program_non_filesystem(source, max_workers=max_workers)
+        return program_validator.validate_program_non_filesystem(
+            source,
+            max_workers=max_workers,
+            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
+        )
 
     return _run
 
@@ -211,11 +208,11 @@ def validate_testdata_structural(
         allow_entry_action_interface_positions: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        return program_validator.ProgramStructuralValidator(
-            allow_entry_action_interface_positions=(
-                allow_entry_action_interface_positions
-            ),
-        ).validate_program(PurePosixPath(entry_file), max_workers=max_workers)
+        return program_validator.validate_program(
+            PurePosixPath(entry_file),
+            max_workers=max_workers,
+            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
+        )
 
     return _run
 
@@ -240,11 +237,11 @@ def validate_testdata_non_filesystem_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        result = program_validator.ProgramStructuralValidator(
-            allow_entry_action_interface_positions=(
-                allow_entry_action_interface_positions
-            ),
-        ).validate_program_non_filesystem(source, max_workers=max_workers)
+        result = program_validator.validate_program_non_filesystem(
+            source,
+            max_workers=max_workers,
+            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
+        )
         _run_reference_graph_validation(
             result,
             max_workers=max_workers,
@@ -311,11 +308,11 @@ def validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> FullValidationResult:
         monkeypatch.chdir(directory)
-        structural_result = program_validator.ProgramStructuralValidator(
-            allow_entry_action_interface_positions=(
-                allow_entry_action_interface_positions
-            ),
-        ).validate_program(PurePosixPath("test.dfn"), max_workers=max_workers)
+        structural_result = program_validator.validate_program(
+            PurePosixPath("test.dfn"),
+            max_workers=max_workers,
+            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
+        )
         return _run_reference_graph_validation(
             structural_result,
             max_workers=max_workers,

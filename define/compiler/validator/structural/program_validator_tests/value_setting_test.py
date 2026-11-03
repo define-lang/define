@@ -30,7 +30,7 @@ def test_same_position(
     assert diagnostic.position_name == "position<item>"
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.column == 46
 
 
 def test_same_chained_position(
@@ -44,7 +44,7 @@ def test_same_chained_position(
     assert diagnostic.position_name == "position<item>::position</child>"
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
-    assert diagnostic.location.column == 62
+    assert diagnostic.location.column == 64
 
 
 def test_distinct_parent_positions(
@@ -84,7 +84,7 @@ def test_undefined_positions(
     assert source.local_name == "position<source>"
     assert source.location.file_path is None
     assert source.location.line == 6
-    assert source.location.column == 46
+    assert source.location.column == 48
 
 
 def test_invalid_local_chains(
@@ -105,7 +105,7 @@ def test_invalid_local_chains(
     assert source.local_name == "position<source_child>"
     assert source.location.file_path is None
     assert source.location.line == 8
-    assert source.location.column == 88
+    assert source.location.column == 90
 
 
 def test_unknown_global_positions(
@@ -126,7 +126,7 @@ def test_unknown_global_positions(
     assert source.source_global_name == "position</source>"
     assert source.location.file_path is None
     assert source.location.line == 8
-    assert source.location.column == 47
+    assert source.location.column == 49
 
 
 def test_chained_references_load_definitions(

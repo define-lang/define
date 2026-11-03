@@ -12,7 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<worker>.
         create a particle in position</copy>.
         create a particle in position<worker>::action</provide>::position<trigger>.
-        set the value of position</copy> to position<worker>::action</provide>::position<item>.
+        set the value of position</copy> from position<worker>::action</provide>::position<item>.
         destroy the particle in position<worker>::action</provide>::position<item>.
     }
 }

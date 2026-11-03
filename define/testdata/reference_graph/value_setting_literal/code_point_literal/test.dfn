@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</letter>.
-        set the value of position</letter> to literal<standard:/text/unicode/code_point>"E9".
+        set the value of position</letter> from literal<standard:/text/unicode/code_point>"E9".
     }
 }

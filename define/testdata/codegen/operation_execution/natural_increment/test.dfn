@@ -5,7 +5,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</count>.
-        set the value of position</count> to literal<standard:/number>"1".
+        set the value of position</count> from literal<standard:/number>"1".
         execute the operation<standard:/number/natural/increment> {
             with view<value> looking at position</count>.
         }

@@ -9,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<total>.
-        set the value of position<total> to literal<standard:/number>"1".
+        set the value of position<total> from literal<standard:/number>"1".
         destroy the particle in position<total>.
     }
 }

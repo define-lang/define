@@ -1012,7 +1012,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1207,7 +1207,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "destructor.dfn",
         },
     )

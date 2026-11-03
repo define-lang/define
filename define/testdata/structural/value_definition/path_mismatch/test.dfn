@@ -1,2 +1,7 @@
 # A value definition must match its file path.
-define the potential value<my.domain.com:my_lib:/number>.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}

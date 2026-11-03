@@ -10,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/destructor> {
         }
         create a particle in position<reader>.
         create a particle in position<reader>::action</keep>::position<input>.
-        set the value of position<reader>::action</keep>::position<input> to position</reading>.
+        set the value of position<reader>::action</keep>::position<input> from position</reading>.
         create a particle in position<reader>::action</keep>::position<run>.
     }
 }

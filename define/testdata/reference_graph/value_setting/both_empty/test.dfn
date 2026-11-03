@@ -17,12 +17,12 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<target>.
         create a particle in position<source>.
         create a particle in position</copy>.
-        set the value of position</copy> to literal<standard:/number>"5".
-        set the value of position<target> to position</copy>.
-        set the value of position<source> to position<target>.
-        set the value of position</copy> to position<source>.
+        set the value of position</copy> from literal<standard:/number>"5".
+        set the value of position<target> from position</copy>.
+        set the value of position<source> from position<target>.
+        set the value of position</copy> from position<source>.
         destroy the particle in position<target>.
         destroy the particle in position<source>.
-        set the value of position<target> to position<source>.
+        set the value of position<target> from position<source>.
     }
 }

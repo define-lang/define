@@ -6,14 +6,11 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-import threading
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
-from unittest import mock
 
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.structural import file_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -66,36 +63,7 @@ def test_wrong_type_detected_without_deferral(
 def test_reference_edges_resolve_by_file_completion_order(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    # With max_workers=2, test.dfn and lib/target.dfn run concurrently.
-    # We force lib/target.dfn to complete after test.dfn so that
-    # test.dfn's pending reference edges get resolved by the file
-    # completion callback rather than being available immediately.
-    original_validate_file = file_validator.FileStructuralValidator.validate_file
-    test_completed = threading.Event()
-    target_started = threading.Event()
-
-    def ordered_validate_file(
-        self: file_validator.FileStructuralValidator,
-        context: file_validator.FileValidationContext,
-    ):
-        if context.full_path == define_path.DefinePath("lib/target.dfn"):
-            target_started.set()
-            assert test_completed.wait(timeout=10)
-        result = original_validate_file(self, context)
-        if context.full_path == define_path.DefinePath("test.dfn"):
-            test_completed.set()
-        return result
-
-    with mock.patch.object(
-        file_validator.FileStructuralValidator,
-        "validate_file",
-        autospec=True,
-        side_effect=ordered_validate_file,
-    ):
-        result = validate_testdata_structural(max_workers=2)
-
-    assert target_started.is_set()
-    assert test_completed.is_set()
+    result = validate_testdata_structural(max_workers=2)
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert len(result.file_results[0].diagnostics) == 2

@@ -7,6 +7,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
     } and it does {
-        set the value of position<missing> to literal</bad-name>"hello".
+        set the value of position<missing> from literal</bad-name>"hello".
     }
 }

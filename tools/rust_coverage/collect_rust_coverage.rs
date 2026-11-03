@@ -6,7 +6,7 @@
 //! profile into `COVERAGE_DIR` when the test's process exits. This merges the
 //! profiles and writes LCOV for the test binary and every extension in the
 //! test's runfiles that is instrumented into `COVERAGE_DIR`, where Bazel's LCOV
-//! merger combines it with any Python coverage of the test.
+//! merger combines it with a copy of any Python coverage of the test.
 //!
 //! Stable Rust has no branch coverage, so the LCOV also has a branch record for
 //! each code region that LLVM counts, such as each arm of an `if` and each side
@@ -70,6 +70,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Bazel's LCOV merger reads every file in `COVERAGE_DIR`, and it cannot
     // read this one.
     fs::remove_file(profile)?;
+    // A Python test writes its Python coverage straight to the test's output
+    // file, which the LCOV merger then replaces with the merge of
+    // `COVERAGE_DIR`, so a copy in `COVERAGE_DIR` keeps it in the merge.
+    fs::copy(
+        env::var("COVERAGE_OUTPUT_FILE")?,
+        coverage_dir.join("test_output_coverage.dat"),
+    )?;
     Ok(())
 }
 

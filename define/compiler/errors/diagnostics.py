@@ -215,6 +215,40 @@ class UnreferencedViewDiagnostic(Diagnostic):
     )
 
 
+class LogicalOperationWithoutOutputViewDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation that has no output view."""
+
+    message_format: ClassVar[str] = (
+        "a logical operation must have at least one output view; "
+        "add 'it is written.' to one of its views"
+    )
+
+
+class DuplicateLogicalOperationSupportDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation listed in more than one Logical Operation Support Statement of a value definition."""
+
+    logical_operation_name: str
+    first_support_line: int
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' is already supported on line "
+        "{self.first_support_line}; each logical operation may be listed only "
+        "once in a value definition"
+    )
+
+
+class LogicalOperationSupportOrderDiagnostic(Diagnostic):
+    """Diagnostic for a Logical Operation Support Statement that is out of alphabetical order."""
+
+    logical_operation_name: str
+    logical_operation_name_it_must_precede: str
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' is out of order; Logical Operation "
+        "Support Statements must be in alphabetical order by logical operation "
+        "name, so it must come before "
+        "'{self.logical_operation_name_it_must_precede}'"
+    )
+
+
 class ViewPositionOrActionQualityDiagnostic(Diagnostic):
     """Diagnostic for a view Quality Assignment Statement that names a position or action."""
 
@@ -800,21 +834,6 @@ class ConfigLoadErrorDiagnostic(Diagnostic):
     error: config.ConfigError
     message_format: ClassVar[str] = (
         "an error occurred while loading the project configuration:\n{self.error}"
-    )
-
-
-class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
-    """Diagnostic for when a sub-root path already has files loaded under a different universe."""
-
-    universe: str
-    sub_root_path: str
-    existing_file: str
-    existing_universe: str
-    message_format: ClassVar[str] = (
-        "attempted to load the universe '{self.universe}' in "
-        "'{self.sub_root_path}' but '{self.existing_file}' was already "
-        "registered as having the universe '{self.existing_universe}' ; "
-        "two different universes cannot occupy '{self.sub_root_path}'"
     )
 
 

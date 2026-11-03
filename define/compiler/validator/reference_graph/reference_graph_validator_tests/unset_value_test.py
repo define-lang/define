@@ -25,7 +25,7 @@ def test_new_particle_is_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 18
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
 
@@ -60,7 +60,7 @@ def test_move_preserves_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 16
-    assert diagnostic.location.column == 47
+    assert diagnostic.location.column == 49
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<moved>"
 
@@ -74,7 +74,7 @@ def test_replacement_is_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 24
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
 
@@ -127,7 +127,7 @@ def test_trigger_requires_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 12,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -188,7 +188,7 @@ def test_transitive_requirement_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 12,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -247,7 +247,7 @@ def test_transitive_implied_requirement_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
             "line": 9,
-            "column": 45,
+            "column": 47,
             "file_path": "read.dfn",
         },
     )
@@ -298,7 +298,7 @@ def test_implied_requirement_after_move(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
             "line": 11,
-            "column": 45,
+            "column": 47,
             "file_path": "read.dfn",
         },
     )
@@ -320,7 +320,7 @@ def test_guarantee_new_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 15
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -343,7 +343,7 @@ def test_guarantee_existing_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 16
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -372,7 +372,7 @@ def test_guarantee_unchanged_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 16
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -395,7 +395,7 @@ def test_guarantee_moved_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 16
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -463,7 +463,7 @@ def test_destructor_direct_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -533,7 +533,7 @@ def test_destructor_contract_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -624,7 +624,7 @@ def test_destructor_contract_replace_set(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -693,7 +693,7 @@ def test_destructor_contract_replace_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -769,7 +769,7 @@ def test_destructor_contract_untouched_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -791,7 +791,7 @@ def test_transitive_implied_guarantee_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 16
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
@@ -812,7 +812,7 @@ def test_constructor_guarantee_unset(
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 15
-    assert diagnostic.location.column == 45
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
@@ -865,7 +865,7 @@ def test_requirement_after_move_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 14,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -943,7 +943,7 @@ def test_destructor_transitive_requirement_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1021,7 +1021,7 @@ def test_destructor_untouched_requirement_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1091,7 +1091,7 @@ def test_destructor_replaced_child_identity_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1169,7 +1169,7 @@ def test_multiple_value_requirements(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 19,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -1198,7 +1198,7 @@ def test_multiple_value_requirements(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 20,
-            "column": 51,
+            "column": 53,
             "file_path": "consume.dfn",
         },
     )
@@ -1253,7 +1253,7 @@ def test_interfaces_stop_value_inference(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -1331,7 +1331,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1418,7 +1418,7 @@ def test_multiple_destructor_requirements_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1471,7 +1471,7 @@ def test_multiple_destructor_requirements_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "other_cleanup.dfn",
         },
     )
@@ -1551,7 +1551,7 @@ def test_destructor_multiple_value_requirements(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 14,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1604,7 +1604,7 @@ def test_destructor_multiple_value_requirements(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 23,
-            "column": 84,
+            "column": 86,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1682,7 +1682,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 17,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1698,7 +1698,7 @@ def test_repeated_unset_reads(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 17
-    assert diagnostic.location.column == 47
+    assert diagnostic.location.column == 49
     assert diagnostic.position_name == "position<source>"
 
 
@@ -1712,12 +1712,12 @@ def test_value_error_preserves_occupancy(
     assert isinstance(first, diagnostics.UnsetValueDiagnostic)
     assert first.location.file_path == PurePosixPath("test.dfn")
     assert first.location.line == 18
-    assert first.location.column == 46
+    assert first.location.column == 48
     assert first.position_name == "position<source>"
     assert isinstance(second, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert second.location.file_path == PurePosixPath("test.dfn")
     assert second.location.line == 20
-    assert second.location.column == 46
+    assert second.location.column == 48
     assert second.position_name == "position<source>"
 
 
@@ -1763,7 +1763,7 @@ def test_repeated_interface_value_requirement(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 45,
+            "column": 47,
             "file_path": "consume.dfn",
         },
     )
@@ -1779,7 +1779,7 @@ def test_value_error_new_guarantee(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
     assert diagnostic.location.line == 18
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
 
 
@@ -1793,7 +1793,7 @@ def test_value_error_existing_guarantee(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
     assert diagnostic.location.line == 17
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
 
 
@@ -1807,7 +1807,7 @@ def test_value_error_recovered_by_literal(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -1827,7 +1827,7 @@ def test_destructor_value_error(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
 
 
@@ -1841,7 +1841,7 @@ def test_value_error_recovered_by_copy(
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -1918,7 +1918,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )

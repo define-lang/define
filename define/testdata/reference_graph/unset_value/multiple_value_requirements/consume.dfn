@@ -16,8 +16,8 @@ define the potential action<my.domain.com:my_lib:/consume> {
     } and it does {
         create a particle in position</copy>.
         create a particle in position</other_copy>.
-        set the value of position</copy> to position<input>.
-        set the value of position</other_copy> to position<other>.
+        set the value of position</copy> from position<input>.
+        set the value of position</other_copy> from position<other>.
         destroy the particle in position<other>.
         destroy the particle in position<input>.
     }

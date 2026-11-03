@@ -16,7 +16,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
         the position<run> has a particle.
     } and it does {
         create a particle in position</copy>.
-        set the value of position</copy> to position<input>.
+        set the value of position</copy> from position<input>.
         destroy the particle in position<input>.
         destroy the particle in position<run>.
     }
@@ -32,7 +32,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::action</consume>::position<input>.
-        set the value of position<box>::action</consume>::position<input> to literal<standard:/number>"5".
+        set the value of position<box>::action</consume>::position<input> from literal<standard:/number>"5".
         create a particle in position<box>::action</consume>::position<run>.
         destroy the particle in position<box>.
     }

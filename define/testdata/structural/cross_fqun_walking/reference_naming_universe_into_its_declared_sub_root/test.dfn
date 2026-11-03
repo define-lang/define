@@ -1,0 +1,7 @@
+# A reference that names child_universe still cannot reach a file in the
+# sub-root that child_universe declares for grandchild.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:child_universe:/inner/x>.
+    }
+}

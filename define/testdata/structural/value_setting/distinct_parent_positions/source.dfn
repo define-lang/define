@@ -6,6 +6,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<first>.
         define the position<second>.
-        set the value of position<first>::position</child> to position<second>::position</child>.
+        set the value of position<first>::position</child> from position<second>::position</child>.
     }
 }

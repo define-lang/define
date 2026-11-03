@@ -1,0 +1,23 @@
+# A value definition may support logical operations that are defined before it.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</negate> {
+        it may be written.
+    }
+}

@@ -1,5 +1,10 @@
 # view<source> requires counts, which have no encoding, so no literal can become one.
-define the potential value<my.domain.com:my_lib:/count>.
+define the potential value<my.domain.com:my_lib:/count> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+        it may be written.
+    }
+}
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.

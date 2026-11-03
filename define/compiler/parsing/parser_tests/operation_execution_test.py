@@ -466,7 +466,7 @@ def test_operation_requires_open_angle_bracket(parse: Parse):
 
 
 def test_operation_name_type_cannot_be_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the position</other>.\n"
@@ -479,7 +479,7 @@ def test_operation_name_type_cannot_be_position(parse: Parse):
 
 
 def test_operation_name_type_cannot_be_action(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the action</other>.\n"

@@ -10,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
     it happens when {
         the position<trigger> has a particle.
     } and it does {
-        set the value of position<input> to literal<standard:/number>"1".
+        set the value of position<input> from literal<standard:/number>"1".
         destroy the particle in position<trigger>.
     }
 }

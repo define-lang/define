@@ -1,4 +1,5 @@
-//! Operation execution statements and their operation arguments blocks.
+//! Operation execution statements, Logical Operation Execution Statements,
+//! and their operation arguments blocks.
 
 use crate::ast;
 use crate::node_construction::NodeTuple;
@@ -13,7 +14,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyString;
 use terminals::{
     ACTION, BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
-    EXECUTE_THE_ENCODING_OPERATION, LITERAL, OPERATION, POSITION, SPACE_LOOKING_AT, VIEW, WITH,
+    EXECUTE_THE_ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION, OPERATION, POSITION,
+    SPACE_LOOKING_AT, VIEW, WITH,
 };
 
 /// The one name type that a Value Operation Execution Statement allows.
@@ -21,6 +23,9 @@ const OPERATION_NAME_TYPE: [(&[u8], ast::NameType); 1] = [(OPERATION, ast::NameT
 /// The one name type that an Encoding Operation Execution Statement allows.
 const ENCODING_OPERATION_NAME_TYPE: [(&[u8], ast::NameType); 1] =
     [(ENCODING_OPERATION, ast::NameType::EncodingOperation)];
+/// The one name type that a Logical Operation Execution Statement allows.
+const LOGICAL_OPERATION_NAME_TYPE: [(&[u8], ast::NameType); 1] =
+    [(LOGICAL_OPERATION, ast::NameType::LogicalOperation)];
 /// Whether an operation is a Value Operation or an Encoding Operation.
 #[derive(Clone, Copy)]
 pub(crate) enum OperationKind {
@@ -70,23 +75,28 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> ParseResult<ast::OperationExecutionStatement<'py>> {
         let start = self.scanner.position;
         self.scanner.consume(EXECUTE_THE);
+        let (name_type, wrong_name_type): (_, fn(&Self) -> ParseError) =
+            match (executing_definition, kind) {
+                (_, OperationKind::Encoding) => (
+                    &ENCODING_OPERATION_NAME_TYPE,
+                    Self::expected_encoding_operation,
+                ),
+                (ExecutingDefinition::Action, OperationKind::Value) => {
+                    (&OPERATION_NAME_TYPE, Self::expected_operation)
+                }
+                // A Value Operation may also execute logical operations.
+                (ExecutingDefinition::Operation, OperationKind::Value) => (
+                    &OPERATION_NAME_TYPE,
+                    Self::expected_operation_or_logical_operation,
+                ),
+            };
         // The line ends, or a non-letter character comes, where the operation's
         // typed name belongs.
         if !self.space_before_word()? {
-            return Err(self.wrong_operation_name_type(kind));
+            return Err(wrong_name_type(self));
         }
-        let (operation, _) = match kind {
-            OperationKind::Value => self.parse_typed_global_name_reference(
-                fqun,
-                &OPERATION_NAME_TYPE,
-                Self::expected_operation,
-            )?,
-            OperationKind::Encoding => self.parse_typed_global_name_reference(
-                fqun,
-                &ENCODING_OPERATION_NAME_TYPE,
-                Self::expected_encoding_operation,
-            )?,
-        };
+        let (operation, _) =
+            self.parse_typed_global_name_reference(fqun, name_type, wrong_name_type)?;
         if self.scanner.next_bytes_are(BLOCK_OPEN) {
             let (arguments, end) = self.parse_operation_arguments_block(
                 executing_definition,
@@ -109,6 +119,42 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .ast
             .operation_execution_statement(location, operation, arguments)?)
+    }
+
+    /// Parses a Logical Operation Execution Statement in a Value Operation,
+    /// indented `indentation` spaces, whose references take their default FQUN
+    /// from `fqun`, through the end of its last line.
+    ///
+    /// ```ebnf
+    /// logical_operation_execution_statement =
+    ///     "execute the", " ", logical_operation_name, operation_arguments_block ;
+    /// ```
+    pub(crate) fn parse_logical_operation_execution_statement(
+        &mut self,
+        indentation: usize,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
+    ) -> ParseResult<ast::LogicalOperationExecutionStatement<'py>> {
+        let start = self.scanner.position;
+        // The caller found `execute the logical_operation`, so exactly one
+        // space follows `execute the`.
+        self.scanner.consume_bytes(EXECUTE_THE.len() + 1);
+        let (logical_operation, _) = self.parse_typed_global_name_reference(
+            fqun,
+            &LOGICAL_OPERATION_NAME_TYPE,
+            Self::expected_operation_or_logical_operation,
+        )?;
+        let (arguments, end) = self.parse_operation_arguments_block(
+            ExecutingDefinition::Operation,
+            start,
+            indentation,
+            fqun,
+        )?;
+        let location = self.ast.location(start, end)?;
+        Ok(self.ast.logical_operation_execution_statement(
+            location,
+            logical_operation,
+            arguments,
+        )?)
     }
 
     /// Parses the operation arguments block of the operation execution
@@ -308,18 +354,6 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a name type, at the scanner's position, that is
-    /// not the one an operation execution statement that executes an
-    /// operation of `kind` allows.
-    #[cold]
-    #[inline(never)]
-    fn wrong_operation_name_type(&self, kind: OperationKind) -> ParseError {
-        match kind {
-            OperationKind::Value => self.expected_operation(),
-            OperationKind::Encoding => self.expected_encoding_operation(),
-        }
-    }
-
-    /// Returns the error for a name type, at the scanner's position, that is
     /// not `operation`, in a Value Operation Execution Statement.
     #[cold]
     #[inline(never)]
@@ -330,6 +364,20 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.errors
             .expected_operation(start, self.scanner.end_of_word())
+    }
+
+    /// Returns the error for a name type, at the scanner's position, that is
+    /// neither `operation` nor `logical_operation`, in an execution statement
+    /// in a Value Operation.
+    #[cold]
+    #[inline(never)]
+    fn expected_operation_or_logical_operation(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after_any(&[OPERATION, LOGICAL_OPERATION]) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .expected_operation_or_logical_operation(start, self.scanner.end_of_word())
     }
 
     /// Returns the error for a name type, at the scanner's position, that is

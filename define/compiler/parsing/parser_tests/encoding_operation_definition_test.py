@@ -478,7 +478,7 @@ def test_arguments_block_requires_argument(parse: Parse):
 
 
 def test_value_operation_disallows_computer_operation(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
@@ -495,7 +495,7 @@ def test_value_operation_disallows_computer_operation(parse: Parse):
 def test_value_operation_disallows_encoding_operation_execution(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"

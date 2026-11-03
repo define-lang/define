@@ -23,6 +23,7 @@ pub const ENCODING: &[u8] = b"encoding";
 pub const LITERAL: &[u8] = b"literal";
 pub const OPERATION: &[u8] = b"operation";
 pub const ENCODING_OPERATION: &[u8] = b"encoding_operation";
+pub const LOGICAL_OPERATION: &[u8] = b"logical_operation";
 pub const VIEW: &[u8] = b"view";
 
 // Statements
@@ -55,6 +56,9 @@ pub const DEFINE_THE_POTENTIAL_POSITION: &[u8] = b"define the potential position
 // Defining Value Qualities
 
 pub const DEFINE_THE_POTENTIAL_VALUE: &[u8] = b"define the potential value";
+pub const IT_SUPPORTS_THE: &[u8] = b"it supports the";
+pub const IT_MAY_BE_READ: &[u8] = b"it may be read";
+pub const IT_MAY_BE_WRITTEN: &[u8] = b"it may be written";
 
 // Defining Encodings
 
@@ -112,6 +116,11 @@ pub const ESCAPED_LINE_FEED: u8 = b'n';
 // Setting Values
 
 pub const SET_THE_VALUE_OF: &[u8] = b"set the value of";
+pub const SPACE_FROM: &[u8] = b" from";
+
+// Logical Operations
+
+pub const DEFINE_THE_LOGICAL_OPERATION: &[u8] = b"define the logical_operation";
 
 // Value Operations
 
@@ -127,6 +136,10 @@ pub const EXECUTE_THE_ENCODING_OPERATION: &[u8] = b"execute the encoding operati
 pub const EXECUTE_THE: &[u8] = b"execute the";
 pub const WITH: &[u8] = b"with";
 pub const SPACE_LOOKING_AT: &[u8] = b" looking at";
+
+// Executing Logical Operations
+
+pub const EXECUTE_THE_LOGICAL_OPERATION: &[u8] = b"execute the logical_operation";
 
 // Encoding Operations
 

@@ -63,6 +63,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     def analyze(self) -> validation_result.PostorderValidationResult:
         """Validate the definition and return its validation result."""
         for statement in self._definition.operation_statements:
+            if isinstance(statement, ast.LogicalOperationExecutionStatement):
+                raise NotImplementedError(
+                    "Logical Operation Execution Statements are not validated yet."
+                )
             if not isinstance(statement, ast.OperationExecutionStatement):
                 self._analyze_encoding_or_computer_operation_execution(statement)
                 continue

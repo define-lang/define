@@ -5,7 +5,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</enabled>.
-        set the value of position</enabled> to literal<standard:/boolean>"true".
+        set the value of position</enabled> from literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position</enabled>.
         }

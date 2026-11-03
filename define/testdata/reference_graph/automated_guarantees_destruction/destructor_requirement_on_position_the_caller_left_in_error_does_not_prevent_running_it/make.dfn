@@ -8,6 +8,6 @@ define the potential action<my.domain.com:my_lib:/make> {
         create a particle in position</child>.
         create a particle in position</child>::position</inner>.
         create a particle in position</child>::position</inner>::position</value>.
-        set the value of position</child>::position</inner>::position</value> to literal<standard:/number>"1".
+        set the value of position</child>::position</inner>::position</value> from literal<standard:/number>"1".
     }
 }

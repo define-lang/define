@@ -14,7 +14,7 @@ define the potential action<my.domain.com:my_lib:/provide> {
             }
         }
         create a particle in position<source>.
-        set the value of position<item> to position<source>.
+        set the value of position<item> from position<source>.
         destroy the particle in position<trigger>.
     }
 }

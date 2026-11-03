@@ -6,6 +6,6 @@ define the potential action<define-lang.org:bank:/account/construct> {
         this particle is created.
     } and it does {
         create a particle in position</account/balance>.
-        set the value of position</account/balance> to literal<standard:/number>"0".
+        set the value of position</account/balance> from literal<standard:/number>"0".
     }
 }

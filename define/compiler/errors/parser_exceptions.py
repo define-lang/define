@@ -192,7 +192,8 @@ class ExpectedGlobalDefinition(DefineTokenError):
         + "    - define the potential literal\n"
         + "    - define the encoding\n"
         + "    - define the operation\n"
-        + "    - define the encoding_operation"
+        + "    - define the encoding_operation\n"
+        + "    - define the logical_operation"
     )
 
 
@@ -206,6 +207,12 @@ class ExpectedEncodingOperation(DefineTokenError):
     """Expected an Encoding Operation name in an Encoding Operation Execution Statement."""
 
     message_format: ClassVar[str] = "Expected 'encoding_operation'."
+
+
+class ExpectedOperationOrLogicalOperation(DefineTokenError):
+    """Expected an operation or logical operation name in an Operation Statements Block."""
+
+    message_format: ClassVar[str] = "Expected 'operation' or 'logical_operation'."
 
 
 class ExpectedPositionOrAction(DefineTokenError):
@@ -290,6 +297,33 @@ class InvalidHasAParticleSyntax(DefineTokenError):
     )
 
 
+class InvalidLogicalOperationDefinitionBlock(DefineTokenError):
+    """Wrote something other than a view definition in a Logical Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A logical operation definition may contain only 'define the view' definitions."
+    )
+
+
+class InvalidLogicalOperationSupportBlock(DefineTokenError):
+    """Wrote something other than 'it may be read.' and 'it may be written.' in a Logical Operation Support Block."""
+
+    message_format: ClassVar[str] = (
+        "An 'it supports the logical_operation<...>' block must contain"
+        " 'it may be read.', 'it may be written.', or both, in that order,"
+        " with each at most once."
+    )
+
+
+class InvalidLogicalOperationViewDefinitionBlock(DefineTokenError):
+    """Wrote something other than View Direction Statements in a Logical Operation View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A view definition in a logical operation may contain only"
+        " 'it is read.', 'it is written.', or both, in that order."
+    )
+
+
 class InvalidMoveStatementSyntax(DefineTokenError):
     """Expected 'to' or '::' after a position reference in a move statement."""
 
@@ -347,7 +381,8 @@ class InvalidOperationStatementsBlock(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
-        " 'execute the operation<...>' or 'execute the encoding operation.' statements."
+        " 'execute the operation<...>', 'execute the logical_operation<...>',"
+        " or 'execute the encoding operation.' statements."
     )
 
 
@@ -395,12 +430,21 @@ class InvalidTriggerConditionsBlock(DefineTokenError):
     message_format: ClassVar[str] = "Not a valid trigger condition statement."
 
 
+class InvalidValueDefinitionBlock(DefineTokenError):
+    """Wrote something other than a Logical Operation Support Statement in a Value Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A value definition may contain only"
+        " 'it supports the logical_operation<...>' statements."
+    )
+
+
 class InvalidValueSettingStatementSyntax(DefineTokenError):
     """Invalid target or source syntax in a Value Setting Statement."""
 
     message_format: ClassVar[str] = (
         "The syntax for a value setting statement looks like:\n"
-        "    set the value of position<target> to position<source>.\n"
+        "    set the value of position<target> from position<source>.\n"
         "The source may also be a literal."
     )
 
@@ -459,6 +503,24 @@ class MissingLiteralContentStart(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "A literal's content must start with '\"' right after the '>' of its typed name."
+    )
+
+
+class MissingLogicalOperationSupportStatement(DefineTokenError):
+    """Left out the Logical Operation Support Statements of a Value Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A value definition must contain at least one"
+        " 'it supports the logical_operation<...>' statement."
+    )
+
+
+class MissingLogicalOperationViewDefinition(DefineTokenError):
+    """Left out the view definitions of a Logical Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "A logical operation definition must contain at least one"
+        " 'define the view' definition."
     )
 
 
@@ -526,7 +588,8 @@ class MissingOperationStatementsContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain at least one"
-        " 'execute the operation<...>' or 'execute the encoding operation.' statement."
+        " 'execute the operation<...>', 'execute the logical_operation<...>',"
+        " or 'execute the encoding operation.' statement."
     )
 
 

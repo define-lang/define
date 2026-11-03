@@ -1,0 +1,9 @@
+# A logical operation whose views are all only read has no output view.
+define the logical_operation<my.domain.com:my_lib:/compare> {
+    define the view<left> {
+        it is read.
+    }
+    define the view<right> {
+        it is read.
+    }
+}

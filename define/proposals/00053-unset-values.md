@@ -65,7 +65,7 @@ define the potential action<mv:example.com:example:/copy_unset_value> {
         }
         create a particle in position<source>.
         # Error: the newly created source particle has an unset value.
-        set the value of position<recipient> to position<source>.
+        set the value of position<recipient> from position<source>.
     }
 }
 ```
@@ -91,7 +91,7 @@ define the potential action<mv:example.com:example:/copy_value> {
         the position<source> has a particle.
     } and it does {
         # Requires the caller to provide a source particle with a set value.
-        set the value of position<recipient> to position<source>.
+        set the value of position<recipient> from position<source>.
     }
 }
 ```
@@ -116,7 +116,7 @@ define the potential action<mv:example.com:example:/initialize_value> {
         the position<recipient> has a particle.
     } and it does {
         # Guarantees the recipient's value is 5, even if it arrived unset.
-        set the value of position<recipient> to literal<standard:/decimal:5>.
+        set the value of position<recipient> from literal<standard:/decimal:5>.
     }
 }
 ```

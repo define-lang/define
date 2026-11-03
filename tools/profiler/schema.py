@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 
 # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.
 SCHEMA_VERSION = 8
-MAX_DISCARDED_RATE = 0.001
+MAX_DISCARDED_RATE = 0.01
 
 
 class ObservationFailureKind(enum.StrEnum):

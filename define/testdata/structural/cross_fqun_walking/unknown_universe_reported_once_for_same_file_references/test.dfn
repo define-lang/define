@@ -1,0 +1,9 @@
+# A definition's references into one unknown universe get one diagnostic, even when they name earlier definitions in the same file.
+define the potential position<mv:define-lang.org:other_lib:/a>.
+define the potential position<mv:define-lang.org:other_lib:/b>.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:other_lib:/a>.
+        it has the position<mv:define-lang.org:other_lib:/b>.
+    }
+}

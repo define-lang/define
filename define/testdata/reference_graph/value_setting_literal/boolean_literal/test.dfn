@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</flag>.
-        set the value of position</flag> to literal<standard:/boolean>"true".
+        set the value of position</flag> from literal<standard:/boolean>"true".
     }
 }

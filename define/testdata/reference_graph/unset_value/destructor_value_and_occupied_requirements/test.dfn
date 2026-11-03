@@ -13,7 +13,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::position</value>.
         create a particle in position<box>::position</scratch>.
-        set the value of position<box>::position</value> to literal<standard:/number>"5".
+        set the value of position<box>::position</value> from literal<standard:/number>"5".
         define the position<worker> {
             it may only contain particles where {
                 it has the action</close>.

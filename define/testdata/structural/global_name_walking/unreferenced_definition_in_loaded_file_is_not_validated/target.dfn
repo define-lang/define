@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:my_lib:/target>.
+define the potential value<my.domain.com:my_lib:/target> {
+    it supports the logical_operation</Missing> {
+        it may be read.
+    }
+}

@@ -5,7 +5,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</balance>.
-        set the value of position</balance> to literal<standard:/number>"3".
+        set the value of position</balance> from literal<standard:/number>"3".
         execute the operation<standard:/number/integer/negate> {
             with view<value> looking at position</balance>.
         }

@@ -9,9 +9,9 @@
 
 All programs need some way to specify literal values, like numbers or strings
 that you want to set variables to. In Define, we need something that can be on
-the right side of `set the value of position<foo> to X.` (where X is). Literals
-have way more problems than you would imagine, though, given that they look so
-simple in most languages.
+the right side of `set the value of position<foo> from X.` (where X is).
+Literals have way more problems than you would imagine, though, given that they
+look so simple in most languages.
 
 ### 1: Parsing the Language
 
@@ -247,7 +247,7 @@ define the position<temporary> {
     }
 }
 create a particle in position<temporary>.
-set the value of position<temporary> to literal<standard:/number>"5".
+set the value of position<temporary> from literal<standard:/number>"5".
 execute the operation<standard:/number/rational/add> {
     with view<a> looking at position<temporary>.
     with view<b> looking at position<second_input>.
@@ -282,7 +282,7 @@ define the potential action<mv:example.com:example:/set_price> {
     it happens when {
         the position<price> has a particle.
     } and it does {
-        set the value of position<price> to literal<standard:/decimal>"12.50".
+        set the value of position<price> from literal<standard:/decimal>"12.50".
     }
 }
 ```
@@ -304,7 +304,7 @@ define the potential action<mv:example.com:example:/set_greeting> {
     it happens when {
         the position<greeting> has a particle.
     } and it does {
-        set the value of position<greeting> to literal<standard:/string>"Hello, world!".
+        set the value of position<greeting> from literal<standard:/string>"Hello, world!".
     }
 }
 ```

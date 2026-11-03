@@ -221,20 +221,18 @@ class TestPathResolution:
 class TestSourceValidation:
     def test_max_threads_configures_both_validation_phases(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        structural_validate = (
-            program_validator.ProgramStructuralValidator.validate_program_non_filesystem
-        )
+        structural_validate = program_validator.validate_program_non_filesystem
         reference_graph_validate = (
             reference_graph_validator.ReferenceGraphValidator.validate
         )
 
         def validate_structurally(
-            validator: program_validator.ProgramStructuralValidator,
             source: str,
+            *,
             max_workers: int | None = None,
         ) -> validation_result.ProgramValidationResult:
             assert max_workers == 3
-            return structural_validate(validator, source, max_workers=max_workers)
+            return structural_validate(source, max_workers=max_workers)
 
         def validate_reference_graph(
             validator: reference_graph_validator.ReferenceGraphValidator,
@@ -248,7 +246,7 @@ class TestSourceValidation:
 
         with (
             mock.patch.object(
-                program_validator.ProgramStructuralValidator,
+                program_validator,
                 "validate_program_non_filesystem",
                 autospec=True,
                 side_effect=validate_structurally,

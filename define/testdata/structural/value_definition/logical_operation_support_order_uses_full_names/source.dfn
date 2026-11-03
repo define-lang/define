@@ -1,0 +1,14 @@
+# Statements are ordered by the full names of their logical operations, not by how the references are written.
+define the logical_operation<zz.example.com:zz_lib:/add> {
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<zz.example.com:zz_lib:/number> {
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+    }
+    it supports the logical_operation</add> {
+        it may be written.
+    }
+}

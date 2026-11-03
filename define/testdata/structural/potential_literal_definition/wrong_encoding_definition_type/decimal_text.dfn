@@ -1,1 +1,5 @@
-define the potential value<my.domain.com:my_lib:/decimal_text>.
+define the potential value<my.domain.com:my_lib:/decimal_text> {
+    it supports the logical_operation<standard:/text/equality> {
+        it may be read.
+    }
+}

@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<parent>.
         create a particle in position<parent>.
-        set the value of position<parent>::position</child> to position<parent>::position</child>.
+        set the value of position<parent>::position</child> from position<parent>::position</child>.
     }
 }

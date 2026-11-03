@@ -1625,7 +1625,7 @@ def test_operation_arguments_block_truncated_after_argument(parse: Parse):
 
 
 def test_operation_execution_ends_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"

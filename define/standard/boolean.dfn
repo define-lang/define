@@ -1,4 +1,13 @@
-define the potential value<standard:/boolean>.
+define the potential value<standard:/boolean> {
+    it supports the logical_operation</boolean/and> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</boolean/not> {
+        it may be read.
+        it may be written.
+    }
+}
 define the potential literal<standard:/boolean> {
     it has the encoding</boolean/ascii>.
 }

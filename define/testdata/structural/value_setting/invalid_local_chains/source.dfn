@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<target>.
         define the position<source>.
-        set the value of position<target>::position<target_child> to position<source>::position<source_child>.
+        set the value of position<target>::position<target_child> from position<source>::position<source_child>.
     }
 }

@@ -25,7 +25,7 @@ define the potential action<define-lang.org:bank:/account/deposit> {
             with view<b> looking at position<amount>.
             with view<result> looking at position<new_balance>.
         }
-        set the value of position</account/balance> to position<new_balance>.
+        set the value of position</account/balance> from position<new_balance>.
         destroy the particle in position<amount>.
         destroy the particle in position<run>.
     }

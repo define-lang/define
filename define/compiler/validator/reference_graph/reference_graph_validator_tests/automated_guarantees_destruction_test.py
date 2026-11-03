@@ -882,7 +882,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -969,7 +969,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1056,7 +1056,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1110,7 +1110,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1231,7 +1231,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
-            "column": 78,
+            "column": 80,
             "file_path": "cleanup.dfn",
         },
     )

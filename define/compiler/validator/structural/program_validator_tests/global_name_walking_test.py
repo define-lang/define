@@ -10,14 +10,20 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from unittest import mock
 
+from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.structural import file_validator
+from define.compiler.validator.structural import (
+    file_validator,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateTestdataStructural,
+    )
+    from define.compiler.validator.structural import (
+        file_validation_context,
     )
 
 
@@ -137,25 +143,25 @@ def test_same_file_position_must_precede_referencing_action(
 def test_same_target_file_referenced_as_two_types_loads_once(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    original_validate_file = file_validator.FileStructuralValidator.validate_file
-    validated_paths: list[str] = []
+    original_load_file = file_validator.FileStructuralValidator.load_file
+    loaded_paths: list[str] = []
 
-    def recording_validate_file(
+    def recording_load_file(
         self: file_validator.FileStructuralValidator,
-        context: file_validator.FileValidationContext,
+        context: file_validation_context.FileValidationContext,
     ):
-        validated_paths.append(str(context.full_path))
-        return original_validate_file(self, context)
+        loaded_paths.append(str(context.full_path))
+        return original_load_file(self, context)
 
     with mock.patch.object(
         file_validator.FileStructuralValidator,
-        "validate_file",
+        "load_file",
         autospec=True,
-        side_effect=recording_validate_file,
+        side_effect=recording_load_file,
     ):
         result = validate_testdata_structural()
     assert result.all_exceptions == []
-    assert validated_paths == ["test.dfn", "target.dfn"]
+    assert loaded_paths == ["test.dfn", "target.dfn"]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -328,3 +334,66 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].location.column == 29
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
+
+
+def test_unreferenced_definition_in_loaded_file_is_not_validated(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert_no_errors(result)
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("target.dfn"),
+    ]
+    assert [
+        definition_result.definition.typed_name.source_typed_name
+        for definition_result in result.file_results[1].definition_results
+    ] == ["position<my.domain.com:my_lib:/target>"]
+
+
+def test_reference_to_earlier_definition_with_mismatched_path_reaches_it(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert [file_result.file_path for file_result in result.file_results] == [
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("x.dfn"),
+    ]
+    assert result.file_results[0].diagnostics == []
+    diags = result.file_results[1].diagnostics
+    assert len(diags) == 2
+    path_diag = diags[0]
+    assert isinstance(path_diag, diagnostics.PathMismatchDiagnostic)
+    assert path_diag.location.file_path == PurePosixPath("x.dfn")
+    assert path_diag.location.line == 1
+    assert path_diag.location.column == 52
+    assert path_diag.expected_path == "/x"
+    assert path_diag.actual_path == "/y"
+    not_found_diag = diags[1]
+    assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert not_found_diag.location.file_path == PurePosixPath("x.dfn")
+    assert not_found_diag.location.line == 3
+    assert not_found_diag.location.column == 29
+    assert not_found_diag.file_path == "missing.dfn"
+
+
+def test_unreferenced_duplicate_in_loaded_file_is_reported(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.DuplicateDefinitionDiagnostic(
+            location=ast.SourceLocation(
+                line=7,
+                column=1,
+                end_line=11,
+                end_column=1,
+                file_path=PurePosixPath("target.dfn"),
+            ),
+            definition_type="value",
+            path="/target",
+            first_definition_line=2,
+        )
+    ]

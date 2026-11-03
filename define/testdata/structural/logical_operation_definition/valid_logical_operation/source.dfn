@@ -1,0 +1,12 @@
+# A logical operation with input views and an output view.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}

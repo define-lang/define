@@ -228,33 +228,6 @@ _codegen_testdata_requires_pyright_test_test = unittest.make(
     _codegen_testdata_requires_pyright_test_impl,
 )
 
-def _runfiles_directory_variables_are_forbidden_impl(ctx):
-    env = unittest.begin(ctx)
-    rules = [
-        ("args_rootpath", {"args": ("--tool=$(rootpath :tool)",), "kind": "sh_binary"}),
-        ("args_rootpaths", {"args": ("$(rootpaths :files)",), "kind": "sh_binary"}),
-        ("cmd_location", {"cmd": "$(location :generator) $@", "kind": "genrule"}),
-        ("cmd_locations", {"cmd": "cat $(locations :parts) > $@", "kind": "genrule"}),
-        ("env_location", {"env": {"TOOL": "$(location)"}, "kind": "sh_test", "size": "small"}),
-        ("escaped", {"cmd": "echo $$(location :tool) $$$$(rootpath :tool) > $@", "kind": "genrule"}),
-        ("execpath", {"cmd": "$(execpath :generator) $@", "kind": "genrule"}),
-        ("rlocationpath", {"env": {"TOOL": "$(rlocationpath :tool)"}, "kind": "sh_test", "size": "small"}),
-        ("variable_after_escaped_dollar", {"cmd": "echo $$$(location :tool) > $@", "kind": "genrule"}),
-    ]
-    asserts.equals(env, [
-        '"args_rootpath" uses $(rootpath) in "args"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-        '"args_rootpaths" uses $(rootpaths) in "args"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-        '"cmd_location" uses $(location) in "cmd"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-        '"cmd_locations" uses $(locations) in "cmd"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-        '"env_location" uses $(location) in "env"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-        '"variable_after_escaped_dollar" uses $(location) in "cmd"; use $(rlocationpath) for files read at runtime, or $(execpath) in build actions',
-    ], build_file_violations("tools", rules))
-    return unittest.end(env)
-
-_runfiles_directory_variables_are_forbidden_test = unittest.make(
-    _runfiles_directory_variables_are_forbidden_impl,
-)
-
 def _clippy_tests_must_have_the_clippy_tag_impl(ctx):
     env = unittest.begin(ctx)
     rules = [
@@ -294,7 +267,6 @@ def build_file_checks_test_suite(name):
                 _python_targets_must_be_in_pyright_test_test,
                 _package_without_pyright_test_is_not_checked_for_coverage_test,
                 _codegen_testdata_requires_pyright_test_test,
-                _runfiles_directory_variables_are_forbidden_test,
                 _clippy_tests_must_have_the_clippy_tag_test,
             ]
         ]

@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:parent_universe:/second_child_reference> {
+    it may only contain particles where {
+        it has the position<mv:define-lang.org:second_child:/other>.
+    }
+}

@@ -1,0 +1,7 @@
+# A reference to an earlier definition in its own file reaches that
+# definition, even when the definition's path does not match its file.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</x>.
+    }
+}

@@ -197,6 +197,7 @@ def _project(tmp_path: Path) -> Path:
         "define/compiler/parsing/parser.rs",
         "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
         "MODULE.bazel.lock",
+        "tools/setup_local_dev.py",
     ):
         (repository / path).parent.mkdir(parents=True, exist_ok=True)
         _ = (repository / path).write_text("\n", encoding="utf-8", newline="\n")
@@ -270,6 +271,29 @@ def test_failed_setup_local_dev_output_goes_to_the_agent_at_each_uv_run(
         f"{_SETUP_LOCAL_DEV} in {repository}",
         f"{_SETUP_LOCAL_DEV} in {repository}",
     ]
+
+
+def test_uv_run_outside_a_git_repository_does_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    # The test's temporary directory could be under some other git repository.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert _run_hook(monkeypatch, tmp_path, "cd outside && uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
+
+
+def test_uv_run_in_a_repository_without_setup_local_dev_does_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _repository(tmp_path)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert _run_hook(monkeypatch, repository, "uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
 def test_other_uv_subcommands_do_nothing(

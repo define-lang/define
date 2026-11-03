@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</balance>.
         create a particle in position</remaining>.
-        set the value of position</balance> to literal<standard:/number>"2".
+        set the value of position</balance> from literal<standard:/number>"2".
         execute the operation<standard:/number/natural/subtract_saturating> {
             with view<a> looking at position</balance>.
             with view<b> looking at literal<standard:/number>"5".

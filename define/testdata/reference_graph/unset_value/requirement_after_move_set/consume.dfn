@@ -11,6 +11,6 @@ define the potential action<my.domain.com:my_lib:/consume> {
         define the position<moved>.
         move the particle in position<input> to position<moved>.
         create a particle in position</copy>.
-        set the value of position</copy> to position<moved>.
+        set the value of position</copy> from position<moved>.
     }
 }

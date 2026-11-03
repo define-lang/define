@@ -42,7 +42,7 @@ def test_external_universe_no_project_config(
 def test_config_failure_still_validates_same_file_cycles(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    result = validate_testdata_structural_non_filesystem()
+    result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
@@ -117,15 +117,16 @@ def test_external_universe_configured_but_no_sub_root_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
-    results = result.file_results
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path is None
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.NotProjectRootError)
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath(
+        "vendor/other/.define/project/config.defcl"
+    )
+    assert error.root == "vendor/other"
+    assert result.all_exceptions == [error]
+    assert len(result.file_results) == 1
+    assert result.all_diagnostics == []
 
 
 def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_filesystem(
@@ -256,25 +257,25 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
     assert result.file_results[1].diagnostics == []
 
 
-def test_unknown_universe_and_sub_root_config_errors_in_source_order(
+def test_unknown_universe_reported_with_sub_root_config_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
+    assert len(result.config_errors) == 1
+    error = result.config_errors[0]
+    assert isinstance(error, config.NotProjectRootError)
+    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
+    assert error.root == "lib"
+    assert result.all_exceptions == [error]
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
-    assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
-    assert isinstance(diags[0].error, config.NotProjectRootError)
-    assert diags[0].location.line == 3
+    assert diags[0].universe == "unknown.com:other_lib"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].location.line == 4
     assert diags[0].location.column == 29
-    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[1].location.file_path is None
-    assert diags[1].universe == "unknown.com:other_lib"
-    assert diags[1].current_universe_name == "my.domain.com:my_lib"
-    assert diags[1].location.line == 4
-    assert diags[1].location.column == 29
 
 
 def test_two_unknown_universes_for_same_path_each_diagnosed(
@@ -405,13 +406,14 @@ def test_non_filesystem_cross_universe_back_reference(
 def test_standard_reference_loads_its_standard_file_non_filesystem(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
-    result = validate_testdata_structural_non_filesystem()
+    result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert_no_errors(result)
     assert [str(file_result.file_path) for file_result in result.file_results] == [
         "<string>",
-        standard_library_file("number/natural.dfn"),
         "target.dfn",
+        standard_library_file("number/natural.dfn"),
         "leaf.dfn",
+        standard_library_file("number/add.dfn"),
     ]
 
 

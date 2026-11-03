@@ -50,11 +50,7 @@ define the potential position<my.domain.com:lib:/independent>.
 
 
 def _order() -> reference_graph_order.ReferenceGraphOrder:
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            _SOURCE, max_workers=1
-        )
-    )
+    result = program_validator.validate_program_non_filesystem(_SOURCE, max_workers=1)
     test_helpers.assert_no_errors(result)
     return result.definition_order
 

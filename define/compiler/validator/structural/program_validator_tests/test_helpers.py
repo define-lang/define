@@ -30,10 +30,6 @@ def parse_and_validate_file(
     else:
         _ = source_path.write_bytes(source)
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(relative_path)
-        .file_results
-    )
+    results = program_validator.validate_program(relative_path).file_results
     assert len(results) == 1
     return results[0]

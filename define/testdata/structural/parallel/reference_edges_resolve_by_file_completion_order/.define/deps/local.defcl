@@ -1,8 +1,0 @@
-deps: {
-  local: [
-    {
-      universe_name: "mv:define-lang.org:test_parent"
-      path: "lib"
-    }
-  ]
-}

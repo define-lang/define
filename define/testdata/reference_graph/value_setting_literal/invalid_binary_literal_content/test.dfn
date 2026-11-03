@@ -9,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<target>.
-        set the value of position<target> to literal<standard:/binary>"1021".
+        set the value of position<target> from literal<standard:/binary>"1021".
         destroy the particle in position<target>.
     }
 }

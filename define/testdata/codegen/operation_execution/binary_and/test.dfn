@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</flags>.
         create a particle in position</masked>.
-        set the value of position</flags> to literal<standard:/binary>"1100".
+        set the value of position</flags> from literal<standard:/binary>"1100".
         execute the operation<standard:/binary/and> {
             with view<a> looking at position</flags>.
             with view<b> looking at literal<standard:/binary>"1010".

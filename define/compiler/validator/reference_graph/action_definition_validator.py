@@ -755,7 +755,7 @@ class ActionDefinitionValidator:
         )
         for pos in self._definition.interface_positions:
             # Skip duplicates so the first definition's quality assignments are preserved,
-            # matching file_validator's behavior of not adding conflicting names.
+            # matching definition_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
                 scope.add_definition(pos)
                 self._dead_quality_assignment_validator.register_position_quality_assignments(

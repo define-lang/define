@@ -11,6 +11,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
     } and it does {
-        set the value of position<iface> to literal<standard:/number>"5".
+        set the value of position<iface> from literal<standard:/number>"5".
     }
 }

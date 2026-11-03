@@ -8,7 +8,7 @@ define the potential action<my.domain.com:my_lib:/read> {
         define the position<moved>.
         move the particle in position</value> to position<moved>.
         create a particle in position</copy>.
-        set the value of position</copy> to position<moved>.
+        set the value of position</copy> from position<moved>.
         destroy the particle in position<trigger>.
     }
 }

@@ -34,7 +34,7 @@ def test_invalid_literal_name(
     assert diagnostic.segment == "bad-name"
     assert diagnostic.chars == ("-",)
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 56
+    assert diagnostic.location.column == 58
 
 
 def test_same_universe_requires_short_form(
@@ -48,7 +48,7 @@ def test_same_universe_requires_short_form(
     assert diagnostic.location.file_path is None
     assert diagnostic.fqun == "my.domain.com:my_lib"
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
 
 
 def test_undefined_target(
@@ -82,7 +82,7 @@ def test_invalid_target_and_literal(
     assert literal.segment == "bad-name"
     assert literal.chars == ("-",)
     assert literal.location.line == 10
-    assert literal.location.column == 59
+    assert literal.location.column == 61
 
 
 def test_missing_literal_file(validate_testdata_structural: ValidateTestdataStructural):
@@ -94,7 +94,7 @@ def test_missing_literal_file(validate_testdata_structural: ValidateTestdataStru
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.file_path == "missing.dfn"
     assert diagnostic.location.line == 7
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
 
 
 def test_wrong_definition_type(
@@ -109,7 +109,7 @@ def test_wrong_definition_type(
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 8
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
 
 
 def test_literal_must_precede_reference(
@@ -124,7 +124,7 @@ def test_literal_must_precede_reference(
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 8
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
 
 
 def test_external_literal(validate_testdata_structural: ValidateTestdataStructural):
@@ -146,7 +146,7 @@ def test_unconfigured_external_literal(
     assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.universe == "literals.org:literals"
     assert diagnostic.location.line == 7
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
 
 
 def test_built_in_literal(
@@ -166,5 +166,5 @@ def test_undefined_standard_literal(
     assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 7
-    assert diagnostic.location.column == 52
+    assert diagnostic.location.column == 54
     assert diagnostic.definition_name == "literal<standard:/missing>"

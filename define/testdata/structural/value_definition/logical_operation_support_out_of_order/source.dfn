@@ -1,0 +1,12 @@
+# Each statement that comes after a logical operation whose name sorts later is out of order.
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<standard:/text/equality> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/boolean/and> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/number/add> {
+        it may be read.
+    }
+}

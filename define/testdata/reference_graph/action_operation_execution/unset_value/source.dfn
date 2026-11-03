@@ -33,7 +33,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<first>.
         create a particle in position<second>.
-        set the value of position<first> to literal<standard:/number>"1".
+        set the value of position<first> from literal<standard:/number>"1".
         execute the operation</compare> {
             with view<left> looking at position<first>.
             with view<right> looking at position<second>.

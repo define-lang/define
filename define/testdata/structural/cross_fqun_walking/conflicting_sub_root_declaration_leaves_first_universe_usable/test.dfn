@@ -1,0 +1,11 @@
+# The local deps declare two universes at lib. The first declaration,
+# child_universe, wins, so second_child_reference.dfn's reference to
+# second_child is not followed, while /a and /b load and validate normally in
+# child_universe, where their references to each other form a cycle.
+define the potential position<mv:define-lang.org:parent_universe:/test> {
+    it may only contain particles where {
+        it has the position</second_child_reference>.
+        it has the position<mv:define-lang.org:child_universe:/a>.
+        it has the position<mv:define-lang.org:child_universe:/b>.
+    }
+}

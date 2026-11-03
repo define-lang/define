@@ -489,6 +489,27 @@ suffer in this respect from their operations syntax) because we will know
 exactly the developer's intention about ordering, and (in the future) we will
 know the constraints we've specified on the operation and the values.
 
+### Why Forbid Aliasing?
+
+As noted in our [principles](../spec/principles.md), pointer aliasing is one of
+the language features that causes the most difficulty for static analysis. Views
+have essentially the same analysis challenges as pointers, so we need to be very
+careful with what they actually point to.
+
+More concretely: if two views point to the same particle, then writing through
+one view can change what the other view reads. (That's the core problem of
+aliasing, that you have to account for that possibility everywhere simply
+because it _might_ be possible.)
+
+In order to preserve modular analysis, we need to know that all the statements
+inside an Operation Statements Block are safe purely by looking at the code of
+the Operation Statements Block and the other operations it executes. If we
+allowed aliasing, the safety of an operation could change based on what was
+happening in the _caller_ of the operation. By forbidding aliasing, the compiler
+can determine the safety of far more code simply by looking at the _names_
+inside of the Operation Statements Block (often through trivial linear
+algorithms).
+
 ## Forward Compatibility
 
 It's hard for me to imagine a syntax that we could _not_ translate this into.

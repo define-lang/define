@@ -464,7 +464,9 @@ def _draw_action_statements(draw: st.DrawFn, indent: str) -> list[str]:
             source = f'literal<{literal_name}>"{escaped}"'
         else:
             source = draw(create_particle_references())
-        statements.append(f"{indent}set the value of {target_position} to {source}.\n")
+        statements.append(
+            f"{indent}set the value of {target_position} from {source}.\n"
+        )
     destroy_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(destroy_count):
         position_reference = draw(create_particle_references())
@@ -844,7 +846,13 @@ def syntactic_sources(draw: st.DrawFn) -> str:
         if kind in {"position_simple", "position"}:
             defs.append(draw(position_definitions()))
         elif kind == "value":
-            defs.append(f"define the potential value<{draw(global_names())}>.\n")
+            defs.append(
+                f"define the potential value<{draw(global_names())}> {{\n"
+                + "    it supports the logical_operation<standard:/number/add> {\n"
+                + "        it may be read.\n"
+                + "    }\n"
+                + "}\n"
+            )
         elif kind == "encoding":
             defs.append(f"define the encoding<{draw(global_names())}>.\n")
         elif kind == "potential_literal":
@@ -1429,13 +1437,13 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
         ),
         _create_particle_statement("position<source>", indent="        "),
         _create_particle_statement("position<target>", indent="        "),
-        '        set the value of position<source> to literal</decimal>"5".\n',
+        '        set the value of position<source> from literal</decimal>"5".\n',
     ]
     for _ in range(copies):
         statements.extend(
             (
-                "        set the value of position<target> to position<source>.\n",
-                "        set the value of position<source> to position<target>.\n",
+                "        set the value of position<target> from position<source>.\n",
+                "        set the value of position<source> from position<target>.\n",
             )
         )
     # A value write is dead unless something uses the value, so the action
@@ -1443,7 +1451,7 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
     statements.extend(
         [
             _create_particle_statement("position</copy>", indent="        "),
-            "        set the value of position</copy> to position<source>.\n",
+            "        set the value of position</copy> from position<source>.\n",
         ]
     )
     files = {

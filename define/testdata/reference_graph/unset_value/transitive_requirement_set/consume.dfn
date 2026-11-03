@@ -9,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
         the position<input> has a particle.
     } and it does {
         create a particle in position</copy>.
-        set the value of position</copy> to position<input>.
+        set the value of position</copy> from position<input>.
         destroy the particle in position<input>.
     }
 }

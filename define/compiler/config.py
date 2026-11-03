@@ -96,6 +96,72 @@ class SubRootFqunMismatchError(ConfigError):
         )
 
 
+class LocalDependencyEntry(msgspec.Struct, frozen=True):
+    """One entry in a project's local dependencies config."""
+
+    deps_path: PurePosixPath
+    universe: str
+    # The path as the entry writes it, relative to the project that declares it.
+    path: str
+
+    def describe(self) -> str:
+        """Describe the entry by its file and the values a developer finds in it."""
+        return (
+            f"\"{self.deps_path}\" declares universe '{self.universe}' at '{self.path}'"
+        )
+
+
+class SubRootPathAlreadyDeclaredError(ConfigError):
+    """A local dependency declares a sub-root at a path that another local dependency already declared.
+
+    The first declaration of a path wins, and the later one is not used.
+    """
+
+    # TODO: Point at both entries with caret-style diagnostics once the defcl
+    # parser records the source positions of the nodes it builds.
+
+    sub_root_path: str
+    entry: LocalDependencyEntry
+    existing_entry: LocalDependencyEntry
+
+    def __init__(
+        self,
+        sub_root_path: str,
+        entry: LocalDependencyEntry,
+        existing_entry: LocalDependencyEntry,
+    ):
+        """Initialize with the path and both local dependency entries that declare it."""
+        self.sub_root_path = sub_root_path
+        self.entry = entry
+        self.existing_entry = existing_entry
+        super().__init__(
+            f"Two local dependencies declare the sub-root '{sub_root_path}':\n"
+            + f"  {existing_entry.describe()}\n"
+            + f"  {entry.describe()}\n"
+            + "Only the first one is used."
+        )
+
+
+class LocalDependencyOnOwnUniverseError(ConfigError):
+    """A local dependency names the universe of the project that declares it.
+
+    That universe is already at the project root, so the entry is not used.
+    """
+
+    # TODO: Point at the entry with a caret-style diagnostic once the defcl
+    # parser records the source positions of the nodes it builds.
+
+    entry: LocalDependencyEntry
+
+    def __init__(self, entry: LocalDependencyEntry):
+        """Initialize with the local dependency entry."""
+        self.entry = entry
+        super().__init__(
+            f"{entry.describe()}, but that is the project's own universe, so it"
+            + " cannot be a dependency of that project."
+        )
+
+
 class ConfigSyntaxError(ConfigError):
     """Configuration file has DCL syntax errors."""
 

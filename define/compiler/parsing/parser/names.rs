@@ -220,23 +220,31 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok((typed_name, full_typed_name))
     }
 
-    /// Constructs the typed global name with `name_type` that a definition
-    /// defines, whose name content is `name_content`, with the text `text` in
-    /// the source.
-    pub(crate) fn global_typed_name_in_definition(
+    /// Parses the name content after the name type of the typed global name
+    /// with `name_type` that a definition defines, where the name type begins
+    /// at `typed_name_start`, and returns the typed name with its FQUN.
+    ///
+    /// ```ebnf
+    /// "<", fully_qualified_global_name, ">"
+    /// ```
+    pub(crate) fn parse_global_typed_name_in_definition(
         &mut self,
-        location: ast::SourceLocation<'py>,
+        typed_name_start: Position,
         name_type: ast::NameType,
-        name_content: ast::DefinitionGlobalNameContent<'py>,
-        text: &'source [u8],
-    ) -> PyResult<ast::GlobalTypedNameInDefinition<'py>> {
-        let source_typed_name = self.typed_name_text(name_type, None, text)?;
-        self.ast.global_typed_name_in_definition(
+    ) -> ParseResult<(
+        ast::GlobalTypedNameInDefinition<'py>,
+        FqunWithCanonicalText<'py, 'source>,
+    )> {
+        let (name_content, name_text, fqun) = self.parse_global_name_definition_content()?;
+        let location = self.ast.location(typed_name_start, self.scanner.position)?;
+        let source_typed_name = self.typed_name_text(name_type, None, name_text)?;
+        let typed_name = self.ast.global_typed_name_in_definition(
             location,
             name_type,
             name_content,
             source_typed_name,
-        )
+        )?;
+        Ok((typed_name, fqun))
     }
 
     /// Consumes the `<` that starts a name's content at the scanner's
@@ -317,7 +325,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// "<", fully_qualified_global_name, ">"
     /// fully_qualified_global_name = fqun, global_name_path ;
     /// ```
-    pub(crate) fn parse_global_name_definition_content(
+    fn parse_global_name_definition_content(
         &mut self,
     ) -> ParseResult<(
         ast::DefinitionGlobalNameContent<'py>,

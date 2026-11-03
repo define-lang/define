@@ -41,8 +41,8 @@ def test_duplicate_value(
     assert diagnostic.location.column == 20
     assert diagnostic.location.file_path is None
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.first_assignment_line == 5
-    assert diagnostic.location.line == 6
+    assert diagnostic.first_assignment_line == 10
+    assert diagnostic.location.line == 11
 
 
 def test_multiple_values(
@@ -59,10 +59,10 @@ def test_multiple_values(
     assert second.location.file_path is None
     assert first.first_value_name == "value</number>"
     assert second.first_value_name == "value</number>"
-    assert first.first_assignment_line == 7
-    assert second.first_assignment_line == 7
-    assert first.location.line == 8
-    assert second.location.line == 9
+    assert first.first_assignment_line == 21
+    assert second.first_assignment_line == 21
+    assert first.location.line == 22
+    assert second.location.line == 23
     assert first.location.column == 20
 
 
@@ -76,8 +76,8 @@ def test_multiple_values_in_local_position(
     assert isinstance(diagnostic, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.first_value_name == "value</number>"
-    assert diagnostic.first_assignment_line == 7
-    assert diagnostic.location.line == 8
+    assert diagnostic.first_assignment_line == 16
+    assert diagnostic.location.line == 17
     assert diagnostic.location.column == 24
 
 
@@ -89,7 +89,7 @@ def test_invalid_name_does_not_count_as_value_quality(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diagnostic.location.line == 5
+    assert diagnostic.location.line == 10
     assert diagnostic.location.column == 27
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "Bad"
@@ -104,7 +104,7 @@ def test_same_fqun_requires_short_form(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
-    assert diagnostic.location.line == 5
+    assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.location.file_path is None
     assert diagnostic.fqun == "my.domain.com:my_lib"
@@ -115,7 +115,7 @@ def test_reference_to_value_file(
 ):
     result = validate_testdata_structural()
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 3
     value_definitions = result.file_results[1].definition_results
     assert len(value_definitions) == 1
     assert isinstance(value_definitions[0].definition, ast.ValueDefinition)
@@ -141,4 +141,4 @@ def test_cross_universe_value(
 ):
     result = validate_testdata_structural()
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 3

@@ -223,24 +223,24 @@ class EncodingOperationDefinition(OperationDefinition):
     )
 
 
+class LogicalOperationDefinition(GlobalDefinition):
+    """Represents a logical operation definition."""
+
+    views: tuple[LogicalOperationViewDefinition, ...]
+
+
 class ValueDefinition(QualityDefinition):
     """Represents a value quality definition."""
 
-    @classmethod
-    def from_name(
-        cls, *, name: DefinitionGlobalNameContent, location: SourceLocation
-    ) -> Self:
-        """Initialize with a global name."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.VALUE,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.VALUE
-                ),
-            ),
-            location=location,
-        )
+    logical_operation_support_statements: tuple[LogicalOperationSupportStatement, ...]
+
+
+class LogicalOperationSupportStatement(ASTNode):
+    """Represents a Logical Operation Support Statement."""
+
+    logical_operation: GlobalTypedNameReference
+    may_be_read: bool
+    may_be_written: bool
 
 
 class PositionDefinition(QualityDefinition):
@@ -370,6 +370,14 @@ class ViewDefinition(ASTNode):
             quality_assignment_block=quality_assignment_block,
             location=location,
         )
+
+
+class LogicalOperationViewDefinition(ASTNode):
+    """Represents a Logical Operation View Definition."""
+
+    typed_name: LocalTypedNameReference
+    is_input: bool
+    is_output: bool
 
 
 # Struct-generated constructors prevent automatic covariance inference.
@@ -798,7 +806,7 @@ class Literal(ASTNode):
 
 
 class ValueSettingStatement(ParticleStatement):
-    """Represents a 'set the value of ... to' statement."""
+    """Represents a 'set the value of ... from' statement."""
 
     source: PositionReference | Literal
 
@@ -827,6 +835,13 @@ class OperationExecutionStatement(ASTNode):
     arguments: tuple[OperationArgumentStatement, ...]
 
 
+class LogicalOperationExecutionStatement(ASTNode):
+    """Represents an 'execute the logical_operation<...>' statement."""
+
+    logical_operation: GlobalTypedNameReference
+    arguments: tuple[OperationArgumentStatement, ...]
+
+
 class EncodingOperationExecutionStatement(ASTNode):
     """Represents the 'execute the encoding operation' statement."""
 
@@ -837,6 +852,7 @@ class ComputerOperationExecutionStatement(ASTNode):
 
 type OperationStatement = (
     OperationExecutionStatement
+    | LogicalOperationExecutionStatement
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement
 )
@@ -1097,6 +1113,13 @@ class DefinitionGlobalNameContent(GlobalNameContent[Fqun]):
 
 class ReferenceGlobalNameContent(GlobalNameContent[Fqun | None]):
     """Represents a global name at a reference site."""
+
+    @property
+    def source_fqun(self) -> str | None:
+        """The FQUN written in the reference, or None for a short-form reference."""
+        if self.fqun is None:
+            return None
+        return self.fqun.canonical
 
 
 class GlobalTypedNameInDefinition(GlobalTypedName[DefinitionGlobalNameContent]):
