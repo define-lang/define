@@ -1,0 +1,27 @@
+# The standard library defines no operation<standard:/number/missing>, so the
+# values written to position<first> and position<second> are not also reported
+# as dead writes.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<first>.
+        create a particle in position<second>.
+        set the value of position<first> from literal<standard:/number>"1".
+        set the value of position<second> from literal<standard:/number>"2".
+        execute the operation<standard:/number/missing> {
+            with view<source> looking at position<first>.
+            with view<target> looking at position<second>.
+        }
+    }
+}

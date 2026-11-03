@@ -1,0 +1,33 @@
+# The standard library defines no operation<standard:/number/missing>, so
+# reading position<first> after it is not also reported as reading an unset
+# value.
+define the operation<my.domain.com:my_lib:/show> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<first>.
+        execute the operation<standard:/number/missing> {
+            with view<result> looking at position<first>.
+        }
+        execute the operation</show> {
+            with view<value> looking at position<first>.
+        }
+    }
+}

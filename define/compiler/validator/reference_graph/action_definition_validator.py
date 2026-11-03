@@ -462,6 +462,7 @@ class ActionDefinitionValidator:
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
         ] = {}
         written_positions: list[ast.PositionReference] = []
+        positions_with_unknown_use: list[ast.PositionReference] = []
         for argument in stmt.arguments:
             position = argument.looking_at
             if not isinstance(position, ast.PositionReference):
@@ -473,9 +474,6 @@ class ActionDefinitionValidator:
                 if executed is None
                 else executed.get_view(argument.view.source_typed_name)
             )
-            # A missing operation or an undefined interface view is reported
-            # when the arguments are validated, so its position is neither
-            # read nor written.
             is_read = interface_view is not None and interface_view.is_input
             particle = self._analyze_looked_at_position(
                 position, scope, statement_diagnostics, is_read=is_read
@@ -483,17 +481,26 @@ class ActionDefinitionValidator:
             if particle is None:
                 continue
             looked_at_qualities[argument] = particle.qualities.names
-            if (
-                interface_view is not None
-                and interface_view.is_output
-                and particle.qualities.value_quality is not None
-            ):
+            if particle.qualities.value_quality is None:
+                continue
+            # A missing operation or an undefined interface view is reported
+            # when the arguments are validated, so whether this statement
+            # reads or writes its position is unknown.
+            if interface_view is None:
+                positions_with_unknown_use.append(position)
+            elif interface_view.is_output:
                 written_positions.append(position)
         argument_diagnostics, literal_values = (
             self._operation_arguments_validator.validate(stmt, looked_at_qualities)
         )
         statement_diagnostics.extend(argument_diagnostics)
         self._diagnostics.extend(statement_diagnostics)
+        # The statement may have read the value of a position with unknown
+        # use, or written it, so neither an earlier write nor a later read
+        # reports the same mistake again.
+        for position in positions_with_unknown_use:
+            self._dead_value_write_validator.mark_used(position)
+            self._tracker.mark_value_error(position)
         # A failed statement still counts as writing its output views, so
         # later reads do not report the same mistake again as an unset value.
         for position in written_positions:
