@@ -19,10 +19,14 @@ def _p(path: str) -> str:
 
 
 def _make_position(path_name: str) -> ast.PositionDefinition:
-    return ast.PositionDefinition.from_name(
-        name=ast.DefinitionGlobalNameContent(
-            path=ast.GlobalPathName(name=path_name, location=_LOC),
-            fqun=_FQUN,
+    return ast.PositionDefinition(
+        typed_name=ast.GlobalTypedNameInDefinition(
+            name_type=name_types.NameType.POSITION,
+            name_content=ast.DefinitionGlobalNameContent(
+                path=ast.GlobalPathName(name=path_name, location=_LOC),
+                fqun=_FQUN,
+                location=_LOC,
+            ),
             location=_LOC,
         ),
         location=_LOC,
@@ -37,10 +41,14 @@ _TRIGGER_REF = ast.LocalTypedNameReference(
 
 
 def _make_action(path_name: str) -> ast.ActionDefinition:
-    return ast.ActionDefinition.from_name(
-        name=ast.DefinitionGlobalNameContent(
-            path=ast.GlobalPathName(name=path_name, location=_LOC),
-            fqun=_FQUN,
+    return ast.ActionDefinition(
+        typed_name=ast.GlobalTypedNameInDefinition(
+            name_type=name_types.NameType.ACTION,
+            name_content=ast.DefinitionGlobalNameContent(
+                path=ast.GlobalPathName(name=path_name, location=_LOC),
+                fqun=_FQUN,
+                location=_LOC,
+            ),
             location=_LOC,
         ),
         quality_implications=(),

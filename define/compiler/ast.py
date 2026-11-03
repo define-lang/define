@@ -54,24 +54,6 @@ class SourceLocation(msgspec.Struct, frozen=True, gc=False):
     end_column: int
     file_path: PurePosixPath | None = None
 
-    @classmethod
-    def from_definition_name(
-        cls, name_content: NameContent, name_type: name_types.NameType
-    ) -> Self:
-        """Source location of a typed name at its definition site.
-
-        Spans the type-keyword word ("position" or "action") immediately
-        before "<" through the closing ">" of the name content.
-        """
-        name_loc = name_content.location
-        return cls(
-            line=name_loc.line,
-            column=name_loc.column - 1 - len(name_type.value),
-            end_line=name_loc.end_line,
-            end_column=name_loc.end_column + 1,
-            file_path=name_loc.file_path,
-        )
-
 
 def start_of_file_location(
     file_path: PurePosixPath | None = None,
@@ -114,48 +96,11 @@ class QualityDefinition(GlobalDefinition):
 class EncodingDefinition(GlobalDefinition):
     """Represents an encoding definition."""
 
-    @classmethod
-    def from_name(
-        cls, *, name: DefinitionGlobalNameContent, location: SourceLocation
-    ) -> Self:
-        """Initialize with a global name."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.ENCODING,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.ENCODING
-                ),
-            ),
-            location=location,
-        )
-
 
 class PotentialLiteralDefinition(GlobalDefinition):
     """Represents a potential literal definition."""
 
     encoding: GlobalTypedNameReference
-
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        name: DefinitionGlobalNameContent,
-        encoding: GlobalTypedNameReference,
-        location: SourceLocation,
-    ) -> Self:
-        """Initialize with a global name and its encoding."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.LITERAL,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.LITERAL
-                ),
-            ),
-            encoding=encoding,
-            location=location,
-        )
 
 
 class OperationDefinition(GlobalDefinition):
@@ -165,29 +110,6 @@ class OperationDefinition(GlobalDefinition):
 
     views: tuple[ViewDefinition, ...]
     operation_statements: tuple[OperationStatement, ...]
-
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        name: DefinitionGlobalNameContent,
-        views: tuple[ViewDefinition, ...],
-        operation_statements: tuple[OperationStatement, ...],
-        location: SourceLocation,
-    ) -> Self:
-        """Initialize with a global name, its views, and its statements."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=cls.definition_name_type,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, cls.definition_name_type
-                ),
-            ),
-            views=views,
-            operation_statements=operation_statements,
-            location=location,
-        )
 
     def view_index(self, view_name: str) -> int | None:
         """Return the index of the first view with this name, if there is one."""
@@ -248,27 +170,6 @@ class PositionDefinition(QualityDefinition):
 
     quality_assignment_block: QualityAssignmentBlock | None = None
 
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        name: DefinitionGlobalNameContent,
-        location: SourceLocation,
-        quality_assignment_block: QualityAssignmentBlock | None = None,
-    ) -> Self:
-        """Initialize with a global name, wrapping it in a typed definition name."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.POSITION,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.POSITION
-                ),
-            ),
-            location=location,
-            quality_assignment_block=quality_assignment_block,
-        )
-
     @property
     def assigned_qualities(self) -> tuple[GlobalTypedNameReference, ...]:
         """The typed names of the qualities this position assigns, in source order."""
@@ -306,27 +207,6 @@ class LocalPositionDefinition(ASTNode):
     typed_name: LocalTypedNameReference
     quality_assignment_block: QualityAssignmentBlock | None = None
 
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        local_name: LocalNameContent,
-        location: SourceLocation,
-        quality_assignment_block: QualityAssignmentBlock | None = None,
-    ) -> Self:
-        """Initialize with a local name, wrapping it in a typed name."""
-        return cls(
-            typed_name=LocalTypedNameReference(
-                name_type=name_types.NameType.POSITION,
-                name_content=local_name,
-                location=SourceLocation.from_definition_name(
-                    local_name, name_types.NameType.POSITION
-                ),
-            ),
-            location=location,
-            quality_assignment_block=quality_assignment_block,
-        )
-
     @property
     def assigned_qualities(self) -> tuple[GlobalTypedNameReference, ...]:
         """The typed names of the qualities this position assigns, in source order."""
@@ -345,31 +225,6 @@ class ViewDefinition(ASTNode):
     is_input: bool
     is_output: bool
     quality_assignment_block: QualityAssignmentBlock
-
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        local_name: LocalNameContent,
-        is_input: bool,
-        is_output: bool,
-        quality_assignment_block: QualityAssignmentBlock,
-        location: SourceLocation,
-    ) -> Self:
-        """Initialize with a local name, wrapping it in a typed name."""
-        return cls(
-            typed_name=LocalTypedNameReference(
-                name_type=name_types.NameType.VIEW,
-                name_content=local_name,
-                location=SourceLocation.from_definition_name(
-                    local_name, name_types.NameType.VIEW
-                ),
-            ),
-            is_input=is_input,
-            is_output=is_output,
-            quality_assignment_block=quality_assignment_block,
-            location=location,
-        )
 
 
 class LogicalOperationViewDefinition(ASTNode):
@@ -976,33 +831,6 @@ class ActionDefinition(QualityDefinition):
         msgspec.field(default_factory=dict)
     )
     trigger_position: Derived[LocalPositionDefinition | None] = None
-
-    @classmethod
-    def from_name(
-        cls,
-        *,
-        name: DefinitionGlobalNameContent,
-        location: SourceLocation,
-        quality_implications: tuple[QualityImplicationStatement, ...],
-        interface_positions: tuple[LocalPositionDefinition, ...],
-        trigger_conditions: TriggerConditionsBlock,
-        action_statements: ActionStatementsBlock,
-    ) -> Self:
-        """Initialize with a global name, wrapping it in a typed definition name."""
-        return cls(
-            typed_name=GlobalTypedNameInDefinition(
-                name_type=name_types.NameType.ACTION,
-                name_content=name,
-                location=SourceLocation.from_definition_name(
-                    name, name_types.NameType.ACTION
-                ),
-            ),
-            quality_implications=quality_implications,
-            location=location,
-            interface_positions=interface_positions,
-            trigger_conditions=trigger_conditions,
-            action_statements=action_statements,
-        )
 
     def __post_init__(self):
         """Populate the interface-position lookup values."""

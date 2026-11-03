@@ -21,8 +21,12 @@ def _make_local_def(
     name: str,
     quality_assignment_block: ast.QualityAssignmentBlock | None = None,
 ) -> ast.LocalPositionDefinition:
-    return ast.LocalPositionDefinition.from_name(
-        local_name=ast.LocalNameContent(name=name, location=_LOC),
+    return ast.LocalPositionDefinition(
+        typed_name=ast.LocalTypedNameReference(
+            name_type=name_types.NameType.POSITION,
+            name_content=ast.LocalNameContent(name=name, location=_LOC),
+            location=_LOC,
+        ),
         quality_assignment_block=quality_assignment_block,
         location=_LOC,
     )
