@@ -249,6 +249,34 @@ class LogicalOperationSupportOrderDiagnostic(Diagnostic):
     )
 
 
+class LogicalOperationReadNotSupportedDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation reading a view whose value quality does not support it with 'it may be read.'."""
+
+    looked_at_name: str
+    logical_operation_name: str
+    value_name: str
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' cannot read "
+        "'{self.looked_at_name}'. '{self.looked_at_name}' holds a "
+        "'{self.value_name}'. However, '{self.value_name}' does not "
+        "support being read by '{self.logical_operation_name}'."
+    )
+
+
+class LogicalOperationWriteNotSupportedDiagnostic(Diagnostic):
+    """Diagnostic for a logical operation writing a view whose value quality does not support it with 'it may be written.'."""
+
+    looked_at_name: str
+    logical_operation_name: str
+    value_name: str
+    message_format: ClassVar[str] = (
+        "'{self.logical_operation_name}' cannot write to "
+        "'{self.looked_at_name}'. '{self.looked_at_name}' holds a "
+        "'{self.value_name}'. However, '{self.value_name}' does not "
+        "support being written by '{self.logical_operation_name}'."
+    )
+
+
 class ViewPositionOrActionQualityDiagnostic(Diagnostic):
     """Diagnostic for a view Quality Assignment Statement that names a position or action."""
 

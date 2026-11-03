@@ -1,0 +1,36 @@
+# view<value> of logical_operation</negate> reads the output-only view<first> before anything writes it.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<first> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<second> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<value> looking at view<first>.
+            with view<result> looking at view<second>.
+        }
+    }
+}

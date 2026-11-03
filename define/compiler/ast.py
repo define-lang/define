@@ -103,13 +103,32 @@ class PotentialLiteralDefinition(GlobalDefinition):
     encoding: GlobalTypedNameReference
 
 
-class OperationDefinition(GlobalDefinition):
-    """Base class for Value Operation and Encoding Operation definitions."""
+class ViewDefinition(ASTNode):
+    """Base class for view definitions."""
 
-    definition_name_type: ClassVar[name_types.NameType]
+    typed_name: LocalTypedNameReference
+    is_input: bool
+    is_output: bool
 
-    views: tuple[ViewDefinition, ...]
-    operation_statements: tuple[OperationStatement, ...]
+
+class InterfaceViewDefinition(ViewDefinition):
+    """Represents an Interface View definition on a Value Operation or an Encoding Operation."""
+
+    quality_assignment_block: QualityAssignmentBlock
+
+
+class LogicalOperationViewDefinition(ViewDefinition):
+    """Represents a Logical Operation View Definition."""
+
+
+# Struct-generated constructors prevent automatic covariance inference.
+ViewDefinitionT_co = TypeVar("ViewDefinitionT_co", bound=ViewDefinition, covariant=True)
+
+
+class ExecutableDefinition(GlobalDefinition, Generic[ViewDefinitionT_co]):  # noqa: UP046
+    """Base class for definitions that a statement executes with an Operation Arguments Block."""
+
+    views: Final[tuple[ViewDefinitionT_co, ...]]
 
     def view_index(self, view_name: str) -> int | None:
         """Return the index of the first view with this name, if there is one."""
@@ -121,7 +140,7 @@ class OperationDefinition(GlobalDefinition):
                 return index
         return None
 
-    def get_view(self, view_name: str) -> ViewDefinition | None:
+    def get_view(self, view_name: str) -> ViewDefinitionT_co | None:
         """Return the first view with this name, if there is one."""
         # This scans the views instead of keeping a dict of them for the same
         # reason view_index does.
@@ -129,6 +148,13 @@ class OperationDefinition(GlobalDefinition):
         if index is None:
             return None
         return self.views[index]
+
+
+class OperationDefinition(ExecutableDefinition[InterfaceViewDefinition]):
+    """Base class for Value Operation and Encoding Operation definitions."""
+
+    definition_name_type: ClassVar[name_types.NameType]
+    operation_statements: tuple[OperationStatement, ...]
 
 
 class ValueOperationDefinition(OperationDefinition):
@@ -145,10 +171,8 @@ class EncodingOperationDefinition(OperationDefinition):
     )
 
 
-class LogicalOperationDefinition(GlobalDefinition):
+class LogicalOperationDefinition(ExecutableDefinition[LogicalOperationViewDefinition]):
     """Represents a logical operation definition."""
-
-    views: tuple[LogicalOperationViewDefinition, ...]
 
 
 class ValueDefinition(QualityDefinition):
@@ -216,23 +240,6 @@ class LocalPositionDefinition(ASTNode):
             statement.typed_global_name
             for statement in self.quality_assignment_block.statements
         )
-
-
-class ViewDefinition(ASTNode):
-    """Represents a view definition."""
-
-    typed_name: LocalTypedNameReference
-    is_input: bool
-    is_output: bool
-    quality_assignment_block: QualityAssignmentBlock
-
-
-class LogicalOperationViewDefinition(ASTNode):
-    """Represents a Logical Operation View Definition."""
-
-    typed_name: LocalTypedNameReference
-    is_input: bool
-    is_output: bool
 
 
 # Struct-generated constructors prevent automatic covariance inference.

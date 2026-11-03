@@ -1744,3 +1744,99 @@ def test_occupied_action_interface_when_action_triggers_format(
             create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
                                                                                   ^^^^^^^^^^^^^^""")
     )
+
+
+_NEGATE_FILE = (
+    "define the logical_operation<my.domain.com:my_lib:/negate> {\n"
+    "    define the view<value> {\n"
+    "        it is read.\n"
+    "    }\n"
+    "    define the view<result> {\n"
+    "        it is written.\n"
+    "    }\n"
+    "}\n"
+)
+
+_NEGATE_TEST_FILE = (
+    "define the operation<my.domain.com:my_lib:/test> {\n"
+    "    define the view<amount> {\n"
+    "        it is read.\n"
+    "        it may only contain particles where {\n"
+    "            it has the value</number>.\n"
+    "        }\n"
+    "    }\n"
+    "    define the view<negated> {\n"
+    "        it is written.\n"
+    "        it may only contain particles where {\n"
+    "            it has the value</number>.\n"
+    "        }\n"
+    "    }\n"
+    "\n"
+    "    it does {\n"
+    "        execute the logical_operation</negate> {\n"
+    "            with view<value> looking at view<amount>.\n"
+    "            with view<result> looking at view<negated>.\n"
+    "        }\n"
+    "    }\n"
+    "}\n"
+)
+
+
+def test_logical_operation_read_not_supported_format(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "negate.dfn": _NEGATE_FILE,
+            "number.dfn": (
+                "define the potential value<my.domain.com:my_lib:/number> {\n"
+                "    it supports the logical_operation</negate> {\n"
+                "        it may be written.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": _NEGATE_TEST_FILE,
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 17, column 41
+            with view<value> looking at view<amount>.
+                                        ^^^^^^^^^^^^
+        'logical_operation</negate>' cannot read 'view<amount>'. 'view<amount>' holds a 'value</number>'. However, 'value</number>' does not support being read by 'logical_operation</negate>'.""")
+    )
+
+
+def test_logical_operation_write_not_supported_format(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "negate.dfn": _NEGATE_FILE,
+            "number.dfn": (
+                "define the potential value<my.domain.com:my_lib:/number> {\n"
+                "    it supports the logical_operation</negate> {\n"
+                "        it may be read.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": _NEGATE_TEST_FILE,
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 18, column 42
+            with view<result> looking at view<negated>.
+                                         ^^^^^^^^^^^^^
+        'logical_operation</negate>' cannot write to 'view<negated>'. 'view<negated>' holds a 'value</number>'. However, 'value</number>' does not support being written by 'logical_operation</negate>'.""")
+    )

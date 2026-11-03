@@ -24,7 +24,7 @@ _OPERATION_SUFFIX = (
 )
 
 
-def _only_view(program: ast.Program) -> ast.ViewDefinition:
+def _only_view(program: ast.Program) -> ast.InterfaceViewDefinition:
     [definition] = program.definitions
     assert isinstance(definition, ast.ValueOperationDefinition)
     [view] = definition.views

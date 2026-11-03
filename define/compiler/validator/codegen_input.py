@@ -75,7 +75,7 @@ class PositionValueSetting(ValueSetting):
 class OperationArgument[LookedAt](msgspec.Struct):
     """What one interface view of an executed operation looks at."""
 
-    interface_view: ast.ViewDefinition
+    interface_view: ast.InterfaceViewDefinition
     looking_at: LookedAt | EncodedLiteral
 
 

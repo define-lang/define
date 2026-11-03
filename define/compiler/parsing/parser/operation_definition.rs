@@ -90,11 +90,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         block_open_end: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
-        NodeTuple<'py, ast::ViewDefinition<'py>>,
+        NodeTuple<'py, ast::InterfaceViewDefinition<'py>>,
         LineInBlock,
         Position,
     )> {
-        let views = self.nodes.start::<ast::ViewDefinition>();
+        let views = self.nodes.start::<ast::InterfaceViewDefinition>();
         let mut content_end = block_open_end;
         loop {
             let line = self.next_line_in_block(0, &OPERATION_DEFINITION_STATEMENT_STARTS)?;
@@ -130,7 +130,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<(ast::ViewDefinition<'py>, Position)> {
+    ) -> ParseResult<(ast::InterfaceViewDefinition<'py>, Position)> {
         let name = self.parse_local_name_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
         let (typed_name, _) =
@@ -174,7 +174,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let location = self.ast.location(start, end)?;
         let definition = self
             .ast
-            .view_definition(location, typed_name, is_input, is_output, block)?;
+            .interface_view_definition(location, typed_name, is_input, is_output, block)?;
         Ok((definition, end))
     }
 

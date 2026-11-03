@@ -1,4 +1,4 @@
-"""Validation of Operation Argument Statements against the executed operation's interface views."""
+"""Validation of Operation Argument Statements against the views of the operations and logical operations they execute."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from define.compiler.validator import codegen_input
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Mapping
+    from collections.abc import Collection, Mapping, Sequence
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 
 class OperationArgumentsValidator:
-    """Validates Operation Argument Statements against the interface views of the operations they execute."""
+    """Validates Operation Argument Statements against the views of the operations and logical operations they execute."""
 
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
@@ -73,23 +73,12 @@ class OperationArgumentsValidator:
         operation_name = statement.operation.source_form_in_universe(
             self._enclosing_fqun
         )
-        if not executed.views:
-            if statement.arguments:
-                validation_diagnostics.append(
-                    diagnostics.ArgumentsForOperationWithoutViewsDiagnostic(
-                        location=statement.arguments[0].location,
-                        operation_name=operation_name,
-                    )
-                )
-            return validation_diagnostics, literal_values
-        arguments = self._collect_arguments(
-            statement, executed, operation_name, validation_diagnostics
-        )
-        self._check_argument_order(
-            arguments, executed, operation_name, validation_diagnostics
-        )
-        self._check_missing_arguments(
-            statement, arguments, executed, operation_name, validation_diagnostics
+        arguments = self.validate_arguments(
+            statement.operation,
+            statement.arguments,
+            executed,
+            operation_name,
+            validation_diagnostics,
         )
         for index, argument in arguments.items():
             literal_value = self._check_view_requirements(
@@ -103,6 +92,43 @@ class OperationArgumentsValidator:
             if literal_value is not None:
                 literal_values[argument] = literal_value
         return validation_diagnostics, literal_values
+
+    def validate_arguments(
+        self,
+        executed_name: ast.GlobalTypedNameReference,
+        arguments: Sequence[ast.OperationArgumentStatement[ast.LookedAt]],
+        executed: ast.ExecutableDefinition[ast.ViewDefinition],
+        operation_name: str,
+        validation_diagnostics: list[diagnostics.Diagnostic],
+    ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
+        """Check that the arguments name each of the executed definition's views once, in order.
+
+        Returns the arguments that name a view of the executed definition, by
+        view index in source order.
+        """
+        if not executed.views:
+            if arguments:
+                validation_diagnostics.append(
+                    diagnostics.ArgumentsForOperationWithoutViewsDiagnostic(
+                        location=arguments[0].location,
+                        operation_name=operation_name,
+                    )
+                )
+            return {}
+        arguments_by_index = self._collect_arguments(
+            arguments, executed, operation_name, validation_diagnostics
+        )
+        self._check_argument_order(
+            arguments_by_index, executed, operation_name, validation_diagnostics
+        )
+        self._check_missing_arguments(
+            executed_name,
+            arguments_by_index,
+            executed,
+            operation_name,
+            validation_diagnostics,
+        )
+        return arguments_by_index
 
     @staticmethod
     def operation_arguments[
@@ -153,16 +179,29 @@ class OperationArgumentsValidator:
             return None
         return typing.cast("ast.OperationDefinition", definition_result.definition)
 
+    def get_executed_logical_operation(
+        self, statement: ast.LogicalOperationExecutionStatement
+    ) -> ast.LogicalOperationDefinition | None:
+        """Return the logical operation the statement executes, if it is defined."""
+        definition_result = self._definition_results.get(statement.logical_operation)
+        # A missing logical operation, or a definition of another type, was
+        # already reported when its reference was resolved.
+        if definition_result is None:
+            return None
+        return typing.cast(
+            "ast.LogicalOperationDefinition", definition_result.definition
+        )
+
     @staticmethod
     def _collect_arguments(
-        statement: ast.OperationExecutionStatement[ast.LookedAt],
-        executed: ast.OperationDefinition,
+        arguments: Sequence[ast.OperationArgumentStatement[ast.LookedAt]],
+        executed: ast.ExecutableDefinition[ast.ViewDefinition],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
-        """Return the arguments that name an interface view of the executed operation, by view index in source order."""
-        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]] = {}
-        for argument in statement.arguments:
+        """Return the arguments that name a view of the executed definition, by view index in source order."""
+        arguments_by_index: dict[int, ast.OperationArgumentStatement[ast.LookedAt]] = {}
+        for argument in arguments:
             # Structural validation reports malformed view names.
             if name_validators.validate_local_name_format(argument.view.name_content):
                 continue
@@ -181,15 +220,15 @@ class OperationArgumentsValidator:
                 )
                 continue
             # Structural validation reports a view given more than one argument.
-            if index in arguments:
+            if index in arguments_by_index:
                 continue
-            arguments[index] = argument
-        return arguments
+            arguments_by_index[index] = argument
+        return arguments_by_index
 
     @staticmethod
     def _check_argument_order(
         arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
-        executed: ast.OperationDefinition,
+        executed: ast.ExecutableDefinition[ast.ViewDefinition],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
@@ -215,9 +254,9 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def _check_missing_arguments(
-        statement: ast.OperationExecutionStatement[ast.LookedAt],
+        executed_name: ast.GlobalTypedNameReference,
         arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
-        executed: ast.OperationDefinition,
+        executed: ast.ExecutableDefinition[ast.ViewDefinition],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
@@ -227,7 +266,7 @@ class OperationArgumentsValidator:
             if executed.view_index(view_name) not in arguments:
                 validation_diagnostics.append(
                     diagnostics.MissingOperationArgumentDiagnostic(
-                        location=statement.operation.location,
+                        location=executed_name.location,
                         view_name=view_name,
                         operation_name=operation_name,
                     )
@@ -237,7 +276,7 @@ class OperationArgumentsValidator:
         self,
         argument: ast.OperationArgumentStatement[ast.LookedAt],
         executed: ast.OperationDefinition,
-        interface_view: ast.ViewDefinition,
+        interface_view: ast.InterfaceViewDefinition,
         operation_name: str,
         looked_at_qualities: Mapping[
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
@@ -294,7 +333,7 @@ class OperationArgumentsValidator:
         self,
         literal: ast.Literal,
         executed: ast.OperationDefinition,
-        interface_view: ast.ViewDefinition,
+        interface_view: ast.InterfaceViewDefinition,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> codegen_input.EncodedLiteral | None:
         """Check that the literal can be translated into what the executed operation's interface view requires, and return it translated."""

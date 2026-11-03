@@ -141,10 +141,10 @@ class DefinitionStructuralValidator:
             if encoding_operation is not None:
                 self._process_reference(encoding_operation)
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ] = typed_name_dict.TypedNameDict()
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ] = typed_name_dict.TypedNameDict()
         for view in definition.views:
             self._validate_view_definition(definition, view, views, unreferenced_views)
@@ -186,12 +186,12 @@ class DefinitionStructuralValidator:
     def _validate_view_definition(
         self,
         definition: ast.OperationDefinition,
-        view: ast.ViewDefinition,
+        view: ast.InterfaceViewDefinition,
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ],
     ):
         if self._validate_view_name(view, views):
@@ -313,9 +313,7 @@ class DefinitionStructuralValidator:
                 greatest_name = name
             self._process_reference(logical_operation)
 
-    def _validate_view_name[
-        ViewT: (ast.ViewDefinition, ast.LogicalOperationViewDefinition)
-    ](
+    def _validate_view_name[ViewT: ast.ViewDefinition](
         self,
         view: ViewT,
         views: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, ViewT],
@@ -431,10 +429,10 @@ class DefinitionStructuralValidator:
         self,
         view: ast.LocalTypedNameReference,
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
         ],
     ) -> bool:
         name_diagnostics = name_validators.validate_local_name_format(view.name_content)

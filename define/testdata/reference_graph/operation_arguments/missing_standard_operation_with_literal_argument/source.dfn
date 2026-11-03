@@ -1,0 +1,18 @@
+# The standard library defines no operation<standard:/number/missing>. Its
+# view argument is neither read nor written, so view<result> is not reported as
+# unwritten.
+define the operation<my.domain.com:my_lib:/total> {
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation<standard:/number/missing> {
+            with view<first> looking at literal<standard:/number>"1".
+            with view<result> looking at view<result>.
+        }
+    }
+}

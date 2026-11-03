@@ -134,6 +134,9 @@ def _type_variable_values(
     inherits from `TypedName[GlobalNameContentT_co]`. So for
     `GlobalTypedNameInDefinition`, both `GlobalNameContentT_co` and the type
     variable of `TypedName.name_content` map to `DefinitionGlobalNameContent`.
+    Type variables that a non-generic base inherits values for, such as
+    those of `ExecutableDefinition` for `ValueOperationDefinition` through
+    `OperationDefinition`, map to those values too.
     A value written as a string, such as `"ReferenceGlobalNameContent"`, is
     looked up in `namespace`.
     """
@@ -141,7 +144,11 @@ def _type_variable_values(
     original_bases = typing.cast("tuple[object, ...]", types.get_original_bases(cls))
     for base in original_bases:
         origin = typing.get_origin(base)
-        if origin is None or origin is typing.Generic:
+        if origin is typing.Generic:
+            continue
+        # A base that is not a generic alias may still inherit from one.
+        if origin is None:
+            values.update(_type_variable_values(typing.cast("type", base), namespace))
             continue
         generic_class = typing.cast("type", origin)
         base_values: dict[typing.TypeVar, object] = {}

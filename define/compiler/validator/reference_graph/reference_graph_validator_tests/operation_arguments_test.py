@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -181,6 +182,19 @@ def test_missing_operation(
     assert diagnostic.location.column == 31
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"
+
+
+def test_missing_standard_operation_with_literal_argument(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.StandardDefinitionNotFoundDiagnostic(
+            location=ast.SourceLocation(line=13, column=31, end_line=13, end_column=54),
+            definition_name="operation<standard:/number/missing>",
+        )
+    ]
 
 
 def test_duplicate_executed_view(
