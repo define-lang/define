@@ -227,18 +227,16 @@ class ExpectedPositionOrActionOrLiteral(DefineTokenError):
     message_format: ClassVar[str] = "Expected 'position', 'action', or 'literal'."
 
 
-class ExpectedValueSource(DefineTokenError):
-    """Expected what an Operation Argument Statement is looking at."""
-
-    message_format: ClassVar[str] = (
-        "Expected 'position', 'action', 'view', or 'literal'."
-    )
-
-
 class ExpectedView(DefineTokenError):
     """Expected a view name in an Operation Argument Statement."""
 
     message_format: ClassVar[str] = "Expected 'view'."
+
+
+class ExpectedViewOrLiteral(DefineTokenError):
+    """Expected what an Operation Argument Statement in an operation definition is looking at."""
+
+    message_format: ClassVar[str] = "Expected 'view' or 'literal'."
 
 
 class ExtraWhitespace(DefineTokenError):

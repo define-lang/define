@@ -118,11 +118,14 @@ impl Constructor {
     }
 }
 
-/// An AST class.
+/// An AST class, or a parameterization of a generic one.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 struct NodeClass {
+    /// The name of the Rust type.
     name: String,
+    /// The name of the Python class that instances are.
+    python_name: String,
     snake_case_name: String,
     /// The AST classes that this class inherits from.
     ancestors: Vec<String>,
@@ -138,6 +141,7 @@ impl NodeClass {
     #[new]
     const fn new(
         name: String,
+        python_name: String,
         snake_case_name: String,
         ancestors: Vec<String>,
         constructor: Option<Constructor>,
@@ -145,6 +149,7 @@ impl NodeClass {
     ) -> Self {
         Self {
             name,
+            python_name,
             snake_case_name,
             ancestors,
             constructor,

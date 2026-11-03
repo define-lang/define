@@ -166,168 +166,159 @@ def test_action_operation_execution_with_arguments(parse: Parse):
     )
 
 
-def test_operation_argument_looking_at_position_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at position<p>.\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
-            position_name="position<p>",
+def test_operation_argument_cannot_look_at_position(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    [statement] = _operation_statements(result.program)
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [argument] = statement.arguments
-    looking_at = argument.looking_at
-    assert isinstance(looking_at, ast.PositionReference)
-    [position] = looking_at.typed_names
-    assert isinstance(position, ast.LocalTypedNameReference)
-    assert position.name_content.name == "p"
-    assert argument.location == ast.SourceLocation(
-        line=4, column=13, end_line=4, end_column=48
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
 
 
-def test_operation_argument_looking_at_chained_position_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at position</global>::position<child>.\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=70),
-            position_name="position</global>::position<child>",
+def test_operation_argument_cannot_look_at_action(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at action</act>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    [statement] = _operation_statements(result.program)
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [argument] = statement.arguments
-    looking_at = argument.looking_at
-    assert isinstance(looking_at, ast.PositionReference)
-    [parent, child] = looking_at.typed_names
-    assert isinstance(parent, ast.GlobalTypedNameReference)
-    assert parent.name_content.path.name == "/global"
-    assert isinstance(child, ast.LocalTypedNameReference)
-    assert child.name_content.name == "child"
-    assert argument.location == ast.SourceLocation(
-        line=4, column=13, end_line=4, end_column=71
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 42
 
 
-def test_operation_argument_position_name_is_its_source_form(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at position <p>.\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
-            location=ast.SourceLocation(line=4, column=45, end_line=4, end_column=45)
-        ),
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=48),
-            position_name="position<p>",
-        ),
-    ]
-    assert result.program is not None
-    [statement] = _operation_statements(result.program)
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [argument] = statement.arguments
-    assert isinstance(argument.looking_at, ast.PositionReference)
-    assert argument.location == ast.SourceLocation(
-        line=4, column=13, end_line=4, end_column=49
-    )
-
-
-def test_action_argument_looking_at_view_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    it happens when {\n"
-        + "        this particle is created.\n"
-        + "    } and it does {\n"
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at view<left>.\n"
-        + "        }\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentViewDiagnostic(
-            location=ast.SourceLocation(line=6, column=37, end_line=6, end_column=46),
-            view_name="view<left>",
+def test_operation_argument_cannot_look_at_chained_position(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position</global>::position<child>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    [definition] = result.program.definitions
-    assert isinstance(definition, ast.ActionDefinition)
-    [statement] = definition.action_statements.statements
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [argument] = statement.arguments
-    looking_at = argument.looking_at
-    assert isinstance(looking_at, ast.LocalTypedNameReference)
-    assert looking_at.name_content.name == "left"
-    assert argument.location == ast.SourceLocation(
-        line=6, column=13, end_line=6, end_column=47
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
 
 
-def test_argument_looking_at_wrong_kind_does_not_stop_the_next_argument(
-    parse_with_diagnostics: ParseWithDiagnostics,
+def test_operation_argument_cannot_look_at_position_with_space_before_angle_bracket(
+    parse: Parse,
 ):
-    result = parse_with_diagnostics(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    it happens when {\n"
-        + "        this particle is created.\n"
-        + "    } and it does {\n"
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at view<left>.\n"
-        + "            with view<b> looking at position<p>.\n"
-        + "        }\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentViewDiagnostic(
-            location=ast.SourceLocation(line=6, column=37, end_line=6, end_column=46),
-            view_name="view<left>",
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position <p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    [definition] = result.program.definitions
-    assert isinstance(definition, ast.ActionDefinition)
-    [statement] = definition.action_statements.statements
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [_, position_argument] = statement.arguments
-    assert position_argument.view.name_content.name == "b"
-    assert isinstance(position_argument.looking_at, ast.PositionReference)
-    assert position_argument.location == ast.SourceLocation(
-        line=7, column=13, end_line=7, end_column=48
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
+
+
+def test_action_argument_cannot_look_at_view(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 6
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 6
+    assert error.value.location.end_column == 40
+
+
+def test_argument_looking_at_wrong_kind_stops_before_the_next_argument(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<left>.\n"
+            + "            with view<b> looking at position<p>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 6
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 6
+    assert error.value.location.end_column == 40
+
+
+def test_operation_argument_looking_at_position_stops_before_the_next_argument(
+    parse: Parse,
+):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "            with view<b> looking at view<c>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
+
+
+def test_action_arguments_looking_at_same_view_stop_at_the_first(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at view<number>.\n"
+            + "            with view<b> looking at view<number>.\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 6
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 6
+    assert error.value.location.end_column == 40
+
+
+def test_operation_arguments_looking_at_same_position_stop_at_the_first(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "            with view<b> looking at position<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
 
 
 def test_multiple_statements_comments_and_blank_lines(parse: Parse):
@@ -707,7 +698,7 @@ def test_argument_view_cannot_be_chained(parse: Parse):
 
 
 def test_argument_cannot_look_at_value(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
@@ -770,44 +761,61 @@ def test_argument_source_requires_local_view_name(parse: Parse):
     assert error.value.location.end_column == 43
 
 
-def test_operation_argument_position_reference_with_empty_name(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at position<>.\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.EmptyName)
-    assert result.exception.location == ast.SourceLocation(
-        line=4, column=46, end_line=4, end_column=46
-    )
-    assert result.program is None
-
-
-def test_operation_argument_position_reference_without_terminator(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the operation</other> {\n"
-        + "            with view<a> looking at position<p>\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
-            position_name="position<p>",
+def test_operation_argument_cannot_look_at_position_with_empty_name(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position<>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert isinstance(
-        result.exception, parser_exceptions.ExpectedChainSeparatorOrTerminator
-    )
-    assert result.exception.location == ast.SourceLocation(
-        line=4, column=48, end_line=4, end_column=48
-    )
-    assert result.program is None
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
+
+
+def test_operation_argument_cannot_look_at_position_without_terminator(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at position<p>\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
+
+
+def test_operation_argument_literal_missing_open_quote(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at literal</number>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 53
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 53
+
+
+def test_operation_argument_literal_followed_by_text(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingTerminator) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the operation</other> {\n"
+            + '            with view<a> looking at literal</number>"1" extra.\n'
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 56
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 56

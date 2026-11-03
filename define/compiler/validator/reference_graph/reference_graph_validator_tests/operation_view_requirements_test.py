@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -118,26 +117,6 @@ def test_looks_at_undefined_view(
     assert diagnostic.location.line == 30
     assert diagnostic.location.column == 42
     assert diagnostic.local_name == "view<missing>"
-
-
-def test_looks_at_position_before_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=37, column=42, end_line=37, end_column=57),
-            position_name="position<number>",
-        ),
-        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
-            location=ast.SourceLocation(line=38, column=42, end_line=38, end_column=53),
-            view_name="view<target>",
-            looked_at_name="view<result>",
-            looked_at_kind=diagnostics.LookedAtKind.VIEW,
-            missing_qualities=["value<standard:/number/natural>"],
-        ),
-    ]
 
 
 def test_invalid_literal_content_in_action(

@@ -817,29 +817,39 @@ type ActionStatement = (
     | MoveParticleStatement
     | DestroyParticleStatement
     | ValueSettingStatement
-    | OperationExecutionStatement
+    | OperationExecutionStatement[PositionReference | Literal]
 )
 
 
-class OperationArgumentStatement(ASTNode):
+# What the view of an Operation Argument Statement may look at somewhere.
+type LookedAt = PositionReference | LocalTypedNameReference | Literal
+
+LookedAtT_co = TypeVar("LookedAtT_co", bound=LookedAt, covariant=True)
+
+
+class OperationArgumentStatement(ASTNode, Generic[LookedAtT_co]):  # noqa: UP046
     """Represents a 'with view<...> looking at' statement."""
 
     view: LocalTypedNameReference
-    looking_at: PositionReference | LocalTypedNameReference | Literal
+    looking_at: Final[LookedAtT_co]
 
 
-class OperationExecutionStatement(ASTNode):
-    """Represents an 'execute the operation<...>' or 'execute the encoding_operation<...>' statement."""
+class OperationExecutionStatement(ASTNode, Generic[LookedAtT_co]):  # noqa: UP046
+    """Represents an 'execute the operation<...>' or 'execute the encoding_operation<...>' statement.
+
+    Its arguments look at positions in an action, and at views in a Value
+    Operation or an Encoding Operation.
+    """
 
     operation: GlobalTypedNameReference
-    arguments: tuple[OperationArgumentStatement, ...]
+    arguments: Final[tuple[OperationArgumentStatement[LookedAtT_co], ...]]
 
 
 class LogicalOperationExecutionStatement(ASTNode):
     """Represents an 'execute the logical_operation<...>' statement."""
 
     logical_operation: GlobalTypedNameReference
-    arguments: tuple[OperationArgumentStatement, ...]
+    arguments: tuple[OperationArgumentStatement[LocalTypedNameReference | Literal], ...]
 
 
 class EncodingOperationExecutionStatement(ASTNode):
@@ -851,7 +861,7 @@ class ComputerOperationExecutionStatement(ASTNode):
 
 
 type OperationStatement = (
-    OperationExecutionStatement
+    OperationExecutionStatement[LocalTypedNameReference | Literal]
     | LogicalOperationExecutionStatement
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement

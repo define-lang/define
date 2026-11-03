@@ -8,7 +8,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -17,23 +16,6 @@ if TYPE_CHECKING:
         ValidateTestdataStructural,
         ValidateTestdataStructuralNonFilesystem,
     )
-
-
-def test_looks_at_same_position_twice(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-):
-    result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=37, column=42, end_line=37, end_column=57),
-            position_name="position<result>",
-        ),
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=38, column=42, end_line=38, end_column=57),
-            position_name="position<result>",
-        ),
-    ]
 
 
 def test_looks_at_undefined_view(

@@ -1671,8 +1671,27 @@ def test_operation_argument_ends_after_with(parse: Parse):
     assert error.value.location.end_column == 17
 
 
+def test_action_operation_argument_ends_after_looking_at(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    it happens when {\n"
+            + "        this particle is created.\n"
+            + "    } and it does {\n"
+            + "        execute the operation</other> {\n"
+            + "            with view<a> looking at\n"
+            + "        }\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 6
+    assert error.value.location.column == 36
+    assert error.value.location.end_line == 6
+    assert error.value.location.end_column == 36
+
+
 def test_operation_argument_ends_after_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"

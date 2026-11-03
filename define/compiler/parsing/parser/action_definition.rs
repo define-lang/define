@@ -6,7 +6,6 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
-use crate::parser::operation_execution::{ExecutingDefinition, OperationKind};
 use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
@@ -545,12 +544,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         if self.scanner.next_bytes_are(EXECUTE_THE) {
             return Ok(self
-                .parse_operation_execution_statement(
-                    ExecutingDefinition::Action,
-                    OperationKind::Value,
-                    indentation,
-                    fqun,
-                )?
+                .parse_operation_execution_statement_in_action(indentation, fqun)?
                 .into());
         }
         Err(self.invalid_action_statements_block())
@@ -611,7 +605,8 @@ impl<'py, 'source> Parser<'py, 'source> {
             let missing = self.scanner.position;
             return Err(self.errors.missing_value_source(missing, missing));
         }
-        let (source, end) = self.parse_value_source(fqun, Self::expected_value_source)?;
+        let (source, end) =
+            self.parse_value_source(fqun, Self::expected_position_or_action_or_literal)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.value_setting_statement(location, target, source)?)
     }
@@ -716,11 +711,12 @@ impl<'py, 'source> Parser<'py, 'source> {
 // The functions that only run on an error path.
 impl<'py, 'source> Parser<'py, 'source> {
     /// Returns the error for the name type, at the scanner's position, of a
-    /// value setting statement's source that is not `position`, `action`, or
+    /// value setting statement's source, or of what an operation argument's
+    /// view in an action looks at, that is not `position`, `action`, or
     /// `literal`.
     #[cold]
     #[inline(never)]
-    fn expected_value_source(&self) -> ParseError {
+    pub(crate) fn expected_position_or_action_or_literal(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_after_any(&[POSITION, ACTION, LITERAL]) {
             return error;
         }

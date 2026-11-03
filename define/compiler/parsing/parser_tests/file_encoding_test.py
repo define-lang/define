@@ -1050,16 +1050,16 @@ def test_invisible_character_in_operation_argument_source_name_type(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    it does {\n"
             + "        execute the operation</other> {\n"
-            + "            with view<a> looking at posi\u200btion<p>.\n"
+            + "            with view<a> looking at vi\u200bew<p>.\n"
             + "        }\n"
             + "    }\n"
             + "}\n"
         )
     assert error.value.char == "\u200b"
     assert error.value.location.line == 4
-    assert error.value.location.column == 41
+    assert error.value.location.column == 39
     assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 41
+    assert error.value.location.end_column == 39
 
 
 def test_invisible_character_in_operation_argument_statement(parse: Parse):

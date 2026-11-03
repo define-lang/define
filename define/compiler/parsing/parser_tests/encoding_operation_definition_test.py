@@ -154,32 +154,19 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
     )
 
 
-def test_encoding_operation_argument_looking_at_position_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _ENCODING_OPERATION_PREFIX
-        + "        execute the encoding_operation</other> {\n"
-        + "            with view<a> looking at position<p>.\n"
-        + "        }\n"
-        + _ENCODING_OPERATION_SUFFIX
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
-            position_name="position<p>",
+def test_encoding_operation_argument_cannot_look_at_position(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _ENCODING_OPERATION_PREFIX
+            + "        execute the encoding_operation</other> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "        }\n"
+            + _ENCODING_OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    definition = _only_encoding_operation(result.program)
-    [statement] = definition.operation_statements
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    [argument] = statement.arguments
-    assert isinstance(argument.looking_at, ast.PositionReference)
-    assert argument.location == ast.SourceLocation(
-        line=4, column=13, end_line=4, end_column=48
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
 
 
 def test_multiple_statements_comments_and_blank_lines(parse: Parse):

@@ -218,7 +218,7 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
 
 
 def test_argument_cannot_look_at_value(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
         parse(
             _ACTION_PREFIX
             + "        execute the operation</add> {\n"

@@ -43,11 +43,15 @@ class OperationArgumentsValidator:
 
     def validate(
         self,
-        statement: ast.OperationExecutionStatement,
-        looked_at_qualities: Mapping[ast.OperationArgumentStatement, Collection[str]],
+        statement: ast.OperationExecutionStatement[ast.LookedAt],
+        looked_at_qualities: Mapping[
+            ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
+        ],
     ) -> tuple[
         list[diagnostics.Diagnostic],
-        dict[ast.OperationArgumentStatement, codegen_input.EncodedLiteral],
+        dict[
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+        ],
     ]:
         """Validate the statement's arguments against the executed operation's interface views.
 
@@ -61,7 +65,7 @@ class OperationArgumentsValidator:
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         literal_values: dict[
-            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ] = {}
         executed = self.get_executed_operation(statement)
         if executed is None:
@@ -102,21 +106,16 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def operation_arguments[
-        LookedAt: (ast.PositionReference, ast.LocalTypedNameReference)
+        LookedAtT: (ast.PositionReference, ast.LocalTypedNameReference)
     ](
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[LookedAtT | ast.Literal],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
-        looked_at_type: type[LookedAt],
-    ) -> list[codegen_input.OperationArgument[LookedAt]] | None:
-        """Describe the statement's arguments for code generation, if all of them could be resolved.
-
-        looked_at_type is what views may look at where the statement is,
-        besides literals.
-        """
-        arguments: list[codegen_input.OperationArgument[LookedAt]] = []
+    ) -> list[codegen_input.OperationArgument[LookedAtT]] | None:
+        """Describe the statement's arguments for code generation, if all of them could be resolved."""
+        arguments: list[codegen_input.OperationArgument[LookedAtT]] = []
         for argument in statement.arguments:
             interface_view = executed.get_view(argument.view.source_typed_name)
             # Validation reports arguments that name undefined views.
@@ -134,20 +133,17 @@ class OperationArgumentsValidator:
                         interface_view=interface_view, looking_at=literal_value
                     )
                 )
-            # The parser reports views that look at a position within an
-            # operation, or at a view within an action.
-            elif isinstance(looking_at, looked_at_type):
+            else:
                 arguments.append(
                     codegen_input.OperationArgument(
                         interface_view=interface_view, looking_at=looking_at
                     )
                 )
-            else:
-                return None
         return arguments
 
     def get_executed_operation(
-        self, statement: ast.OperationExecutionStatement
+        self,
+        statement: ast.OperationExecutionStatement[ast.LookedAt],
     ) -> ast.OperationDefinition | None:
         """Return the operation the statement executes, if it is defined."""
         definition_result = self._definition_results.get(statement.operation)
@@ -159,13 +155,13 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def _collect_arguments(
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[ast.LookedAt],
         executed: ast.OperationDefinition,
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> dict[int, ast.OperationArgumentStatement]:
+    ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
         """Return the arguments that name an interface view of the executed operation, by view index in source order."""
-        arguments: dict[int, ast.OperationArgumentStatement] = {}
+        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]] = {}
         for argument in statement.arguments:
             # Structural validation reports malformed view names.
             if name_validators.validate_local_name_format(argument.view.name_content):
@@ -192,7 +188,7 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def _check_argument_order(
-        arguments: dict[int, ast.OperationArgumentStatement],
+        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.OperationDefinition,
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
@@ -219,8 +215,8 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def _check_missing_arguments(
-        statement: ast.OperationExecutionStatement,
-        arguments: dict[int, ast.OperationArgumentStatement],
+        statement: ast.OperationExecutionStatement[ast.LookedAt],
+        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.OperationDefinition,
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
@@ -239,11 +235,13 @@ class OperationArgumentsValidator:
 
     def _check_view_requirements(
         self,
-        argument: ast.OperationArgumentStatement,
+        argument: ast.OperationArgumentStatement[ast.LookedAt],
         executed: ast.OperationDefinition,
         interface_view: ast.ViewDefinition,
         operation_name: str,
-        looked_at_qualities: Mapping[ast.OperationArgumentStatement, Collection[str]],
+        looked_at_qualities: Mapping[
+            ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
+        ],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> codegen_input.EncodedLiteral | None:
         """Check that the particle the argument looks at meets the quality assignments of the executed operation's interface view.

@@ -452,13 +452,15 @@ class ActionDefinitionValidator:
 
     def _analyze_operation_execution(
         self,
-        stmt: ast.OperationExecutionStatement,
+        stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.ScopeTracker,
     ):
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         executed = self._operation_arguments_validator.get_executed_operation(stmt)
-        looked_at_qualities: dict[ast.OperationArgumentStatement, Collection[str]] = {}
+        looked_at_qualities: dict[
+            ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
+        ] = {}
         written_positions: list[ast.PositionReference] = []
         for argument in stmt.arguments:
             position = argument.looking_at
@@ -517,7 +519,7 @@ class ActionDefinitionValidator:
         if encoding_operation is None:
             return
         arguments = self._operation_arguments_validator.operation_arguments(
-            stmt, executed, literal_values, ast.PositionReference
+            stmt, executed, literal_values
         )
         if arguments is not None:
             self._steps.append(

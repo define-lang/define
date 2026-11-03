@@ -8,13 +8,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import parser_exceptions
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import (
-        Parse,
-        ParseWithDiagnostics,
-    )
+    from define.compiler.parsing.parser_tests.conftest import Parse
 
 
 _OPERATION_PREFIX = (
@@ -116,28 +113,19 @@ def test_among_other_operation_statements(parse: Parse):
     assert isinstance(third, ast.EncodingOperationExecutionStatement)
 
 
-def test_argument_looking_at_position_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the logical_operation</and> {\n"
-        + "            with view<a> looking at position<p>.\n"
-        + "        }\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.exception is None
-    assert result.diagnostics == [
-        diagnostics.OperationArgumentPositionDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=47),
-            position_name="position<p>",
+def test_argument_cannot_look_at_position(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
         )
-    ]
-    assert result.program is not None
-    [statement] = _operation_statements(result.program)
-    assert isinstance(statement, ast.LogicalOperationExecutionStatement)
-    [argument] = statement.arguments
-    assert isinstance(argument.looking_at, ast.PositionReference)
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
 
 
 def test_requires_arguments_block(parse: Parse):

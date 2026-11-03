@@ -25,8 +25,6 @@ _PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
     diagnostics.ControlCharacterInCommentDiagnostic,
     diagnostics.InvisibleCharacterInCommentDiagnostic,
     diagnostics.MissingTerminatorAtEndOfLineDiagnostic,
-    diagnostics.OperationArgumentPositionDiagnostic,
-    diagnostics.OperationArgumentViewDiagnostic,
 )
 
 

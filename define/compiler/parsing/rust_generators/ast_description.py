@@ -2,7 +2,12 @@
 
 The description is made in three steps:
 
-1. Collect every `msgspec.Struct` class defined in `define.compiler.ast`.
+1. Collect every `msgspec.Struct` class defined in `define.compiler.ast`, and
+   every parameterization of a generic one, such as
+   `OperationExecutionStatement[PositionReference | Literal]`, that a parsed
+   program can contain. Each is a node type, and a parameterization's name is
+   its generic class's name, "Of", and its type argument's name, such as
+   `OperationExecutionStatementOfPositionReferenceOrLiteral`.
 2. Name a union of AST classes after a type alias for it, wherever one
    exists, so that the same union written out in a field annotation gets the
    alias's name.
@@ -15,10 +20,10 @@ except a field computed on first use, which the constructor sets to `None`. A
 the parser always passes it.
 Each parameter's annotation becomes a `FieldType`:
 
-- An AST class becomes `Node`.
+- An AST class, or a parameterization of a generic one, becomes `Node`.
 - A union of AST classes, or a type alias for one, becomes `Node` with the
   union's name.
-- `tuple[X, ...]`, where `X` is an AST class or a union of them, becomes
+- `tuple[X, ...]`, where `X` is a node type or a union of them, becomes
   `Tuple`, and `tuple[str, ...]` or a `typing.NewType` of it becomes
   `StringTuple`.
 - `frozenset[str]` becomes `StringSet`, and `dict[str, X]`, where `X` is an
@@ -43,6 +48,9 @@ import msgspec
 from define.compiler import ast
 from define.compiler.parsing.rust_generators import rust_names, rust_renderer
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Callable
+
 _SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
     str: rust_renderer.FieldType.String(),
     int: rust_renderer.FieldType.Integer(),
@@ -57,6 +65,63 @@ def _rust_enum_variant_name(member_name: str) -> str:
 
 def _type_arguments(annotation: object) -> tuple[object, ...]:
     return typing.cast("tuple[object, ...]", typing.get_args(annotation))
+
+
+def _is_parameterization(annotation: object) -> bool:
+    """Return whether `annotation` is a generic AST class with type arguments."""
+    origin = typing.get_origin(annotation)
+    return (
+        isinstance(origin, type)
+        and issubclass(origin, msgspec.Struct)
+        and bool(_type_arguments(annotation))
+    )
+
+
+def _node_class(node_type: object) -> type:
+    """Return the class that instances of `node_type` are."""
+    if _is_parameterization(node_type):
+        return typing.cast("type", typing.get_origin(node_type))
+    return typing.cast("type", node_type)
+
+
+def _node_name(node_type: object) -> str:
+    """Return the Rust name of `node_type`."""
+    if not _is_parameterization(node_type):
+        return _node_class(node_type).__name__
+    argument_names: list[str] = []
+    for argument in _type_arguments(node_type):
+        members = (
+            _type_arguments(argument)
+            if typing.get_origin(argument) is types.UnionType
+            else (argument,)
+        )
+        argument_names.append("Or".join(_node_name(member) for member in members))
+    return _node_class(node_type).__name__ + "Of" + "And".join(argument_names)
+
+
+def _is_node_subtype(node_type: object, member: object) -> bool:
+    """Return whether every instance of `node_type` is an instance of `member`."""
+    if node_type == member:
+        return True
+    return (
+        isinstance(member, type)
+        and not _is_parameterization(member)
+        and issubclass(_node_class(node_type), member)
+    )
+
+
+def _node_type_variable_values(
+    node_type: object, namespace: dict[str, object]
+) -> dict[typing.TypeVar, object]:
+    """Map each type variable of `node_type`'s class and the generic classes it inherits from to its value for `node_type`."""
+    cls = _node_class(node_type)
+    values = _type_variable_values(cls, namespace)
+    if _is_parameterization(node_type):
+        parameters = typing.cast(
+            "tuple[typing.TypeVar, ...]", getattr(cls, "__parameters__", ())
+        )
+        values.update(zip(parameters, _type_arguments(node_type), strict=True))
+    return values
 
 
 def _type_variable_values(
@@ -111,7 +176,7 @@ def _is_computed_on_first_use(parameter: inspect.Parameter) -> bool:
 def _field_annotation(
     parameter: inspect.Parameter, type_variable_values: dict[typing.TypeVar, object]
 ) -> object:
-    """Return the annotation of `parameter` without `Final`, `Derived`, or `ParsedOrComputedOnFirstUse`, as the value of its type variable if it is one.
+    """Return the annotation of `parameter` without `Final`, `Derived`, or `ParsedOrComputedOnFirstUse`, with the value of each type variable in it.
 
     A `ParsedOrComputedOnFirstUse` field is `None` only until Python code
     computes it, so its annotation is the one type other than `None` in its
@@ -133,9 +198,21 @@ def _field_annotation(
 def _type_variable_value(
     annotation: object, type_variable_values: dict[typing.TypeVar, object]
 ) -> object:
-    """Return the value of `annotation` if it is a type variable, and otherwise `annotation`."""
+    """Return `annotation` with the value of each type variable in place of it, itself or as a type argument of a tuple or a generic AST class."""
     if isinstance(annotation, typing.TypeVar):
         return type_variable_values[annotation]
+    arguments = tuple(
+        _type_variable_value(argument, type_variable_values)
+        for argument in _type_arguments(annotation)
+    )
+    if typing.get_origin(annotation) is tuple:
+        return types.GenericAlias(tuple, arguments)
+    if _is_parameterization(annotation):
+        parameterize = typing.cast(
+            "Callable[[tuple[object, ...]], object]",
+            typing.cast("typing.Any", _node_class(annotation)).__class_getitem__,
+        )
+        return parameterize(arguments)
     return annotation
 
 
@@ -155,7 +232,7 @@ def _ast_classes(module: types.ModuleType) -> list[type]:
 
 def describe(module: types.ModuleType) -> rust_renderer.AstDescription:
     """Describe the AST classes in `module` that a parsed `Program` can contain."""
-    classes = _parsed_classes(module)
+    classes = _parsed_node_types(module)
     field_types = _FieldTypes(classes)
     # Type aliases come first, so that a union written out in a field
     # annotation takes the name of an alias for the same classes.
@@ -171,33 +248,44 @@ def describe(module: types.ModuleType) -> rust_renderer.AstDescription:
     )
 
 
-def _parsed_classes(module: types.ModuleType) -> list[type]:
-    """Return the AST classes in `module` that a parsed `Program` can contain.
+def _parsed_node_types(module: types.ModuleType) -> list[object]:
+    """Return the node types in `module` that a parsed `Program` can contain.
 
-    These are `Program`, and every class that a constructor parameter of one
-    of them names, with its subclasses.
+    These are `Program`, and every node type that a constructor parameter of
+    one of them names, with the subclasses of each class among them. Classes
+    come in the order `module` defines them, followed by parameterizations in
+    the order they were found.
     """
     classes = _ast_classes(module)
-    reachable: set[type] = set()
-    pending: list[type] = [ast.Program]
+    reachable: list[object] = []
+    pending: list[object] = [ast.Program]
     while pending:
-        cls = pending.pop()
-        if cls in reachable:
+        node_type = pending.pop()
+        if node_type in reachable:
             continue
-        reachable.add(cls)
-        pending.extend(subclass for subclass in classes if issubclass(subclass, cls))
-        pending.extend(_constructor_classes(cls, classes, module))
-    return [cls for cls in classes if cls in reachable]
+        reachable.append(node_type)
+        if not _is_parameterization(node_type):
+            pending.extend(
+                subclass
+                for subclass in classes
+                if issubclass(subclass, typing.cast("type", node_type))
+            )
+        pending.extend(_constructor_node_types(node_type, classes, module))
+    parameterizations = [
+        node_type for node_type in reachable if _is_parameterization(node_type)
+    ]
+    return [cls for cls in classes if cls in reachable] + parameterizations
 
 
-def _constructor_classes(
-    cls: type, classes: list[type], module: types.ModuleType
-) -> list[type]:
-    """Return the AST classes that the annotations of `cls`'s constructor parameters name."""
-    if inspect.isabstract(cls) or getattr(cls, "__parameters__", ()):
+def _constructor_node_types(
+    node_type: object, classes: list[type], module: types.ModuleType
+) -> list[object]:
+    """Return the node types that the annotations of `node_type`'s constructor parameters name."""
+    cls = _node_class(node_type)
+    if inspect.isabstract(cls) or not _is_constructed(node_type):
         return []
-    type_variable_values = _type_variable_values(cls, vars(module))
-    named: list[type] = []
+    type_variable_values = _node_type_variable_values(node_type, vars(module))
+    named: list[object] = []
     for parameter in inspect.signature(cls).parameters.values():
         if _is_computed_on_first_use(parameter):
             continue
@@ -206,40 +294,52 @@ def _constructor_classes(
     return named
 
 
-def _annotation_classes(annotation: object, classes: list[type]) -> list[type]:
-    """Return the AST classes in `classes` that `annotation` names."""
+def _is_constructed(node_type: object) -> bool:
+    """Return whether `node_type` is a class without type variables or a parameterization of one with them."""
+    return _is_parameterization(node_type) or not getattr(
+        node_type, "__parameters__", ()
+    )
+
+
+def _annotation_classes(annotation: object, classes: list[type]) -> list[object]:
+    """Return the node types whose classes are in `classes` that `annotation` names."""
     if isinstance(annotation, type) and annotation in classes:
+        return [annotation]
+    if _is_parameterization(annotation) and _node_class(annotation) in classes:
         return [annotation]
     if isinstance(annotation, typing.TypeAliasType):
         return _annotation_classes(typing.cast("object", annotation.__value__), classes)
-    named: list[type] = []
+    named: list[object] = []
     for argument in _type_arguments(annotation):
         named.extend(_annotation_classes(argument, classes))
     return named
 
 
 def _describe_class(
-    cls: type,
-    classes: list[type],
+    node_type: object,
+    classes: list[object],
     field_types: _FieldTypes,
     module: types.ModuleType,
 ) -> rust_renderer.NodeClass:
+    cls = _node_class(node_type)
     ancestors = [base.__name__ for base in cls.__mro__[1:] if base in classes]
     constructor = None
     # A class that has subclasses is only ever a base of the classes the
     # parser builds.
     has_subclasses = any(
-        other is not cls and issubclass(other, cls) for other in classes
+        other != node_type and _is_node_subtype(other, node_type) for other in classes
     )
     if (
         not inspect.isabstract(cls)
-        and not getattr(cls, "__parameters__", ())
+        and _is_constructed(node_type)
         and not has_subclasses
     ):
-        constructor = _describe_constructor(cls, field_types, module)
+        constructor = _describe_constructor(node_type, field_types, module)
+    name = _node_name(node_type)
     return rust_renderer.NodeClass(
-        name=cls.__name__,
-        snake_case_name=rust_names.snake_case_name(cls.__name__),
+        name=name,
+        python_name=cls.__name__,
+        snake_case_name=rust_names.snake_case_name(name),
         ancestors=ancestors,
         constructor=constructor,
         # Syntax errors build a SourceLocation without an AstBuilder.
@@ -248,8 +348,9 @@ def _describe_class(
 
 
 def _describe_constructor(
-    cls: type, field_types: _FieldTypes, module: types.ModuleType
+    node_type: object, field_types: _FieldTypes, module: types.ModuleType
 ) -> rust_renderer.Constructor:
+    cls = _node_class(node_type)
     # The constructor writes each field into its instance without calling the
     # class, which leaves an instance of a class that the garbage collector
     # tracks untracked.
@@ -260,7 +361,7 @@ def _describe_constructor(
     # An unset field would raise an error on every later read of it.
     if {parameter.name for parameter in signature_parameters} != set(struct_fields):
         raise ValueError(f"{cls.__name__}'s constructor does not take every field")
-    type_variable_values = _type_variable_values(cls, vars(module))
+    type_variable_values = _node_type_variable_values(node_type, vars(module))
     parameters: list[rust_renderer.Parameter] = []
     computed_on_first_use: list[str] = []
     for parameter in signature_parameters:
@@ -284,10 +385,10 @@ def _describe_constructor(
 class _FieldTypes:
     """Turns annotations into field types, naming each union and enum they use."""
 
-    def __init__(self, classes: list[type]):
-        self._classes: list[type] = classes
-        self._alias_names: dict[frozenset[type], str] = {}
-        self._unions: dict[frozenset[type], rust_renderer.NodeUnion] = {}
+    def __init__(self, classes: list[object]):
+        self._classes: list[object] = classes
+        self._alias_names: dict[frozenset[object], str] = {}
+        self._unions: dict[frozenset[object], rust_renderer.NodeUnion] = {}
         self._enums: dict[type, rust_renderer.FieldEnum] = {}
 
     def register_type_aliases(self, module: types.ModuleType):
@@ -340,8 +441,8 @@ class _FieldTypes:
     def _field_type(self, annotation: object) -> rust_renderer.FieldType:
         origin = typing.get_origin(annotation)
         arguments = _type_arguments(annotation)
-        if isinstance(annotation, type) and annotation in self._classes:
-            return rust_renderer.FieldType.Node(name=annotation.__name__)
+        if annotation in self._classes:
+            return rust_renderer.FieldType.Node(name=_node_name(annotation))
         if annotation in _SIMPLE_FIELD_TYPES:
             return _SIMPLE_FIELD_TYPES[annotation]
         if isinstance(annotation, type) and issubclass(annotation, enum.Enum):
@@ -374,9 +475,9 @@ class _FieldTypes:
             return self._union_type(self._union_members(*arguments), None)
         raise ValueError(f"unsupported field type: {annotation!r}")
 
-    def _union_members(self, *types_in_union: object) -> list[type]:
-        """Return the AST classes in a union of `types_in_union`, expanding unions and type aliases."""
-        members: list[type] = []
+    def _union_members(self, *types_in_union: object) -> list[object]:
+        """Return the node types in a union of `types_in_union`, expanding unions and type aliases."""
+        members: list[object] = []
         for member in types_in_union:
             if isinstance(member, typing.TypeAliasType):
                 members.extend(
@@ -384,14 +485,14 @@ class _FieldTypes:
                 )
             elif typing.get_origin(member) is types.UnionType:
                 members.extend(self._union_members(*_type_arguments(member)))
-            elif isinstance(member, type) and member in self._classes:
+            elif member in self._classes:
                 members.append(member)
             else:
                 raise ValueError(f"unsupported union member: {member!r}")
         return members
 
     def _union_type(
-        self, members: list[type], alias_name: str | None
+        self, members: list[object], alias_name: str | None
     ) -> rust_renderer.FieldType.Node:
         """Return the union of `members`, registering it the first time it is seen.
 
@@ -402,11 +503,11 @@ class _FieldTypes:
         key = frozenset(members)
         if key not in self._unions:
             alias_name = alias_name or self._alias_names.get(key)
-            name = alias_name or "Or".join(member.__name__ for member in members)
+            name = alias_name or "Or".join(_node_name(member) for member in members)
             member_classes: list[str] = []
-            for cls in self._classes:
-                if any(issubclass(cls, member) for member in members):
-                    member_classes.append(cls.__name__)
+            for node_type in self._classes:
+                if any(_is_node_subtype(node_type, member) for member in members):
+                    member_classes.append(_node_name(node_type))
             self._unions[key] = rust_renderer.NodeUnion(
                 name=name,
                 is_type_alias=alias_name is not None,

@@ -299,26 +299,6 @@ class ValueOperationViewEncodingDiagnostic(Diagnostic):
     )
 
 
-class OperationArgumentPositionDiagnostic(Diagnostic):
-    """Diagnostic for an Operation Argument Statement in an operation definition that looks at a position."""
-
-    position_name: str
-    message_format: ClassVar[str] = (
-        "within an operation, a view may only look at a view or a "
-        "literal, but this is looking at '{self.position_name}'"
-    )
-
-
-class OperationArgumentViewDiagnostic(Diagnostic):
-    """Diagnostic for an Operation Argument Statement in an action that looks at a view."""
-
-    view_name: str
-    message_format: ClassVar[str] = (
-        "within an action, a view may only look at a position or a "
-        "literal, but this is looking at '{self.view_name}'"
-    )
-
-
 class AliasedViewDiagnostic(Diagnostic):
     """Diagnostic for more than one view looking at the same view or position in one Operation Arguments Block."""
 

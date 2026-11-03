@@ -90,10 +90,12 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     @abc.abstractmethod
     def _analyze_valid_execution(
         self,
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[
+            ast.LocalTypedNameReference | ast.Literal
+        ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
     ): ...
 
@@ -144,22 +146,27 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
 
     def _analyze_execution(
         self,
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[
+            ast.LocalTypedNameReference | ast.Literal
+        ],
         executed: ast.OperationDefinition | None,
     ) -> tuple[
         list[diagnostics.Diagnostic],
-        dict[ast.OperationArgumentStatement, codegen_input.EncodedLiteral],
+        dict[
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+        ],
     ]:
         """Validate an Operation Execution Statement, and return its diagnostics and its translated literals."""
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         operation_name = statement.operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
         )
-        looked_at_qualities: dict[ast.OperationArgumentStatement, Collection[str]] = {}
+        looked_at_qualities: dict[
+            ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
+        ] = {}
         for argument in statement.arguments:
             looking_at = argument.looking_at
-            # The parser reports views looking at positions within an
-            # operation definition.
+            # Literals are checked when the arguments are validated.
             if not isinstance(looking_at, ast.LocalTypedNameReference):
                 continue
             looked_at_view = self._definition.get_view(looking_at.source_typed_name)
@@ -227,10 +234,12 @@ class ValueOperationDefinitionValidator(
     @override
     def _analyze_valid_execution(
         self,
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[
+            ast.LocalTypedNameReference | ast.Literal
+        ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
     ):
         # Value Operations have no code of their own: executing one runs the
@@ -280,14 +289,16 @@ class EncodingOperationDefinitionValidator(
     @override
     def _analyze_valid_execution(
         self,
-        statement: ast.OperationExecutionStatement,
+        statement: ast.OperationExecutionStatement[
+            ast.LocalTypedNameReference | ast.Literal
+        ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
     ):
         arguments = self._arguments_validator.operation_arguments(
-            statement, executed, literal_values, ast.LocalTypedNameReference
+            statement, executed, literal_values
         )
         if arguments is not None:
             self._steps.append(

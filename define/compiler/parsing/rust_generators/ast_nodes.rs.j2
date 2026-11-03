@@ -32,7 +32,7 @@ impl<'py> FieldValue<'py> for {{ enum_type.name }} {
 }
 {% endfor %}
 {%- for class in classes %}
-/// `{{ module_name }}.{{ class.name }}`.
+/// `{{ module_name }}.{{ class.python_name }}`.
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct {{ class.name }}<'py>(pub(crate) Bound<'py, PyAny>);
@@ -94,7 +94,7 @@ impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
 {%- if class.has_standalone_constructor %}
 {%- if let Some(constructor) = class.constructor %}
 impl<'py> {{ class.name }}<'py> {
-    /// Constructs a `{{ module_name }}.{{ class.name }}` without an `AstBuilder`.
+    /// Constructs a `{{ module_name }}.{{ class.python_name }}` without an `AstBuilder`.
     pub fn new(
         py: Python<'py>,
 {%- for parameter in constructor.parameters %}
@@ -151,7 +151,7 @@ impl AstClasses {
 {%- if let Some(constructor) = class.constructor %}
             {{ class.snake_case_name }}: ClassLayout::load(
                 &module,
-                "{{ class.name }}",
+                "{{ class.python_name }}",
                 [
 {%- for parameter in constructor.parameters %}
                     "{{ parameter.name }}",

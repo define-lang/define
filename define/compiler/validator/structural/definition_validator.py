@@ -150,12 +150,8 @@ class DefinitionStructuralValidator:
             self._validate_view_definition(definition, view, views, unreferenced_views)
         executes_all_views = False
 
-        def validate_looked_at(
-            looking_at: ast.PositionReference | ast.LocalTypedNameReference,
-        ) -> bool:
-            return self._validate_looked_at_in_operation(
-                looking_at, views, unreferenced_views
-            )
+        def validate_looked_at(looking_at: ast.LocalTypedNameReference) -> bool:
+            return self._validate_looked_at_view(looking_at, views, unreferenced_views)
 
         for statement in definition.operation_statements:
             match statement:
@@ -343,13 +339,13 @@ class DefinitionStructuralValidator:
         views[view.typed_name] = view
         return True
 
-    def _validate_execution(
+    def _validate_execution[
+        LookedAt: (ast.PositionReference, ast.LocalTypedNameReference)
+    ](
         self,
         executed: ast.GlobalTypedNameReference,
-        arguments: Sequence[ast.OperationArgumentStatement],
-        validate_looked_at: Callable[
-            [ast.PositionReference | ast.LocalTypedNameReference], bool
-        ],
+        arguments: Sequence[ast.OperationArgumentStatement[LookedAt | ast.Literal]],
+        validate_looked_at: Callable[[LookedAt], bool],
     ):
         """Validate an Operation Execution Statement or a Logical Operation Execution Statement.
 
@@ -364,12 +360,12 @@ class DefinitionStructuralValidator:
             self._process_reference(executed)
         self._validate_operation_arguments(arguments, validate_looked_at)
 
-    def _validate_operation_arguments(
+    def _validate_operation_arguments[
+        LookedAt: (ast.PositionReference, ast.LocalTypedNameReference)
+    ](
         self,
-        arguments: Sequence[ast.OperationArgumentStatement],
-        validate_looked_at: Callable[
-            [ast.PositionReference | ast.LocalTypedNameReference], bool
-        ],
+        arguments: Sequence[ast.OperationArgumentStatement[LookedAt | ast.Literal]],
+        validate_looked_at: Callable[[LookedAt], bool],
     ):
         looked_at_lines: dict[str, int] = {}
         argument_lines: typed_name_dict.TypedNameDict[
@@ -407,39 +403,12 @@ class DefinitionStructuralValidator:
                     )
                 )
 
-    def _validate_looked_at_in_operation(
-        self,
-        looking_at: ast.PositionReference | ast.LocalTypedNameReference,
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
-        ],
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
-        ],
-    ) -> bool:
-        match looking_at:
-            case ast.LocalTypedNameReference():
-                return self._validate_looked_at_view(
-                    looking_at, views, unreferenced_views
-                )
-            # The parser reports a position that an operation's argument
-            # looks at.
-            case ast.PositionReference():
-                return False
-
     def _validate_looked_at_in_action(
-        self,
-        looking_at: ast.PositionReference | ast.LocalTypedNameReference,
-        scope: scope_tracker.ScopeTracker,
+        self, looking_at: ast.PositionReference, scope: scope_tracker.ScopeTracker
     ) -> bool:
-        match looking_at:
-            case ast.PositionReference():
-                position_ok = self._validate_full_chained_name(looking_at, scope)
-                self._looked_at_position_validity.append(position_ok)
-                return position_ok
-            # The parser reports a view that an action's argument looks at.
-            case ast.LocalTypedNameReference():
-                return False
+        position_ok = self._validate_full_chained_name(looking_at, scope)
+        self._looked_at_position_validity.append(position_ok)
+        return position_ok
 
     def _check_duplicate_argument(
         self,
