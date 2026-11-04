@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import name_types
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -187,3 +187,19 @@ def test_duplicate_operation(
     assert diagnostic.definition_type == "operation"
     assert diagnostic.path == "/copy"
     assert diagnostic.first_definition_line == 2
+
+
+def test_without_execution(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.OperationWithoutExecutionDiagnostic(
+            location=ast.SourceLocation(line=3, column=12, end_line=3, end_column=48)
+        ),
+        diagnostics.UnreferencedLocalViewDiagnostic(
+            location=ast.SourceLocation(line=5, column=25, end_line=5, end_column=30),
+            view_name="view<unused>",
+        ),
+    ]

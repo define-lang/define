@@ -10,7 +10,8 @@ use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::OperationKind;
 use crate::scanner::Position;
 use terminals::{
-    DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
+    DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
+    EXECUTE_THE_ENCODING_OPERATION, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
     IT_IS_WRITTEN, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, VIEW,
 };
 
@@ -22,6 +23,14 @@ const OPERATION_DEFINITION_BLOCK_INDENTATION: usize = INDENTATION_WIDTH;
 const OPERATION_DEFINITION_STATEMENT_STARTS: [&[u8]; 2] = [DEFINE_THE_VIEW, IT_DOES];
 /// The words that begin each View Direction Statement.
 pub(crate) const VIEW_DIRECTION_STATEMENT_STARTS: [&[u8]; 2] = [IT_IS_READ, IT_IS_WRITTEN];
+/// The words that begin each statement a Value Operation's operation
+/// statements block may have.
+const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 3] =
+    [DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_ENCODING_OPERATION];
+/// The words that begin each statement an Encoding Operation's operation
+/// statements block may have.
+const ENCODING_OPERATION_STATEMENT_STARTS: [&[u8]; 2] =
+    [EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION];
 /// The words that begin each statement a view definition block may have.
 const VIEW_DEFINITION_STATEMENT_STARTS: [&[u8]; 3] = [
     IT_IS_READ,
@@ -255,7 +264,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.scanner.consume(IT_DOES);
         let block_open_end = self.parse_block_open()?;
-        match self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, &[EXECUTE_THE])? {
+        let statement_starts = operation_statement_starts(kind);
+        match self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)? {
             LineInBlock::Statement => {}
             // The block is empty.
             LineInBlock::Close => {
@@ -275,7 +285,9 @@ impl<'py, 'source> Parser<'py, 'source> {
                 fqun,
             )?;
             self.nodes.push(&statements, statement);
-            match self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, &[EXECUTE_THE])? {
+            match self
+                .next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)?
+            {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
                 // The block ends before its `}`.
@@ -294,7 +306,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///
     /// ```ebnf
     /// operation_statement =
-    ///     operation_execution_statement
+    ///     local_view_definition
+    ///     | operation_execution_statement
     ///     | logical_operation_execution_statement
     ///     | encoding_operation_execution_statement ;
     /// encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
@@ -308,6 +321,13 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationStatement<'py>> {
         let start = self.scanner.position;
+        if matches!(kind, OperationKind::Value)
+            && let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, VIEW)
+        {
+            return Ok(self
+                .parse_local_view_definition(start, typed_name_start, indentation, fqun)?
+                .into());
+        }
         // TODO: Remove `execute the encoding operation.` from Value
         // Operations, which DLP 55 replaced with Logical Operation Execution
         // Statements, once codegen compiles a Value Operation's statements.
@@ -343,6 +363,74 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .parse_operation_execution_statement_in_operation(kind, indentation, fqun)?
             .into())
+    }
+
+    /// Parses the rest of a Local View Definition after its `view`, given the
+    /// positions of the definition's start and of its `view`, where the
+    /// definition is indented `indentation` spaces and its references take
+    /// their default FQUN from `fqun`, through the end of its `}` line.
+    ///
+    /// ```ebnf
+    /// local_view_definition =
+    ///     "define the", " ", local_view_name, block_open, view_quality_assignment_block, block_close ;
+    /// ```
+    fn parse_local_view_definition(
+        &mut self,
+        start: Position,
+        typed_name_start: Position,
+        indentation: usize,
+        fqun: &FqunWithCanonicalText<'py, 'source>,
+    ) -> ParseResult<ast::LocalViewDefinition<'py>> {
+        let name = self.parse_local_name_content()?;
+        let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
+        let (typed_name, _) =
+            self.local_typed_name_reference(typed_name_location, ast::NameType::View, name)?;
+        let block_open_end = self.parse_block_open()?;
+        match self.next_line_in_block(indentation, &[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE])? {
+            LineInBlock::Statement => {}
+            // The block is empty.
+            LineInBlock::Close => {
+                let close = self.scanner.position;
+                return Err(self
+                    .errors
+                    .missing_local_view_quality_assignment_block(close, close));
+            }
+            // The block ends where its View Quality Assignment Block belongs.
+            LineInBlock::Unclosed => {
+                return Err(self
+                    .errors
+                    .missing_local_view_quality_assignment_block(block_open_end, block_open_end));
+            }
+        }
+        let block_start = self.scanner.position;
+        // The block has something other than a View Quality Assignment Block.
+        if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
+            return Err(self.invalid_local_view_definition_statement());
+        }
+        let block = self.parse_quality_assignment_block(
+            block_start,
+            indentation + INDENTATION_WIDTH,
+            fqun,
+        )?;
+        let end = self.parse_block_close_after_content(
+            start,
+            block_open_end,
+            indentation,
+            Self::statement_instead_of_local_view_close,
+        )?;
+        let location = self.ast.location(start, end)?;
+        Ok(self
+            .ast
+            .local_view_definition(location, typed_name, block)?)
+    }
+}
+
+/// The words that begin each statement the operation statements block of an
+/// operation of `kind` may have.
+const fn operation_statement_starts(kind: OperationKind) -> &'static [&'static [u8]] {
+    match kind {
+        OperationKind::Value => &VALUE_OPERATION_STATEMENT_STARTS,
+        OperationKind::Encoding => &ENCODING_OPERATION_STATEMENT_STARTS,
     }
 }
 
@@ -436,6 +524,56 @@ impl<'py, 'source> Parser<'py, 'source> {
         )
     }
 
+    /// Returns the error for a statement at the scanner's position in a Local
+    /// View Definition that is not a View Quality Assignment Block.
+    #[cold]
+    #[inline(never)]
+    fn invalid_local_view_definition_statement(&self) -> ParseError {
+        if let Some(error) = self.disallowed_character_after(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
+            return error;
+        }
+        if let Some(error) = self.local_view_direction_statement() {
+            return error;
+        }
+        // The line begins like a View Quality Assignment Block, but with extra or
+        // missing spaces between two of its words.
+        if let Some(error) = self.misspaced_words_in_any(&[IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE]) {
+            return error;
+        }
+        let start = self.scanner.position;
+        self.errors
+            .missing_local_view_quality_assignment_block(start, self.end_of_line())
+    }
+
+    /// Returns the error for a statement at the scanner's position, after a
+    /// Local View Definition's View Quality Assignment Block, where the Local
+    /// View Definition's `}` belongs.
+    #[cold]
+    #[inline(never)]
+    fn statement_instead_of_local_view_close(&self) -> ParseError {
+        if let Some(error) = self.local_view_direction_statement() {
+            return error;
+        }
+        self.statement_instead_of_close_brace()
+    }
+
+    /// Returns the error for a View Direction Statement at the scanner's
+    /// position in a Local View Definition, if one is there.
+    #[cold]
+    fn local_view_direction_statement(&self) -> Option<ParseError> {
+        if !VIEW_DIRECTION_STATEMENT_STARTS
+            .iter()
+            .any(|statement| self.scanner.next_bytes_are(statement))
+        {
+            return None;
+        }
+        let start = self.scanner.position;
+        Some(
+            self.errors
+                .local_view_direction_statement(start, self.end_of_line()),
+        )
+    }
+
     /// Returns the error for a statement at the scanner's position in an
     /// operation definition block that does not belong there.
     #[cold]
@@ -462,13 +600,13 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn invalid_operation_statement(&self, kind: OperationKind) -> ParseError {
-        let statement_starts = [EXECUTE_THE, kind.implementation_execution_statement()];
-        if let Some(error) = self.disallowed_character_after_any(&statement_starts) {
+        let statement_starts = operation_statement_starts(kind);
+        if let Some(error) = self.disallowed_character_after_any(statement_starts) {
             return error;
         }
         // The line begins like a statement of the block, but with extra or
         // missing spaces between two of its words.
-        if let Some(error) = self.misspaced_words_in_any(&statement_starts) {
+        if let Some(error) = self.misspaced_words_in_any(statement_starts) {
             return error;
         }
         let start = self.scanner.position;

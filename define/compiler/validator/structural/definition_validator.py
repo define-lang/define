@@ -141,25 +141,34 @@ class DefinitionStructuralValidator:
             if encoding_operation is not None:
                 self._process_reference(encoding_operation)
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ] = typed_name_dict.TypedNameDict()
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ] = typed_name_dict.TypedNameDict()
         for view in definition.views:
             self._validate_view_definition(definition, view, views, unreferenced_views)
         executes_all_views = False
+        has_execution = False
 
         def validate_looked_at(looking_at: ast.LocalTypedNameReference) -> bool:
             return self._validate_looked_at_view(looking_at, views, unreferenced_views)
 
         for statement in definition.operation_statements:
             match statement:
+                case ast.LocalViewDefinition():
+                    self._validate_view_definition(
+                        definition, statement, views, unreferenced_views
+                    )
                 case ast.OperationExecutionStatement():
+                    has_execution = True
                     self._validate_execution(
                         statement.operation, statement.arguments, validate_looked_at
                     )
                 case ast.LogicalOperationExecutionStatement():
+                    has_execution = True
                     self._validate_execution(
                         statement.logical_operation,
                         statement.arguments,
@@ -169,29 +178,44 @@ class DefinitionStructuralValidator:
                     ast.EncodingOperationExecutionStatement()
                     | ast.ComputerOperationExecutionStatement()
                 ):
+                    has_execution = True
                     executes_all_views = True
-        # The encoding operation or computer operation receives every interface
-        # view, so executing it references all of them.
-        if executes_all_views:
-            return
-        for view in unreferenced_views.values():
+        if not has_execution:
             self._diagnostics.append(
-                diagnostics.UnreferencedViewDiagnostic(
-                    location=view.typed_name.name_content.location,
-                    view_name=view.typed_name.source_typed_name,
-                    operation_name_type=definition.typed_name.name_type,
+                diagnostics.OperationWithoutExecutionDiagnostic(
+                    location=definition.typed_name.location
                 )
             )
+        for view in unreferenced_views.values():
+            if isinstance(view, ast.LocalViewDefinition):
+                self._diagnostics.append(
+                    diagnostics.UnreferencedLocalViewDiagnostic(
+                        location=view.typed_name.name_content.location,
+                        view_name=view.typed_name.source_typed_name,
+                    )
+                )
+            # The encoding operation or computer operation receives every
+            # interface view, so executing it references all of them.
+            elif not executes_all_views:
+                self._diagnostics.append(
+                    diagnostics.UnreferencedViewDiagnostic(
+                        location=view.typed_name.name_content.location,
+                        view_name=view.typed_name.source_typed_name,
+                        operation_name_type=definition.typed_name.name_type,
+                    )
+                )
 
     def _validate_view_definition(
         self,
         definition: ast.OperationDefinition,
-        view: ast.InterfaceViewDefinition,
+        view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ],
     ):
         if self._validate_view_name(view, views):
@@ -200,6 +224,17 @@ class DefinitionStructuralValidator:
         quality_name_types: set[name_types.NameType] = set()
         for statement in view.quality_assignment_block.statements:
             quality = statement.typed_global_name
+            if (
+                isinstance(view, ast.LocalViewDefinition)
+                and quality.name_type != name_types.NameType.VALUE
+            ):
+                self._diagnostics.append(
+                    diagnostics.LocalViewNonValueQualityDiagnostic(
+                        location=quality.location,
+                        quality_name=quality.source_typed_name,
+                    )
+                )
+                continue
             if quality.name_type in {
                 name_types.NameType.POSITION,
                 name_types.NameType.ACTION,
@@ -247,13 +282,23 @@ class DefinitionStructuralValidator:
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
-        elif name_types.NameType.VALUE not in quality_name_types:
+            return
+        if name_types.NameType.VALUE in quality_name_types:
+            return
+        if isinstance(view, ast.LocalViewDefinition):
             self._diagnostics.append(
-                diagnostics.ViewMissingValueQualityDiagnostic(
+                diagnostics.LocalViewMissingValueQualityDiagnostic(
                     location=view.typed_name.name_content.location,
                     view_name=view.typed_name.source_typed_name,
                 )
             )
+            return
+        self._diagnostics.append(
+            diagnostics.ViewMissingValueQualityDiagnostic(
+                location=view.typed_name.name_content.location,
+                view_name=view.typed_name.source_typed_name,
+            )
+        )
 
     def _validate_logical_operation_definition(
         self, definition: ast.LogicalOperationDefinition
@@ -313,7 +358,7 @@ class DefinitionStructuralValidator:
                 greatest_name = name
             self._process_reference(logical_operation)
 
-    def _validate_view_name[ViewT: ast.ViewDefinition](
+    def _validate_view_name[ViewT: ast.ViewDefinition | ast.LocalViewDefinition](
         self,
         view: ViewT,
         views: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, ViewT],
@@ -429,10 +474,12 @@ class DefinitionStructuralValidator:
         self,
         view: ast.LocalTypedNameReference,
         views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.InterfaceViewDefinition
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ],
     ) -> bool:
         name_diagnostics = name_validators.validate_local_name_format(view.name_content)

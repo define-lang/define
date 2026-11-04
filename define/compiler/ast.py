@@ -121,6 +121,13 @@ class LogicalOperationViewDefinition(ViewDefinition):
     """Represents a Logical Operation View Definition."""
 
 
+class LocalViewDefinition(ASTNode):
+    """Represents a Local View Definition in a Value Operation's Operation Statements Block."""
+
+    typed_name: LocalTypedNameReference
+    quality_assignment_block: QualityAssignmentBlock
+
+
 # Struct-generated constructors prevent automatic covariance inference.
 ViewDefinitionT_co = TypeVar("ViewDefinitionT_co", bound=ViewDefinition, covariant=True)
 
@@ -723,7 +730,8 @@ class ComputerOperationExecutionStatement(ASTNode):
 
 
 type OperationStatement = (
-    OperationExecutionStatement[LocalTypedNameReference | Literal]
+    LocalViewDefinition
+    | OperationExecutionStatement[LocalTypedNameReference | Literal]
     | LogicalOperationExecutionStatement
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement

@@ -245,6 +245,47 @@ def test_logical_operation_support_order_format():
     )
 
 
+def test_local_view_error_messages():
+    source = (
+        "define the operation<my.domain.com:my_lib:/test> {\n"
+        "    it does {\n"
+        "        define the view<unused> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the encoding<standard:/number/decimal/ascii>.\n"
+        "            }\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    formatted = [
+        diagnostic.format(program_result.source_map)
+        for diagnostic in program_result.file_results[0].diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        line 1, column 12
+            define the operation<my.domain.com:my_lib:/test> {
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        a value operation must execute at least one logical operation or value operation"""),
+        textwrap.dedent("""\
+        line 3, column 25
+            define the view<unused> {
+                            ^^^^^^
+        'view<unused>' must have a value quality, because every local view must have one"""),
+        textwrap.dedent("""\
+        line 3, column 25
+            define the view<unused> {
+                            ^^^^^^
+        'view<unused>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'view<unused>'."""),
+        textwrap.dedent("""\
+        line 5, column 28
+            it has the encoding<standard:/number/decimal/ascii>.
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        local views may only be assigned a value quality. However, 'encoding<standard:/number/decimal/ascii>' is not a value quality"""),
+    ]
+
+
 def test_non_filesystem_diagnostics_have_no_file_name():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"

@@ -1,0 +1,11 @@
+# A value operation must execute at least one logical operation or value
+# operation.
+define the operation<my.domain.com:my_lib:/test> {
+    it does {
+        define the view<unused> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+    }
+}

@@ -70,6 +70,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         """Validate the definition and return its validation result."""
         for statement in self._definition.operation_statements:
             match statement:
+                case ast.LocalViewDefinition():
+                    raise NotImplementedError(
+                        "The reference graph does not validate local views yet."
+                    )
                 case ast.OperationExecutionStatement():
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():

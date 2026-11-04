@@ -215,6 +215,26 @@ class UnreferencedViewDiagnostic(Diagnostic):
     )
 
 
+class OperationWithoutExecutionDiagnostic(Diagnostic):
+    """Diagnostic for a value operation whose Operation Statements Block executes nothing."""
+
+    message_format: ClassVar[str] = (
+        "a value operation must execute at least one logical operation "
+        "or value operation"
+    )
+
+
+class UnreferencedLocalViewDiagnostic(Diagnostic):
+    """Diagnostic for a local view never referenced in its operation."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is defined here, but it is never referenced "
+        "within this definition; either remove the definition or reference "
+        "'{self.view_name}'."
+    )
+
+
 class LogicalOperationWithoutOutputViewDiagnostic(Diagnostic):
     """Diagnostic for a logical operation that has no output view."""
 
@@ -294,6 +314,26 @@ class ViewMissingValueQualityDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "'{self.view_name}' must have a value quality, because every "
         "interface view on a value operation must have one"
+    )
+
+
+class LocalViewNonValueQualityDiagnostic(Diagnostic):
+    """Diagnostic for a local view Quality Assignment Statement that names something other than a value quality."""
+
+    quality_name: str
+    message_format: ClassVar[str] = (
+        "local views may only be assigned a value quality. "
+        "However, '{self.quality_name}' is not a value quality"
+    )
+
+
+class LocalViewMissingValueQualityDiagnostic(Diagnostic):
+    """Diagnostic for a local view without a value quality."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' must have a value quality, because every "
+        "local view must have one"
     )
 
 

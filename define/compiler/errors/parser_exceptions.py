@@ -379,8 +379,9 @@ class InvalidOperationStatementsBlock(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
-        " 'execute the operation<...>', 'execute the logical_operation<...>',"
-        " or 'execute the encoding operation.' statements."
+        " 'define the view<...>', 'execute the operation<...>',"
+        " 'execute the logical_operation<...>', or"
+        " 'execute the encoding operation.' statements."
     )
 
 
@@ -465,6 +466,15 @@ class LiteralInLogicalOperationExecution(DefineTokenError):
     )
 
 
+class LocalViewDirectionStatement(DefineTokenError):
+    """Wrote a View Direction Statement in a Local View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A local view has no 'it is read.' or 'it is written.' statements,"
+        " because it is always both read and written."
+    )
+
+
 class MissingActionDefinitionSyntax(DefineTokenError):
     """Forgot to write 'it happens when' in an Action Definition Block."""
 
@@ -528,6 +538,16 @@ class MissingLogicalOperationViewDefinition(DefineTokenError):
     message_format: ClassVar[str] = (
         "A logical operation definition must contain at least one"
         " 'define the view' definition."
+    )
+
+
+class MissingLocalViewQualityAssignmentBlock(DefineTokenError):
+    """Left out the View Quality Assignment Block of a Local View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A local view definition must contain only an"
+        " 'it may only contain particles where' block"
+        " that assigns a single value quality."
     )
 
 
@@ -595,8 +615,9 @@ class MissingOperationStatementsContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain at least one"
-        " 'execute the operation<...>', 'execute the logical_operation<...>',"
-        " or 'execute the encoding operation.' statement."
+        " 'define the view<...>', 'execute the operation<...>',"
+        " 'execute the logical_operation<...>', or"
+        " 'execute the encoding operation.' statement."
     )
 
 

@@ -1872,6 +1872,9 @@ This block may contain only these types of statements:
 3. Logical Operation Execution Statements
 4. View Setting Statements
 
+It must contain at least one Value Operation Execution Statement or Logical
+Operation Execution Statement.
+
 ```ebnf
 operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
 operation_statements_contents = operation_statement, { operation_statement } ;
