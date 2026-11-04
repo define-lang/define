@@ -37,7 +37,7 @@ class ChainedNameValidator:
     def validate(
         self,
         chain: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
         """Validate chained name elements against their parent name's quality assignments.
 

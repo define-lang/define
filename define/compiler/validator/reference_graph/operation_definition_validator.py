@@ -8,7 +8,7 @@ from typing import override
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input, validation_result
+from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
     literal_encoder,
     operation_arguments_validator,
@@ -30,7 +30,9 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     ]
     _diagnostics: list[diagnostics.Diagnostic]
     _arguments_validator: operation_arguments_validator.OperationArgumentsValidator
-    _local_views: dict[str, ast.LocalViewDefinition]
+    _views: scope_tracker.ScopeTracker[
+        ast.InterfaceViewDefinition | ast.LocalViewDefinition
+    ]
     _read_views: set[str]
     _written_views: set[str]
     # Where each local view is first written.
@@ -56,7 +58,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         self._definition = definition
         self._definition_results = definition_results
         self._diagnostics = []
-        self._local_views = {}
+        self._views = scope_tracker.ScopeTracker()
+        for view in definition.views:
+            self._define_view(view)
+        self._views.enter_child_scope()
         self._read_views = set()
         self._written_views = set()
         self._local_view_writes = {}
@@ -76,7 +81,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         for statement in self._definition.operation_statements.statements:
             match statement:
                 case ast.LocalViewDefinition():
-                    self._define_local_view(statement)
+                    self._define_view(statement)
                 case ast.OperationExecutionStatement():
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():
@@ -112,21 +117,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     @abc.abstractmethod
     def _build_result(self) -> validation_result.PostorderValidationResult: ...
 
-    def _define_local_view(self, view: ast.LocalViewDefinition):
-        view_name = view.typed_name.source_typed_name
-        # Structural validation reports a local view whose name is already
-        # defined.
-        if self._get_view(view_name) is None:
-            self._local_views[view_name] = view
-
-    def _get_view(
-        self, view_name: str
-    ) -> ast.InterfaceViewDefinition | ast.LocalViewDefinition | None:
-        """Return the interface view or earlier local view with this name, if there is one."""
-        interface_view = self._definition.get_view(view_name)
-        if interface_view is not None:
-            return interface_view
-        return self._local_views.get(view_name)
+    def _define_view(self, view: ast.InterfaceViewDefinition | ast.LocalViewDefinition):
+        # Structural validation reports a view whose name is already defined.
+        if not self._views.is_defined(view.typed_name):
+            self._views.add_definition(view)
 
     def _fulfill_every_view_direction(self):
         for view in self._definition.views:
@@ -171,7 +165,8 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                 )
 
     def _check_local_views_read(self):
-        for view_name, view in self._local_views.items():
+        for view in self._views.current_scope_definitions():
+            view_name = view.typed_name.source_typed_name
             if (
                 view_name in self._views_with_unknown_use
                 or view_name in self._misused_views
@@ -214,7 +209,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             # Literals are checked when the arguments are validated.
             if not isinstance(looking_at, ast.LocalTypedNameReference):
                 continue
-            looked_at_view = self._get_view(looking_at.source_typed_name)
+            looked_at_view = self._views.get_definition_or_none(looking_at)
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue
@@ -264,7 +259,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         )
         for argument in statement.arguments:
             looking_at = argument.looking_at
-            looked_at_view = self._get_view(looking_at.source_typed_name)
+            looked_at_view = self._views.get_definition_or_none(looking_at)
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue

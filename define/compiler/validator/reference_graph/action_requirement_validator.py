@@ -61,7 +61,7 @@ class ActionRequirementValidator:
         self,
         requirement: action_contract.OccupancyRequirement,
         local_position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Record ``requirement`` in this definition's contract and reflect it in the tracker at ``local_position``, the position in this definition's local namespace that the requirement's contracted position names."""
         # Profiles of dense action call graphs make requirement recording and
@@ -117,7 +117,7 @@ class ActionRequirementValidator:
         self,
         inferred_at: ast.SourceLocation,
         requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Propagate the requirements of a callee triggered at ``inferred_at`` into this definition's contract."""
         propagated_requirements = self._tracker.propagate_requirements(
@@ -140,7 +140,7 @@ class ActionRequirementValidator:
         self,
         required_state: position_occupancy.PositionOccupancyState,
         position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Infer requirements for a position and all its parent positions.
 

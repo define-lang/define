@@ -206,7 +206,7 @@ class ActionDefinitionValidator:
         self,
         statement: ast.CreateParticleStatement,
         qualities: quality_assignment.QualityAssignments,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Trigger every constructor on the particle just created in position (DLP 32)."""
         position = statement.target_position
@@ -253,7 +253,7 @@ class ActionDefinitionValidator:
         self,
         statement: ast.CreateParticleStatement | ast.MoveParticleStatement,
         action_chain: ast.ActionReference,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Record an interface arrival and trigger its action if appropriate."""
         position = statement.target_position
@@ -300,7 +300,7 @@ class ActionDefinitionValidator:
     def _trigger_callee(
         self,
         execution: callee_execution.CalleeExecution,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         result = self._callee_execution_validator.validate(execution, scope)
         self._tracker.apply_guarantees(execution.action_chain, execution.contract)
@@ -316,7 +316,7 @@ class ActionDefinitionValidator:
     def _analyze_statements(
         self,
         action_statements: ast.ActionStatementsBlock,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         validity_iter = iter(self._particle_statement_validity)
         looked_at_validity_iter = iter(self._looked_at_position_validity)
@@ -348,7 +348,7 @@ class ActionDefinitionValidator:
                     )
         self._auto_destruct_locals(scope)
 
-    def _auto_destruct_locals(self, scope: scope_tracker.ScopeTracker):
+    def _auto_destruct_locals(self, scope: scope_tracker.PositionScopeTracker):
         """Destroy any particles still in positions defined locally in this block.
 
         Per the spec's "Automatic Destruction" section, all particles still
@@ -366,7 +366,7 @@ class ActionDefinitionValidator:
         self,
         stmt: ast.ValueSettingStatement,
         validity: validation_result.ParticleStatementValidity,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         if not (validity.target_ok and validity.source_ok):
             return
@@ -454,7 +454,7 @@ class ActionDefinitionValidator:
         self,
         stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
         looked_at_validity: Iterator[bool],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         executed = self._operation_arguments_validator.get_executed_operation(stmt)
@@ -540,7 +540,7 @@ class ActionDefinitionValidator:
     def _analyze_looked_at_position(
         self,
         position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
         statement_diagnostics: list[diagnostics.Diagnostic],
         *,
         is_read: bool,
@@ -577,7 +577,7 @@ class ActionDefinitionValidator:
         self,
         stmt: ast.CreateParticleStatement,
         validity: validation_result.ParticleStatementValidity,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         if not validity.target_ok:
             return
@@ -609,7 +609,7 @@ class ActionDefinitionValidator:
         self,
         stmt: ast.DestroyParticleStatement,
         validity: validation_result.ParticleStatementValidity,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         if not validity.target_ok:
             return
@@ -637,7 +637,7 @@ class ActionDefinitionValidator:
         self,
         stmt: ast.MoveParticleStatement,
         validity: validation_result.ParticleStatementValidity,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         if not (validity.source_ok and validity.target_ok):
             return
@@ -669,7 +669,7 @@ class ActionDefinitionValidator:
     def _execute_move(
         self,
         stmt: ast.MoveParticleStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Execute a move and update tracker state."""
         from_pos = stmt.source_position
@@ -730,7 +730,7 @@ class ActionDefinitionValidator:
     def _check_trigger(
         self,
         statement: ast.CreateParticleStatement | ast.MoveParticleStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Check trigger, detecting self-triggering as an error."""
         position = statement.target_position
@@ -758,7 +758,7 @@ class ActionDefinitionValidator:
         action_contract.ActionContract,
         list[codegen_input.GuaranteedParticleDestructors],
     ]:
-        scope = scope_tracker.ScopeTracker()
+        scope = scope_tracker.PositionScopeTracker()
         self._dead_quality_assignment_validator.register_implied_actions(
             self._definition.quality_implications
         )

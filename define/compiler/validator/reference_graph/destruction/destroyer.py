@@ -70,7 +70,7 @@ class Destroyer:
         self._callee_execution_validator = callee_execution_validator
 
     def destroy(
-        self, position: ast.PositionReference, scope: scope_tracker.ScopeTracker
+        self, position: ast.PositionReference, scope: scope_tracker.PositionScopeTracker
     ) -> DestroyResult:
         """Destroy the particle in ``position``, as a Destroy statement does, with every particle below it, and return what the destruction produces."""
         return self._destroy_simultaneously([position], scope, is_automatic=False)
@@ -78,7 +78,7 @@ class Destroyer:
     def destroy_automatically(
         self,
         local_position_names: Sequence[ast.LocalTypedNameReference],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> DestroyResult:
         """Destroy the particles still in the positions ``local_position_names`` name, the positions defined only in a block that is ending, simultaneously, with every particle below them, and return what the destruction produces."""
         occupied_positions: list[ast.PositionReference] = []
@@ -103,7 +103,7 @@ class Destroyer:
     def _destroy_simultaneously(
         self,
         positions: list[ast.PositionReference],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
         *,
         is_automatic: bool,
     ) -> DestroyResult:

@@ -118,7 +118,7 @@ class DefinitionStructuralValidator:
         definition: ast.ActionDefinition,
     ):
         self._validate_quality_implications(definition.quality_implications)
-        scope = scope_tracker.ScopeTracker()
+        scope = scope_tracker.PositionScopeTracker()
         for local_def in definition.interface_positions:
             self._validate_local_position_definition(local_def, scope)
         self._validate_trigger_conditions(definition.trigger_conditions, scope)
@@ -140,16 +140,16 @@ class DefinitionStructuralValidator:
             )
             if encoding_operation is not None:
                 self._process_reference(encoding_operation)
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        ] = typed_name_dict.TypedNameDict()
+        views = scope_tracker.ScopeTracker[
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition
+        ]()
         unreferenced_views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference,
             ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         ] = typed_name_dict.TypedNameDict()
         for view in definition.views:
             self._validate_view_definition(definition, view, views, unreferenced_views)
+        views.enter_child_scope()
         executes_all_views = False
         has_execution = False
 
@@ -209,9 +209,8 @@ class DefinitionStructuralValidator:
         self,
         definition: ast.OperationDefinition,
         view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+        views: scope_tracker.ScopeTracker[
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference,
@@ -303,9 +302,7 @@ class DefinitionStructuralValidator:
     def _validate_logical_operation_definition(
         self, definition: ast.LogicalOperationDefinition
     ):
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.LogicalOperationViewDefinition
-        ] = typed_name_dict.TypedNameDict()
+        views = scope_tracker.ScopeTracker[ast.LogicalOperationViewDefinition]()
         has_output_view = False
         for view in definition.views:
             _ = self._validate_view_name(view, views)
@@ -361,25 +358,25 @@ class DefinitionStructuralValidator:
     def _validate_view_name[ViewT: ast.ViewDefinition | ast.LocalViewDefinition](
         self,
         view: ViewT,
-        views: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, ViewT],
+        views: scope_tracker.ScopeTracker[ViewT],
     ) -> bool:
-        """Validate the name of a view and add it to `views` if no earlier view has its name.
+        """Validate the name of a view and add it to the scope if no earlier view has its name.
 
         Returns whether it was added.
         """
         self._diagnostics.extend(
             name_validators.validate_local_name_format(view.typed_name.name_content)
         )
-        if view.typed_name in views:
+        if views.is_defined(view.typed_name):
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
                     location=view.typed_name.location,
                     local_name=view.typed_name.name_content.name,
-                    first_definition_line=views[view.typed_name].location.line,
+                    first_definition_line=views.defined_on_line(view.typed_name),
                 )
             )
             return False
-        views[view.typed_name] = view
+        views.add_definition(view)
         return True
 
     def _validate_execution[
@@ -447,7 +444,9 @@ class DefinitionStructuralValidator:
                 )
 
     def _validate_looked_at_in_action(
-        self, looking_at: ast.PositionReference, scope: scope_tracker.ScopeTracker
+        self,
+        looking_at: ast.PositionReference,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> bool:
         position_ok = self._validate_full_chained_name(looking_at, scope)
         self._looked_at_position_validity.append(position_ok)
@@ -473,9 +472,8 @@ class DefinitionStructuralValidator:
     def _validate_looked_at_view(
         self,
         view: ast.LocalTypedNameReference,
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+        views: scope_tracker.ScopeTracker[
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ],
         unreferenced_views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference,
@@ -486,7 +484,7 @@ class DefinitionStructuralValidator:
         self._diagnostics.extend(name_diagnostics)
         if name_diagnostics:
             return False
-        if view not in views:
+        if not views.is_defined(view):
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
                     location=view.location,
@@ -501,7 +499,7 @@ class DefinitionStructuralValidator:
     def _validate_trigger_conditions(
         self,
         trigger_conditions: ast.TriggerConditionsBlock,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         condition = trigger_conditions.condition
         if isinstance(condition, ast.PositionPresenceStatement):
@@ -510,7 +508,7 @@ class DefinitionStructuralValidator:
     def _validate_action_statements(
         self,
         action_statements: ast.ActionStatementsBlock,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         if not action_statements.statements:
             self._diagnostics.append(
@@ -542,7 +540,7 @@ class DefinitionStructuralValidator:
     def _validate_value_setting(
         self,
         stmt: ast.ValueSettingStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         target_ok = self._validate_full_chained_name(stmt.target_position, scope)
         match stmt.source:
@@ -581,7 +579,7 @@ class DefinitionStructuralValidator:
     def _validate_local_position_definition(
         self,
         local_def: ast.LocalPositionDefinition,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
         self._validate_quality_assignment_block(local_def.quality_assignment_block)
@@ -598,7 +596,7 @@ class DefinitionStructuralValidator:
     def _validate_local_name_format_and_conflicts(
         self,
         local_def: ast.LocalPositionDefinition,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         self._diagnostics.extend(
             name_validators.validate_local_name_format(
@@ -621,7 +619,7 @@ class DefinitionStructuralValidator:
     def _validate_create_particle(
         self,
         stmt: ast.CreateParticleStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         target_ok = self._validate_full_chained_name(
             stmt.target_position,
@@ -636,7 +634,7 @@ class DefinitionStructuralValidator:
     def _validate_move_particle(
         self,
         stmt: ast.MoveParticleStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         source_ok = self._validate_full_chained_name(
             stmt.source_position,
@@ -695,7 +693,7 @@ class DefinitionStructuralValidator:
     def _validate_destroy_particle(
         self,
         stmt: ast.DestroyParticleStatement,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         target_ok = self._validate_full_chained_name(
             stmt.target_position,
@@ -710,7 +708,7 @@ class DefinitionStructuralValidator:
     def _validate_full_chained_name(
         self,
         chain: ast.ChainedName,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> bool:
         """Validate a full chained name reference.
 

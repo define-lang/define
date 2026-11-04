@@ -79,7 +79,7 @@ class CalleeExecutionValidator:
     def validate(
         self,
         execution: callee_execution.CalleeExecution,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> CalleeExecutionValidationResult:
         """Trigger the callee, and return what validating its execution produces.
 
@@ -149,7 +149,7 @@ class CalleeExecutionValidator:
     def _validate_destructor_in_callee(
         self,
         execution: callee_execution.DestructorInCalleeExecution,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
         """Validate a Destructor that ran when the callee destroyed its particle, as though it were running at the moment of destruction."""
         validation_diagnostics = self._validate_destructor_occupancy_requirements(
@@ -163,7 +163,7 @@ class CalleeExecutionValidator:
     def _validate_destructor_occupancy_requirements(
         self,
         execution: callee_execution.DestructorInCalleeExecution,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
         """Validate the occupancy requirements of a Destructor that ran when the callee destroyed its particle."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []

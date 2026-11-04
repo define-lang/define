@@ -89,6 +89,12 @@ class GlobalDefinition(ASTNode):
     typed_name: GlobalTypedNameInDefinition
 
 
+class LocalDefinition(ASTNode):
+    """Base class for definitions in a local scope."""
+
+    typed_name: LocalTypedNameReference
+
+
 class QualityDefinition(GlobalDefinition):
     """Base class for quality definitions."""
 
@@ -103,10 +109,9 @@ class PotentialLiteralDefinition(GlobalDefinition):
     encoding: GlobalTypedNameReference
 
 
-class ViewDefinition(ASTNode):
+class ViewDefinition(LocalDefinition):
     """Base class for view definitions."""
 
-    typed_name: LocalTypedNameReference
     is_input: bool
     is_output: bool
 
@@ -121,10 +126,9 @@ class LogicalOperationViewDefinition(ViewDefinition):
     """Represents a Logical Operation View Definition."""
 
 
-class LocalViewDefinition(ASTNode):
+class LocalViewDefinition(LocalDefinition):
     """Represents a Local View Definition in a Value Operation's Operation Statements Block."""
 
-    typed_name: LocalTypedNameReference
     quality_assignment_block: QualityAssignmentBlock
 
 
@@ -232,10 +236,9 @@ class LocalNameContent(NameContent):
         return self.name
 
 
-class LocalPositionDefinition(ASTNode):
+class LocalPositionDefinition(LocalDefinition):
     """Represents a local position definition."""
 
-    typed_name: LocalTypedNameReference
     quality_assignment_block: QualityAssignmentBlock | None = None
 
     @property

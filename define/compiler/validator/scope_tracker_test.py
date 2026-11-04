@@ -58,7 +58,7 @@ def _make_global_typed_name(
 
 
 def test_add_and_is_defined():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     local_def = _make_local_def("my_pos")
     tracker.add_definition(local_def)
 
@@ -67,14 +67,14 @@ def test_add_and_is_defined():
 
 
 def test_is_defined_unknown():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
 
     typed_name = _make_local_typed_name("no_such")
     assert tracker.is_defined(typed_name) is False
 
 
 def test_enter_child_scope_sees_parent():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -84,7 +84,7 @@ def test_enter_child_scope_sees_parent():
 
 
 def test_is_defined_in_current_scope_parent_not_visible():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -95,7 +95,7 @@ def test_is_defined_in_current_scope_parent_not_visible():
 
 
 def test_is_defined_in_current_scope_child_visible():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.enter_child_scope()
     tracker.add_definition(_make_local_def("child_pos"))
 
@@ -104,7 +104,7 @@ def test_is_defined_in_current_scope_child_visible():
 
 
 def test_enter_child_scope_adds_to_child_layer():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -115,7 +115,7 @@ def test_enter_child_scope_adds_to_child_layer():
 
 
 def test_defined_on_line():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     local_def = _make_local_def("my_pos")
     tracker.add_definition(local_def)
 
@@ -123,14 +123,14 @@ def test_defined_on_line():
 
 
 def test_defined_on_line_raises_for_undefined():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
 
     with pytest.raises(KeyError):
         tracker.defined_on_line(_make_local_typed_name("no_such"))
 
 
 def test_action_name_does_not_match_position():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("shared_name"))
 
     pos_ref = _make_local_typed_name("shared_name", name_types.NameType.POSITION)
@@ -147,7 +147,7 @@ def _make_position_ref(
 
 
 def test_is_defined_local_single_local_in_scope():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
     position = _make_position_ref([_make_local_typed_name("my_pos")])
 
@@ -155,7 +155,7 @@ def test_is_defined_local_single_local_in_scope():
 
 
 def test_is_defined_local_multi_item_chain():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
     position = _make_position_ref(
         [
@@ -168,7 +168,7 @@ def test_is_defined_local_multi_item_chain():
 
 
 def test_is_defined_local_global_reference():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     position = _make_position_ref(
         [_make_global_typed_name("/some_pos", name_types.NameType.POSITION)]
     )
@@ -177,16 +177,34 @@ def test_is_defined_local_global_reference():
 
 
 def test_is_defined_local_not_in_scope():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     position = _make_position_ref([_make_local_typed_name("missing")])
 
     assert tracker.is_defined_local(position) is False
 
 
 def test_is_defined_local_in_parent_scope():
-    tracker = scope_tracker.ScopeTracker()
+    tracker = scope_tracker.PositionScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
     tracker.enter_child_scope()
     position = _make_position_ref([_make_local_typed_name("parent_pos")])
 
     assert tracker.is_defined_local(position) is True
+
+
+def test_get_definition_or_none_in_parent_scope():
+    tracker = scope_tracker.PositionScopeTracker()
+    local_def = _make_local_def("parent_pos")
+    tracker.add_definition(local_def)
+    tracker.enter_child_scope()
+
+    assert (
+        tracker.get_definition_or_none(_make_local_typed_name("parent_pos"))
+        is local_def
+    )
+
+
+def test_get_definition_or_none_unknown():
+    tracker = scope_tracker.PositionScopeTracker()
+
+    assert tracker.get_definition_or_none(_make_local_typed_name("no_such")) is None

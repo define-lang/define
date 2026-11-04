@@ -141,7 +141,7 @@ class DeadQualityAssignmentValidator:
     def mark_callee_contract_quality_assignments_alive(
         self,
         requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Keep quality assignments alive through occupied callee requirements."""
         if not self._dead_quality_assignment_tracker.has_candidates():
@@ -165,7 +165,7 @@ class DeadQualityAssignmentValidator:
         self,
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Keep the quality assignments on a particle's origin alive through a contracted Position."""
         if not self._dead_quality_assignment_tracker.has_candidates():
@@ -188,7 +188,7 @@ class DeadQualityAssignmentValidator:
             chained_name.PositionReferenceTuple,
             action_contract.PositionGuarantee,
         ],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
         """Check dead quality assignments and untriggered Actions after accounting for final guarantees."""
         self._mark_own_contract_guarantees_alive(own_guarantees, scope)
@@ -250,7 +250,7 @@ class DeadQualityAssignmentValidator:
             chained_name.PositionReferenceTuple,
             action_contract.PositionGuarantee,
         ],
-        scope: scope_tracker.ScopeTracker,
+        scope: scope_tracker.PositionScopeTracker,
     ):
         """Keep origin and final position quality assignments alive through this action's guarantees."""
         if not self._dead_quality_assignment_tracker.has_candidates():
