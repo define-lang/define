@@ -124,12 +124,16 @@ DCL has strict rules for numeric literals:
 2. The `+` sign is not allowed (only `-` for negative numbers)
 3. Floating point numbers must be exactly `INT.INT` format (no leading or
    trailing decimal points, no scientific notation, no type suffixes)
+4. The fractional part of a floating point number must not end with `0`, unless
+   it is exactly `0`
 
 ```ebnf
 dec_lit   = "0"
           | ( dec - "0" ), { dec } ;
 INTEGER = [ "-" ], dec_lit ;
-FLOAT = [ "-" ], dec_lit, ".", dec, { dec } ;
+fraction  = "0"
+          | { dec }, ( dec - "0" ) ;
+FLOAT = [ "-" ], dec_lit, ".", fraction ;
 ```
 
 Valid numeric literals:
@@ -138,6 +142,7 @@ Valid numeric literals:
 - `-5`
 - `3.14`
 - `-2.0`
+- `1.05`
 
 Invalid numeric literals:
 
@@ -145,6 +150,7 @@ Invalid numeric literals:
 - `- 5` (space between sign and number)
 - `.5` (must have integer part)
 - `10.` (must have fractional part)
+- `1.50` or `2.00` (fractional part ends with `0`)
 - `10f` or `10F` (no type suffixes)
 - `1e5` (no scientific notation)
 - `1.5e-2` (no scientific notation)
@@ -191,12 +197,12 @@ Invalid string literals:
 ### Top-Level Syntax
 
 A DCL file consists of one or more top-level messages. Each top-level message
-has a field name followed by a colon and a message value.
+has a field name followed by a colon, exactly one space, and a message value.
 
 ```ebnf
 file = { WHITESPACE }, top_level_message, { WHITESPACE, top_level_message }, { WHITESPACE } ;
 
-top_level_message = FIELD_NAME, ":", message_value ;
+top_level_message = FIELD_NAME, ":", " ", message_value ;
 ```
 
 Note that `message_value` is defined below.
