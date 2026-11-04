@@ -203,6 +203,10 @@ crate.annotation(
     build_script_env = {"PYO3_CONFIG_FILE": "$(execpath @@//tools:pyo3_config_file)"},
     crate = "pyo3",
 )
+crate.annotation(
+    crate = "protoc-gen-prost",
+    gen_binaries = ["protoc-gen-prost"],
+)
 crate.from_cargo(
     name = "crates",
     cargo_lock = "//:Cargo.lock",
@@ -220,6 +224,9 @@ crate.from_cargo(
 use_repo(crate, "crates")
 
 register_toolchains("//tools/bzl:rust_pyo3_toolchain")
+
+# Registered before rules_rs's default prost toolchain, so it takes precedence.
+register_toolchains("//tools/bzl:prost_toolchain")
 
 register_toolchains(
     "@rules_rust_pyo3//toolchains:toolchain",

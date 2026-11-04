@@ -331,10 +331,14 @@ This applies to both repeated message values and repeated scalar literals
 (strings, numbers, enums).
 
 ```ebnf
-repeated_value = "[", [ WHITESPACE ], [ value_list ], [ WHITESPACE ], "]" ;
+repeated_value = "[", [ WHITESPACE ], [ element_list ], [ WHITESPACE ], "]" ;
 
-value_list = value, { ",", [ WHITESPACE ], value } ;
+element_list = element, { ",", [ WHITESPACE ], element } ;
+
+element = STRING | INTEGER | FLOAT | enum_value | message_value ;
 ```
+
+An element of a repeated value cannot itself be a repeated value.
 
 Note that `value` is defined in the Value Types section below.
 
@@ -391,6 +395,12 @@ Write it as one list instead:
 
 ```
 tags: ["tag1", "tag2", "tag3"]
+```
+
+Invalid (repeated value as an element of a repeated value):
+
+```
+tags: ["tag1", ["tag2"]]
 ```
 
 ## Schema Restrictions

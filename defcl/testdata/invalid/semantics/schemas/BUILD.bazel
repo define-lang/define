@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@protobuf//bazel:proto_descriptor_set.bzl", "proto_descriptor_set")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
@@ -23,6 +24,11 @@ py_proto_library(
     name = "integer_enum_proto_py",
     visibility = ["//defcl/python/validator:__pkg__"],
     deps = [":integer_enum_proto"],
+)
+
+proto_library(
+    name = "message_values_for_scalar_fields_proto",
+    srcs = ["message_values_for_scalar_fields.proto"],
 )
 
 proto_library(
@@ -81,6 +87,16 @@ py_proto_library(
 )
 
 proto_library(
+    name = "no_package_proto",
+    srcs = ["no_package.proto"],
+)
+
+proto_library(
+    name = "non_repeated_fields_with_brackets_proto",
+    srcs = ["non_repeated_fields_with_brackets.proto"],
+)
+
+proto_library(
     name = "repeated_integer_enum_proto",
     srcs = ["repeated_integer_enum.proto"],
 )
@@ -91,11 +107,37 @@ py_proto_library(
     deps = [":repeated_integer_enum_proto"],
 )
 
+proto_library(
+    name = "scalars_for_message_fields_proto",
+    srcs = ["scalars_for_message_fields.proto"],
+)
+
 py_library(
     name = "schemas",
     srcs = ["__init__.py"],
     visibility = ["//defcl/python/validator:__pkg__"],
     deps = ["//defcl/testdata/invalid/semantics"],
+)
+
+# Every schema in this package, for the Rust tests of //defcl/rust/semantics.
+proto_descriptor_set(
+    name = "schemas_descriptor_set",
+    testonly = True,
+    visibility = ["//defcl/rust/semantics:__pkg__"],
+    deps = [
+        ":field_written_twice_proto",
+        ":integer_enum_proto",
+        ":message_values_for_scalar_fields_proto",
+        ":nested_integer_enum_proto",
+        ":nested_no_brackets_message_proto",
+        ":nested_no_brackets_scalar_proto",
+        ":no_brackets_message_proto",
+        ":no_brackets_scalar_proto",
+        ":no_package_proto",
+        ":non_repeated_fields_with_brackets_proto",
+        ":repeated_integer_enum_proto",
+        ":scalars_for_message_fields_proto",
+    ],
 )
 
 check_build_file()

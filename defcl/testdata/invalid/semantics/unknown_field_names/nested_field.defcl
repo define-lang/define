@@ -1,0 +1,8 @@
+project: {
+    dependencies: [
+        {
+            universe: "lib1"
+            version: "1.0"
+        }
+    ]
+}

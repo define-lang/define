@@ -10,14 +10,20 @@ name = "renderer"
 path = "compiler/codegen/literal/python/renderer.rs"
 crate-type = ["cdylib"]
 
+# Bazel targets list their own crates; this package only tells the @crates hub
+# which crates to fetch. It also lists the crates for //defcl/rust and for the
+# prost toolchain in //tools/bzl: prost, prost-types and protoc-gen-prost.
 [dependencies]
 askama.workspace = true
+prost.workspace = true
+prost-types.workspace = true
 pyo3.workspace = true
 rustc-hash.workspace = true
 wide.workspace = true
 
 [dev-dependencies]
 googletest.workspace = true
+protoc-gen-prost.workspace = true
 pyo3-introspection = "=0.30.1"
 serde_json.workspace = true
 

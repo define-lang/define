@@ -5,7 +5,7 @@ load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 rust_library(
-    name = "defcl",
+    name = "parser",
     srcs = [
         "lib.rs",
         "parser.rs",
@@ -15,16 +15,18 @@ rust_library(
         "syntax_error.rs",
         "syntax_tree.rs",
     ],
+    crate_name = "defcl_parser",
     crate_root = "lib.rs",
     lint_config = lint_config(),
+    visibility = ["//defcl/rust:__subpackages__"],
 )
 
 rust_test(
     name = "parser_test",
     size = "small",
-    # The test reads its DCL files with include_str!.
+    # The tests read their DCL files with include_str!.
     compile_data = ["//defcl/testdata:testdata_files"],
-    crate = ":defcl",
+    crate = ":parser",
     lint_config = lint_config(),
     deps = ["@crates//:googletest"],
 )
@@ -39,7 +41,7 @@ rust_clippy_test(
         "precommit",
     ],
     targets = [
-        ":defcl",
+        ":parser",
         ":parser_test",
     ],
 )

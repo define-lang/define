@@ -1,5 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
+load("@rules_rust//extensions/prost:defs.bzl", "rust_prost_toolchain")
+load("@rules_rust//rust:defs.bzl", "rust_library_group")
 load("@rules_rust_pyo3//:defs.bzl", "rust_pyo3_toolchain")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
@@ -61,6 +63,28 @@ bzl_library(
     name = "package_checks",
     srcs = ["package_checks.bzl"],
     visibility = ["//visibility:public"],
+)
+
+# Our own prost toolchain, instead of the one rules_rs registers, so that
+# generated code uses the prost version in our Cargo.lock.
+rust_prost_toolchain(
+    name = "prost",
+    prost_plugin = "@crates//:protoc-gen-prost__protoc-gen-prost",
+    prost_runtime = ":prost_runtime",
+    prost_types = "@crates//:prost-types",
+    # The flag's default counts as a tonic attribute, and we do not use tonic.
+    tonic_plugin_flag = "",
+)
+
+rust_library_group(
+    name = "prost_runtime",
+    deps = ["@crates//:prost"],
+)
+
+toolchain(
+    name = "prost_toolchain",
+    toolchain = ":prost",
+    toolchain_type = "@rules_rust//extensions/prost:toolchain_type",
 )
 
 bzl_library(

@@ -1,0 +1,14 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message NonRepeatedFieldsWithBracketsFile {
+  Config config = 1;
+  message Config {
+    string name = 1;
+    Database database = 2;
+  }
+  message Database {
+    string host = 1;
+  }
+}

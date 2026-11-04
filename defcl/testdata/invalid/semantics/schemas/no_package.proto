@@ -1,0 +1,8 @@
+edition = "2024";
+
+message NoPackageFile {
+  Config config = 1;
+  message Config {
+    int32 count = 1;
+  }
+}

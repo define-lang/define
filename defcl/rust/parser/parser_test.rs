@@ -4,25 +4,16 @@ use crate::{
 };
 use googletest::prelude::*;
 
-const fn location(
-    line: usize,
-    column: usize,
-    end_line: usize,
-    end_column: usize,
-) -> SourceLocation {
-    SourceLocation {
-        line,
-        column,
-        end_line,
-        end_column,
-    }
-}
-
 /// A field name written in ASCII on one line.
 const fn name(text: &str, line: usize, column: usize) -> FieldName<'_> {
     FieldName {
         text,
-        location: location(line, column, line, column + text.len() - 1),
+        location: SourceLocation {
+            line,
+            column,
+            end_line: line,
+            end_column: column + text.len() - 1,
+        },
     }
 }
 
@@ -30,19 +21,24 @@ const fn name(text: &str, line: usize, column: usize) -> FieldName<'_> {
 const fn scalar(text: &str, line: usize, column: usize) -> Scalar<'_> {
     Scalar {
         text,
-        location: location(line, column, line, column + text.len() - 1),
+        location: SourceLocation {
+            line,
+            column,
+            end_line: line,
+            end_column: column + text.len() - 1,
+        },
     }
 }
 
 /// A field, which covers its name through its value.
 fn field<'source>(name: FieldName<'source>, value: Value<'source>) -> Field<'source> {
     let value_location = value.location();
-    let location = location(
-        name.location.line,
-        name.location.column,
-        value_location.end_line,
-        value_location.end_column,
-    );
+    let location = SourceLocation {
+        line: name.location.line,
+        column: name.location.column,
+        end_line: value_location.end_line,
+        end_column: value_location.end_column,
+    };
     Field {
         name,
         value,
@@ -55,12 +51,12 @@ const fn top_level_message<'source>(
     name: FieldName<'source>,
     value: MessageValue<'source>,
 ) -> TopLevelMessage<'source> {
-    let location = location(
-        name.location.line,
-        name.location.column,
-        value.location.end_line,
-        value.location.end_column,
-    );
+    let location = SourceLocation {
+        line: name.location.line,
+        column: name.location.column,
+        end_line: value.location.end_line,
+        end_column: value.location.end_column,
+    };
     TopLevelMessage {
         name,
         value,
@@ -74,7 +70,7 @@ mod valid_files {
     #[gtest]
     fn single_toplevel() {
         expect_that!(
-            parse(include_str!("../testdata/valid/single_toplevel.defcl")),
+            parse(include_str!("../../testdata/valid/single_toplevel.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("project", 1, 1),
@@ -83,7 +79,12 @@ mod valid_files {
                             name("universe_name", 2, 5),
                             Value::String(scalar("\"example\"", 2, 20)),
                         )],
-                        location: location(1, 10, 3, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 10,
+                            end_line: 3,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -93,7 +94,7 @@ mod valid_files {
     #[gtest]
     fn multiple_toplevel() {
         expect_that!(
-            parse(include_str!("../testdata/valid/multiple_toplevel.defcl")),
+            parse(include_str!("../../testdata/valid/multiple_toplevel.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![
                     top_level_message(
@@ -103,7 +104,12 @@ mod valid_files {
                                 name("universe_name", 2, 5),
                                 Value::String(scalar("\"example\"", 2, 20)),
                             )],
-                            location: location(1, 10, 3, 1),
+                            location: SourceLocation {
+                                line: 1,
+                                column: 10,
+                                end_line: 3,
+                                end_column: 1
+                            },
                         },
                     ),
                     top_level_message(
@@ -113,7 +119,12 @@ mod valid_files {
                                 name("log_level", 5, 5),
                                 Value::Integer(scalar("3", 5, 16)),
                             )],
-                            location: location(4, 11, 6, 1),
+                            location: SourceLocation {
+                                line: 4,
+                                column: 11,
+                                end_line: 6,
+                                end_column: 1
+                            },
                         },
                     ),
                 ],
@@ -124,7 +135,7 @@ mod valid_files {
     #[gtest]
     fn comments() {
         expect_that!(
-            parse(include_str!("../testdata/valid/comments.defcl")),
+            parse(include_str!("../../testdata/valid/comments.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![
                     top_level_message(
@@ -134,7 +145,12 @@ mod valid_files {
                                 name("universe_name", 4, 5),
                                 Value::String(scalar("\"example\"", 4, 20)),
                             )],
-                            location: location(2, 10, 5, 1),
+                            location: SourceLocation {
+                                line: 2,
+                                column: 10,
+                                end_line: 5,
+                                end_column: 1
+                            },
                         },
                     ),
                     top_level_message(
@@ -144,7 +160,12 @@ mod valid_files {
                                 name("log_level", 8, 5),
                                 Value::Integer(scalar("3", 8, 16)),
                             )],
-                            location: location(7, 11, 9, 1),
+                            location: SourceLocation {
+                                line: 7,
+                                column: 11,
+                                end_line: 9,
+                                end_column: 1
+                            },
                         },
                     ),
                 ],
@@ -155,13 +176,18 @@ mod valid_files {
     #[gtest]
     fn empty_message() {
         expect_that!(
-            parse(include_str!("../testdata/valid/empty_message.defcl")),
+            parse(include_str!("../../testdata/valid/empty_message.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("project", 1, 1),
                     MessageValue {
                         fields: vec![],
-                        location: location(1, 10, 1, 11),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 10,
+                            end_line: 1,
+                            end_column: 11
+                        },
                     },
                 )],
             }))
@@ -172,7 +198,7 @@ mod valid_files {
     fn empty_repeated_messages() {
         expect_that!(
             parse(include_str!(
-                "../testdata/valid/empty_repeated_messages.defcl"
+                "../../testdata/valid/empty_repeated_messages.defcl"
             )),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
@@ -182,10 +208,20 @@ mod valid_files {
                             name("dependencies", 2, 5),
                             Value::Repeated(RepeatedValue {
                                 values: vec![],
-                                location: location(2, 19, 2, 20),
+                                location: SourceLocation {
+                                    line: 2,
+                                    column: 19,
+                                    end_line: 2,
+                                    end_column: 20
+                                },
                             }),
                         )],
-                        location: location(1, 10, 3, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 10,
+                            end_line: 3,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -196,7 +232,7 @@ mod valid_files {
     fn empty_repeated_scalars() {
         expect_that!(
             parse(include_str!(
-                "../testdata/valid/empty_repeated_scalars.defcl"
+                "../../testdata/valid/empty_repeated_scalars.defcl"
             )),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
@@ -207,18 +243,33 @@ mod valid_files {
                                 name("tags", 2, 5),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![],
-                                    location: location(2, 11, 2, 12),
+                                    location: SourceLocation {
+                                        line: 2,
+                                        column: 11,
+                                        end_line: 2,
+                                        end_column: 12
+                                    },
                                 }),
                             ),
                             field(
                                 name("items", 3, 5),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![],
-                                    location: location(3, 12, 3, 13),
+                                    location: SourceLocation {
+                                        line: 3,
+                                        column: 12,
+                                        end_line: 3,
+                                        end_column: 13
+                                    },
                                 }),
                             ),
                         ],
-                        location: location(1, 9, 4, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 4,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -228,7 +279,7 @@ mod valid_files {
     #[gtest]
     fn enums() {
         expect_that!(
-            parse(include_str!("../testdata/valid/enums.defcl")),
+            parse(include_str!("../../testdata/valid/enums.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -246,7 +297,12 @@ mod valid_files {
                                 Value::Enum(scalar("UNSPECIFIED", 6, 12)),
                             ),
                         ],
-                        location: location(1, 9, 7, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 7,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -256,7 +312,7 @@ mod valid_files {
     #[gtest]
     fn field_names() {
         expect_that!(
-            parse(include_str!("../testdata/valid/field_names.defcl")),
+            parse(include_str!("../../testdata/valid/field_names.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -287,7 +343,12 @@ mod valid_files {
                                 Value::String(scalar("\"http://example.com\"", 7, 22)),
                             ),
                         ],
-                        location: location(1, 9, 8, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 8,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -297,7 +358,7 @@ mod valid_files {
     #[gtest]
     fn floats() {
         expect_that!(
-            parse(include_str!("../testdata/valid/floats.defcl")),
+            parse(include_str!("../../testdata/valid/floats.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -314,7 +375,12 @@ mod valid_files {
                                 Value::Float(scalar("123.456789", 5, 14)),
                             ),
                         ],
-                        location: location(1, 9, 6, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 6,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -324,7 +390,7 @@ mod valid_files {
     #[gtest]
     fn integers() {
         expect_that!(
-            parse(include_str!("../testdata/valid/integers.defcl")),
+            parse(include_str!("../../testdata/valid/integers.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -335,7 +401,12 @@ mod valid_files {
                             field(name("zero", 4, 5), Value::Integer(scalar("0", 4, 11))),
                             field(name("large", 5, 5), Value::Integer(scalar("999999", 5, 12)),),
                         ],
-                        location: location(1, 9, 6, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 6,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -345,7 +416,7 @@ mod valid_files {
     #[gtest]
     fn nested_messages() {
         expect_that!(
-            parse(include_str!("../testdata/valid/nested_messages.defcl")),
+            parse(include_str!("../../testdata/valid/nested_messages.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("project", 1, 1),
@@ -374,15 +445,30 @@ mod valid_files {
                                                     name("max_connections", 7, 13),
                                                     Value::Integer(scalar("10", 7, 30)),
                                                 )],
-                                                location: location(6, 15, 8, 9),
+                                                location: SourceLocation {
+                                                    line: 6,
+                                                    column: 15,
+                                                    end_line: 8,
+                                                    end_column: 9
+                                                },
                                             }),
                                         ),
                                     ],
-                                    location: location(3, 15, 9, 5),
+                                    location: SourceLocation {
+                                        line: 3,
+                                        column: 15,
+                                        end_line: 9,
+                                        end_column: 5
+                                    },
                                 }),
                             ),
                         ],
-                        location: location(1, 10, 10, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 10,
+                            end_line: 10,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -392,7 +478,7 @@ mod valid_files {
     #[gtest]
     fn repeated_messages() {
         expect_that!(
-            parse(include_str!("../testdata/valid/repeated_messages.defcl")),
+            parse(include_str!("../../testdata/valid/repeated_messages.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("project", 1, 1),
@@ -408,7 +494,12 @@ mod valid_files {
                                                 scalar("\"mv:example.com:lib1\"", 3, 21,)
                                             ),
                                         )],
-                                        location: location(3, 9, 3, 43),
+                                        location: SourceLocation {
+                                            line: 3,
+                                            column: 9,
+                                            end_line: 3,
+                                            end_column: 43
+                                        },
                                     }),
                                     Value::Message(MessageValue {
                                         fields: vec![field(
@@ -417,13 +508,28 @@ mod valid_files {
                                                 scalar("\"mv:example.com:lib2\"", 4, 21,)
                                             ),
                                         )],
-                                        location: location(4, 9, 4, 43),
+                                        location: SourceLocation {
+                                            line: 4,
+                                            column: 9,
+                                            end_line: 4,
+                                            end_column: 43
+                                        },
                                     }),
                                 ],
-                                location: location(2, 19, 5, 5),
+                                location: SourceLocation {
+                                    line: 2,
+                                    column: 19,
+                                    end_line: 5,
+                                    end_column: 5
+                                },
                             }),
                         )],
-                        location: location(1, 10, 6, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 10,
+                            end_line: 6,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -433,7 +539,7 @@ mod valid_files {
     #[gtest]
     fn repeated_scalars() {
         expect_that!(
-            parse(include_str!("../testdata/valid/repeated_scalars.defcl")),
+            parse(include_str!("../../testdata/valid/repeated_scalars.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -447,7 +553,12 @@ mod valid_files {
                                         Value::String(scalar("\"tag2\"", 2, 20)),
                                         Value::String(scalar("\"tag3\"", 2, 28)),
                                     ],
-                                    location: location(2, 11, 2, 34),
+                                    location: SourceLocation {
+                                        line: 2,
+                                        column: 11,
+                                        end_line: 2,
+                                        end_column: 34
+                                    },
                                 }),
                             ),
                             field(
@@ -458,7 +569,12 @@ mod valid_files {
                                         Value::Integer(scalar("2", 3, 17)),
                                         Value::Integer(scalar("3", 3, 20)),
                                     ],
-                                    location: location(3, 13, 3, 21),
+                                    location: SourceLocation {
+                                        line: 3,
+                                        column: 13,
+                                        end_line: 3,
+                                        end_column: 21
+                                    },
                                 }),
                             ),
                             field(
@@ -468,7 +584,12 @@ mod valid_files {
                                         Value::Float(scalar("1.5", 4, 14)),
                                         Value::Float(scalar("2.5", 4, 19)),
                                     ],
-                                    location: location(4, 13, 4, 22),
+                                    location: SourceLocation {
+                                        line: 4,
+                                        column: 13,
+                                        end_line: 4,
+                                        end_column: 22
+                                    },
                                 }),
                             ),
                             field(
@@ -478,11 +599,21 @@ mod valid_files {
                                         Value::Enum(scalar("ACTIVE", 5, 13)),
                                         Value::Enum(scalar("INACTIVE", 5, 21)),
                                     ],
-                                    location: location(5, 12, 5, 29),
+                                    location: SourceLocation {
+                                        line: 5,
+                                        column: 12,
+                                        end_line: 5,
+                                        end_column: 29
+                                    },
                                 }),
                             ),
                         ],
-                        location: location(1, 9, 6, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 6,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -492,7 +623,7 @@ mod valid_files {
     #[gtest]
     fn strings() {
         expect_that!(
-            parse(include_str!("../testdata/valid/strings.defcl")),
+            parse(include_str!("../../testdata/valid/strings.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("config", 1, 1),
@@ -571,7 +702,12 @@ mod valid_files {
                                 Value::String(scalar(r#""\U00100000""#, 19, 18)),
                             ),
                         ],
-                        location: location(1, 9, 20, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 9,
+                            end_line: 20,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -581,7 +717,7 @@ mod valid_files {
     #[gtest]
     fn whitespace() {
         expect_that!(
-            parse(include_str!("../testdata/valid/whitespace.defcl")),
+            parse(include_str!("../../testdata/valid/whitespace.defcl")),
             eq(&Ok(ParsedFile {
                 top_level_messages: vec![
                     top_level_message(
@@ -591,7 +727,12 @@ mod valid_files {
                                 name("name", 2, 5),
                                 Value::String(scalar("\"test\"", 2, 11)),
                             )],
-                            location: location(1, 10, 3, 1),
+                            location: SourceLocation {
+                                line: 1,
+                                column: 10,
+                                end_line: 3,
+                                end_column: 1
+                            },
                         },
                     ),
                     top_level_message(
@@ -601,7 +742,12 @@ mod valid_files {
                                 name("level", 6, 5),
                                 Value::Integer(scalar("1", 6, 12)),
                             )],
-                            location: location(5, 11, 7, 1),
+                            location: SourceLocation {
+                                line: 5,
+                                column: 11,
+                                end_line: 7,
+                                end_column: 1
+                            },
                         },
                     ),
                 ],
@@ -626,12 +772,22 @@ mod valid_source {
                                 name("b", 2, 5),
                                 Value::String(Scalar {
                                     text: "\"caf\u{e9}\"",
-                                    location: location(2, 8, 2, 13),
+                                    location: SourceLocation {
+                                        line: 2,
+                                        column: 8,
+                                        end_line: 2,
+                                        end_column: 13
+                                    },
                                 }),
                             ),
                             field(name("c", 3, 5), Value::Integer(scalar("1", 3, 8))),
                         ],
-                        location: location(1, 4, 4, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 4,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -650,7 +806,12 @@ mod valid_source {
                             name("b", 2, 5),
                             Value::String(scalar("\"x\t\ry\"", 2, 8)),
                         )],
-                        location: location(1, 4, 3, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 3,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -666,7 +827,12 @@ mod valid_source {
                     name("a", 1, 1),
                     MessageValue {
                         fields: vec![field(name("b", 2, 5), Value::Float(scalar("1.05", 2, 8)))],
-                        location: location(1, 4, 3, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 3,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -685,7 +851,12 @@ mod valid_source {
                             name("b", 2, 5),
                             Value::String(scalar("\"\\0\\x4\"", 2, 8)),
                         )],
-                        location: location(1, 4, 3, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 3,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -709,14 +880,29 @@ mod valid_source {
                                             name("c", 1, 9),
                                             Value::Integer(scalar("1", 1, 11)),
                                         )],
-                                        location: location(1, 8, 1, 12),
+                                        location: SourceLocation {
+                                            line: 1,
+                                            column: 8,
+                                            end_line: 1,
+                                            end_column: 12
+                                        },
                                     }),
                                     Value::Float(scalar("2.5", 1, 14)),
                                 ],
-                                location: location(1, 7, 1, 17),
+                                location: SourceLocation {
+                                    line: 1,
+                                    column: 7,
+                                    end_line: 1,
+                                    end_column: 17
+                                },
                             }),
                         )],
-                        location: location(1, 4, 1, 18),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 1,
+                            end_column: 18
+                        },
                     },
                 )],
             }))
@@ -735,10 +921,20 @@ mod valid_source {
                             name("b", 2, 5),
                             Value::Repeated(RepeatedValue {
                                 values: vec![Value::Integer(scalar("1", 2, 9))],
-                                location: location(2, 8, 3, 5),
+                                location: SourceLocation {
+                                    line: 2,
+                                    column: 8,
+                                    end_line: 3,
+                                    end_column: 5
+                                },
                             }),
                         )],
-                        location: location(1, 4, 4, 1),
+                        location: SourceLocation {
+                            line: 1,
+                            column: 4,
+                            end_line: 4,
+                            end_column: 1
+                        },
                     },
                 )],
             }))
@@ -753,10 +949,15 @@ mod invalid_booleans {
     fn false_literal() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/booleans/false_literal.defcl"
+                "../../testdata/invalid/syntax/booleans/false_literal.defcl"
             )),
             eq(&Err(SyntaxError::BooleanNotSupported {
-                location: location(2, 14, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 14,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -765,10 +966,15 @@ mod invalid_booleans {
     fn true_literal() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/booleans/true_literal.defcl"
+                "../../testdata/invalid/syntax/booleans/true_literal.defcl"
             )),
             eq(&Err(SyntaxError::BooleanNotSupported {
-                location: location(2, 14, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 14,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -781,10 +987,15 @@ mod invalid_enums {
     fn lowercase_enum() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/enums/lowercase_enum.defcl"
+                "../../testdata/invalid/syntax/enums/lowercase_enum.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEnumCase {
-                location: location(2, 13, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -793,10 +1004,15 @@ mod invalid_enums {
     fn mixed_case_enum() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/enums/mixed_case_enum.defcl"
+                "../../testdata/invalid/syntax/enums/mixed_case_enum.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEnumCase {
-                location: location(2, 13, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -809,10 +1025,15 @@ mod invalid_field_names {
     fn double_underscore() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/double_underscore.defcl"
+                "../../testdata/invalid/syntax/field_names/double_underscore.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -821,10 +1042,15 @@ mod invalid_field_names {
     fn hyphen() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/hyphen.defcl"
+                "../../testdata/invalid/syntax/field_names/hyphen.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -833,10 +1059,15 @@ mod invalid_field_names {
     fn leading_digit() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/leading_digit.defcl"
+                "../../testdata/invalid/syntax/field_names/leading_digit.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 12)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 12
+                }
             }))
         );
     }
@@ -845,10 +1076,15 @@ mod invalid_field_names {
     fn leading_underscore() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/leading_underscore.defcl"
+                "../../testdata/invalid/syntax/field_names/leading_underscore.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -857,10 +1093,15 @@ mod invalid_field_names {
     fn period() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/period.defcl"
+                "../../testdata/invalid/syntax/field_names/period.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -869,10 +1110,15 @@ mod invalid_field_names {
     fn trailing_underscore() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/trailing_underscore.defcl"
+                "../../testdata/invalid/syntax/field_names/trailing_underscore.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -881,10 +1127,15 @@ mod invalid_field_names {
     fn underscore_digit() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/underscore_digit.defcl"
+                "../../testdata/invalid/syntax/field_names/underscore_digit.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 12)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 12
+                }
             }))
         );
     }
@@ -893,10 +1144,15 @@ mod invalid_field_names {
     fn uppercase() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/uppercase.defcl"
+                "../../testdata/invalid/syntax/field_names/uppercase.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(2, 5, 2, 16)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 16
+                }
             }))
         );
     }
@@ -905,10 +1161,15 @@ mod invalid_field_names {
     fn top_level_message_name() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/field_names/top_level_message_name.defcl"
+                "../../testdata/invalid/syntax/field_names/top_level_message_name.defcl"
             )),
             eq(&Err(SyntaxError::InvalidFieldName {
-                location: location(1, 1, 1, 7)
+                location: SourceLocation {
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 7
+                }
             }))
         );
     }
@@ -921,10 +1182,15 @@ mod invalid_file_format {
     fn bom() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/file_format/bom.defcl"
+                "../../testdata/invalid/syntax/file_format/bom.defcl"
             )),
             eq(&Err(SyntaxError::ByteOrderMark {
-                location: location(1, 1, 1, 1)
+                location: SourceLocation {
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1
+                }
             }))
         );
     }
@@ -933,10 +1199,15 @@ mod invalid_file_format {
     fn no_trailing_newline() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/file_format/no_trailing_newline.defcl"
+                "../../testdata/invalid/syntax/file_format/no_trailing_newline.defcl"
             )),
             eq(&Err(SyntaxError::MissingTrailingNewline {
-                location: location(3, 1, 3, 1)
+                location: SourceLocation {
+                    line: 3,
+                    column: 1,
+                    end_line: 3,
+                    end_column: 1
+                }
             }))
         );
     }
@@ -945,10 +1216,15 @@ mod invalid_file_format {
     fn no_trailing_newline_after_comment() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/file_format/no_trailing_newline_after_comment.defcl"
+                "../../testdata/invalid/syntax/file_format/no_trailing_newline_after_comment.defcl"
             )),
             eq(&Err(SyntaxError::MissingTrailingNewline {
-                location: location(2, 5, 2, 5)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 5
+                }
             }))
         );
     }
@@ -957,10 +1233,15 @@ mod invalid_file_format {
     fn empty_file() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/file_format/empty_file.defcl"
+                "../../testdata/invalid/syntax/file_format/empty_file.defcl"
             )),
             eq(&Err(SyntaxError::MissingTopLevelMessage {
-                location: location(1, 1, 1, 1)
+                location: SourceLocation {
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1
+                }
             }))
         );
     }
@@ -969,10 +1250,15 @@ mod invalid_file_format {
     fn only_a_comment() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/file_format/only_a_comment.defcl"
+                "../../testdata/invalid/syntax/file_format/only_a_comment.defcl"
             )),
             eq(&Err(SyntaxError::MissingTopLevelMessage {
-                location: location(2, 1, 2, 1)
+                location: SourceLocation {
+                    line: 2,
+                    column: 1,
+                    end_line: 2,
+                    end_column: 1
+                }
             }))
         );
     }
@@ -985,10 +1271,15 @@ mod invalid_messages {
     fn angle_brackets() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/angle_brackets.defcl"
+                "../../testdata/invalid/syntax/messages/angle_brackets.defcl"
             )),
             eq(&Err(SyntaxError::AngleBracketsNotAllowed {
-                location: location(1, 10, 1, 10)
+                location: SourceLocation {
+                    line: 1,
+                    column: 10,
+                    end_line: 1,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -997,10 +1288,15 @@ mod invalid_messages {
     fn nested_angle_brackets() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/nested_angle_brackets.defcl"
+                "../../testdata/invalid/syntax/messages/nested_angle_brackets.defcl"
             )),
             eq(&Err(SyntaxError::AngleBracketsNotAllowed {
-                location: location(2, 13, 2, 13)
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 13
+                }
             }))
         );
     }
@@ -1009,10 +1305,15 @@ mod invalid_messages {
     fn quoted_field_name() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/quoted_field_name.defcl"
+                "../../testdata/invalid/syntax/messages/quoted_field_name.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedFieldNameOrCloseBrace {
-                location: location(2, 5, 2, 5)
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 5
+                }
             }))
         );
     }
@@ -1021,10 +1322,15 @@ mod invalid_messages {
     fn fields_without_whitespace_between_them() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/fields_without_whitespace_between_them.defcl"
+                "../../testdata/invalid/syntax/messages/fields_without_whitespace_between_them.defcl"
             )),
             eq(&Err(SyntaxError::MissingWhitespace {
-                location: location(2, 11, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1033,10 +1339,15 @@ mod invalid_messages {
     fn top_level_messages_without_whitespace_between_them() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/top_level_messages_without_whitespace_between_them.defcl"
+                "../../testdata/invalid/syntax/messages/top_level_messages_without_whitespace_between_them.defcl"
             )),
             eq(&Err(SyntaxError::MissingWhitespace {
-                location: location(1, 6, 1, 6)
+                location: SourceLocation {
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1045,10 +1356,15 @@ mod invalid_messages {
     fn unclosed_message() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/messages/unclosed_message.defcl"
+                "../../testdata/invalid/syntax/messages/unclosed_message.defcl"
             )),
             eq(&Err(SyntaxError::UnclosedMessage {
-                location: location(1, 4, 1, 4)
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 4
+                }
             }))
         );
     }
@@ -1060,9 +1376,16 @@ mod invalid_numbers {
     #[gtest]
     fn hex() {
         expect_that!(
-            parse(include_str!("../testdata/invalid/syntax/numbers/hex.defcl")),
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/hex.defcl"
+            )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 15)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 15
+                }
             }))
         );
     }
@@ -1071,10 +1394,15 @@ mod invalid_numbers {
     fn octal() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/octal.defcl"
+                "../../testdata/invalid/syntax/numbers/octal.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 15)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 15
+                }
             }))
         );
     }
@@ -1083,10 +1411,15 @@ mod invalid_numbers {
     fn scientific_int() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/scientific_int.defcl"
+                "../../testdata/invalid/syntax/numbers/scientific_int.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1095,10 +1428,15 @@ mod invalid_numbers {
     fn scientific_float() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/scientific_float.defcl"
+                "../../testdata/invalid/syntax/numbers/scientific_float.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -1107,10 +1445,15 @@ mod invalid_numbers {
     fn leading_zeros() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/leading_zeros.defcl"
+                "../../testdata/invalid/syntax/numbers/leading_zeros.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1119,10 +1462,15 @@ mod invalid_numbers {
     fn leading_decimal() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/leading_decimal.defcl"
+                "../../testdata/invalid/syntax/numbers/leading_decimal.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 13)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 13
+                }
             }))
         );
     }
@@ -1131,10 +1479,15 @@ mod invalid_numbers {
     fn trailing_decimal() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/trailing_decimal.defcl"
+                "../../testdata/invalid/syntax/numbers/trailing_decimal.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1143,10 +1496,15 @@ mod invalid_numbers {
     fn plus_sign() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/plus_sign.defcl"
+                "../../testdata/invalid/syntax/numbers/plus_sign.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1155,10 +1513,15 @@ mod invalid_numbers {
     fn space_after_sign() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/space_after_sign.defcl"
+                "../../testdata/invalid/syntax/numbers/space_after_sign.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 12)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 12
+                }
             }))
         );
     }
@@ -1167,10 +1530,15 @@ mod invalid_numbers {
     fn type_suffix_f() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/type_suffix_f.defcl"
+                "../../testdata/invalid/syntax/numbers/type_suffix_f.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1179,10 +1547,15 @@ mod invalid_numbers {
     fn type_suffix_upper_f() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/type_suffix_upper_f.defcl"
+                "../../testdata/invalid/syntax/numbers/type_suffix_upper_f.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 12, 2, 14)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                }
             }))
         );
     }
@@ -1191,10 +1564,15 @@ mod invalid_numbers {
     fn type_suffix_d() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/type_suffix_d.defcl"
+                "../../testdata/invalid/syntax/numbers/type_suffix_d.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1203,10 +1581,15 @@ mod invalid_numbers {
     fn type_suffix_l() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/type_suffix_l.defcl"
+                "../../testdata/invalid/syntax/numbers/type_suffix_l.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1215,10 +1598,15 @@ mod invalid_numbers {
     fn bare_e_suffix() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/bare_e_suffix.defcl"
+                "../../testdata/invalid/syntax/numbers/bare_e_suffix.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1227,10 +1615,15 @@ mod invalid_numbers {
     fn fraction_with_trailing_zero() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/fraction_with_trailing_zero.defcl"
+                "../../testdata/invalid/syntax/numbers/fraction_with_trailing_zero.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1239,10 +1632,15 @@ mod invalid_numbers {
     fn fraction_of_only_zeros() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/fraction_of_only_zeros.defcl"
+                "../../testdata/invalid/syntax/numbers/fraction_of_only_zeros.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1251,10 +1649,15 @@ mod invalid_numbers {
     fn extra_decimal_after_float() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/numbers/extra_decimal_after_float.defcl"
+                "../../testdata/invalid/syntax/numbers/extra_decimal_after_float.defcl"
             )),
             eq(&Err(SyntaxError::InvalidNumberFormat {
-                location: location(2, 8, 2, 13)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 13
+                }
             }))
         );
     }
@@ -1267,10 +1670,15 @@ mod invalid_characters {
     fn at_sign() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/at_sign.defcl"
+                "../../testdata/invalid/syntax/characters/at_sign.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 8, 2, 8),
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                },
                 character: '@',
             }))
         );
@@ -1280,10 +1688,15 @@ mod invalid_characters {
     fn non_ascii_character_outside_strings_and_comments() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/non_ascii_character_outside_strings_and_comments.defcl"
+                "../../testdata/invalid/syntax/characters/non_ascii_character_outside_strings_and_comments.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 8, 2, 8),
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                },
                 character: '\u{e9}',
             }))
         );
@@ -1293,10 +1706,15 @@ mod invalid_characters {
     fn nul_in_string() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_string.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_string.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 10, 2, 10),
+                location: SourceLocation {
+                    line: 2,
+                    column: 10,
+                    end_line: 2,
+                    end_column: 10
+                },
                 character: '\0',
             }))
         );
@@ -1306,10 +1724,15 @@ mod invalid_characters {
     fn nul_in_comment() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(1, 10, 1, 10),
+                location: SourceLocation {
+                    line: 1,
+                    column: 10,
+                    end_line: 1,
+                    end_column: 10
+                },
                 character: '\0',
             }))
         );
@@ -1319,10 +1742,15 @@ mod invalid_characters {
     fn nul_in_comment_at_start_of_file() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_file.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_file.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(1, 2, 1, 2),
+                location: SourceLocation {
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 2
+                },
                 character: '\0',
             }))
         );
@@ -1332,10 +1760,15 @@ mod invalid_characters {
     fn nul_in_comment_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(1, 5, 1, 5),
+                location: SourceLocation {
+                    line: 1,
+                    column: 5,
+                    end_line: 1,
+                    end_column: 5
+                },
                 character: '\0',
             }))
         );
@@ -1345,10 +1778,15 @@ mod invalid_characters {
     fn nul_in_comment_after_field_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_field_colon.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_colon.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 9, 2, 9),
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 9
+                },
                 character: '\0',
             }))
         );
@@ -1358,10 +1796,15 @@ mod invalid_characters {
     fn nul_in_comment_at_start_of_message_value() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_message_value.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_message_value.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(1, 7, 1, 7),
+                location: SourceLocation {
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 7
+                },
                 character: '\0',
             }))
         );
@@ -1371,10 +1814,15 @@ mod invalid_characters {
     fn nul_in_comment_after_field() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_field.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 11, 2, 11),
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                },
                 character: '\0',
             }))
         );
@@ -1384,10 +1832,15 @@ mod invalid_characters {
     fn nul_in_comment_at_start_of_repeated_value() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_repeated_value.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_repeated_value.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 11, 2, 11),
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                },
                 character: '\0',
             }))
         );
@@ -1397,10 +1850,15 @@ mod invalid_characters {
     fn nul_in_comment_after_comma() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_comma.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_comma.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 13, 2, 13),
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 13
+                },
                 character: '\0',
             }))
         );
@@ -1410,10 +1868,15 @@ mod invalid_characters {
     fn nul_in_comment_after_repeated_element() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_repeated_element.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_repeated_element.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(2, 12, 2, 12),
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 12
+                },
                 character: '\0',
             }))
         );
@@ -1422,10 +1885,15 @@ mod invalid_characters {
     fn nul_in_comment_after_field_name() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/characters/nul_in_comment_after_field_name.defcl"
+                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_name.defcl"
             )),
             eq(&Err(SyntaxError::UnexpectedCharacter {
-                location: location(1, 4, 1, 4),
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 4
+                },
                 character: '\0',
             }))
         );
@@ -1439,10 +1907,15 @@ mod invalid_separators {
     fn comma_separator() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/comma_separator.defcl"
+                "../../testdata/invalid/syntax/separators/comma_separator.defcl"
             )),
             eq(&Err(SyntaxError::InvalidSeparator {
-                location: location(2, 9, 2, 9)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 9
+                }
             }))
         );
     }
@@ -1451,10 +1924,15 @@ mod invalid_separators {
     fn trailing_comma_in_message() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/trailing_comma_in_message.defcl"
+                "../../testdata/invalid/syntax/separators/trailing_comma_in_message.defcl"
             )),
             eq(&Err(SyntaxError::InvalidSeparator {
-                location: location(2, 9, 2, 9)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 9
+                }
             }))
         );
     }
@@ -1463,10 +1941,15 @@ mod invalid_separators {
     fn comma_between_top_level_messages() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/comma_between_top_level_messages.defcl"
+                "../../testdata/invalid/syntax/separators/comma_between_top_level_messages.defcl"
             )),
             eq(&Err(SyntaxError::InvalidSeparator {
-                location: location(1, 6, 1, 6)
+                location: SourceLocation {
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1475,10 +1958,15 @@ mod invalid_separators {
     fn missing_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/missing_colon.defcl"
+                "../../testdata/invalid/syntax/separators/missing_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingColon {
-                location: location(2, 10, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 10,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1487,10 +1975,15 @@ mod invalid_separators {
     fn field_named_f_missing_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/field_named_f_missing_colon.defcl"
+                "../../testdata/invalid/syntax/separators/field_named_f_missing_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingColon {
-                location: location(2, 6, 2, 6)
+                location: SourceLocation {
+                    line: 2,
+                    column: 6,
+                    end_line: 2,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1499,10 +1992,15 @@ mod invalid_separators {
     fn missing_colon_at_end_of_source() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/missing_colon_at_end_of_source.defcl"
+                "../../testdata/invalid/syntax/separators/missing_colon_at_end_of_source.defcl"
             )),
             eq(&Err(SyntaxError::MissingColon {
-                location: location(1, 2, 1, 2)
+                location: SourceLocation {
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 2
+                }
             }))
         );
     }
@@ -1511,10 +2009,15 @@ mod invalid_separators {
     fn whitespace_before_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/whitespace_before_colon.defcl"
+                "../../testdata/invalid/syntax/separators/whitespace_before_colon.defcl"
             )),
             eq(&Err(SyntaxError::WhitespaceBeforeColon {
-                location: location(2, 6, 2, 6)
+                location: SourceLocation {
+                    line: 2,
+                    column: 6,
+                    end_line: 2,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1523,10 +2026,15 @@ mod invalid_separators {
     fn comment_before_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/comment_before_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/separators/comment_before_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::WhitespaceBeforeColon {
-                location: location(1, 2, 1, 6)
+                location: SourceLocation {
+                    line: 1,
+                    column: 2,
+                    end_line: 1,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1535,10 +2043,15 @@ mod invalid_separators {
     fn semicolon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/separators/semicolon.defcl"
+                "../../testdata/invalid/syntax/separators/semicolon.defcl"
             )),
             eq(&Err(SyntaxError::InvalidSeparator {
-                location: location(2, 18, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 18,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -1551,10 +2064,15 @@ mod invalid_repeated_values {
     fn missing_comma() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/missing_comma.defcl"
+                "../../testdata/invalid/syntax/repeated_values/missing_comma.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedCommaOrCloseBracket {
-                location: location(2, 11, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1563,10 +2081,15 @@ mod invalid_repeated_values {
     fn whitespace_before_comma() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/whitespace_before_comma.defcl"
+                "../../testdata/invalid/syntax/repeated_values/whitespace_before_comma.defcl"
             )),
             eq(&Err(SyntaxError::WhitespaceBeforeComma {
-                location: location(2, 10, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 10,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1575,10 +2098,15 @@ mod invalid_repeated_values {
     fn trailing_comma() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/trailing_comma.defcl"
+                "../../testdata/invalid/syntax/repeated_values/trailing_comma.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedValue {
-                location: location(2, 11, 2, 11)
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                }
             }))
         );
     }
@@ -1587,10 +2115,15 @@ mod invalid_repeated_values {
     fn unclosed_empty_repeated_value() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/unclosed_empty_repeated_value.defcl"
+                "../../testdata/invalid/syntax/repeated_values/unclosed_empty_repeated_value.defcl"
             )),
             eq(&Err(SyntaxError::UnclosedRepeatedValue {
-                location: location(2, 8, 2, 8)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                }
             }))
         );
     }
@@ -1599,10 +2132,15 @@ mod invalid_repeated_values {
     fn unclosed_repeated_value() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/unclosed_repeated_value.defcl"
+                "../../testdata/invalid/syntax/repeated_values/unclosed_repeated_value.defcl"
             )),
             eq(&Err(SyntaxError::UnclosedRepeatedValue {
-                location: location(2, 8, 2, 8)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                }
             }))
         );
     }
@@ -1611,10 +2149,32 @@ mod invalid_repeated_values {
     fn semicolon_between_values() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/repeated_values/semicolon_between_values.defcl"
+                "../../testdata/invalid/syntax/repeated_values/semicolon_between_values.defcl"
             )),
             eq(&Err(SyntaxError::InvalidSeparator {
-                location: location(2, 10, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 10,
+                    end_line: 2,
+                    end_column: 10
+                }
+            }))
+        );
+    }
+
+    #[gtest]
+    fn repeated_value_in_repeated_value() {
+        expect_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/repeated_values/repeated_value_in_repeated_value.defcl"
+            )),
+            eq(&Err(SyntaxError::RepeatedValueInRepeatedValue {
+                location: SourceLocation {
+                    line: 2,
+                    column: 17,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -1627,10 +2187,15 @@ mod invalid_values {
     fn close_brace_where_value_belongs() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/values/close_brace_where_value_belongs.defcl"
+                "../../testdata/invalid/syntax/values/close_brace_where_value_belongs.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedValue {
-                location: location(2, 8, 2, 8)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                }
             }))
         );
     }
@@ -1639,10 +2204,15 @@ mod invalid_values {
     fn end_of_source_where_value_belongs() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/values/end_of_source_where_value_belongs.defcl"
+                "../../testdata/invalid/syntax/values/end_of_source_where_value_belongs.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedValue {
-                location: location(2, 7, 2, 7)
+                location: SourceLocation {
+                    line: 2,
+                    column: 7,
+                    end_line: 2,
+                    end_column: 7
+                }
             }))
         );
     }
@@ -1655,10 +2225,15 @@ mod invalid_strings {
     fn raw_newline() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/raw_newline.defcl"
+                "../../testdata/invalid/syntax/strings/raw_newline.defcl"
             )),
             eq(&Err(SyntaxError::UnterminatedString {
-                location: location(2, 12, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -1667,10 +2242,15 @@ mod invalid_strings {
     fn unterminated_at_end_of_source() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/unterminated_at_end_of_source.defcl"
+                "../../testdata/invalid/syntax/strings/unterminated_at_end_of_source.defcl"
             )),
             eq(&Err(SyntaxError::UnterminatedString {
-                location: location(2, 8, 2, 9)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 9
+                }
             }))
         );
     }
@@ -1679,10 +2259,15 @@ mod invalid_strings {
     fn backslash_at_end_of_line() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/backslash_at_end_of_line.defcl"
+                "../../testdata/invalid/syntax/strings/backslash_at_end_of_line.defcl"
             )),
             eq(&Err(SyntaxError::UnterminatedString {
-                location: location(2, 8, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1691,10 +2276,15 @@ mod invalid_strings {
     fn backslash_at_end_of_source() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/backslash_at_end_of_source.defcl"
+                "../../testdata/invalid/syntax/strings/backslash_at_end_of_source.defcl"
             )),
             eq(&Err(SyntaxError::UnterminatedString {
-                location: location(2, 8, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1703,10 +2293,15 @@ mod invalid_strings {
     fn single_quotes() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/single_quotes.defcl"
+                "../../testdata/invalid/syntax/strings/single_quotes.defcl"
             )),
             eq(&Err(SyntaxError::SingleQuotesNotAllowed {
-                location: location(2, 12, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -1715,10 +2310,15 @@ mod invalid_strings {
     fn single_quote_without_closing_quote() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/single_quote_without_closing_quote.defcl"
+                "../../testdata/invalid/syntax/strings/single_quote_without_closing_quote.defcl"
             )),
             eq(&Err(SyntaxError::SingleQuotesNotAllowed {
-                location: location(2, 8, 2, 8)
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 8
+                }
             }))
         );
     }
@@ -1727,10 +2327,15 @@ mod invalid_strings {
     fn unknown_escape() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/unknown_escape.defcl"
+                "../../testdata/invalid/syntax/strings/unknown_escape.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1739,10 +2344,15 @@ mod invalid_strings {
     fn non_octal_digit_escape() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/non_octal_digit_escape.defcl"
+                "../../testdata/invalid/syntax/strings/non_octal_digit_escape.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1751,10 +2361,15 @@ mod invalid_strings {
     fn hex_escape_without_digits() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/hex_escape_without_digits.defcl"
+                "../../testdata/invalid/syntax/strings/hex_escape_without_digits.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 10)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1763,10 +2378,15 @@ mod invalid_strings {
     fn short_unicode_escape() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/short_unicode_escape.defcl"
+                "../../testdata/invalid/syntax/strings/short_unicode_escape.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 12)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 12
+                }
             }))
         );
     }
@@ -1775,10 +2395,15 @@ mod invalid_strings {
     fn unicode_escape_past_last_code_point() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/unicode_escape_past_last_code_point.defcl"
+                "../../testdata/invalid/syntax/strings/unicode_escape_past_last_code_point.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 18)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 18
+                }
             }))
         );
     }
@@ -1787,10 +2412,15 @@ mod invalid_strings {
     fn short_long_unicode_escape() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/strings/short_long_unicode_escape.defcl"
+                "../../testdata/invalid/syntax/strings/short_long_unicode_escape.defcl"
             )),
             eq(&Err(SyntaxError::InvalidEscapeSequence {
-                location: location(2, 9, 2, 17)
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 17
+                }
             }))
         );
     }
@@ -1803,10 +2433,15 @@ mod invalid_toplevel {
     fn unmatched_close_brace() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/unmatched_close_brace.defcl"
+                "../../testdata/invalid/syntax/toplevel/unmatched_close_brace.defcl"
             )),
             eq(&Err(SyntaxError::ExpectedFieldName {
-                location: location(1, 1, 1, 1)
+                location: SourceLocation {
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1
+                }
             }))
         );
     }
@@ -1815,10 +2450,15 @@ mod invalid_toplevel {
     fn missing_toplevel_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/missing_toplevel_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/missing_toplevel_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingColon {
-                location: location(1, 8, 1, 8)
+                location: SourceLocation {
+                    line: 1,
+                    column: 8,
+                    end_line: 1,
+                    end_column: 8
+                }
             }))
         );
     }
@@ -1827,10 +2467,15 @@ mod invalid_toplevel {
     fn scalar_toplevel() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/scalar_toplevel.defcl"
+                "../../testdata/invalid/syntax/toplevel/scalar_toplevel.defcl"
             )),
             eq(&Err(SyntaxError::ScalarAtToplevel {
-                location: location(1, 7, 1, 13)
+                location: SourceLocation {
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 13
+                }
             }))
         );
     }
@@ -1839,10 +2484,15 @@ mod invalid_toplevel {
     fn repeated_value_at_toplevel() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/repeated_value_at_toplevel.defcl"
+                "../../testdata/invalid/syntax/toplevel/repeated_value_at_toplevel.defcl"
             )),
             eq(&Err(SyntaxError::ScalarAtToplevel {
-                location: location(1, 4, 1, 6)
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 6
+                }
             }))
         );
     }
@@ -1850,10 +2500,15 @@ mod invalid_toplevel {
     fn no_space_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/no_space_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/no_space_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingSpaceAfterColon {
-                location: location(1, 3, 1, 3)
+                location: SourceLocation {
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 3
+                }
             }))
         );
     }
@@ -1862,10 +2517,15 @@ mod invalid_toplevel {
     fn line_feed_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/line_feed_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/line_feed_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingSpaceAfterColon {
-                location: location(1, 3, 1, 3)
+                location: SourceLocation {
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 3
+                }
             }))
         );
     }
@@ -1874,10 +2534,15 @@ mod invalid_toplevel {
     fn end_of_source_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/end_of_source_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/end_of_source_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::MissingSpaceAfterColon {
-                location: location(1, 3, 1, 3)
+                location: SourceLocation {
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 3
+                }
             }))
         );
     }
@@ -1886,10 +2551,15 @@ mod invalid_toplevel {
     fn tab_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/tab_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/tab_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::TabNotAllowed {
-                location: location(1, 3, 1, 3)
+                location: SourceLocation {
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 3
+                }
             }))
         );
     }
@@ -1898,10 +2568,15 @@ mod invalid_toplevel {
     fn two_spaces_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/two_spaces_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/two_spaces_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
-                location: location(1, 4, 1, 4)
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 4
+                }
             }))
         );
     }
@@ -1910,10 +2585,15 @@ mod invalid_toplevel {
     fn trailing_space_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/trailing_space_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/trailing_space_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
-                location: location(1, 4, 1, 4)
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 4
+                }
             }))
         );
     }
@@ -1922,10 +2602,15 @@ mod invalid_toplevel {
     fn comment_after_space_after_top_level_colon() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/toplevel/comment_after_space_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/toplevel/comment_after_space_after_top_level_colon.defcl"
             )),
             eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
-                location: location(1, 4, 1, 7)
+                location: SourceLocation {
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 7
+                }
             }))
         );
     }
@@ -1938,10 +2623,15 @@ mod invalid_whitespace {
     fn carriage_return() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/whitespace/carriage_return.defcl"
+                "../../testdata/invalid/syntax/whitespace/carriage_return.defcl"
             )),
             eq(&Err(SyntaxError::CarriageReturnNotAllowed {
-                location: location(1, 10, 1, 10)
+                location: SourceLocation {
+                    line: 1,
+                    column: 10,
+                    end_line: 1,
+                    end_column: 10
+                }
             }))
         );
     }
@@ -1950,10 +2640,15 @@ mod invalid_whitespace {
     fn tab_char() {
         expect_that!(
             parse(include_str!(
-                "../testdata/invalid/syntax/whitespace/tab_char.defcl"
+                "../../testdata/invalid/syntax/whitespace/tab_char.defcl"
             )),
             eq(&Err(SyntaxError::TabNotAllowed {
-                location: location(2, 1, 2, 1)
+                location: SourceLocation {
+                    line: 2,
+                    column: 1,
+                    end_line: 2,
+                    end_column: 1
+                }
             }))
         );
     }

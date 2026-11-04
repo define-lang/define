@@ -1,0 +1,14 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message ScalarsForMessageFieldsFile {
+  Config config = 1;
+  message Config {
+    Database database = 1;
+    repeated Database replicas = 2;
+  }
+  message Database {
+    string host = 1;
+  }
+}

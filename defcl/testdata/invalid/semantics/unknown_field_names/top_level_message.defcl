@@ -1,0 +1,5 @@
+project: {
+    universe_name: "example"
+}
+settings: {
+}

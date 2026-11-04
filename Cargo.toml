@@ -10,6 +10,9 @@ rust-version = "1.99"
 [workspace.dependencies]
 askama = "=0.16.1"
 googletest = "=0.14.4"
+prost = "=0.14.4"
+prost-types = "=0.14.4"
+protoc-gen-prost = "=0.5.0"
 pyo3 = { version = "=0.30.1", features = [
   "experimental-inspect",
   "extension-module",

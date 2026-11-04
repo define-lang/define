@@ -290,6 +290,19 @@ impl<'source> Parser<'source> {
     }
 
     /// ```ebnf
+    /// element = STRING | INTEGER | FLOAT | enum_value | message_value ;
+    /// ```
+    fn parse_element(&mut self) -> Result<Value<'source>, SyntaxError> {
+        // A repeated value is an element of a repeated value.
+        if self.scanner.peek() == Some(b'[') {
+            return Err(SyntaxError::RepeatedValueInRepeatedValue {
+                location: SourceLocation::at(self.scanner.position()),
+            });
+        }
+        self.parse_value()
+    }
+
+    /// ```ebnf
     /// STRING = '"', { escape | char - '"' - newline - "\" }, '"' ;
     /// ```
     fn parse_string(&mut self) -> Result<Value<'source>, SyntaxError> {
@@ -482,8 +495,8 @@ impl<'source> Parser<'source> {
     }
 
     /// ```ebnf
-    /// repeated_value = "[", [ WHITESPACE ], [ value_list ], [ WHITESPACE ], "]" ;
-    /// value_list = value, { ",", [ WHITESPACE ], value } ;
+    /// repeated_value = "[", [ WHITESPACE ], [ element_list ], [ WHITESPACE ], "]" ;
+    /// element_list = element, { ",", [ WHITESPACE ], element } ;
     /// ```
     fn parse_repeated_value(&mut self) -> Result<RepeatedValue<'source>, SyntaxError> {
         let start = self.scanner.position();
@@ -498,7 +511,7 @@ impl<'source> Parser<'source> {
                 });
             }
             loop {
-                values.push(self.parse_value()?);
+                values.push(self.parse_element()?);
                 if self.scanner.consume_byte(b',') {
                     self.skip_whitespace()?;
                     continue;

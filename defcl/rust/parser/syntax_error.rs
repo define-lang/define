@@ -49,6 +49,9 @@ pub enum SyntaxError {
     UnclosedMessage { location: SourceLocation },
     /// A `[` with no `]` that closes it. The location is the `[`.
     UnclosedRepeatedValue { location: SourceLocation },
+    /// A repeated value as an element of a repeated value. The location is its
+    /// `[`.
+    RepeatedValueInRepeatedValue { location: SourceLocation },
     /// Something other than a `,` or a `]` after a value in a repeated value.
     ExpectedCommaOrCloseBracket { location: SourceLocation },
     /// Whitespace between a value and the `,` after it in a repeated value.
