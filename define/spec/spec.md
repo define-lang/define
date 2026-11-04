@@ -1763,10 +1763,8 @@ Block.
 
 A Logical Operation Definition Block contains one or more Logical Operation View
 Definitions. A Logical Operation View Definition is `define the ` followed by a
-local view name and a block that contains only
-[View Direction Statements](#view-direction-statements). They follow the same
-rules as in an Interface View: one or both of `it is read.` and
-`it is written.`, in that order.
+local view name and a block that contains exactly one
+[View Direction Statement](#view-direction-statements).
 
 A logical operation must have at least one output view.
 
@@ -1783,7 +1781,9 @@ logical_operation_definition_block =
     { logical_operation_view_definition },
     block_close ;
 logical_operation_view_definition =
-    "define the", " ", local_view_name, block_open, view_direction_statements, block_close ;
+    "define the", " ", local_view_name, block_open,
+    ( "it is read" | "it is written" ), terminator,
+    block_close ;
 ```
 
 ### The Compiler Knows Every Logical Operation

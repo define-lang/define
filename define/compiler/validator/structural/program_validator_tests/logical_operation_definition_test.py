@@ -75,7 +75,7 @@ def test_duplicate_logical_operation(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 8
+    assert diagnostic.location.line == 7
     assert diagnostic.location.column == 1
     assert diagnostic.definition_type == "logical_operation"
     assert diagnostic.path == "/negate"

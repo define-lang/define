@@ -1,13 +1,11 @@
 # The same logical operation is defined twice.
 define the logical_operation<my.domain.com:my_lib:/negate> {
     define the view<number> {
-        it is read.
         it is written.
     }
 }
 define the logical_operation<my.domain.com:my_lib:/negate> {
     define the view<number> {
-        it is read.
         it is written.
     }
 }

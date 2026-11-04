@@ -68,8 +68,10 @@ def test_logical_operation_definition(parse: Parse):
     )
 
 
-def test_read_and_written_view(parse: Parse):
-    definition = _only_logical_operation(
+def test_view_disallows_read_and_written(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.ExtraLogicalOperationViewDirectionStatement
+    ) as error:
         parse(
             "define the logical_operation<mv:define-lang.org:parser:/increment> {\n"
             + "    define the view<number> {\n"
@@ -78,13 +80,30 @@ def test_read_and_written_view(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    )
-    [view] = definition.views
-    assert view.is_input
-    assert view.is_output
-    assert view.location == ast.SourceLocation(
-        line=2, column=5, end_line=5, end_column=5
-    )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 22
+
+
+def test_view_disallows_read_and_written_after_comment(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.ExtraLogicalOperationViewDirectionStatement
+    ) as error:
+        parse(
+            "define the logical_operation<mv:define-lang.org:parser:/increment> {\n"
+            + "    define the view<number> {\n"
+            + "        it is read. # comment\n"
+            + "\n"
+            + "        # comment\n"
+            + "        it is written.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 6
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 6
+    assert error.value.location.end_column == 22
 
 
 def test_comments_and_blank_lines(parse: Parse):
@@ -97,8 +116,6 @@ def test_comments_and_blank_lines(parse: Parse):
             + "\n"
             + "        it is read. # comment\n"
             + "\n"
-            + "        it is written. # comment\n"
-            + "\n"
             + "    } # comment\n"
             + "\n"
             + "    define the view<result> { # comment\n"
@@ -110,15 +127,15 @@ def test_comments_and_blank_lines(parse: Parse):
     )
     [a, result] = definition.views
     assert a.is_input
-    assert a.is_output
-    assert a.location == ast.SourceLocation(line=4, column=5, end_line=10, end_column=5)
+    assert not a.is_output
+    assert a.location == ast.SourceLocation(line=4, column=5, end_line=8, end_column=5)
     assert not result.is_input
     assert result.is_output
     assert result.location == ast.SourceLocation(
-        line=12, column=5, end_line=14, end_column=5
+        line=10, column=5, end_line=12, end_column=5
     )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=16, end_column=1
+        line=1, column=1, end_line=14, end_column=1
     )
 
 
@@ -153,7 +170,6 @@ def test_read_without_terminator_gets_a_diagnostic(
         "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
         + "    define the view<a> {\n"
         + "        it is read\n"
-        + "        it is written.\n"
         + "    }\n"
         + "}\n"
     )
@@ -166,7 +182,7 @@ def test_read_without_terminator_gets_a_diagnostic(
     assert result.program is not None
     [view] = _only_logical_operation(result.program).views
     assert view.is_input
-    assert view.is_output
+    assert not view.is_output
 
 
 def test_requires_global_name(parse: Parse):
@@ -310,7 +326,9 @@ def test_view_requires_block(parse: Parse):
 
 
 def test_view_requires_direction_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingViewDirectionStatement) as error:
+    with pytest.raises(
+        parser_exceptions.MissingLogicalOperationViewDirectionStatement
+    ) as error:
         parse(
             "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<result> {\n"
@@ -326,7 +344,9 @@ def test_view_requires_direction_statement(parse: Parse):
 def test_view_requires_direction_statement_instead_of_quality_assignment_block(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.MissingViewDirectionStatement) as error:
+    with pytest.raises(
+        parser_exceptions.MissingLogicalOperationViewDirectionStatement
+    ) as error:
         parse(
             "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<result> {\n"
@@ -340,6 +360,20 @@ def test_view_requires_direction_statement_instead_of_quality_assignment_block(
     assert error.value.location.column == 9
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 45
+
+
+def test_view_requires_direction_statement_before_end_of_source(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.MissingLogicalOperationViewDirectionStatement
+    ) as error:
+        parse(
+            "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<result> {\n"
+        )
+    assert error.value.location.line == 2
+    assert error.value.location.column == 30
+    assert error.value.location.end_line == 2
+    assert error.value.location.end_column == 30
 
 
 def test_view_extra_space_in_direction_statement(parse: Parse):
@@ -412,8 +446,10 @@ def test_view_extra_space_in_statement_after_direction_statement(parse: Parse):
     assert error.value.location.end_column == 12
 
 
-def test_view_disallows_written_before_read(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidViewDirectionStatementOrder) as error:
+def test_view_disallows_written_and_read(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.ExtraLogicalOperationViewDirectionStatement
+    ) as error:
         parse(
             "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<a> {\n"
@@ -429,7 +465,9 @@ def test_view_disallows_written_before_read(parse: Parse):
 
 
 def test_view_disallows_repeated_read(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidViewDirectionStatementOrder) as error:
+    with pytest.raises(
+        parser_exceptions.ExtraLogicalOperationViewDirectionStatement
+    ) as error:
         parse(
             "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<a> {\n"
@@ -442,6 +480,24 @@ def test_view_disallows_repeated_read(parse: Parse):
     assert error.value.location.column == 9
     assert error.value.location.end_line == 4
     assert error.value.location.end_column == 19
+
+
+def test_view_disallows_repeated_written(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.ExtraLogicalOperationViewDirectionStatement
+    ) as error:
+        parse(
+            "define the logical_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<a> {\n"
+            + "        it is written.\n"
+            + "        it is written.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 22
 
 
 def test_view_requires_close_brace(parse: Parse):

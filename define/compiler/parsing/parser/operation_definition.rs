@@ -9,6 +9,7 @@ use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::OperationKind;
 use crate::scanner::Position;
+use crate::syntax_errors::SyntaxErrors;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
     EXECUTE_THE_ENCODING_OPERATION, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
@@ -225,6 +226,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 &line,
                 block_open_end,
                 statement_starts,
+                SyntaxErrors::missing_view_direction_statement,
             ));
         }
         Ok((is_input, is_output, line, content_end))
@@ -441,23 +443,23 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Returns the error for a view definition block whose first line, `line`,
     /// is not a View Direction Statement, where the block's `{` ends at
     /// `block_open_end` and its statements begin with one of
-    /// `statement_starts`.
+    /// `statement_starts`. `missing` returns the error for the missing View
+    /// Direction Statement.
     #[cold]
     #[inline(never)]
-    fn missing_view_direction_statement(
+    pub(crate) fn missing_view_direction_statement(
         &self,
         line: &LineInBlock,
         block_open_end: Position,
         statement_starts: &[&[u8]],
+        missing: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
     ) -> ParseError {
         let start = self.scanner.position;
         match line {
             // The block closes where its first statement belongs.
-            LineInBlock::Close => self.errors.missing_view_direction_statement(start, start),
+            LineInBlock::Close => missing(&self.errors, start, start),
             // The block ends where its first statement belongs.
-            LineInBlock::Unclosed => self
-                .errors
-                .missing_view_direction_statement(block_open_end, block_open_end),
+            LineInBlock::Unclosed => missing(&self.errors, block_open_end, block_open_end),
             LineInBlock::Statement => {
                 if let Some(error) = self.disallowed_character_after_any(statement_starts) {
                     return error;
@@ -467,8 +469,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 if let Some(error) = self.misspaced_words_in_any(statement_starts) {
                     return error;
                 }
-                self.errors
-                    .missing_view_direction_statement(start, self.end_of_line())
+                missing(&self.errors, start, self.end_of_line())
             }
         }
     }
@@ -512,7 +513,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// position, which is somewhere other than where View Direction Statements
     /// belong, if one is there.
     #[cold]
-    pub(crate) fn misplaced_view_direction_statement(&self) -> Option<ParseError> {
+    fn misplaced_view_direction_statement(&self) -> Option<ParseError> {
         if !VIEW_DIRECTION_STATEMENT_STARTS
             .iter()
             .any(|statement| self.scanner.next_bytes_are(statement))

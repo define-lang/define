@@ -243,7 +243,12 @@ define the logical_operation<standard:/number/add> {
 ```
 
 As you can see, logical operations define only a set of views, and each view
-definition has only View Direction Statements and no Quality Assignment Block.
+definition has only a View Direction Statement and no Quality Assignment Block.
+
+### View Directions
+
+A view in a logical operation is either read or written, never both. (That is,
+logical operations cannot have read/write views.)
 
 ### Compiler Integration
 
@@ -1645,6 +1650,23 @@ It is a bit awkward and confusing to have to use a value operation wrapper when
 you want to pass a literal, because it provides two ways to do the same thing
 inside of a Value Operation Statements Block. (In an Action Statements Block
 there's no conflict because you can't directly call logical operations.)
+
+### Why No Read/Write Views for Logical Operations?
+
+With [Single Assignment](#single-assignment), it is not possible to pass in a
+local view as a read/write view of anything. This is fine for value operations,
+because at the worst, you could write out your logic using logical operations.
+But if the only available logical operation is one that only has a read/write
+view, Define would totally prevent you from being able to write your logic _at
+all_.
+
+With Value Operations we allow read/write views because it's conceptually
+idiomatic and simplifies the logic for the compiler at the action level: if I
+say "increment" I just want to update the particle I'm passing into the Value
+Operation. There's no need to allow that inside of a Value Operation's
+definition, where there are no particles and we are just providing a conceptual
+description of a transformation that gets performed on a symbol attached to a
+particle.
 
 ### Why Value Qualities Declare Their Logical Operations
 

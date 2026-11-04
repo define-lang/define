@@ -239,6 +239,16 @@ class ExpectedViewOrLiteral(DefineTokenError):
     message_format: ClassVar[str] = "Expected 'view' or 'literal'."
 
 
+class ExtraLogicalOperationViewDirectionStatement(DefineTokenError):
+    """Wrote more than one View Direction Statement in a Logical Operation View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A view definition in a logical operation must contain exactly one of"
+        " 'it is read.' or 'it is written.'. Instead of a view that is both read"
+        " and written, define one view that is read and another that is written."
+    )
+
+
 class ExtraWhitespace(DefineTokenError):
     """When you write two spaces where you should have written one."""
 
@@ -318,7 +328,7 @@ class InvalidLogicalOperationViewDefinitionBlock(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "A view definition in a logical operation may contain only"
-        " 'it is read.', 'it is written.', or both, in that order."
+        " 'it is read.' or 'it is written.'."
     )
 
 
@@ -538,6 +548,15 @@ class MissingLogicalOperationViewDefinition(DefineTokenError):
     message_format: ClassVar[str] = (
         "A logical operation definition must contain at least one"
         " 'define the view' definition."
+    )
+
+
+class MissingLogicalOperationViewDirectionStatement(DefineTokenError):
+    """Left out the View Direction Statement of a Logical Operation View Definition."""
+
+    message_format: ClassVar[str] = (
+        "A view definition in a logical operation must contain exactly one of"
+        " 'it is read.' or 'it is written.'."
     )
 
 

@@ -3,10 +3,11 @@
 use crate::ast;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
-use crate::parser::lines::LineInBlock;
+use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::operation_definition::VIEW_DIRECTION_STATEMENT_STARTS;
 use crate::scanner::Position;
-use terminals::{DEFINE_THE, DEFINE_THE_VIEW, VIEW};
+use crate::syntax_errors::SyntaxErrors;
+use terminals::{DEFINE_THE, DEFINE_THE_VIEW, IT_IS_READ, IT_IS_WRITTEN, VIEW};
 
 impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the rest of a logical operation definition after its
@@ -87,7 +88,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///
     /// ```ebnf
     /// logical_operation_view_definition =
-    ///     "define the", " ", local_view_name, block_open, view_direction_statements, block_close ;
+    ///     "define the", " ", local_view_name, block_open,
+    ///     ( "it is read" | "it is written" ), terminator,
+    ///     block_close ;
     /// ```
     fn parse_logical_operation_view_definition(
         &mut self,
@@ -99,11 +102,24 @@ impl<'py, 'source> Parser<'py, 'source> {
         let (typed_name, _) =
             self.local_typed_name_reference(typed_name_location, ast::NameType::View, name)?;
         let block_open_end = self.parse_block_open()?;
-        let (is_input, is_output, line, _) =
-            self.parse_view_direction_statements(block_open_end, &VIEW_DIRECTION_STATEMENT_STARTS)?;
-        match line {
+        let line = self.next_line_in_block(INDENTATION_WIDTH, &VIEW_DIRECTION_STATEMENT_STARTS)?;
+        let is_input = matches!(line, LineInBlock::Statement) && self.scanner.consume(IT_IS_READ);
+        let is_output = !is_input
+            && matches!(line, LineInBlock::Statement)
+            && self.scanner.consume(IT_IS_WRITTEN);
+        // The view has no View Direction Statement.
+        if !is_input && !is_output {
+            return Err(self.missing_view_direction_statement(
+                &line,
+                block_open_end,
+                &VIEW_DIRECTION_STATEMENT_STARTS,
+                SyntaxErrors::missing_logical_operation_view_direction_statement,
+            ));
+        }
+        self.parse_statement_terminator()?;
+        match self.next_line_in_block(INDENTATION_WIDTH, &VIEW_DIRECTION_STATEMENT_STARTS)? {
             LineInBlock::Close => {}
-            // A statement other than a View Direction Statement follows them.
+            // A statement follows the View Direction Statement.
             LineInBlock::Statement => {
                 return Err(self.invalid_logical_operation_view_definition_statement());
             }
@@ -141,7 +157,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the error for a statement at the scanner's position, after the
-    /// View Direction Statements of a Logical Operation View Definition, where
+    /// View Direction Statement of a Logical Operation View Definition, where
     /// its `}` belongs.
     #[cold]
     #[inline(never)]
@@ -149,8 +165,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         if let Some(error) = self.disallowed_character_after_any(&VIEW_DIRECTION_STATEMENT_STARTS) {
             return error;
         }
-        if let Some(error) = self.misplaced_view_direction_statement() {
-            return error;
+        if VIEW_DIRECTION_STATEMENT_STARTS
+            .iter()
+            .any(|statement| self.scanner.next_bytes_are(statement))
+        {
+            let start = self.scanner.position;
+            return self
+                .errors
+                .extra_logical_operation_view_direction_statement(start, self.end_of_line());
         }
         // The line begins like a View Direction Statement, but with extra or
         // missing spaces between two of its words.
