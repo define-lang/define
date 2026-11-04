@@ -329,7 +329,12 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             return
         if executed_view.is_input:
             self._read_views.add(view_name)
-            if not looked_at_view.is_input and view_name not in self._written_views:
+            # A statement whose use of the view is unknown may have written it.
+            if (
+                not looked_at_view.is_input
+                and view_name not in self._written_views
+                and view_name not in self._views_with_unknown_use
+            ):
                 self._misused_views.add(view_name)
                 statement_diagnostics.append(
                     diagnostics.ReadFromUnwrittenOutputViewDiagnostic(

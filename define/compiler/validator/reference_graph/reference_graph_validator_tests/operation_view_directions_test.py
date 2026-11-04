@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import name_types
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -283,3 +283,16 @@ def test_callee_without_output_view_leaves_implied_value_unset(
     assert diagnostic.location.line == 35
     assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<box>::position</value>"
+
+
+def test_missing_operation_before_output_view_read(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.StandardDefinitionNotFoundDiagnostic(
+            location=ast.SourceLocation(line=42, column=21, end_line=42, end_column=63),
+            definition_name="operation<standard:/number/natural/missing>",
+        )
+    ]

@@ -1,0 +1,51 @@
+# The missing operation may write view<doubled>, so reading view<doubled>
+# afterward is not reported as a read before anything writes it.
+define the operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/double_then_negate> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<doubled> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation<standard:/number/natural/missing> {
+            with view<value> looking at view<number>.
+            with view<result> looking at view<doubled>.
+        }
+        execute the operation</negate> {
+            with view<value> looking at view<doubled>.
+            with view<result> looking at view<negated>.
+        }
+    }
+}
