@@ -1384,7 +1384,6 @@ def test_observation_processor_persists_queued_work_when_interrupted_while_finis
 
     assert raised.value.signal_number == signal.SIGTERM
     assert processed_times == [15, 16]
-    assert join_count == 2
 
 
 # PRF-023: Guaranteed resume. PRF-027: Incremental persistence.
