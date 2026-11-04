@@ -149,3 +149,27 @@ def test_unreferenced(
             view_name="view<unused>",
         )
     ]
+
+
+def test_encoding_operation_with_local_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_missing_logical_operation_looks_at_undefined_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.StandardDefinitionNotFoundDiagnostic(
+            location=ast.SourceLocation(line=57, column=21, end_line=57, end_column=63),
+            definition_name="logical_operation<standard:/number/missing>",
+        ),
+        diagnostics.UndefinedLocalNameDiagnostic(
+            location=ast.SourceLocation(line=59, column=42, end_line=59, end_column=56),
+            local_name="view<undefined>",
+        ),
+    ]

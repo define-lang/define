@@ -125,6 +125,7 @@ py_library(
     deps = [
         ":literal_encoder",
         ":operation_arguments_validator",
+        ":view_use_tracker",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
@@ -278,6 +279,17 @@ py_library(
     ],
 )
 
+py_library(
+    name = "view_use_tracker",
+    srcs = ["view_use_tracker.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:name_types",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//msgspec",
+    ],
+)
+
 # --- Type-checking ---
 
 pyright_test(
@@ -301,6 +313,7 @@ pyright_test(
         ":reference_graph_validator",
         ":reference_graph_validator_test",
         ":test_helpers",
+        ":view_use_tracker",
     ],
 )
 
