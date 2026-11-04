@@ -207,7 +207,7 @@ def test_duplicate_executed_view(
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 9
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.local_name == "source"
     assert diagnostic.first_definition_line == 3
 

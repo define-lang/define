@@ -38,7 +38,7 @@ def test_unread_input_view(
     assert isinstance(diagnostic, diagnostics.UnreadInputViewDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 21
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<number>"
     assert diagnostic.operation_name_type == name_types.NameType.OPERATION
 
@@ -53,7 +53,7 @@ def test_unwritten_output_view(
     assert isinstance(diagnostic, diagnostics.UnwrittenOutputViewDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 15
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<number>"
     assert diagnostic.operation_name_type == name_types.NameType.OPERATION
 
@@ -231,7 +231,7 @@ def test_unreferenced_view(
     assert isinstance(diagnostic, diagnostics.UnreferencedViewDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 21
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<unused>"
     assert diagnostic.operation_name_type == name_types.NameType.OPERATION
 

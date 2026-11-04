@@ -29,7 +29,7 @@ def test_missing_value_quality(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMissingValueQualityDiagnostic(
-            location=ast.SourceLocation(line=25, column=25, end_line=25, end_column=31),
+            location=ast.SourceLocation(line=25, column=20, end_line=25, end_column=32),
             view_name="view<negated>",
         ),
         diagnostics.LocalViewNonValueQualityDiagnostic(
@@ -72,14 +72,14 @@ def test_invalid_view_name(
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
+        diagnostics.UnreferencedLocalViewDiagnostic(
+            location=ast.SourceLocation(line=25, column=20, end_line=25, end_column=32),
+            view_name="view<Negated>",
+        ),
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=ast.SourceLocation(line=25, column=25, end_line=25, end_column=25),
             local_name="Negated",
             chars=("N",),
-        ),
-        diagnostics.UnreferencedLocalViewDiagnostic(
-            location=ast.SourceLocation(line=25, column=25, end_line=25, end_column=31),
-            view_name="view<Negated>",
         ),
     ]
 
@@ -91,7 +91,7 @@ def test_conflicts_with_interface_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalNameConflictDiagnostic(
-            location=ast.SourceLocation(line=25, column=25, end_line=25, end_column=30),
+            location=ast.SourceLocation(line=25, column=20, end_line=25, end_column=31),
             local_name="number",
             first_definition_line=11,
         )
@@ -105,7 +105,7 @@ def test_duplicate_local_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalNameConflictDiagnostic(
-            location=ast.SourceLocation(line=30, column=25, end_line=30, end_column=31),
+            location=ast.SourceLocation(line=30, column=20, end_line=30, end_column=32),
             local_name="negated",
             first_definition_line=25,
         )
@@ -119,7 +119,7 @@ def test_unreferenced_local_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UnreferencedLocalViewDiagnostic(
-            location=ast.SourceLocation(line=30, column=25, end_line=30, end_column=30),
+            location=ast.SourceLocation(line=30, column=20, end_line=30, end_column=31),
             view_name="view<unused>",
         )
     ]

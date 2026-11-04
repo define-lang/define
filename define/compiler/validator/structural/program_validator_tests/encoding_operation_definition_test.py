@@ -43,14 +43,14 @@ def test_unreferenced_views(
     assert isinstance(first, diagnostics.UnreferencedViewDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 27
-    assert first.location.column == 21
+    assert first.location.column == 16
     assert first.view_name == "view<unused>"
     assert first.operation_name_type == name_types.NameType.ENCODING_OPERATION
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.UnreferencedViewDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 33
-    assert second.location.column == 21
+    assert second.location.column == 16
     assert second.view_name == "view<also_unused>"
     assert second.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
@@ -65,7 +65,7 @@ def test_view_missing_encoding(
     assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
     assert missing.location.file_path is None
     assert missing.location.line == 3
-    assert missing.location.column == 21
+    assert missing.location.column == 16
     assert missing.view_name == "view<number>"
     quality = result.all_diagnostics[1]
     assert isinstance(quality, diagnostics.ViewPositionOrActionQualityDiagnostic)
@@ -85,7 +85,7 @@ def test_view_value_quality(
     assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
     assert missing.location.file_path is None
     assert missing.location.line == 3
-    assert missing.location.column == 21
+    assert missing.location.column == 16
     assert missing.view_name == "view<number>"
     value = result.all_diagnostics[1]
     assert isinstance(value, diagnostics.EncodingOperationViewValueQualityDiagnostic)
@@ -135,7 +135,7 @@ def test_duplicate_view(
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 9
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.local_name == "number"
     assert diagnostic.first_definition_line == 3
 

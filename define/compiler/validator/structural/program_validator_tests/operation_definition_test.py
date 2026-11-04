@@ -39,14 +39,14 @@ def test_unreferenced_views(
     assert isinstance(first, diagnostics.UnreferencedViewDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 27
-    assert first.location.column == 21
+    assert first.location.column == 16
     assert first.view_name == "view<unused>"
     assert first.operation_name_type == name_types.NameType.OPERATION
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.UnreferencedViewDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 33
-    assert second.location.column == 21
+    assert second.location.column == 16
     assert second.view_name == "view<also_unused>"
     assert second.operation_name_type == name_types.NameType.OPERATION
 
@@ -61,7 +61,7 @@ def test_duplicate_view(
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 9
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.local_name == "number"
     assert diagnostic.first_definition_line == 3
 
@@ -119,7 +119,7 @@ def test_view_missing_value_quality(
     assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
-    assert first.location.column == 21
+    assert first.location.column == 16
     assert first.view_name == "view<number>"
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)
@@ -199,7 +199,7 @@ def test_without_execution(
             location=ast.SourceLocation(line=4, column=5, end_line=10, end_column=5)
         ),
         diagnostics.UnreferencedLocalViewDiagnostic(
-            location=ast.SourceLocation(line=5, column=25, end_line=5, end_column=30),
+            location=ast.SourceLocation(line=5, column=20, end_line=5, end_column=31),
             view_name="view<unused>",
         ),
     ]

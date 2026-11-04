@@ -524,6 +524,49 @@ class ReadFromUnwrittenOutputViewDiagnostic(Diagnostic):
     )
 
 
+class ReadFromUnwrittenLocalViewDiagnostic(Diagnostic):
+    """Diagnostic for an executed operation reading a local view before anything writes to it."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.looked_at_name}' is a local view, so it cannot be read until an"
+        " earlier statement writes to it. However, '{self.view_name}' of"
+        " '{self.operation_name}' reads it on this line before anything writes"
+        " to it."
+    )
+
+
+class LocalViewWrittenTwiceDiagnostic(Diagnostic):
+    """Diagnostic for a local view that more than one statement writes to."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    first_write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that first writes the local view."""
+        return (
+            f"'{self.looked_at_name}' is a local view, so only one statement may"
+            f" write to it. However, '{self.view_name}' of '{self.operation_name}'"
+            " writes to it again on this line. It was already written here:\n"
+            f"{sources.format_location(self.first_write)}"
+        )
+
+
+class UnreadLocalViewDiagnostic(Diagnostic):
+    """Diagnostic for a local view that is written but never read."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is written, but nothing in this operation reads it."
+        " Either have an operation read it, or remove it."
+    )
+
+
 class LookedAtKind(enum.Enum):
     """What an Operation Argument Statement's view is looking at."""
 

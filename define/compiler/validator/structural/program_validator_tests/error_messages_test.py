@@ -414,14 +414,14 @@ def test_local_view_error_messages():
             ^^^^^^^^^
         a value operation must execute at least one logical operation or value operation"""),
         textwrap.dedent("""\
-        line 3, column 25
+        line 3, column 20
             define the view<unused> {
-                            ^^^^^^
+                       ^^^^^^^^^^^^
         'view<unused>' must have a value quality, because every local view must have one"""),
         textwrap.dedent("""\
-        line 3, column 25
+        line 3, column 20
             define the view<unused> {
-                            ^^^^^^
+                       ^^^^^^^^^^^^
         'view<unused>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'view<unused>'."""),
         textwrap.dedent("""\
         line 5, column 28

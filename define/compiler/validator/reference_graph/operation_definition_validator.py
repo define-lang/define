@@ -30,8 +30,11 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     ]
     _diagnostics: list[diagnostics.Diagnostic]
     _arguments_validator: operation_arguments_validator.OperationArgumentsValidator
+    _local_views: dict[str, ast.LocalViewDefinition]
     _read_views: set[str]
     _written_views: set[str]
+    # Where each local view is first written.
+    _local_view_writes: dict[str, ast.SourceLocation]
     # Views looked at for a missing executed definition, or by a view the
     # executed definition does not define, so whether they are read or written
     # is unknown.
@@ -53,8 +56,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         self._definition = definition
         self._definition_results = definition_results
         self._diagnostics = []
+        self._local_views = {}
         self._read_views = set()
         self._written_views = set()
+        self._local_view_writes = {}
         self._views_with_unknown_use = set()
         self._misused_views = set()
         enclosing_fqun = definition.typed_name.name_content.fqun
@@ -71,9 +76,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         for statement in self._definition.operation_statements.statements:
             match statement:
                 case ast.LocalViewDefinition():
-                    raise NotImplementedError(
-                        "The reference graph does not validate local views yet."
-                    )
+                    self._define_local_view(statement)
                 case ast.OperationExecutionStatement():
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():
@@ -84,6 +87,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                 ):
                     self._analyze_encoding_or_computer_operation_execution(statement)
         self._check_view_directions_fulfilled()
+        self._check_local_views_read()
         return self._build_result()
 
     @abc.abstractmethod
@@ -107,6 +111,22 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
 
     @abc.abstractmethod
     def _build_result(self) -> validation_result.PostorderValidationResult: ...
+
+    def _define_local_view(self, view: ast.LocalViewDefinition):
+        view_name = view.typed_name.source_typed_name
+        # Structural validation reports a local view whose name is already
+        # defined.
+        if self._get_view(view_name) is None:
+            self._local_views[view_name] = view
+
+    def _get_view(
+        self, view_name: str
+    ) -> ast.InterfaceViewDefinition | ast.LocalViewDefinition | None:
+        """Return the interface view or earlier local view with this name, if there is one."""
+        interface_view = self._definition.get_view(view_name)
+        if interface_view is not None:
+            return interface_view
+        return self._local_views.get(view_name)
 
     def _fulfill_every_view_direction(self):
         for view in self._definition.views:
@@ -136,7 +156,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             if view.is_input and view_name not in self._read_views:
                 self._diagnostics.append(
                     diagnostics.UnreadInputViewDiagnostic(
-                        location=view.typed_name.name_content.location,
+                        location=view.typed_name.location,
                         view_name=view_name,
                         operation_name_type=self._definition.typed_name.name_type,
                     )
@@ -144,11 +164,30 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             if view.is_output and view_name not in self._written_views:
                 self._diagnostics.append(
                     diagnostics.UnwrittenOutputViewDiagnostic(
-                        location=view.typed_name.name_content.location,
+                        location=view.typed_name.location,
                         view_name=view_name,
                         operation_name_type=self._definition.typed_name.name_type,
                     )
                 )
+
+    def _check_local_views_read(self):
+        for view_name, view in self._local_views.items():
+            if (
+                view_name in self._views_with_unknown_use
+                or view_name in self._misused_views
+                or view_name in self._read_views
+            ):
+                continue
+            # Structural validation reports local views that are never
+            # referenced.
+            if view_name not in self._local_view_writes:
+                continue
+            self._diagnostics.append(
+                diagnostics.UnreadLocalViewDiagnostic(
+                    location=view.typed_name.location,
+                    view_name=view_name,
+                )
+            )
 
     def _analyze_execution(
         self,
@@ -175,7 +214,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             # Literals are checked when the arguments are validated.
             if not isinstance(looking_at, ast.LocalTypedNameReference):
                 continue
-            looked_at_view = self._definition.get_view(looking_at.source_typed_name)
+            looked_at_view = self._get_view(looking_at.source_typed_name)
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue
@@ -225,7 +264,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         )
         for argument in statement.arguments:
             looking_at = argument.looking_at
-            looked_at_view = self._definition.get_view(looking_at.source_typed_name)
+            looked_at_view = self._get_view(looking_at.source_typed_name)
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue
@@ -267,7 +306,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         self,
         argument: ast.OperationArgumentStatement[ast.LookedAt],
         looking_at: ast.LocalTypedNameReference,
-        looked_at_view: ast.InterfaceViewDefinition,
+        looked_at_view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         executed_view: ast.ViewDefinition | None,
         operation_name: str,
         statement_diagnostics: list[diagnostics.Diagnostic],
@@ -278,6 +317,15 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         # arguments are validated.
         if executed_view is None:
             self._views_with_unknown_use.add(view_name)
+            return
+        if isinstance(looked_at_view, ast.LocalViewDefinition):
+            self._record_local_view_use(
+                argument,
+                looking_at,
+                executed_view,
+                operation_name,
+                statement_diagnostics,
+            )
             return
         if executed_view.is_input:
             self._read_views.add(view_name)
@@ -304,12 +352,55 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                     )
                 )
 
+    def _record_local_view_use(
+        self,
+        argument: ast.OperationArgumentStatement[ast.LookedAt],
+        looking_at: ast.LocalTypedNameReference,
+        executed_view: ast.ViewDefinition,
+        operation_name: str,
+        statement_diagnostics: list[diagnostics.Diagnostic],
+    ):
+        """Record whether the executed view reads or writes the local view, and report a read before its write or a second write."""
+        view_name = looking_at.source_typed_name
+        # A statement whose use of the view is unknown may have written it, so
+        # neither a later read nor a later write is known to be a mistake.
+        if view_name in self._views_with_unknown_use:
+            return
+        if executed_view.is_input:
+            self._read_views.add(view_name)
+            if view_name not in self._local_view_writes:
+                self._misused_views.add(view_name)
+                statement_diagnostics.append(
+                    diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+                        location=looking_at.location,
+                        looked_at_name=view_name,
+                        view_name=argument.view.source_typed_name,
+                        operation_name=operation_name,
+                    )
+                )
+        if not executed_view.is_output:
+            return
+        first_write = self._local_view_writes.get(view_name)
+        if first_write is None:
+            self._local_view_writes[view_name] = looking_at.location
+            return
+        self._misused_views.add(view_name)
+        statement_diagnostics.append(
+            diagnostics.LocalViewWrittenTwiceDiagnostic(
+                location=looking_at.location,
+                looked_at_name=view_name,
+                view_name=argument.view.source_typed_name,
+                operation_name=operation_name,
+                first_write=first_write,
+            )
+        )
+
     def _check_logical_operation_support(
         self,
         logical_operation: ast.GlobalTypedNameReference,
         operation_name: str,
         looking_at: ast.LocalTypedNameReference,
-        looked_at_view: ast.InterfaceViewDefinition,
+        looked_at_view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
         logical_operation_view: ast.LogicalOperationViewDefinition,
     ):
         """Check that the looked-at view's value quality supports the logical operation in each direction its view uses."""

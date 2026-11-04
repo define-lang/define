@@ -190,7 +190,7 @@ class DefinitionStructuralValidator:
             if isinstance(view, ast.LocalViewDefinition):
                 self._diagnostics.append(
                     diagnostics.UnreferencedLocalViewDiagnostic(
-                        location=view.typed_name.name_content.location,
+                        location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
@@ -199,7 +199,7 @@ class DefinitionStructuralValidator:
             elif not executes_all_views:
                 self._diagnostics.append(
                     diagnostics.UnreferencedViewDiagnostic(
-                        location=view.typed_name.name_content.location,
+                        location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                         operation_name_type=definition.typed_name.name_type,
                     )
@@ -278,7 +278,7 @@ class DefinitionStructuralValidator:
             if name_types.NameType.ENCODING not in quality_name_types:
                 self._diagnostics.append(
                     diagnostics.ViewMissingEncodingDiagnostic(
-                        location=view.typed_name.name_content.location,
+                        location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
@@ -288,14 +288,14 @@ class DefinitionStructuralValidator:
         if isinstance(view, ast.LocalViewDefinition):
             self._diagnostics.append(
                 diagnostics.LocalViewMissingValueQualityDiagnostic(
-                    location=view.typed_name.name_content.location,
+                    location=view.typed_name.location,
                     view_name=view.typed_name.source_typed_name,
                 )
             )
             return
         self._diagnostics.append(
             diagnostics.ViewMissingValueQualityDiagnostic(
-                location=view.typed_name.name_content.location,
+                location=view.typed_name.location,
                 view_name=view.typed_name.source_typed_name,
             )
         )
@@ -373,7 +373,7 @@ class DefinitionStructuralValidator:
         if view.typed_name in views:
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
-                    location=view.typed_name.name_content.location,
+                    location=view.typed_name.location,
                     local_name=view.typed_name.name_content.name,
                     first_definition_line=views[view.typed_name].location.line,
                 )

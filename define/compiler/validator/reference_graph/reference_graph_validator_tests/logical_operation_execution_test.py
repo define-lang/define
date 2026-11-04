@@ -197,7 +197,7 @@ def test_view_without_value_quality(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ViewMissingValueQualityDiagnostic(
-            location=ast.SourceLocation(line=17, column=21, end_line=17, end_column=26),
+            location=ast.SourceLocation(line=17, column=16, end_line=17, end_column=27),
             view_name="view<amount>",
         ),
         diagnostics.ValueOperationViewEncodingDiagnostic(

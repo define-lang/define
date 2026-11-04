@@ -30,7 +30,7 @@ def test_duplicate_caller_view(
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 28
-    assert diagnostic.location.column == 21
+    assert diagnostic.location.column == 16
     assert diagnostic.local_name == "number"
     assert diagnostic.first_definition_line == 22
 
@@ -95,7 +95,7 @@ def test_literal_for_view_without_value(
     assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
-    assert first.location.column == 21
+    assert first.location.column == 16
     assert first.view_name == "view<source>"
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)

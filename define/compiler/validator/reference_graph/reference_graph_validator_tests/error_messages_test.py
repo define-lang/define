@@ -1782,6 +1782,99 @@ _NEGATE_TEST_FILE = (
 )
 
 
+def test_local_view_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "negate.dfn": _NEGATE_FILE,
+            "number.dfn": (
+                "define the potential value<my.domain.com:my_lib:/number> {\n"
+                "    it supports the logical_operation</negate> {\n"
+                "        it may be read.\n"
+                "        it may be written.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<amount> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<negated> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        define the view<unwritten> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the view<twice> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the view<unread> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<unwritten>.\n"
+                "            with view<result> looking at view<negated>.\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<amount>.\n"
+                "            with view<result> looking at view<twice>.\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<amount>.\n"
+                "            with view<result> looking at view<twice>.\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<amount>.\n"
+                "            with view<result> looking at view<unread>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 26, column 20
+            define the view<unread> {
+                       ^^^^^^^^^^^^
+        'view<unread>' is written, but nothing in this operation reads it. Either have an operation read it, or remove it."""),
+        textwrap.dedent("""\
+        File "test.dfn", line 32, column 41
+            with view<value> looking at view<unwritten>.
+                                        ^^^^^^^^^^^^^^^
+        'view<unwritten>' is a local view, so it cannot be read until an earlier statement writes to it. However, 'view<value>' of 'logical_operation</negate>' reads it on this line before anything writes to it."""),
+        textwrap.dedent("""\
+        File "test.dfn", line 41, column 42
+            with view<result> looking at view<twice>.
+                                         ^^^^^^^^^^^
+        'view<twice>' is a local view, so only one statement may write to it. However, 'view<result>' of 'logical_operation</negate>' writes to it again on this line. It was already written here:
+        File "test.dfn", line 37, column 42
+            with view<result> looking at view<twice>.
+                                         ^^^^^^^^^^^"""),
+    ]
+
+
 def test_logical_operation_read_not_supported_format(
     validate_project: ValidateProject,
 ):
