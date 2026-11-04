@@ -144,7 +144,7 @@ def _emit_simple_position_pool(prefix: str, num_globals: int) -> list[str]:
     # ``it has the position</g_(i+1)>`` quality assignment is a back-reference to
     # an already-defined name. The non-filesystem validator does not load
     # files for same-source back-references; forward references would
-    # instead trigger NoProjectRootInNonFilesystemContext.
+    # instead trigger NoProjectRootForDefinitionNotInSuppliedSource.
     lines: list[str] = []
     for i in reversed(range(num_globals)):
         name = _qualified_global_name(prefix, i)

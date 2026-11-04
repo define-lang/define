@@ -30,9 +30,9 @@ def test_action_local_position_requires_missing_global(
     assert diags[0].file_path == "test.dfn"
     assert diags[0].definition_name == "position<mv:define-lang.org:test_files:/test>"
     assert diags[0].location.line == 7
-    assert diags[0].location.column == 37
+    assert diags[0].location.column == 28
     assert diags[0].location.end_line == 7
-    assert diags[0].location.end_column == 41
+    assert diags[0].location.end_column == 42
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -154,7 +154,7 @@ def test_referenced_global_name_wrong_type_position(
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
 
 
 def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
@@ -176,11 +176,11 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
     assert diags[1].file_path == "target.dfn"
     assert (
         diags[1].definition_name
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
     assert diags[1].location.line == 12
-    assert diags[1].location.column == 37
+    assert diags[1].location.column == 28

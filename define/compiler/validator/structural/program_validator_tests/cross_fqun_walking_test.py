@@ -107,7 +107,7 @@ def test_cross_fqun_file_not_found(
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 63
     assert diags[0].file_path == "lib/missing.dfn"
 
 
@@ -284,7 +284,7 @@ def test_reference_naming_universe_into_its_declared_sub_root(
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.file_path == PurePosixPath("test.dfn")
     assert path_diag.location.line == 5
-    assert path_diag.location.column == 29
+    assert path_diag.location.column == 63
     assert path_diag.path == "lib/inner/x.dfn"
     assert path_diag.other_universe == "mv:define-lang.org:grandchild"
     assert path_diag.sub_root_path == "lib/inner"
@@ -317,9 +317,9 @@ def test_sub_root_is_current_universe(
         == "position<mv:define-lang.org:test_parent:/lib/target>"
     )
     assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 29
+    assert all_diags[0].location.column == 20
     assert all_diags[0].location.end_line == 3
-    assert all_diags[0].location.end_column == 39
+    assert all_diags[0].location.end_column == 40
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[1].file_path == "target.dfn"
@@ -360,7 +360,7 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.location.file_path == PurePosixPath("test.dfn")
     assert not_found_diag.location.line == 6
-    assert not_found_diag.location.column == 29
+    assert not_found_diag.location.column == 63
     assert not_found_diag.file_path == "lib/missing_target.dfn"
 
 
@@ -408,7 +408,7 @@ def test_path_inside_other_universe_skips_further_validation(
     )
     assert wrong_type_diag.location.file_path == PurePosixPath("test.dfn")
     assert wrong_type_diag.location.line == 3
-    assert wrong_type_diag.location.column == 29
+    assert wrong_type_diag.location.column == 20
     assert wrong_type_diag.file_path == "lib/child_action.dfn"
     assert (
         wrong_type_diag.definition_name
@@ -448,7 +448,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         "test.dfn"
     )
     assert result.file_results[0].diagnostics[0].location.line == 3
-    assert result.file_results[0].diagnostics[0].location.column == 29
+    assert result.file_results[0].diagnostics[0].location.column == 20
     assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
     assert (
         result.file_results[0].diagnostics[0].definition_name
@@ -486,7 +486,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
         "test.dfn"
     )
     assert result.file_results[0].diagnostics[0].location.line == 3
-    assert result.file_results[0].diagnostics[0].location.column == 29
+    assert result.file_results[0].diagnostics[0].location.column == 20
     assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
     assert (
         result.file_results[0].diagnostics[0].definition_name
@@ -602,7 +602,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
         == "position<mv:define-lang.org:parent_universe:/wrong_type>"
     )
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 

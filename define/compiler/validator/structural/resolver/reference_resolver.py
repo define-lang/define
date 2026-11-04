@@ -229,7 +229,7 @@ class ReferenceResolver:
         sub_root_path, entry = declared_sub_root
         source_definition.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
-                location=edge.global_name_reference.name_content.location,
+                location=edge.global_name_reference.name_content.path.location,
                 path=str(target_file),
                 other_universe=entry.universe,
                 sub_root_path=str(sub_root_path),
@@ -245,7 +245,6 @@ class ReferenceResolver:
     ) -> ReachedDefinition | None:
         """Validate a reference edge against a loaded target file, and return the definition it names."""
         target_file = target_loaded_file.context.full_path
-        global_name = edge.global_name_reference.name_content
         target_exception = target_loaded_file.exception
         target_definition = target_loaded_file.definitions.get(
             edge.global_name_reference
@@ -275,7 +274,7 @@ class ReferenceResolver:
                 return ReachedDefinition(target_loaded_file, target_definition)
             source_definition.diagnostics.append(
                 diagnostics.StandardDefinitionNotFoundDiagnostic(
-                    location=global_name.location,
+                    location=edge.global_name_reference.location,
                     definition_name=edge.global_name_reference.full_typed_name,
                 )
             )
@@ -284,7 +283,7 @@ class ReferenceResolver:
         if isinstance(target_exception, exceptions.SourceFileNotFoundError):
             source_definition.diagnostics.append(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
-                    location=global_name.location,
+                    location=edge.global_name_reference.name_content.path.location,
                     file_path=str(target_file),
                 )
             )
@@ -294,7 +293,7 @@ class ReferenceResolver:
         if target_definition is None:
             source_definition.diagnostics.append(
                 diagnostics.ReferencedDefinitionNotFoundDiagnostic(
-                    location=global_name.location,
+                    location=edge.global_name_reference.location,
                     file_path=str(target_file),
                     definition_name=edge.global_name_reference.full_typed_name,
                 )

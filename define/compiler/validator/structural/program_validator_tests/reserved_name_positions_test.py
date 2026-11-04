@@ -131,7 +131,7 @@ def test_reserved_universe_name_reference(
     assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 4
-    assert diagnostic.location.column == 26
+    assert diagnostic.location.column == 20
     assert diagnostic.definition_name == "value<standard:/number>"
 
 

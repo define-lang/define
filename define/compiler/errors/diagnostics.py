@@ -876,6 +876,21 @@ class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
     )
 
 
+class NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(Diagnostic):
+    """Diagnostic for when a reference to a universe the supplied source defines names a definition the supplied source lacks, outside a project root."""
+
+    definition_name: str
+    config_path: str
+    message_format: ClassVar[str] = (
+        "'{self.definition_name}' is not defined in the supplied source, "
+        + "so the compiler tried to load it from the project. "
+        + "However, {self.config_path} was not found.\n"
+        + "For more information, see "
+        + constants.DOCS_ROOT
+        + "/project-root.md"
+    )
+
+
 class ConfigLoadErrorDiagnostic(Diagnostic):
     """Diagnostic for when project configuration fails to load."""
 

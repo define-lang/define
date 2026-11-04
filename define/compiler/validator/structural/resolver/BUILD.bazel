@@ -24,6 +24,7 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":reference_resolver",
+        "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler/errors:diagnostics",

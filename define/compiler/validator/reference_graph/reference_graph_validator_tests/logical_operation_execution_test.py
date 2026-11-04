@@ -171,7 +171,7 @@ def test_missing_logical_operation(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=31, column=39, end_line=31, end_column=62),
+            location=ast.SourceLocation(line=31, column=21, end_line=31, end_column=63),
             definition_name="logical_operation<standard:/number/missing>",
         )
     ]
@@ -184,7 +184,7 @@ def test_missing_value(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=20, column=30, end_line=20, end_column=53),
+            location=ast.SourceLocation(line=20, column=24, end_line=20, end_column=54),
             definition_name="value<standard:/number/missing>",
         )
     ]

@@ -1,0 +1,7 @@
+# A short-form reference to a definition the supplied source lacks loads the
+# project config, which fails here.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+    }
+}

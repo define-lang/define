@@ -860,9 +860,9 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[3].parent_position_name == "action</impl>::position<q>"
     assert isinstance(all_diags[4], diagnostics.UnreferencedPositionDiagnostic)
     assert all_diags[4].location.line == 3
-    assert all_diags[4].location.column == 25
+    assert all_diags[4].location.column == 16
     assert all_diags[4].location.end_line == 3
-    assert all_diags[4].location.end_column == 25
+    assert all_diags[4].location.end_column == 26
     assert all_diags[4].location.file_path == PurePosixPath("impl.dfn")
     assert all_diags[4].position_name == "position<q>"
     assert isinstance(all_diags[5], diagnostics.DeadChildPositionDiagnostic)

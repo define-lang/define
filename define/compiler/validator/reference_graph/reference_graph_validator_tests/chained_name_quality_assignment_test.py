@@ -27,13 +27,14 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
-            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[0],
+            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
-        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].definition_name == "action</other>"
         assert diags[0].location.line == 4
-        assert diags[0].location.column == 31
+        assert diags[0].location.column == 24
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "wrong"
@@ -127,7 +128,7 @@ class TestCreateParticle:
         assert all_diags[0].local_name == "pos_a"
         assert all_diags[0].first_definition_line == 2
         assert all_diags[0].location.line == 7
-        assert all_diags[0].location.column == 25
+        assert all_diags[0].location.column == 16
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_duplicate_source_definition_does_not_add_chain_diagnostics(
@@ -156,13 +157,14 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
-            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[0],
+            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
-        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].definition_name == "position</child>"
         assert diags[0].location.line == 4
-        assert diags[0].location.column == 33
+        assert diags[0].location.column == 24
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "child"
@@ -231,13 +233,14 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
-            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[0],
+            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
-        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].definition_name == "action</child>"
         assert diags[0].location.line == 4
-        assert diags[0].location.column == 31
+        assert diags[0].location.column == 24
         assert isinstance(
             diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -271,13 +274,14 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
-            diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+            diags[0],
+            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
-        assert diags[0].universe == "my.domain.com:my_lib"
+        assert diags[0].definition_name == "action</other>"
         assert diags[0].location.line == 4
-        assert diags[0].location.column == 31
+        assert diags[0].location.column == 24
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "wrong"

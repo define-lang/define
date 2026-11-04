@@ -161,7 +161,7 @@ def test_wrong_logical_operation_definition_type(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=3, column=39, end_line=3, end_column=67),
+            location=ast.SourceLocation(line=3, column=21, end_line=3, end_column=68),
             definition_name="logical_operation<standard:/text/unicode/scalar>",
         )
     ]

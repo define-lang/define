@@ -136,7 +136,7 @@ def test_same_file_position_must_precede_referencing_action(
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.definition_name == "position<my.domain.com:my_lib:/test>"
     assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 34
+    assert diagnostic.location.column == 25
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
 
@@ -171,7 +171,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
     assert diags[0].file_path == "target.dfn"
     assert diags[0].definition_name == "action<my.domain.com:my_lib:/target>"
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 27
+    assert diags[0].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[1].diagnostics == []
 
@@ -331,7 +331,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].file_path == "wrong_type.dfn"
     assert diags[1].definition_name == "position<my.domain.com:my_lib:/wrong_type>"
     assert diags[1].location.line == 4
-    assert diags[1].location.column == 29
+    assert diags[1].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 

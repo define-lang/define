@@ -179,7 +179,7 @@ def test_missing_operation(
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 31
+    assert diagnostic.location.column == 21
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"
 
@@ -191,7 +191,7 @@ def test_missing_standard_operation_with_literal_argument(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=13, column=31, end_line=13, end_column=54),
+            location=ast.SourceLocation(line=13, column=21, end_line=13, end_column=55),
             definition_name="operation<standard:/number/missing>",
         )
     ]

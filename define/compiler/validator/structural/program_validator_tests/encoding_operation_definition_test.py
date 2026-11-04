@@ -219,7 +219,7 @@ def test_executes_value_operation(
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 40
+    assert diagnostic.location.column == 21
     assert (
         diagnostic.definition_name == "encoding_operation<my.domain.com:my_lib:/copy>"
     )
@@ -236,6 +236,6 @@ def test_value_operation_executes_encoding_operation(
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 31
+    assert diagnostic.location.column == 21
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"

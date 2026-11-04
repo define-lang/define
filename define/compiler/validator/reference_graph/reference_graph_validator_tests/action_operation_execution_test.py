@@ -41,7 +41,7 @@ def test_missing_operation_after_value_write(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=22, column=31, end_line=22, end_column=54),
+            location=ast.SourceLocation(line=22, column=21, end_line=22, end_column=55),
             definition_name="operation<standard:/number/missing>",
         )
     ]
@@ -54,7 +54,7 @@ def test_missing_operation_before_value_read(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=26, column=31, end_line=26, end_column=54),
+            location=ast.SourceLocation(line=26, column=21, end_line=26, end_column=55),
             definition_name="operation<standard:/number/missing>",
         )
     ]

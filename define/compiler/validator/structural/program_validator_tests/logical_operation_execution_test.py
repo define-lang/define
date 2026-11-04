@@ -143,9 +143,9 @@ def test_wrong_logical_operation_definition_type(
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=ast.SourceLocation(
                 line=17,
-                column=39,
+                column=21,
                 end_line=17,
-                end_column=45,
+                end_column=46,
                 file_path=PurePosixPath("test.dfn"),
             ),
             file_path="negate.dfn",

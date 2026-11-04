@@ -34,7 +34,7 @@ def test_duplicate_name_error(
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
+    assert diags[0].location.column == 16
 
 
 def test_three_locals_two_same_one_diagnostic(
@@ -49,7 +49,7 @@ def test_three_locals_two_same_one_diagnostic(
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 25
+    assert diags[0].location.column == 16
 
 
 def test_three_same_name_two_diagnostics(
@@ -66,11 +66,11 @@ def test_three_same_name_two_diagnostics(
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
+    assert diags[0].location.column == 16
     assert diags[1].local_name == "alpha"
     assert diags[1].first_definition_line == 2
     assert diags[1].location.line == 4
-    assert diags[1].location.column == 25
+    assert diags[1].location.column == 16
 
 
 def test_terminated_action_no_error(
@@ -114,7 +114,7 @@ def test_action_statements_duplicate_name_error(
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 6
     assert diags[0].location.line == 7
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
 
 
 def test_action_statements_name_conflicts_with_parent_scope(
@@ -130,7 +130,7 @@ def test_action_statements_name_conflicts_with_parent_scope(
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
 
 
 def test_action_statements_two_duplicates_point_to_parent_scope_definition(
@@ -149,6 +149,6 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition(
     assert diags[0].first_definition_line == 2
     assert diags[1].first_definition_line == 2
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 29
+    assert diags[0].location.column == 20
     assert diags[1].location.line == 7
-    assert diags[1].location.column == 29
+    assert diags[1].location.column == 20

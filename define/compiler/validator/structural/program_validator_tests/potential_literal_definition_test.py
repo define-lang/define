@@ -164,7 +164,7 @@ def test_wrong_encoding_definition_type(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 25
+    assert diagnostic.location.column == 16
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.definition_name == "encoding<my.domain.com:my_lib:/decimal_text>"
     assert diagnostic.file_path == "decimal_text.dfn"
@@ -189,7 +189,7 @@ def test_same_file_encoding_must_precede_reference(
     assert diagnostic.definition_name == "encoding<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 25
+    assert diagnostic.location.column == 16
 
 
 def test_configured_external_encoding(
@@ -247,5 +247,5 @@ def test_built_in_name_with_wrong_type(
     assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 25
+    assert diagnostic.location.column == 16
     assert diagnostic.definition_name == "encoding<standard:/number>"

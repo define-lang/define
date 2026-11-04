@@ -609,7 +609,7 @@ class DefinitionStructuralValidator:
         if scope.is_defined(local_def.typed_name):
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
-                    location=local_def.typed_name.name_content.location,
+                    location=local_def.typed_name.location,
                     local_name=name,
                     first_definition_line=scope.defined_on_line(local_def.typed_name),
                 )
@@ -899,7 +899,7 @@ class DefinitionStructuralValidator:
         for local_def in self._unreferenced_positions.values():
             self._diagnostics.append(
                 diagnostics.UnreferencedPositionDiagnostic(
-                    location=local_def.typed_name.name_content.location,
+                    location=local_def.typed_name.location,
                     position_name=local_def.typed_name.source_typed_name,
                 )
             )

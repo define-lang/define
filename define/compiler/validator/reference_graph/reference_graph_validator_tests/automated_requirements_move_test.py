@@ -135,7 +135,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert all_diags[1].position_name == "position<extra>"
     assert all_diags[1].location.line == 4
-    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.column == 16
     assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
@@ -192,7 +192,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert all_diags[1].position_name == "position<extra>"
     assert all_diags[1].location.line == 3
-    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.column == 16
     assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),

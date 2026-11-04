@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config
+from define.compiler import ast, config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import (
@@ -113,6 +113,34 @@ def test_external_universe_invalid_local_deps(
     assert isinstance(diags[0].error, config.ConfigValidationError)
 
 
+def test_source_universe_definition_no_project_config(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            location=ast.SourceLocation(line=7, column=20, end_line=7, end_column=61),
+            definition_name="position<my.domain.com:other_lib:/missing>",
+            config_path=".define/project/config.defcl",
+        )
+    ]
+
+
+def test_source_universe_definition_invalid_local_deps(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    diags = result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].location == ast.SourceLocation(
+        line=5, column=20, end_line=5, end_column=36
+    )
+    assert isinstance(diags[0].error, config.ConfigValidationError)
+
+
 def test_external_universe_configured_but_no_sub_root_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
@@ -211,7 +239,7 @@ def test_same_target_file_referenced_as_two_types_loads_once_non_filesystem(
         "action<mv:define-lang.org:child_universe:/target>"
     )
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 27
+    assert diags[0].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].diagnostics == []
 
@@ -230,7 +258,7 @@ def test_non_filesystem_cross_universe_reference(
     assert diag.location.file_path is None
     assert diag.file_path == "lib/missing.dfn"
     assert diag.location.line == 4
-    assert diag.location.column == 29
+    assert diag.location.column == 58
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
     assert result.file_results[1].exception is None
@@ -434,5 +462,5 @@ def test_config_failure_keeps_standard_references(
     assert isinstance(second, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 5
-    assert second.location.column == 26
+    assert second.location.column == 20
     assert second.definition_name == "value<standard:/number/missing>"

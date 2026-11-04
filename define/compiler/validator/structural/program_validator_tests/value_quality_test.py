@@ -130,7 +130,7 @@ def test_reference_to_wrong_type(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.line == 4
-    assert diagnostic.location.column == 26
+    assert diagnostic.location.column == 20
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.definition_name == "value<my.domain.com:my_lib:/number>"
     assert diagnostic.file_path == "number.dfn"

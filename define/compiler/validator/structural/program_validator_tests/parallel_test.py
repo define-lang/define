@@ -55,7 +55,7 @@ def test_wrong_type_detected_without_deferral(
     assert isinstance(diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag.location.file_path == PurePosixPath("checker.dfn")
     assert diag.location.line == 3
-    assert diag.location.column == 29
+    assert diag.location.column == 20
     assert diag.file_path == "target.dfn"
     assert diag.definition_name == "position<my.domain.com:my_lib:/target>"
 
@@ -71,7 +71,7 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert isinstance(diag0, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag0.location.file_path == PurePosixPath("test.dfn")
     assert diag0.location.line == 3
-    assert diag0.location.column == 29
+    assert diag0.location.column == 20
     assert diag0.file_path == "lib/target.dfn"
     assert (
         diag0.definition_name == "position<mv:define-lang.org:test_parent:/lib/target>"

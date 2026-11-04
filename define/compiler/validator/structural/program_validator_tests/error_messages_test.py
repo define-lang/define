@@ -172,11 +172,156 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 3, column 29
+        File "test.dfn", line 3, column 20
             it has the position</target>.
-                                ^^^^^^^
+                       ^^^^^^^^^^^^^^^^^
         file 'target.dfn' does not contain a definition for 'position<my.domain.com:my_lib:/target>'""")
     )
+
+
+def test_referenced_file_not_found_format(validate_project: ValidateProject):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</missing>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project({"test.dfn": source})
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    formatted = diags[0].format(result.program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+            it has the position</missing>.
+                                ^^^^^^^^
+        there is no file 'missing.dfn' in this project""")
+
+
+def test_path_inside_other_universe_format(validate_project: ValidateProject):
+    parent_universe = "mv:define-lang.org:parent"
+    child_universe = "mv:define-lang.org:child"
+    source = (
+        f"define the potential position<{parent_universe}:/test> {{\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</lib/parent_target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "lib/parent_target.dfn": f"define the potential position<{parent_universe}:/lib/parent_target>.\n",
+        },
+        universe_name=parent_universe,
+        local_deps={child_universe: "lib"},
+        sub_roots={"lib": child_universe},
+    )
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PathInsideOtherUniverseDiagnostic)
+    formatted = diags[0].format(result.program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+            it has the position</lib/parent_target>.
+                                ^^^^^^^^^^^^^^^^^^
+        the path 'lib/parent_target.dfn' is inside of a different universe from this one ('mv:define-lang.org:child' located at 'lib') ; two different universes cannot both occupy 'lib'""")
+    )
+
+
+def test_external_universe_not_configured_format(validate_project: ValidateProject):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project({"test.dfn": source})
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    formatted = diags[0].format(result.program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+            it has the position<other.example.com:other_universe:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        universe 'other.example.com:other_universe' is not configured as a dependency of this universe (my.domain.com:my_lib); add it to .define/deps/local.defcl""")
+    )
+
+
+def test_standard_definition_not_found_format():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<standard:/missing>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.StandardDefinitionNotFoundDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 3, column 20
+            it has the position<standard:/missing>.
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        the standard universe does not define 'position<standard:/missing>'""")
+
+
+def test_unreferenced_position_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<unused>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 5, column 20
+            define the position<unused>.
+                       ^^^^^^^^^^^^^^^^
+        'position<unused>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'position<unused>'.""")
+    )
+
+
+def test_local_position_name_conflict_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<pos>.\n"
+        "        define the position<pos>.\n"
+        "        create a particle in position<pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 6, column 20
+            define the position<pos>.
+                       ^^^^^^^^^^^^^
+        duplicate local definition 'pos'; first defined on line 5""")
 
 
 def test_duplicate_definition_format():
@@ -486,12 +631,135 @@ def test_config_load_error_format_for_supplied_source_project(
     assert formatted == textwrap.dedent("""\
         line 3, column 29
             it has the position<other.example.com:other_universe:/target>.
-                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         an error occurred while loading the project configuration:
         File ".define/deps/local.defcl"
         Invalid configuration:
           - deps.local.universe_name: value is required
           - deps.local.path: value is required""")
+
+
+def test_external_universe_not_configured_format_for_supplied_source_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 3, column 29
+            it has the position<other.example.com:other_universe:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        universe 'other.example.com:other_universe' is not configured as a dependency of this universe (my.domain.com:my_lib); add it to .define/deps/local.defcl""")
+    )
+
+
+def test_no_project_root_format_for_supplied_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(
+        diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 3, column 29
+            it has the position<other.example.com:other_universe:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        universe 'other.example.com:other_universe' was not previously defined, so the compiler tried to load it from the filesystem. However, .define/project/config.defcl was not found.
+        For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
+    )
+
+
+def test_config_load_error_format_for_supplied_source_universe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    deps_path = tmp_path / ".define" / "deps" / "local.defcl"
+    deps_path.parent.mkdir(parents=True)
+    _ = deps_path.write_text(
+        "deps: {\n  local: [\n    {}\n  ]\n}\n", encoding="utf-8", newline="\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    assert len(program_result.all_diagnostics) == 1
+    diagnostic = program_result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ConfigLoadErrorDiagnostic)
+
+    formatted = diagnostic.format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 3, column 20
+            it has the position</target>.
+                       ^^^^^^^^^^^^^^^^^
+        an error occurred while loading the project configuration:
+        File ".define/deps/local.defcl"
+        Invalid configuration:
+          - deps.local.universe_name: value is required
+          - deps.local.path: value is required""")
+
+
+def test_no_project_root_for_definition_not_in_supplied_source_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the action</other>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = program_validator.validate_program_non_filesystem(source)
+    assert program_result.config_errors == []
+    diags = program_result.all_diagnostics
+    assert len(diags) == 1
+    assert isinstance(
+        diags[0], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic
+    )
+    formatted = diags[0].format(program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 3, column 20
+            it has the action</other>.
+                       ^^^^^^^^^^^^^^
+        'action</other>' is not defined in the supplied source, so the compiler tried to load it from the project. However, .define/project/config.defcl was not found.
+        For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
+    )
 
 
 def test_not_project_root_error_message_for_project_root(

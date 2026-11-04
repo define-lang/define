@@ -183,7 +183,7 @@ def test_wrong_operation_definition_type(
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 31
+    assert diagnostic.location.column == 21
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"
 

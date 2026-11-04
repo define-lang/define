@@ -44,12 +44,13 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
     all_diagnostics = result.all_diagnostics
     assert len(all_diagnostics) == 1
     assert isinstance(
-        all_diagnostics[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+        all_diagnostics[0],
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
     )
-    assert all_diagnostics[0].location.column == 31
+    assert all_diagnostics[0].location.column == 24
     assert all_diagnostics[0].location.file_path is None
     assert all_diagnostics[0].config_path == ".define/project/config.defcl"
-    assert all_diagnostics[0].universe == "my.domain.com:my_lib"
+    assert all_diagnostics[0].definition_name == "action</missing>"
     assert all_diagnostics[0].location.line == 5
 
 
@@ -379,7 +380,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
         all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
     assert all_diagnostics[0].location.line == 2
-    assert all_diagnostics[0].location.column == 34
+    assert all_diagnostics[0].location.column == 25
     assert all_diagnostics[0].location.file_path == PurePosixPath("initialize.dfn")
     assert all_diagnostics[0].file_path == "child.dfn"
     assert all_diagnostics[0].definition_name == "position<my.domain.com:my_lib:/child>"
@@ -387,7 +388,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
         all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
     assert all_diagnostics[1].location.line == 2
-    assert all_diagnostics[1].location.column == 34
+    assert all_diagnostics[1].location.column == 25
     assert all_diagnostics[1].location.file_path == PurePosixPath("cleanup.dfn")
     assert all_diagnostics[1].file_path == "child.dfn"
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
