@@ -313,14 +313,10 @@ class ActionDefinitionValidator:
         )
         self._destruction_contracts.extend(result.destruction_contracts)
 
-    def _analyze_statements(
-        self,
-        action_statements: ast.ActionStatementsBlock,
-        scope: scope_tracker.PositionScopeTracker,
-    ):
+    def _analyze_statements(self, scope: scope_tracker.PositionScopeTracker):
         validity_iter = iter(self._particle_statement_validity)
         looked_at_validity_iter = iter(self._looked_at_position_validity)
-        for stmt in action_statements.statements:
+        for stmt in self._definition.action_statements.statements:
             match stmt:
                 case ast.ValueSettingStatement():
                     validity = next(validity_iter)
@@ -790,7 +786,7 @@ class ActionDefinitionValidator:
             )
 
         scope.enter_child_scope()
-        self._analyze_statements(self._definition.action_statements, scope)
+        self._analyze_statements(scope)
         self._check_unconsumed_action_interfaces()
 
         guaranteed_destruction = (

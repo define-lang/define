@@ -1,0 +1,122 @@
+id: self-method-no-self-argument
+snapshots:
+  "class Contract:\n    def occupancy_requirements_in_caller(self, chain):\n        return self._requirements_in_caller(self.occupancy_requirements, chain)\n\n    def _requirements_in_caller(self, requirements, chain):\n        return requirements\n":
+    labels:
+    - source: self._requirements_in_caller(self.occupancy_requirements, chain)
+      style: primary
+      start: 86
+      end: 150
+    - source: self._requirements_in_caller
+      style: secondary
+      start: 86
+      end: 114
+    - source: self.occupancy_requirements
+      style: secondary
+      start: 115
+      end: 142
+    - source: (self.occupancy_requirements, chain)
+      style: secondary
+      start: 114
+      end: 150
+  "self._validate(definition, views=self._views)\n":
+    labels:
+    - source: self._validate(definition, views=self._views)
+      style: primary
+      start: 0
+      end: 45
+    - source: self._validate
+      style: secondary
+      start: 0
+      end: 14
+    - source: self._views
+      style: secondary
+      start: 33
+      end: 44
+    - source: views=self._views
+      style: secondary
+      start: 27
+      end: 44
+    - source: (definition, views=self._views)
+      style: secondary
+      start: 14
+      end: 45
+  "self._validate(self)\n":
+    labels:
+    - source: self._validate(self)
+      style: primary
+      start: 0
+      end: 20
+    - source: self._validate
+      style: secondary
+      start: 0
+      end: 14
+    - source: self
+      style: secondary
+      start: 15
+      end: 19
+    - source: (self)
+      style: secondary
+      start: 14
+      end: 20
+  "self._validate(self._definition)\n":
+    labels:
+    - source: self._validate(self._definition)
+      style: primary
+      start: 0
+      end: 32
+    - source: self._validate
+      style: secondary
+      start: 0
+      end: 14
+    - source: self._definition
+      style: secondary
+      start: 15
+      end: 31
+    - source: (self._definition)
+      style: secondary
+      start: 14
+      end: 32
+  "self._validate(self._definition.views)\n":
+    labels:
+    - source: self._validate(self._definition.views)
+      style: primary
+      start: 0
+      end: 38
+    - source: self._validate
+      style: secondary
+      start: 0
+      end: 14
+    - source: self._definition.views
+      style: secondary
+      start: 15
+      end: 37
+    - source: (self._definition.views)
+      style: secondary
+      start: 14
+      end: 38
+  "self.validate(\n    self._definition,\n    scope,\n)\n":
+    labels:
+    - source: |-
+        self.validate(
+            self._definition,
+            scope,
+        )
+      style: primary
+      start: 0
+      end: 49
+    - source: self.validate
+      style: secondary
+      start: 0
+      end: 13
+    - source: self._definition
+      style: secondary
+      start: 19
+      end: 35
+    - source: |-
+        (
+            self._definition,
+            scope,
+        )
+      style: secondary
+      start: 13
+      end: 49

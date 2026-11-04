@@ -198,11 +198,9 @@ class _Walk:
     def walk(self) -> WalkedDestruction:
         """Find what destroying the root destroys and that this action knows about."""
         walked = WalkedDestruction()
+        root = self._root
         self._add_particle(
-            self._root.position,
-            self._root.particle,
-            self._root.position_in_child_state,
-            walked,
+            root.position, root.particle, root.position_in_child_state, walked
         )
         return walked
 

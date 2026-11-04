@@ -121,11 +121,12 @@ class ReferenceGraphValidator:
                     )
                 case _:
                     pass
+        entry_action = self._entry_action
         if (
-            self._entry_action is not None
+            entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
         ):
-            self._validate_entry_action_requirements(self._entry_action)
+            self._validate_entry_action_requirements(entry_action)
         return ReferenceGraphValidationResult(
             codegen_input=codegen_input.CodegenInput(
                 definition_order=definition_order,

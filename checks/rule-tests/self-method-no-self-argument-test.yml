@@ -1,0 +1,45 @@
+id: self-method-no-self-argument
+valid:
+  - |
+    self._validate(definition)
+  - |
+    self._assign(target, self._expand(value))
+  - |
+    self._remove(particle, self._by_particle[particle])
+  - |
+    helper(self._definition)
+  - |
+    self._tracker.record(self._definition)
+  - |
+    other.validate(self)
+  - |
+    self._validate(selfish)
+  - |
+    class Contract:
+        def occupancy_requirements_in_caller(self, chain):
+            return self._requirements_in_caller(self.occupancy_requirements, chain)
+
+        @staticmethod
+        def _requirements_in_caller(requirements, chain):
+            return requirements
+invalid:
+  - |
+    self._validate(self._definition)
+  - |
+    self._validate(self._definition.views)
+  - |
+    self._validate(self)
+  - |
+    self._validate(definition, views=self._views)
+  - |
+    self.validate(
+        self._definition,
+        scope,
+    )
+  - |
+    class Contract:
+        def occupancy_requirements_in_caller(self, chain):
+            return self._requirements_in_caller(self.occupancy_requirements, chain)
+
+        def _requirements_in_caller(self, requirements, chain):
+            return requirements

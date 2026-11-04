@@ -77,27 +77,27 @@ class DefinitionStructuralValidator:
         )
 
         match self._definition:
-            case ast.ActionDefinition():
-                self._validate_action_definition(self._definition)
-            case ast.PositionDefinition():
+            case ast.ActionDefinition() as definition:
+                self._validate_action_definition(definition)
+            case ast.PositionDefinition() as definition:
                 self._validate_quality_assignment_block(
-                    self._definition.quality_assignment_block
+                    definition.quality_assignment_block
                 )
-            case ast.PotentialLiteralDefinition():
-                encoding = self._definition.encoding
+            case ast.PotentialLiteralDefinition() as definition:
+                encoding = definition.encoding
                 encoding_diagnostics = name_validators.validate_typed_name(
-                    encoding, self._definition
+                    encoding, definition
                 )
                 self._diagnostics.extend(encoding_diagnostics)
                 if not encoding_diagnostics:
                     self._process_reference(encoding)
-            case ast.OperationDefinition():
-                self._validate_operation_definition(self._definition)
-            case ast.LogicalOperationDefinition():
-                self._validate_logical_operation_definition(self._definition)
-            case ast.ValueDefinition():
+            case ast.OperationDefinition() as definition:
+                self._validate_operation_definition(definition)
+            case ast.LogicalOperationDefinition() as definition:
+                self._validate_logical_operation_definition(definition)
+            case ast.ValueDefinition() as definition:
                 self._validate_logical_operation_support_statements(
-                    self._definition.logical_operation_support_statements
+                    definition.logical_operation_support_statements
                 )
             case _:
                 pass

@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterator
 
     from define.compiler import ast
 
@@ -118,14 +118,18 @@ class ReferenceGraph:
         Only definitions reachable from ``starting_definition`` are yielded.
         """
         starting_name = starting_definition.typed_name.source_typed_name
-        for definition_name in self._names_in_postorder([starting_name]):
+        for definition_name in self._names_in_postorder(starting_name, set()):
             yield self._definition_by_name[definition_name]
 
     def dfs_postorder_all(self) -> Iterator[ast.GlobalDefinition]:
         """Yield all referenced definitions before definitions that reference them."""
-        for definition_name in self._names_in_postorder(self._references_by_name):
-            if definition_name in self._definition_by_name:
-                yield self._definition_by_name[definition_name]
+        visited_names: set[str] = set()
+        for starting_name in self._references_by_name:
+            for definition_name in self._names_in_postorder(
+                starting_name, visited_names
+            ):
+                if definition_name in self._definition_by_name:
+                    yield self._definition_by_name[definition_name]
 
     def referenced_definitions(
         self, definition: ast.GlobalDefinition
@@ -201,32 +205,31 @@ class ReferenceGraph:
     # Algorithm: Iterative depth-first search in post-order. The stack replaces
     # the call stack so a long reference chain cannot exceed Python's recursion
     # limit.
-    def _names_in_postorder(self, starting_names: Iterable[str]) -> Iterator[str]:
-        """Yield reachable names in depth-first post-order."""
-        visited_names: set[str] = set()
-        for starting_name in starting_names:
-            if starting_name in visited_names:
-                continue
-
-            visited_names.add(starting_name)
-            stack = [(starting_name, iter(self._references_by_name[starting_name]))]
-            while stack:
-                current_name, remaining_referenced_names = stack[-1]
-                for referenced_name in remaining_referenced_names:
-                    if referenced_name not in visited_names:
-                        visited_names.add(referenced_name)
-                        stack.append(
-                            (
-                                referenced_name,
-                                iter(self._references_by_name[referenced_name]),
-                            )
+    def _names_in_postorder(
+        self, starting_name: str, visited_names: set[str]
+    ) -> Iterator[str]:
+        """Yield the names reachable from ``starting_name`` that are not in ``visited_names``, in depth-first post-order, adding each to ``visited_names``."""
+        if starting_name in visited_names:
+            return
+        visited_names.add(starting_name)
+        stack = [(starting_name, iter(self._references_by_name[starting_name]))]
+        while stack:
+            current_name, remaining_referenced_names = stack[-1]
+            for referenced_name in remaining_referenced_names:
+                if referenced_name not in visited_names:
+                    visited_names.add(referenced_name)
+                    stack.append(
+                        (
+                            referenced_name,
+                            iter(self._references_by_name[referenced_name]),
                         )
-                        break
-                else:
-                    # All references from this definition have been yielded, so
-                    # the definition itself is ready.
-                    _ = stack.pop()
-                    yield current_name
+                    )
+                    break
+            else:
+                # All references from this definition have been yielded, so
+                # the definition itself is ready.
+                _ = stack.pop()
+                yield current_name
 
 
 # Algorithm: Predecessor-chain path reconstruction for breadth-first search.
