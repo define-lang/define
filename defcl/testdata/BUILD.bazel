@@ -14,7 +14,10 @@ filegroup(
         "//defcl/testdata/invalid:invalid_files",
         "//defcl/testdata/valid:valid_files",
     ],
-    visibility = ["//defcl/python:__subpackages__"],
+    visibility = [
+        "//defcl/python:__subpackages__",
+        "//defcl/rust:__pkg__",
+    ],
 )
 
 check_build_file()
