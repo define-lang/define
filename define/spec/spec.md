@@ -1791,10 +1791,6 @@ logical_operation_view_definition =
 The compiler throws an error if a program uses a logical operation that the
 compiler does not know about the existence of.
 
-The compiler must also know how to translate every literal that a Logical
-Operation Execution Statement could look at for that logical operation. This
-limits what literal types are valid for logical operations.
-
 ## Value Operations
 
 Proposals:
@@ -2079,6 +2075,11 @@ with a Logical Operation Support Statement:
   quality that supports the logical operation with `it may be read.`
 - A view looked at by an output view of the logical operation must have a value
   quality that supports the logical operation with `it may be written.`
+
+The Operation Argument Statements of a Logical Operation Execution Statement may
+only look at views. That is, for a Logical Operation Execution Statement,
+`( position_reference | literal )` in `operation_argument_statement` is replaced
+by `local_view_name`.
 
 ```ebnf
 logical_operation_name = "logical_operation", "<", global_name, ">" ;

@@ -11,8 +11,8 @@ use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use terminals::{
     BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
-    EXECUTE_THE_ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION, OPERATION, SPACE_LOOKING_AT, VIEW,
-    WITH,
+    EXECUTE_THE_ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START, OPERATION,
+    SPACE_LOOKING_AT, VIEW, WITH,
 };
 
 /// The one name type that a Value Operation Execution Statement allows.
@@ -174,7 +174,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             Self::expected_operation_or_logical_operation,
         )?;
         let (arguments, end) = self.parse_operation_arguments_block(
-            Self::parse_operation_argument_statement_in_operation,
+            Self::parse_logical_operation_argument_statement,
             start,
             indentation,
             fqun,
@@ -290,6 +290,34 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .ast
             .operation_argument_statement_of_local_typed_name_reference_or_literal(
+                location, view, looking_at,
+            )?)
+    }
+
+    /// Parses an operation argument statement in a Logical Operation Execution
+    /// Statement through the end of its line. Its view may only look at a
+    /// view.
+    ///
+    /// ```ebnf
+    /// logical_operation_argument_statement =
+    ///     operation_argument_view, local_view_name, terminator ;
+    /// ```
+    fn parse_logical_operation_argument_statement(
+        &mut self,
+        _fqun: &FqunWithCanonicalText<'py, 'source>,
+    ) -> ParseResult<ast::OperationArgumentStatementOfLocalTypedNameReference<'py>> {
+        let (start, view) =
+            self.parse_operation_argument_view(Self::expected_view_in_logical_operation)?;
+        // What the view looks at is not a view.
+        if !self.scanner.next_bytes_are(VIEW) {
+            return Err(self.expected_view_in_logical_operation());
+        }
+        let looking_at = self.parse_view_reference()?;
+        let end = self.parse_statement_terminator()?;
+        let location = self.ast.location(start, end)?;
+        Ok(self
+            .ast
+            .operation_argument_statement_of_local_typed_name_reference(
                 location, view, looking_at,
             )?)
     }
@@ -416,6 +444,24 @@ impl<'py, 'source> Parser<'py, 'source> {
         let start = self.scanner.position;
         self.errors
             .expected_view_or_literal(start, self.scanner.end_of_word())
+    }
+
+    /// Returns the error for what an operation argument's view in a Logical
+    /// Operation Execution Statement looks at, at the scanner's position, that
+    /// is not `view`.
+    #[cold]
+    #[inline(never)]
+    fn expected_view_in_logical_operation(&self) -> ParseError {
+        let is_literal = self
+            .scanner
+            .rest_after(LITERAL)
+            .is_some_and(|rest| rest.first() == Some(&NAME_CONTENT_START));
+        if !is_literal {
+            return self.expected_view();
+        }
+        let start = self.scanner.position;
+        self.errors
+            .literal_in_logical_operation_execution(start, self.scanner.end_of_word())
     }
 
     /// Returns the error for a statement at the scanner's position in an

@@ -35,7 +35,7 @@ def test_logical_operation_execution(parse: Parse):
             _OPERATION_PREFIX
             + "        execute the logical_operation</and> {\n"
             + "            with view<a> looking at view<left>.\n"
-            + '            with view<b> looking at literal</number>"12".\n'
+            + "            with view<b> looking at view<right>.\n"
             + "        }\n"
             + _OPERATION_SUFFIX
         )
@@ -48,22 +48,18 @@ def test_logical_operation_execution(parse: Parse):
     assert logical_operation.location == ast.SourceLocation(
         line=3, column=21, end_line=3, end_column=43
     )
-    [view_argument, literal_argument] = statement.arguments
-    assert view_argument.view.name_type == name_types.NameType.VIEW
-    assert view_argument.view.name_content.name == "a"
-    looking_at_view = view_argument.looking_at
-    assert isinstance(looking_at_view, ast.LocalTypedNameReference)
-    assert looking_at_view.name_type == name_types.NameType.VIEW
-    assert looking_at_view.name_content.name == "left"
-    assert view_argument.location == ast.SourceLocation(
+    [first_argument, second_argument] = statement.arguments
+    assert first_argument.view.name_type == name_types.NameType.VIEW
+    assert first_argument.view.name_content.name == "a"
+    assert first_argument.looking_at.name_type == name_types.NameType.VIEW
+    assert first_argument.looking_at.name_content.name == "left"
+    assert first_argument.location == ast.SourceLocation(
         line=4, column=13, end_line=4, end_column=47
     )
-    assert literal_argument.view.name_content.name == "b"
-    looking_at_literal = literal_argument.looking_at
-    assert isinstance(looking_at_literal, ast.Literal)
-    assert looking_at_literal.content == "12"
-    assert literal_argument.location == ast.SourceLocation(
-        line=5, column=13, end_line=5, end_column=57
+    assert second_argument.view.name_content.name == "b"
+    assert second_argument.looking_at.name_content.name == "right"
+    assert second_argument.location == ast.SourceLocation(
+        line=5, column=13, end_line=5, end_column=48
     )
     assert statement.location == ast.SourceLocation(
         line=3, column=9, end_line=6, end_column=9
@@ -114,7 +110,7 @@ def test_among_other_operation_statements(parse: Parse):
 
 
 def test_argument_cannot_look_at_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
+    with pytest.raises(parser_exceptions.ExpectedView) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the logical_operation</and> {\n"
@@ -238,6 +234,130 @@ def test_value_operation_name_type_cannot_be_view(parse: Parse):
     assert error.value.location.column == 21
     assert error.value.location.end_line == 3
     assert error.value.location.end_column == 24
+
+
+def test_logical_operation_disallows_literal(parse: Parse):
+    with pytest.raises(parser_exceptions.LiteralInLogicalOperationExecution) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + '            with view<a> looking at literal</number>"12".\n'
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 43
+
+
+def test_logical_operation_word_starting_with_literal(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedView) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> looking at literally<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 45
+
+
+def test_logical_operation_looks_at_non_word(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedView) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + '            with view<a> looking at "12".\n'
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 37
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 40
+
+
+def test_argument_requires_looking_at(parse: Parse):
+    with pytest.raises(parser_exceptions.InvalidOperationArgumentSyntax) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> view<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 26
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 29
+
+
+def test_argument_source_requires_local_view_name(parse: Parse):
+    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> looking at view</p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 42
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 43
+
+
+def test_argument_followed_by_text(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingTerminator) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> looking at view<p> extra.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 44
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 44
+
+
+def test_carriage_return_in_comment_before_first_argument(parse: Parse):
+    with pytest.raises(parser_exceptions.CarriageReturnError) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            # note\r\n"
+            + "            with view<a> looking at view<p>.\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.char == "\r"
+    assert error.value.location.line == 4
+    assert error.value.location.column == 19
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 19
+
+
+def test_carriage_return_in_comment_after_argument(parse: Parse):
+    with pytest.raises(parser_exceptions.CarriageReturnError) as error:
+        parse(
+            _OPERATION_PREFIX
+            + "        execute the logical_operation</and> {\n"
+            + "            with view<a> looking at view<p>.\n"
+            + "            # note\r\n"
+            + "        }\n"
+            + _OPERATION_SUFFIX
+        )
+    assert error.value.char == "\r"
+    assert error.value.location.line == 5
+    assert error.value.location.column == 19
+    assert error.value.location.end_line == 5
+    assert error.value.location.end_column == 19
 
 
 def test_encoding_operation_disallows_logical_operation(parse: Parse):

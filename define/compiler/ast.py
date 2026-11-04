@@ -711,7 +711,7 @@ class LogicalOperationExecutionStatement(ASTNode):
     """Represents an 'execute the logical_operation<...>' statement."""
 
     logical_operation: GlobalTypedNameReference
-    arguments: tuple[OperationArgumentStatement[LocalTypedNameReference | Literal], ...]
+    arguments: tuple[OperationArgumentStatement[LocalTypedNameReference], ...]
 
 
 class EncodingOperationExecutionStatement(ASTNode):

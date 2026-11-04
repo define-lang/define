@@ -212,7 +212,6 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
     ):
-        view_arguments = _view_arguments(statement)
         executed = self._arguments_validator.get_executed_logical_operation(statement)
         if executed is None:
             self._mark_views_with_unknown_use(statement.arguments)
@@ -220,7 +219,8 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         operation_name = statement.logical_operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
         )
-        for argument, looking_at in view_arguments:
+        for argument in statement.arguments:
+            looking_at = argument.looking_at
             looked_at_view = self._definition.get_view(looking_at.source_typed_name)
             # Structural validation reports undefined views.
             if looked_at_view is None:
@@ -350,23 +350,6 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                     value_name=value_name,
                 )
             )
-
-
-def _view_arguments(
-    statement: ast.LogicalOperationExecutionStatement,
-) -> list[
-    tuple[ast.OperationArgumentStatement[ast.LookedAt], ast.LocalTypedNameReference]
-]:
-    """Return each of the statement's arguments with the view it looks at."""
-    view_arguments: list[
-        tuple[ast.OperationArgumentStatement[ast.LookedAt], ast.LocalTypedNameReference]
-    ] = []
-    for argument in statement.arguments:
-        looking_at = argument.looking_at
-        if isinstance(looking_at, ast.Literal):
-            raise NotImplementedError("Logical operations cannot look at literals yet.")
-        view_arguments.append((argument, looking_at))
-    return view_arguments
 
 
 class ValueOperationDefinitionValidator(

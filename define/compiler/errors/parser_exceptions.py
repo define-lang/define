@@ -456,6 +456,15 @@ class InvalidViewDirectionStatementOrder(DefineTokenError):
     )
 
 
+class LiteralInLogicalOperationExecution(DefineTokenError):
+    """Wrote a literal where a Logical Operation Execution Statement's view must look at a view."""
+
+    message_format: ClassVar[str] = (
+        "A logical operation may not look at a literal. Pass the literal to a"
+        " view of a value operation that executes the logical operation instead."
+    )
+
+
 class MissingActionDefinitionSyntax(DefineTokenError):
     """Forgot to write 'it happens when' in an Action Definition Block."""
 

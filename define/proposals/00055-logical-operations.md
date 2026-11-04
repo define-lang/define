@@ -294,13 +294,14 @@ Logical operations _must_ have at least one output view. (That rule is not true
 of other operation types, which could be just sending something out and
 receiving nothing in return.)
 
-### Literals in Logical Operations Executions
+#### No Literals in Logical Operation Execution Statements
 
-For now, the compiler must be aware of every literal type used in a logical
-operation's Operation Arguments Block and know how to translate it for that
-logical operation. In the future, we will have a way to convert literals into
-something a logical operation can use, more generically, allowing for people to
-create and use their own literals.
+A Logical Operation Execution Statement may only look at views. It may not look
+at a literal. If programs need to use literals with a logical operation, they
+can pass the literal to a value operation that wraps that logical operation.
+That way, the compiler always has some value quality on the target of a literal,
+so that it knows how to translate it into a value. (Logical operations have no
+value qualities, so we don't know how to translate literals on them.)
 
 ### Value Qualities Declare What Logical Operations They Support
 
@@ -494,7 +495,9 @@ define the operation<mv:example.com:example:/saturating_subtract> {
                 it has the value<standard:/number/integer>.
             }
         }
-        execute the logical_operation<standard:/number/minimum> {
+        # Logical operations may not look at literals, so this passes 0
+        # through a Value Operation.
+        execute the operation<standard:/number/integer/minimum> {
             with view<a> looking at view<negated_difference>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<smaller>.
@@ -676,9 +679,6 @@ define the potential value<standard:/number/natural> {
     it supports the logical_operation<standard:/number/negate> {
         it may be read.
     }
-    it supports the logical_operation<standard:/number/power> {
-        it may be written.
-    }
 }
 
 define the potential value<standard:/number/integer> {
@@ -700,9 +700,6 @@ define the potential value<standard:/number/integer> {
     it supports the logical_operation<standard:/number/negate> {
         it may be read.
         it may be written.
-    }
-    it supports the logical_operation<standard:/number/power> {
-        it may be read.
     }
 }
 
@@ -794,7 +791,7 @@ define the operation<standard:/number/natural/increment> {
                 it has the value<standard:/number/natural>.
             }
         }
-        execute the logical_operation<standard:/number/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at view<value>.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<sum>.
@@ -904,11 +901,17 @@ define the operation<standard:/number/integer/square> {
         }
     }
 
-   it does {
+    it does {
+        define the view<copy_of_a> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        set the value of view<copy_of_a> from view<a>.
         # The square of any integer is never negative, so it fits in a natural.
-        execute the logical_operation<standard:/number/power> {
+        execute the logical_operation<standard:/number/multiply> {
             with view<a> looking at view<a>.
-            with view<b> looking at literal<standard:/number>"2".
+            with view<b> looking at view<copy_of_a>.
             with view<result> looking at view<result>.
         }
     }
@@ -951,7 +954,7 @@ define the operation<standard:/number/integer/has_opposite_signs> {
             with view<b> looking at view<b>.
             with view<result> looking at view<product>.
         }
-        execute the logical_operation<standard:/number/less_than> {
+        execute the operation<standard:/number/integer/less_than> {
             with view<a> looking at view<product>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<result>.
@@ -1122,6 +1125,12 @@ define the operation<mv:example.com:example:/bad_next_user_id> {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
     define the view<result> {
         it is written.
         it may only contain particles where {
@@ -1134,7 +1143,7 @@ define the operation<mv:example.com:example:/bad_next_user_id> {
         # logical_operation<standard:/number/add>.
         execute the logical_operation<standard:/number/add> {
             with view<a> looking at view<a>.
-            with view<b> looking at literal<standard:/number>"1".
+            with view<b> looking at view<b>.
             with view<result> looking at view<result>.
         }
     }
@@ -1203,7 +1212,7 @@ define the operation<mv:example.com:example:/bad_read_after_write> {
                 it has the value<standard:/number/natural>.
             }
         }
-        execute the logical_operation<standard:/number/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at view<value>.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<sum>.
@@ -1211,7 +1220,7 @@ define the operation<mv:example.com:example:/bad_read_after_write> {
         set the value of view<value> from view<sum>.
         # Error: view<value> was written by the statement above, so reading it
         # here could mean either value.
-        execute the logical_operation<standard:/number/add> {
+        execute the operation<standard:/number/natural/add> {
             with view<a> looking at view<value>.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<result>.
@@ -1245,6 +1254,12 @@ define the operation<mv:example.com:example:/bad_square> {
 }
 
 define the operation<mv:example.com:example:/bad_reference> {
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
     define the view<result> {
         it is written.
         it may only contain particles where {
@@ -1257,6 +1272,32 @@ define the operation<mv:example.com:example:/bad_reference> {
             # Error: view<result> is output-only and nothing has written to it
             # yet.
             with view<a> looking at view<result>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<result>.
+        }
+    }
+}
+
+define the operation<mv:example.com:example:/bad_literal> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/add> {
+            with view<a> looking at view<a>.
+            # Error: a logical operation may not look at a literal. Pass the
+            # literal to a view of operation<standard:/number/natural/add>
+            # instead.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<result>.
         }
@@ -1591,6 +1632,19 @@ unnatural to do so.
 We ban literals in View Setting Statements because they duplicate what you would
 otherwise do with a Value Setting Statement outside of a Value Operation, and I
 couldn't think of a legitimate reason for them to exist.
+
+### Why No Literals in Logical Operations?
+
+Originally, this proposal specified that Logical Operations _could_ take
+literals, but didn't specify how they would actually be translated into values.
+Instead of leaving that hole, I decided to ban literals for now, and handle them
+in the future if we discover that we really need them on logical operations for
+some reason.
+
+It is a bit awkward and confusing to have to use a value operation wrapper when
+you want to pass a literal, because it provides two ways to do the same thing
+inside of a Value Operation Statements Block. (In an Action Statements Block
+there's no conflict because you can't directly call logical operations.)
 
 ### Why Value Qualities Declare Their Logical Operations
 
