@@ -47,7 +47,7 @@ def test_encoding_operation_definition(parse: Parse):
         line=1, column=12, end_line=1, end_column=61
     )
     assert definition.views == ()
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.ComputerOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=39
@@ -98,7 +98,7 @@ def test_encoding_operation_execution_without_arguments(parse: Parse):
             + _ENCODING_OPERATION_SUFFIX
         )
     )
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
     assert statement.operation.name_content.fqun is None
@@ -123,7 +123,7 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
             + _ENCODING_OPERATION_SUFFIX
         )
     )
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
     fqun = statement.operation.name_content.fqun
@@ -208,7 +208,7 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     assert view.location == ast.SourceLocation(
         line=4, column=5, end_line=14, end_column=5
     )
-    [first, second, third] = definition.operation_statements
+    [first, second, third] = definition.operation_statements.statements
     assert isinstance(first, ast.OperationExecutionStatement)
     assert first.operation.name_content.path.name == "/first"
     assert first.location == ast.SourceLocation(
@@ -415,7 +415,7 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
     ]
     assert result.program is not None
     definition = _only_encoding_operation(result.program)
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.ComputerOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
         line=3, column=9, end_line=3, end_column=38

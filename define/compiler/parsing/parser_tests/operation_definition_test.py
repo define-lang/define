@@ -30,8 +30,11 @@ def test_operation_definition(parse: Parse):
         line=1, column=12, end_line=1, end_column=52
     )
     assert definition.views == ()
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert definition.operation_statements.location == ast.SourceLocation(
+        line=2, column=5, end_line=4, end_column=5
+    )
     assert definition.location == ast.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
@@ -110,7 +113,7 @@ def test_comments_and_blank_lines(parse: Parse):
     assert view.location == ast.SourceLocation(
         line=4, column=5, end_line=14, end_column=5
     )
-    [statement] = definition.operation_statements
+    [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
         line=18, column=9, end_line=18, end_column=39

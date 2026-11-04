@@ -156,7 +156,7 @@ class DefinitionStructuralValidator:
         def validate_looked_at(looking_at: ast.LocalTypedNameReference) -> bool:
             return self._validate_looked_at_view(looking_at, views, unreferenced_views)
 
-        for statement in definition.operation_statements:
+        for statement in definition.operation_statements.statements:
             match statement:
                 case ast.LocalViewDefinition():
                     self._validate_view_definition(
@@ -183,7 +183,7 @@ class DefinitionStructuralValidator:
         if not has_execution:
             self._diagnostics.append(
                 diagnostics.OperationWithoutExecutionDiagnostic(
-                    location=definition.typed_name.location
+                    location=definition.operation_statements.location
                 )
             )
         for view in unreferenced_views.values():

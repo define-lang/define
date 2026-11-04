@@ -264,9 +264,9 @@ def test_local_view_error_messages():
     ]
     assert formatted == [
         textwrap.dedent("""\
-        line 1, column 12
-            define the operation<my.domain.com:my_lib:/test> {
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        line 2, column 5
+            it does {
+            ^^^^^^^^^
         a value operation must execute at least one logical operation or value operation"""),
         textwrap.dedent("""\
         line 3, column 25

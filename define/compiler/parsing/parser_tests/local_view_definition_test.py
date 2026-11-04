@@ -26,7 +26,7 @@ def _operation_statements(
 ) -> tuple[ast.OperationStatement, ...]:
     [definition] = program.definitions
     assert isinstance(definition, ast.ValueOperationDefinition)
-    return definition.operation_statements
+    return definition.operation_statements.statements
 
 
 def test_local_view_definition(parse: Parse):

@@ -196,7 +196,7 @@ def test_without_execution(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.OperationWithoutExecutionDiagnostic(
-            location=ast.SourceLocation(line=3, column=12, end_line=3, end_column=48)
+            location=ast.SourceLocation(line=4, column=5, end_line=10, end_column=5)
         ),
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=ast.SourceLocation(line=5, column=25, end_line=5, end_column=30),

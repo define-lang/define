@@ -161,7 +161,7 @@ class OperationDefinition(ExecutableDefinition[InterfaceViewDefinition]):
     """Base class for Value Operation and Encoding Operation definitions."""
 
     definition_name_type: ClassVar[name_types.NameType]
-    operation_statements: tuple[OperationStatement, ...]
+    operation_statements: OperationStatementsBlock
 
 
 class ValueOperationDefinition(OperationDefinition):
@@ -736,6 +736,12 @@ type OperationStatement = (
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement
 )
+
+
+class OperationStatementsBlock(ASTNode):
+    """Represents an Operation Statements Block."""
+
+    statements: tuple[OperationStatement, ...]
 
 
 class QualityAssignmentStatement(ASTNode):

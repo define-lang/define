@@ -233,7 +233,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the operation statements block of an operation of `kind` at
     /// `line` in its operation definition block, whose content ends at
     /// `content_end` before it, and whose references take their default FQUN
-    /// from `fqun`, and returns its statements.
+    /// from `fqun`, and returns it.
     ///
     /// ```ebnf
     /// operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
@@ -245,7 +245,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         line: LineInBlock,
         content_end: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<NodeTuple<'py, ast::OperationStatement<'py>>> {
+    ) -> ParseResult<ast::OperationStatementsBlock<'py>> {
         match line {
             LineInBlock::Statement if self.scanner.next_bytes_are(IT_DOES) => {}
             LineInBlock::Statement => return Err(self.invalid_operation_definition_statement()),
@@ -296,8 +296,10 @@ impl<'py, 'source> Parser<'py, 'source> {
                 }
             }
         }
-        self.parse_block_close()?;
-        Ok(self.nodes.finish_tuple(statements)?)
+        let end = self.parse_block_close()?;
+        let statements = self.nodes.finish_tuple(statements)?;
+        let location = self.ast.location(start, end)?;
+        Ok(self.ast.operation_statements_block(location, statements)?)
     }
 
     /// Parses a statement in the operation statements block of an operation

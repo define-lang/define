@@ -68,7 +68,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
 
     def analyze(self) -> validation_result.PostorderValidationResult:
         """Validate the definition and return its validation result."""
-        for statement in self._definition.operation_statements:
+        for statement in self._definition.operation_statements.statements:
             match statement:
                 case ast.LocalViewDefinition():
                     raise NotImplementedError(
