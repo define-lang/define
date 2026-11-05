@@ -1,0 +1,54 @@
+# A path segment's package gets underscores until its name differs from every function in its parent package, even when the first underscore also collides.
+define the encoding_operation<my.domain.com:my_lib:/if> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/natural/ascii/add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/if_> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/natural/ascii/add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the potential position<my.domain.com:my_lib:/if/child>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</if/child>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</if/child>.
+    }
+}

@@ -43,8 +43,8 @@ def test_directory_for_driver_test():
 def test_directory_for_codegen_test():
     directory = path_resolver.directory_for(
         Path("define/compiler/codegen/generator_test.py"),
-        "test_constructor_entry_point_adds_no_diagnostics",
+        "test_parallel_generation_matches_single_worker",
     )
     assert directory == Path(
-        "define/testdata/codegen/generator/constructor_entry_point_adds_no_diagnostics"
+        "define/testdata/codegen/generator/parallel_generation_matches_single_worker"
     )

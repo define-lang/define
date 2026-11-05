@@ -28,9 +28,6 @@ def generator_integration_tests(
             size = "small",
             args = [test_module],
             data = ["//define/testdata/codegen/%s:%s" % (category, testdata_target)],
-            env = {
-                "DEFINE_CODEGEN_TESTDATA_CATEGORY": category,
-            },
             deps = deps,
         )
         tests.append(":" + test_name)

@@ -3,24 +3,26 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler import driver
-from define.compiler.codegen import generated_program_runner, test_helpers
+from define.compiler.codegen import (
+    generated_program_runner,
+    test_helpers,
+    testdata_cases,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _TEST_CASE_DIRS = test_helpers.codegen_test_cases()
 
 
-def _compile(generated_dir: Path):
+def _compile(case_dir: Path, generated_dir: Path):
     generated_dir.mkdir()
-    result = driver.Driver().compile_program(
-        Path("test.dfn"),
-        generated_dir,
-        trace_operations=True,
-    )
+    result = testdata_cases.compile_case(case_dir, generated_dir, trace_operations=True)
     assert_no_errors(result)
 
 
@@ -33,14 +35,14 @@ def test_test_cases_not_empty():
 )
 def test_generated_tracing_code_matches_expected_artifacts(
     test_case_dir: Path,
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    request: pytest.FixtureRequest,
 ):
-    monkeypatch.chdir(test_case_dir.resolve())
+    test_helpers.mark_nondeterministic_definition_order(request, test_case_dir)
     generated_dir = tmp_path / "generated"
-    _compile(generated_dir)
+    _compile(test_case_dir, generated_dir)
     test_helpers.assert_generated_directory_matches(
-        Path("expected_trace"), generated_dir
+        test_case_dir / "expected_trace", generated_dir
     )
 
 
@@ -49,15 +51,15 @@ def test_generated_tracing_code_matches_expected_artifacts(
 )
 def test_runtime_operation_order_matches_expected_trace(
     test_case_dir: Path,
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    monkeypatch.chdir(test_case_dir.resolve())
     trace_file = tmp_path / "operation_trace.txt"
     runtime_result = generated_program_runner.run_generated_program(
-        Path("expected_trace"),
+        test_case_dir / "expected_trace",
         operation_trace_file=trace_file,
     )
     if runtime_result.returncode != 0:
         pytest.fail(runtime_result.stderr)
-    assert trace_file.read_bytes() == Path("operation_trace.txt").read_bytes()
+    assert (
+        trace_file.read_bytes() == (test_case_dir / "operation_trace.txt").read_bytes()
+    )

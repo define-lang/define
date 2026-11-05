@@ -1,0 +1,4 @@
+start.create(job)
+worker.create(item)
+start.destroy(job::/worker::item)
+start.destroy(job)

@@ -5,14 +5,12 @@ Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_
 
 from __future__ import annotations
 
-import contextlib
 import shutil
 import sys
 import tempfile
 from pathlib import Path
 
-from define.compiler import driver
-from define.compiler.codegen import generated_program_runner
+from define.compiler.codegen import generated_program_runner, testdata_cases
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CODEGEN_TESTDATA_ROOT = REPO_ROOT / "define/testdata/codegen"
@@ -27,19 +25,16 @@ def _compile_case(
     case_dir = expected_dir.parent
     with tempfile.TemporaryDirectory(dir=case_dir) as temporary_dir:
         regenerated_dir = Path(temporary_dir) / expected_dir.name
-        with contextlib.chdir(case_dir):
-            result = driver.Driver().compile_program(
-                Path("test.dfn"),
-                regenerated_dir,
-                trace_operations=trace_operations,
-            )
-            if result.has_errors():
-                print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
-                for exc in result.all_exceptions:
-                    print(f"    {exc}")
-                for diag in result.all_diagnostics:
-                    print(f"    {diag}")
-                return False
+        result = testdata_cases.compile_case(
+            case_dir, regenerated_dir, trace_operations=trace_operations
+        )
+        if result.has_errors():
+            print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
+            for exc in result.all_exceptions:
+                print(f"    {exc}")
+            for diag in result.all_diagnostics:
+                print(f"    {diag}")
+            return False
         if expected_dir.exists():
             shutil.rmtree(expected_dir)
         _ = regenerated_dir.replace(expected_dir)
@@ -99,9 +94,7 @@ def main(
     codegen_testdata_root: Path = CODEGEN_TESTDATA_ROOT,
 ):
     """Regenerate ordinary and traced expected output files."""
-    codegen_case_dirs = sorted(
-        test_file.parent for test_file in codegen_testdata_root.glob("*/*/test.dfn")
-    )
+    codegen_case_dirs = testdata_cases.case_directories(codegen_testdata_root)
     regenerated_codegen_case_count = 0
     regenerated_tracing_case_count = 0
     success = True

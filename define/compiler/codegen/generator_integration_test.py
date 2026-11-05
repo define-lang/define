@@ -2,8 +2,8 @@
 """Integration tests for code generation.
 
 Each test case is a category/case directory under the shared codegen testdata
-tree containing a test.dfn entry point, an expected/ directory with the expected
-generated files.
+tree containing a test.dfn entry point or a non-filesystem source.dfn, and an
+expected/ directory with the expected generated files.
 """
 
 from __future__ import annotations
@@ -13,8 +13,11 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import driver
-from define.compiler.codegen import generated_program_runner, test_helpers
+from define.compiler.codegen import (
+    generated_program_runner,
+    test_helpers,
+    testdata_cases,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST_CASES = test_helpers.codegen_test_cases()
@@ -29,14 +32,12 @@ def test_test_cases_not_empty():
     _TEST_CASES,
     ids=test_helpers.codegen_test_case_id,
 )
-def test_generates_expected_output(
-    test_case_dir: Path, monkeypatch: pytest.MonkeyPatch
-):
-    expected_dir = (test_case_dir / "expected").resolve()
+def test_generates_expected_output(test_case_dir: Path, request: pytest.FixtureRequest):
+    test_helpers.mark_nondeterministic_definition_order(request, test_case_dir)
+    expected_dir = test_case_dir / "expected"
 
-    monkeypatch.chdir(test_case_dir)
     output_dir = Path(tempfile.mkdtemp())
-    result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
+    result = testdata_cases.compile_case(test_case_dir, output_dir)
 
     assert_no_errors(result)
     test_helpers.assert_generated_directory_matches(expected_dir, output_dir)
