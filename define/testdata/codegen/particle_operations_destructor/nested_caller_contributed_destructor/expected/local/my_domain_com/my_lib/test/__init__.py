@@ -11,14 +11,14 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        outer = literal.LocalPosition[Never](
+        position_outer = literal.LocalPosition[Never](
             "position<outer>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer_destructor.OuterDestructorAction,
             ),
         )
-        outer.create_particle()
-        outer.particle.get_action(
+        position_outer.create_particle()
+        position_outer.particle.get_action(
             local.my_domain_com.my_lib.outer_destructor.OuterDestructorAction
         ).run()
-        outer.destroy_particle()
+        position_outer.destroy_particle()

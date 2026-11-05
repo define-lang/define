@@ -18,7 +18,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        temp = literal.LocalPosition[Never](
+        position_temp = literal.LocalPosition[Never](
             "position<temp>",
         )
         self.on_particle.get_position(
@@ -28,10 +28,10 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.destination.DestinationPosition
         ).move_particle_to(
-            temp
+            position_temp
         )
         literal.record_operation("test.move(/destination, temp)")
-        temp.move_particle_to(
+        position_temp.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.slot.SlotPosition
             )

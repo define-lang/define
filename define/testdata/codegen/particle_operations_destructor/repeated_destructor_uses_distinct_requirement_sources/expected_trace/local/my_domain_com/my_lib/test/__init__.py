@@ -16,27 +16,27 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first_source = literal.LocalPosition[Never](
+        position_first_source = literal.LocalPosition[Never](
             "position<first_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.marker.MarkerPosition,
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        second_source = literal.LocalPosition[Never](
+        position_second_source = literal.LocalPosition[Never](
             "position<second_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.marker.MarkerPosition,
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        first_source.create_particle()
+        position_first_source.create_particle()
         literal.record_operation("test.create(first_source)")
-        first_source.particle.get_position(
+        position_first_source.particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(first_source::/marker)")
-        first_source.move_particle_to(
+        position_first_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
@@ -47,13 +47,13 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        second_source.create_particle()
+        position_second_source.create_particle()
         literal.record_operation("test.create(second_source)")
-        second_source.particle.get_position(
+        position_second_source.particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(second_source::/marker)")
-        second_source.move_particle_to(
+        position_second_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

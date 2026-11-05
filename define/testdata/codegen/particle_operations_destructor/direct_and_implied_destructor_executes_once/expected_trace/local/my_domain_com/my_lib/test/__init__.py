@@ -18,7 +18,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        direct = literal.LocalPosition[Never](
+        position_direct = literal.LocalPosition[Never](
             "position<direct>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
@@ -37,10 +37,10 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.BundlePosition
         ).move_particle_to(
-            direct
+            position_direct
         )
         literal.record_operation("test.move(/bundle, direct)")
-        direct.move_particle_to(
+        position_direct.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

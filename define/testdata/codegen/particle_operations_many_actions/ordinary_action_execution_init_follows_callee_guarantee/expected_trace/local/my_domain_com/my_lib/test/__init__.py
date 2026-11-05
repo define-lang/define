@@ -12,24 +12,24 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.carrier.CarrierAction,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/carrier::run)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.CarrierAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
@@ -39,18 +39,18 @@ class TestAction(literal.Action):
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/carrier::result::/worker::run)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/carrier::result)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

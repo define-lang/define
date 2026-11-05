@@ -11,33 +11,33 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        item = literal.LocalPosition[int](
+        position_item = literal.LocalPosition[int](
             "position<item>",
         )
-        worker = literal.LocalPosition[Never](
+        position_worker = literal.LocalPosition[Never](
             "position<worker>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.provide.ProvideAction,
             ),
         )
-        item.create_particle()
-        worker.create_particle()
-        item.move_particle_to(
-            worker.particle.get_action(
+        position_item.create_particle()
+        position_worker.create_particle()
+        position_item.move_particle_to(
+            position_worker.particle.get_action(
                 local.my_domain_com.my_lib.provide.ProvideAction
             ).get_interface_position(
                 "position<input>"
             )
         )
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.provide.ProvideAction
         ).run()
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.provide.ProvideAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
-            item
+            position_item
         )
-        item.destroy_particle()
-        worker.destroy_particle()
+        position_item.destroy_particle()
+        position_worker.destroy_particle()

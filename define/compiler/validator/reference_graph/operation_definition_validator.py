@@ -81,6 +81,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             match statement:
                 case ast.LocalViewDefinition():
                     self._define_view(statement)
+                    self._add_local_statement(statement)
                 case ast.OperationExecutionStatement():
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():
@@ -89,6 +90,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                     self._diagnostics.extend(
                         self._view_uses.record_view_setting(statement)
                     )
+                    self._add_local_statement(statement)
                 case (
                     ast.EncodingOperationExecutionStatement()
                     | ast.ComputerOperationExecutionStatement()
@@ -115,6 +117,12 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
     ): ...
+
+    @abc.abstractmethod
+    def _add_local_statement(
+        self, statement: ast.LocalViewDefinition | ast.ViewSettingStatement
+    ):
+        """Record a statement that only uses the operation's own views."""
 
     @abc.abstractmethod
     def _build_result(self) -> validation_result.PostorderValidationResult: ...
@@ -311,6 +319,14 @@ class ValueOperationDefinitionValidator(
         pass
 
     @override
+    def _add_local_statement(
+        self, statement: ast.LocalViewDefinition | ast.ViewSettingStatement
+    ):
+        # Value Operations have no code of their own: executing one runs the
+        # Encoding Operation that performs it.
+        pass
+
+    @override
     def _build_result(self) -> validation_result.PostorderValidationResult:
         return validation_result.PostorderValidationResult(self._diagnostics)
 
@@ -372,6 +388,12 @@ class EncodingOperationDefinitionValidator(
                     encoding_operation=statement.operation, arguments=arguments
                 )
             )
+
+    @override
+    def _add_local_statement(
+        self, statement: ast.LocalViewDefinition | ast.ViewSettingStatement
+    ):
+        self._steps.append(statement)
 
     @override
     def _build_result(self) -> validation_result.PostorderValidationResult:

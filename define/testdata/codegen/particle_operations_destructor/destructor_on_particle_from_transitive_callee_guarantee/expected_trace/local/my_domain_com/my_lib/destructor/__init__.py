@@ -14,23 +14,23 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        _noop = literal.LocalPosition[Never](
+        position__noop = literal.LocalPosition[Never](
             "position<_noop>",
         )
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
-        _noop.create_particle()
+        position__noop.create_particle()
         literal.record_operation("destructor.create(_noop)")
-        _noop.destroy_particle()
+        position__noop.destroy_particle()
         literal.record_operation("destructor.destroy(_noop)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         literal.record_operation("destructor.move(/marker, holder)")
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.MarkerPosition
             )

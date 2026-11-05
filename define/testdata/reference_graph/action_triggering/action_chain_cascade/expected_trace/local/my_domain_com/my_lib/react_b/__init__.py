@@ -28,10 +28,10 @@ class ReactBAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: ReactBDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_result = literal.LocalPosition[Never](
+        position_local_result = literal.LocalPosition[Never](
             "position<local_result>",
         )
-        local_result.create_particle()
+        position_local_result.create_particle()
         literal.record_operation("react_b.create(local_result)")
         destruction_contracts.run_destructors_position_trigger(
             self.get_interface_position(
@@ -47,5 +47,5 @@ class ReactBAction(literal.Action):
             "position<trigger>"
         ).destroy_particle()
         literal.record_operation("react_b.destroy(trigger)")
-        local_result.destroy_particle()
+        position_local_result.destroy_particle()
         literal.record_operation("react_b.destroy(local_result)")

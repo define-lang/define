@@ -35,26 +35,26 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        holder.create_particle()
-        holder.particle.get_position(
+        position_holder.create_particle()
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         self.get_interface_position(
             "position<input>"
         ).move_particle_to(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
                 local.my_domain_com.my_lib.grandchild.GrandchildPosition
             )
         )
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(

@@ -12,55 +12,55 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        result = literal.LocalPosition[Never](
+        position_result = literal.LocalPosition[Never](
             "position<result>",
         )
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
-        gateway.create_particle()
+        position_gateway.create_particle()
         literal.record_operation("test.create(gateway)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/outer::source)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/outer::trigger_pos)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<destination>"
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValuePosition
         ).move_particle_to(
-            result
+            position_result
         )
         literal.record_operation("test.move(gateway::/outer::destination::/result_value, result)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/outer::destination)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/outer::trigger_pos)")
-        result.destroy_particle()
+        position_result.destroy_particle()
         literal.record_operation("test.destroy(result)")
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()
         literal.record_operation("test.destroy(gateway)")

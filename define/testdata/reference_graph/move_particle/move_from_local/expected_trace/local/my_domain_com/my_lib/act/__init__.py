@@ -52,52 +52,52 @@ class ActAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: ActDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        src_a = literal.LocalPosition[Never](
+        position_src_a = literal.LocalPosition[Never](
             "position<src_a>",
         )
-        src_b = literal.LocalPosition[Never](
+        position_src_b = literal.LocalPosition[Never](
             "position<src_b>",
         )
-        src_c = literal.LocalPosition[Never](
+        position_src_c = literal.LocalPosition[Never](
             "position<src_c>",
         )
-        src_d = literal.LocalPosition[Never](
+        position_src_d = literal.LocalPosition[Never](
             "position<src_d>",
         )
-        local_dest = literal.LocalPosition[Never](
+        position_local_dest = literal.LocalPosition[Never](
             "position<local_dest>",
         )
-        local_chain_dest = literal.LocalPosition[Never](
+        position_local_chain_dest = literal.LocalPosition[Never](
             "position<local_chain_dest>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.mid_local.MidLocalPosition,
             ),
         )
-        src_a.create_particle()
+        position_src_a.create_particle()
         literal.record_operation("act.create(src_a)")
-        src_b.create_particle()
+        position_src_b.create_particle()
         literal.record_operation("act.create(src_b)")
-        src_c.create_particle()
+        position_src_c.create_particle()
         literal.record_operation("act.create(src_c)")
-        src_d.create_particle()
+        position_src_d.create_particle()
         literal.record_operation("act.create(src_d)")
-        local_chain_dest.create_particle()
+        position_local_chain_dest.create_particle()
         literal.record_operation("act.create(local_chain_dest)")
-        local_chain_dest.particle.get_position(
+        position_local_chain_dest.particle.get_position(
             local.my_domain_com.my_lib.mid_local.MidLocalPosition
         ).create_particle()
         literal.record_operation("act.create(local_chain_dest::/mid_local)")
-        src_a.move_particle_to(
-            local_dest
+        position_src_a.move_particle_to(
+            position_local_dest
         )
         literal.record_operation("act.move(src_a, local_dest)")
-        src_b.move_particle_to(
+        position_src_b.move_particle_to(
             self.get_interface_position(
                 "position<iface_dest>"
             )
         )
         literal.record_operation("act.move(src_b, iface_dest)")
-        src_c.move_particle_to(
+        position_src_c.move_particle_to(
             self.get_interface_position(
                 "position<chain_dest>"
             ).particle.get_position(
@@ -107,8 +107,8 @@ class ActAction(literal.Action):
             )
         )
         literal.record_operation("act.move(src_c, chain_dest::/mid_dest::/end_dest)")
-        src_d.move_particle_to(
-            local_chain_dest.particle.get_position(
+        position_src_d.move_particle_to(
+            position_local_chain_dest.particle.get_position(
                 local.my_domain_com.my_lib.mid_local.MidLocalPosition
             ).particle.get_position(
                 local.my_domain_com.my_lib.end_local.EndLocalPosition
@@ -175,17 +175,17 @@ class ActAction(literal.Action):
             "position<trigger>"
         ).destroy_particle()
         literal.record_operation("act.destroy(trigger)")
-        local_dest.destroy_particle()
+        position_local_dest.destroy_particle()
         literal.record_operation("act.destroy(local_dest)")
-        local_chain_dest.particle.get_position(
+        position_local_chain_dest.particle.get_position(
             local.my_domain_com.my_lib.mid_local.MidLocalPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.end_local.EndLocalPosition
         ).destroy_particle()
         literal.record_operation("act.destroy(local_chain_dest::/mid_local::/end_local)")
-        local_chain_dest.particle.get_position(
+        position_local_chain_dest.particle.get_position(
             local.my_domain_com.my_lib.mid_local.MidLocalPosition
         ).destroy_particle()
         literal.record_operation("act.destroy(local_chain_dest::/mid_local)")
-        local_chain_dest.destroy_particle()
+        position_local_chain_dest.destroy_particle()
         literal.record_operation("act.destroy(local_chain_dest)")

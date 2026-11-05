@@ -13,7 +13,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        station = literal.LocalPosition[Never](
+        position_station = literal.LocalPosition[Never](
             "position<station>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.grind.GrindAction,
@@ -21,64 +21,64 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.brew.BrewAction,
             ),
         )
-        station.create_particle()
+        position_station.create_particle()
         literal.record_operation("test.create(station)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).get_interface_position(
             "position<beans>"
         ).create_particle()
         literal.record_operation("test.create(station::/grind::beans)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).get_interface_position(
             "position<cold_water>"
         ).create_particle()
         literal.record_operation("test.create(station::/heat::cold_water)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).get_interface_position(
             "position<grounds>"
         ).move_particle_to(
-            station.particle.get_action(
+            position_station.particle.get_action(
                 local.my_domain_com.my_lib.brew.BrewAction
             ).get_interface_position(
                 "position<grounds>"
             )
         )
         literal.record_operation("test.move(station::/grind::grounds, station::/brew::grounds)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).get_interface_position(
             "position<hot_water>"
         ).move_particle_to(
-            station.particle.get_action(
+            position_station.particle.get_action(
                 local.my_domain_com.my_lib.brew.BrewAction
             ).get_interface_position(
                 "position<water>"
             )
         )
         literal.record_operation("test.move(station::/heat::hot_water, station::/brew::water)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).get_interface_position(
             "position<cup>"
         ).destroy_particle()
         literal.record_operation("test.destroy(station::/brew::cup)")
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).get_interface_position(
             "position<spent_puck>"
         ).destroy_particle()
         literal.record_operation("test.destroy(station::/brew::spent_puck)")
-        station.destroy_particle()
+        position_station.destroy_particle()
         literal.record_operation("test.destroy(station)")

@@ -12,36 +12,36 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        mw = literal.LocalPosition[Never](
+        position_mw = literal.LocalPosition[Never](
             "position<mw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        mw.create_particle()
-        mw.particle.get_action(
+        position_mw.create_particle()
+        position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<iface>"
         ).create_particle()
-        mw.particle.get_action(
+        position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<iface>"
         ).particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
-        mw.particle.get_action(
+        position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        mw.particle.get_action(
+        position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        mw.particle.get_action(
+        position_mw.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        mw.destroy_particle()
+        position_mw.destroy_particle()

@@ -14,17 +14,17 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[int](
+        position_source = literal.LocalPosition[int](
             "position<source>",
         )
-        source.create_particle()
+        position_source.create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).create_particle()
-        source.particle.value = -5
+        position_source.particle.value = -5
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).particle.value = (
-            source.particle.value
+            position_source.particle.value
         )
-        source.destroy_particle()
+        position_source.destroy_particle()

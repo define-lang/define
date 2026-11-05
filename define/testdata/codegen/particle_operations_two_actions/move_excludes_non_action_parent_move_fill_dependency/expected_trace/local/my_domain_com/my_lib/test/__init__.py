@@ -12,45 +12,45 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
-        destination = literal.LocalPosition[Never](
+        position_destination = literal.LocalPosition[Never](
             "position<destination>",
         )
-        gateway.create_particle()
+        position_gateway.create_particle()
         literal.record_operation("test.create(gateway)")
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.move_particle_to(
-            destination
+        position_box.move_particle_to(
+            position_destination
         )
         literal.record_operation("test.move(box, destination)")
-        destination.move_particle_to(
-            gateway.particle.get_action(
+        position_destination.move_particle_to(
+            position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.other.OtherAction
             ).get_interface_position(
                 "position<box>"
             )
         )
         literal.record_operation("test.move(destination, gateway::/other::box)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/other::destination)")
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()
         literal.record_operation("test.destroy(gateway)")

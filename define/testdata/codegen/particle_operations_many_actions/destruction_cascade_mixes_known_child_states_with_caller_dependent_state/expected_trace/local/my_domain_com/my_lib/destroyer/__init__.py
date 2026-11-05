@@ -43,7 +43,7 @@ class DestroyerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_ = literal.LocalPosition[Never](
+        position_local = literal.LocalPosition[Never](
             "position<local>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
@@ -61,10 +61,10 @@ class DestroyerAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
-            local_
+            position_local
         )
         literal.record_operation("destroyer.move(/target, local)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.known_empty.KnownEmptyPosition
         ).move_particle_to(
             self.on_particle.get_position(
@@ -72,19 +72,19 @@ class DestroyerAction(literal.Action):
             )
         )
         literal.record_operation("destroyer.move(local::/known_empty, /destination)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition
         ).create_particle()
         literal.record_operation("destroyer.create(local::/known_occupied)")
         destruction_contracts.run_destructors_position_run(
-            local_.particle
+            position_local.particle
         )
         destruction_contracts.destroy_position_run(
-            local_.particle
+            position_local.particle
         )
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(local::/known_occupied)")
-        local_.destroy_particle()
+        position_local.destroy_particle()
         literal.record_operation("destroyer.destroy(local)")

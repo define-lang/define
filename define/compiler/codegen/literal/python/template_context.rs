@@ -501,6 +501,8 @@ pub enum EncodingOperationStatement {
         /// The local names that receive the returned values.
         results: Vec<String>,
     },
+    /// Gives `target` the value of `source`, for a View Setting Statement.
+    Assignment { target: String, source: String },
 }
 
 /// A Python local name and the type of its value.

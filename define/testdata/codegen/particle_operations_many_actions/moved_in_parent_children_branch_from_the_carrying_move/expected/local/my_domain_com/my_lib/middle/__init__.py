@@ -45,32 +45,32 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        gw = literal.LocalPosition[Never](
+        position_gw = literal.LocalPosition[Never](
             "position<gw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
-        gw.create_particle()
+        position_gw.create_particle()
         self.get_interface_position(
             "position<iface>"
         ).move_particle_to(
-            gw.particle.get_action(
+            position_gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         destruction_contracts.run_destructors_position_iface__position_parent(
-            gw.particle.get_action(
+            position_gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
@@ -79,14 +79,14 @@ class MiddleAction(literal.Action):
             ).particle
         )
         destruction_contracts.run_destructors_position_iface(
-            gw.particle.get_action(
+            position_gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
         destruction_contracts.destroy_position_iface__position_parent(
-            gw.particle.get_action(
+            position_gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
@@ -95,18 +95,18 @@ class MiddleAction(literal.Action):
             ).particle
         )
         destruction_contracts.destroy_position_iface(
-            gw.particle.get_action(
+            position_gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
@@ -115,7 +115,7 @@ class MiddleAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
@@ -124,16 +124,16 @@ class MiddleAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).destroy_particle()
-        gw.destroy_particle()
+        position_gw.destroy_particle()

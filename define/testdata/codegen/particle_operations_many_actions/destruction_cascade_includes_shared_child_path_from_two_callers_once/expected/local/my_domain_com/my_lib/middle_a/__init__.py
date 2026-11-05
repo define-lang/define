@@ -31,34 +31,34 @@ class MiddleAAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MiddleADestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        destroyer_holder = literal.LocalPosition[Never](
+        position_destroyer_holder = literal.LocalPosition[Never](
             "position<destroyer_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
-        destroyer_holder.create_particle()
-        box.create_particle()
-        box.particle.get_position(
+        position_destroyer_holder.create_particle()
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        box.move_particle_to(
-            destroyer_holder.particle.get_action(
+        position_box.move_particle_to(
+            position_destroyer_holder.particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
-        destroyer_holder.particle.get_action(
+        position_destroyer_holder.particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        destroyer_holder.destroy_particle()
+        position_destroyer_holder.destroy_particle()
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(
                 "position<run>"

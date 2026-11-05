@@ -11,34 +11,34 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        src = literal.LocalPosition[Never](
+        position_src = literal.LocalPosition[Never](
             "position<src>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        dest = literal.LocalPosition[Never](
+        position_dest = literal.LocalPosition[Never](
             "position<dest>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        dest.create_particle()
-        dest.particle.get_position(
+        position_dest.create_particle()
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
-        dest.destroy_particle()
-        src.create_particle()
-        src.particle.get_position(
+        position_dest.destroy_particle()
+        position_src.create_particle()
+        position_src.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        src.move_particle_to(
-            dest
+        position_src.move_particle_to(
+            position_dest
         )
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
-        dest.destroy_particle()
+        position_dest.destroy_particle()

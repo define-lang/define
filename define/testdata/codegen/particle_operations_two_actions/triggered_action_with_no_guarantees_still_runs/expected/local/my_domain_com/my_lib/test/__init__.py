@@ -11,29 +11,29 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        note = literal.LocalPosition[Never](
+        position_note = literal.LocalPosition[Never](
             "position<note>",
         )
-        gw = literal.LocalPosition[Never](
+        position_gw = literal.LocalPosition[Never](
             "position<gw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
-        gw.create_particle()
-        gw.particle.get_action(
+        position_gw.create_particle()
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        note.create_particle()
-        gw.particle.get_action(
+        position_note.create_particle()
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        note.destroy_particle()
-        gw.destroy_particle()
+        position_note.destroy_particle()
+        position_gw.destroy_particle()

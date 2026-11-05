@@ -14,11 +14,11 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
         )
-        source.create_particle()
-        source.move_particle_to(
+        position_source.create_particle()
+        position_source.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.implied.ImpliedPosition
             )

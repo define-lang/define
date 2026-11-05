@@ -18,7 +18,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
@@ -26,23 +26,23 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_first)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.TransitivePosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_first::/transitive)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_last)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

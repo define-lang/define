@@ -12,37 +12,37 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.origin.OriginPosition,
                 local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
         literal.record_operation("test.create(box::/origin)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
-            box.particle.get_position(
+            position_box.particle.get_position(
                 local.my_domain_com.my_lib.target.TargetPosition
             )
         )
         literal.record_operation("test.move(box::/origin, box::/target)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         literal.record_operation("test.move(box::/target, holder)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")
-        holder.destroy_particle()
+        position_holder.destroy_particle()
         literal.record_operation("test.destroy(holder)")

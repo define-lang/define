@@ -33,16 +33,16 @@ class FillerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: FillerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         literal.record_operation("filler.move(/marker, holder)")
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.MarkerPosition
             )

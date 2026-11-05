@@ -12,39 +12,39 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
-        destination = literal.LocalPosition[Never](
+        position_destination = literal.LocalPosition[Never](
             "position<destination>",
         )
-        gateway.create_particle()
-        box.create_particle()
-        box.move_particle_to(
-            destination
+        position_gateway.create_particle()
+        position_box.create_particle()
+        position_box.move_particle_to(
+            position_destination
         )
-        destination.move_particle_to(
-            gateway.particle.get_action(
+        position_destination.move_particle_to(
+            position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.other.OtherAction
             ).get_interface_position(
                 "position<box>"
             )
         )
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()

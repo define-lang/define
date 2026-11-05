@@ -12,30 +12,30 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
-        destination = literal.LocalPosition[Never](
+        position_destination = literal.LocalPosition[Never](
             "position<destination>",
         )
-        source.create_particle()
-        source.particle.get_position(
+        position_source.create_particle()
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).create_particle()
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
-        source.move_particle_to(
-            destination
+        position_source.move_particle_to(
+            position_destination
         )
-        destination.particle.get_position(
+        position_destination.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
-        destination.particle.get_position(
+        position_destination.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
-        destination.destroy_particle()
+        position_destination.destroy_particle()

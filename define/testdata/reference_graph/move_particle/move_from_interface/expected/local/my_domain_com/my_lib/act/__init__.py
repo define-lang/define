@@ -53,7 +53,7 @@ class ActAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: ActDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_dest = literal.LocalPosition[Never](
+        position_local_dest = literal.LocalPosition[Never](
             "position<local_dest>",
         )
         self.get_interface_position(
@@ -68,7 +68,7 @@ class ActAction(literal.Action):
         self.get_interface_position(
             "position<src_a>"
         ).move_particle_to(
-            local_dest
+            position_local_dest
         )
         self.get_interface_position(
             "position<src_b>"
@@ -143,4 +143,4 @@ class ActAction(literal.Action):
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        local_dest.destroy_particle()
+        position_local_dest.destroy_particle()

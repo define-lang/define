@@ -21,7 +21,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.mover.MoverAction,
@@ -29,32 +29,32 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.box.BoxPosition,
             ),
         )
-        holder.create_particle()
+        position_holder.create_particle()
         literal.record_operation("test.create(holder)")
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.box.BoxPosition
         ).create_particle()
         literal.record_operation("test.create(holder::/box)")
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(holder::/item)")
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.item.ItemPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.kept.KeptPosition
         ).create_particle()
         literal.record_operation("test.create(holder::/item::/kept)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(holder::/mover::run)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).run()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.box.BoxPosition
         ).move_particle_to(
             self.on_particle.get_action(
@@ -73,7 +73,7 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        holder.destroy_particle()
+        position_holder.destroy_particle()
         literal.record_operation("test.destroy(holder)")
 
 

@@ -20,41 +20,41 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
                 local.my_domain_com.my_lib.carrier.CarrierPosition,
             ),
         )
-        carrier_source = literal.LocalPosition[Never](
+        position_carrier_source = literal.LocalPosition[Never](
             "position<carrier_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
                 local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
-        payload_source = literal.LocalPosition[Never](
+        position_payload_source = literal.LocalPosition[Never](
             "position<payload_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
-        source.create_particle()
-        carrier_source.create_particle()
-        payload_source.create_particle()
-        payload_source.move_particle_to(
-            carrier_source.particle.get_position(
+        position_source.create_particle()
+        position_carrier_source.create_particle()
+        position_payload_source.create_particle()
+        position_payload_source.move_particle_to(
+            position_carrier_source.particle.get_position(
                 local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
-        carrier_source.move_particle_to(
-            source.particle.get_position(
+        position_carrier_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.carrier.CarrierPosition
             )
         )
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.wrapper.WrapperAction
             ).get_interface_position(

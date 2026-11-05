@@ -28,10 +28,10 @@ class FinalAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: FinalDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        complete = literal.LocalPosition[Never](
+        position_complete = literal.LocalPosition[Never](
             "position<complete>",
         )
-        complete.create_particle()
+        position_complete.create_particle()
         literal.record_operation("final.create(complete)")
         destruction_contracts.run_destructors_position_trigger(
             self.get_interface_position(
@@ -47,5 +47,5 @@ class FinalAction(literal.Action):
             "position<trigger>"
         ).destroy_particle()
         literal.record_operation("final.destroy(trigger)")
-        complete.destroy_particle()
+        position_complete.destroy_particle()
         literal.record_operation("final.destroy(complete)")

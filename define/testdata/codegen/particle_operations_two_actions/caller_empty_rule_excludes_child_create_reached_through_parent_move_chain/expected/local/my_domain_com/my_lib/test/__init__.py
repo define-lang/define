@@ -17,23 +17,23 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder_a = literal.LocalPosition[Never](
+        position_holder_a = literal.LocalPosition[Never](
             "position<holder_a>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
-        box.move_particle_to(
-            holder_a
+        position_box.move_particle_to(
+            position_holder_a
         )
-        holder_a.move_particle_to(
+        position_holder_a.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.input.InputPosition
             )

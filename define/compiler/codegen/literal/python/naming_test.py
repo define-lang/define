@@ -244,27 +244,11 @@ def test_name_allocator_underscores_repeated_candidates():
     ]
 
 
-def test_name_allocator_underscores_reserved_names():
-    allocator = naming.LocalNameAllocator()
-    assert allocator.allocate("class") == "class_"
-    assert allocator.allocate("class") == "class__"
-    assert allocator.allocate("class") == "class___"
-    assert allocator.allocate("self") == "self_"
-    assert allocator.allocate("literal") == "literal_"
-
-
 def test_name_allocator_underscores_imported_module_names():
     allocator = naming.LocalNameAllocator()
     allocator.reserve_module_first_names(["package.module"])
     assert allocator.allocate("package") == "package_"
     assert allocator.allocate("package") == "package__"
-
-
-def test_name_allocator_underscores_collisions_with_reserved_name_results():
-    allocator = naming.LocalNameAllocator()
-    assert allocator.allocate("class") == "class_"
-    assert allocator.allocate("class_") == "class__"
-    assert allocator.allocate("class_") == "class___"
 
 
 def test_name_allocator_skips_conflicting_source_suffixes():

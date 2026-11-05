@@ -55,7 +55,7 @@ class StarterAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: StarterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.wrapper.WrapperAction,
@@ -65,20 +65,20 @@ class StarterAction(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
-            gateway
+            position_gateway
         )
         literal.record_operation("starter.move(run, gateway)")
-        gateway.particle.get_position(
+        position_gateway.particle.get_position(
             local.my_domain_com.my_lib.crate.CratePosition
         ).move_particle_to(
-            gateway.particle.get_action(
+            position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.wrapper.WrapperAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("starter.move(gateway::/crate, gateway::/wrapper::run)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.wrapper.WrapperAction
         ).run(
             WrapperDestructionContracts(
@@ -91,12 +91,12 @@ class StarterAction(literal.Action):
             ),
         )
         destruction_contracts.run_destructors_position_run(
-            gateway.particle
+            position_gateway.particle
         )
         destruction_contracts.destroy_position_run(
-            gateway.particle
+            position_gateway.particle
         )
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()
         literal.record_operation("starter.destroy(gateway)")
 
 

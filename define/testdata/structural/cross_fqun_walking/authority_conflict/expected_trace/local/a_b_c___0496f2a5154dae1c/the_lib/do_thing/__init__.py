@@ -28,10 +28,10 @@ class DoThingAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DoThingDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_pos = literal.LocalPosition[Never](
+        position_local_pos = literal.LocalPosition[Never](
             "position<local_pos>",
         )
-        local_pos.create_particle()
+        position_local_pos.create_particle()
         literal.record_operation("do_thing.create(local_pos)")
         destruction_contracts.run_destructors_position_trigger_pos(
             self.get_interface_position(
@@ -47,5 +47,5 @@ class DoThingAction(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("do_thing.destroy(trigger_pos)")
-        local_pos.destroy_particle()
+        position_local_pos.destroy_particle()
         literal.record_operation("do_thing.destroy(local_pos)")

@@ -9,8 +9,8 @@ class CleanupBAction(literal.Action):
 
     @override
     def run(self):
-        scratch = literal.LocalPosition[Never](
+        position_scratch = literal.LocalPosition[Never](
             "position<scratch>",
         )
-        scratch.create_particle()
-        scratch.destroy_particle()
+        position_scratch.create_particle()
+        position_scratch.destroy_particle()

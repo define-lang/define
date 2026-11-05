@@ -43,31 +43,31 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        inner_holder = literal.LocalPosition[Never](
+        position_inner_holder = literal.LocalPosition[Never](
             "position<inner_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
-        inner_holder.create_particle()
+        position_inner_holder.create_particle()
         literal.record_operation("middle.create(inner_holder)")
         self.get_interface_position(
             "position<input>"
         ).move_particle_to(
-            inner_holder.particle.get_action(
+            position_inner_holder.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(input, inner_holder::/inner::input)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("middle.create(inner_holder::/inner::run)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
@@ -77,13 +77,13 @@ class MiddleAction(literal.Action):
                 destruction_contracts.destroy_position_input,
             ),
         )
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(inner_holder::/inner::run)")
-        inner_holder.destroy_particle()
+        position_inner_holder.destroy_particle()
         literal.record_operation("middle.destroy(inner_holder)")
 
 

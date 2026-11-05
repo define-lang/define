@@ -28,34 +28,34 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
-        held_marker = literal.LocalPosition[Never](
+        position_held_marker = literal.LocalPosition[Never](
             "position<held_marker>",
         )
-        box.create_particle()
-        box.particle.get_action(
+        position_box.create_particle()
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            held_marker
+            position_held_marker
         )
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<result>"
@@ -64,16 +64,16 @@ class MiddleAction(literal.Action):
                 "position<result>"
             )
         )
-        held_marker.move_particle_to(
+        position_held_marker.move_particle_to(
             self.get_interface_position(
                 "position<result>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        box.destroy_particle()
+        position_box.destroy_particle()

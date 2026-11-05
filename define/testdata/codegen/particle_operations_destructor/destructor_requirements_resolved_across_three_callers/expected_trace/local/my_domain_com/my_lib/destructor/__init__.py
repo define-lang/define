@@ -18,22 +18,22 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        callee_holder = literal.LocalPosition[Never](
+        position_callee_holder = literal.LocalPosition[Never](
             "position<callee_holder>",
         )
-        middle_holder = literal.LocalPosition[Never](
+        position_middle_holder = literal.LocalPosition[Never](
             "position<middle_holder>",
         )
-        creator_holder = literal.LocalPosition[Never](
+        position_creator_holder = literal.LocalPosition[Never](
             "position<creator_holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).move_particle_to(
-            callee_holder
+            position_callee_holder
         )
         literal.record_operation("destructor.move(/callee_known, callee_holder)")
-        callee_holder.move_particle_to(
+        position_callee_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
             )
@@ -42,10 +42,10 @@ class DestructorAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).move_particle_to(
-            middle_holder
+            position_middle_holder
         )
         literal.record_operation("destructor.move(/middle_known, middle_holder)")
-        middle_holder.move_particle_to(
+        position_middle_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
             )
@@ -54,10 +54,10 @@ class DestructorAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).move_particle_to(
-            creator_holder
+            position_creator_holder
         )
         literal.record_operation("destructor.move(/creator_known, creator_holder)")
-        creator_holder.move_particle_to(
+        position_creator_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
             )

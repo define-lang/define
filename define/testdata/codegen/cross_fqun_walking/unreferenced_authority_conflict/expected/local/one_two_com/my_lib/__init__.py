@@ -3,5 +3,5 @@
 import standard.number.natural.ascii
 
 
-def increment(number: int) -> int:
-    return standard.number.natural.ascii.add(number, 1)
+def increment(view_number: int) -> int:
+    return standard.number.natural.ascii.add(view_number, 1)

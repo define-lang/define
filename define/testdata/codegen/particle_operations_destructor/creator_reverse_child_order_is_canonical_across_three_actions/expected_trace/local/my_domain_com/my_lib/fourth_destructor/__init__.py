@@ -14,25 +14,25 @@ class FourthDestructorAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.fourth.FourthPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         literal.record_operation("fourth_destructor.move(/fourth, holder)")
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.fourth.FourthPosition
             )
         )
         literal.record_operation("fourth_destructor.move(holder, /fourth)")
-        marker = literal.LocalPosition[Never](
+        position_marker = literal.LocalPosition[Never](
             "position<marker>",
         )
-        marker.create_particle()
+        position_marker.create_particle()
         literal.record_operation("fourth_destructor.create(marker)")
-        marker.destroy_particle()
+        position_marker.destroy_particle()
         literal.record_operation("fourth_destructor.destroy(marker)")

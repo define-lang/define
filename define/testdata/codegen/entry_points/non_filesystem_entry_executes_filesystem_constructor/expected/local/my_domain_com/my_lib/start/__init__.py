@@ -11,19 +11,19 @@ class StartAction(literal.Action):
 
     @override
     def run(self):
-        job = literal.LocalPosition[Never](
+        position_job = literal.LocalPosition[Never](
             "position<job>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
-        job.create_particle()
-        job.particle.get_action(
+        position_job.create_particle()
+        position_job.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        job.particle.get_action(
+        position_job.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<item>"
         ).destroy_particle()
-        job.destroy_particle()
+        position_job.destroy_particle()

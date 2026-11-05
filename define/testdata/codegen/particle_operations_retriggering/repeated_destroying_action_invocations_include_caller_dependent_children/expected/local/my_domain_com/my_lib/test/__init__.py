@@ -15,23 +15,23 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first = literal.LocalPosition[Never](
+        position_first = literal.LocalPosition[Never](
             "position<first>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        second = literal.LocalPosition[Never](
+        position_second = literal.LocalPosition[Never](
             "position<second>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        first.create_particle()
-        first.particle.get_position(
+        position_first.create_particle()
+        position_first.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        first.move_particle_to(
+        position_first.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
@@ -41,11 +41,11 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        second.create_particle()
-        second.particle.get_position(
+        position_second.create_particle()
+        position_second.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        second.move_particle_to(
+        position_second.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

@@ -15,7 +15,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        item = literal.LocalPosition[Never](
+        position_item = literal.LocalPosition[Never](
             "position<item>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.initialize.InitializeAction,
@@ -23,18 +23,18 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.second_cleanup.SecondCleanupAction,
             ),
         )
-        item.create_particle()
+        position_item.create_particle()
         literal.record_operation("test.create(item)")
-        item.particle.get_action(
+        position_item.particle.get_action(
             local.my_domain_com.my_lib.initialize.InitializeAction
         ).run()
-        item.particle.get_action(
+        position_item.particle.get_action(
             local.my_domain_com.my_lib.first_cleanup.FirstCleanupAction
         ).run(FirstCleanupDestructionContracts())
-        item.particle.get_action(
+        position_item.particle.get_action(
             local.my_domain_com.my_lib.second_cleanup.SecondCleanupAction
         ).run(SecondCleanupDestructionContracts())
-        item.destroy_particle()
+        position_item.destroy_particle()
         literal.record_operation("test.destroy(item)")
 
 

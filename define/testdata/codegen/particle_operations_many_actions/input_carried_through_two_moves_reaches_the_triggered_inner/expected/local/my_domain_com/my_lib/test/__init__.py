@@ -12,46 +12,46 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        outer_holder = literal.LocalPosition[Never](
+        position_outer_holder = literal.LocalPosition[Never](
             "position<outer_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
-        outer_holder.create_particle()
-        box.move_particle_to(
-            outer_holder.particle.get_action(
+        position_outer_holder.create_particle()
+        position_box.move_particle_to(
+            position_outer_holder.particle.get_action(
                 local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<input>"
             )
         )
-        outer_holder.particle.get_action(
+        position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        outer_holder.particle.get_action(
+        position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
-        outer_holder.particle.get_action(
+        position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<middle_holder>"
         ).destroy_particle()
-        outer_holder.particle.get_action(
+        position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        outer_holder.destroy_particle()
+        position_outer_holder.destroy_particle()

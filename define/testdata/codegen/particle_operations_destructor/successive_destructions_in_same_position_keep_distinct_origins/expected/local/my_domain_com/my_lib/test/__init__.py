@@ -16,34 +16,34 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first_source = literal.LocalPosition[Never](
+        position_first_source = literal.LocalPosition[Never](
             "position<first_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first_child.FirstChildPosition,
             ),
         )
-        second_source = literal.LocalPosition[Never](
+        position_second_source = literal.LocalPosition[Never](
             "position<second_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.second_child.SecondChildPosition,
             ),
         )
-        first_source.create_particle()
-        first_source.particle.get_position(
+        position_first_source.create_particle()
+        position_first_source.particle.get_position(
             local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).create_particle()
-        second_source.create_particle()
-        second_source.particle.get_position(
+        position_second_source.create_particle()
+        position_second_source.particle.get_position(
             local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).create_particle()
-        first_source.move_particle_to(
+        position_first_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
-        second_source.move_particle_to(
+        position_second_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(

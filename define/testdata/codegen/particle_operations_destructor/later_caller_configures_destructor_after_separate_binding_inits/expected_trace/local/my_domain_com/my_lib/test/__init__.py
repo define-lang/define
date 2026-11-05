@@ -17,7 +17,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.later_destructor.LaterDestructorAction,
@@ -25,9 +25,9 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.caller.CallerAction
             ).get_interface_position(

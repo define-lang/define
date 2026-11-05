@@ -3,5 +3,5 @@
 import builtins
 
 
-def absolute_value(value: int) -> int:
-    return builtins.abs(value)
+def absolute_value(view_value: int) -> int:
+    return builtins.abs(view_value)

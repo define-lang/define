@@ -13,10 +13,10 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.origin.OriginPosition,
@@ -24,28 +24,28 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
-            box.particle.get_position(
+            position_box.particle.get_position(
                 local.my_domain_com.my_lib.middle.MiddlePosition
             )
         )
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.middle.MiddlePosition
         ).move_particle_to(
-            box.particle.get_position(
+            position_box.particle.get_position(
                 local.my_domain_com.my_lib.target.TargetPosition
             )
         )
-        box.move_particle_to(
-            holder
+        position_box.move_particle_to(
+            position_holder
         )
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).destroy_particle()
-        holder.destroy_particle()
+        position_holder.destroy_particle()

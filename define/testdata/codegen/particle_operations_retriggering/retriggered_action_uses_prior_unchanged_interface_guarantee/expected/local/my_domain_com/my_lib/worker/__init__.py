@@ -29,15 +29,15 @@ class WorkerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: WorkerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
         self.get_interface_position(
             "position<item>"
         ).move_particle_to(
-            holder
+            position_holder
         )
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.get_interface_position(
                 "position<item>"
             )

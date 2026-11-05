@@ -45,46 +45,46 @@ class ClassVarAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
-        self_ = literal.LocalPosition[Never](
+        position_self = literal.LocalPosition[Never](
             "position<self>",
         )
-        self__ = literal.LocalPosition[Never](
+        position_self_ = literal.LocalPosition[Never](
             "position<self_>",
         )
-        literal_ = literal.LocalPosition[Never](
+        position_literal = literal.LocalPosition[Never](
             "position<literal>",
         )
-        super = literal.LocalPosition[Never](
+        position_super = literal.LocalPosition[Never](
             "position<super>",
         )
-        type = literal.LocalPosition[Never](
+        position_type = literal.LocalPosition[Never](
             "position<type>",
         )
-        typing = literal.LocalPosition[Never](
+        position_typing = literal.LocalPosition[Never](
             "position<typing>",
         )
-        class_ = literal.LocalPosition[Never](
+        position_class = literal.LocalPosition[Never](
             "position<class>",
         )
-        class__ = literal.LocalPosition[Never](
+        position_class_ = literal.LocalPosition[Never](
             "position<class_>",
         )
-        local_ = literal.LocalPosition[Never](
+        position_local = literal.LocalPosition[Never](
             "position<local>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        self_.create_particle()
-        self__.create_particle()
-        literal_.create_particle()
-        super.create_particle()
-        type.create_particle()
-        typing.create_particle()
-        class_.create_particle()
-        class__.create_particle()
-        local_.create_particle()
-        local_.particle.get_position(
+        position_self.create_particle()
+        position_self_.create_particle()
+        position_literal.create_particle()
+        position_super.create_particle()
+        position_type.create_particle()
+        position_typing.create_particle()
+        position_class.create_particle()
+        position_class_.create_particle()
+        position_local.create_particle()
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         destruction_contracts.run_destructors_position_trigger_pos(
@@ -100,15 +100,15 @@ class ClassVarAction(literal.Action):
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self_.destroy_particle()
-        self__.destroy_particle()
-        literal_.destroy_particle()
-        super.destroy_particle()
-        type.destroy_particle()
-        typing.destroy_particle()
-        class_.destroy_particle()
-        class__.destroy_particle()
-        local_.particle.get_position(
+        position_self.destroy_particle()
+        position_self_.destroy_particle()
+        position_literal.destroy_particle()
+        position_super.destroy_particle()
+        position_type.destroy_particle()
+        position_typing.destroy_particle()
+        position_class.destroy_particle()
+        position_class_.destroy_particle()
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
-        local_.destroy_particle()
+        position_local.destroy_particle()

@@ -285,24 +285,20 @@ class EncodingOperationDefinitionGenerator:
     def generate(self) -> renderer.EncodingOperationDefinition:
         """Build the template context for this Encoding Operation's function."""
         definition = self._operation_input.definition
-        # Every valid View Setting Statement in an Encoding Operation looks at a
-        # local view, so this also covers View Setting Statements.
-        for statement in definition.operation_statements.statements:
-            if isinstance(statement, ast.LocalViewDefinition):
-                raise NotImplementedError(
-                    "Local views in Encoding Operations are not generated yet."
-                )
         function = self._converter.function_reference(definition.typed_name)
         callees: list[renderer.FunctionReference] = []
         for step in self._operation_input.steps:
-            if isinstance(step, codegen_input.EncodingOperationExecution):
-                callees.append(
-                    self._converter.function_reference(step.encoding_operation)
-                )
-            else:
-                computer_operation = _lookup_computer_operation(definition)
-                if isinstance(computer_operation, _FunctionCall):
-                    callees.append(computer_operation.function)
+            match step:
+                case codegen_input.EncodingOperationExecution():
+                    callees.append(
+                        self._converter.function_reference(step.encoding_operation)
+                    )
+                case ast.ComputerOperationExecutionStatement():
+                    computer_operation = _lookup_computer_operation(definition)
+                    if isinstance(computer_operation, _FunctionCall):
+                        callees.append(computer_operation.function)
+                case ast.LocalViewDefinition() | ast.ViewSettingStatement():
+                    pass
         imports = {
             callee.module_name
             for callee in callees
@@ -320,21 +316,35 @@ class EncodingOperationDefinitionGenerator:
         view_names: dict[str, str] = {}
         for view in definition.views:
             view_names[view.typed_name.source_typed_name] = names.allocate(
-                view.typed_name.name_content.name
+                naming.VIEW_PREFIX + view.typed_name.name_content.name
             )
         statements: list[renderer.EncodingOperationStatement] = []
         # The local names that the last statement assigns, in order.
         last_written_names: list[str] = []
         for step in self._operation_input.steps:
-            if isinstance(step, codegen_input.EncodingOperationExecution):
-                call = self._call(step, view_names)
-                statements.append(call)
-                last_written_names = call.results
-            else:
-                computer_operation, last_written_names = self._computer_operation(
-                    definition, view_names
-                )
-                statements.append(computer_operation)
+            match step:
+                case ast.LocalViewDefinition():
+                    view_names[step.typed_name.source_typed_name] = names.allocate(
+                        naming.VIEW_PREFIX + step.typed_name.name_content.name
+                    )
+                case codegen_input.EncodingOperationExecution():
+                    call = self._call(step, view_names)
+                    statements.append(call)
+                    last_written_names = call.results
+                case ast.ViewSettingStatement():
+                    target = view_names[step.target.source_typed_name]
+                    statements.append(
+                        renderer.EncodingOperationStatement.Assignment(
+                            target=target,
+                            source=view_names[step.source.source_typed_name],
+                        )
+                    )
+                    last_written_names = [target]
+                case ast.ComputerOperationExecutionStatement():
+                    computer_operation, last_written_names = self._computer_operation(
+                        definition, view_names
+                    )
+                    statements.append(computer_operation)
         parameters: list[renderer.TypedLocalName] = []
         results: list[renderer.TypedLocalName] = []
         for view in definition.views:

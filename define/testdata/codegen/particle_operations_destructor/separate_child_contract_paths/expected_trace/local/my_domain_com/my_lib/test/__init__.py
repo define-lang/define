@@ -19,7 +19,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.left.LeftPosition,
@@ -27,41 +27,41 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction,
             ),
         )
-        left_source = literal.LocalPosition[Never](
+        position_left_source = literal.LocalPosition[Never](
             "position<left_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
-        right_source = literal.LocalPosition[Never](
+        position_right_source = literal.LocalPosition[Never](
             "position<right_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child_destructor.ChildDestructorAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        left_source.create_particle()
+        position_left_source.create_particle()
         literal.record_operation("test.create(left_source)")
-        left_source.particle.get_position(
+        position_left_source.particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("test.create(left_source::/extra)")
-        left_source.move_particle_to(
-            source.particle.get_position(
+        position_left_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.left.LeftPosition
             )
         )
         literal.record_operation("test.move(left_source, source::/left)")
-        right_source.create_particle()
+        position_right_source.create_particle()
         literal.record_operation("test.create(right_source)")
-        right_source.move_particle_to(
-            source.particle.get_position(
+        position_right_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.right.RightPosition
             )
         )
         literal.record_operation("test.move(right_source, source::/right)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

@@ -13,7 +13,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.marker_a.MarkerAPosition,
@@ -21,20 +21,20 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.destruct.DestructAction,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.destruct.DestructAction
         ).run()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).destroy_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).destroy_particle()
-        box.destroy_particle()
+        position_box.destroy_particle()

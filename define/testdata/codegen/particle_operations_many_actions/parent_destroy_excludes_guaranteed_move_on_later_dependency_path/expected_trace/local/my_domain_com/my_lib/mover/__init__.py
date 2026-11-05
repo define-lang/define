@@ -30,16 +30,16 @@ class MoverAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MoverDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        intermediate = literal.LocalPosition[Never](
+        position_intermediate = literal.LocalPosition[Never](
             "position<intermediate>",
         )
         self.get_interface_position(
             "position<source>"
         ).move_particle_to(
-            intermediate
+            position_intermediate
         )
         literal.record_operation("mover.move(source, intermediate)")
-        intermediate.move_particle_to(
+        position_intermediate.move_particle_to(
             self.get_interface_position(
                 "position<destination>"
             )

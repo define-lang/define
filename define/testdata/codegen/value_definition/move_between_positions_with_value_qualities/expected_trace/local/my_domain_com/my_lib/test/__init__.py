@@ -11,39 +11,39 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        item = literal.LocalPosition[int](
+        position_item = literal.LocalPosition[int](
             "position<item>",
         )
-        worker = literal.LocalPosition[Never](
+        position_worker = literal.LocalPosition[Never](
             "position<worker>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.provide.ProvideAction,
             ),
         )
-        item.create_particle()
+        position_item.create_particle()
         literal.record_operation("test.create(item)")
-        worker.create_particle()
+        position_worker.create_particle()
         literal.record_operation("test.create(worker)")
-        item.move_particle_to(
-            worker.particle.get_action(
+        position_item.move_particle_to(
+            position_worker.particle.get_action(
                 local.my_domain_com.my_lib.provide.ProvideAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(item, worker::/provide::input)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.provide.ProvideAction
         ).run()
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.provide.ProvideAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
-            item
+            position_item
         )
         literal.record_operation("test.move(worker::/provide::result, item)")
-        item.destroy_particle()
+        position_item.destroy_particle()
         literal.record_operation("test.destroy(item)")
-        worker.destroy_particle()
+        position_worker.destroy_particle()
         literal.record_operation("test.destroy(worker)")

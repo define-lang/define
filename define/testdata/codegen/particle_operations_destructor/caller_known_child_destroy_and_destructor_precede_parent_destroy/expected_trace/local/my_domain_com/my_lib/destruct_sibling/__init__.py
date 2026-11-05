@@ -14,16 +14,16 @@ class DestructSiblingAction(literal.Action):
 
     @override
     def run(self):
-        held_sibling = literal.LocalPosition[Never](
+        position_held_sibling = literal.LocalPosition[Never](
             "position<held_sibling>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.sibling.SiblingPosition
         ).move_particle_to(
-            held_sibling
+            position_held_sibling
         )
         literal.record_operation("destruct_sibling.move(/sibling, held_sibling)")
-        held_sibling.move_particle_to(
+        position_held_sibling.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.sibling.SiblingPosition
             )

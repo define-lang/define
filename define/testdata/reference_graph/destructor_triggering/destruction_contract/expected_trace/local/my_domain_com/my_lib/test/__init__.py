@@ -12,46 +12,46 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.close_thing.CloseThingAction,
             ),
         )
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.move_particle_to(
-            box.particle.get_action(
+        position_source.move_particle_to(
+            position_box.particle.get_action(
                 local.my_domain_com.my_lib.close_thing.CloseThingAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(source, box::/close_thing::target)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/close_thing::run)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).run(CloseThingDestructionContracts())
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/close_thing::run)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")
 
 

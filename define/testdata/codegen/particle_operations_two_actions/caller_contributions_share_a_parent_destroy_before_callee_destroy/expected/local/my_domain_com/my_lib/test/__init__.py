@@ -17,27 +17,27 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.branch.BranchPosition,
             ),
         )
-        source.create_particle()
-        source.particle.get_position(
+        position_source.create_particle()
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition
         ).create_particle()
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).create_particle()
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

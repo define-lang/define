@@ -109,7 +109,10 @@ type ActionStep = (
 )
 
 type EncodingOperationStep = (
-    EncodingOperationExecution | ast.ComputerOperationExecutionStatement
+    ast.LocalViewDefinition
+    | EncodingOperationExecution
+    | ast.ViewSettingStatement
+    | ast.ComputerOperationExecutionStatement
 )
 
 

@@ -13,7 +13,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        station = literal.LocalPosition[Never](
+        position_station = literal.LocalPosition[Never](
             "position<station>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.grind.GrindAction,
@@ -21,56 +21,56 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.brew.BrewAction,
             ),
         )
-        station.create_particle()
-        station.particle.get_action(
+        position_station.create_particle()
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).get_interface_position(
             "position<beans>"
         ).create_particle()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).get_interface_position(
             "position<cold_water>"
         ).create_particle()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.grind.GrindAction
         ).get_interface_position(
             "position<grounds>"
         ).move_particle_to(
-            station.particle.get_action(
+            position_station.particle.get_action(
                 local.my_domain_com.my_lib.brew.BrewAction
             ).get_interface_position(
                 "position<grounds>"
             )
         )
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.heat.HeatAction
         ).get_interface_position(
             "position<hot_water>"
         ).move_particle_to(
-            station.particle.get_action(
+            position_station.particle.get_action(
                 local.my_domain_com.my_lib.brew.BrewAction
             ).get_interface_position(
                 "position<water>"
             )
         )
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).run()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).get_interface_position(
             "position<cup>"
         ).destroy_particle()
-        station.particle.get_action(
+        position_station.particle.get_action(
             local.my_domain_com.my_lib.brew.BrewAction
         ).get_interface_position(
             "position<spent_puck>"
         ).destroy_particle()
-        station.destroy_particle()
+        position_station.destroy_particle()

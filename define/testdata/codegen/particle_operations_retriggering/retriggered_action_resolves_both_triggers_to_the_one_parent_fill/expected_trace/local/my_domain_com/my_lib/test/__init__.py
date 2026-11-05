@@ -12,30 +12,30 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gw = literal.LocalPosition[Never](
+        position_gw = literal.LocalPosition[Never](
             "position<gw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
-        gw.create_particle()
+        position_gw.create_particle()
         literal.record_operation("test.create(gw)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).create_particle()
         literal.record_operation("test.create(gw::/maker::held)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/maker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
@@ -43,22 +43,22 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::held::/c)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/maker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
@@ -66,17 +66,17 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::held::/c)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::held)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::trigger_pos)")
-        gw.destroy_particle()
+        position_gw.destroy_particle()
         literal.record_operation("test.destroy(gw)")

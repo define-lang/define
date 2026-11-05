@@ -12,19 +12,19 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        local_ = literal.LocalPosition[Never](
+        position_local = literal.LocalPosition[Never](
             "position<local>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.parent.ParentPosition,
             ),
         )
-        local_.create_particle()
+        position_local.create_particle()
         literal.record_operation("test.create(local)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         literal.record_operation("test.create(local::/parent)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
@@ -32,12 +32,12 @@ class TestAction(literal.Action):
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(local::/parent::/middle::trigger_pos)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
@@ -45,9 +45,9 @@ class TestAction(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent::/middle::trigger_pos)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent)")
-        local_.destroy_particle()
+        position_local.destroy_particle()
         literal.record_operation("test.destroy(local)")

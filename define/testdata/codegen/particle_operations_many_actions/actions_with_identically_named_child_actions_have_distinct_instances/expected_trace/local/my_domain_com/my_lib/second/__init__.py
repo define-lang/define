@@ -19,28 +19,28 @@ class SecondAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("second.create(box)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("second.create(box::/inner::trigger_pos)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("second.destroy(box::/inner::trigger_pos)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("second.destroy(box)")

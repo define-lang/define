@@ -12,44 +12,44 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
-        held = literal.LocalPosition[Never](
+        position_held = literal.LocalPosition[Never](
             "position<held>",
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/maker::run)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
-            held
+            position_held
         )
         literal.record_operation("test.move(box::/maker::result, held)")
-        held.particle.get_action(
+        position_held.particle.get_action(
             local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
-        held.destroy_particle()
+        position_held.destroy_particle()
         literal.record_operation("test.destroy(held)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/maker::run)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

@@ -18,10 +18,10 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        second_holder = literal.LocalPosition[Never](
+        position_second_holder = literal.LocalPosition[Never](
             "position<second_holder>",
         )
-        third_holder = literal.LocalPosition[Never](
+        position_third_holder = literal.LocalPosition[Never](
             "position<third_holder>",
         )
         self.on_particle.get_position(
@@ -39,10 +39,10 @@ class TestAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.second.SecondPosition
         ).move_particle_to(
-            second_holder
+            position_second_holder
         )
         literal.record_operation("test.move(/input::/second, second_holder)")
-        second_holder.destroy_particle()
+        position_second_holder.destroy_particle()
         literal.record_operation("test.destroy(second_holder)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.input.InputPosition
@@ -55,10 +55,10 @@ class TestAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.third.ThirdPosition
         ).move_particle_to(
-            third_holder
+            position_third_holder
         )
         literal.record_operation("test.move(/input::/third, third_holder)")
-        third_holder.destroy_particle()
+        position_third_holder.destroy_particle()
         literal.record_operation("test.destroy(third_holder)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle_action.MiddleActionAction

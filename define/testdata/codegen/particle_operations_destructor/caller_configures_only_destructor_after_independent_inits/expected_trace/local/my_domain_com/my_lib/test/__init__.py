@@ -18,29 +18,29 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
             ),
         )
-        parent_source = literal.LocalPosition[Never](
+        position_parent_source = literal.LocalPosition[Never](
             "position<parent_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        parent_source.create_particle()
+        position_parent_source.create_particle()
         literal.record_operation("test.create(parent_source)")
-        parent_source.move_particle_to(
+        position_parent_source.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.parent.ParentPosition
             )
         )
         literal.record_operation("test.move(parent_source, /parent)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.caller.CallerAction
             ).get_interface_position(

@@ -28,11 +28,11 @@ class ChildAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: ChildDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        scratch = literal.LocalPosition[Never](
+        position_scratch = literal.LocalPosition[Never](
             "position<scratch>",
         )
-        scratch.create_particle()
-        scratch.destroy_particle()
+        position_scratch.create_particle()
+        position_scratch.destroy_particle()
         destruction_contracts.run_destructors_position_trigger_pos(
             self.get_interface_position(
                 "position<trigger_pos>"

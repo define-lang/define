@@ -13,25 +13,25 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        a = literal.LocalPosition[Never](
+        position_a = literal.LocalPosition[Never](
             "position<a>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
-        a.create_particle()
+        position_a.create_particle()
         literal.record_operation("test.create(a)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("test.create(a::/b)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).create_particle()
         literal.record_operation("test.create(a::/b::/c)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
@@ -39,7 +39,7 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.d.DPosition
         ).create_particle()
         literal.record_operation("test.create(a::/b::/c::/d)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
@@ -47,15 +47,15 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.d.DPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(a::/b::/c::/d)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(a::/b::/c)")
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(a::/b)")
-        a.destroy_particle()
+        position_a.destroy_particle()
         literal.record_operation("test.destroy(a)")

@@ -17,7 +17,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first_source = literal.LocalPosition[Never](
+        position_first_source = literal.LocalPosition[Never](
             "position<first_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.direct_destructor.DirectDestructorAction,
@@ -25,22 +25,22 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
             ),
         )
-        second_source = literal.LocalPosition[Never](
+        position_second_source = literal.LocalPosition[Never](
             "position<second_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.shared_destructor.SharedDestructorAction,
             ),
         )
-        first_source.create_particle()
-        second_source.create_particle()
-        first_source.move_particle_to(
+        position_first_source.create_particle()
+        position_second_source.create_particle()
+        position_first_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<first>"
             )
         )
-        second_source.move_particle_to(
+        position_second_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

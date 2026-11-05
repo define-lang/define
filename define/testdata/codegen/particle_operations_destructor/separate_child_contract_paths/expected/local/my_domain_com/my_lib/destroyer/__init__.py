@@ -49,10 +49,10 @@ class DestroyerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        left_holder = literal.LocalPosition[Never](
+        position_left_holder = literal.LocalPosition[Never](
             "position<left_holder>",
         )
-        right_holder = literal.LocalPosition[Never](
+        position_right_holder = literal.LocalPosition[Never](
             "position<right_holder>",
         )
         self.get_interface_position(
@@ -60,9 +60,9 @@ class DestroyerAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
-            left_holder
+            position_left_holder
         )
-        left_holder.move_particle_to(
+        position_left_holder.move_particle_to(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
@@ -74,9 +74,9 @@ class DestroyerAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
-            right_holder
+            position_right_holder
         )
-        right_holder.move_particle_to(
+        position_right_holder.move_particle_to(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(

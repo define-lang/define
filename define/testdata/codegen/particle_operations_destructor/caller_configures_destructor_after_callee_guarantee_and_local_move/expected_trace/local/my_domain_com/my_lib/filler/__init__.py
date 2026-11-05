@@ -33,24 +33,24 @@ class FillerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: FillerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        scratch = literal.LocalPosition[Never](
+        position_scratch = literal.LocalPosition[Never](
             "position<scratch>",
         )
-        scratch.create_particle()
+        position_scratch.create_particle()
         literal.record_operation("filler.create(scratch)")
-        scratch.destroy_particle()
+        position_scratch.destroy_particle()
         literal.record_operation("filler.destroy(scratch)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.result.ResultPosition
         ).move_particle_to(
-            scratch
+            position_scratch
         )
         literal.record_operation("filler.move(/result, scratch)")
         destruction_contracts.run_destructors_global_position_result(
-            scratch.particle
+            position_scratch.particle
         )
         destruction_contracts.destroy_global_position_result(
-            scratch.particle
+            position_scratch.particle
         )
-        scratch.destroy_particle()
+        position_scratch.destroy_particle()
         literal.record_operation("filler.destroy(scratch)")

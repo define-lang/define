@@ -16,23 +16,23 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        left = literal.LocalPosition[Never](
+        position_left = literal.LocalPosition[Never](
             "position<left>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
             ),
         )
-        right = literal.LocalPosition[Never](
+        position_right = literal.LocalPosition[Never](
             "position<right>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
             ),
         )
-        left.create_particle()
+        position_left.create_particle()
         literal.record_operation("test.create(left)")
-        right.create_particle()
+        position_right.create_particle()
         literal.record_operation("test.create(right)")
-        left.move_particle_to(
+        position_left.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
@@ -40,7 +40,7 @@ class TestAction(literal.Action):
             )
         )
         literal.record_operation("test.move(left, /destroyer::left)")
-        right.move_particle_to(
+        position_right.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

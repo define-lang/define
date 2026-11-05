@@ -16,7 +16,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.construct_a.ConstructAAction,
@@ -24,28 +24,28 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.construct_c.ConstructCAction,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.construct_a.ConstructAAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.construct_c.ConstructCAction
         ).run()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/marker_a)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/marker_b)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.marker_c.MarkerCPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/marker_c)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

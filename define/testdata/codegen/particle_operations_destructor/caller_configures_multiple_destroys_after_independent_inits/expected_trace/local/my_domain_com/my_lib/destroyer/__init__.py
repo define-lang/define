@@ -44,7 +44,7 @@ class DestroyerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        retained_marker = literal.LocalPosition[Never](
+        position_retained_marker = literal.LocalPosition[Never](
             "position<retained_marker>",
         )
         self.get_interface_position(
@@ -52,10 +52,10 @@ class DestroyerAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            retained_marker
+            position_retained_marker
         )
         literal.record_operation("destroyer.move(target::/marker, retained_marker)")
-        retained_marker.move_particle_to(
+        position_retained_marker.move_particle_to(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(

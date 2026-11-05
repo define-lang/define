@@ -15,49 +15,49 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.fill_1.Fill1Action,
             ),
         )
-        holder.create_particle()
-        holder.particle.get_action(
+        position_holder.create_particle()
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.fill_1.Fill1Action
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.fill_1.Fill1Action
         ).run()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.child_a.ChildAPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.child_b.ChildBPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_a__position_middle(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.child_a.ChildAPosition
             ).particle.get_position(
                 local.my_domain_com.my_lib.middle.MiddlePosition
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_b__position_middle(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.child_b.ChildBPosition
             ).particle.get_position(
                 local.my_domain_com.my_lib.middle.MiddlePosition
             ).particle
         )
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.child_a.ChildAPosition
         ).destroy_particle()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.child_b.ChildBPosition
         ).destroy_particle()
-        holder.destroy_particle()
+        position_holder.destroy_particle()

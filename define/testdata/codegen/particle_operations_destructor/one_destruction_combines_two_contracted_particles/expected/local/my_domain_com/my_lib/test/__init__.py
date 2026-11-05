@@ -17,36 +17,36 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first_source = literal.LocalPosition[Never](
+        position_first_source = literal.LocalPosition[Never](
             "position<first_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
-        second_source = literal.LocalPosition[Never](
+        position_second_source = literal.LocalPosition[Never](
             "position<second_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
-        first_source.create_particle()
-        first_source.particle.get_position(
+        position_first_source.create_particle()
+        position_first_source.particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
-        second_source.create_particle()
-        second_source.particle.get_position(
+        position_second_source.create_particle()
+        position_second_source.particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
-        first_source.move_particle_to(
+        position_first_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<first>"
             )
         )
-        second_source.move_particle_to(
+        position_second_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(

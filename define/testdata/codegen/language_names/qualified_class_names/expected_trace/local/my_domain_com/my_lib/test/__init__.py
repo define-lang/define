@@ -58,19 +58,19 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.class_var__.ClassVarAction
         ).run()
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/child)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.class_var.ClassVarAction
             ).get_interface_position(
@@ -81,13 +81,13 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.class_var.ClassVarAction
         ).run(ClassVarDestructionContracts())
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/child)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.class_var__.ClassVarAction
             ).get_interface_position(

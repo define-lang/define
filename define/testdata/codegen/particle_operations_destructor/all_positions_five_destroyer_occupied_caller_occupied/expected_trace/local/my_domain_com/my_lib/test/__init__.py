@@ -22,7 +22,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        carrier = literal.LocalPosition[Never](
+        position_carrier = literal.LocalPosition[Never](
             "position<carrier>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first.FirstPosition,
@@ -35,21 +35,21 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction,
             ),
         )
-        carrier.create_particle()
+        position_carrier.create_particle()
         literal.record_operation("test.create(carrier)")
-        carrier.particle.get_position(
+        position_carrier.particle.get_position(
             local.my_domain_com.my_lib.first.FirstPosition
         ).create_particle()
         literal.record_operation("test.create(carrier::/first)")
-        carrier.particle.get_position(
+        position_carrier.particle.get_position(
             local.my_domain_com.my_lib.third.ThirdPosition
         ).create_particle()
         literal.record_operation("test.create(carrier::/third)")
-        carrier.particle.get_position(
+        position_carrier.particle.get_position(
             local.my_domain_com.my_lib.fifth.FifthPosition
         ).create_particle()
         literal.record_operation("test.create(carrier::/fifth)")
-        carrier.move_particle_to(
+        position_carrier.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

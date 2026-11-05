@@ -23,15 +23,15 @@ class MakerAction(literal.Action):
 
     @override
     def run(self):
-        temp = literal.LocalPosition[Never](
+        position_temp = literal.LocalPosition[Never](
             "position<temp>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        temp.create_particle()
+        position_temp.create_particle()
         literal.record_operation("maker.create(temp)")
-        temp.move_particle_to(
+        position_temp.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.child.ChildPosition
             )

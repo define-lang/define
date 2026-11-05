@@ -3,5 +3,5 @@
 import builtins
 
 
-def minimum(a: int, b: int) -> int:
-    return builtins.min(a, b)
+def minimum(view_a: int, view_b: int) -> int:
+    return builtins.min(view_a, view_b)

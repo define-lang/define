@@ -12,40 +12,40 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        destination = literal.LocalPosition[Never](
+        position_destination = literal.LocalPosition[Never](
             "position<destination>",
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(box::/child)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         literal.record_operation("test.create(box::/child::/leaf)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child::/leaf)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child)")
-        box.move_particle_to(
-            destination
+        position_box.move_particle_to(
+            position_destination
         )
         literal.record_operation("test.move(box, destination)")
-        destination.destroy_particle()
+        position_destination.destroy_particle()
         literal.record_operation("test.destroy(destination)")

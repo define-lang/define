@@ -16,24 +16,24 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(source::/a)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("test.create(source::/b)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(

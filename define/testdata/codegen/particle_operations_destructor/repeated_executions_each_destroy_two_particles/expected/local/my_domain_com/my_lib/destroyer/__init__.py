@@ -42,13 +42,13 @@ class DestroyerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        used_run = literal.LocalPosition[Never](
+        position_used_run = literal.LocalPosition[Never](
             "position<used_run>",
         )
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
-            used_run
+            position_used_run
         )
         destruction_contracts.run_destructors_position_first(
             self.get_interface_position(
@@ -77,9 +77,9 @@ class DestroyerAction(literal.Action):
             "position<second>"
         ).destroy_particle()
         destruction_contracts.run_destructors_position_run(
-            used_run.particle
+            position_used_run.particle
         )
         destruction_contracts.destroy_position_run(
-            used_run.particle
+            position_used_run.particle
         )
-        used_run.destroy_particle()
+        position_used_run.destroy_particle()

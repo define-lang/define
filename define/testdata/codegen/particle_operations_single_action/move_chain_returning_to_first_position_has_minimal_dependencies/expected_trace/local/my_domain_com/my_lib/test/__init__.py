@@ -9,35 +9,35 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        a = literal.LocalPosition[Never](
+        position_a = literal.LocalPosition[Never](
             "position<a>",
         )
-        b = literal.LocalPosition[Never](
+        position_b = literal.LocalPosition[Never](
             "position<b>",
         )
-        c = literal.LocalPosition[Never](
+        position_c = literal.LocalPosition[Never](
             "position<c>",
         )
-        d = literal.LocalPosition[Never](
+        position_d = literal.LocalPosition[Never](
             "position<d>",
         )
-        a.create_particle()
+        position_a.create_particle()
         literal.record_operation("test.create(a)")
-        a.move_particle_to(
-            b
+        position_a.move_particle_to(
+            position_b
         )
         literal.record_operation("test.move(a, b)")
-        b.move_particle_to(
-            c
+        position_b.move_particle_to(
+            position_c
         )
         literal.record_operation("test.move(b, c)")
-        c.move_particle_to(
-            d
+        position_c.move_particle_to(
+            position_d
         )
         literal.record_operation("test.move(c, d)")
-        d.move_particle_to(
-            a
+        position_d.move_particle_to(
+            position_a
         )
         literal.record_operation("test.move(d, a)")
-        a.destroy_particle()
+        position_a.destroy_particle()
         literal.record_operation("test.destroy(a)")

@@ -17,8 +17,8 @@ class OtherAction(literal.Action):
 
     @override
     def run(self):
-        other_item = literal.LocalPosition[Never](
+        position_other_item = literal.LocalPosition[Never](
             "position<other_item>",
         )
-        other_item.create_particle()
-        other_item.destroy_particle()
+        position_other_item.create_particle()
+        position_other_item.destroy_particle()

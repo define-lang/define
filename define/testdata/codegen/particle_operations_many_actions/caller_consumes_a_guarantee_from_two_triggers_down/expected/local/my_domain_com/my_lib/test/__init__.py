@@ -11,40 +11,40 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        result = literal.LocalPosition[Never](
+        position_result = literal.LocalPosition[Never](
             "position<result>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
-        box.create_particle()
-        box.particle.get_action(
+        position_box.create_particle()
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
-            result
+            position_result
         )
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        result.destroy_particle()
-        box.destroy_particle()
+        position_result.destroy_particle()
+        position_box.destroy_particle()

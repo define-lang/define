@@ -13,55 +13,55 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
-        state = literal.LocalPosition[Never](
+        position_state = literal.LocalPosition[Never](
             "position<state>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.occupied.OccupiedPosition,
                 local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
         )
-        gateway.create_particle()
-        state.create_particle()
-        state.particle.get_position(
+        position_gateway.create_particle()
+        position_state.create_particle()
+        position_state.particle.get_position(
             local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).create_particle()
-        source.create_particle()
-        source.move_particle_to(
-            gateway.particle.get_action(
+        position_source.create_particle()
+        position_source.move_particle_to(
+            position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<source>"
             )
         )
-        state.move_particle_to(
-            gateway.particle.get_action(
+        position_state.move_particle_to(
+            position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<state>"
             )
         )
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).destroy_particle()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).destroy_particle()
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()

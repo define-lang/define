@@ -42,22 +42,22 @@ class DestroyerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        first = literal.LocalPosition[Never](
+        position_first = literal.LocalPosition[Never](
             "position<first>",
         )
-        destruction_contracts_ = literal.LocalPosition[Never](
+        position_destruction_contracts = literal.LocalPosition[Never](
             "position<destruction_contracts>",
         )
         self.get_interface_position(
             "position<left>"
         ).move_particle_to(
-            first
+            position_first
         )
         literal.record_operation("destroyer.move(left, first)")
         self.get_interface_position(
             "position<right>"
         ).move_particle_to(
-            destruction_contracts_
+            position_destruction_contracts
         )
         literal.record_operation("destroyer.move(right, destruction_contracts)")
         destruction_contracts.run_destructors_position_run(
@@ -75,18 +75,18 @@ class DestroyerAction(literal.Action):
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(run)")
         destruction_contracts.run_destructors_position_left(
-            first.particle
+            position_first.particle
         )
         destruction_contracts.run_destructors_position_right(
-            destruction_contracts_.particle
+            position_destruction_contracts.particle
         )
         destruction_contracts.destroy_position_left(
-            first.particle
+            position_first.particle
         )
         destruction_contracts.destroy_position_right(
-            destruction_contracts_.particle
+            position_destruction_contracts.particle
         )
-        first.destroy_particle()
+        position_first.destroy_particle()
         literal.record_operation("destroyer.destroy(first)")
-        destruction_contracts_.destroy_particle()
+        position_destruction_contracts.destroy_particle()
         literal.record_operation("destroyer.destroy(destruction_contracts)")

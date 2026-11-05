@@ -28,10 +28,10 @@ class InnerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: InnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        noop = literal.LocalPosition[Never](
+        position_noop = literal.LocalPosition[Never](
             "position<noop>",
         )
-        noop.create_particle()
+        position_noop.create_particle()
         literal.record_operation("inner.create(noop)")
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(
@@ -47,5 +47,5 @@ class InnerAction(literal.Action):
             "position<run>"
         ).destroy_particle()
         literal.record_operation("inner.destroy(run)")
-        noop.destroy_particle()
+        position_noop.destroy_particle()
         literal.record_operation("inner.destroy(noop)")

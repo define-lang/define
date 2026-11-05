@@ -24,14 +24,14 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self):
-        first = literal.LocalPosition[Never](
+        position_first = literal.LocalPosition[Never](
             "position<first>",
         )
-        second = literal.LocalPosition[Never](
+        position_second = literal.LocalPosition[Never](
             "position<second>",
         )
-        first.create_particle()
-        second.create_particle()
+        position_first.create_particle()
+        position_second.create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.child_a.ChildAAction
         ).get_interface_position(
@@ -58,5 +58,5 @@ class MiddleAction(literal.Action):
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        first.destroy_particle()
-        second.destroy_particle()
+        position_first.destroy_particle()
+        position_second.destroy_particle()

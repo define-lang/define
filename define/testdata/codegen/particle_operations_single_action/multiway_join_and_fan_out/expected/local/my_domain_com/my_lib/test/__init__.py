@@ -12,24 +12,24 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).create_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
-        box.destroy_particle()
+        position_box.destroy_particle()

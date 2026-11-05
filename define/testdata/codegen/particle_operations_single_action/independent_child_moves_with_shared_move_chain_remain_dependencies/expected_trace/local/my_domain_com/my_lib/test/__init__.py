@@ -14,158 +14,158 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.box_a.BoxAPosition,
                 local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),
         )
-        stage_a = literal.LocalPosition[Never](
+        position_stage_a = literal.LocalPosition[Never](
             "position<stage_a>",
         )
-        stage_b = literal.LocalPosition[Never](
+        position_stage_b = literal.LocalPosition[Never](
             "position<stage_b>",
         )
-        workspace = literal.LocalPosition[Never](
+        position_workspace = literal.LocalPosition[Never](
             "position<workspace>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.box_a.BoxAPosition,
                 local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),
         )
-        moved_marker = literal.LocalPosition[Never](
+        position_moved_marker = literal.LocalPosition[Never](
             "position<moved_marker>",
         )
-        left_a_holder = literal.LocalPosition[Never](
+        position_left_a_holder = literal.LocalPosition[Never](
             "position<left_a_holder>",
         )
-        right_a_holder = literal.LocalPosition[Never](
+        position_right_a_holder = literal.LocalPosition[Never](
             "position<right_a_holder>",
         )
-        left_b_holder = literal.LocalPosition[Never](
+        position_left_b_holder = literal.LocalPosition[Never](
             "position<left_b_holder>",
         )
-        right_b_holder = literal.LocalPosition[Never](
+        position_right_b_holder = literal.LocalPosition[Never](
             "position<right_b_holder>",
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).create_particle()
         literal.record_operation("test.create(source::/box_a)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/box_a)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).create_particle()
         literal.record_operation("test.create(source::/box_b)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/box_b)")
-        source.move_particle_to(
-            stage_a
+        position_source.move_particle_to(
+            position_stage_a
         )
         literal.record_operation("test.move(source, stage_a)")
-        stage_a.move_particle_to(
-            stage_b
+        position_stage_a.move_particle_to(
+            position_stage_b
         )
         literal.record_operation("test.move(stage_a, stage_b)")
-        stage_b.move_particle_to(
-            workspace
+        position_stage_b.move_particle_to(
+            position_workspace
         )
         literal.record_operation("test.move(stage_b, workspace)")
-        workspace.move_particle_to(
-            moved_marker
+        position_workspace.move_particle_to(
+            position_moved_marker
         )
         literal.record_operation("test.move(workspace, moved_marker)")
-        workspace.create_particle()
+        position_workspace.create_particle()
         literal.record_operation("test.create(workspace)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_a)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_a::/left)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_a::/right)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
-            left_a_holder
+            position_left_a_holder
         )
         literal.record_operation("test.move(workspace::/box_a::/left, left_a_holder)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
-            right_a_holder
+            position_right_a_holder
         )
         literal.record_operation("test.move(workspace::/box_a::/right, right_a_holder)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxAPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(workspace::/box_a)")
-        left_a_holder.destroy_particle()
+        position_left_a_holder.destroy_particle()
         literal.record_operation("test.destroy(left_a_holder)")
-        right_a_holder.destroy_particle()
+        position_right_a_holder.destroy_particle()
         literal.record_operation("test.destroy(right_a_holder)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_b)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_b::/left)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).create_particle()
         literal.record_operation("test.create(workspace::/box_b::/right)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
-            left_b_holder
+            position_left_b_holder
         )
         literal.record_operation("test.move(workspace::/box_b::/left, left_b_holder)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
-            right_b_holder
+            position_right_b_holder
         )
         literal.record_operation("test.move(workspace::/box_b::/right, right_b_holder)")
-        workspace.particle.get_position(
+        position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxBPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(workspace::/box_b)")
-        left_b_holder.destroy_particle()
+        position_left_b_holder.destroy_particle()
         literal.record_operation("test.destroy(left_b_holder)")
-        right_b_holder.destroy_particle()
+        position_right_b_holder.destroy_particle()
         literal.record_operation("test.destroy(right_b_holder)")
-        workspace.destroy_particle()
+        position_workspace.destroy_particle()
         literal.record_operation("test.destroy(workspace)")
-        moved_marker.destroy_particle()
+        position_moved_marker.destroy_particle()
         literal.record_operation("test.destroy(moved_marker)")

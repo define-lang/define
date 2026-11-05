@@ -12,41 +12,41 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
-        carrier = literal.LocalPosition[Never](
+        position_carrier = literal.LocalPosition[Never](
             "position<carrier>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        box.create_particle()
-        carrier.create_particle()
-        carrier.move_particle_to(
-            box.particle.get_action(
+        position_box.create_particle()
+        position_carrier.create_particle()
+        position_carrier.move_particle_to(
+            position_box.particle.get_action(
                 local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<target>"
             )
         )
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).run(CalleeDestructionContracts())
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        box.destroy_particle()
+        position_box.destroy_particle()
 
 
 class CalleeDestructionContracts(local.my_domain_com.my_lib.callee.CalleeDestructionContracts):

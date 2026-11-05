@@ -12,26 +12,26 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
-        holder.create_particle()
+        position_holder.create_particle()
         literal.record_operation("test.create(holder)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(holder::/outer::run)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.box.BoxPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(holder::/box)")
-        holder.destroy_particle()
+        position_holder.destroy_particle()
         literal.record_operation("test.destroy(holder)")

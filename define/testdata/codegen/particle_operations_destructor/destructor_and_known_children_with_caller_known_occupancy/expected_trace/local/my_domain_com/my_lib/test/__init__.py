@@ -18,7 +18,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.marker_a.MarkerAPosition,
@@ -27,25 +27,25 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.destruct.DestructAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
         literal.record_operation("test.create(source::/marker_a)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).create_particle()
         literal.record_operation("test.create(source::/marker_b)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition
         ).create_particle()
         literal.record_operation("test.create(source::/maybe_empty)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/maybe_empty)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(

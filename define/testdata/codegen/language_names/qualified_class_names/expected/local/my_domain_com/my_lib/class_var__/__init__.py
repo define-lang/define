@@ -28,10 +28,10 @@ class ClassVarAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: ClassVarDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        self_ = literal.LocalPosition[Never](
+        position_self_ = literal.LocalPosition[Never](
             "position<self_>",
         )
-        self_.create_particle()
+        position_self_.create_particle()
         destruction_contracts.run_destructors_position_trigger_pos(
             self.get_interface_position(
                 "position<trigger_pos>"
@@ -45,4 +45,4 @@ class ClassVarAction(literal.Action):
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self_.destroy_particle()
+        position_self_.destroy_particle()

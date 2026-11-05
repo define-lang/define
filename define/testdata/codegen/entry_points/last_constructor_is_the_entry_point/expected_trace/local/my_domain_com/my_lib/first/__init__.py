@@ -9,10 +9,10 @@ class FirstAction(literal.Action):
 
     @override
     def run(self):
-        item = literal.LocalPosition[Never](
+        position_item = literal.LocalPosition[Never](
             "position<item>",
         )
-        item.create_particle()
+        position_item.create_particle()
         literal.record_operation("first.create(item)")
-        item.destroy_particle()
+        position_item.destroy_particle()
         literal.record_operation("first.destroy(item)")

@@ -16,33 +16,33 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.run.RunPosition,
             ),
         )
-        child_particle = literal.LocalPosition[Never](
+        position_child_particle = literal.LocalPosition[Never](
             "position<child_particle>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        child_particle.create_particle()
+        position_child_particle.create_particle()
         literal.record_operation("test.create(child_particle)")
-        child_particle.particle.get_position(
+        position_child_particle.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(child_particle::/child)")
-        child_particle.move_particle_to(
-            source.particle.get_position(
+        position_child_particle.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.run.RunPosition
             )
         )
         literal.record_operation("test.move(child_particle, source::/run)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

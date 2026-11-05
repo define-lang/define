@@ -9,17 +9,17 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first = literal.LocalPosition[Never](
+        position_first = literal.LocalPosition[Never](
             "position<first>",
         )
-        second = literal.LocalPosition[Never](
+        position_second = literal.LocalPosition[Never](
             "position<second>",
         )
-        first.create_particle()
+        position_first.create_particle()
         literal.record_operation("test.create(first)")
-        second.create_particle()
+        position_second.create_particle()
         literal.record_operation("test.create(second)")
-        first.destroy_particle()
+        position_first.destroy_particle()
         literal.record_operation("test.destroy(first)")
-        second.destroy_particle()
+        position_second.destroy_particle()
         literal.record_operation("test.destroy(second)")

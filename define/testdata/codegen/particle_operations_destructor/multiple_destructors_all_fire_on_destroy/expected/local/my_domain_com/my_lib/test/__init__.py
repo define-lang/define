@@ -12,18 +12,18 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destruct_a.DestructAAction,
                 local.my_domain_com.my_lib.destruct_b.DestructBAction,
             ),
         )
-        box.create_particle()
-        box.particle.get_action(
+        position_box.create_particle()
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.destruct_a.DestructAAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.destruct_b.DestructBAction
         ).run()
-        box.destroy_particle()
+        position_box.destroy_particle()

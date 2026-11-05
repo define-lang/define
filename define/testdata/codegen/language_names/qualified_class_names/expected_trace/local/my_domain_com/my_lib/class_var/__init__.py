@@ -47,55 +47,55 @@ class ClassVarAction(literal.Action):
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("class_var.destroy(/child)")
-        self_ = literal.LocalPosition[Never](
+        position_self = literal.LocalPosition[Never](
             "position<self>",
         )
-        self__ = literal.LocalPosition[Never](
+        position_self_ = literal.LocalPosition[Never](
             "position<self_>",
         )
-        literal_ = literal.LocalPosition[Never](
+        position_literal = literal.LocalPosition[Never](
             "position<literal>",
         )
-        super = literal.LocalPosition[Never](
+        position_super = literal.LocalPosition[Never](
             "position<super>",
         )
-        type = literal.LocalPosition[Never](
+        position_type = literal.LocalPosition[Never](
             "position<type>",
         )
-        typing = literal.LocalPosition[Never](
+        position_typing = literal.LocalPosition[Never](
             "position<typing>",
         )
-        class_ = literal.LocalPosition[Never](
+        position_class = literal.LocalPosition[Never](
             "position<class>",
         )
-        class__ = literal.LocalPosition[Never](
+        position_class_ = literal.LocalPosition[Never](
             "position<class_>",
         )
-        local_ = literal.LocalPosition[Never](
+        position_local = literal.LocalPosition[Never](
             "position<local>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        self_.create_particle()
+        position_self.create_particle()
         literal.record_operation("class_var.create(self)")
-        self__.create_particle()
+        position_self_.create_particle()
         literal.record_operation("class_var.create(self_)")
-        literal_.create_particle()
+        position_literal.create_particle()
         literal.record_operation("class_var.create(literal)")
-        super.create_particle()
+        position_super.create_particle()
         literal.record_operation("class_var.create(super)")
-        type.create_particle()
+        position_type.create_particle()
         literal.record_operation("class_var.create(type)")
-        typing.create_particle()
+        position_typing.create_particle()
         literal.record_operation("class_var.create(typing)")
-        class_.create_particle()
+        position_class.create_particle()
         literal.record_operation("class_var.create(class)")
-        class__.create_particle()
+        position_class_.create_particle()
         literal.record_operation("class_var.create(class_)")
-        local_.create_particle()
+        position_local.create_particle()
         literal.record_operation("class_var.create(local)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("class_var.create(local::/child)")
@@ -113,25 +113,25 @@ class ClassVarAction(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("class_var.destroy(trigger_pos)")
-        self_.destroy_particle()
+        position_self.destroy_particle()
         literal.record_operation("class_var.destroy(self)")
-        self__.destroy_particle()
+        position_self_.destroy_particle()
         literal.record_operation("class_var.destroy(self_)")
-        literal_.destroy_particle()
+        position_literal.destroy_particle()
         literal.record_operation("class_var.destroy(literal)")
-        super.destroy_particle()
+        position_super.destroy_particle()
         literal.record_operation("class_var.destroy(super)")
-        type.destroy_particle()
+        position_type.destroy_particle()
         literal.record_operation("class_var.destroy(type)")
-        typing.destroy_particle()
+        position_typing.destroy_particle()
         literal.record_operation("class_var.destroy(typing)")
-        class_.destroy_particle()
+        position_class.destroy_particle()
         literal.record_operation("class_var.destroy(class)")
-        class__.destroy_particle()
+        position_class_.destroy_particle()
         literal.record_operation("class_var.destroy(class_)")
-        local_.particle.get_position(
+        position_local.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("class_var.destroy(local::/child)")
-        local_.destroy_particle()
+        position_local.destroy_particle()
         literal.record_operation("class_var.destroy(local)")

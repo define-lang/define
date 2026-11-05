@@ -13,21 +13,21 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
-        gateway.create_particle()
+        position_gateway.create_particle()
         literal.record_operation("test.create(gateway)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/other::input)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
@@ -35,7 +35,7 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(gateway::/other::input::/item)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
@@ -45,28 +45,28 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.deep.DeepPosition
         ).create_particle()
         literal.record_operation("test.create(gateway::/other::input::/item::/deep)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/other::trigger_pos)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).run(OtherDestructionContracts())
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/other::input)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/other::trigger_pos)")
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()
         literal.record_operation("test.destroy(gateway)")
 
 

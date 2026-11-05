@@ -159,6 +159,7 @@ parenthesize-tuple-in-subscript = true
   "I001", # Import ordering depends on isort first-party config of the target project.
   "I002", # Generated code does not inherit this project's required imports.
   "N801", # Generated code may produce non-CapWords class names.
+  "RET504", # Each statement in an Encoding Operation generates its own Python statement.
   "RUF052", # Generated names preserve the source program's identifiers.
   "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
@@ -175,6 +176,7 @@ parenthesize-tuple-in-subscript = true
   "I001", # Import ordering depends on isort first-party config of the target project.
   "I002", # Generated code does not inherit this project's required imports.
   "N801", # Generated code may produce non-CapWords class names.
+  "RET504", # Each statement in an Encoding Operation generates its own Python statement.
   "RUF052", # Generated names preserve the source program's identifiers.
   "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]

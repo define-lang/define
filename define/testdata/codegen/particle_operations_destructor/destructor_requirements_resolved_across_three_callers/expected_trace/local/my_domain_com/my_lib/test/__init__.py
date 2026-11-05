@@ -18,7 +18,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.callee_known.CalleeKnownPosition,
@@ -27,29 +27,29 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/callee_known)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/callee_known)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/middle_known)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/middle_known)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/creator_known)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(

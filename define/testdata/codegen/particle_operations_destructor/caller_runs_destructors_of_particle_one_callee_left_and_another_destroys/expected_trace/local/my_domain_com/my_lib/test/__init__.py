@@ -17,24 +17,24 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.make_part.MakePartAction,
             ),
         )
-        holder.create_particle()
+        position_holder.create_particle()
         literal.record_operation("test.create(holder)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.make_part.MakePartAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(holder::/make_part::run)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.make_part.MakePartAction
         ).run()
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

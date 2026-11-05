@@ -12,53 +12,53 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder_first = literal.LocalPosition[Never](
+        position_holder_first = literal.LocalPosition[Never](
             "position<holder_first>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first.FirstAction,
             ),
         )
-        holder_second = literal.LocalPosition[Never](
+        position_holder_second = literal.LocalPosition[Never](
             "position<holder_second>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.second.SecondAction,
             ),
         )
-        holder_first.create_particle()
+        position_holder_first.create_particle()
         literal.record_operation("test.create(holder_first)")
-        holder_first.particle.get_action(
+        position_holder_first.particle.get_action(
             local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(holder_first::/first::trigger_pos)")
-        holder_first.particle.get_action(
+        position_holder_first.particle.get_action(
             local.my_domain_com.my_lib.first.FirstAction
         ).run()
-        holder_first.particle.get_action(
+        position_holder_first.particle.get_action(
             local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(holder_first::/first::trigger_pos)")
-        holder_second.create_particle()
+        position_holder_second.create_particle()
         literal.record_operation("test.create(holder_second)")
-        holder_second.particle.get_action(
+        position_holder_second.particle.get_action(
             local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(holder_second::/second::trigger_pos)")
-        holder_second.particle.get_action(
+        position_holder_second.particle.get_action(
             local.my_domain_com.my_lib.second.SecondAction
         ).run()
-        holder_second.particle.get_action(
+        position_holder_second.particle.get_action(
             local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(holder_second::/second::trigger_pos)")
-        holder_first.destroy_particle()
+        position_holder_first.destroy_particle()
         literal.record_operation("test.destroy(holder_first)")
-        holder_second.destroy_particle()
+        position_holder_second.destroy_particle()
         literal.record_operation("test.destroy(holder_second)")

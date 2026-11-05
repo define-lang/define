@@ -45,7 +45,7 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        retained_child = literal.LocalPosition[Never](
+        position_retained_child = literal.LocalPosition[Never](
             "position<retained_child>",
         )
         self.get_interface_position(
@@ -53,9 +53,9 @@ class MiddleAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).move_particle_to(
-            retained_child
+            position_retained_child
         )
-        retained_child.move_particle_to(
+        position_retained_child.move_particle_to(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(

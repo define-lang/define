@@ -11,43 +11,43 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gw = literal.LocalPosition[Never](
+        position_gw = literal.LocalPosition[Never](
             "position<gw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
-        gw.create_particle()
+        position_gw.create_particle()
         literal.record_operation("test.create(gw)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/worker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/worker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/worker::trigger_pos)")
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/worker::trigger_pos)")
-        gw.destroy_particle()
+        position_gw.destroy_particle()
         literal.record_operation("test.destroy(gw)")

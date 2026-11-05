@@ -28,10 +28,10 @@ class HelperAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: HelperDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        work = literal.LocalPosition[Never](
+        position_work = literal.LocalPosition[Never](
             "position<work>",
         )
-        work.create_particle()
+        position_work.create_particle()
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(
                 "position<run>"
@@ -45,4 +45,4 @@ class HelperAction(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        work.destroy_particle()
+        position_work.destroy_particle()

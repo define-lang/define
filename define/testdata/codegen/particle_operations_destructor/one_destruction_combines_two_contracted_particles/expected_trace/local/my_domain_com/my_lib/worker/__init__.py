@@ -39,19 +39,19 @@ class WorkerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: WorkerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.left.LeftPosition,
                 local.my_domain_com.my_lib.right.RightPosition,
             ),
         )
-        holder.create_particle()
+        position_holder.create_particle()
         literal.record_operation("worker.create(holder)")
         self.get_interface_position(
             "position<first>"
         ).move_particle_to(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.left.LeftPosition
             )
         )
@@ -59,38 +59,38 @@ class WorkerAction(literal.Action):
         self.get_interface_position(
             "position<second>"
         ).move_particle_to(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.right.RightPosition
             )
         )
         literal.record_operation("worker.move(second, holder::/right)")
         destruction_contracts.run_destructors_position_first(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.left.LeftPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_second(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
         destruction_contracts.destroy_position_first(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.left.LeftPosition
             ).particle
         )
         destruction_contracts.destroy_position_second(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.left.LeftPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(holder::/left)")
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.right.RightPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(holder::/right)")
-        holder.destroy_particle()
+        position_holder.destroy_particle()
         literal.record_operation("worker.destroy(holder)")

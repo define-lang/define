@@ -9,17 +9,17 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        work_a = literal.LocalPosition[Never](
+        position_work_a = literal.LocalPosition[Never](
             "position<work_a>",
         )
-        work_b = literal.LocalPosition[Never](
+        position_work_b = literal.LocalPosition[Never](
             "position<work_b>",
         )
-        work_a.create_particle()
+        position_work_a.create_particle()
         literal.record_operation("destructor.create(work_a)")
-        work_a.destroy_particle()
+        position_work_a.destroy_particle()
         literal.record_operation("destructor.destroy(work_a)")
-        work_b.create_particle()
+        position_work_b.create_particle()
         literal.record_operation("destructor.create(work_b)")
-        work_b.destroy_particle()
+        position_work_b.destroy_particle()
         literal.record_operation("destructor.destroy(work_b)")

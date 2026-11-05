@@ -13,13 +13,13 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder_a = literal.LocalPosition[Never](
+        position_holder_a = literal.LocalPosition[Never](
             "position<holder_a>",
         )
-        holder_c = literal.LocalPosition[Never](
+        position_holder_c = literal.LocalPosition[Never](
             "position<holder_c>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.origin.OriginPosition,
@@ -27,31 +27,31 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
-        box.create_particle()
-        box.particle.get_position(
+        position_box.create_particle()
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
-            holder_a
+            position_holder_a
         )
-        holder_a.move_particle_to(
-            box.particle.get_position(
+        position_holder_a.move_particle_to(
+            position_box.particle.get_position(
                 local.my_domain_com.my_lib.middle.MiddlePosition
             )
         )
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.middle.MiddlePosition
         ).move_particle_to(
-            box.particle.get_position(
+            position_box.particle.get_position(
                 local.my_domain_com.my_lib.target.TargetPosition
             )
         )
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
-            holder_c
+            position_holder_c
         )
-        box.destroy_particle()
-        holder_c.destroy_particle()
+        position_box.destroy_particle()
+        position_holder_c.destroy_particle()

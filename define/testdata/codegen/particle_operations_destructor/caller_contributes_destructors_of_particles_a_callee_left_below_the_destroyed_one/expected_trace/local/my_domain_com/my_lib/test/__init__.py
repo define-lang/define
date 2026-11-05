@@ -18,25 +18,25 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.make.MakeAction,
                 local.my_domain_com.my_lib.box.BoxPosition,
             ),
         )
-        holder.create_particle()
+        position_holder.create_particle()
         literal.record_operation("test.create(holder)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.make.MakeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(holder::/make::run)")
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.make.MakeAction
         ).run()
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.box.BoxPosition
         ).move_particle_to(
             self.on_particle.get_action(
@@ -55,7 +55,7 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        holder.destroy_particle()
+        position_holder.destroy_particle()
         literal.record_operation("test.destroy(holder)")
 
 

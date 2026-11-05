@@ -19,7 +19,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.first_child.FirstChildPosition,
@@ -27,9 +27,9 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.third_child.ThirdChildPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/first_child)")
@@ -39,7 +39,7 @@ class TestAction(literal.Action):
             "position<other_input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::other_input)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
@@ -50,9 +50,9 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts())
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/second_child)")
@@ -62,7 +62,7 @@ class TestAction(literal.Action):
             "position<other_input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::other_input)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
@@ -73,13 +73,13 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts_())
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.third_child.ThirdChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/third_child)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.other.OtherAction
             ).get_interface_position(

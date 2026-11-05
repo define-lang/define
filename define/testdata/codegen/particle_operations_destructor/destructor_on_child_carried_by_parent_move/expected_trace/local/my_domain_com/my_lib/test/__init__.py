@@ -12,33 +12,33 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        staging = literal.LocalPosition[Never](
+        position_staging = literal.LocalPosition[Never](
             "position<staging>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
         )
-        staging.create_particle()
+        position_staging.create_particle()
         literal.record_operation("test.create(staging)")
-        staging.particle.get_position(
+        position_staging.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(staging::/child)")
-        staging.move_particle_to(
-            box
+        position_staging.move_particle_to(
+            position_box
         )
         literal.record_operation("test.move(staging, box)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

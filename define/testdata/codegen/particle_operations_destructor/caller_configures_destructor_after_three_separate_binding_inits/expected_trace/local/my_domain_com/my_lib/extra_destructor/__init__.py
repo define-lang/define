@@ -9,10 +9,10 @@ class ExtraDestructorAction(literal.Action):
 
     @override
     def run(self):
-        marker = literal.LocalPosition[Never](
+        position_marker = literal.LocalPosition[Never](
             "position<marker>",
         )
-        marker.create_particle()
+        position_marker.create_particle()
         literal.record_operation("extra_destructor.create(marker)")
-        marker.destroy_particle()
+        position_marker.destroy_particle()
         literal.record_operation("extra_destructor.destroy(marker)")

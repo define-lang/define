@@ -25,7 +25,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        trash = literal.LocalPosition[Never](
+        position_trash = literal.LocalPosition[Never](
             "position<trash>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.caller_only.CallerOnlyPosition,
@@ -51,13 +51,13 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.child_b.ChildBPosition
         ).create_particle()
         literal.record_operation("test.create(/caller_parent::/child_b)")
-        trash.create_particle()
+        position_trash.create_particle()
         literal.record_operation("test.create(trash)")
-        trash.particle.get_position(
+        position_trash.particle.get_position(
             local.my_domain_com.my_lib.caller_only.CallerOnlyPosition
         ).create_particle()
         literal.record_operation("test.create(trash::/caller_only)")
-        trash.move_particle_to(
+        position_trash.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.mover.MoverAction
             ).get_interface_position(

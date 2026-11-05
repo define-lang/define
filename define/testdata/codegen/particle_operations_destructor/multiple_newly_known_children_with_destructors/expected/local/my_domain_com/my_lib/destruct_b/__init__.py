@@ -9,8 +9,8 @@ class DestructBAction(literal.Action):
 
     @override
     def run(self):
-        _noop_b = literal.LocalPosition[Never](
+        position__noop_b = literal.LocalPosition[Never](
             "position<_noop_b>",
         )
-        _noop_b.create_particle()
-        _noop_b.destroy_particle()
+        position__noop_b.create_particle()
+        position__noop_b.destroy_particle()

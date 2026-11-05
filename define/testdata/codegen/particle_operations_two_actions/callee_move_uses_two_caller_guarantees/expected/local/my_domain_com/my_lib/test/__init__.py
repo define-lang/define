@@ -16,7 +16,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
         )
         self.on_particle.get_position(
@@ -25,8 +25,8 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
-        source.create_particle()
-        source.move_particle_to(
+        position_source.create_particle()
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(

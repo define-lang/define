@@ -12,58 +12,58 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
         )
-        gw_a = literal.LocalPosition[Never](
+        position_gw_a = literal.LocalPosition[Never](
             "position<gw_a>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
-        gw_b = literal.LocalPosition[Never](
+        position_gw_b = literal.LocalPosition[Never](
             "position<gw_b>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.helper.HelperAction,
             ),
         )
-        source.create_particle()
-        gw_a.create_particle()
-        gw_b.create_particle()
-        source.move_particle_to(
-            gw_a.particle.get_action(
+        position_source.create_particle()
+        position_gw_a.create_particle()
+        position_gw_b.create_particle()
+        position_source.move_particle_to(
+            position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
-        gw_a.particle.get_action(
+        position_gw_a.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        source.create_particle()
-        source.move_particle_to(
-            gw_b.particle.get_action(
+        position_source.create_particle()
+        position_source.move_particle_to(
+            position_gw_b.particle.get_action(
                 local.my_domain_com.my_lib.helper.HelperAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
-        gw_b.particle.get_action(
+        position_gw_b.particle.get_action(
             local.my_domain_com.my_lib.helper.HelperAction
         ).run()
-        gw_b.particle.get_action(
+        position_gw_b.particle.get_action(
             local.my_domain_com.my_lib.helper.HelperAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
-            gw_a.particle.get_action(
+            position_gw_a.particle.get_action(
                 local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
-        gw_a.particle.get_action(
+        position_gw_a.particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
-        gw_a.destroy_particle()
-        gw_b.destroy_particle()
+        position_gw_a.destroy_particle()
+        position_gw_b.destroy_particle()

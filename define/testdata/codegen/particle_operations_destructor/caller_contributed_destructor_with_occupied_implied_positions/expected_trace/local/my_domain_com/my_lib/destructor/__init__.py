@@ -17,22 +17,22 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        first_holder = literal.LocalPosition[Never](
+        position_first_holder = literal.LocalPosition[Never](
             "position<first_holder>",
         )
-        transitive_holder = literal.LocalPosition[Never](
+        position_transitive_holder = literal.LocalPosition[Never](
             "position<transitive_holder>",
         )
-        last_holder = literal.LocalPosition[Never](
+        position_last_holder = literal.LocalPosition[Never](
             "position<last_holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).move_particle_to(
-            first_holder
+            position_first_holder
         )
         literal.record_operation("destructor.move(/occupied_first, first_holder)")
-        first_holder.move_particle_to(
+        position_first_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
             )
@@ -43,10 +43,10 @@ class DestructorAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.TransitivePosition
         ).move_particle_to(
-            transitive_holder
+            position_transitive_holder
         )
         literal.record_operation("destructor.move(/occupied_first::/transitive, transitive_holder)")
-        transitive_holder.move_particle_to(
+        position_transitive_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
             ).particle.get_position(
@@ -57,10 +57,10 @@ class DestructorAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
         ).move_particle_to(
-            last_holder
+            position_last_holder
         )
         literal.record_operation("destructor.move(/occupied_last, last_holder)")
-        last_holder.move_particle_to(
+        position_last_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
             )

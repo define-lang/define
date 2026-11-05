@@ -168,7 +168,7 @@ class ActionStatementsGenerator:
             match statement:
                 case ast.LocalPositionDefinition():
                     source_name = statement.typed_name.name_content.name
-                    name = names.allocate(source_name)
+                    name = names.allocate(naming.POSITION_PREFIX + source_name)
                     local_position_names[source_name] = name
                     statements.append(
                         renderer.ActionStatement.LocalPosition(
@@ -378,7 +378,7 @@ class ActionStatementsGenerator:
         result_names: list[str] = []
         if len(outputs) > 1:
             for view_name in output_view_names:
-                result_names.append(names.allocate(view_name))
+                result_names.append(names.allocate(naming.VIEW_PREFIX + view_name))
         return renderer.ActionStatement.ExecuteOperation(
             function=self._converter.function_reference(execution.encoding_operation),
             arguments=arguments,

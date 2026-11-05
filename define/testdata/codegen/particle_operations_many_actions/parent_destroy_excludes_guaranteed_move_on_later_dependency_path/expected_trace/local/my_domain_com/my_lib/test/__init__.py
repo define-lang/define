@@ -11,34 +11,34 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        parent = literal.LocalPosition[Never](
+        position_parent = literal.LocalPosition[Never](
             "position<parent>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.mover.MoverAction,
             ),
         )
-        parent.create_particle()
+        position_parent.create_particle()
         literal.record_operation("test.create(parent)")
-        parent.particle.get_action(
+        position_parent.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         literal.record_operation("test.create(parent::/mover::source)")
-        parent.particle.get_action(
+        position_parent.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(parent::/mover::run)")
-        parent.particle.get_action(
+        position_parent.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).run()
-        parent.particle.get_action(
+        position_parent.particle.get_action(
             local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
         literal.record_operation("test.destroy(parent::/mover::destination)")
-        parent.destroy_particle()
+        position_parent.destroy_particle()
         literal.record_operation("test.destroy(parent)")

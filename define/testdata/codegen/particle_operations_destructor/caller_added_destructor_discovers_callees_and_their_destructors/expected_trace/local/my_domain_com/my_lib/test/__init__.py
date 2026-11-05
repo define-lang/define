@@ -12,46 +12,46 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
-        carrier = literal.LocalPosition[Never](
+        position_carrier = literal.LocalPosition[Never](
             "position<carrier>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        carrier.create_particle()
+        position_carrier.create_particle()
         literal.record_operation("test.create(carrier)")
-        carrier.move_particle_to(
-            box.particle.get_action(
+        position_carrier.move_particle_to(
+            position_box.particle.get_action(
                 local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(carrier, box::/callee::target)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/callee::run)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).run(CalleeDestructionContracts())
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/callee::run)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")
 
 

@@ -12,41 +12,41 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        gateway.create_particle()
+        position_gateway.create_particle()
         literal.record_operation("test.create(gateway)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/middle::run)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/middle::result)")
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/middle::run)")
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()
         literal.record_operation("test.destroy(gateway)")

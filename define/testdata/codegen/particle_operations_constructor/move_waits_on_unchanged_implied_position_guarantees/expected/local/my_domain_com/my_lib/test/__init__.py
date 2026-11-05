@@ -13,33 +13,33 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.construct_a.ConstructAAction,
                 local.my_domain_com.my_lib.construct_b.ConstructBAction,
             ),
         )
-        dest = literal.LocalPosition[Never](
+        position_dest = literal.LocalPosition[Never](
             "position<dest>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )
-        source.create_particle()
-        source.particle.get_action(
+        position_source.create_particle()
+        position_source.particle.get_action(
             local.my_domain_com.my_lib.construct_a.ConstructAAction
         ).run()
-        source.particle.get_action(
+        position_source.particle.get_action(
             local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
-        source.move_particle_to(
-            dest
+        position_source.move_particle_to(
+            position_dest
         )
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
-        dest.destroy_particle()
+        position_dest.destroy_particle()

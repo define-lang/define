@@ -12,67 +12,67 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.mid.MidPosition,
             ),
         )
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.mid.MidPosition,
             ),
         )
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).create_particle()
         literal.record_operation("test.create(box::/mid)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         literal.record_operation("test.create(box::/mid::/leaf)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/mid::/leaf)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/mid)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).create_particle()
         literal.record_operation("test.create(source::/mid)")
-        source.particle.get_position(
+        position_source.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         literal.record_operation("test.create(source::/mid::/leaf)")
-        source.move_particle_to(
-            box
+        position_source.move_particle_to(
+            position_box
         )
         literal.record_operation("test.move(source, box)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/mid::/leaf)")
-        box.particle.get_position(
+        position_box.particle.get_position(
             local.my_domain_com.my_lib.mid.MidPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/mid)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

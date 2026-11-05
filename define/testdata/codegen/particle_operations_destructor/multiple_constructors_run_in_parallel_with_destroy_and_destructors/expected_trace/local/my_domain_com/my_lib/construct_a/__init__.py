@@ -9,10 +9,10 @@ class ConstructAAction(literal.Action):
 
     @override
     def run(self):
-        scratch = literal.LocalPosition[Never](
+        position_scratch = literal.LocalPosition[Never](
             "position<scratch>",
         )
-        scratch.create_particle()
+        position_scratch.create_particle()
         literal.record_operation("construct_a.create(scratch)")
-        scratch.destroy_particle()
+        position_scratch.destroy_particle()
         literal.record_operation("construct_a.destroy(scratch)")

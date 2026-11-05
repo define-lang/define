@@ -9,8 +9,8 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        output = literal.LocalPosition[Never](
+        position_output = literal.LocalPosition[Never](
             "position<output>",
         )
-        output.create_particle()
-        output.destroy_particle()
+        position_output.create_particle()
+        position_output.destroy_particle()

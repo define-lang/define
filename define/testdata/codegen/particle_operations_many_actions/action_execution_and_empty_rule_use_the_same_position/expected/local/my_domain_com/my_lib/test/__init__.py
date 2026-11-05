@@ -11,34 +11,34 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gateway = literal.LocalPosition[Never](
+        position_gateway = literal.LocalPosition[Never](
             "position<gateway>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        gateway.create_particle()
-        gateway.particle.get_action(
+        position_gateway.create_particle()
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        gateway.particle.get_action(
+        position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<holder>"
         ).destroy_particle()
-        gateway.destroy_particle()
+        position_gateway.destroy_particle()

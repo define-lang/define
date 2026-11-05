@@ -16,38 +16,38 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        first_a = literal.LocalPosition[Never](
+        position_first_a = literal.LocalPosition[Never](
             "position<first_a>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
             ),
         )
-        first_none = literal.LocalPosition[Never](
+        position_first_none = literal.LocalPosition[Never](
             "position<first_none>",
         )
-        second_b = literal.LocalPosition[Never](
+        position_second_b = literal.LocalPosition[Never](
             "position<second_b>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
-        second_a_and_b = literal.LocalPosition[Never](
+        position_second_a_and_b = literal.LocalPosition[Never](
             "position<second_a_and_b>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.destructor_a.DestructorAAction,
                 local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
-        first_a.create_particle()
-        first_none.create_particle()
-        first_a.move_particle_to(
+        position_first_a.create_particle()
+        position_first_none.create_particle()
+        position_first_a.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<first>"
             )
         )
-        first_none.move_particle_to(
+        position_first_none.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
@@ -62,16 +62,16 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
-        second_b.create_particle()
-        second_a_and_b.create_particle()
-        second_b.move_particle_to(
+        position_second_b.create_particle()
+        position_second_a_and_b.create_particle()
+        position_second_b.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<first>"
             )
         )
-        second_a_and_b.move_particle_to(
+        position_second_a_and_b.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

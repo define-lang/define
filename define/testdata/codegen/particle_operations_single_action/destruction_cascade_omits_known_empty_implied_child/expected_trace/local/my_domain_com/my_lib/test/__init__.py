@@ -15,7 +15,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        destination = literal.LocalPosition[Never](
+        position_destination = literal.LocalPosition[Never](
             "position<destination>",
         )
         self.on_particle.get_position(
@@ -33,12 +33,12 @@ class TestAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).move_particle_to(
-            destination
+            position_destination
         )
         literal.record_operation("test.move(/parent::/child, destination)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(/parent)")
-        destination.destroy_particle()
+        position_destination.destroy_particle()
         literal.record_operation("test.destroy(destination)")

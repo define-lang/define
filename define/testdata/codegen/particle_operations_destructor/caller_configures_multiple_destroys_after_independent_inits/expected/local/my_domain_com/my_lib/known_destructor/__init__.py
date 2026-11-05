@@ -14,15 +14,15 @@ class KnownDestructorAction(literal.Action):
 
     @override
     def run(self):
-        retained_marker = literal.LocalPosition[Never](
+        position_retained_marker = literal.LocalPosition[Never](
             "position<retained_marker>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            retained_marker
+            position_retained_marker
         )
-        retained_marker.move_particle_to(
+        position_retained_marker.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.MarkerPosition
             )

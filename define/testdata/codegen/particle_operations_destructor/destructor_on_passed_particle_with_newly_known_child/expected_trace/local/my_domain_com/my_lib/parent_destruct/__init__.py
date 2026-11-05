@@ -9,10 +9,10 @@ class ParentDestructAction(literal.Action):
 
     @override
     def run(self):
-        _noop = literal.LocalPosition[Never](
+        position__noop = literal.LocalPosition[Never](
             "position<_noop>",
         )
-        _noop.create_particle()
+        position__noop.create_particle()
         literal.record_operation("parent_destruct.create(_noop)")
-        _noop.destroy_particle()
+        position__noop.destroy_particle()
         literal.record_operation("parent_destruct.destroy(_noop)")

@@ -17,16 +17,16 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        _holder = literal.LocalPosition[Never](
+        position__holder = literal.LocalPosition[Never](
             "position<_holder>",
         )
         self.get_interface_position(
             "position<item>"
         ).move_particle_to(
-            _holder
+            position__holder
         )
         literal.record_operation("destructor.move(item, _holder)")
-        _holder.move_particle_to(
+        position__holder.move_particle_to(
             self.get_interface_position(
                 "position<item>"
             )

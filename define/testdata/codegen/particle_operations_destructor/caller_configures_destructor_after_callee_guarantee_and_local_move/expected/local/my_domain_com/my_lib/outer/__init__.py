@@ -55,7 +55,7 @@ class OuterAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: OuterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        receiver = literal.LocalPosition[Never](
+        position_receiver = literal.LocalPosition[Never](
             "position<receiver>",
         )
         self.on_particle.get_action(
@@ -79,9 +79,9 @@ class OuterAction(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
-            receiver
+            position_receiver
         )
-        receiver.move_particle_to(
+        position_receiver.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.result.ResultPosition
             )

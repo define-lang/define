@@ -19,34 +19,34 @@ class RunnerAction(literal.Action):
 
     @override
     def run(self):
-        wrapper = literal.LocalPosition[Never](
+        position_wrapper = literal.LocalPosition[Never](
             "position<wrapper>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        wrapper.create_particle()
+        position_wrapper.create_particle()
         literal.record_operation("runner.create(wrapper)")
-        wrapper.particle.get_action(
+        position_wrapper.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<box>"
         ).create_particle()
         literal.record_operation("runner.create(wrapper::/middle::box)")
-        wrapper.particle.get_action(
+        position_wrapper.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("runner.create(wrapper::/middle::run)")
-        wrapper.particle.get_action(
+        position_wrapper.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        wrapper.particle.get_action(
+        position_wrapper.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<final>"
         ).destroy_particle()
         literal.record_operation("runner.destroy(wrapper::/middle::final)")
-        wrapper.destroy_particle()
+        position_wrapper.destroy_particle()
         literal.record_operation("runner.destroy(wrapper)")

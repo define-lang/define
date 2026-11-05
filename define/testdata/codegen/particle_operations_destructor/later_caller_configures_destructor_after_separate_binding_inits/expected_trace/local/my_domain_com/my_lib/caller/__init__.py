@@ -45,39 +45,39 @@ class CallerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: CallerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.outer.OuterAction,
                 local.my_domain_com.my_lib.carrier.CarrierPosition,
             ),
         )
-        carrier_source = literal.LocalPosition[Never](
+        position_carrier_source = literal.LocalPosition[Never](
             "position<carrier_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
                 local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("caller.create(source)")
-        carrier_source.create_particle()
+        position_carrier_source.create_particle()
         literal.record_operation("caller.create(carrier_source)")
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
-            carrier_source.particle.get_position(
+            position_carrier_source.particle.get_position(
                 local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
         literal.record_operation("caller.move(run, carrier_source::/payload)")
-        carrier_source.move_particle_to(
-            source.particle.get_position(
+        position_carrier_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.carrier.CarrierPosition
             )
         )
         literal.record_operation("caller.move(carrier_source, source::/carrier)")
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.wrapper.WrapperAction
             ).get_interface_position(

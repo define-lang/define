@@ -13,41 +13,41 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        a = literal.LocalPosition[Never](
+        position_a = literal.LocalPosition[Never](
             "position<a>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.b.BPosition,
             ),
         )
-        a.create_particle()
-        a.particle.get_position(
+        position_a.create_particle()
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).create_particle()
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.d.DPosition
         ).create_particle()
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.d.DPosition
         ).destroy_particle()
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
-        a.particle.get_position(
+        position_a.particle.get_position(
             local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
-        a.destroy_particle()
+        position_a.destroy_particle()

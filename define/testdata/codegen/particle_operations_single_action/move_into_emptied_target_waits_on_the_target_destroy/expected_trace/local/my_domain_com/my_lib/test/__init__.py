@@ -11,43 +11,43 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        src = literal.LocalPosition[Never](
+        position_src = literal.LocalPosition[Never](
             "position<src>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        dest = literal.LocalPosition[Never](
+        position_dest = literal.LocalPosition[Never](
             "position<dest>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        dest.create_particle()
+        position_dest.create_particle()
         literal.record_operation("test.create(dest)")
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(dest::/child)")
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(dest::/child)")
-        dest.destroy_particle()
+        position_dest.destroy_particle()
         literal.record_operation("test.destroy(dest)")
-        src.create_particle()
+        position_src.create_particle()
         literal.record_operation("test.create(src)")
-        src.particle.get_position(
+        position_src.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(src::/child)")
-        src.move_particle_to(
-            dest
+        position_src.move_particle_to(
+            position_dest
         )
         literal.record_operation("test.move(src, dest)")
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(dest::/child)")
-        dest.destroy_particle()
+        position_dest.destroy_particle()
         literal.record_operation("test.destroy(dest)")

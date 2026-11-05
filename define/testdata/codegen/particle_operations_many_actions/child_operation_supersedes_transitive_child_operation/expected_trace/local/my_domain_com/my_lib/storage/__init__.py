@@ -17,10 +17,10 @@ class StorageAction(literal.Action):
 
     @override
     def run(self):
-        local_item = literal.LocalPosition[Never](
+        position_local_item = literal.LocalPosition[Never](
             "position<local_item>",
         )
-        local_item.create_particle()
+        position_local_item.create_particle()
         literal.record_operation("storage.create(local_item)")
-        local_item.destroy_particle()
+        position_local_item.destroy_particle()
         literal.record_operation("storage.destroy(local_item)")

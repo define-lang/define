@@ -33,18 +33,18 @@ class InnerAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: InnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.input.InputPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         destruction_contracts.run_destructors_global_position_input(
-            holder.particle
+            position_holder.particle
         )
         destruction_contracts.destroy_global_position_input(
-            holder.particle
+            position_holder.particle
         )
-        holder.destroy_particle()
+        position_holder.destroy_particle()

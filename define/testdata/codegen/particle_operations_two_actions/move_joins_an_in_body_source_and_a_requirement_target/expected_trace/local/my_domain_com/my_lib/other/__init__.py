@@ -29,12 +29,12 @@ class OtherAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        src = literal.LocalPosition[Never](
+        position_src = literal.LocalPosition[Never](
             "position<src>",
         )
-        src.create_particle()
+        position_src.create_particle()
         literal.record_operation("other.create(src)")
-        src.move_particle_to(
+        position_src.move_particle_to(
             self.get_interface_position(
                 "position<dest>"
             )

@@ -50,11 +50,11 @@ class MiddleAction(literal.Action):
                 destruction_contracts.destroy_position_run,
             ),
         )
-        local_ = literal.LocalPosition[Never](
+        position_local = literal.LocalPosition[Never](
             "position<local>",
         )
-        local_.create_particle()
-        local_.move_particle_to(
+        position_local.create_particle()
+        position_local.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

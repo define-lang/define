@@ -49,28 +49,28 @@ class OuterAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: OuterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        middle_holder = literal.LocalPosition[Never](
+        position_middle_holder = literal.LocalPosition[Never](
             "position<middle_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        middle_holder.create_particle()
+        position_middle_holder.create_particle()
         self.get_interface_position(
             "position<input>"
         ).move_particle_to(
-            middle_holder.particle.get_action(
+            position_middle_holder.particle.get_action(
                 local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<input>"
             )
         )
-        middle_holder.particle.get_action(
+        position_middle_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        middle_holder.particle.get_action(
+        position_middle_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run(
             MiddleDestructionContracts(
@@ -93,7 +93,7 @@ class OuterAction(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        middle_holder.destroy_particle()
+        position_middle_holder.destroy_particle()
 
 
 class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):

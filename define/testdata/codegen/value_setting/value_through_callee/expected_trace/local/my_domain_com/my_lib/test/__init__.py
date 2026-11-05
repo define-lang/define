@@ -11,52 +11,52 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        worker = literal.LocalPosition[Never](
+        position_worker = literal.LocalPosition[Never](
             "position<worker>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.assign.AssignAction,
             ),
         )
-        worker.create_particle()
+        position_worker.create_particle()
         literal.record_operation("test.create(worker)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<target>"
         ).create_particle()
         literal.record_operation("test.create(worker::/assign::target)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         literal.record_operation("test.create(worker::/assign::source)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<source>", int
         ).particle.value = 4
         literal.record_operation("test.set_value(worker::/assign::source, 4)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         literal.record_operation("test.create(worker::/assign::trigger)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).run()
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<target>"
         ).destroy_particle()
         literal.record_operation("test.destroy(worker::/assign::target)")
-        worker.particle.get_action(
+        position_worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<source>"
         ).destroy_particle()
         literal.record_operation("test.destroy(worker::/assign::source)")
-        worker.destroy_particle()
+        position_worker.destroy_particle()
         literal.record_operation("test.destroy(worker)")

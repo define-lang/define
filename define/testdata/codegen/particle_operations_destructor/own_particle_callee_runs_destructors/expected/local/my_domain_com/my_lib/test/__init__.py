@@ -13,29 +13,29 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.wrapper.WrapperAction,
             ),
         )
-        holder.create_particle()
-        holder.particle.get_action(
+        position_holder.create_particle()
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.wrapper.WrapperAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        holder.particle.get_action(
+        position_holder.particle.get_action(
             local.my_domain_com.my_lib.wrapper.WrapperAction
         ).run()
         local.my_domain_com.my_lib.wrapper.WrapperAction.run_guaranteed_particle_destructors_global_position_q__position_r(
-            holder.particle.get_position(
+            position_holder.particle.get_position(
                 local.my_domain_com.my_lib.q.QPosition
             ).particle.get_position(
                 local.my_domain_com.my_lib.r.RPosition
             ).particle
         )
-        holder.particle.get_position(
+        position_holder.particle.get_position(
             local.my_domain_com.my_lib.q.QPosition
         ).destroy_particle()
-        holder.destroy_particle()
+        position_holder.destroy_particle()

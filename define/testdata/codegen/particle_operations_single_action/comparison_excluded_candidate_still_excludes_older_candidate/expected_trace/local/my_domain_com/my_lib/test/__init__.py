@@ -13,53 +13,53 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        parent = literal.LocalPosition[Never](
+        position_parent = literal.LocalPosition[Never](
             "position<parent>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
-        parent.create_particle()
+        position_parent.create_particle()
         literal.record_operation("test.create(parent)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(parent::/child)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild_x.GrandchildXPosition
         ).create_particle()
         literal.record_operation("test.create(parent::/child::/grandchild_x)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild_x.GrandchildXPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(parent::/child::/grandchild_x)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(parent::/child)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(parent::/child)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild_y.GrandchildYPosition
         ).create_particle()
         literal.record_operation("test.create(parent::/child::/grandchild_y)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild_y.GrandchildYPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(parent::/child::/grandchild_y)")
-        parent.particle.get_position(
+        position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(parent::/child)")
-        parent.destroy_particle()
+        position_parent.destroy_particle()
         literal.record_operation("test.destroy(parent)")

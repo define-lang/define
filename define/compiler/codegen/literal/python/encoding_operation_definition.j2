@@ -44,6 +44,8 @@ not{{ " " }}
             {%- endmatch -%}
         {%- when EncodingOperationStatement::Call { function, arguments, .. } -%}
 {{ function.get().name_in_module(module_name) }}({{ arguments|join(", ") }})
+        {%- when EncodingOperationStatement::Assignment { source, .. } -%}
+{{ source }}
     {%- endmatch -%}
 {%- endmacro -%}
 def {{ self.function_name }}(
@@ -74,6 +76,8 @@ def {{ self.function_name }}(
             {%- when EncodingOperationStatement::Call { results, .. } %}
     {% if !results.is_empty() %}{{ results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::Assignment { target, .. } %}
+    {{ target }} = {{ expression(statement, module_name) }}
         {%- endmatch %}
     {%- endif %}
 {%- endfor %}

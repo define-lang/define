@@ -20,21 +20,21 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
                 local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
-        payload_source = literal.LocalPosition[Never](
+        position_payload_source = literal.LocalPosition[Never](
             "position<payload_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
                 local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.seeder.SeederAction
         ).get_interface_position(
@@ -48,13 +48,13 @@ class TestAction(literal.Action):
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        payload_source.create_particle()
-        payload_source.move_particle_to(
-            source.particle.get_position(
+        position_payload_source.create_particle()
+        position_payload_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(

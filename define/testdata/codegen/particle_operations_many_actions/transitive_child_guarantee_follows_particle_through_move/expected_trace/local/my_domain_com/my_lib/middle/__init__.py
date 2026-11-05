@@ -26,47 +26,47 @@ class MiddleAction(literal.Action):
 
     @override
     def run(self):
-        inner_holder = literal.LocalPosition[Never](
+        position_inner_holder = literal.LocalPosition[Never](
             "position<inner_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
-        result_holder = literal.LocalPosition[Never](
+        position_result_holder = literal.LocalPosition[Never](
             "position<result_holder>",
         )
-        inner_holder.create_particle()
+        position_inner_holder.create_particle()
         literal.record_operation("middle.create(inner_holder)")
         self.get_interface_position(
             "position<inner_parent>"
         ).move_particle_to(
-            inner_holder.particle.get_action(
+            position_inner_holder.particle.get_action(
                 local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(inner_parent, inner_holder::/inner::input)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("middle.create(inner_holder::/inner::trigger_pos)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).run()
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValuePosition
         ).move_particle_to(
-            result_holder
+            position_result_holder
         )
         literal.record_operation("middle.move(inner_holder::/inner::input::/result_value, result_holder)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
@@ -76,7 +76,7 @@ class MiddleAction(literal.Action):
             )
         )
         literal.record_operation("middle.move(inner_holder::/inner::input, inner_parent)")
-        result_holder.move_particle_to(
+        position_result_holder.move_particle_to(
             self.get_interface_position(
                 "position<inner_parent>"
             ).particle.get_position(
@@ -84,11 +84,11 @@ class MiddleAction(literal.Action):
             )
         )
         literal.record_operation("middle.move(result_holder, inner_parent::/result_value)")
-        inner_holder.particle.get_action(
+        position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(inner_holder::/inner::trigger_pos)")
-        inner_holder.destroy_particle()
+        position_inner_holder.destroy_particle()
         literal.record_operation("middle.destroy(inner_holder)")

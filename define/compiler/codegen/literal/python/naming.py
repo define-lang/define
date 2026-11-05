@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import hashlib
 import keyword
 import re
@@ -27,7 +28,13 @@ _READABLE_AUTHORITY = re.compile(r"[a-z0-9]+(?:[./][a-z0-9]+)*")
 # Separates a translated authority from the digest of the original. Readable
 # authority segments never contain it, so the two forms never collide.
 _AUTHORITY_DIGEST_SEPARATOR = "___"
-_RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
+# A function name that is also a built-in would hide the built-in from the
+# rest of its module.
+_BUILTIN_NAMES: typing.Final = frozenset(dir(builtins))
+# Local names start with a prefix so that no local name is a keyword, a
+# built-in, or a name the generated method itself uses.
+VIEW_PREFIX = "view_"
+POSITION_PREFIX = "position_"
 
 RUN_DESTRUCTORS_PREFIX = "run_destructors_"
 DESTROY_PREFIX = "destroy_"
@@ -171,8 +178,8 @@ class LocalNameAllocator:
     """Allocate unique local names within one generated Python method."""
 
     def __init__(self):
-        """Reserve Python keywords and names used by generated methods."""
-        self._used = set(_RESERVED_NAMES)
+        """Start with no names allocated."""
+        self._used: set[str] = set()
 
     def allocate(self, candidate: str) -> str:
         """Return the first available name based on ``candidate``."""
@@ -256,9 +263,12 @@ class NameConverter:
     def _function_name(
         typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
     ) -> str:
-        return _escape_module_component(
-            typed_global_name.name_content.path.relative_path.parts[-1]
-        )
+        name = typed_global_name.name_content.path.relative_path.parts[-1]
+        # Appending `_` to every name that already ends in `_` keeps the
+        # escaping one-to-one.
+        if name in _BUILTIN_NAMES or name.endswith("_"):
+            return name + "_"
+        return _escape_module_component(name)
 
     def _parent_package_key(
         self,

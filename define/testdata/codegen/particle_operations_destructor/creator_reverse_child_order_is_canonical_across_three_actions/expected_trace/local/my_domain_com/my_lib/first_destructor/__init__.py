@@ -14,25 +14,25 @@ class FirstDestructorAction(literal.Action):
 
     @override
     def run(self):
-        holder = literal.LocalPosition[Never](
+        position_holder = literal.LocalPosition[Never](
             "position<holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.first.FirstPosition
         ).move_particle_to(
-            holder
+            position_holder
         )
         literal.record_operation("first_destructor.move(/first, holder)")
-        holder.move_particle_to(
+        position_holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.first.FirstPosition
             )
         )
         literal.record_operation("first_destructor.move(holder, /first)")
-        marker = literal.LocalPosition[Never](
+        position_marker = literal.LocalPosition[Never](
             "position<marker>",
         )
-        marker.create_particle()
+        position_marker.create_particle()
         literal.record_operation("first_destructor.create(marker)")
-        marker.destroy_particle()
+        position_marker.destroy_particle()
         literal.record_operation("first_destructor.destroy(marker)")

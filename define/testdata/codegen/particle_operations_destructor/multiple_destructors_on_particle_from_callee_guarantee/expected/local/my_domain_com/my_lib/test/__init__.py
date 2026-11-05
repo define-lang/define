@@ -13,43 +13,43 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
-        box.create_particle()
-        box.particle.get_action(
+        position_box.create_particle()
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
             local.my_domain_com.my_lib.destruct_a.DestructAAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
             local.my_domain_com.my_lib.destruct_b.DestructBAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-        box.destroy_particle()
+        position_box.destroy_particle()

@@ -14,11 +14,11 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        temporary = literal.LocalPosition[Never](
+        position_temporary = literal.LocalPosition[Never](
             "position<temporary>",
         )
-        temporary.create_particle()
+        position_temporary.create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
-        temporary.destroy_particle()
+        position_temporary.destroy_particle()

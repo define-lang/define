@@ -11,50 +11,50 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        gw = literal.LocalPosition[Never](
+        position_gw = literal.LocalPosition[Never](
             "position<gw>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.filler.FillerAction,
             ),
         )
-        gw.create_particle()
-        gw.particle.get_action(
+        position_gw.create_particle()
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).run()
-        gw.particle.get_action(
+        position_gw.particle.get_action(
             local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        gw.destroy_particle()
+        position_gw.destroy_particle()

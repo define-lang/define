@@ -28,10 +28,10 @@ class BAction(literal.Action):
 
     @override
     def run(self, destruction_contracts: BDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        r = literal.LocalPosition[Never](
+        position_r = literal.LocalPosition[Never](
             "position<r>",
         )
-        r.create_particle()
+        position_r.create_particle()
         literal.record_operation("b.create(r)")
         destruction_contracts.run_destructors_position_t(
             self.get_interface_position(
@@ -47,5 +47,5 @@ class BAction(literal.Action):
             "position<t>"
         ).destroy_particle()
         literal.record_operation("b.destroy(t)")
-        r.destroy_particle()
+        position_r.destroy_particle()
         literal.record_operation("b.destroy(r)")

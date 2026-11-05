@@ -3,5 +3,5 @@
 import builtins
 
 
-def maximum(a: int, b: int) -> int:
-    return builtins.max(a, b)
+def maximum(view_a: int, view_b: int) -> int:
+    return builtins.max(view_a, view_b)

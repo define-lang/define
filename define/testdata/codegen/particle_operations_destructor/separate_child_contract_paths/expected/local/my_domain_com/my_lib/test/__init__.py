@@ -19,7 +19,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.left.LeftPosition,
@@ -27,35 +27,35 @@ class TestAction(literal.Action):
                 local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction,
             ),
         )
-        left_source = literal.LocalPosition[Never](
+        position_left_source = literal.LocalPosition[Never](
             "position<left_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
-        right_source = literal.LocalPosition[Never](
+        position_right_source = literal.LocalPosition[Never](
             "position<right_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.child_destructor.ChildDestructorAction,
             ),
         )
-        source.create_particle()
-        left_source.create_particle()
-        left_source.particle.get_position(
+        position_source.create_particle()
+        position_left_source.create_particle()
+        position_left_source.particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
-        left_source.move_particle_to(
-            source.particle.get_position(
+        position_left_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.left.LeftPosition
             )
         )
-        right_source.create_particle()
-        right_source.move_particle_to(
-            source.particle.get_position(
+        position_right_source.create_particle()
+        position_right_source.move_particle_to(
+            position_source.particle.get_position(
                 local.my_domain_com.my_lib.right.RightPosition
             )
         )
-        source.move_particle_to(
+        position_source.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(

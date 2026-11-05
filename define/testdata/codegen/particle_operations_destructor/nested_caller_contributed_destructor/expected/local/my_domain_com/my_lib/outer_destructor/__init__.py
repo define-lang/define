@@ -12,31 +12,31 @@ class OuterDestructorAction(literal.Action):
 
     @override
     def run(self):
-        inner_destroyer_particle = literal.LocalPosition[Never](
+        position_inner_destroyer_particle = literal.LocalPosition[Never](
             "position<inner_destroyer_particle>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction,
             ),
         )
-        inner_source = literal.LocalPosition[Never](
+        position_inner_source = literal.LocalPosition[Never](
             "position<inner_source>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction,
             ),
         )
-        inner_destroyer_particle.create_particle()
-        inner_source.create_particle()
-        inner_source.move_particle_to(
-            inner_destroyer_particle.particle.get_action(
+        position_inner_destroyer_particle.create_particle()
+        position_inner_source.create_particle()
+        position_inner_source.move_particle_to(
+            position_inner_destroyer_particle.particle.get_action(
                 local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
-        inner_destroyer_particle.particle.get_action(
+        position_inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
         ).run(InnerDestroyerDestructionContracts())
-        inner_destroyer_particle.destroy_particle()
+        position_inner_destroyer_particle.destroy_particle()
 
 
 class InnerDestroyerDestructionContracts(local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerDestructionContracts):

@@ -14,15 +14,15 @@ class DestructorAction(literal.Action):
 
     @override
     def run(self):
-        _holder = literal.LocalPosition[Never](
+        position__holder = literal.LocalPosition[Never](
             "position<_holder>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
-            _holder
+            position__holder
         )
-        _holder.move_particle_to(
+        position__holder.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.MarkerPosition
             )

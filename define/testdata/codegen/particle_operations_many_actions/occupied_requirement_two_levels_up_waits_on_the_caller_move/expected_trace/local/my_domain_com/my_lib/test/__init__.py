@@ -12,27 +12,27 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        source = literal.LocalPosition[Never](
+        position_source = literal.LocalPosition[Never](
             "position<source>",
         )
-        box = literal.LocalPosition[Never](
+        position_box = literal.LocalPosition[Never](
             "position<box>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
-        source.create_particle()
+        position_source.create_particle()
         literal.record_operation("test.create(source)")
-        box.create_particle()
+        position_box.create_particle()
         literal.record_operation("test.create(box)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
         literal.record_operation("test.create(box::/middle::gw)")
-        source.move_particle_to(
-            box.particle.get_action(
+        position_source.move_particle_to(
+            position_box.particle.get_action(
                 local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<gw>"
@@ -41,20 +41,20 @@ class TestAction(literal.Action):
             )
         )
         literal.record_operation("test.move(source, box::/middle::gw::/value)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(box::/middle::trigger_pos)")
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
-        box.particle.get_action(
+        position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/middle::trigger_pos)")
-        box.destroy_particle()
+        position_box.destroy_particle()
         literal.record_operation("test.destroy(box)")

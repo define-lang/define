@@ -3,9 +3,9 @@
 import standard.number.natural.ascii
 
 
-def if_(number: int) -> int:
-    return standard.number.natural.ascii.add(number, 1)
+def if_(view_number: int) -> int:
+    return standard.number.natural.ascii.add(view_number, 1)
 
 
-def if__(number: int) -> int:
-    return standard.number.natural.ascii.add(number, 2)
+def if__(view_number: int) -> int:
+    return standard.number.natural.ascii.add(view_number, 2)

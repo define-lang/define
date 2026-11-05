@@ -14,15 +14,15 @@ class DestructRequiredAction(literal.Action):
 
     @override
     def run(self):
-        held_required = literal.LocalPosition[Never](
+        position_held_required = literal.LocalPosition[Never](
             "position<held_required>",
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.required.RequiredPosition
         ).move_particle_to(
-            held_required
+            position_held_required
         )
-        held_required.move_particle_to(
+        position_held_required.move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.required.RequiredPosition
             )

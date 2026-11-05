@@ -14,7 +14,7 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        local_item = literal.LocalPosition[Never](
+        position_local_item = literal.LocalPosition[Never](
             "position<local_item>",
         )
         self.on_particle.get_action(
@@ -25,10 +25,10 @@ class TestAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).run()
-        local_item.create_particle()
+        position_local_item.create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        local_item.destroy_particle()
+        position_local_item.destroy_particle()

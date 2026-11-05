@@ -20,82 +20,82 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        filled = literal.LocalPosition[Never](
+        position_filled = literal.LocalPosition[Never](
             "position<filled>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.fill_1.Fill1Action,
                 local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
-        filled.create_particle()
-        filled.particle.get_position(
+        position_filled.create_particle()
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
-        filled.particle.get_action(
+        position_filled.particle.get_action(
             local.my_domain_com.my_lib.fill_1.Fill1Action
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        filled.particle.get_action(
+        position_filled.particle.get_action(
             local.my_domain_com.my_lib.fill_1.Fill1Action
         ).run()
-        filled.particle.get_position(
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.kept.KeptPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_0(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_0.Child10Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.child_2_0.Child20Position
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_1(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_0.Child10Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.child_2_1.Child21Position
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_done(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_0.Child10Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.done.DonePosition
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_0(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_1.Child11Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.child_2_0.Child20Position
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_1(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_1.Child11Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.child_2_1.Child21Position
             ).particle
         )
         local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_done(
-            filled.particle.get_position(
+            position_filled.particle.get_position(
                 local.my_domain_com.my_lib.child_1_1.Child11Position
             ).particle.get_position(
                 local.my_domain_com.my_lib.done.DonePosition
             ).particle
         )
-        filled.particle.get_position(
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.child_1_0.Child10Position
         ).destroy_particle()
-        filled.particle.get_position(
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.child_1_1.Child11Position
         ).destroy_particle()
-        filled.particle.get_position(
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.kept.KeptPosition
         ).destroy_particle()
-        filled.particle.get_position(
+        position_filled.particle.get_position(
             local.my_domain_com.my_lib.mark.MarkPosition
         ).destroy_particle()
-        filled.destroy_particle()
+        position_filled.destroy_particle()

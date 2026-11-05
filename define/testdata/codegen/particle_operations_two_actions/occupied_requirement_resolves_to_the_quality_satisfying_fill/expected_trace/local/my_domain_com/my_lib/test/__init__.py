@@ -12,82 +12,82 @@ class TestAction(literal.Action):
 
     @override
     def run(self):
-        box1 = literal.LocalPosition[Never](
+        position_box1 = literal.LocalPosition[Never](
             "position<box1>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
             ),
         )
-        box2 = literal.LocalPosition[Never](
+        position_box2 = literal.LocalPosition[Never](
             "position<box2>",
         )
-        dest = literal.LocalPosition[Never](
+        position_dest = literal.LocalPosition[Never](
             "position<dest>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.a.APosition,
             ),
         )
-        action_holder = literal.LocalPosition[Never](
+        position_action_holder = literal.LocalPosition[Never](
             "position<action_holder>",
             assigned_qualities=(
                 local.my_domain_com.my_lib.move.MoveAction,
             ),
         )
-        action_holder.create_particle()
+        position_action_holder.create_particle()
         literal.record_operation("test.create(action_holder)")
-        box1.create_particle()
+        position_box1.create_particle()
         literal.record_operation("test.create(box1)")
-        box2.create_particle()
+        position_box2.create_particle()
         literal.record_operation("test.create(box2)")
-        box2.move_particle_to(
-            action_holder.particle.get_action(
+        position_box2.move_particle_to(
+            position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.MoveAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(box2, action_holder::/move::input)")
-        action_holder.particle.get_action(
+        position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.MoveAction
         ).run()
-        action_holder.particle.get_action(
+        position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.MoveAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
-            box2
+            position_box2
         )
         literal.record_operation("test.move(action_holder::/move::output, box2)")
-        box1.move_particle_to(
-            action_holder.particle.get_action(
+        position_box1.move_particle_to(
+            position_action_holder.particle.get_action(
                 local.my_domain_com.my_lib.move.MoveAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(box1, action_holder::/move::input)")
-        action_holder.particle.get_action(
+        position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.MoveAction
         ).run()
-        action_holder.particle.get_action(
+        position_action_holder.particle.get_action(
             local.my_domain_com.my_lib.move.MoveAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
-            dest
+            position_dest
         )
         literal.record_operation("test.move(action_holder::/move::output, dest)")
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(dest::/a)")
-        box2.destroy_particle()
+        position_box2.destroy_particle()
         literal.record_operation("test.destroy(box2)")
-        dest.particle.get_position(
+        position_dest.particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("test.destroy(dest::/a)")
-        dest.destroy_particle()
+        position_dest.destroy_particle()
         literal.record_operation("test.destroy(dest)")
-        action_holder.destroy_particle()
+        position_action_holder.destroy_particle()
         literal.record_operation("test.destroy(action_holder)")

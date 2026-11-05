@@ -9,8 +9,8 @@ class InnerDestructorBAction(literal.Action):
 
     @override
     def run(self):
-        work_b = literal.LocalPosition[Never](
+        position_work_b = literal.LocalPosition[Never](
             "position<work_b>",
         )
-        work_b.create_particle()
-        work_b.destroy_particle()
+        position_work_b.create_particle()
+        position_work_b.destroy_particle()
