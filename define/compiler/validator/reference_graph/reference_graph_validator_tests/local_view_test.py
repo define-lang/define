@@ -198,34 +198,31 @@ def test_written_twice_after_unknown_use(
     ]
 
 
-def test_passed_to_read_write_view_before_write(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
-            location=ast.SourceLocation(line=65, column=41, end_line=65, end_column=53),
-            looked_at_name="view<negated>",
-            view_name="view<value>",
-            operation_name="operation</negate_in_place>",
-        )
-    ]
-
-
 def test_passed_to_read_write_view_after_write(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
-        diagnostics.LocalViewWrittenTwiceDiagnostic(
+        diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
             location=ast.SourceLocation(line=75, column=41, end_line=75, end_column=53),
             looked_at_name="view<negated>",
             view_name="view<value>",
             operation_name="operation</negate_in_place>",
-            first_write=ast.SourceLocation(
-                line=72, column=42, end_line=72, end_column=54
-            ),
-        )
+        ),
+    ]
+
+
+def test_passed_to_read_write_view_before_write(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=65, column=41, end_line=65, end_column=55),
+            looked_at_name="view<unwritten>",
+            view_name="view<value>",
+            operation_name="operation</negate_in_place>",
+        ),
     ]

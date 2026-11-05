@@ -221,8 +221,24 @@ def _record_local_view_use(
     executed_view: ast.ViewDefinition,
     operation_name: str,
 ) -> list[diagnostics.Diagnostic]:
-    use_diagnostics: list[diagnostics.Diagnostic] = []
     view_name = looking_at.source_typed_name
+    # No statement may both read and write a local view. The statement still
+    # counts as a read and a write of it, so the statements after it are not
+    # also reported.
+    if executed_view.is_input and executed_view.is_output:
+        use.is_read = True
+        if use.first_write is None:
+            use.first_write = looking_at.location
+        use.has_reported_read_or_write_violation = True
+        return [
+            diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
+                location=looking_at.location,
+                looked_at_name=view_name,
+                view_name=argument.view.source_typed_name,
+                operation_name=operation_name,
+            )
+        ]
+    use_diagnostics: list[diagnostics.Diagnostic] = []
     if executed_view.is_input:
         use.is_read = True
         # A statement whose use of the view is unknown may have written it.

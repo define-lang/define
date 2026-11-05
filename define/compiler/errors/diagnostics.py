@@ -617,6 +617,20 @@ class ReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
         )
 
 
+class LocalViewPassedToReadWriteViewDiagnostic(Diagnostic):
+    """Diagnostic for passing a local view to a read/write interface view of an executed operation."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.looked_at_name}' is a local view, so it cannot be passed to"
+        " '{self.view_name}' of '{self.operation_name}', which both reads and"
+        " writes it. A local view must be written by exactly one statement and"
+        " read only by statements after that one."
+    )
+
+
 class UnreadLocalViewDiagnostic(Diagnostic):
     """Diagnostic for a local view that is written but never read."""
 

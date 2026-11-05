@@ -1,4 +1,4 @@
-# Passing a local view to a read/write view of an executed operation writes it, so it may not already be written.
+# A local view may not be passed to a read/write view of an executed operation after it is written. Later statements may still read it.
 define the logical_operation<my.domain.com:my_lib:/negate> {
     define the view<value> {
         it is read.
