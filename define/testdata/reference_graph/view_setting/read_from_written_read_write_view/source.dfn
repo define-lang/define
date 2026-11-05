@@ -1,0 +1,72 @@
+# A View Setting Statement may not read a read/write interface view after a statement writes it.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/negate_twice_in_place_and_add> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<value>.
+            with view<result> looking at view<negated>.
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<negated>.
+            with view<result> looking at view<value>.
+        }
+        set the value of view<copy> from view<value>.
+        execute the logical_operation</add> {
+            with view<a> looking at view<copy>.
+            with view<b> looking at view<value>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

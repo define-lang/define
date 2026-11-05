@@ -1,0 +1,135 @@
+# A View Setting Statement reads its source and writes its target, and may write a read/write interface view after the execution statement that read it.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/divide> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<quotient> {
+        it is written.
+    }
+    define the view<remainder> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</add> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</divide> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<doubled> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        set the value of view<copy> from view<number>.
+        execute the logical_operation</add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<copy>.
+            with view<result> looking at view<doubled>.
+        }
+    }
+}
+define the operation<my.domain.com:my_lib:/negate_in_place> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<value>.
+            with view<result> looking at view<negated>.
+        }
+        set the value of view<value> from view<negated>.
+    }
+}
+define the operation<my.domain.com:my_lib:/divide_in_place> {
+    define the view<a> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<quotient> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the view<remainder> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        execute the logical_operation</divide> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<quotient> looking at view<quotient>.
+            with view<remainder> looking at view<remainder>.
+        }
+        set the value of view<a> from view<quotient>.
+        set the value of view<b> from view<remainder>.
+    }
+}

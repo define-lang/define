@@ -1,0 +1,47 @@
+# A View Setting Statement may not write a local view that an earlier statement wrote.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</add> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        set the value of view<copy> from view<number>.
+        set the value of view<copy> from view<number>.
+        execute the logical_operation</add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<copy>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

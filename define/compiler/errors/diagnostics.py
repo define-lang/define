@@ -617,6 +617,103 @@ class ReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
         )
 
 
+class ViewSettingReadFromUnwrittenOutputViewDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement reading an output-only view before anything writes to it."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is an output-only interface view, so it cannot be"
+        " read until an earlier statement writes to it. However, this view"
+        " setting statement reads it before anything writes to it."
+    )
+
+
+class ViewSettingReadFromUnwrittenLocalViewDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement reading a local view before anything writes to it."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is a local view, so it cannot be read until an"
+        " earlier statement writes to it. However, this view setting statement"
+        " reads it before anything writes to it."
+    )
+
+
+class ViewSettingReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement reading a read/write interface view after a statement wrote to it."""
+
+    view_name: str
+    write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that writes the interface view."""
+        return (
+            f"'{self.view_name}' is a read/write interface view, so it may only be"
+            " read before the statement that writes to it. However, this view"
+            " setting statement reads it after it was written here:\n"
+            f"{sources.format_location(self.write)}"
+        )
+
+
+class ViewSettingLocalViewWrittenTwiceDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement writing to a local view that an earlier statement already wrote to."""
+
+    view_name: str
+    first_write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that first writes the local view."""
+        return (
+            f"'{self.view_name}' is a local view, so only one statement may"
+            " write to it. However, this view setting statement writes to it"
+            " again. It was already written here:\n"
+            f"{sources.format_location(self.first_write)}"
+        )
+
+
+class ViewSettingInterfaceViewWrittenTwiceDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement writing to an interface view that an earlier statement already wrote to."""
+
+    view_name: str
+    first_write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that first writes the interface view."""
+        return (
+            f"'{self.view_name}' is an output interface view, so only one"
+            " statement may write to it. However, this view setting statement"
+            " writes to it again. It was already written here:\n"
+            f"{sources.format_location(self.first_write)}"
+        )
+
+
+class ViewSettingReadWriteTargetWithoutExecutionDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement with a read/write interface view target that does not follow an execution statement."""
+
+    target_name: str
+    message_format: ClassVar[str] = (
+        "the statement before this view setting statement, other than view"
+        " setting statements directly before it, must be an execution"
+        " statement, because '{self.target_name}' is a read/write interface"
+        " view."
+    )
+
+
+class ViewSettingReadWriteTargetNotFromExecutionDiagnostic(Diagnostic):
+    """Diagnostic for a View Setting Statement with a read/write interface view target whose source the execution statement before it did not write from the target."""
+
+    target_name: str
+    source_name: str
+    message_format: ClassVar[str] = (
+        "the execution statement before this view setting statement must read"
+        " '{self.target_name}' and write '{self.source_name}', because"
+        " '{self.target_name}' is a read/write interface view."
+    )
+
+
 class LocalViewPassedToReadWriteViewDiagnostic(Diagnostic):
     """Diagnostic for passing a local view to a read/write interface view of an executed operation."""
 
@@ -1310,6 +1407,18 @@ class ViewSettingSourceWasTargetDiagnostic(Diagnostic):
         "'{self.view_name}' is the target of the view setting statement on line"
         " {self.target_line}, so it cannot be the source of another view"
         " setting statement."
+    )
+
+
+class ViewSettingReadWriteTargetSourceNotLocalDiagnostic(Diagnostic):
+    """A View Setting Statement with a read/write interface view target has a source that is not a local view."""
+
+    target_name: str
+    source_name: str
+    message_format: ClassVar[str] = (
+        "the source of this view setting statement must be a local view, not"
+        " '{self.source_name}', because '{self.target_name}' is a read/write"
+        " interface view."
     )
 
 

@@ -1,0 +1,36 @@
+# A View Setting Statement may not read an output-only interface view before a statement writes it.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/negate> {
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        set the value of view<copy> from view<result>.
+        execute the logical_operation</negate> {
+            with view<value> looking at view<copy>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

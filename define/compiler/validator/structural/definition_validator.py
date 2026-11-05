@@ -266,10 +266,22 @@ class DefinitionStructuralValidator:
                 )
         if not source_ok:
             return
+        source_view = views.get_definition(source)
+        if (
+            isinstance(target_view, ast.InterfaceViewDefinition)
+            and target_view.is_input
+            and target_view.is_output
+            and not isinstance(source_view, ast.LocalViewDefinition)
+        ):
+            self._diagnostics.append(
+                diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
+                    location=source.location,
+                    target_name=target.source_typed_name,
+                    source_name=source.source_typed_name,
+                )
+            )
         target_value_quality = target_view.quality_assignment_block.value_quality
-        source_value_quality = views.get_definition(
-            source
-        ).quality_assignment_block.value_quality
+        source_value_quality = source_view.quality_assignment_block.value_quality
         # A view without a value quality is reported where it is defined.
         if (
             target_value_quality is not None

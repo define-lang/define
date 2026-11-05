@@ -113,7 +113,7 @@ def test_only_view_setting(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.OperationWithoutExecutionDiagnostic(
-            location=ast.SourceLocation(line=17, column=5, end_line=19, end_column=5),
+            location=ast.SourceLocation(line=11, column=5, end_line=18, end_column=5),
         ),
     ]
 
@@ -127,6 +127,20 @@ def test_output_only_target(
         diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
             location=ast.SourceLocation(line=34, column=26, end_line=34, end_column=38),
             view_name="view<negated>",
+        ),
+    ]
+
+
+def test_read_write_target_source_not_local(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
+            location=ast.SourceLocation(line=35, column=43, end_line=35, end_column=54),
+            target_name="view<value>",
+            source_name="view<number>",
         ),
     ]
 

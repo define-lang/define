@@ -77,6 +77,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
     def analyze(self) -> validation_result.PostorderValidationResult:
         """Validate the definition and return its validation result."""
         for statement in self._definition.operation_statements.statements:
+            self._view_uses.start_statement(statement)
             match statement:
                 case ast.LocalViewDefinition():
                     self._define_view(statement)
@@ -85,8 +86,8 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                 case ast.LogicalOperationExecutionStatement():
                     self._analyze_logical_operation_execution(statement)
                 case ast.ViewSettingStatement():
-                    raise NotImplementedError(
-                        "View Setting Statements are not validated yet."
+                    self._diagnostics.extend(
+                        self._view_uses.record_view_setting(statement)
                     )
                 case (
                     ast.EncodingOperationExecutionStatement()

@@ -1,0 +1,56 @@
+# A View Setting Statement whose target is a read/write interface view must directly follow an execution statement.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/negate_in_place> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<value>.
+            with view<result> looking at view<negated>.
+        }
+        define the view<negated_again> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        set the value of view<value> from view<negated>.
+        execute the logical_operation</negate> {
+            with view<value> looking at view<negated>.
+            with view<result> looking at view<negated_again>.
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<negated_again>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

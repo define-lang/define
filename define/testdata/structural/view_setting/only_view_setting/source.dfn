@@ -1,11 +1,5 @@
 # A View Setting Statement references its views but is not an execution statement.
 define the operation<my.domain.com:my_lib:/copy> {
-    define the view<number> {
-        it is read.
-        it may only contain particles where {
-            it has the value<standard:/number/integer>.
-        }
-    }
     define the view<result> {
         it is read.
         it is written.
@@ -15,6 +9,11 @@ define the operation<my.domain.com:my_lib:/copy> {
     }
 
     it does {
-        set the value of view<result> from view<number>.
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        set the value of view<result> from view<copy>.
     }
 }

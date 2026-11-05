@@ -1999,6 +1999,191 @@ def test_interface_view_single_assignment_error_messages(
     ]
 
 
+_ADD_FILE = (
+    "define the logical_operation<my.domain.com:my_lib:/add> {\n"
+    "    define the view<a> {\n"
+    "        it is read.\n"
+    "    }\n"
+    "    define the view<b> {\n"
+    "        it is read.\n"
+    "    }\n"
+    "    define the view<result> {\n"
+    "        it is written.\n"
+    "    }\n"
+    "}\n"
+)
+
+_ADD_AND_NEGATE_NUMBER_FILE = (
+    "define the potential value<my.domain.com:my_lib:/number> {\n"
+    "    it supports the logical_operation</add> {\n"
+    "        it may be read.\n"
+    "        it may be written.\n"
+    "    }\n"
+    "    it supports the logical_operation</negate> {\n"
+    "        it may be read.\n"
+    "        it may be written.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+def test_view_setting_written_twice_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "add.dfn": _ADD_FILE,
+            "negate.dfn": _NEGATE_FILE,
+            "number.dfn": _ADD_AND_NEGATE_NUMBER_FILE,
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<value> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        define the view<negated> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the view<copy> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<value>.\n"
+                "            with view<result> looking at view<negated>.\n"
+                "        }\n"
+                "        set the value of view<value> from view<negated>.\n"
+                "        set the value of view<value> from view<negated>.\n"
+                "        set the value of view<copy> from view<negated>.\n"
+                "        set the value of view<copy> from view<negated>.\n"
+                "        execute the logical_operation</add> {\n"
+                "            with view<a> looking at view<copy>.\n"
+                "            with view<b> looking at view<negated>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 32, column 26
+            set the value of view<value> from view<negated>.
+                             ^^^^^^^^^^^
+        'view<value>' is an output interface view, so only one statement may write to it. However, this view setting statement writes to it again. It was already written here:
+        File "test.dfn", line 31, column 26
+            set the value of view<value> from view<negated>.
+                             ^^^^^^^^^^^"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 34, column 26
+            set the value of view<copy> from view<negated>.
+                             ^^^^^^^^^^
+        'view<copy>' is a local view, so only one statement may write to it. However, this view setting statement writes to it again. It was already written here:
+        File "test.dfn", line 33, column 26
+            set the value of view<copy> from view<negated>.
+                             ^^^^^^^^^^"""),
+    ]
+
+
+def test_view_setting_read_from_written_read_write_view_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "add.dfn": _ADD_FILE,
+            "negate.dfn": _NEGATE_FILE,
+            "number.dfn": _ADD_AND_NEGATE_NUMBER_FILE,
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<value> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value</number>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        define the view<negated> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the view<copy> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value</number>.\n"
+                "            }\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<value>.\n"
+                "            with view<result> looking at view<negated>.\n"
+                "        }\n"
+                "        execute the logical_operation</negate> {\n"
+                "            with view<value> looking at view<negated>.\n"
+                "            with view<result> looking at view<value>.\n"
+                "        }\n"
+                "        set the value of view<copy> from view<value>.\n"
+                "        execute the logical_operation</add> {\n"
+                "            with view<a> looking at view<copy>.\n"
+                "            with view<b> looking at view<value>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 35, column 42
+            set the value of view<copy> from view<value>.
+                                             ^^^^^^^^^^^
+        'view<value>' is a read/write interface view, so it may only be read before the statement that writes to it. However, this view setting statement reads it after it was written here:
+        File "test.dfn", line 33, column 42
+            with view<result> looking at view<value>.
+                                         ^^^^^^^^^^^"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 38, column 37
+            with view<b> looking at view<value>.
+                                    ^^^^^^^^^^^
+        'view<value>' is a read/write interface view, so it may only be read before the statement that writes to it. However, 'view<b>' of 'logical_operation</add>' reads it on this line, after it was written here:
+        File "test.dfn", line 33, column 42
+            with view<result> looking at view<value>.
+                                         ^^^^^^^^^^^"""),
+    ]
+
+
 def test_logical_operation_read_not_supported_format(
     validate_project: ValidateProject,
 ):
