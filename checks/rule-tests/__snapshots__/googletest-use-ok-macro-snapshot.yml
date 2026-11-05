@@ -1,0 +1,66 @@
+id: googletest-use-ok-macro
+snapshots:
+  "assert_that!(check(file), eq(Ok(())));\n":
+    labels:
+    - source: assert_that!(check(file), eq(Ok(())))
+      style: primary
+      start: 0
+      end: 37
+    - source: assert_that
+      style: secondary
+      start: 0
+      end: 11
+    - source: (check(file), eq(Ok(())))
+      style: secondary
+      start: 12
+      end: 37
+  "expect_that!(\n    check_semantics(&file, &schema),\n    ok(anything()),\n);\n":
+    labels:
+    - source: |-
+        expect_that!(
+            check_semantics(&file, &schema),
+            ok(anything()),
+        )
+      style: primary
+      start: 0
+      end: 72
+    - source: expect_that
+      style: secondary
+      start: 0
+      end: 11
+    - source: |-
+        (
+            check_semantics(&file, &schema),
+            ok(anything()),
+        )
+      style: secondary
+      start: 12
+      end: 72
+  "expect_that!(check(file), ok(anything()));\n":
+    labels:
+    - source: expect_that!(check(file), ok(anything()))
+      style: primary
+      start: 0
+      end: 41
+    - source: expect_that
+      style: secondary
+      start: 0
+      end: 11
+    - source: (check(file), ok(anything()))
+      style: secondary
+      start: 12
+      end: 41
+  "verify_that!(check(file), eq(&Ok(())))\n":
+    labels:
+    - source: verify_that!(check(file), eq(&Ok(())))
+      style: primary
+      start: 0
+      end: 38
+    - source: verify_that
+      style: secondary
+      start: 0
+      end: 11
+    - source: (check(file), eq(&Ok(())))
+      style: secondary
+      start: 12
+      end: 38

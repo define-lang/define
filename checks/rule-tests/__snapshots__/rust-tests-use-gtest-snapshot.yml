@@ -1,0 +1,74 @@
+id: rust-tests-use-gtest
+snapshots:
+  "#[cfg(test)]\nmod tests {\n    fn parsed(source: &str) -> u32 {\n        assert_ne!(source, \"\");\n        parse(source)\n    }\n}\n":
+    labels:
+    - source: assert_ne!(source, "")
+      style: primary
+      start: 70
+      end: 92
+    - source: "#[cfg(test)]"
+      style: secondary
+      start: 0
+      end: 12
+    - source: |-
+        mod tests {
+            fn parsed(source: &str) -> u32 {
+                assert_ne!(source, "");
+                parse(source)
+            }
+        }
+      style: secondary
+      start: 13
+      end: 123
+    - source: assert_ne
+      style: secondary
+      start: 70
+      end: 79
+  "#[gtest]\n#[ignore]\nfn parses() {\n    assert!(parse(\"a\") == 1);\n}\n":
+    labels:
+    - source: assert!(parse("a") == 1)
+      style: primary
+      start: 37
+      end: 61
+    - source: "#[gtest]"
+      style: secondary
+      start: 0
+      end: 8
+    - source: |-
+        fn parses() {
+            assert!(parse("a") == 1);
+        }
+      style: secondary
+      start: 19
+      end: 64
+    - source: assert
+      style: secondary
+      start: 37
+      end: 43
+  "#[gtest]\nfn parses() {\n    assert_eq!(parse(\"a\"), 1);\n}\n":
+    labels:
+    - source: assert_eq!(parse("a"), 1)
+      style: primary
+      start: 27
+      end: 52
+    - source: "#[gtest]"
+      style: secondary
+      start: 0
+      end: 8
+    - source: |-
+        fn parses() {
+            assert_eq!(parse("a"), 1);
+        }
+      style: secondary
+      start: 9
+      end: 55
+    - source: assert_eq
+      style: secondary
+      start: 27
+      end: 36
+  "#[test]\nfn parses() {\n    expect_that!(parse(\"a\"), eq(1));\n}\n":
+    labels:
+    - source: "#[test]"
+      style: primary
+      start: 0
+      end: 7

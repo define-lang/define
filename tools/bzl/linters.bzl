@@ -25,7 +25,10 @@ ast_grep = lint_ast_grep_aspect(
         "py_test",
         "py_venv_exec",
         "py_venv_exec_test",
+        "rust_binary",
         # The Rust library of each pyo3_extension.
         "rust_cdylib_library",
+        "rust_library",
+        "rust_test",
     ],
 )

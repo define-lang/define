@@ -1,0 +1,23 @@
+id: rust-use-fx-hash-collections
+valid:
+  - |
+    use rustc_hash::{FxBuildHasher, FxHashMap};
+  - |
+    use std::collections::{BTreeMap, BTreeSet};
+  - |
+    use std::collections::hash_map::Entry;
+  - |
+    use std::{collections::BTreeMap, other::HashMap};
+  - |
+    let names: FxHashSet<&str> = FxHashSet::default();
+invalid:
+  - |
+    use std::collections::HashMap;
+  - |
+    use std::collections::{BTreeMap, HashSet};
+  - |
+    use std::{collections::{HashMap, VecDeque}, fmt};
+  - |
+    let names = std::collections::HashSet::new();
+  - |
+    fn index(names: &std::collections::HashMap<String, usize>) {}

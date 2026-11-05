@@ -971,8 +971,8 @@ mod tests {
     use googletest::prelude::*;
 
     #[gtest]
-    fn name_content_with_fqun() {
-        expect_that!(
+    fn name_content_with_fqun() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/path>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 14,
@@ -987,12 +987,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_several_component_separators() {
-        expect_that!(
+    fn name_content_with_several_component_separators() -> Result<()> {
+        verify_that!(
             name_content(b"authority:universe:/a/b>.\ndefine the potential position<x>.\n"),
             eq(NameContent {
                 length: 23,
@@ -1007,12 +1007,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_too_many_component_separators() {
-        expect_that!(
+    fn name_content_with_too_many_component_separators() -> Result<()> {
+        verify_that!(
             name_content(b"a:b:c:d:/x>.\n"),
             eq(NameContent {
                 length: 10,
@@ -1027,12 +1027,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_component_separator_first() {
-        expect_that!(
+    fn name_content_with_component_separator_first() -> Result<()> {
+        verify_that!(
             name_content(b":/x>.\n"),
             eq(NameContent {
                 length: 3,
@@ -1047,7 +1047,7 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -1093,8 +1093,8 @@ mod tests {
     }
 
     #[gtest]
-    fn global_name_content_with_full_fqun() {
-        expect_that!(
+    fn global_name_content_with_full_fqun() -> Result<()> {
+        verify_that!(
             global_name_content(b"mv:define-lang.org:parser:/my_action>.\n"),
             eq(GlobalNameContent {
                 length: 36,
@@ -1108,12 +1108,12 @@ mod tests {
                     last: 25
                 }),
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_path_only() {
-        expect_that!(
+    fn name_content_with_path_only() -> Result<()> {
+        verify_that!(
             name_content(b"/path>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 5,
@@ -1123,12 +1123,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_space_before_path_is_not_global() {
-        expect_that!(
+    fn name_content_with_space_before_path_is_not_global() -> Result<()> {
+        verify_that!(
             name_content(b"a b:/c>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 6,
@@ -1138,12 +1138,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_empty_path_is_not_global() {
-        expect_that!(
+    fn name_content_with_empty_path_is_not_global() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 10,
@@ -1153,12 +1153,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_slash_after_letter_is_not_global() {
-        expect_that!(
+    fn name_content_with_slash_after_letter_is_not_global() -> Result<()> {
+        verify_that!(
             name_content(b"x/y>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 3,
@@ -1168,12 +1168,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_ends_at_line_feed() {
-        expect_that!(
+    fn name_content_ends_at_line_feed() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/path\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 14,
@@ -1188,12 +1188,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_non_ascii_character() {
-        expect_that!(
+    fn name_content_with_non_ascii_character() -> Result<()> {
+        verify_that!(
             name_content("café:/x>.\ndefine the potential position<standard:/other>.\n".as_bytes()),
             eq(NameContent {
                 length: 8,
@@ -1208,12 +1208,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_control_character() {
-        expect_that!(
+    fn name_content_with_control_character() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/a\x01b>.\n"),
             eq(NameContent {
                 length: 13,
@@ -1228,12 +1228,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_at_end_of_source() {
-        expect_that!(
+    fn name_content_at_end_of_source() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/path"),
             eq(NameContent {
                 length: 14,
@@ -1248,12 +1248,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_before_end_of_source() {
-        expect_that!(
+    fn name_content_before_end_of_source() -> Result<()> {
+        verify_that!(
             name_content(b"standard:/path>.\n"),
             eq(NameContent {
                 length: 14,
@@ -1268,12 +1268,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_component_separators_in_path() {
-        expect_that!(
+    fn name_content_with_component_separators_in_path() -> Result<()> {
+        verify_that!(
             name_content(b"/foo::bar>.\n"),
             eq(NameContent {
                 length: 9,
@@ -1283,12 +1283,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_longer_than_one_vector_with_component_separator_in_path() {
-        expect_that!(
+    fn name_content_longer_than_one_vector_with_component_separator_in_path() -> Result<()> {
+        verify_that!(
             name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
             eq(NameContent {
                 length: 41,
@@ -1303,12 +1303,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_component_separator_in_path_in_second_vector() {
-        expect_that!(
+    fn name_content_with_component_separator_in_path_in_second_vector() -> Result<()> {
+        verify_that!(
             name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
             eq(NameContent {
                 length: 47,
@@ -1323,12 +1323,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn global_name_content_with_fqun() {
-        expect_that!(
+    fn global_name_content_with_fqun() -> Result<()> {
+        verify_that!(
             global_name_content(
                 b"standard:/path>.\ndefine the potential position<standard:/other>.\n"
             ),
@@ -1344,12 +1344,12 @@ mod tests {
                     last: 8
                 }),
             })
-        );
+        )
     }
 
     #[gtest]
-    fn global_name_content_longer_than_one_vector() {
-        expect_that!(
+    fn global_name_content_longer_than_one_vector() -> Result<()> {
+        verify_that!(
             global_name_content(b"universe:/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
             eq(GlobalNameContent {
                 length: 47,
@@ -1363,12 +1363,12 @@ mod tests {
                     last: 8
                 }),
             })
-        );
+        )
     }
 
     #[gtest]
-    fn global_name_content_of_local_name() {
-        expect_that!(
+    fn global_name_content_of_local_name() -> Result<()> {
+        verify_that!(
             global_name_content(b"run>.\n"),
             eq(GlobalNameContent {
                 length: 3,
@@ -1377,12 +1377,12 @@ mod tests {
                 is_global_name: false,
                 fqun_separators: None,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_of_local_name() {
-        expect_that!(
+    fn name_content_of_local_name() -> Result<()> {
+        verify_that!(
             name_content(b"run>.\ndefine the potential position<standard:/other>.\n"),
             eq(NameContent {
                 length: 3,
@@ -1392,12 +1392,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_component_separator_in_second_vector_is_not_local() {
-        expect_that!(
+    fn name_content_with_component_separator_in_second_vector_is_not_local() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:b>.\n"),
             eq(NameContent {
                 length: 36,
@@ -1407,12 +1407,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_longer_than_one_vector() {
-        expect_that!(
+    fn name_content_longer_than_one_vector() -> Result<()> {
+        verify_that!(
             name_content(
                 b"multiverse:authority.example:universe:/a/very/long/path>.\ndefine the potential position<x>.\n"
             ),
@@ -1424,12 +1424,12 @@ mod tests {
                 fqun_separators: Some(FqunSeparators { count: NonZeroU32::new(3).unwrap(), first: 10, second: 28, last: 37 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_path_starting_at_last_byte_of_vector() {
-        expect_that!(
+    fn name_content_with_path_starting_at_last_byte_of_vector() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:/b>.\n"),
             eq(NameContent {
                 length: 33,
@@ -1444,12 +1444,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_longer_than_one_vector_with_space_before_path() {
-        expect_that!(
+    fn name_content_longer_than_one_vector_with_space_before_path() -> Result<()> {
+        verify_that!(
             name_content(b"this name content has spaces in it:/x>.\n"),
             eq(NameContent {
                 length: 37,
@@ -1459,12 +1459,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_longer_than_one_vector_without_path() {
-        expect_that!(
+    fn name_content_longer_than_one_vector_without_path() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>.\n"),
             eq(NameContent {
                 length: 36,
@@ -1474,12 +1474,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_empty_path_at_last_byte_of_vector() {
-        expect_that!(
+    fn name_content_with_empty_path_at_last_byte_of_vector() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:/>.\n"),
             eq(NameContent {
                 length: 32,
@@ -1489,12 +1489,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_empty_path_in_second_vector() {
-        expect_that!(
+    fn name_content_with_empty_path_in_second_vector() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:/>.\n"),
             eq(NameContent {
                 length: 35,
@@ -1504,12 +1504,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_component_separator_at_last_byte_of_vector() {
-        expect_that!(
+    fn name_content_with_component_separator_at_last_byte_of_vector() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:/b>.\n"),
             eq(NameContent {
                 length: 34,
@@ -1524,12 +1524,12 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_space_in_second_vector() {
-        expect_that!(
+    fn name_content_with_space_in_second_vector() -> Result<()> {
+        verify_that!(
             name_content(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa a:/b>.\n"),
             eq(NameContent {
                 length: 38,
@@ -1539,12 +1539,12 @@ mod tests {
                 fqun_separators: None,
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_non_ascii_character_in_second_vector() {
-        expect_that!(
+    fn name_content_with_non_ascii_character_in_second_vector() -> Result<()> {
+        verify_that!(
             name_content("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaé:/x>.\n".as_bytes()),
             eq(NameContent {
                 length: 37,
@@ -1559,7 +1559,7 @@ mod tests {
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -1668,198 +1668,198 @@ mod tests {
     }
 
     #[gtest]
-    fn line_end_at_line_feed() {
-        expect_that!(
+    fn line_end_at_line_feed() -> Result<()> {
+        verify_that!(
             line_end(b"\n# a comment\n"),
             eq(LineEnd::EndOrAsciiComment {
                 length: 0,
                 leading_space_count: 0
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(b""),
             eq(LineEnd::EndOrAsciiComment {
                 length: 0,
                 leading_space_count: 0
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment() {
-        expect_that!(
+    fn line_end_at_comment() -> Result<()> {
+        verify_that!(
             line_end(b"# a comment\ndefine the potential position<standard:/path>.\n"),
             eq(LineEnd::EndOrAsciiComment {
                 length: 11,
                 leading_space_count: 0
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_after_spaces() {
-        expect_that!(
+    fn line_end_at_comment_after_spaces() -> Result<()> {
+        verify_that!(
             line_end(b"    # a comment\ndefine the potential position<standard:/path>.\n"),
             eq(LineEnd::EndOrAsciiComment {
                 length: 15,
                 leading_space_count: 4
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_comment_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(b" #"),
             eq(LineEnd::EndOrAsciiComment {
                 length: 2,
                 leading_space_count: 1
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_longer_than_one_vector() {
-        expect_that!(
+    fn line_end_at_comment_longer_than_one_vector() -> Result<()> {
+        verify_that!(
             line_end(b"  # A comment that is longer than one vector of bytes.\nx\n"),
             eq(LineEnd::EndOrAsciiComment {
                 length: 54,
                 leading_space_count: 2
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_text() {
-        expect_that!(
+    fn line_end_at_text() -> Result<()> {
+        verify_that!(
             line_end(b"define the potential position<standard:/path>.\n"),
             eq(LineEnd::Text {
                 leading_space_count: 0
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_text_after_spaces() {
-        expect_that!(
+    fn line_end_at_text_after_spaces() -> Result<()> {
+        verify_that!(
             line_end(b"    it has the position</child>.\n"),
             eq(LineEnd::Text {
                 leading_space_count: 4
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_text_after_spaces_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_text_after_spaces_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(b"  x"),
             eq(LineEnd::Text {
                 leading_space_count: 2
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_spaces_before_line_feed() {
-        expect_that!(
+    fn line_end_at_spaces_before_line_feed() -> Result<()> {
+        verify_that!(
             line_end(b"  \n# a comment\n"),
             eq(LineEnd::Unusual {
                 leading_space_count: 2,
                 length: 2
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_spaces_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_spaces_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(b"  "),
             eq(LineEnd::Unusual {
                 leading_space_count: 2,
                 length: 2
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_ending_with_space() {
-        expect_that!(
+    fn line_end_at_comment_ending_with_space() -> Result<()> {
+        verify_that!(
             line_end(b"# a comment \ndefine the potential position<standard:/path>.\n"),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 12
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_ending_with_space_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_comment_ending_with_space_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(b"# "),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 2
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_with_control_character() {
-        expect_that!(
+    fn line_end_at_comment_with_control_character() -> Result<()> {
+        verify_that!(
             line_end(b"# a\tcomment\n"),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 11
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_non_ascii_comment() {
-        expect_that!(
+    fn line_end_at_non_ascii_comment() -> Result<()> {
+        verify_that!(
             line_end("# café\n".as_bytes()),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 7
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_longer_than_one_vector_ending_with_space() {
-        expect_that!(
+    fn line_end_at_comment_longer_than_one_vector_ending_with_space() -> Result<()> {
+        verify_that!(
             line_end(b"# A comment that is longer than one vector of bytes. \nx\n"),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 53
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_longer_than_one_vector_with_non_ascii_character() {
-        expect_that!(
+    fn line_end_at_comment_longer_than_one_vector_with_non_ascii_character() -> Result<()> {
+        verify_that!(
             line_end("# A comment that is longer than one vector, ending in é\n".as_bytes()),
             eq(LineEnd::Unusual {
                 leading_space_count: 0,
                 length: 56
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_comment_longer_than_one_vector_after_spaces_ending_with_space() {
-        expect_that!(
+    fn line_end_at_comment_longer_than_one_vector_after_spaces_ending_with_space() -> Result<()> {
+        verify_that!(
             line_end(b"   # A comment that is longer than one vector of bytes. \nx\n"),
             eq(LineEnd::Unusual {
                 leading_space_count: 3,
                 length: 56
             })
-        );
+        )
     }
 
     #[gtest]
@@ -1925,25 +1925,25 @@ mod tests {
     }
 
     #[gtest]
-    fn line_end_at_one_vector_of_spaces_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_one_vector_of_spaces_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(&[b' '; 32]),
             eq(LineEnd::Unusual {
                 leading_space_count: 32,
                 length: 32
             })
-        );
+        )
     }
 
     #[gtest]
-    fn line_end_at_more_than_one_vector_of_spaces_at_end_of_source() {
-        expect_that!(
+    fn line_end_at_more_than_one_vector_of_spaces_at_end_of_source() -> Result<()> {
+        verify_that!(
             line_end(&[b' '; 40]),
             eq(LineEnd::Unusual {
                 leading_space_count: 40,
                 length: 40
             })
-        );
+        )
     }
 
     #[gtest]
@@ -1959,56 +1959,56 @@ mod tests {
     }
 
     #[gtest]
-    fn literal_content_ending_at_delimiter_near_end_of_source() {
-        expect_that!(
+    fn literal_content_ending_at_delimiter_near_end_of_source() -> Result<()> {
+        verify_that!(
             literal_content(b"abc\".\n"),
             eq(LiteralContent {
                 length: 3,
                 character_count: 3,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_ending_at_delimiter() {
-        expect_that!(
+    fn literal_content_ending_at_delimiter() -> Result<()> {
+        verify_that!(
             literal_content(b"hello world\". # define the potential position<standard:/after>.\n"),
             eq(LiteralContent {
                 length: 11,
                 character_count: 11,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_ending_at_escape() {
-        expect_that!(
+    fn literal_content_ending_at_escape() -> Result<()> {
+        verify_that!(
             literal_content(b"a\\\"b\".\ndefine the potential position<standard:/after>.\n"),
             eq(LiteralContent {
                 length: 1,
                 character_count: 1,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_ending_at_line_feed() {
-        expect_that!(
+    fn literal_content_ending_at_line_feed() -> Result<()> {
+        verify_that!(
             literal_content(b"abc\ndefine the potential position<standard:/after>.\n"),
             eq(LiteralContent {
                 length: 3,
                 character_count: 3,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_with_non_ascii_character() {
-        expect_that!(
+    fn literal_content_with_non_ascii_character() -> Result<()> {
+        verify_that!(
             literal_content(
                 "café\".\ndefine the potential position<standard:/after>.\n".as_bytes()
             ),
@@ -2017,31 +2017,31 @@ mod tests {
                 character_count: 4,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_with_unprintable_character() {
-        expect_that!(
+    fn literal_content_with_unprintable_character() -> Result<()> {
+        verify_that!(
             literal_content(b"a\tb\".\ndefine the potential position<standard:/after>.\n"),
             eq(LiteralContent {
                 length: 3,
                 character_count: 3,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn literal_content_at_end_of_short_source() {
-        expect_that!(
+    fn literal_content_at_end_of_short_source() -> Result<()> {
+        verify_that!(
             literal_content(b"abc"),
             eq(LiteralContent {
                 length: 3,
                 character_count: 3,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -2058,15 +2058,15 @@ mod tests {
     }
 
     #[gtest]
-    fn literal_content_longer_than_one_vector_at_end_of_source() {
-        expect_that!(
+    fn literal_content_longer_than_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
             literal_content(&[b'a'; 40]),
             eq(LiteralContent {
                 length: 40,
                 character_count: 40,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -2083,58 +2083,58 @@ mod tests {
     }
 
     #[gtest]
-    fn rest_of_line_ending_at_line_feed() {
-        expect_that!(
+    fn rest_of_line_ending_at_line_feed() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# a comment\ndefine the potential position<standard:/path>.\n"),
             eq(RestOfLine {
                 length: 11,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_at_end_of_source() {
-        expect_that!(
+    fn rest_of_line_at_end_of_source() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# a comment"),
             eq(RestOfLine {
                 length: 11,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_with_non_ascii_character() {
-        expect_that!(
+    fn rest_of_line_with_non_ascii_character() -> Result<()> {
+        verify_that!(
             rest_of_line("# café\n".as_bytes()),
             eq(RestOfLine {
                 length: 7,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_longer_than_one_vector() {
-        expect_that!(
+    fn rest_of_line_longer_than_one_vector() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# A comment that is longer than one vector of thirty-two bytes.\nx\n"),
             eq(RestOfLine {
                 length: 63,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_longer_than_one_vector_at_end_of_source() {
-        expect_that!(
+    fn rest_of_line_longer_than_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
             rest_of_line("# A comment that is longer than one vector, ending in é".as_bytes()),
             eq(RestOfLine {
                 length: 56,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -2150,109 +2150,109 @@ mod tests {
     }
 
     #[gtest]
-    fn rest_of_line_with_non_ascii_character_after_line_feed() {
-        expect_that!(
+    fn rest_of_line_with_non_ascii_character_after_line_feed() -> Result<()> {
+        verify_that!(
             rest_of_line("# ascii\né\n".as_bytes()),
             eq(RestOfLine {
                 length: 7,
                 is_printable_ascii: true,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_with_control_character() {
-        expect_that!(
+    fn rest_of_line_with_control_character() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# a\tcomment\n"),
             eq(RestOfLine {
                 length: 11,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_with_delete_character_longer_than_one_vector() {
-        expect_that!(
+    fn rest_of_line_with_delete_character_longer_than_one_vector() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# A comment longer than one vector of bytes, ending in \x7f\n"),
             eq(RestOfLine {
                 length: 56,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn rest_of_line_with_delete_character_in_first_vector() {
-        expect_that!(
+    fn rest_of_line_with_delete_character_in_first_vector() -> Result<()> {
+        verify_that!(
             rest_of_line(b"# \x7f comment that is longer than one vector of bytes\n"),
             eq(RestOfLine {
                 length: 51,
                 is_printable_ascii: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn character_count_of_empty_text() {
-        expect_that!(character_count(b""), eq(0));
+    fn character_count_of_empty_text() -> Result<()> {
+        verify_that!(character_count(b""), eq(0))
     }
 
     #[gtest]
-    fn character_count_of_ascii_text() {
-        expect_that!(character_count(b"abc"), eq(3));
+    fn character_count_of_ascii_text() -> Result<()> {
+        verify_that!(character_count(b"abc"), eq(3))
     }
 
     #[gtest]
-    fn character_count_of_two_byte_characters() {
-        expect_that!(character_count("café".as_bytes()), eq(4));
+    fn character_count_of_two_byte_characters() -> Result<()> {
+        verify_that!(character_count("café".as_bytes()), eq(4))
     }
 
     #[gtest]
-    fn character_count_of_three_byte_characters() {
-        expect_that!(character_count("日本語".as_bytes()), eq(3));
+    fn character_count_of_three_byte_characters() -> Result<()> {
+        verify_that!(character_count("日本語".as_bytes()), eq(3))
     }
 
     #[gtest]
-    fn character_count_of_exactly_one_vector() {
-        expect_that!(character_count("éééééééééééééééé".as_bytes()), eq(16));
+    fn character_count_of_exactly_one_vector() -> Result<()> {
+        verify_that!(character_count("éééééééééééééééé".as_bytes()), eq(16))
     }
 
     #[gtest]
-    fn character_count_of_comment_shorter_than_one_vector() {
-        expect_that!(character_count("# Ça coûte 3 € 🎉".as_bytes()), eq(16));
+    fn character_count_of_comment_shorter_than_one_vector() -> Result<()> {
+        verify_that!(character_count("# Ça coûte 3 € 🎉".as_bytes()), eq(16))
     }
 
     #[gtest]
-    fn character_count_of_comment_longer_than_two_vectors() {
-        expect_that!(
+    fn character_count_of_comment_longer_than_two_vectors() -> Result<()> {
+        verify_that!(
             character_count(
                 "# Kommentar über die Größe: 日本語のコメント 🎉 und mehr Text.".as_bytes()
             ),
             eq(53)
-        );
+        )
     }
 
     #[gtest]
-    fn character_count_with_character_crossing_vectors() {
-        expect_that!(
+    fn character_count_with_character_crossing_vectors() -> Result<()> {
+        verify_that!(
             character_count("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🎉b".as_bytes()),
             eq(32)
-        );
+        )
     }
 
     #[gtest]
-    fn character_count_of_exactly_two_vectors() {
-        expect_that!(character_count("é".repeat(32).as_bytes()), eq(32));
+    fn character_count_of_exactly_two_vectors() -> Result<()> {
+        verify_that!(character_count("é".repeat(32).as_bytes()), eq(32))
     }
 
     #[gtest]
-    fn character_count_of_text_longer_than_two_vectors() {
-        expect_that!(character_count("é".repeat(40).as_bytes()), eq(40));
+    fn character_count_of_text_longer_than_two_vectors() -> Result<()> {
+        verify_that!(character_count("é".repeat(40).as_bytes()), eq(40))
     }
 
     #[gtest]
-    fn character_count_of_text_longer_than_one_vector() {
-        expect_that!(character_count("éééééééééééééééééééé".as_bytes()), eq(20));
+    fn character_count_of_text_longer_than_one_vector() -> Result<()> {
+        verify_that!(character_count("éééééééééééééééééééé".as_bytes()), eq(20))
     }
 }

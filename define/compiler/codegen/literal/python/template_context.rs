@@ -4,7 +4,7 @@
 use crate::filters;
 use askama::Template;
 use pyo3::prelude::*;
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 // A class here that holds another one holds it as a `Py` reference. Taking
 // it by value would copy it, and everything inside it, every time Python
@@ -80,7 +80,7 @@ pub struct PositionDefinition {
     assigned_qualities: Vec<Py<ClassReference>>,
     value_type: String,
     /// The modules, other than its own, that the definition uses.
-    imports: HashSet<String>,
+    imports: FxHashSet<String>,
 }
 
 #[pymethods]
@@ -91,7 +91,7 @@ impl PositionDefinition {
         module_name: String,
         assigned_qualities: Vec<Py<ClassReference>>,
         value_type: String,
-        imports: HashSet<String>,
+        imports: FxHashSet<String>,
     ) -> Self {
         Self {
             class_name,
@@ -400,7 +400,7 @@ pub struct ActionDefinition {
     implied_qualities: Vec<Py<ClassReference>>,
     trace_operations: bool,
     /// The modules, other than its own, that the definition uses.
-    imports: HashSet<String>,
+    imports: FxHashSet<String>,
     contract_class_name: Option<String>,
     contract_methods: Vec<String>,
     contract_definitions: Vec<Py<DestructionContractDefinition>>,
@@ -421,7 +421,7 @@ impl ActionDefinition {
         interface_positions: Vec<Py<InterfacePosition>>,
         implied_qualities: Vec<Py<ClassReference>>,
         trace_operations: bool,
-        imports: HashSet<String>,
+        imports: FxHashSet<String>,
         contract_class_name: Option<String>,
         contract_methods: Vec<String>,
         contract_definitions: Vec<Py<DestructionContractDefinition>>,
@@ -532,7 +532,7 @@ pub struct EncodingOperationDefinition {
     /// returns its expression instead.
     return_last_statement: bool,
     /// The modules, other than its own, that the function uses.
-    imports: HashSet<String>,
+    imports: FxHashSet<String>,
 }
 
 #[pymethods]
@@ -545,7 +545,7 @@ impl EncodingOperationDefinition {
         statements: Vec<Py<EncodingOperationStatement>>,
         results: Vec<Py<TypedLocalName>>,
         return_last_statement: bool,
-        imports: HashSet<String>,
+        imports: FxHashSet<String>,
     ) -> Self {
         Self {
             function_name,

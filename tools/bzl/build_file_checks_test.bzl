@@ -243,6 +243,39 @@ _clippy_tests_must_have_the_clippy_tag_test = unittest.make(
     _clippy_tests_must_have_the_clippy_tag_impl,
 )
 
+def _rust_targets_must_be_in_clippy_test_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("descriptor_proto", {"kind": "rust_prost_library"}),
+        ("parser_extension_shared", {
+            "generator_function": "pyo3_extension",
+            "generator_name": "parser_extension",
+            "kind": "rust_cdylib_library",
+        }),
+        ("parser_extension", {
+            "generator_function": "pyo3_extension",
+            "generator_name": "parser_extension",
+            "kind": "py_pyo3_library",
+        }),
+        ("scanner", {"kind": "rust_library"}),
+        ("scanner_test", {"kind": "rust_test", "size": "small"}),
+        ("terminals", {"kind": "rust_library"}),
+        ("clippy_test", {
+            "kind": "rust_clippy_test",
+            "tags": ["clippy"],
+            "targets": ["//define/compiler/parsing:scanner", "//define/compiler/parsing:scanner_test"],
+        }),
+    ]
+    asserts.equals(env, [
+        'Rust target "parser_extension_shared" must be in the targets of a rust_clippy_test',
+        'Rust target "terminals" must be in the targets of a rust_clippy_test',
+    ], build_file_violations("parsing", rules))
+    return unittest.end(env)
+
+_rust_targets_must_be_in_clippy_test_test = unittest.make(
+    _rust_targets_must_be_in_clippy_test_impl,
+)
+
 def build_file_checks_test_suite(name):
     """Creates the unit tests for build_file_checks.bzl.
 
@@ -268,6 +301,7 @@ def build_file_checks_test_suite(name):
                 _package_without_pyright_test_is_not_checked_for_coverage_test,
                 _codegen_testdata_requires_pyright_test_test,
                 _clippy_tests_must_have_the_clippy_tag_test,
+                _rust_targets_must_be_in_clippy_test_test,
             ]
         ]
     )

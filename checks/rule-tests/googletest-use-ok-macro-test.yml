@@ -1,0 +1,22 @@
+id: googletest-use-ok-macro
+valid:
+  - |
+    expect_ok!(check(file));
+  - |
+    expect_that!(parse(source), ok(eq(&parsed_file)));
+  - |
+    expect_that!(parse(source), eq(&Ok(parsed_file)));
+  - |
+    expect_that!(check(file), err(anything()));
+invalid:
+  - |
+    expect_that!(check(file), ok(anything()));
+  - |
+    verify_that!(check(file), eq(&Ok(())))
+  - |
+    assert_that!(check(file), eq(Ok(())));
+  - |
+    expect_that!(
+        check_semantics(&file, &schema),
+        ok(anything()),
+    );

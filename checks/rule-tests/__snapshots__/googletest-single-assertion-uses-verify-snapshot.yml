@@ -1,0 +1,110 @@
+id: googletest-single-assertion-uses-verify
+snapshots:
+  "#[gtest]\nfn checks() -> Result<()> {\n    expect_ok!(check(file()?));\n    Ok(())\n}\n":
+    labels:
+    - source: |-
+        fn checks() -> Result<()> {
+            expect_ok!(check(file()?));
+            Ok(())
+        }
+      style: primary
+      start: 9
+      end: 81
+    - source: expect_ok
+      style: secondary
+      start: 41
+      end: 50
+    - source: expect_ok!(check(file()?))
+      style: secondary
+      start: 41
+      end: 67
+    - source: expect_ok!(check(file()?));
+      style: secondary
+      start: 41
+      end: 68
+    - source: Ok(())
+      style: secondary
+      start: 73
+      end: 79
+    - source: |-
+        {
+            expect_ok!(check(file()?));
+            Ok(())
+        }
+      style: secondary
+      start: 35
+      end: 81
+    - source: "#[gtest]"
+      style: secondary
+      start: 0
+      end: 8
+  "#[gtest]\nfn parses() -> Result<()> {\n    expect_that!(parse(\"a\"), eq(1));\n    Ok(())\n}\n":
+    labels:
+    - source: |-
+        fn parses() -> Result<()> {
+            expect_that!(parse("a"), eq(1));
+            Ok(())
+        }
+      style: primary
+      start: 9
+      end: 86
+    - source: expect_that
+      style: secondary
+      start: 41
+      end: 52
+    - source: expect_that!(parse("a"), eq(1))
+      style: secondary
+      start: 41
+      end: 72
+    - source: expect_that!(parse("a"), eq(1));
+      style: secondary
+      start: 41
+      end: 73
+    - source: Ok(())
+      style: secondary
+      start: 78
+      end: 84
+    - source: |-
+        {
+            expect_that!(parse("a"), eq(1));
+            Ok(())
+        }
+      style: secondary
+      start: 35
+      end: 86
+    - source: "#[gtest]"
+      style: secondary
+      start: 0
+      end: 8
+  "#[gtest]\nfn parses() {\n    expect_that!(parse(\"a\"), eq(1));\n}\n":
+    labels:
+    - source: |-
+        fn parses() {
+            expect_that!(parse("a"), eq(1));
+        }
+      style: primary
+      start: 9
+      end: 61
+    - source: expect_that
+      style: secondary
+      start: 27
+      end: 38
+    - source: expect_that!(parse("a"), eq(1))
+      style: secondary
+      start: 27
+      end: 58
+    - source: expect_that!(parse("a"), eq(1));
+      style: secondary
+      start: 27
+      end: 59
+    - source: |-
+        {
+            expect_that!(parse("a"), eq(1));
+        }
+      style: secondary
+      start: 21
+      end: 61
+    - source: "#[gtest]"
+      style: secondary
+      start: 0
+      end: 8

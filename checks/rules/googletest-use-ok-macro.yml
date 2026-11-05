@@ -1,0 +1,15 @@
+id: googletest-use-ok-macro
+language: rust
+severity: error
+message:
+  Use `expect_ok!`, `assert_ok!` or `verify_ok!` to assert that a `Result` is
+  `Ok`, instead of matching it with `ok(anything())` or `eq(&Ok(()))`.
+rule:
+  kind: macro_invocation
+  all:
+    - has:
+        field: macro
+        regex: ^(expect|assert|verify)_that$
+    - has:
+        kind: token_tree
+        regex: ',\s*(ok\(\s*anything\(\s*\)\s*\)|eq\(\s*&?\s*Ok\(\s*\(\s*\)\s*\)\s*\))\s*,?\s*\)$'

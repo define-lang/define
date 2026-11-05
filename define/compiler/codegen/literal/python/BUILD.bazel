@@ -175,7 +175,10 @@ pyo3_extension(
     module_name = "renderer",
     stubs = True,
     visibility = ["//tools:__pkg__"],
-    deps = ["@crates//:askama"],
+    deps = [
+        "@crates//:askama",
+        "@crates//:rustc-hash",
+    ],
 )
 
 # The generated stub, which tools:setup_local_dev copies into the source tree.

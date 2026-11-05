@@ -10,6 +10,10 @@ _META_FUNCTIONS = [
 
 _PYTHON_FUNCTIONS = ["py_binary", "py_library", "py_test"]
 
+# The kinds of Rust targets that a rust_clippy_test in their package must
+# check. pyo3_extension declares a rust_cdylib_library.
+_CLIPPY_CHECKED_KINDS = ["rust_binary", "rust_cdylib_library", "rust_library", "rust_test"]
+
 # Codegen testdata packages provide these targets to the generator integration
 # tests. Their expected outputs are generated Python, which must type-check.
 _CODEGEN_TESTDATA_TARGETS = ["codegen_testdata", "tracing_testdata"]
@@ -148,6 +152,17 @@ def _clippy_tag_violations(calls):
         if call.function == "rust_clippy_test" and "clippy" not in call.attributes.get("tags", [])
     ]
 
+def _clippy_coverage_violations(calls, rules):
+    checked = []
+    for call in calls:
+        if call.function == "rust_clippy_test":
+            checked.extend([_label_name(label) for label in call.attributes.get("targets", [])])
+    return [
+        'Rust target "%s" must be in the targets of a rust_clippy_test' % rule_name
+        for rule_name, rule in rules
+        if rule["kind"] in _CLIPPY_CHECKED_KINDS and rule_name not in checked
+    ]
+
 def _codegen_testdata_violations(calls):
     if [call for call in calls if call.function == "pyright_test"]:
         return []
@@ -173,7 +188,8 @@ def build_file_violations(package_name, rules):
         _order_violations(calls) +
         _pyright_violations(calls, rules) +
         _codegen_testdata_violations(calls) +
-        _clippy_tag_violations(calls)
+        _clippy_tag_violations(calls) +
+        _clippy_coverage_violations(calls, rules)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable

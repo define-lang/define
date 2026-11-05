@@ -1,0 +1,36 @@
+id: rust-tests-use-gtest
+language: rust
+severity: error
+message:
+  Write Rust tests as `#[gtest]` functions that use googletest assertions, such
+  as `expect_that!` or `verify_that!`, instead of `#[test]` or the standard
+  `assert!` macros.
+rule:
+  any:
+    - kind: attribute_item
+      regex: ^#\[test\]$
+    - kind: macro_invocation
+      has:
+        field: macro
+        regex: ^(assert|assert_eq|assert_ne)$
+      inside:
+        stopBy: end
+        any:
+          - kind: function_item
+            follows:
+              kind: attribute_item
+              regex: ^#\[g?test\]$
+              stopBy:
+                not:
+                  any:
+                    - kind: attribute_item
+                    - kind: line_comment
+          - kind: mod_item
+            follows:
+              kind: attribute_item
+              regex: ^#\[cfg\(test\)\]$
+              stopBy:
+                not:
+                  any:
+                    - kind: attribute_item
+                    - kind: line_comment

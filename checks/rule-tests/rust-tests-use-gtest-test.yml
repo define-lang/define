@@ -1,0 +1,46 @@
+id: rust-tests-use-gtest
+valid:
+  - |
+    #[gtest]
+    fn parses() {
+        expect_that!(parse("a"), eq(1));
+    }
+  - |
+    const _: () = assert!(WIDTH_U32 as usize == WIDTH);
+  - |
+    fn advance(&mut self) {
+        assert!(self.offset < self.source.len());
+    }
+  - |
+    #[cfg(test)]
+    mod tests {
+        #[gtest]
+        fn parses() -> Result<()> {
+            verify_that!(parse("a"), eq(1))
+        }
+    }
+invalid:
+  - |
+    #[test]
+    fn parses() {
+        expect_that!(parse("a"), eq(1));
+    }
+  - |
+    #[gtest]
+    fn parses() {
+        assert_eq!(parse("a"), 1);
+    }
+  - |
+    #[gtest]
+    #[ignore]
+    fn parses() {
+        assert!(parse("a") == 1);
+    }
+  - |
+    #[cfg(test)]
+    mod tests {
+        fn parsed(source: &str) -> u32 {
+            assert_ne!(source, "");
+            parse(source)
+        }
+    }

@@ -51,6 +51,11 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Parses an operation execution statement in an action, indented
     /// `indentation` spaces, whose references take their default FQUN from
     /// `fqun`, through the end of its last line.
+    ///
+    /// ```ebnf
+    /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
+    /// operation_argument_statement = operation_argument_statement_in_action ;
+    /// ```
     pub(crate) fn parse_operation_execution_statement_in_action(
         &mut self,
         indentation: usize,
@@ -74,6 +79,11 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// Encoding Operation that executes an operation of `kind`, indented
     /// `indentation` spaces, whose references take their default FQUN from
     /// `fqun`, through the end of its last line.
+    ///
+    /// ```ebnf
+    /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
+    /// operation_argument_statement = operation_argument_statement_in_operation ;
+    /// ```
     pub(crate) fn parse_operation_execution_statement_in_operation(
         &mut self,
         kind: OperationKind,

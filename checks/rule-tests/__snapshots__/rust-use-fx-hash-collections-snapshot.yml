@@ -1,0 +1,44 @@
+id: rust-use-fx-hash-collections
+snapshots:
+  "fn index(names: &std::collections::HashMap<String, usize>) {}\n":
+    labels:
+    - source: std::collections::HashMap
+      style: primary
+      start: 17
+      end: 42
+  "let names = std::collections::HashSet::new();\n":
+    labels:
+    - source: std::collections::HashSet
+      style: primary
+      start: 12
+      end: 37
+  "use std::collections::HashMap;\n":
+    labels:
+    - source: use std::collections::HashMap;
+      style: primary
+      start: 0
+      end: 30
+    - source: std
+      style: secondary
+      start: 4
+      end: 7
+  "use std::collections::{BTreeMap, HashSet};\n":
+    labels:
+    - source: use std::collections::{BTreeMap, HashSet};
+      style: primary
+      start: 0
+      end: 42
+    - source: std
+      style: secondary
+      start: 4
+      end: 7
+  "use std::{collections::{HashMap, VecDeque}, fmt};\n":
+    labels:
+    - source: use std::{collections::{HashMap, VecDeque}, fmt};
+      style: primary
+      start: 0
+      end: 49
+    - source: std
+      style: secondary
+      start: 4
+      end: 7

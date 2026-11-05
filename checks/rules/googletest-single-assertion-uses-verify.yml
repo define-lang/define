@@ -1,0 +1,38 @@
+id: googletest-single-assertion-uses-verify
+language: rust
+severity: error
+message:
+  End a `#[gtest]` function whose only assertion is one `expect_*!` with the
+  matching `verify_*!` as its tail expression, and return `Result<()>`, instead
+  of an `expect_*!` statement followed by `Ok(())` or nothing.
+rule:
+  kind: function_item
+  follows:
+    kind: attribute_item
+    regex: ^#\[gtest\]$
+    stopBy:
+      not:
+        any:
+          - kind: attribute_item
+          - kind: line_comment
+  has:
+    field: body
+    all:
+      - has:
+          nthChild: 1
+          kind: expression_statement
+          has:
+            kind: macro_invocation
+            has:
+              field: macro
+              regex: ^expect_
+      - not:
+          has:
+            nthChild: 3
+      - any:
+          - not:
+              has:
+                nthChild: 2
+          - has:
+              nthChild: 2
+              pattern: Ok(())

@@ -16,7 +16,25 @@ ast_grep = lint_ast_grep_aspect(
 
 load("//tools/bzl:lint_batches.bzl", "lint_batches")
 
+_AstGrepInfo = provider(
+    doc = "The outputs of the ast-grep actions that lint a target's sources.",
+    fields = {"outputs": "a depset of the marker files that the actions write"},
+)
+
 def _ast_grep_aspect_impl(target, ctx):
+    # Bazel builds the validation outputs of top-level targets only, and
+    # pyo3_extension tags its rust_cdylib_library `manual`, so the
+    # py_pyo3_library passes on the outputs of the library in its `extension`.
+    if hasattr(ctx.rule.attr, "extension"):
+        extensions = ctx.rule.attr.extension
+        if type(extensions) != "list":
+            extensions = [extensions]
+        outputs = depset(transitive = [
+            extension[_AstGrepInfo].outputs
+            for extension in extensions
+            if _AstGrepInfo in extension
+        ])
+        return [_AstGrepInfo(outputs = outputs), OutputGroupInfo(_validation = outputs)]
     if ctx.rule.kind not in ctx.attr._rule_kinds:
         return []
     srcs = [src for src in ctx.rule.files.srcs if src.is_source and src.owner.workspace_name == ""]
@@ -42,7 +60,7 @@ def _ast_grep_aspect_impl(target, ctx):
             progress_message = "Linting %{label} with ast-grep",
         )
         outputs.append(output)
-    return [OutputGroupInfo(_validation = depset(outputs))]
+    return [_AstGrepInfo(outputs = depset(outputs)), OutputGroupInfo(_validation = depset(outputs))]
 
 def lint_ast_grep_aspect(binary, config, rules, rule_kinds):
     """Create an aspect that fails the build when `ast-grep scan` reports an error in a target's sources.
@@ -58,6 +76,7 @@ def lint_ast_grep_aspect(binary, config, rules, rule_kinds):
     """
     return aspect(
         implementation = _ast_grep_aspect_impl,
+        attr_aspects = ["extension"],
         attrs = {
             "_ast_grep": attr.label(
                 default = binary,

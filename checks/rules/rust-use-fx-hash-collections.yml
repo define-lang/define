@@ -1,0 +1,22 @@
+id: rust-use-fx-hash-collections
+language: rust
+severity: error
+message:
+  Use `rustc_hash::FxHashMap` and `FxHashSet` instead of `HashMap` and `HashSet`
+  from `std::collections`. Our keys never come from an attacker, so FxHash's
+  speed is worth more than SipHash's resistance to collision attacks.
+rule:
+  any:
+    - kind: use_declaration
+      regex: \bcollections::(hash_map::|hash_set::)?(\{[^}]*)?\bHash(Map|Set)\b
+      has:
+        stopBy: end
+        regex: ^std$
+    - any:
+        - kind: scoped_identifier
+        - kind: scoped_type_identifier
+      regex: ^(::)?std::collections::(hash_map::|hash_set::)?Hash(Map|Set)$
+      not:
+        inside:
+          stopBy: end
+          kind: use_declaration
