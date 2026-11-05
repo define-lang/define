@@ -286,7 +286,9 @@ class ValueOperationDefinitionValidator(
         statement: ast.EncodingOperationExecutionStatement
         | ast.ComputerOperationExecutionStatement,
     ):
-        self._view_uses.fulfill_every_interface_view_direction(statement.location)
+        self._diagnostics.extend(
+            self._view_uses.fulfill_every_interface_view_direction(statement.location)
+        )
 
     @override
     def _analyze_valid_execution(
@@ -336,7 +338,9 @@ class EncodingOperationDefinitionValidator(
         # TODO: Once users can define Encoding Operations that associate with
         # Value Operations, report a computer operation that the compiler
         # cannot perform. Code generation relies on performing every one.
-        self._view_uses.fulfill_every_interface_view_direction(statement.location)
+        self._diagnostics.extend(
+            self._view_uses.fulfill_every_interface_view_direction(statement.location)
+        )
         # The grammar allows only computer operations in an Encoding
         # Operation.
         self._steps.append(

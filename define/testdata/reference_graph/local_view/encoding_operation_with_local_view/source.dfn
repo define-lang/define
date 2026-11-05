@@ -1,4 +1,4 @@
-# Executing the encoding operation reads and writes every interface view, but not a local view, which the logical operations still write and read.
+# Executing the encoding operation reads and writes every interface view, but not a local view, which other statements still write and read.
 define the logical_operation<my.domain.com:my_lib:/negate> {
     define the view<value> {
         it is read.
@@ -39,6 +39,18 @@ define the operation<my.domain.com:my_lib:/negate_number> {
         }
     }
 }
+define the operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
 define the operation<my.domain.com:my_lib:/test> {
     define the view<number> {
         it is read.
@@ -46,7 +58,7 @@ define the operation<my.domain.com:my_lib:/test> {
             it has the value</number>.
         }
     }
-    define the view<twice_negated> {
+    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the value</number>.
@@ -63,9 +75,8 @@ define the operation<my.domain.com:my_lib:/test> {
             with view<value> looking at view<number>.
             with view<result> looking at view<negated>.
         }
-        execute the logical_operation</negate> {
+        execute the operation</inspect> {
             with view<value> looking at view<negated>.
-            with view<result> looking at view<twice_negated>.
         }
         execute the encoding operation.
     }

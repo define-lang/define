@@ -78,16 +78,35 @@ class ViewUseTracker:
             use, use.definition, argument, looking_at, executed_view, operation_name
         )
 
-    def fulfill_every_interface_view_direction(self, location: ast.SourceLocation):
-        """Record a statement at `location` that reads every input view and writes every output view of the operation."""
+    def fulfill_every_interface_view_direction(
+        self, location: ast.SourceLocation
+    ) -> list[diagnostics.Diagnostic]:
+        """Record a statement at `location` that reads every input view and writes every output view of the operation, and return a diagnostic for each output view that an earlier statement already wrote."""
+        write_diagnostics: list[diagnostics.Diagnostic] = []
         for use in self._uses.values():
             view = use.definition
             if isinstance(view, ast.LocalViewDefinition):
                 continue
+            # The statement reads each read/write view before it writes it, so
+            # a read/write view written earlier is reported only as written
+            # twice.
             if view.is_input:
                 use.is_read = True
-            if view.is_output and use.first_write is None:
+            if not view.is_output:
+                continue
+            if use.first_write is None:
                 use.first_write = location
+                continue
+            use.has_reported_read_or_write_violation = True
+            write_diagnostics.append(
+                diagnostics.InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(
+                    location=location,
+                    view_name=view.typed_name.source_typed_name,
+                    operation_name_type=self._operation_name_type,
+                    first_write=use.first_write,
+                )
+            )
+        return write_diagnostics
 
     def check_operation_end(self) -> list[diagnostics.Diagnostic]:
         """Return a diagnostic for each view that the whole operation leaves unread or unwritten."""
@@ -149,19 +168,49 @@ def _record_interface_view_use(
                     operation_name=operation_name,
                 )
             )
-    if executed_view.is_output:
-        if use.first_write is None:
-            use.first_write = looking_at.location
-        if not view.is_output:
+        # An executed view that also writes the view reads it first, so only
+        # its write can be a mistake, and that is reported below.
+        if (
+            view.is_input
+            and use.first_write is not None
+            and not executed_view.is_output
+        ):
             use.has_reported_read_or_write_violation = True
             use_diagnostics.append(
-                diagnostics.WriteToInputOnlyViewDiagnostic(
+                diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
                     location=looking_at.location,
                     looked_at_name=looking_at.source_typed_name,
                     view_name=argument.view.source_typed_name,
                     operation_name=operation_name,
+                    write=use.first_write,
                 )
             )
+    if not executed_view.is_output:
+        return use_diagnostics
+    if not view.is_output:
+        use.has_reported_read_or_write_violation = True
+        use_diagnostics.append(
+            diagnostics.WriteToInputOnlyViewDiagnostic(
+                location=looking_at.location,
+                looked_at_name=looking_at.source_typed_name,
+                view_name=argument.view.source_typed_name,
+                operation_name=operation_name,
+            )
+        )
+        return use_diagnostics
+    if use.first_write is None:
+        use.first_write = looking_at.location
+        return use_diagnostics
+    use.has_reported_read_or_write_violation = True
+    use_diagnostics.append(
+        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+            location=looking_at.location,
+            looked_at_name=looking_at.source_typed_name,
+            view_name=argument.view.source_typed_name,
+            operation_name=operation_name,
+            first_write=use.first_write,
+        )
+    )
     return use_diagnostics
 
 
@@ -172,15 +221,12 @@ def _record_local_view_use(
     executed_view: ast.ViewDefinition,
     operation_name: str,
 ) -> list[diagnostics.Diagnostic]:
-    # A statement whose use of the view is unknown may have written it, so
-    # neither a later read nor a later write is known to be a mistake.
-    if use.has_unknown_use:
-        return []
     use_diagnostics: list[diagnostics.Diagnostic] = []
     view_name = looking_at.source_typed_name
     if executed_view.is_input:
         use.is_read = True
-        if use.first_write is None:
+        # A statement whose use of the view is unknown may have written it.
+        if use.first_write is None and not use.has_unknown_use:
             use.has_reported_read_or_write_violation = True
             use_diagnostics.append(
                 diagnostics.ReadFromUnwrittenLocalViewDiagnostic(

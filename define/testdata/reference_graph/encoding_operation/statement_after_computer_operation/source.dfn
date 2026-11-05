@@ -1,13 +1,7 @@
 # Statements after the computer operation may read what it wrote.
-define the encoding_operation<my.domain.com:my_lib:/copy> {
-    define the view<source> {
+define the encoding_operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
         it is read.
-        it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
-        }
-    }
-    define the view<target> {
-        it is written.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }
@@ -17,15 +11,9 @@ define the encoding_operation<my.domain.com:my_lib:/copy> {
         execute the computer operation.
     }
 }
-define the encoding_operation<my.domain.com:my_lib:/copy_twice> {
+define the encoding_operation<my.domain.com:my_lib:/copy_and_inspect> {
     define the view<source> {
         it is read.
-        it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
-        }
-    }
-    define the view<middle> {
-        it is written.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }
@@ -39,9 +27,8 @@ define the encoding_operation<my.domain.com:my_lib:/copy_twice> {
 
     it does {
         execute the computer operation.
-        execute the encoding_operation</copy> {
-            with view<source> looking at view<middle>.
-            with view<target> looking at view<target>.
+        execute the encoding_operation</inspect> {
+            with view<value> looking at view<target>.
         }
     }
 }

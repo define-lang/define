@@ -296,3 +296,124 @@ def test_missing_operation_before_output_view_read(
             definition_name="operation<standard:/number/natural/missing>",
         )
     ]
+
+
+def test_output_view_written_twice(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=66, column=42, end_line=66, end_column=53),
+            looked_at_name="view<result>",
+            view_name="view<target>",
+            operation_name="operation</copy>",
+            first_write=ast.SourceLocation(
+                line=62, column=42, end_line=62, end_column=53
+            ),
+        )
+    ]
+
+
+def test_read_write_view_written_twice(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=59, column=41, end_line=59, end_column=51),
+            looked_at_name="view<count>",
+            view_name="view<value>",
+            operation_name="operation</increment>",
+            first_write=ast.SourceLocation(
+                line=56, column=41, end_line=56, end_column=51
+            ),
+        )
+    ]
+
+
+def test_read_from_written_read_write_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=69, column=41, end_line=69, end_column=51),
+            looked_at_name="view<count>",
+            view_name="view<value>",
+            operation_name="operation</inspect>",
+            write=ast.SourceLocation(line=66, column=42, end_line=66, end_column=52),
+        )
+    ]
+
+
+def test_read_write_view_passed_to_read_write_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_written_twice_after_unknown_use(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            location=ast.SourceLocation(line=64, column=21, end_line=64, end_column=39),
+            definition_name="operation</missing>",
+            config_path=".define/project/config.defcl",
+        ),
+        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=69, column=42, end_line=69, end_column=53),
+            looked_at_name="view<result>",
+            view_name="view<target>",
+            operation_name="operation</copy>",
+            first_write=ast.SourceLocation(
+                line=62, column=42, end_line=62, end_column=53
+            ),
+        ),
+    ]
+
+
+def test_read_from_written_read_write_view_after_unknown_use(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            location=ast.SourceLocation(line=65, column=21, end_line=65, end_column=39),
+            definition_name="operation</missing>",
+            config_path=".define/project/config.defcl",
+        ),
+        diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=69, column=41, end_line=69, end_column=51),
+            looked_at_name="view<count>",
+            view_name="view<value>",
+            operation_name="operation</inspect>",
+            write=ast.SourceLocation(line=63, column=42, end_line=63, end_column=52),
+        ),
+    ]
+
+
+def test_written_after_encoding_operation(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=63, column=42, end_line=63, end_column=53),
+            looked_at_name="view<result>",
+            view_name="view<target>",
+            operation_name="operation</copy>",
+            first_write=ast.SourceLocation(
+                line=60, column=9, end_line=60, end_column=39
+            ),
+        )
+    ]

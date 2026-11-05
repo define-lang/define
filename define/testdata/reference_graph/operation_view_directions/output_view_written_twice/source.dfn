@@ -1,0 +1,69 @@
+# Only one statement may write an output view.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/increment> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
+        }
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
+        }
+    }
+}

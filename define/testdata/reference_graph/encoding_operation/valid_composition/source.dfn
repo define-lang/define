@@ -17,16 +17,21 @@ define the encoding_operation<my.domain.com:my_lib:/copy> {
         execute the computer operation.
     }
 }
-define the encoding_operation<my.domain.com:my_lib:/increment_by> {
-    define the view<total> {
+define the encoding_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
         it is read.
-        it is written.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }
-    define the view<amount> {
+    define the view<b> {
         it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<sum> {
+        it is written.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }
@@ -55,15 +60,22 @@ define the encoding_operation<my.domain.com:my_lib:/copy_and_increment> {
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }
+    define the view<incremented> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
 
     it does {
         execute the encoding_operation</copy> {
             with view<source> looking at view<number>.
             with view<target> looking at view<result>.
         }
-        execute the encoding_operation</increment_by> {
-            with view<total> looking at view<result>.
-            with view<amount> looking at view<step>.
+        execute the encoding_operation</add> {
+            with view<a> looking at view<result>.
+            with view<b> looking at view<step>.
+            with view<sum> looking at view<incremented>.
         }
     }
 }

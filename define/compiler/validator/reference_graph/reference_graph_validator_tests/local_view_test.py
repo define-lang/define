@@ -173,3 +173,59 @@ def test_missing_logical_operation_looks_at_undefined_view(
             local_name="view<undefined>",
         ),
     ]
+
+
+def test_written_twice_after_unknown_use(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            location=ast.SourceLocation(line=66, column=21, end_line=66, end_column=47),
+            definition_name="logical_operation</missing>",
+            config_path=".define/project/config.defcl",
+        ),
+        diagnostics.LocalViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=71, column=42, end_line=71, end_column=54),
+            looked_at_name="view<negated>",
+            view_name="view<result>",
+            operation_name="logical_operation</negate>",
+            first_write=ast.SourceLocation(
+                line=64, column=42, end_line=64, end_column=54
+            ),
+        ),
+    ]
+
+
+def test_passed_to_read_write_view_before_write(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+            location=ast.SourceLocation(line=65, column=41, end_line=65, end_column=53),
+            looked_at_name="view<negated>",
+            view_name="view<value>",
+            operation_name="operation</negate_in_place>",
+        )
+    ]
+
+
+def test_passed_to_read_write_view_after_write(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.LocalViewWrittenTwiceDiagnostic(
+            location=ast.SourceLocation(line=75, column=41, end_line=75, end_column=53),
+            looked_at_name="view<negated>",
+            view_name="view<value>",
+            operation_name="operation</negate_in_place>",
+            first_write=ast.SourceLocation(
+                line=72, column=42, end_line=72, end_column=54
+            ),
+        )
+    ]

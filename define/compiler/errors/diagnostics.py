@@ -473,8 +473,8 @@ class UnreadInputViewDiagnostic(Diagnostic):
         return _ALL_VIEWS_STATEMENTS[self.operation_name_type]
 
     message_format: ClassVar[str] = (
-        "'{self.view_name}' has 'it is read.', but nothing in this operation"
-        " reads it. Either have an operation read it,"
+        "'{self.view_name}' is an input interface view, but nothing in this"
+        " operation reads it. Either have an operation read it,"
         " {self.all_views_statement}, or remove 'it is read.'"
     )
 
@@ -491,8 +491,8 @@ class UnwrittenOutputViewDiagnostic(Diagnostic):
         return _ALL_VIEWS_STATEMENTS[self.operation_name_type]
 
     message_format: ClassVar[str] = (
-        "'{self.view_name}' has 'it is written.', but nothing in this operation"
-        " writes to it. Either have an operation write to it,"
+        "'{self.view_name}' is an output interface view, but nothing in this"
+        " operation writes to it. Either have an operation write to it,"
         " {self.all_views_statement}, or remove 'it is written.'"
     )
 
@@ -504,9 +504,9 @@ class WriteToInputOnlyViewDiagnostic(Diagnostic):
     view_name: str
     operation_name: str
     message_format: ClassVar[str] = (
-        "'{self.looked_at_name}' is read-only, so it cannot be written to."
-        " However, '{self.view_name}' of '{self.operation_name}' writes to it"
-        " on this line."
+        "'{self.looked_at_name}' is an input-only interface view, so it cannot be"
+        " written to. However, '{self.view_name}' of '{self.operation_name}'"
+        " writes to it on this line."
     )
 
 
@@ -517,8 +517,8 @@ class ReadFromUnwrittenOutputViewDiagnostic(Diagnostic):
     view_name: str
     operation_name: str
     message_format: ClassVar[str] = (
-        "'{self.looked_at_name}' is write-only, so it cannot be read until an"
-        " earlier statement writes to it. However, '{self.view_name}' of"
+        "'{self.looked_at_name}' is an output-only interface view, so it cannot be"
+        " read until an earlier statement writes to it. However, '{self.view_name}' of"
         " '{self.operation_name}' reads it on this line before anything writes"
         " to it."
     )
@@ -554,6 +554,66 @@ class LocalViewWrittenTwiceDiagnostic(Diagnostic):
             f" write to it. However, '{self.view_name}' of '{self.operation_name}'"
             " writes to it again on this line. It was already written here:\n"
             f"{sources.format_location(self.first_write)}"
+        )
+
+
+class InterfaceViewWrittenTwiceDiagnostic(Diagnostic):
+    """Diagnostic for an executed definition writing to an interface view that an earlier statement already wrote to."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    first_write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that first writes the interface view."""
+        return (
+            f"'{self.looked_at_name}' is an output interface view, so only one"
+            f" statement may write to it. However, '{self.view_name}' of"
+            f" '{self.operation_name}' writes to it again on this line. It was"
+            " already written here:\n"
+            f"{sources.format_location(self.first_write)}"
+        )
+
+
+class InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(Diagnostic):
+    """Diagnostic for a statement that writes to every output view after an earlier statement already wrote to one of them."""
+
+    view_name: str
+    operation_name_type: name_types.NameType
+    first_write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that first writes the interface view."""
+        all_views_statement = _ALL_VIEWS_STATEMENTS[self.operation_name_type]
+        return (
+            f"'{self.view_name}' is an output interface view, so only one statement"
+            f" may write to it. However, '{all_views_statement}.' writes to every"
+            f" output view on this line, and '{self.view_name}' was already"
+            " written here:\n"
+            f"{sources.format_location(self.first_write)}"
+        )
+
+
+class ReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
+    """Diagnostic for an executed definition reading a read/write interface view after a statement wrote to it."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    write: ast.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message with the statement that writes the interface view."""
+        return (
+            f"'{self.looked_at_name}' is a read/write interface view, so it may only be"
+            " read before the statement that writes to it. However,"
+            f" '{self.view_name}' of '{self.operation_name}' reads it on this"
+            " line, after it was written here:\n"
+            f"{sources.format_location(self.write)}"
         )
 
 

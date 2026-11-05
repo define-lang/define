@@ -30,6 +30,12 @@ define the operation<my.domain.com:my_lib:/double> {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<two> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
         execute the operation</copy> {
@@ -38,7 +44,7 @@ define the operation<my.domain.com:my_lib:/double> {
         }
         execute the operation</copy> {
             with view<source> looking at literal<standard:/number>"2".
-            with view<target> looking at view<result>.
+            with view<target> looking at view<two>.
         }
     }
 }

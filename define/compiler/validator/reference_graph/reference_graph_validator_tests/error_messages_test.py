@@ -1875,6 +1875,130 @@ def test_local_view_error_messages(
     ]
 
 
+def test_interface_view_single_assignment_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "copy.dfn": (
+                "define the operation<my.domain.com:my_lib:/copy> {\n"
+                "    define the view<source> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<target> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inspect.dfn": (
+                "define the operation<my.domain.com:my_lib:/inspect> {\n"
+                "    define the view<value> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<count> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<number> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the operation</copy> {\n"
+                "            with view<source> looking at view<number>.\n"
+                "            with view<target> looking at view<result>.\n"
+                "        }\n"
+                "        execute the operation</copy> {\n"
+                "            with view<source> looking at view<number>.\n"
+                "            with view<target> looking at view<result>.\n"
+                "        }\n"
+                "        execute the operation</copy> {\n"
+                "            with view<source> looking at view<number>.\n"
+                "            with view<target> looking at view<count>.\n"
+                "        }\n"
+                "        execute the operation</inspect> {\n"
+                "            with view<value> looking at view<count>.\n"
+                "        }\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 29, column 42
+            with view<target> looking at view<result>.
+                                         ^^^^^^^^^^^^
+        'view<result>' is an output interface view, so only one statement may write to it. However, 'view<target>' of 'operation</copy>' writes to it again on this line. It was already written here:
+        File "test.dfn", line 25, column 42
+            with view<target> looking at view<result>.
+                                         ^^^^^^^^^^^^"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 36, column 41
+            with view<value> looking at view<count>.
+                                        ^^^^^^^^^^^
+        'view<count>' is a read/write interface view, so it may only be read before the statement that writes to it. However, 'view<value>' of 'operation</inspect>' reads it on this line, after it was written here:
+        File "test.dfn", line 33, column 42
+            with view<target> looking at view<count>.
+                                         ^^^^^^^^^^^"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 38, column 9
+            execute the encoding operation.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'view<count>' is an output interface view, so only one statement may write to it. However, 'execute the encoding operation.' writes to every output view on this line, and 'view<count>' was already written here:
+        File "test.dfn", line 33, column 42
+            with view<target> looking at view<count>.
+                                         ^^^^^^^^^^^"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 38, column 9
+            execute the encoding operation.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'view<result>' is an output interface view, so only one statement may write to it. However, 'execute the encoding operation.' writes to every output view on this line, and 'view<result>' was already written here:
+        File "test.dfn", line 25, column 42
+            with view<target> looking at view<result>.
+                                         ^^^^^^^^^^^^"""),
+    ]
+
+
 def test_logical_operation_read_not_supported_format(
     validate_project: ValidateProject,
 ):

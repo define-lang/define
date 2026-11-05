@@ -1,0 +1,72 @@
+# A missing operation does not undo the write before it, so a later write is still a second write.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/increment> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
+        }
+        execute the operation</missing> {
+            with view<value> looking at view<result>.
+        }
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
+        }
+    }
+}

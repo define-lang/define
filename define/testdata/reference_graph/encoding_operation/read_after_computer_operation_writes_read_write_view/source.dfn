@@ -1,0 +1,60 @@
+# The computer operation writes every read/write view, so no later statement may read one.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/increment> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/test> {
+    define the view<count> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+        execute the encoding_operation</inspect> {
+            with view<value> looking at view<count>.
+        }
+    }
+}

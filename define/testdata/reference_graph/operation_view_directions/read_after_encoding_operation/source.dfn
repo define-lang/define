@@ -1,13 +1,6 @@
-# Executing the encoding operation writes to every output view.
-define the operation<my.domain.com:my_lib:/increment_by> {
-    define the view<total> {
-        it is read.
-        it is written.
-        it may only contain particles where {
-            it has the value<standard:/number/natural>.
-        }
-    }
-    define the view<amount> {
+# Executing the encoding operation writes to every output view, so a later statement may read one.
+define the operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
         it is read.
         it may only contain particles where {
             it has the value<standard:/number/natural>.
@@ -18,7 +11,7 @@ define the operation<my.domain.com:my_lib:/increment_by> {
         execute the encoding operation.
     }
 }
-define the operation<my.domain.com:my_lib:/fill_and_increment> {
+define the operation<my.domain.com:my_lib:/fill_and_inspect> {
     define the view<number> {
         it is read.
         it may only contain particles where {
@@ -34,9 +27,8 @@ define the operation<my.domain.com:my_lib:/fill_and_increment> {
 
     it does {
         execute the encoding operation.
-        execute the operation</increment_by> {
-            with view<total> looking at view<result>.
-            with view<amount> looking at view<number>.
+        execute the operation</inspect> {
+            with view<value> looking at view<result>.
         }
     }
 }
