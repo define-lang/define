@@ -318,6 +318,9 @@ class TestEquality:
     def test_unequal_paths(self):
         assert define_path.DefinePath("a") != define_path.DefinePath("b")
 
+    def test_not_equal_to_string_with_same_text(self):
+        assert define_path.DefinePath("a/b") != "a/b"
+
     def test_trailing_slash_makes_distinct(self):
         assert define_path.DefinePath("foo") != define_path.DefinePath("foo/")
 

@@ -61,11 +61,7 @@ def _scenario_directories() -> list[Path]:
     directories: list[Path] = []
     for phase in _TEST_SOURCE_ROOTS:
         phase_root = _TESTDATA_ROOT / phase
-        if not phase_root.exists():
-            continue
         for module_directory in phase_root.iterdir():
-            if module_directory == phase_root / "BUILD.bazel":
-                continue
             # Only generator has convention-owned cases; the integration test owns the rest.
             if phase == "codegen" and module_directory.name != "generator":
                 continue

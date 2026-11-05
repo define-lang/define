@@ -1349,3 +1349,28 @@ def test_operation_execution_on_child_position_keeps_child_position_alive(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
+
+
+def test_callee_requirement_on_unresolved_position_keeps_no_quality_assignment_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].file_path == "missing.dfn"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 34
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert all_diags[1].quality_name == "value<standard:/number/natural>"
+    assert all_diags[1].position_name == "position<box>"
+    assert all_diags[1].location.line == 11
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[2], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[2].file_path == "missing.dfn"
+    assert all_diags[2].location.line == 2
+    assert all_diags[2].location.column == 34
+    assert all_diags[2].location.file_path == PurePosixPath("callee.dfn")

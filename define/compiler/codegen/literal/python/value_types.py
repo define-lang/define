@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from define.compiler import constants, name_types
+from define.compiler import constants
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -88,15 +88,10 @@ def python_value_type(value_quality: ast.GlobalTypedNameReference) -> str:
 
 def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
     """Return the Python type that generated code uses for values with the encoding this block assigns."""
-    # Generated code represents a value the same way in every encoding, so any
+    # Validation allows only encodings on an Encoding Operation view, and
+    # generated code represents a value the same way in every encoding, so any
     # one encoding serves.
-    for statement in block.statements:
-        encoding = statement.typed_global_name
-        if encoding.name_type == name_types.NameType.ENCODING:
-            return _ENCODING_PYTHON_TYPES[encoding.full_typed_name]
-    raise ValueError(
-        "Validation requires every Encoding Operation view to have an encoding"
-    )
+    return _ENCODING_PYTHON_TYPES[block.statements[0].typed_global_name.full_typed_name]
 
 
 def assigned_python_value_type(

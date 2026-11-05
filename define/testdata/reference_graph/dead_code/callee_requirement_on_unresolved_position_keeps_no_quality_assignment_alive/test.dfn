@@ -1,0 +1,18 @@
+# position</missing> has no definition, so the requirement action</callee> has
+# on it cannot keep any quality assignment alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</missing>.
+    it also assigns the action</callee>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position</missing>.
+        create a particle in action</callee>::position<run>.
+    }
+}

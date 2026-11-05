@@ -31,10 +31,9 @@ def _position_reference_for(chained_name: str) -> ast.PositionReference:
     program = test_helpers.parse(source)
     action_definition = program.definitions[0]
     assert isinstance(action_definition, ast.ActionDefinition)
-    for statement in action_definition.action_statements.statements:
-        if isinstance(statement, ast.CreateParticleStatement):
-            return statement.target_position
-    raise ValueError(f"No create statement found for: {chained_name}")
+    (statement,) = action_definition.action_statements.statements
+    assert isinstance(statement, ast.CreateParticleStatement)
+    return statement.target_position
 
 
 def _parse_position(source: str) -> ast.PositionDefinition:

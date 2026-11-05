@@ -66,6 +66,19 @@ def test_case(validate_testdata_structural):
     ]
 
 
+def test_starred_unpacking_tracks_named_elements():
+    assert (
+        _problems("""
+def test_case(validate_testdata_structural):
+    first, *_ = validate_testdata_structural().all_diagnostics
+    assert isinstance(first, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert first.location == location
+    assert first.position_name == "position<target>"
+""")
+        == []
+    )
+
+
 def test_loop_assertions_apply_to_each_element():
     assert (
         _problems("""
@@ -93,6 +106,21 @@ def test_case(validate_testdata_structural):
 """) == [
         "line 4: validate_testdata_structural().all_diagnostics[*each] is a DestroyInEmptyPositionDiagnostic, but the test does not assert on location.column, location.file_path, position_name"
     ]
+
+
+def test_loop_element_checked_before_indexed_elements():
+    assert (
+        _problems("""
+def test_case(validate_testdata_structural):
+    diags = validate_testdata_structural().all_diagnostics
+    for diag in diags:
+        assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+        assert diag.location == location
+    assert isinstance(diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<first>"
+""")
+        == []
+    )
 
 
 def test_list_equality_asserts_every_element():
@@ -196,6 +224,20 @@ def test_case(validate_testdata_structural):
     assert isinstance(function, ast.FunctionDef)
     assert diagnostic_assertions.diagnostic_message_assertions(function) == [
         "line 4: assert on the fields of validate_testdata_structural().file_results[0].diagnostics[1] instead of its message"
+    ]
+
+
+def test_every_message_assertion_reported():
+    function = ast.parse("""
+def test_case(validate_testdata_structural):
+    diags = validate_testdata_structural().all_diagnostics
+    assert diags[0].message == "first"
+    assert diags[1].message == "second"
+""").body[0]
+    assert isinstance(function, ast.FunctionDef)
+    assert diagnostic_assertions.diagnostic_message_assertions(function) == [
+        "line 4: assert on the fields of validate_testdata_structural().all_diagnostics[0] instead of its message",
+        "line 5: assert on the fields of validate_testdata_structural().all_diagnostics[1] instead of its message",
     ]
 
 
