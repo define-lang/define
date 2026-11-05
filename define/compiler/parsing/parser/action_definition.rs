@@ -145,8 +145,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     )> {
         let interface_positions_by_name = PyDict::new(self.ast.py());
         for (name, position) in &named_interface_positions {
-            // As in `ActionDefinition.__post_init__`, a name refers to the
-            // first interface position with that name.
+            // A name refers to the first interface position with that name.
             if !interface_positions_by_name.contains(name)? {
                 interface_positions_by_name.set_item(name, position.clone().into_object())?;
             }
@@ -491,7 +490,6 @@ impl<'py, 'source> Parser<'py, 'source> {
             typed_name_location,
             typed_names,
             canonical_chained_name_tuple,
-            true,
         )?;
         let location = self.ast.location(start, end)?;
         let statement =

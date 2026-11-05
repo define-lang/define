@@ -574,15 +574,10 @@ class ChainedName(ASTNode, Generic[ChainedNameTupleT_co]):
 class PositionReference(ChainedName[chained_name.PositionReferenceTuple]):
     """Represents a position reference, possibly chained with ::."""
 
-    from_source: bool = False
-
     def __post_init__(self):
         """Require a position as the final typed name."""
         super().__post_init__()
-        if (
-            not self.from_source
-            and self.typed_names[-1].name_type != name_types.NameType.POSITION
-        ):
+        if self.typed_names[-1].name_type != name_types.NameType.POSITION:
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
             )
@@ -808,21 +803,6 @@ class PositionPresenceStatement(ASTNode):
     typed_name: LocalTypedNameReference
     position_reference: PositionReference
 
-    @classmethod
-    def from_typed_name(
-        cls, *, location: SourceLocation, typed_name: LocalTypedNameReference
-    ) -> Self:
-        """Create a position presence statement for a typed name."""
-        return cls(
-            location=location,
-            typed_name=typed_name,
-            position_reference=PositionReference(
-                typed_names=(typed_name,),
-                location=typed_name.location,
-                from_source=True,
-            ),
-        )
-
 
 class ConstructorConditionStatement(ASTNode):
     """Represents a constructor condition statement."""
@@ -864,31 +844,10 @@ class ActionDefinition(QualityDefinition):
     )
     trigger_position: Derived[LocalPositionDefinition | None] = None
 
-    def __post_init__(self):
-        """Populate the interface-position lookup values."""
-        # The parser computes the same values in
-        # `interface_positions_by_name_and_trigger_position` in
-        # define/compiler/parsing/parser/action_definition.rs. Keep the two in
-        # sync.
-        # Computing these up front guarantees later thread-safety for accessing
-        # this information instead of creating multiple cached copies across threads.
-        for local_def in self.interface_positions:
-            local_name = local_def.typed_name.source_typed_name
-            if local_name not in self.interface_positions_by_name:
-                self.interface_positions_by_name[local_name] = local_def
-        self.trigger_position = self._compute_trigger_position()
-
     @property
     def interface_position_names(self) -> tuple[TypedName[NameContent], ...]:
         """The TypedName objects for all interface positions."""
         return tuple(pos.typed_name for pos in self.interface_positions)
-
-    def _compute_trigger_position(self) -> LocalPositionDefinition | None:
-        condition = self.trigger_conditions.condition
-        if not isinstance(condition, PositionPresenceStatement):
-            return None
-        trigger_name = condition.typed_name.source_typed_name
-        return self.interface_positions_by_name.get(trigger_name)
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:

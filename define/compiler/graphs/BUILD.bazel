@@ -57,6 +57,7 @@ py_test(
         ":reference_graph",
         "//define/compiler:ast",
         "//define/compiler:name_types",
+        "//define/compiler/parsing:test_helpers",
     ],
 )
 

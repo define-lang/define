@@ -70,12 +70,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         let typed_names = self.nodes.finish_tuple(typed_names)?;
         let canonical_chained_name_tuple = self.texts.finish_tuple(full_typed_names)?;
         let location = self.ast.location(start, self.scanner.position)?;
-        Ok(self.ast.position_reference(
-            location,
-            typed_names,
-            canonical_chained_name_tuple,
-            true,
-        )?)
+        Ok(self
+            .ast
+            .position_reference(location, typed_names, canonical_chained_name_tuple)?)
     }
 
     /// Parses a typed name in a position reference, which is local or global,

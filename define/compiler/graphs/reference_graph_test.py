@@ -1,9 +1,10 @@
-# pyright: reportUnusedCallResult=false
+# pyright: reportUnusedCallResult=false, reportImplicitStringConcatenation=false
 
 from __future__ import annotations
 
 from define.compiler import ast, name_types
 from define.compiler.graphs import reference_graph
+from define.compiler.parsing import test_helpers
 
 _LOC = ast.start_of_file_location()
 _FQUN = ast.Fqun(
@@ -33,35 +34,19 @@ def _make_position(path_name: str) -> ast.PositionDefinition:
     )
 
 
-_TRIGGER_REF = ast.LocalTypedNameReference(
-    name_type=name_types.NameType.POSITION,
-    name_content=ast.LocalNameContent(name="pp", location=_LOC),
-    location=_LOC,
-)
-
-
 def _make_action(path_name: str) -> ast.ActionDefinition:
-    return ast.ActionDefinition(
-        typed_name=ast.GlobalTypedNameInDefinition(
-            name_type=name_types.NameType.ACTION,
-            name_content=ast.DefinitionGlobalNameContent(
-                path=ast.GlobalPathName(name=path_name, location=_LOC),
-                fqun=_FQUN,
-                location=_LOC,
-            ),
-            location=_LOC,
-        ),
-        quality_implications=(),
-        interface_positions=(),
-        trigger_conditions=ast.TriggerConditionsBlock(
-            condition=ast.PositionPresenceStatement.from_typed_name(
-                typed_name=_TRIGGER_REF, location=_LOC
-            ),
-            location=_LOC,
-        ),
-        action_statements=ast.ActionStatementsBlock(statements=(), location=_LOC),
-        location=_LOC,
-    )
+    definition = test_helpers.parse(
+        f"define the potential action<a.com:lib:{path_name}> {{\n"
+        "    define the position<pp>.\n"
+        "    it happens when {\n"
+        "        the position<pp> has a particle.\n"
+        "    } and it does {\n"
+        "        destroy the particle in position<pp>.\n"
+        "    }\n"
+        "}\n"
+    ).definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    return definition
 
 
 def _make_edge(
