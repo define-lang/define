@@ -1,0 +1,22 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message MultipleErrorsFile {
+  Config config = 1;
+  int32 count = 2;
+  message Config {
+    string name = 1;
+    Status status = 2;
+    Database database = 3;
+    repeated Database replicas = 4;
+    repeated string tags = 5;
+  }
+  message Database {
+    string host = 1;
+  }
+  enum Status {
+    UNSPECIFIED = 0;
+    ACTIVE = 1;
+  }
+}

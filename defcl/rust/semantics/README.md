@@ -12,5 +12,5 @@ syntax.
    indexes every message type and resolves message-typed fields to their message
    types. Build it once and reuse it for every file with that top-level message
    type.
-3. Call `check_semantics(&parsed_file, &schema)`. It returns the first
-   `SemanticError` it finds.
+3. Call `check_semantics(&parsed_file, &schema)`. It returns every
+   `SemanticError` it finds, in source order.

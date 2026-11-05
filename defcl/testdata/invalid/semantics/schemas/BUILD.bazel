@@ -32,6 +32,11 @@ proto_library(
 )
 
 proto_library(
+    name = "multiple_errors_proto",
+    srcs = ["multiple_errors.proto"],
+)
+
+proto_library(
     name = "nested_integer_enum_proto",
     srcs = ["nested_integer_enum.proto"],
 )
@@ -128,6 +133,7 @@ proto_descriptor_set(
         ":field_written_twice_proto",
         ":integer_enum_proto",
         ":message_values_for_scalar_fields_proto",
+        ":multiple_errors_proto",
         ":nested_integer_enum_proto",
         ":nested_no_brackets_message_proto",
         ":nested_no_brackets_scalar_proto",

@@ -9,7 +9,7 @@ fn check_semantics_of_source(
     source: &str,
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
-) -> Result<std::result::Result<(), SemanticError>> {
+) -> Result<std::result::Result<(), Vec<SemanticError>>> {
     let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type).or_fail()?;
     let file = parse(source).or_fail()?;
     Ok(check_semantics(&file, &schema))
@@ -77,7 +77,7 @@ mod non_repeated_fields_with_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NonRepeatedFieldsWithBracketsFile",
             )?,
-            eq(&Err(SemanticError::NonRepeatedFieldWithBrackets {
+            err(eq(&vec![SemanticError::NonRepeatedFieldWithBrackets {
                 location: SourceLocation {
                     line: 2,
                     column: 11,
@@ -85,7 +85,7 @@ mod non_repeated_fields_with_brackets {
                     end_column: 15
                 },
                 field_name: "name".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -99,7 +99,7 @@ mod non_repeated_fields_with_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NonRepeatedFieldsWithBracketsFile",
             )?,
-            eq(&Err(SemanticError::NonRepeatedFieldWithBrackets {
+            err(eq(&vec![SemanticError::NonRepeatedFieldWithBrackets {
                 location: SourceLocation {
                     line: 2,
                     column: 11,
@@ -107,7 +107,7 @@ mod non_repeated_fields_with_brackets {
                     end_column: 12
                 },
                 field_name: "name".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -121,7 +121,7 @@ mod non_repeated_fields_with_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NonRepeatedFieldsWithBracketsFile",
             )?,
-            eq(&Err(SemanticError::NonRepeatedFieldWithBrackets {
+            err(eq(&vec![SemanticError::NonRepeatedFieldWithBrackets {
                 location: SourceLocation {
                     line: 2,
                     column: 15,
@@ -129,7 +129,7 @@ mod non_repeated_fields_with_brackets {
                     end_column: 18
                 },
                 field_name: "database".to_owned(),
-            }))
+            }]))
         )
     }
 }
@@ -147,7 +147,7 @@ mod message_values_for_scalar_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.MessageValuesForScalarFieldsFile",
             )?,
-            eq(&Err(SemanticError::MessageValueForScalarField {
+            err(eq(&vec![SemanticError::MessageValueForScalarField {
                 location: SourceLocation {
                     line: 1,
                     column: 8,
@@ -155,7 +155,7 @@ mod message_values_for_scalar_fields {
                     end_column: 9
                 },
                 field_name: "count".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -169,7 +169,7 @@ mod message_values_for_scalar_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.MessageValuesForScalarFieldsFile",
             )?,
-            eq(&Err(SemanticError::MessageValueForScalarField {
+            err(eq(&vec![SemanticError::MessageValueForScalarField {
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -177,7 +177,7 @@ mod message_values_for_scalar_fields {
                     end_column: 13
                 },
                 field_name: "basic".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -191,7 +191,7 @@ mod message_values_for_scalar_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.MessageValuesForScalarFieldsFile",
             )?,
-            eq(&Err(SemanticError::MessageValueForScalarField {
+            err(eq(&vec![SemanticError::MessageValueForScalarField {
                 location: SourceLocation {
                     line: 2,
                     column: 17,
@@ -199,7 +199,7 @@ mod message_values_for_scalar_fields {
                     end_column: 18
                 },
                 field_name: "tags".to_owned(),
-            }))
+            }]))
         )
     }
 }
@@ -217,7 +217,7 @@ mod scalars_for_message_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.ScalarsForMessageFieldsFile",
             )?,
-            eq(&Err(SemanticError::ScalarForMessageField {
+            err(eq(&vec![SemanticError::ScalarForMessageField {
                 location: SourceLocation {
                     line: 2,
                     column: 15,
@@ -225,7 +225,7 @@ mod scalars_for_message_fields {
                     end_column: 25
                 },
                 field_name: "database".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -239,7 +239,7 @@ mod scalars_for_message_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.ScalarsForMessageFieldsFile",
             )?,
-            eq(&Err(SemanticError::ScalarForMessageField {
+            err(eq(&vec![SemanticError::ScalarForMessageField {
                 location: SourceLocation {
                     line: 2,
                     column: 15,
@@ -247,7 +247,7 @@ mod scalars_for_message_fields {
                     end_column: 18
                 },
                 field_name: "database".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -261,7 +261,7 @@ mod scalars_for_message_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.ScalarsForMessageFieldsFile",
             )?,
-            eq(&Err(SemanticError::ScalarForMessageField {
+            err(eq(&vec![SemanticError::ScalarForMessageField {
                 location: SourceLocation {
                     line: 2,
                     column: 15,
@@ -269,7 +269,7 @@ mod scalars_for_message_fields {
                     end_column: 17
                 },
                 field_name: "database".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -283,7 +283,7 @@ mod scalars_for_message_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.ScalarsForMessageFieldsFile",
             )?,
-            eq(&Err(SemanticError::ScalarForMessageField {
+            err(eq(&vec![SemanticError::ScalarForMessageField {
                 location: SourceLocation {
                     line: 2,
                     column: 15,
@@ -291,7 +291,7 @@ mod scalars_for_message_fields {
                     end_column: 21
                 },
                 field_name: "database".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -305,7 +305,7 @@ mod scalars_for_message_fields {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.ScalarsForMessageFieldsFile",
             )?,
-            eq(&Err(SemanticError::ScalarForMessageField {
+            err(eq(&vec![SemanticError::ScalarForMessageField {
                 location: SourceLocation {
                     line: 2,
                     column: 20,
@@ -313,7 +313,7 @@ mod scalars_for_message_fields {
                     end_column: 30
                 },
                 field_name: "replicas".to_owned(),
-            }))
+            }]))
         )
     }
 }
@@ -329,7 +329,7 @@ mod integer_enums {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.IntegerEnumFile",
             )?,
-            eq(&Err(SemanticError::IntegerEnum {
+            err(eq(&vec![SemanticError::IntegerEnum {
                 location: SourceLocation {
                     line: 5,
                     column: 13,
@@ -337,7 +337,7 @@ mod integer_enums {
                     end_column: 13
                 },
                 field_name: "status".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -349,7 +349,7 @@ mod integer_enums {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.IntegerEnumFile",
             )?,
-            eq(&Err(SemanticError::IntegerEnum {
+            err(eq(&vec![SemanticError::IntegerEnum {
                 location: SourceLocation {
                     line: 2,
                     column: 13,
@@ -357,7 +357,7 @@ mod integer_enums {
                     end_column: 13
                 },
                 field_name: "status".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -369,7 +369,7 @@ mod integer_enums {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.RepeatedIntegerEnumFile",
             )?,
-            eq(&Err(SemanticError::IntegerEnum {
+            err(eq(&vec![SemanticError::IntegerEnum {
                 location: SourceLocation {
                     line: 4,
                     column: 19,
@@ -377,7 +377,7 @@ mod integer_enums {
                     end_column: 19
                 },
                 field_name: "status".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -389,7 +389,7 @@ mod integer_enums {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NestedIntegerEnumFile",
             )?,
-            eq(&Err(SemanticError::IntegerEnum {
+            err(eq(&vec![SemanticError::IntegerEnum {
                 location: SourceLocation {
                     line: 3,
                     column: 17,
@@ -397,7 +397,7 @@ mod integer_enums {
                     end_column: 17
                 },
                 field_name: "status".to_owned(),
-            }))
+            }]))
         )
     }
 }
@@ -413,15 +413,35 @@ mod repeated_fields_without_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NoBracketsScalarFile",
             )?,
-            eq(&Err(SemanticError::RepeatedFieldWithoutBrackets {
-                location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 16
+            err(eq(&vec![
+                SemanticError::RepeatedFieldWithoutBrackets {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 11,
+                        end_line: 2,
+                        end_column: 16
+                    },
+                    field_name: "tags".to_owned(),
                 },
-                field_name: "tags".to_owned(),
-            }))
+                SemanticError::FieldWrittenTwice {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 5,
+                        end_line: 3,
+                        end_column: 8
+                    },
+                    field_name: "tags".to_owned(),
+                },
+                SemanticError::RepeatedFieldWithoutBrackets {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 11,
+                        end_line: 3,
+                        end_column: 16
+                    },
+                    field_name: "tags".to_owned(),
+                },
+            ]))
         )
     }
 
@@ -435,7 +455,7 @@ mod repeated_fields_without_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NestedNoBracketsMessageFile",
             )?,
-            eq(&Err(SemanticError::RepeatedFieldWithoutBrackets {
+            err(eq(&vec![SemanticError::RepeatedFieldWithoutBrackets {
                 location: SourceLocation {
                     line: 3,
                     column: 23,
@@ -443,7 +463,7 @@ mod repeated_fields_without_brackets {
                     end_column: 42
                 },
                 field_name: "dependencies".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -457,7 +477,7 @@ mod repeated_fields_without_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NestedNoBracketsScalarFile",
             )?,
-            eq(&Err(SemanticError::RepeatedFieldWithoutBrackets {
+            err(eq(&vec![SemanticError::RepeatedFieldWithoutBrackets {
                 location: SourceLocation {
                     line: 3,
                     column: 15,
@@ -465,7 +485,7 @@ mod repeated_fields_without_brackets {
                     end_column: 20
                 },
                 field_name: "tags".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -477,15 +497,35 @@ mod repeated_fields_without_brackets {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.NoBracketsMessageFile",
             )?,
-            eq(&Err(SemanticError::RepeatedFieldWithoutBrackets {
-                location: SourceLocation {
-                    line: 2,
-                    column: 19,
-                    end_line: 2,
-                    end_column: 38
+            err(eq(&vec![
+                SemanticError::RepeatedFieldWithoutBrackets {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 19,
+                        end_line: 2,
+                        end_column: 38
+                    },
+                    field_name: "dependencies".to_owned(),
                 },
-                field_name: "dependencies".to_owned(),
-            }))
+                SemanticError::FieldWrittenTwice {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 5,
+                        end_line: 3,
+                        end_column: 16
+                    },
+                    field_name: "dependencies".to_owned(),
+                },
+                SemanticError::RepeatedFieldWithoutBrackets {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 19,
+                        end_line: 3,
+                        end_column: 38
+                    },
+                    field_name: "dependencies".to_owned(),
+                },
+            ]))
         )
     }
 }
@@ -503,7 +543,7 @@ mod fields_written_twice {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::FieldWrittenTwice {
+            err(eq(&vec![SemanticError::FieldWrittenTwice {
                 location: SourceLocation {
                     line: 3,
                     column: 5,
@@ -511,7 +551,7 @@ mod fields_written_twice {
                     end_column: 16
                 },
                 field_name: "dependencies".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -525,7 +565,7 @@ mod fields_written_twice {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::FieldWrittenTwice {
+            err(eq(&vec![SemanticError::FieldWrittenTwice {
                 location: SourceLocation {
                     line: 3,
                     column: 5,
@@ -533,7 +573,7 @@ mod fields_written_twice {
                     end_column: 17
                 },
                 field_name: "universe_name".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -547,7 +587,7 @@ mod fields_written_twice {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::FieldWrittenTwice {
+            err(eq(&vec![SemanticError::FieldWrittenTwice {
                 location: SourceLocation {
                     line: 4,
                     column: 1,
@@ -555,7 +595,7 @@ mod fields_written_twice {
                     end_column: 7
                 },
                 field_name: "project".to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -569,7 +609,7 @@ mod fields_written_twice {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::FieldWrittenTwice {
+            err(eq(&vec![SemanticError::FieldWrittenTwice {
                 location: SourceLocation {
                     line: 6,
                     column: 13,
@@ -577,7 +617,7 @@ mod fields_written_twice {
                     end_column: 20
                 },
                 field_name: "universe".to_owned(),
-            }))
+            }]))
         )
     }
 }
@@ -595,7 +635,7 @@ mod unknown_field_names {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::UnknownFieldName {
+            err(eq(&vec![SemanticError::UnknownFieldName {
                 location: SourceLocation {
                     line: 4,
                     column: 1,
@@ -605,7 +645,7 @@ mod unknown_field_names {
                 field_name: "settings".to_owned(),
                 message_type: "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile"
                     .to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -619,7 +659,7 @@ mod unknown_field_names {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile",
             )?,
-            eq(&Err(SemanticError::UnknownFieldName {
+            err(eq(&vec![SemanticError::UnknownFieldName {
                 location: SourceLocation {
                     line: 5,
                     column: 13,
@@ -630,7 +670,7 @@ mod unknown_field_names {
                 message_type:
                     "defcl.testdata.invalid.semantics.schemas.FieldWrittenTwiceFile.Dependency"
                         .to_owned(),
-            }))
+            }]))
         )
     }
 
@@ -644,7 +684,7 @@ mod unknown_field_names {
                 invalid_semantics_schemas()?,
                 "NoPackageFile",
             )?,
-            eq(&Err(SemanticError::UnknownFieldName {
+            err(eq(&vec![SemanticError::UnknownFieldName {
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -653,7 +693,248 @@ mod unknown_field_names {
                 },
                 field_name: "size".to_owned(),
                 message_type: "NoPackageFile.Config".to_owned(),
-            }))
+            }]))
+        )
+    }
+}
+
+mod multiple_errors {
+    use super::*;
+
+    #[gtest]
+    fn errors_in_several_fields() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/errors_in_several_fields.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![
+                SemanticError::IntegerEnum {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 13,
+                        end_line: 2,
+                        end_column: 13
+                    },
+                    field_name: "status".to_owned(),
+                },
+                SemanticError::ScalarForMessageField {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 15,
+                        end_line: 3,
+                        end_column: 25
+                    },
+                    field_name: "database".to_owned(),
+                },
+                SemanticError::MessageValueForScalarField {
+                    location: SourceLocation {
+                        line: 5,
+                        column: 8,
+                        end_line: 5,
+                        end_column: 9
+                    },
+                    field_name: "count".to_owned(),
+                },
+            ]))
+        )
+    }
+
+    #[gtest]
+    fn errors_in_several_elements() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/errors_in_several_elements.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![
+                SemanticError::MessageValueForScalarField {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 12,
+                        end_line: 2,
+                        end_column: 13
+                    },
+                    field_name: "tags".to_owned(),
+                },
+                SemanticError::MessageValueForScalarField {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 21,
+                        end_line: 2,
+                        end_column: 22
+                    },
+                    field_name: "tags".to_owned(),
+                },
+            ]))
+        )
+    }
+
+    #[gtest]
+    fn value_of_unknown_field_is_not_checked() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/value_of_unknown_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![SemanticError::UnknownFieldName {
+                location: SourceLocation {
+                    line: 2,
+                    column: 5,
+                    end_line: 2,
+                    end_column: 8
+                },
+                field_name: "size".to_owned(),
+                message_type: "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                    .to_owned(),
+            },]))
+        )
+    }
+
+    #[gtest]
+    fn value_of_field_written_twice_is_checked() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/value_of_field_written_twice.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![
+                SemanticError::FieldWrittenTwice {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 5,
+                        end_line: 3,
+                        end_column: 10
+                    },
+                    field_name: "status".to_owned(),
+                },
+                SemanticError::IntegerEnum {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 13,
+                        end_line: 3,
+                        end_column: 13
+                    },
+                    field_name: "status".to_owned(),
+                },
+            ]))
+        )
+    }
+
+    #[gtest]
+    fn unknown_field_written_twice_is_unknown_each_time() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/unknown_field_written_twice.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![
+                SemanticError::UnknownFieldName {
+                    location: SourceLocation {
+                        line: 2,
+                        column: 5,
+                        end_line: 2,
+                        end_column: 8
+                    },
+                    field_name: "size".to_owned(),
+                    message_type:
+                        "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                            .to_owned(),
+                },
+                SemanticError::UnknownFieldName {
+                    location: SourceLocation {
+                        line: 3,
+                        column: 5,
+                        end_line: 3,
+                        end_column: 8
+                    },
+                    field_name: "size".to_owned(),
+                    message_type:
+                        "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                            .to_owned(),
+                },
+            ]))
+        )
+    }
+
+    #[gtest]
+    fn message_value_for_scalar_field_is_not_checked() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/message_value_for_scalar_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![SemanticError::MessageValueForScalarField {
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 4,
+                    end_column: 5
+                },
+                field_name: "name".to_owned(),
+            },]))
+        )
+    }
+
+    #[gtest]
+    fn brackets_on_non_repeated_field_are_not_checked() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/non_repeated_field_with_brackets.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![SemanticError::NonRepeatedFieldWithBrackets {
+                location: SourceLocation {
+                    line: 2,
+                    column: 15,
+                    end_line: 2,
+                    end_column: 27
+                },
+                field_name: "database".to_owned(),
+            },]))
+        )
+    }
+
+    #[gtest]
+    fn repeated_field_without_brackets_is_not_checked() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/multiple_errors/repeated_field_without_brackets.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
+            )?,
+            err(eq(&vec![SemanticError::RepeatedFieldWithoutBrackets {
+                location: SourceLocation {
+                    line: 2,
+                    column: 15,
+                    end_line: 2,
+                    end_column: 25
+                },
+                field_name: "replicas".to_owned(),
+            },]))
         )
     }
 }

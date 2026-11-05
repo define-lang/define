@@ -9,81 +9,109 @@ use rustc_hash::{FxBuildHasher, FxHashSet};
 ///
 /// # Errors
 ///
-/// Returns the first error in the file, in source order.
-pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), SemanticError> {
+/// Returns every error it finds, in source order. A value that an error leaves
+/// without a type to check against is not checked further.
+pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), Vec<SemanticError>> {
+    let mut errors = Vec::new();
     let top_level_message_type = schema.top_level_message_type();
     let mut written_names =
         FxHashSet::with_capacity_and_hasher(file.top_level_messages.len(), FxBuildHasher);
     for top_level_message in &file.top_level_messages {
-        let schema_field = find_field(
+        let Some(schema_field) = find_field(
             schema,
             top_level_message_type,
             &top_level_message.name,
             &mut written_names,
-        )?;
+            &mut errors,
+        ) else {
+            continue;
+        };
         // The top-level message's field is not a message field.
         let Some(message_type) = schema_field.message_type else {
-            return Err(message_value_for_scalar_field(
+            errors.push(message_value_for_scalar_field(
                 &top_level_message.name,
                 top_level_message.value.location,
             ));
+            continue;
         };
-        check_fields(schema, message_type, &top_level_message.value.fields)?;
+        check_fields(
+            schema,
+            message_type,
+            &top_level_message.value.fields,
+            &mut errors,
+        );
     }
-    Ok(())
+    if errors.is_empty() {
+        return Ok(());
+    }
+    Err(errors)
 }
 
 fn check_fields(
     schema: &Schema,
     message_type: &MessageType,
     fields: &[Field],
-) -> Result<(), SemanticError> {
+    errors: &mut Vec<SemanticError>,
+) {
     let mut written_names = FxHashSet::with_capacity_and_hasher(fields.len(), FxBuildHasher);
     for field in fields {
-        let schema_field = find_field(schema, message_type, &field.name, &mut written_names)?;
-        check_field(schema, field, &schema_field)?;
+        if let Some(schema_field) = find_field(
+            schema,
+            message_type,
+            &field.name,
+            &mut written_names,
+            errors,
+        ) {
+            check_field(schema, field, &schema_field, errors);
+        }
     }
-    Ok(())
 }
 
-/// Returns the field of `message_type` that `name` names, and adds `name` to
-/// `written_names`, the field names written so far in the message value.
+/// Returns the field of `message_type` that `name` names, if it has one, and
+/// adds `name` to `written_names`, the field names written so far in the
+/// message value.
 fn find_field<'schema, 'source>(
     schema: &'schema Schema,
     message_type: &'schema MessageType,
     name: &FieldName<'source>,
     written_names: &mut FxHashSet<&'source str>,
-) -> Result<SchemaField<'schema>, SemanticError> {
+    errors: &mut Vec<SemanticError>,
+) -> Option<SchemaField<'schema>> {
+    // The message type has no field with the name.
+    let Some(schema_field) = schema.field(message_type, name.text) else {
+        errors.push(unknown_field_name(name, message_type));
+        return None;
+    };
     // The message value already has a field with this name.
     if !written_names.insert(name.text) {
-        return Err(field_written_twice(name));
+        errors.push(field_written_twice(name));
     }
-    // The message type has no field with the name.
-    schema
-        .field(message_type, name.text)
-        .ok_or_else(|| unknown_field_name(name, message_type))
+    Some(schema_field)
 }
 
 fn check_field(
     schema: &Schema,
     field: &Field,
     schema_field: &SchemaField,
-) -> Result<(), SemanticError> {
+    errors: &mut Vec<SemanticError>,
+) {
     if !schema_field.is_repeated() {
         // The non-repeated field's value is in brackets.
         if let Value::Repeated(repeated) = &field.value {
-            return Err(non_repeated_field_with_brackets(field, repeated.location));
+            errors.push(non_repeated_field_with_brackets(field, repeated.location));
+            return;
         }
-        return check_value(schema, field, schema_field, &field.value);
+        check_value(schema, field, schema_field, &field.value, errors);
+        return;
     }
     // The repeated field's value is not in brackets.
     let Value::Repeated(repeated) = &field.value else {
-        return Err(repeated_field_without_brackets(field));
+        errors.push(repeated_field_without_brackets(field));
+        return;
     };
     for value in &repeated.values {
-        check_value(schema, field, schema_field, value)?;
+        check_value(schema, field, schema_field, value, errors);
     }
-    Ok(())
 }
 
 /// Checks `value`, which is `field`'s value or an element of `field`'s
@@ -93,21 +121,23 @@ fn check_value(
     field: &Field,
     schema_field: &SchemaField,
     value: &Value,
-) -> Result<(), SemanticError> {
+    errors: &mut Vec<SemanticError>,
+) {
     match value {
         // The enum field's value is an integer.
         Value::Integer(integer) if schema_field.is_enum() => {
-            Err(integer_enum(field, integer.location))
+            errors.push(integer_enum(field, integer.location));
         }
         Value::Message(message) => {
             // The field is not a message field.
             let Some(message_type) = schema_field.message_type else {
-                return Err(message_value_for_scalar_field(
+                errors.push(message_value_for_scalar_field(
                     &field.name,
                     message.location,
                 ));
+                return;
             };
-            check_fields(schema, message_type, &message.fields)
+            check_fields(schema, message_type, &message.fields, errors);
         }
         // The message field's value is a string, number or enum value.
         Value::String(scalar)
@@ -116,9 +146,9 @@ fn check_value(
         | Value::Enum(scalar)
             if schema_field.message_type.is_some() =>
         {
-            Err(scalar_for_message_field(field, scalar.location))
+            errors.push(scalar_for_message_field(field, scalar.location));
         }
-        _ => Ok(()),
+        _ => {}
     }
 }
 
