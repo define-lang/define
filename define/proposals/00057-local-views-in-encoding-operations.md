@@ -84,6 +84,13 @@ Definitions and View Setting Statements. They behave identically to local views
 in Value Operations, with one difference: a local view in an Encoding Operation
 is assigned exactly one encoding instead of exactly one value quality.
 
+Once we apply the Single Assignment rules, you can't write
+`execute the computer operation` and any other statement together in the same
+block, because `execute the computer operation` reads from and writes to every
+view (and has to keep doing so, logically, since we can't see "inside" the
+computer operation). Thus, `execute the computer operation.` now must be the
+only statement in its Encoding Operation Statements Block.
+
 ## A Real Program
 
 The smallest of three natural numbers, composed from the two-number minimum:

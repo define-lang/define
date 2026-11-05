@@ -246,6 +246,11 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
     /// operation_statements_contents = operation_statement, { operation_statement } ;
+    /// encoding_operation_statements_block =
+    ///     "it does", block_open, encoding_operation_statements_contents, block_close ;
+    /// encoding_operation_statements_contents =
+    ///     computer_operation_execution_statement
+    ///     | ( encoding_operation_statement, { encoding_operation_statement } ) ;
     /// ```
     fn parse_operation_statements_block(
         &mut self,
@@ -285,13 +290,33 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         let statements = self.nodes.start::<ast::OperationStatement>();
+        let mut statement_count: usize = 0;
+        // The start and end of the statement that executes the operation's
+        // implementation, if the block has one.
+        let mut implementation_execution = None;
         loop {
-            let statement = self.parse_operation_statement(
-                kind,
-                OPERATION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
-                fqun,
-            )?;
+            let statement_start = self.scanner.position;
+            // TODO: Remove `execute the encoding operation.` from Value
+            // Operations, which DLP 55 replaced with Logical Operation
+            // Execution Statements, once codegen compiles a Value Operation's
+            // statements.
+            let statement = if self
+                .scanner
+                .consume(kind.implementation_execution_statement())
+            {
+                let (statement, end) =
+                    self.parse_implementation_execution_statement(kind, statement_start)?;
+                implementation_execution = Some((statement_start, end));
+                statement
+            } else {
+                self.parse_operation_statement(
+                    kind,
+                    OPERATION_DEFINITION_BLOCK_INDENTATION + INDENTATION_WIDTH,
+                    fqun,
+                )?
+            };
             self.nodes.push(&statements, statement);
+            statement_count += 1;
             match self
                 .next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)?
             {
@@ -303,10 +328,49 @@ impl<'py, 'source> Parser<'py, 'source> {
                 }
             }
         }
+        // `execute the computer operation.` reads every input view and writes
+        // every output view, so no other statement could write a view that
+        // anything reads.
+        if matches!(kind, OperationKind::Encoding)
+            && statement_count > 1
+            && let Some((statement_start, end)) = implementation_execution
+        {
+            return Err(self
+                .errors
+                .computer_operation_with_other_statements(statement_start, end.previous_column()));
+        }
         let end = self.parse_block_close()?;
         let statements = self.nodes.finish_tuple(statements)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.operation_statements_block(location, statements)?)
+    }
+
+    /// Parses the rest of the statement that executes the implementation of
+    /// an operation of `kind` after its words, given the position of the
+    /// statement's start, and returns it with the position after its `.`.
+    ///
+    /// ```ebnf
+    /// encoding_operation_execution_statement = "execute the encoding operation", terminator ;
+    /// computer_operation_execution_statement = "execute the computer operation", terminator ;
+    /// ```
+    fn parse_implementation_execution_statement(
+        &mut self,
+        kind: OperationKind,
+        start: Position,
+    ) -> ParseResult<(ast::OperationStatement<'py>, Position)> {
+        let end = self.parse_statement_terminator()?;
+        let location = self.ast.location(start, end)?;
+        let statement = match kind {
+            OperationKind::Value => self
+                .ast
+                .encoding_operation_execution_statement(location)?
+                .into(),
+            OperationKind::Encoding => self
+                .ast
+                .computer_operation_execution_statement(location)?
+                .into(),
+        };
+        Ok((statement, end))
     }
 
     /// Parses a statement in the operation statements block of an operation
@@ -318,11 +382,8 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     local_view_definition
     ///     | operation_execution_statement
     ///     | logical_operation_execution_statement
-    ///     | view_setting_statement
-    ///     | encoding_operation_execution_statement ;
-    /// encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
-    /// encoding_operation_execution_statement = "execute the encoding operation", terminator ;
-    /// computer_operation_execution_statement = "execute the computer operation", terminator ;
+    ///     | view_setting_statement ;
+    /// encoding_operation_statement = encoding_operation_execution_statement ;
     /// ```
     fn parse_operation_statement(
         &mut self,
@@ -340,26 +401,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         if matches!(kind, OperationKind::Value) && self.scanner.consume(SET_THE_VALUE_OF) {
             return Ok(self.parse_view_setting_statement(start)?.into());
-        }
-        // TODO: Remove `execute the encoding operation.` from Value
-        // Operations, which DLP 55 replaced with Logical Operation Execution
-        // Statements, once codegen compiles a Value Operation's statements.
-        if self
-            .scanner
-            .consume(kind.implementation_execution_statement())
-        {
-            let end = self.parse_statement_terminator()?;
-            let location = self.ast.location(start, end)?;
-            return Ok(match kind {
-                OperationKind::Value => self
-                    .ast
-                    .encoding_operation_execution_statement(location)?
-                    .into(),
-                OperationKind::Encoding => self
-                    .ast
-                    .computer_operation_execution_statement(location)?
-                    .into(),
-            });
         }
         // The statement is neither an operation execution statement nor the
         // statement that executes the operation's implementation.

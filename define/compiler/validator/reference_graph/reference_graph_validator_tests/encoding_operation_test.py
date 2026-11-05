@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -198,13 +198,6 @@ def test_output_view_looks_at_literal(
     assert diagnostic.operation_name == "encoding_operation</copy>"
 
 
-def test_statement_after_computer_operation(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
-
-
 def test_literal_in_every_view_encoding(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
@@ -250,76 +243,3 @@ def test_literal_for_view_with_value_quality(
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
     assert diagnostic.quality_name == "value<standard:/number/natural>"
-
-
-def test_written_after_computer_operation(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.InterfaceViewWrittenTwiceDiagnostic(
-            location=ast.SourceLocation(line=63, column=42, end_line=63, end_column=53),
-            looked_at_name="view<result>",
-            view_name="view<target>",
-            operation_name="encoding_operation</copy>",
-            first_write=ast.SourceLocation(
-                line=60, column=9, end_line=60, end_column=39
-            ),
-        )
-    ]
-
-
-def test_computer_operation_after_write(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(
-            location=ast.SourceLocation(line=64, column=9, end_line=64, end_column=39),
-            view_name="view<result>",
-            operation_name_type=name_types.NameType.ENCODING_OPERATION,
-            first_write=ast.SourceLocation(
-                line=62, column=42, end_line=62, end_column=53
-            ),
-        )
-    ]
-
-
-def test_read_after_computer_operation_writes_read_write_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=57, column=41, end_line=57, end_column=51),
-            looked_at_name="view<count>",
-            view_name="view<value>",
-            operation_name="encoding_operation</inspect>",
-            write=ast.SourceLocation(line=55, column=9, end_line=55, end_column=39),
-        )
-    ]
-
-
-def test_computer_operation_after_unknown_use(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert result.all_diagnostics == [
-        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-            location=ast.SourceLocation(line=64, column=21, end_line=64, end_column=48),
-            definition_name="encoding_operation</missing>",
-            config_path=".define/project/config.defcl",
-        ),
-        diagnostics.InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(
-            location=ast.SourceLocation(line=67, column=9, end_line=67, end_column=39),
-            view_name="view<result>",
-            operation_name_type=name_types.NameType.ENCODING_OPERATION,
-            first_write=ast.SourceLocation(
-                line=62, column=42, end_line=62, end_column=53
-            ),
-        ),
-    ]

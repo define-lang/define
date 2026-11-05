@@ -197,8 +197,6 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
             + "\n"
             + "        } # comment\n"
             + "\n"
-            + "        execute the computer operation. # comment\n"
-            + "\n"
             + "    } # comment\n"
             + "\n"
             + "} # comment\n"
@@ -208,7 +206,7 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     assert view.location == ast.SourceLocation(
         line=4, column=5, end_line=14, end_column=5
     )
-    [first, second, third] = definition.operation_statements.statements
+    [first, second] = definition.operation_statements.statements
     assert isinstance(first, ast.OperationExecutionStatement)
     assert first.operation.name_content.path.name == "/first"
     assert first.location == ast.SourceLocation(
@@ -223,12 +221,8 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     assert second.location == ast.SourceLocation(
         line=20, column=9, end_line=24, end_column=9
     )
-    assert isinstance(third, ast.ComputerOperationExecutionStatement)
-    assert third.location == ast.SourceLocation(
-        line=26, column=9, end_line=26, end_column=39
-    )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=30, end_column=1
+        line=1, column=1, end_line=28, end_column=1
     )
 
 
@@ -541,3 +535,50 @@ def test_computer_operation_is_not_a_global_definition(parse: Parse):
     assert error.value.location.column == 1
     assert error.value.location.end_line == 1
     assert error.value.location.end_column == 31
+
+
+def test_computer_operation_before_another_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.ComputerOperationWithOtherStatements) as error:
+        parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the computer operation.\n"
+            + "        execute the encoding_operation</other>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 39
+
+
+def test_computer_operation_after_another_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.ComputerOperationWithOtherStatements) as error:
+        parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the encoding_operation</other>.\n"
+            + "        execute the computer operation.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
+    assert error.value.location.end_line == 4
+    assert error.value.location.end_column == 39
+
+
+def test_computer_operation_followed_by_text(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingTerminator) as error:
+        parse(
+            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    it does {\n"
+            + "        execute the computer operation extra.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert error.value.location.line == 3
+    assert error.value.location.column == 39
+    assert error.value.location.end_line == 3
+    assert error.value.location.end_column == 39

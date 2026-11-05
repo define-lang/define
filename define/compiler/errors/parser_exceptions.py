@@ -151,6 +151,15 @@ class ChainedNameInPositionPresenceStatement(DefineTokenError):
     )
 
 
+class ComputerOperationWithOtherStatements(DefineTokenError):
+    """Wrote 'execute the computer operation.' in an Encoding Operation Statements Block that has other statements."""
+
+    message_format: ClassVar[str] = (
+        "'execute the computer operation.' must be the only statement in its"
+        " encoding operation statements block."
+    )
+
+
 class EmptyBlock(DefineTokenError):
     """Wrote {}."""
 
