@@ -15,7 +15,10 @@ from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import scope_tracker, validation_result
-from define.compiler.validator.structural import name_validators
+from define.compiler.validator.structural import (
+    name_validators,
+    view_setting_order_tracker,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -140,6 +143,9 @@ class DefinitionStructuralValidator:
             )
             if encoding_operation is not None:
                 self._process_reference(encoding_operation)
+        # TODO: Make `unreferenced_views` a member, like
+        # `_unreferenced_positions`, instead of passing it to each method that
+        # validates a view reference.
         views = scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ]()
@@ -156,7 +162,12 @@ class DefinitionStructuralValidator:
         def validate_looked_at(looking_at: ast.LocalTypedNameReference) -> bool:
             return self._validate_looked_at_view(looking_at, views, unreferenced_views)
 
+        view_setting_order = view_setting_order_tracker.ViewSettingOrderTracker()
         for statement in definition.operation_statements.statements:
+            if not isinstance(statement, ast.ViewSettingStatement):
+                self._diagnostics.extend(
+                    view_setting_order.check_next_statement(statement)
+                )
             match statement:
                 case ast.LocalViewDefinition():
                     self._validate_view_definition(
@@ -175,8 +186,8 @@ class DefinitionStructuralValidator:
                         validate_looked_at,
                     )
                 case ast.ViewSettingStatement():
-                    raise NotImplementedError(
-                        "View Setting Statements are not validated yet."
+                    self._validate_view_setting(
+                        statement, views, unreferenced_views, view_setting_order
                     )
                 case (
                     ast.EncodingOperationExecutionStatement()
@@ -184,6 +195,7 @@ class DefinitionStructuralValidator:
                 ):
                     has_execution = True
                     executes_all_views = True
+        self._diagnostics.extend(view_setting_order.check_operation_end())
         if not has_execution:
             self._diagnostics.append(
                 diagnostics.OperationWithoutExecutionDiagnostic(
@@ -208,6 +220,74 @@ class DefinitionStructuralValidator:
                         operation_name_type=definition.typed_name.name_type,
                     )
                 )
+
+    def _validate_view_setting(
+        self,
+        statement: ast.ViewSettingStatement,
+        views: scope_tracker.ScopeTracker[
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition
+        ],
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference,
+            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+        ],
+        view_setting_order: view_setting_order_tracker.ViewSettingOrderTracker,
+    ):
+        """Validate a View Setting Statement, and record it in `view_setting_order`."""
+        target = statement.target
+        source = statement.source
+        target_ok = self._validate_looked_at_view(target, views, unreferenced_views)
+        source_ok = self._validate_looked_at_view(source, views, unreferenced_views)
+        if source_ok:
+            self._diagnostics.extend(view_setting_order.check_source(source))
+        if not target_ok:
+            return
+        view_setting_order.record_target(target)
+        if source_ok and target.full_typed_name == source.full_typed_name:
+            self._diagnostics.append(
+                diagnostics.ViewSettingSameViewDiagnostic(
+                    location=source.location, view_name=source.source_typed_name
+                )
+            )
+            return
+        target_view = views.get_definition(target)
+        if isinstance(target_view, ast.InterfaceViewDefinition):
+            if not target_view.is_output:
+                self._diagnostics.append(
+                    diagnostics.ViewSettingInputOnlyTargetDiagnostic(
+                        location=target.location, view_name=target.source_typed_name
+                    )
+                )
+            elif not target_view.is_input:
+                self._diagnostics.append(
+                    diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
+                        location=target.location, view_name=target.source_typed_name
+                    )
+                )
+        if not source_ok:
+            return
+        target_value_quality = target_view.quality_assignment_block.value_quality
+        source_value_quality = views.get_definition(
+            source
+        ).quality_assignment_block.value_quality
+        # A view without a value quality is reported where it is defined.
+        if (
+            target_value_quality is not None
+            and source_value_quality is not None
+            and target_value_quality.full_typed_name
+            != source_value_quality.full_typed_name
+        ):
+            self._diagnostics.append(
+                diagnostics.ViewSettingValueQualityMismatchDiagnostic(
+                    location=statement.location,
+                    target_view=target.source_typed_name,
+                    source_view=source.source_typed_name,
+                    target_value_quality=target_value_quality.source_typed_name,
+                    source_value_quality=source_value_quality.source_typed_name,
+                )
+            )
+        if isinstance(target_view, ast.LocalViewDefinition):
+            view_setting_order.require_execution_after(statement)
 
     def _validate_view_definition(
         self,

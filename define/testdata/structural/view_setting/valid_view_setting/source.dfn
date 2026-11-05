@@ -1,0 +1,119 @@
+# A local view target copies a view for the next statement, and a read/write interface view target is written back.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<value> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the logical_operation<my.domain.com:my_lib:/add_three> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<c> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<doubled> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        set the value of view<copy> from view<number>.
+        execute the logical_operation</add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<copy>.
+            with view<result> looking at view<doubled>.
+        }
+    }
+}
+define the operation<my.domain.com:my_lib:/negate_in_place> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the logical_operation</negate> {
+            with view<value> looking at view<value>.
+            with view<result> looking at view<negated>.
+        }
+        set the value of view<value> from view<negated>.
+    }
+}
+define the operation<my.domain.com:my_lib:/triple> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<tripled> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<first_copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        define the view<second_copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        set the value of view<first_copy> from view<number>.
+        set the value of view<second_copy> from view<number>.
+        execute the logical_operation</add_three> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<first_copy>.
+            with view<c> looking at view<second_copy>.
+            with view<result> looking at view<tripled>.
+        }
+    }
+}

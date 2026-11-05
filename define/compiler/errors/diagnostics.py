@@ -1255,6 +1255,88 @@ class ValueSettingValueQualityMismatchDiagnostic(Diagnostic):
     )
 
 
+class ViewSettingSameViewDiagnostic(Diagnostic):
+    """A View Setting Statement's source and target are the same view."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "the source and target of a view setting statement cannot be"
+        " the same view ('{self.view_name}')"
+    )
+
+
+class ViewSettingValueQualityMismatchDiagnostic(Diagnostic):
+    """A View Setting Statement's source and target have different value qualities."""
+
+    target_view: str
+    source_view: str
+    target_value_quality: str
+    source_value_quality: str
+    message_format: ClassVar[str] = (
+        "this view setting statement has views with two different value"
+        " qualities, which is not allowed. {self.target_view} has"
+        " {self.target_value_quality} and {self.source_view} has"
+        " {self.source_value_quality}."
+    )
+
+
+class ViewSettingInputOnlyTargetDiagnostic(Diagnostic):
+    """A View Setting Statement's target is an input-only interface view."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is an input-only interface view, so it cannot be"
+        " the target of a view setting statement."
+    )
+
+
+class ViewSettingOutputOnlyTargetDiagnostic(Diagnostic):
+    """A View Setting Statement's target is an output-only interface view."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is an output-only interface view, so it cannot be"
+        " the target of a view setting statement. Look at it directly in the"
+        " statement that writes it instead."
+    )
+
+
+class ViewSettingSourceWasTargetDiagnostic(Diagnostic):
+    """A View Setting Statement's source was the target of an earlier View Setting Statement."""
+
+    view_name: str
+    target_line: int
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is the target of the view setting statement on line"
+        " {self.target_line}, so it cannot be the source of another view"
+        " setting statement."
+    )
+
+
+class ViewSettingLocalTargetWithoutExecutionDiagnostic(Diagnostic):
+    """A View Setting Statement with a local view target is not followed by an execution statement."""
+
+    target_name: str
+    message_format: ClassVar[str] = (
+        "the next statement after this view setting statement must be either"
+        " another view setting statement or an execution statement, because"
+        " '{self.target_name}' is a local view."
+    )
+
+
+class ViewSettingLocalTargetNotLookedAtDiagnostic(Diagnostic):
+    """The statement after a View Setting Statement with a local view target does not look at its source and target."""
+
+    target_name: str
+    source_name: str
+    message_format: ClassVar[str] = (
+        "the next statement after this view setting statement must be either"
+        " another view setting statement, or an execution statement that looks"
+        " at both '{self.target_name}' and '{self.source_name}', because"
+        " '{self.target_name}' is a local view."
+    )
+
+
 class LiteralCannotSetValueDiagnostic(Diagnostic):
     """A literal's encoding cannot be read as the value quality it is setting."""
 

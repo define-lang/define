@@ -1,0 +1,40 @@
+# A View Setting Statement's source must be a defined view.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<b> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<doubled> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        set the value of view<copy> from view<missing>.
+        execute the logical_operation</add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<copy>.
+            with view<result> looking at view<doubled>.
+        }
+    }
+}

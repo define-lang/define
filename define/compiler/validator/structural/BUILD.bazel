@@ -9,6 +9,7 @@ py_library(
     deps = [
         ":file_validation_context",
         ":name_validators",
+        ":view_setting_order_tracker",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
@@ -139,6 +140,15 @@ py_library(
 )
 
 py_library(
+    name = "view_setting_order_tracker",
+    srcs = ["view_setting_order_tracker.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/errors:diagnostics",
+    ],
+)
+
+py_library(
     name = "work_pool",
     srcs = ["work_pool.py"],
 )
@@ -167,6 +177,7 @@ pyright_test(
         ":name_validators_test",
         ":program_validator",
         ":structural",
+        ":view_setting_order_tracker",
         ":work_pool",
         ":work_pool_test",
     ],

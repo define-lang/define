@@ -54,6 +54,7 @@ py_test(
         "value_quality_test.py",
         "value_setting_literal_test.py",
         "value_setting_test.py",
+        "view_setting_test.py",
     ],
     data = [
         "//define/testdata/structural/action_operation_execution",
@@ -92,6 +93,7 @@ py_test(
         "//define/testdata/structural/value_quality",
         "//define/testdata/structural/value_setting",
         "//define/testdata/structural/value_setting_literal",
+        "//define/testdata/structural/view_setting",
     ],
     # Keep about 200 tests per shard.
     shard_count = 2,
