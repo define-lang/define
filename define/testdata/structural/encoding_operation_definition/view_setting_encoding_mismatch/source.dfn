@@ -1,0 +1,29 @@
+# Both views of a View Setting Statement in an Encoding Operation must have the same encoding.
+define the encoding_operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<doubled> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        define the view<copy> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/integer/ascii>.
+            }
+        }
+        set the value of view<copy> from view<number>.
+        execute the encoding_operation<standard:/number/natural/ascii/add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at view<copy>.
+            with view<result> looking at view<doubled>.
+        }
+    }
+}

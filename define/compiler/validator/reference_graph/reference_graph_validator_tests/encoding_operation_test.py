@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import name_types
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -243,3 +243,39 @@ def test_literal_for_view_with_value_quality(
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 24
     assert diagnostic.quality_name == "value<standard:/number/natural>"
+
+
+def test_local_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_local_view_read_before_write(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+            location=ast.SourceLocation(line=35, column=37, end_line=35, end_column=49),
+            looked_at_name="view<smaller>",
+            view_name="view<a>",
+            operation_name="encoding_operation<standard:/number/natural/ascii/minimum>",
+        ),
+    ]
+
+
+def test_view_setting(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_view_setting_read_write_target(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)

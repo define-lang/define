@@ -320,22 +320,28 @@ def test_misspaced_local_view_definition(parse: Parse):
     assert error.value.location.end_column == 20
 
 
-def test_encoding_operation_disallows_local_view(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
-    ) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        define the view<sum> {\n"
-            + "            it may only contain particles where {\n"
-            + "                it has the encoding</decimal>.\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 30
+def test_encoding_operation_local_view(parse: Parse):
+    [definition] = parse(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        define the view<sum> {\n"
+        + "            it may only contain particles where {\n"
+        + "                it has the encoding</decimal>.\n"
+        + "            }\n"
+        + "        }\n"
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<result> looking at view<sum>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    ).definitions
+    assert isinstance(definition, ast.EncodingOperationDefinition)
+    [view, execution] = definition.operation_statements.statements
+    assert isinstance(view, ast.LocalViewDefinition)
+    assert view.typed_name.name_content.name == "sum"
+    [quality] = view.quality_assignment_block.statements
+    assert quality.typed_global_name.name_type == name_types.NameType.ENCODING
+    assert view.location == ast.SourceLocation(
+        line=3, column=9, end_line=7, end_column=9
+    )
+    assert isinstance(execution, ast.OperationExecutionStatement)

@@ -2,20 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, final
+from typing import Final, final
 
 import msgspec
 
-from define.compiler import constants
+from define.compiler import ast, constants
 from define.compiler.codegen.literal.python import (
     naming,
     renderer,
     value_types,
 )
 from define.compiler.validator import codegen_input
-
-if TYPE_CHECKING:
-    from define.compiler import ast
 
 
 class _BinaryOperation(msgspec.Struct, frozen=True):
@@ -288,6 +285,13 @@ class EncodingOperationDefinitionGenerator:
     def generate(self) -> renderer.EncodingOperationDefinition:
         """Build the template context for this Encoding Operation's function."""
         definition = self._operation_input.definition
+        # Every valid View Setting Statement in an Encoding Operation looks at a
+        # local view, so this also covers View Setting Statements.
+        for statement in definition.operation_statements.statements:
+            if isinstance(statement, ast.LocalViewDefinition):
+                raise NotImplementedError(
+                    "Local views in Encoding Operations are not generated yet."
+                )
         function = self._converter.function_reference(definition.typed_name)
         callees: list[renderer.FunctionReference] = []
         for step in self._operation_input.steps:

@@ -1,0 +1,45 @@
+# An Encoding Operation holds an intermediate value in a local view with an encoding.
+define the encoding_operation<my.domain.com:my_lib:/minimum_of_three> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<c> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/natural/ascii>.
+        }
+    }
+
+    it does {
+        define the view<smaller> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/natural/ascii>.
+            }
+        }
+        execute the encoding_operation<standard:/number/natural/ascii/minimum> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<smaller>.
+        }
+        execute the encoding_operation<standard:/number/natural/ascii/minimum> {
+            with view<a> looking at view<smaller>.
+            with view<b> looking at view<c>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

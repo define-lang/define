@@ -409,8 +409,9 @@ class InvalidEncodingOperationStatementsBlock(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Encoding operation statements blocks must contain one or more"
-        " 'execute the encoding_operation<...>' or"
-        " 'execute the computer operation.' statements."
+        " 'define the view<...>', 'execute the encoding_operation<...>',"
+        " 'set the value of view<...>', or 'execute the computer operation.'"
+        " statements."
     )
 
 
@@ -619,8 +620,9 @@ class MissingEncodingOperationStatementsContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Encoding operation statements blocks must contain at least one"
-        " 'execute the encoding_operation<...>' or"
-        " 'execute the computer operation.' statement."
+        " 'define the view<...>', 'execute the encoding_operation<...>',"
+        " 'set the value of view<...>', or 'execute the computer operation.'"
+        " statement."
     )
 
 

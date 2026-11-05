@@ -773,8 +773,18 @@ class QualityAssignmentBlock(ASTNode):
     @property
     def value_quality(self) -> GlobalTypedNameReference | None:
         """The first value quality this block assigns, if any."""
+        return self._first_of_name_type(name_types.NameType.VALUE)
+
+    @property
+    def encoding(self) -> GlobalTypedNameReference | None:
+        """The first encoding this block assigns, if any."""
+        return self._first_of_name_type(name_types.NameType.ENCODING)
+
+    def _first_of_name_type(
+        self, name_type: name_types.NameType
+    ) -> GlobalTypedNameReference | None:
         for statement in self.statements:
-            if statement.typed_global_name.name_type == name_types.NameType.VALUE:
+            if statement.typed_global_name.name_type == name_type:
                 return statement.typed_global_name
         return None
 

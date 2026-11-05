@@ -34,8 +34,12 @@ const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 4] = [
 ];
 /// The words that begin each statement an Encoding Operation's operation
 /// statements block may have.
-const ENCODING_OPERATION_STATEMENT_STARTS: [&[u8]; 2] =
-    [EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION];
+const ENCODING_OPERATION_STATEMENT_STARTS: [&[u8]; 4] = [
+    DEFINE_THE_VIEW,
+    EXECUTE_THE,
+    SET_THE_VALUE_OF,
+    EXECUTE_THE_COMPUTER_OPERATION,
+];
 /// The name type that may come after a View Setting Statement's ` from`.
 const VIEW_ONLY: [&[u8]; 1] = [VIEW];
 /// The words that begin each statement a view definition block may have.
@@ -383,7 +387,10 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     | operation_execution_statement
     ///     | logical_operation_execution_statement
     ///     | view_setting_statement ;
-    /// encoding_operation_statement = encoding_operation_execution_statement ;
+    /// encoding_operation_statement =
+    ///     local_view_definition
+    ///     | encoding_operation_execution_statement
+    ///     | view_setting_statement ;
     /// ```
     fn parse_operation_statement(
         &mut self,
@@ -392,14 +399,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationStatement<'py>> {
         let start = self.scanner.position;
-        if matches!(kind, OperationKind::Value)
-            && let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, VIEW)
-        {
+        if let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, VIEW) {
             return Ok(self
                 .parse_local_view_definition(start, typed_name_start, indentation, fqun)?
                 .into());
         }
-        if matches!(kind, OperationKind::Value) && self.scanner.consume(SET_THE_VALUE_OF) {
+        if self.scanner.consume(SET_THE_VALUE_OF) {
             return Ok(self.parse_view_setting_statement(start)?.into());
         }
         // The statement is neither an operation execution statement nor the

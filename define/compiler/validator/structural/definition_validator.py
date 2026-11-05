@@ -187,7 +187,11 @@ class DefinitionStructuralValidator:
                     )
                 case ast.ViewSettingStatement():
                     self._validate_view_setting(
-                        statement, views, unreferenced_views, view_setting_order
+                        definition,
+                        statement,
+                        views,
+                        unreferenced_views,
+                        view_setting_order,
                     )
                 case (
                     ast.EncodingOperationExecutionStatement()
@@ -223,6 +227,7 @@ class DefinitionStructuralValidator:
 
     def _validate_view_setting(
         self,
+        definition: ast.OperationDefinition,
         statement: ast.ViewSettingStatement,
         views: scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
@@ -233,7 +238,7 @@ class DefinitionStructuralValidator:
         ],
         view_setting_order: view_setting_order_tracker.ViewSettingOrderTracker,
     ):
-        """Validate a View Setting Statement, and record it in `view_setting_order`."""
+        """Validate a View Setting Statement in `definition`, and record it in `view_setting_order`."""
         target = statement.target
         source = statement.source
         target_ok = self._validate_looked_at_view(target, views, unreferenced_views)
@@ -280,6 +285,41 @@ class DefinitionStructuralValidator:
                     source_name=source.source_typed_name,
                 )
             )
+        self._check_view_setting_qualities(
+            definition, statement, target_view, source_view
+        )
+        if isinstance(target_view, ast.LocalViewDefinition):
+            view_setting_order.require_execution_after(statement)
+
+    def _check_view_setting_qualities(
+        self,
+        definition: ast.OperationDefinition,
+        statement: ast.ViewSettingStatement,
+        target_view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+        source_view: ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+    ):
+        """Report a View Setting Statement whose views have different value qualities, or different encodings in an Encoding Operation."""
+        target = statement.target
+        source = statement.source
+        if isinstance(definition, ast.EncodingOperationDefinition):
+            target_encoding = target_view.quality_assignment_block.encoding
+            source_encoding = source_view.quality_assignment_block.encoding
+            # A view without an encoding is reported where it is defined.
+            if (
+                target_encoding is not None
+                and source_encoding is not None
+                and target_encoding.full_typed_name != source_encoding.full_typed_name
+            ):
+                self._diagnostics.append(
+                    diagnostics.ViewSettingEncodingMismatchDiagnostic(
+                        location=statement.location,
+                        target_view=target.source_typed_name,
+                        source_view=source.source_typed_name,
+                        target_encoding=target_encoding.source_typed_name,
+                        source_encoding=source_encoding.source_typed_name,
+                    )
+                )
+            return
         target_value_quality = target_view.quality_assignment_block.value_quality
         source_value_quality = source_view.quality_assignment_block.value_quality
         # A view without a value quality is reported where it is defined.
@@ -298,8 +338,6 @@ class DefinitionStructuralValidator:
                     source_value_quality=source_value_quality.source_typed_name,
                 )
             )
-        if isinstance(target_view, ast.LocalViewDefinition):
-            view_setting_order.require_execution_after(statement)
 
     def _validate_view_definition(
         self,
@@ -315,6 +353,11 @@ class DefinitionStructuralValidator:
     ):
         if self._validate_view_name(view, views):
             unreferenced_views[view.typed_name] = view
+        if isinstance(view, ast.LocalViewDefinition) and isinstance(
+            definition, ast.EncodingOperationDefinition
+        ):
+            self._validate_encoding_operation_local_view_qualities(view)
+            return
         statements: list[ast.QualityAssignmentStatement] = []
         quality_name_types: set[name_types.NameType] = set()
         for statement in view.quality_assignment_block.statements:
@@ -394,6 +437,53 @@ class DefinitionStructuralValidator:
                 view_name=view.typed_name.source_typed_name,
             )
         )
+
+    def _validate_encoding_operation_local_view_qualities(
+        self, view: ast.LocalViewDefinition
+    ):
+        """Validate that a local view in an Encoding Operation is assigned exactly one encoding and nothing else."""
+        statements: list[ast.QualityAssignmentStatement] = []
+        first_encoding: ast.GlobalTypedNameReference | None = None
+        for statement in view.quality_assignment_block.statements:
+            quality = statement.typed_global_name
+            if quality.name_type != name_types.NameType.ENCODING:
+                self._diagnostics.append(
+                    diagnostics.LocalViewNonEncodingDiagnostic(
+                        location=quality.location,
+                        quality_name=quality.source_typed_name,
+                    )
+                )
+                continue
+            # A repeated encoding is reported as a duplicate quality
+            # assignment.
+            if (
+                first_encoding is not None
+                and quality.full_typed_name != first_encoding.full_typed_name
+            ):
+                self._diagnostics.append(
+                    diagnostics.LocalViewMultipleEncodingsDiagnostic(
+                        location=quality.location,
+                        first_encoding_name=first_encoding.source_typed_name,
+                        first_assignment_line=first_encoding.location.line,
+                    )
+                )
+                continue
+            if first_encoding is None:
+                first_encoding = quality
+            statements.append(statement)
+        # The block has only encodings left, so no multiple value qualities
+        # are reported.
+        self._validate_quality_assignment_statements(
+            statements,
+            multiple_values_diagnostic=diagnostics.ViewMultipleValueQualitiesDiagnostic,
+        )
+        if first_encoding is None:
+            self._diagnostics.append(
+                diagnostics.LocalViewMissingEncodingDiagnostic(
+                    location=view.typed_name.location,
+                    view_name=view.typed_name.source_typed_name,
+                )
+            )
 
     def _validate_logical_operation_definition(
         self, definition: ast.LogicalOperationDefinition

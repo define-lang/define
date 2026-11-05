@@ -337,6 +337,38 @@ class LocalViewMissingValueQualityDiagnostic(Diagnostic):
     )
 
 
+class LocalViewNonEncodingDiagnostic(Diagnostic):
+    """Diagnostic for a Quality Assignment Statement of a local view in an Encoding Operation that names something other than an encoding."""
+
+    quality_name: str
+    message_format: ClassVar[str] = (
+        "local views in an encoding operation may only be assigned an encoding. "
+        "However, '{self.quality_name}' is not an encoding"
+    )
+
+
+class LocalViewMissingEncodingDiagnostic(Diagnostic):
+    """Diagnostic for a local view in an Encoding Operation without an encoding."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' must have an encoding, because every local view "
+        "in an encoding operation must have one"
+    )
+
+
+class LocalViewMultipleEncodingsDiagnostic(Diagnostic):
+    """Diagnostic for a local view in an Encoding Operation with more than one encoding."""
+
+    first_encoding_name: str
+    first_assignment_line: int
+    message_format: ClassVar[str] = (
+        "a local view in an encoding operation may only have one encoding; "
+        "'{self.first_encoding_name}' was already declared on line "
+        "{self.first_assignment_line}"
+    )
+
+
 class ViewMissingEncodingDiagnostic(Diagnostic):
     """Diagnostic for an interface view of an encoding operation without an encoding."""
 
@@ -1374,6 +1406,20 @@ class ViewSettingValueQualityMismatchDiagnostic(Diagnostic):
         " qualities, which is not allowed. {self.target_view} has"
         " {self.target_value_quality} and {self.source_view} has"
         " {self.source_value_quality}."
+    )
+
+
+class ViewSettingEncodingMismatchDiagnostic(Diagnostic):
+    """A View Setting Statement in an Encoding Operation has a source and target with different encodings."""
+
+    target_view: str
+    source_view: str
+    target_encoding: str
+    source_encoding: str
+    message_format: ClassVar[str] = (
+        "this view setting statement has views with two different encodings,"
+        " which is not allowed. {self.target_view} has {self.target_encoding}"
+        " and {self.source_view} has {self.source_encoding}."
     )
 
 

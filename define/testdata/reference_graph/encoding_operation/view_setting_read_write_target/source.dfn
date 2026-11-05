@@ -1,0 +1,24 @@
+# A View Setting Statement in an Encoding Operation writes a read/write interface view after the execution statement that read it.
+define the encoding_operation<my.domain.com:my_lib:/increment> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+
+    it does {
+        define the view<sum> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/integer/ascii>.
+            }
+        }
+        execute the encoding_operation<standard:/number/integer/ascii/add> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<sum>.
+        }
+        set the value of view<value> from view<sum>.
+    }
+}

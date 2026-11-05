@@ -278,21 +278,22 @@ def test_followed_by_text(parse: Parse):
     assert error.value.location.end_column == 56
 
 
-def test_encoding_operation_disallows_view_setting(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
-    ) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        set the value of view<target> from view<source>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 56
+def test_encoding_operation_view_setting(parse: Parse):
+    [definition] = parse(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        set the value of view<target> from view<source>.\n"
+        + "    }\n"
+        + "}\n"
+    ).definitions
+    assert isinstance(definition, ast.EncodingOperationDefinition)
+    [statement] = definition.operation_statements.statements
+    assert isinstance(statement, ast.ViewSettingStatement)
+    assert statement.target.name_content.name == "target"
+    assert statement.source.name_content.name == "source"
+    assert statement.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=56
+    )
 
 
 def test_action_disallows_view_setting(parse: Parse):
