@@ -9,8 +9,6 @@ rules:
     days: 2
   agentic-actions:
     any-trigger: true
-  continue-on-error:
-    steps: true
   forbidden-uses:
     allow:
       - actions/checkout
