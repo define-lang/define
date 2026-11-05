@@ -182,10 +182,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         let implications = self.nodes.start::<ast::QualityImplicationStatement>();
         let mut content_end = block_open_end;
         let mut line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
-        while matches!(line, LineInBlock::Statement)
-            && self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE)
-        {
-            let (implication, end) = self.parse_quality_implication_statement(fqun)?;
+        while matches!(line, LineInBlock::Statement) {
+            let start = self.scanner.position;
+            if !self.scanner.consume(IT_ALSO_ASSIGNS_THE) {
+                break;
+            }
+            let (implication, end) = self.parse_quality_implication_statement(start, fqun)?;
             self.nodes.push(&implications, implication);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
@@ -244,19 +246,19 @@ impl<'py, 'source> Parser<'py, 'source> {
         ))
     }
 
-    /// Parses a quality implication statement, whose reference takes its
-    /// default FQUN from `fqun`, through the end of its line, and returns it
-    /// with the position after its `.`.
+    /// Parses the rest of a quality implication statement after its `it also
+    /// assigns the`, given the position of the statement's start, whose
+    /// reference takes its default FQUN from `fqun`, through the end of its
+    /// line, and returns it with the position after its `.`.
     ///
     /// ```ebnf
     /// quality_implication_statement = "it also assigns the", " ", typed_global_name, terminator ;
     /// ```
     fn parse_quality_implication_statement(
         &mut self,
+        start: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(ast::QualityImplicationStatement<'py>, Position)> {
-        let start = self.scanner.position;
-        self.scanner.consume(IT_ALSO_ASSIGNS_THE);
         // The line ends, or a non-letter character comes, where the typed name
         // belongs.
         if !self.space_before_word()? {
@@ -337,8 +339,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         Option<Bound<'py, PyString>>,
         ast::ActionStatementsBlock<'py>,
     )> {
+        let start = self.scanner.position;
         match line {
-            LineInBlock::Statement if self.scanner.next_bytes_are(IT_HAPPENS_WHEN) => {}
+            LineInBlock::Statement if self.scanner.consume(IT_HAPPENS_WHEN) => {}
             LineInBlock::Statement => return Err(self.invalid_action_definition_block()),
             // The block closes before its trigger conditions block.
             LineInBlock::Close => {
@@ -352,8 +355,6 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_action_definition_syntax(content_end, content_end));
             }
         };
-        let start = self.scanner.position;
-        self.scanner.consume(IT_HAPPENS_WHEN);
         let block_open_end = self.parse_block_open()?;
         let (condition, trigger_name) = match self.next_line_in_block(
             ACTION_DEFINITION_BLOCK_INDENTATION,
@@ -539,11 +540,11 @@ impl<'py, 'source> Parser<'py, 'source> {
                 .destroy_particle_statement(location, target)?
                 .into());
         }
-        if self.scanner.next_bytes_are(MOVE_THE_PARTICLE_IN) {
-            return Ok(self.parse_move_particle_statement(fqun)?.into());
+        if self.scanner.consume(MOVE_THE_PARTICLE_IN) {
+            return Ok(self.parse_move_particle_statement(start, fqun)?.into());
         }
-        if self.scanner.next_bytes_are(SET_THE_VALUE_OF) {
-            return Ok(self.parse_value_setting_statement(fqun)?.into());
+        if self.scanner.consume(SET_THE_VALUE_OF) {
+            return Ok(self.parse_value_setting_statement(start, fqun)?.into());
         }
         if self.scanner.next_bytes_are(EXECUTE_THE) {
             return Ok(self
@@ -553,8 +554,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         Err(self.invalid_action_statements_block())
     }
 
-    /// Parses a move particle statement, whose references take their default
-    /// FQUN from `fqun`, through the end of its line.
+    /// Parses the rest of a move particle statement after its `move the
+    /// particle in`, given the position of the statement's start, whose
+    /// references take their default FQUN from `fqun`, through the end of its
+    /// line.
     ///
     /// ```ebnf
     /// move_particle_statement =
@@ -562,10 +565,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_move_particle_statement(
         &mut self,
+        start: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::MoveParticleStatement<'py>> {
-        let start = self.scanner.position;
-        self.scanner.consume(MOVE_THE_PARTICLE_IN);
         let source = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the source position.
         if !self.consume_connecting_word(SPACE_TO, &POSITION_REFERENCE_OR_LITERAL) {
@@ -577,8 +579,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self.ast.move_particle_statement(location, target, source)?)
     }
 
-    /// Parses a value setting statement, whose references take their default
-    /// FQUN from `fqun`, through the end of its line.
+    /// Parses the rest of a value setting statement after its `set the value
+    /// of`, given the position of the statement's start, whose references take
+    /// their default FQUN from `fqun`, through the end of its line.
     ///
     /// ```ebnf
     /// value_setting_statement =
@@ -586,10 +589,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```
     fn parse_value_setting_statement(
         &mut self,
+        start: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::ValueSettingStatement<'py>> {
-        let start = self.scanner.position;
-        self.scanner.consume(SET_THE_VALUE_OF);
         let target = self.parse_statement_position_reference(fqun)?;
         // There is no ` from` after the target position.
         if !self.consume_connecting_word(SPACE_FROM, &POSITION_REFERENCE_OR_LITERAL) {

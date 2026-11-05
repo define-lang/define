@@ -254,8 +254,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         content_end: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::OperationStatementsBlock<'py>> {
+        let start = self.scanner.position;
         match line {
-            LineInBlock::Statement if self.scanner.next_bytes_are(IT_DOES) => {}
+            LineInBlock::Statement if self.scanner.consume(IT_DOES) => {}
             LineInBlock::Statement => return Err(self.invalid_operation_definition_statement()),
             // The block closes before its operation statements block.
             LineInBlock::Close => {
@@ -269,8 +270,6 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_operation_statements_block(content_end, content_end));
             }
         }
-        let start = self.scanner.position;
-        self.scanner.consume(IT_DOES);
         let block_open_end = self.parse_block_open()?;
         let statement_starts = operation_statement_starts(kind);
         match self.next_line_in_block(OPERATION_DEFINITION_BLOCK_INDENTATION, statement_starts)? {
