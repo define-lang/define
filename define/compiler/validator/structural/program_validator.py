@@ -154,8 +154,12 @@ class _ProgramValidationRun:
             )
             if candidate.is_constructor:
                 entry_action = candidate
+        entry_file_definitions = [
+            definition_result.definition
+            for definition_result in file_results[0].definition_results
+        ]
         definition_order = reference_graph_order.ReferenceGraphOrder(
-            self._reference_graph
+            self._reference_graph, entry_file_definitions
         )
         # Later stages need only the compact order, not cycle-detection state.
         del self._reference_graph

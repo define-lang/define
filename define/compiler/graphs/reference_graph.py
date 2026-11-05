@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from define.compiler import ast
 
@@ -111,22 +111,19 @@ class ReferenceGraph:
         return None
 
     def dfs_postorder_from(
-        self, starting_definition: ast.GlobalDefinition
+        self, starting_definitions: Iterable[ast.GlobalDefinition]
     ) -> Iterator[ast.GlobalDefinition]:
         """Yield referenced definitions before definitions that reference them.
 
-        Only definitions reachable from ``starting_definition`` are yielded.
+        Only definitions reachable from ``starting_definitions`` are yielded,
+        each once. The order depends only on the order of
+        ``starting_definitions`` and of each definition's references, not on
+        the order definitions were added.
         """
-        starting_name = starting_definition.typed_name.source_typed_name
-        for definition_name in self._names_in_postorder(starting_name, set()):
-            yield self._definition_by_name[definition_name]
-
-    def dfs_postorder_all(self) -> Iterator[ast.GlobalDefinition]:
-        """Yield all referenced definitions before definitions that reference them."""
         visited_names: set[str] = set()
-        for starting_name in self._references_by_name:
+        for starting_definition in starting_definitions:
             for definition_name in self._names_in_postorder(
-                starting_name, visited_names
+                starting_definition.typed_name.source_typed_name, visited_names
             ):
                 if definition_name in self._definition_by_name:
                     yield self._definition_by_name[definition_name]

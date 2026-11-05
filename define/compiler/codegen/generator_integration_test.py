@@ -32,8 +32,7 @@ def test_test_cases_not_empty():
     _TEST_CASES,
     ids=test_helpers.codegen_test_case_id,
 )
-def test_generates_expected_output(test_case_dir: Path, request: pytest.FixtureRequest):
-    test_helpers.mark_nondeterministic_definition_order(request, test_case_dir)
+def test_generates_expected_output(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"
 
     output_dir = Path(tempfile.mkdtemp())

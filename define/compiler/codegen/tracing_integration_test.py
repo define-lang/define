@@ -36,9 +36,7 @@ def test_test_cases_not_empty():
 def test_generated_tracing_code_matches_expected_artifacts(
     test_case_dir: Path,
     tmp_path: Path,
-    request: pytest.FixtureRequest,
 ):
-    test_helpers.mark_nondeterministic_definition_order(request, test_case_dir)
     generated_dir = tmp_path / "generated"
     _compile(test_case_dir, generated_dir)
     test_helpers.assert_generated_directory_matches(

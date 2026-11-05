@@ -260,7 +260,7 @@ class TestDfsPostorder:
         graph = reference_graph.ReferenceGraph()
         a = _make_position("/a")
         graph.add_definition(a)
-        result = list(graph.dfs_postorder_from(a))
+        result = list(graph.dfs_postorder_from([a]))
         assert result == [a]
 
     def test_chain_yields_leaf_first(self):
@@ -275,7 +275,7 @@ class TestDfsPostorder:
             _make_edge(a, "/b", name_types.NameType.ACTION),
             _make_edge(b, "/c"),
         )
-        result = list(graph.dfs_postorder_from(a))
+        result = list(graph.dfs_postorder_from([a]))
         assert result == [c, b, a]
 
     def test_diamond_yields_shared_dep_once(self):
@@ -293,7 +293,7 @@ class TestDfsPostorder:
             _make_edge(b, "/d"),
             _make_edge(c, "/d"),
         )
-        result = list(graph.dfs_postorder_from(a))
+        result = list(graph.dfs_postorder_from([a]))
         assert len(result) == 4
         assert result[-1] is a
         assert result.index(d) < result.index(b)

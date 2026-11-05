@@ -11,16 +11,6 @@ from define.compiler.codegen import testdata_cases
 
 _CODEGEN_TESTDATA_ROOT = Path("define/testdata/codegen")
 
-# The definition order of unreferenced definitions depends on which worker
-# finishes validating them first. In these cases, that order decides the order
-# of functions in a shared module or which colliding authority gets a suffix.
-_CASES_WITH_NONDETERMINISTIC_DEFINITION_ORDER = frozenset(
-    {
-        "cross_fqun_walking/unreferenced_authority_conflict",
-        "language_names/package_name_avoids_every_function_name",
-    }
-)
-
 
 def _all_files(directory: Path) -> dict[str, str]:
     return {
@@ -84,19 +74,3 @@ def codegen_test_cases() -> list[Path]:
 def codegen_test_case_id(test_case_dir: Path) -> str:
     """Identify a case by its category and name."""
     return test_case_dir.relative_to(_CODEGEN_TESTDATA_ROOT).as_posix()
-
-
-def mark_nondeterministic_definition_order(
-    request: pytest.FixtureRequest, test_case_dir: Path
-):
-    """Expect a mismatch, sometimes, for a case whose generated code depends on definition order."""
-    if (
-        codegen_test_case_id(test_case_dir)
-        in _CASES_WITH_NONDETERMINISTIC_DEFINITION_ORDER
-    ):
-        request.applymarker(
-            pytest.mark.xfail(
-                strict=False,
-                reason="The definition order of unreferenced definitions is nondeterministic.",
-            )
-        )

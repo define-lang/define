@@ -7,8 +7,9 @@ from array import array
 from collections import deque
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
+    from define.compiler import ast
     from define.compiler.graphs import reference_graph
 
 
@@ -20,9 +21,20 @@ class ReferenceGraphOrder:
     occupies 10x less memory than the full ReferenceGraph.
     """
 
-    def __init__(self, graph: reference_graph.ReferenceGraph):
-        """Record the graph's definition order and direct references."""
-        self.definitions = list(graph.dfs_postorder_all())
+    def __init__(
+        self,
+        graph: reference_graph.ReferenceGraph,
+        entry_file_definitions: Iterable[ast.GlobalDefinition],
+    ):
+        """Record the graph's definition order and direct references.
+
+        ``entry_file_definitions`` are in source order. Every definition in the
+        graph must be reachable from them.
+        """
+        # Definitions are added to the graph as workers finish validating them,
+        # so walking from the entry file's definitions in source order keeps
+        # the order, and the generated code that depends on it, deterministic.
+        self.definitions = list(graph.dfs_postorder_from(entry_file_definitions))
         (
             self._reference_counts,
             reference_indexes,
