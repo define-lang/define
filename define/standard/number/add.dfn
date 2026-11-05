@@ -1,3 +1,5 @@
+# TODO: No DLP defines this logical operation yet. Define it in a DLP, and
+# change it here if the DLP defines it differently.
 define the logical_operation<standard:/number/add> {
     define the view<a> {
         it is read.

@@ -25,9 +25,11 @@ def test_referenced_definition_loads_only_its_file(
         "<string>",
         standard_library_file("number/natural.dfn"),
         standard_library_file("number/add.dfn"),
+        standard_library_file("number/subtract.dfn"),
     ]
     assert sorted(name.full_typed_name for name in result.definition_results) == [
         "logical_operation<standard:/number/add>",
+        "logical_operation<standard:/number/subtract>",
         "position<my.domain.com:my_lib:/total>",
         "value<standard:/number/natural>",
     ]
@@ -47,6 +49,7 @@ def test_standard_references_load_their_files(
             standard_library_file("number/add.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
             standard_library_file("number/natural.dfn"),
+            standard_library_file("number/subtract.dfn"),
         ]
     )
     assert sorted(name.full_typed_name for name in result.definition_results) == [
@@ -54,5 +57,6 @@ def test_standard_references_load_their_files(
         "encoding<standard:/number/decimal/ascii>",
         "literal<standard:/number>",
         "logical_operation<standard:/number/add>",
+        "logical_operation<standard:/number/subtract>",
         "value<standard:/number/natural>",
     ]
