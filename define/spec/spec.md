@@ -1896,7 +1896,7 @@ Direction Statements, instead, it is always both read and written. It must be
 defined before any statement that refers to it.
 
 A local view does not create a particle or look at a particle; it is an
-intermediate representation internal to a value operation that the compiler may
+intermediate representation internal to its operation that the compiler may
 represent however is most efficient.
 
 ```ebnf
@@ -1932,7 +1932,7 @@ statement may read or write it.
 
 A View Setting Statement is a Value Setting Statement whose source and target
 are views. It may only appear in the Operation Statements Block of a Value
-Operation.
+Operation or an Encoding Operation.
 
 A View Setting Statement follows the same rules as a Value Setting Statement. In
 particular, both views must have the same value quality. A View Setting
@@ -2096,6 +2096,7 @@ Proposals:
 
 - [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
+- [DLP 57: Local Views in Encoding Operations](../proposals/00057-local-views-in-encoding-operations.md)
 
 An Encoding Operation has syntax and rules identical to those of Value
 Operations, except as described below.
@@ -2111,6 +2112,11 @@ encoding_operation_definition =
     "define the", " ",
     fully_qualified_encoding_operation_name,
     encoding_operation_definition_block ;
+encoding_operation_definition_block =
+    block_open,
+    { view_definition },
+    encoding_operation_statements_block,
+    block_close ;
 ```
 
 ### Encoding Operation Interface Views
@@ -2118,27 +2124,53 @@ encoding_operation_definition =
 Each Interface View on an Encoding Operation must be assigned an encoding, and
 may not be assigned a value quality.
 
+### Encoding Operation Local Views
+
+Each local view in an Encoding Operation must be assigned a single encoding
+instead of a single value quality.
+
+Both views of a View Setting Statement in an Encoding Operation must have the
+same encoding, instead of the same value quality.
+
 ### Encoding Operation Statements Block
 
-An Encoding Operation Statements Block may contain only two types of statements:
+An Encoding Operation Statements Block may contain only these types of
+statements:
 
-1. Encoding Operation Execution Statements
-2. The statement `execute the computer operation.` which executes native code
+1. Local View Definitions
+2. Encoding Operation Execution Statements
+3. View Setting Statements
+4. The statement `execute the computer operation.` which executes native code
    that the compiler understands how to execute for this Encoding Operation.
-
-The statement `execute the computer operation.` is considered to read from all
-input views and write to all output views. For
-[Single Assignment](#single-assignment), it counts as both a statement that
-reads each read/write interface view and the one statement that writes it.
 
 An Encoding Operation Execution Statement is identical to an Operation Execution
 Statement, except that it uses `encoding_operation` instead of `operation`.
 
 ```ebnf
+encoding_operation_statements_block =
+    "it does", block_open, encoding_operation_statements_contents, block_close ;
+encoding_operation_statements_contents =
+    computer_operation_execution_statement
+    | ( encoding_operation_statement, { encoding_operation_statement } ) ;
+encoding_operation_statement =
+    local_view_definition
+    | encoding_operation_execution_statement
+    | view_setting_statement ;
+encoding_operation_execution_statement =
+    "execute the", " ", encoding_operation_name, operation_execution_end ;
 encoding_operation_name = "encoding_operation", "<", global_name, ">" ;
-encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
 computer_operation_execution_statement = "execute the computer operation", terminator ;
 ```
+
+### Computer Operations
+
+If the statement `execute the computer operation.` is in an Encoding Operation
+Statements Block, it must be the only statement in that block.
+
+The statement `execute the computer operation.` is considered to read from all
+input views and write to all output views. For
+[Single Assignment](#single-assignment), it counts as both a statement that
+reads each read/write interface view and the one statement that writes it.
 
 ## Dead Code
 
