@@ -375,7 +375,9 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// ```ebnf
     /// local_view_name = "view", "<", local_name, ">" ;
     /// ```
-    fn parse_view_reference(&mut self) -> ParseResult<ast::LocalTypedNameReference<'py>> {
+    pub(crate) fn parse_view_reference(
+        &mut self,
+    ) -> ParseResult<ast::LocalTypedNameReference<'py>> {
         let start = self.scanner.position;
         // The name type is not `view`.
         if !self.scanner.consume(VIEW) {
@@ -434,7 +436,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// not `view`, where a view's typed name belongs.
     #[cold]
     #[inline(never)]
-    fn expected_view(&self) -> ParseError {
+    pub(crate) fn expected_view(&self) -> ParseError {
         if let Some(error) = self.disallowed_character_after(VIEW) {
             return error;
         }
@@ -462,6 +464,18 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[cold]
     #[inline(never)]
     fn expected_view_in_logical_operation(&self) -> ParseError {
+        self.expected_view_instead_of_literal(SyntaxErrors::literal_in_logical_operation_execution)
+    }
+
+    /// Returns the error for a name type, at the scanner's position, that is
+    /// not `view`, where only a view's typed name may be. `literal_error`
+    /// returns the error for a literal there.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn expected_view_instead_of_literal(
+        &self,
+        literal_error: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
+    ) -> ParseError {
         let is_literal = self
             .scanner
             .rest_after(LITERAL)
@@ -469,9 +483,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         if !is_literal {
             return self.expected_view();
         }
-        let start = self.scanner.position;
-        self.errors
-            .literal_in_logical_operation_execution(start, self.scanner.end_of_word())
+        literal_error(
+            &self.errors,
+            self.scanner.position,
+            self.scanner.end_of_word(),
+        )
     }
 
     /// Returns the error for a statement at the scanner's position in an

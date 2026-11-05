@@ -13,7 +13,7 @@ use crate::syntax_errors::SyntaxErrors;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
     EXECUTE_THE_ENCODING_OPERATION, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
-    IT_IS_WRITTEN, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, VIEW,
+    IT_IS_WRITTEN, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, SET_THE_VALUE_OF, SPACE_FROM, VIEW,
 };
 
 /// How far the lines of an operation definition block, which is always at
@@ -26,12 +26,18 @@ const OPERATION_DEFINITION_STATEMENT_STARTS: [&[u8]; 2] = [DEFINE_THE_VIEW, IT_D
 pub(crate) const VIEW_DIRECTION_STATEMENT_STARTS: [&[u8]; 2] = [IT_IS_READ, IT_IS_WRITTEN];
 /// The words that begin each statement a Value Operation's operation
 /// statements block may have.
-const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 3] =
-    [DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_ENCODING_OPERATION];
+const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 4] = [
+    DEFINE_THE_VIEW,
+    EXECUTE_THE,
+    SET_THE_VALUE_OF,
+    EXECUTE_THE_ENCODING_OPERATION,
+];
 /// The words that begin each statement an Encoding Operation's operation
 /// statements block may have.
 const ENCODING_OPERATION_STATEMENT_STARTS: [&[u8]; 2] =
     [EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION];
+/// The name type that may come after a View Setting Statement's ` from`.
+const VIEW_ONLY: [&[u8]; 1] = [VIEW];
 /// The words that begin each statement a view definition block may have.
 const VIEW_DEFINITION_STATEMENT_STARTS: [&[u8]; 3] = [
     IT_IS_READ,
@@ -313,6 +319,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ///     local_view_definition
     ///     | operation_execution_statement
     ///     | logical_operation_execution_statement
+    ///     | view_setting_statement
     ///     | encoding_operation_execution_statement ;
     /// encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
     /// encoding_operation_execution_statement = "execute the encoding operation", terminator ;
@@ -331,6 +338,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Ok(self
                 .parse_local_view_definition(start, typed_name_start, indentation, fqun)?
                 .into());
+        }
+        if matches!(kind, OperationKind::Value) && self.scanner.consume(SET_THE_VALUE_OF) {
+            return Ok(self.parse_view_setting_statement(start)?.into());
         }
         // TODO: Remove `execute the encoding operation.` from Value
         // Operations, which DLP 55 replaced with Logical Operation Execution
@@ -367,6 +377,43 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(self
             .parse_operation_execution_statement_in_operation(kind, indentation, fqun)?
             .into())
+    }
+
+    /// Parses the rest of a View Setting Statement after its `set the value
+    /// of`, given the position of the statement's start, through the end of
+    /// its line.
+    ///
+    /// ```ebnf
+    /// view_setting_statement =
+    ///     "set the value of", " ", local_view_name, " from ", local_view_name, terminator ;
+    /// ```
+    fn parse_view_setting_statement(
+        &mut self,
+        start: Position,
+    ) -> ParseResult<ast::ViewSettingStatement<'py>> {
+        // The line ends, or a non-letter character comes, where the target's
+        // typed name belongs.
+        if !self.space_before_word()? {
+            return Err(self.expected_view());
+        }
+        let target = self.parse_view_reference()?;
+        // There is no ` from` after the target.
+        if !self.consume_connecting_word(SPACE_FROM, &VIEW_ONLY) {
+            return Err(
+                self.missing_connecting_word(SyntaxErrors::invalid_view_setting_statement_syntax)
+            );
+        }
+        // The line ends, or something other than a view comes, where the
+        // source's typed name belongs.
+        if !self.space_before_word()? || !self.scanner.next_bytes_are(VIEW) {
+            return Err(
+                self.expected_view_instead_of_literal(SyntaxErrors::literal_in_view_setting)
+            );
+        }
+        let source = self.parse_view_reference()?;
+        let end = self.parse_statement_terminator()?;
+        let location = self.ast.location(start, end)?;
+        Ok(self.ast.view_setting_statement(location, target, source)?)
     }
 
     /// Parses the rest of a Local View Definition after its `view`, given the

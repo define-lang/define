@@ -390,8 +390,8 @@ class InvalidOperationStatementsBlock(DefineTokenError):
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
         " 'define the view<...>', 'execute the operation<...>',"
-        " 'execute the logical_operation<...>', or"
-        " 'execute the encoding operation.' statements."
+        " 'execute the logical_operation<...>', 'set the value of view<...>',"
+        " or 'execute the encoding operation.' statements."
     )
 
 
@@ -467,12 +467,29 @@ class InvalidViewDirectionStatementOrder(DefineTokenError):
     )
 
 
+class InvalidViewSettingStatementSyntax(DefineTokenError):
+    """Expected ' from ' after the target in a View Setting Statement."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for a view setting statement looks like:\n"
+        "    set the value of view<target> from view<source>."
+    )
+
+
 class LiteralInLogicalOperationExecution(DefineTokenError):
     """Wrote a literal where a Logical Operation Execution Statement's view must look at a view."""
 
     message_format: ClassVar[str] = (
         "A logical operation may not look at a literal. Pass the literal to a"
         " view of a value operation that executes the logical operation instead."
+    )
+
+
+class LiteralInViewSetting(DefineTokenError):
+    """Wrote a literal where a View Setting Statement's source must be a view."""
+
+    message_format: ClassVar[str] = (
+        "The source of a view setting statement must be a view, not a literal."
     )
 
 
@@ -635,8 +652,8 @@ class MissingOperationStatementsContent(DefineTokenError):
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain at least one"
         " 'define the view<...>', 'execute the operation<...>',"
-        " 'execute the logical_operation<...>', or"
-        " 'execute the encoding operation.' statement."
+        " 'execute the logical_operation<...>', 'set the value of view<...>',"
+        " or 'execute the encoding operation.' statement."
     )
 
 

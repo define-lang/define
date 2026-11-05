@@ -84,6 +84,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():
                     self._analyze_logical_operation_execution(statement)
+                case ast.ViewSettingStatement():
+                    raise NotImplementedError(
+                        "View Setting Statements are not validated yet."
+                    )
                 case (
                     ast.EncodingOperationExecutionStatement()
                     | ast.ComputerOperationExecutionStatement()

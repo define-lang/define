@@ -174,6 +174,10 @@ class DefinitionStructuralValidator:
                         statement.arguments,
                         validate_looked_at,
                     )
+                case ast.ViewSettingStatement():
+                    raise NotImplementedError(
+                        "View Setting Statements are not validated yet."
+                    )
                 case (
                     ast.EncodingOperationExecutionStatement()
                     | ast.ComputerOperationExecutionStatement()

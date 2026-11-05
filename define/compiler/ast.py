@@ -724,6 +724,13 @@ class LogicalOperationExecutionStatement(ASTNode):
     arguments: tuple[OperationArgumentStatement[LocalTypedNameReference], ...]
 
 
+class ViewSettingStatement(ASTNode):
+    """Represents a 'set the value of view<...> from view<...>' statement."""
+
+    target: LocalTypedNameReference
+    source: LocalTypedNameReference
+
+
 class EncodingOperationExecutionStatement(ASTNode):
     """Represents the 'execute the encoding operation' statement."""
 
@@ -736,6 +743,7 @@ type OperationStatement = (
     LocalViewDefinition
     | OperationExecutionStatement[LocalTypedNameReference | Literal]
     | LogicalOperationExecutionStatement
+    | ViewSettingStatement
     | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement
 )

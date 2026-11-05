@@ -44,6 +44,9 @@ macro_rules! action_statement_starts {
         ]
     };
 }
+/// The name types that may come after the connecting word of a statement whose
+/// references are position references.
+const POSITION_REFERENCE_OR_LITERAL: [&[u8]; 3] = [POSITION, ACTION, LITERAL];
 /// The words that begin each statement an action definition block may have
 /// before its trigger conditions block.
 const ACTION_DEFINITION_STATEMENT_STARTS: [&[u8]; 3] = action_definition_statement_starts!();
@@ -565,7 +568,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.scanner.consume(MOVE_THE_PARTICLE_IN);
         let source = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the source position.
-        if !self.consume_connecting_word(SPACE_TO) {
+        if !self.consume_connecting_word(SPACE_TO, &POSITION_REFERENCE_OR_LITERAL) {
             return Err(self.missing_connecting_word(SyntaxErrors::invalid_move_statement_syntax));
         }
         let target = self.parse_statement_position_reference(fqun)?;
@@ -589,7 +592,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.scanner.consume(SET_THE_VALUE_OF);
         let target = self.parse_statement_position_reference(fqun)?;
         // There is no ` from` after the target position.
-        if !self.consume_connecting_word(SPACE_FROM) {
+        if !self.consume_connecting_word(SPACE_FROM, &POSITION_REFERENCE_OR_LITERAL) {
             return Err(
                 self.missing_connecting_word(SyntaxErrors::invalid_value_setting_statement_syntax)
             );
@@ -685,8 +688,13 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Consumes `word`, a connecting word with its leading space such as
-    /// ` to`, when it is the word after a position reference.
-    fn consume_connecting_word(&mut self, word: &[u8]) -> bool {
+    /// ` to`, when it is the word after a reference and `next_name_types` are
+    /// the name types that may follow it.
+    pub(crate) fn consume_connecting_word(
+        &mut self,
+        word: &[u8],
+        next_name_types: &[&[u8]],
+    ) -> bool {
         let Some(after_word) = self.scanner.rest_after(word) else {
             return false;
         };
@@ -697,10 +705,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         let is_word = matches!(
             after_word.first(),
             None | Some(&(SPACE | TERMINATOR | LINE_FEED))
-        ) || after_word.starts_with(LITERAL)
-            || POSITION_OR_ACTION
-                .iter()
-                .any(|&(keyword, _)| after_word.starts_with(keyword));
+        ) || next_name_types
+            .iter()
+            .any(|&name_type| after_word.starts_with(name_type));
         if is_word {
             self.scanner.consume(word);
         }
