@@ -121,14 +121,14 @@ def test_logical_operation_support_out_of_order(
             location=ast.SourceLocation(line=6, column=21, end_line=6, end_column=60),
             logical_operation_name="logical_operation<standard:/boolean/and>",
             logical_operation_name_it_must_precede=(
-                "logical_operation<standard:/text/equality>"
+                "logical_operation<standard:/text/equals>"
             ),
         ),
         diagnostics.LogicalOperationSupportOrderDiagnostic(
             location=ast.SourceLocation(line=9, column=21, end_line=9, end_column=59),
             logical_operation_name="logical_operation<standard:/number/add>",
             logical_operation_name_it_must_precede=(
-                "logical_operation<standard:/text/equality>"
+                "logical_operation<standard:/text/equals>"
             ),
         ),
     ]

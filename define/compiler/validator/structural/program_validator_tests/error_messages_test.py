@@ -368,7 +368,7 @@ def test_duplicate_logical_operation_support_format():
 def test_logical_operation_support_order_format():
     source = (
         "define the potential value<my.domain.com:my_lib:/number> {\n"
-        "    it supports the logical_operation<standard:/text/equality> {\n"
+        "    it supports the logical_operation<standard:/text/equals> {\n"
         "        it may be read.\n"
         "    }\n"
         "    it supports the logical_operation<standard:/number/add> {\n"
@@ -386,7 +386,7 @@ def test_logical_operation_support_order_format():
         line 5, column 21
             it supports the logical_operation<standard:/number/add> {
                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'logical_operation<standard:/number/add>' is out of order; Logical Operation Support Statements must be in alphabetical order by logical operation name, so it must come before 'logical_operation<standard:/text/equality>'""")
+        'logical_operation<standard:/number/add>' is out of order; Logical Operation Support Statements must be in alphabetical order by logical operation name, so it must come before 'logical_operation<standard:/text/equals>'""")
     )
 
 

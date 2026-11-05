@@ -1,7 +1,7 @@
 # TODO: No DLP defines this logical operation. It exists only so that
 # text values have a logical operation to support, and needs to be fixed
 # later.
-define the logical_operation<standard:/text/equality> {
+define the logical_operation<standard:/text/equals> {
     define the view<a> {
         it is read.
     }
