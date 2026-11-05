@@ -4,18 +4,18 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.a_b__c.the_lib.do_thing
 import local.a_b_c.the_lib.do_thing
-import local.a_b_c_.the_lib.do_thing
-import local.a_b_c__.the_lib.do_thing
+import local.a_b_c___0496f2a5154dae1c.the_lib.do_thing
 import mv.a_b_c.the_lib.do_thing
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b_c.the_lib.do_thing.DoThingAction,
-        local.a_b_c_.the_lib.do_thing.DoThingAction,
+        local.a_b_c___0496f2a5154dae1c.the_lib.do_thing.DoThingAction,
         mv.a_b_c.the_lib.do_thing.DoThingAction,
-        local.a_b_c__.the_lib.do_thing.DoThingAction,
+        local.a_b__c.the_lib.do_thing.DoThingAction,
     )
 
     @override
@@ -30,13 +30,13 @@ class TestAction(literal.Action):
             local.a_b_c.the_lib.do_thing.DoThingAction
         ).run()
         self.on_particle.get_action(
-            local.a_b_c_.the_lib.do_thing.DoThingAction
+            local.a_b_c___0496f2a5154dae1c.the_lib.do_thing.DoThingAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(a-b.c:the_lib:/do_thing::trigger_pos)")
         self.on_particle.get_action(
-            local.a_b_c_.the_lib.do_thing.DoThingAction
+            local.a_b_c___0496f2a5154dae1c.the_lib.do_thing.DoThingAction
         ).run()
         self.on_particle.get_action(
             mv.a_b_c.the_lib.do_thing.DoThingAction
@@ -48,11 +48,11 @@ class TestAction(literal.Action):
             mv.a_b_c.the_lib.do_thing.DoThingAction
         ).run()
         self.on_particle.get_action(
-            local.a_b_c__.the_lib.do_thing.DoThingAction
+            local.a_b__c.the_lib.do_thing.DoThingAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(a.b/c:the_lib:/do_thing::trigger_pos)")
         self.on_particle.get_action(
-            local.a_b_c__.the_lib.do_thing.DoThingAction
+            local.a_b__c.the_lib.do_thing.DoThingAction
         ).run()

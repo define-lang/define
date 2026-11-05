@@ -1,0 +1,25 @@
+# An authority with any character besides letters, digits, and single dots and slashes gets a digest of itself after its translated name, so it never gets the package of a readable authority that translates the same way.
+define the potential position<a.b/c.d:the_lib:/place>.
+define the potential position<a.b/c_d:the_lib:/place>.
+define the potential position<a.b/c-d:the_lib:/place>.
+define the potential position<a.b/c~d:the_lib:/place>.
+define the potential position<a.b/c..d:the_lib:/place>.
+define the potential position<a-b.c:the_lib:/place>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position<a.b/c.d:the_lib:/place>.
+    it also assigns the position<a.b/c_d:the_lib:/place>.
+    it also assigns the position<a.b/c-d:the_lib:/place>.
+    it also assigns the position<a.b/c~d:the_lib:/place>.
+    it also assigns the position<a.b/c..d:the_lib:/place>.
+    it also assigns the position<a-b.c:the_lib:/place>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<a.b/c.d:the_lib:/place>.
+        create a particle in position<a.b/c_d:the_lib:/place>.
+        create a particle in position<a.b/c-d:the_lib:/place>.
+        create a particle in position<a.b/c~d:the_lib:/place>.
+        create a particle in position<a.b/c..d:the_lib:/place>.
+        create a particle in position<a-b.c:the_lib:/place>.
+    }
+}

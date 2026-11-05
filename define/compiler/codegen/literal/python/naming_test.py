@@ -289,44 +289,40 @@ def test_name_allocators_are_independent_namespaces():
     assert second.allocate("name") == "name"
 
 
-def test_authority_segment_simple():
-    converter = naming.NameConverter()
-    assert converter.authority_segment("my.domain.com") == "my_domain_com"
+def _digest(authority: str) -> str:
+    return hashlib.blake2b(authority.encode(), digest_size=8).hexdigest()
 
 
-def test_authority_segment_with_path():
-    converter = naming.NameConverter()
-    assert converter.authority_segment("my.domain.com/org") == "my_domain_com_org"
+def test_authority_segment_dotted_domain_is_readable():
+    assert naming.authority_segment("my.domain.com") == "my_domain_com"
 
 
-def test_authority_segment_cached():
-    converter = naming.NameConverter()
-    first = converter.authority_segment("my.domain.com")
-    second = converter.authority_segment("my.domain.com")
-    assert first == second == "my_domain_com"
+def test_authority_segment_keyword_is_escaped():
+    assert naming.authority_segment("as") == "as_"
 
 
-def test_authority_segment_conflict():
-    converter = naming.NameConverter()
-    first = converter.authority_segment("my.domain.com")
-    second = converter.authority_segment("my-domain-com")
-    assert first == "my_domain_com"
-    assert second == "my_domain_com_"
+def test_authority_segment_with_path_is_readable():
+    assert naming.authority_segment("my.domain.com/org") == "my_domain_com__org"
 
 
-def test_authority_segment_conflict_with_hyphen_and_tilde():
-    converter = naming.NameConverter()
-    first = converter.authority_segment("a.b")
-    second = converter.authority_segment("a-b")
-    third = converter.authority_segment("a~b")
-    assert first == "a_b"
-    assert second == "a_b_"
-    assert third == "a_b__"
+def test_authority_segment_with_path_and_underscore_gets_digest():
+    assert (
+        naming.authority_segment("my.domain.com/my_org")
+        == f"my_domain_com__my_org___{_digest('my.domain.com/my_org')}"
+    )
 
 
-def test_authority_segment_conflict_with_slash():
-    converter = naming.NameConverter()
-    first = converter.authority_segment("a.b/c")
-    second = converter.authority_segment("a-b/c")
-    assert first == "a_b_c"
-    assert second == "a_b_c_"
+def test_authority_segment_with_hyphen_gets_digest():
+    assert naming.authority_segment("a-b") == f"a_b___{_digest('a-b')}"
+
+
+def test_authority_segment_with_consecutive_dots_gets_digest():
+    assert naming.authority_segment("a..b") == f"a__b___{_digest('a..b')}"
+
+
+def test_authority_segments_that_translate_alike_are_distinct():
+    segments = {
+        naming.authority_segment(authority)
+        for authority in ("a.b", "a-b", "a~b", "a.b/c", "a-b/c", "ab.cd/ef", "ab/cd.ef")
+    }
+    assert len(segments) == 7

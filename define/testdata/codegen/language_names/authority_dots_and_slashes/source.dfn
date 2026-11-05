@@ -1,0 +1,19 @@
+# An authority of letters and digits separated by single dots and slashes gets a readable package, with one underscore for each dot and two for each slash, so authorities that differ only in where their dots and slashes are get distinct packages.
+define the potential position<a.b.c/d:the_lib:/place>.
+define the potential position<a.b/c.d:the_lib:/place>.
+define the potential position<a.b/c/d:the_lib:/place>.
+define the potential position<a.b.c.d:the_lib:/place>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position<a.b.c/d:the_lib:/place>.
+    it also assigns the position<a.b/c.d:the_lib:/place>.
+    it also assigns the position<a.b/c/d:the_lib:/place>.
+    it also assigns the position<a.b.c.d:the_lib:/place>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<a.b.c/d:the_lib:/place>.
+        create a particle in position<a.b/c.d:the_lib:/place>.
+        create a particle in position<a.b/c/d:the_lib:/place>.
+        create a particle in position<a.b.c.d:the_lib:/place>.
+    }
+}

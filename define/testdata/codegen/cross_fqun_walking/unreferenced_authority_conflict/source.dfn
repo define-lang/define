@@ -1,4 +1,4 @@
-# Unreferenced definitions whose authorities produce the same Python name get distinct packages, chosen by their order in the source.
+# Unreferenced definitions whose authorities translate to the same Python name get distinct packages, and the readable name goes to the authority made of letters, digits, and dots.
 define the encoding_operation<one.two.com:my_lib:/increment> {
     define the view<number> {
         it is read.

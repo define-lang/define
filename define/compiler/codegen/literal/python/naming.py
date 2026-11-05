@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import keyword
+import re
 import typing
 from pathlib import Path
 
@@ -19,7 +20,13 @@ if typing.TYPE_CHECKING:
         destruction_contract,
     )
 
-_AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
+_AUTHORITY_CHAR_TABLE = str.maketrans({".": "_", "/": "__", "-": "_", "~": "_"})
+# These authorities translate to distinct segments, because each run of
+# underscores in their segments is one underscore for a dot or two for a slash.
+_READABLE_AUTHORITY = re.compile(r"[a-z0-9]+(?:[./][a-z0-9]+)*")
+# Separates a translated authority from the digest of the original. Readable
+# authority segments never contain it, so the two forms never collide.
+_AUTHORITY_DIGEST_SEPARATOR = "___"
 _RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
 
 RUN_DESTRUCTORS_PREFIX = "run_destructors_"
@@ -141,9 +148,22 @@ def _with_occurrence(name: str, occurrence: int) -> str:
     return name
 
 
-def _authority_to_module_segment(name: str) -> str:
-    """Convert an authority name segment to a valid Python module segment."""
-    return name.translate(_AUTHORITY_CHAR_TABLE)
+def authority_segment(authority: str) -> str:
+    """Convert an authority to a Python module segment that no other authority gets.
+
+    An authority made of letters and digits separated by single dots and
+    slashes keeps its readable form. Every other authority loses characters in translation, so a
+    digest of the original authority keeps it distinct.
+    """
+    # The segment must stay a pure function of the authority so that an
+    # authority's module name never depends on what else was compiled.
+    segment = authority.translate(_AUTHORITY_CHAR_TABLE)
+    if _READABLE_AUTHORITY.fullmatch(authority) is None:
+        digest = hashlib.blake2b(
+            authority.encode(), digest_size=_MODULE_COMPONENT_DIGEST_BYTES
+        )
+        segment += _AUTHORITY_DIGEST_SEPARATOR + digest.hexdigest()
+    return _escape_module_component(segment)
 
 
 @typing.final
@@ -195,8 +215,6 @@ class NameConverter:
 
     _class_names: dict[tuple[define_path.DefinePath, str], str]
     _class_references: dict[str, renderer.ClassReference]
-    _authority_names: dict[str, str]
-    _used_authority_names: set[str]
     # Keyed by the FQUN and path segments of the package that holds the names.
     _package_components: dict[tuple[str, tuple[str, ...]], dict[str, str]]
     _used_package_names: dict[tuple[str, tuple[str, ...]], set[str]]
@@ -205,8 +223,6 @@ class NameConverter:
         """Initialize with empty name caches."""
         self._class_names = {}
         self._class_references = {}
-        self._authority_names = {}
-        self._used_authority_names = set()
         self._package_components = {}
         self._used_package_names = {}
 
@@ -322,22 +338,6 @@ class NameConverter:
             if isinstance(name, ast.GlobalTypedNameReference):
                 yield self.class_reference(name).module_name
 
-    def authority_segment(self, authority: str) -> str:
-        """Convert an authority string to a unique Python module segment.
-
-        Results are cached so the same authority always returns the same name.
-        Conflicts are resolved by appending underscores.
-        """
-        if authority in self._authority_names:
-            return self._authority_names[authority]
-        raw = _escape_module_component(_authority_to_module_segment(authority))
-        safe = raw
-        while safe in self._used_authority_names:
-            safe += "_"
-        self._authority_names[authority] = safe
-        self._used_authority_names.add(safe)
-        return safe
-
     def _module_name_parts(
         self, fqun: ast.Fqun, path_segments: Sequence[str]
     ) -> list[str]:
@@ -349,7 +349,7 @@ class NameConverter:
                 parts.append(_escape_module_component(fqun.multiverse.name))
             else:
                 parts.append(constants.DEFAULT_MULTIVERSE)
-            parts.append(self.authority_segment(fqun.authority.name))
+            parts.append(authority_segment(fqun.authority.name))
         parts.append(_escape_module_component(fqun.universe.name))
         for index, segment in enumerate(path_segments):
             parts.append(

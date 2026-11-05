@@ -1,0 +1,4 @@
+test.create(a.b.c/d:the_lib:/place)
+test.create(a.b/c.d:the_lib:/place)
+test.create(a.b/c/d:the_lib:/place)
+test.create(a.b.c.d:the_lib:/place)
