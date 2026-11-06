@@ -11,7 +11,7 @@ mod syntax_tree;
 
 pub use parser::parse;
 pub use source_location::SourceLocation;
-pub use syntax_error::SyntaxError;
+pub use syntax_error::{SyntaxError, SyntaxErrorKind};
 pub use syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };

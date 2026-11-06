@@ -1,6 +1,7 @@
 //! The schema that a DCL file is checked against: the message types of a
 //! `FileDescriptorSet`, with lookup tables over their descriptors.
 
+use derive_more::{Display, Error};
 use descriptor_proto::google::protobuf::field_descriptor_proto::{Label, Type};
 use descriptor_proto::google::protobuf::{
     DescriptorProto, FieldDescriptorProto, FileDescriptorSet,
@@ -8,10 +9,13 @@ use descriptor_proto::google::protobuf::{
 use rustc_hash::{FxBuildHasher, FxHashMap};
 
 /// A schema that the crate cannot check a DCL file against.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Display, Error)]
 pub enum SchemaError {
     /// The `FileDescriptorSet` has no message type named `message_type`, the
     /// requested top-level message type.
+    #[display(
+        "Cannot create a DCL schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
+    )]
     MissingMessageType { message_type: String },
 }
 

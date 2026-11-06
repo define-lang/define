@@ -2,7 +2,7 @@
 
 use crate::scanner::Scanner;
 use crate::source_location::{Position, SourceLocation};
-use crate::syntax_error::SyntaxError;
+use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };
@@ -21,9 +21,6 @@ pub fn parse(source: &str) -> Result<ParsedFile<'_>, SyntaxError> {
     }
     .parse_file()
 }
-
-/// Builds the error for where something belongs, from its location.
-type ExpectedError = fn(SourceLocation) -> SyntaxError;
 
 const fn is_field_name_start(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_'
@@ -137,7 +134,8 @@ impl<'source> Parser<'source> {
     fn parse_file(mut self) -> Result<ParsedFile<'source>, SyntaxError> {
         // The file starts with a byte order mark.
         if self.scanner.peek_character() == Some(BYTE_ORDER_MARK) {
-            return Err(SyntaxError::ByteOrderMark {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::ByteOrderMark,
                 location: SourceLocation::at(self.scanner.position()),
             });
         }
@@ -147,14 +145,13 @@ impl<'source> Parser<'source> {
             // Something other than a field name starts where a top-level
             // message belongs.
             if !is_field_name_start(byte) {
-                return Err(self.error_where_field_belongs(|location| {
-                    SyntaxError::ExpectedFieldName { location }
-                }));
+                return Err(self.error_where_field_belongs(SyntaxErrorKind::ExpectedFieldName));
             }
             // The top-level message follows the one before it with no
             // whitespace between them.
             if !has_whitespace && !top_level_messages.is_empty() {
-                return Err(SyntaxError::MissingWhitespace {
+                return Err(SyntaxError {
+                    kind: SyntaxErrorKind::MissingWhitespace,
                     location: SourceLocation::at(self.scanner.position()),
                 });
             }
@@ -163,14 +160,16 @@ impl<'source> Parser<'source> {
         }
         // The file has no top-level message.
         if top_level_messages.is_empty() {
-            return Err(SyntaxError::MissingTopLevelMessage {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTopLevelMessage,
                 location: SourceLocation::at(self.scanner.position()),
             });
         }
         // The file does not end with a line feed. Only a line feed moves the
         // scanner to the first column, and the file is not empty.
         if self.scanner.position().column != 1 {
-            return Err(SyntaxError::MissingTrailingNewline {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTrailingNewline,
                 location: SourceLocation::at(self.scanner.last_consumed()),
             });
         }
@@ -201,9 +200,9 @@ impl<'source> Parser<'source> {
                 None | Some(b'\n') => return Ok(()),
                 // The comment has a NUL.
                 Some(b'\0') => {
-                    return Err(SyntaxError::UnexpectedCharacter {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                         location: SourceLocation::at(self.scanner.position()),
-                        character: '\0',
                     });
                 }
                 Some(_) => self.scanner.advance(),
@@ -229,7 +228,8 @@ impl<'source> Parser<'source> {
         }
         let value = self.parse_value()?;
         let Value::Message(value) = value else {
-            return Err(SyntaxError::ScalarAtToplevel {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::ScalarAtToplevel,
                 location: value.location(),
             });
         };
@@ -265,7 +265,10 @@ impl<'source> Parser<'source> {
         let location = SourceLocation::new(start, self.scanner.last_consumed());
         // The word where the field name belongs is not a valid field name.
         if !is_field_name(text) {
-            return Err(SyntaxError::InvalidFieldName { location });
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
+                location,
+            });
         }
         // The field name is not followed directly by a colon.
         if !self.scanner.consume_byte(b':') {
@@ -285,7 +288,7 @@ impl<'source> Parser<'source> {
             Some(byte) if is_number_start(byte) => self.parse_number(),
             Some(byte) if byte.is_ascii_alphabetic() => self.parse_enum_value(),
             // Something other than a value is where a value belongs.
-            _ => Err(self.unexpected(|location| SyntaxError::ExpectedValue { location })),
+            _ => Err(self.unexpected(SyntaxErrorKind::ExpectedValue)),
         }
     }
 
@@ -295,7 +298,8 @@ impl<'source> Parser<'source> {
     fn parse_element(&mut self) -> Result<Value<'source>, SyntaxError> {
         // A repeated value is an element of a repeated value.
         if self.scanner.peek() == Some(b'[') {
-            return Err(SyntaxError::RepeatedValueInRepeatedValue {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::RepeatedValueInRepeatedValue,
                 location: SourceLocation::at(self.scanner.position()),
             });
         }
@@ -313,7 +317,8 @@ impl<'source> Parser<'source> {
             match self.scanner.peek() {
                 // The string has no closing quote on its line.
                 None | Some(b'\n') => {
-                    return Err(SyntaxError::UnterminatedString {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::UnterminatedString,
                         location: SourceLocation::new(start, self.scanner.last_consumed()),
                     });
                 }
@@ -321,9 +326,9 @@ impl<'source> Parser<'source> {
                 Some(b'\\') => self.consume_escape()?,
                 // The string has a NUL.
                 Some(b'\0') => {
-                    return Err(SyntaxError::UnexpectedCharacter {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                         location: SourceLocation::at(self.scanner.position()),
-                        character: '\0',
                     });
                 }
                 Some(_) => self.scanner.advance(),
@@ -371,7 +376,8 @@ impl<'source> Parser<'source> {
                     .consume_up_to(2, |byte| byte.is_ascii_hexdigit())
                     == 0
                 {
-                    return Err(SyntaxError::InvalidEscapeSequence {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::InvalidEscapeSequence,
                         location: SourceLocation::new(start, self.scanner.last_consumed()),
                     });
                 }
@@ -384,7 +390,8 @@ impl<'source> Parser<'source> {
                     .consume_up_to(4, |byte| byte.is_ascii_hexdigit())
                     < 4
                 {
-                    return Err(SyntaxError::InvalidEscapeSequence {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::InvalidEscapeSequence,
                         location: SourceLocation::new(start, self.scanner.last_consumed()),
                     });
                 }
@@ -399,7 +406,8 @@ impl<'source> Parser<'source> {
                 // The `\U` does not have eight hex digits after it that start
                 // with `000` or `0010`.
                 if count < 8 || !(digits.starts_with("000") || digits.starts_with("0010")) {
-                    return Err(SyntaxError::InvalidEscapeSequence {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::InvalidEscapeSequence,
                         location: SourceLocation::new(start, self.scanner.last_consumed()),
                     });
                 }
@@ -407,7 +415,8 @@ impl<'source> Parser<'source> {
             // The `\` is followed by a character that no escape starts with.
             _ => {
                 self.scanner.advance();
-                return Err(SyntaxError::InvalidEscapeSequence {
+                return Err(SyntaxError {
+                    kind: SyntaxErrorKind::InvalidEscapeSequence,
                     location: SourceLocation::new(start, self.scanner.last_consumed()),
                 });
             }
@@ -429,7 +438,8 @@ impl<'source> Parser<'source> {
             return Ok(Value::Float(scalar));
         }
         // The word that starts like a number is not an integer or a float.
-        Err(SyntaxError::InvalidNumberFormat {
+        Err(SyntaxError {
+            kind: SyntaxErrorKind::InvalidNumberFormat,
             location: scalar.location,
         })
     }
@@ -440,11 +450,17 @@ impl<'source> Parser<'source> {
         let location = SourceLocation::new(start, self.scanner.last_consumed());
         // The word is a boolean literal.
         if text == "true" || text == "false" {
-            return Err(SyntaxError::BooleanNotSupported { location });
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::BooleanNotSupported,
+                location,
+            });
         }
         // The word has a lowercase letter.
         if !is_enum_value(text) {
-            return Err(SyntaxError::InvalidEnumCase { location });
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEnumCase,
+                location,
+            });
         }
         Ok(Value::Enum(Scalar { text, location }))
     }
@@ -465,7 +481,8 @@ impl<'source> Parser<'source> {
                     // The field follows the one before it with no whitespace
                     // between them.
                     if !has_whitespace && !fields.is_empty() {
-                        return Err(SyntaxError::MissingWhitespace {
+                        return Err(SyntaxError {
+                            kind: SyntaxErrorKind::MissingWhitespace,
                             location: SourceLocation::at(self.scanner.position()),
                         });
                     }
@@ -474,16 +491,17 @@ impl<'source> Parser<'source> {
                 }
                 // The source ends before the message value's `}`.
                 None => {
-                    return Err(SyntaxError::UnclosedMessage {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::UnclosedMessage,
                         location: SourceLocation::at(start),
                     });
                 }
                 // Something other than a field name or a `}` is where a field
                 // belongs.
                 Some(_) => {
-                    return Err(self.error_where_field_belongs(|location| {
-                        SyntaxError::ExpectedFieldNameOrCloseBrace { location }
-                    }));
+                    return Err(self.error_where_field_belongs(
+                        SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
+                    ));
                 }
             }
         }
@@ -506,7 +524,8 @@ impl<'source> Parser<'source> {
         if !self.scanner.consume_byte(b']') {
             // The source ends before the repeated value's `]`.
             if self.scanner.is_at_end() {
-                return Err(SyntaxError::UnclosedRepeatedValue {
+                return Err(SyntaxError {
+                    kind: SyntaxErrorKind::UnclosedRepeatedValue,
                     location: SourceLocation::at(start),
                 });
             }
@@ -544,7 +563,8 @@ impl Parser<'_> {
             Err(error) => return error,
             // Whitespace separates the field name from its colon.
             Ok(true) if lookahead.scanner.peek() == Some(b':') => {
-                return SyntaxError::WhitespaceBeforeColon {
+                return SyntaxError {
+                    kind: SyntaxErrorKind::WhitespaceBeforeColon,
                     location: SourceLocation::new(after_name, lookahead.scanner.last_consumed()),
                 };
             }
@@ -552,11 +572,12 @@ impl Parser<'_> {
         }
         // Whitespace follows the field name where its colon belongs.
         if matches!(self.scanner.peek(), Some(b' ' | b'\n' | b'#')) {
-            return SyntaxError::MissingColon {
+            return SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation::at(after_name),
             };
         }
-        self.unexpected(|location| SyntaxError::MissingColon { location })
+        self.unexpected(SyntaxErrorKind::MissingColon)
     }
 
     /// The error for what follows the colon of a top-level message, which is
@@ -566,11 +587,12 @@ impl Parser<'_> {
     fn missing_space_after_colon(&self) -> SyntaxError {
         // A line feed or a comment is where the space belongs.
         if matches!(self.scanner.peek(), Some(b'\n' | b'#')) {
-            return SyntaxError::MissingSpaceAfterColon {
+            return SyntaxError {
+                kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation::at(self.scanner.position()),
             };
         }
-        self.unexpected(|location| SyntaxError::MissingSpaceAfterColon { location })
+        self.unexpected(SyntaxErrorKind::MissingSpaceAfterColon)
     }
 
     /// The error for the whitespace and comments that follow the space after
@@ -583,7 +605,8 @@ impl Parser<'_> {
         if let Err(error) = lookahead.skip_whitespace() {
             return error;
         }
-        SyntaxError::ExtraWhitespaceAfterColon {
+        SyntaxError {
+            kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
             location: SourceLocation::new(start, lookahead.scanner.last_consumed()),
         }
     }
@@ -600,27 +623,30 @@ impl Parser<'_> {
     ) -> SyntaxError {
         // The source ends before the repeated value's `]`.
         if self.scanner.is_at_end() {
-            return SyntaxError::UnclosedRepeatedValue {
+            return SyntaxError {
+                kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation::at(start),
             };
         }
         // Whitespace separates the value from the `,` after it.
         if self.scanner.peek() == Some(b',') {
-            return SyntaxError::WhitespaceBeforeComma {
+            return SyntaxError {
+                kind: SyntaxErrorKind::WhitespaceBeforeComma,
                 location: SourceLocation::new(whitespace_start, self.scanner.last_consumed()),
             };
         }
-        self.unexpected(|location| SyntaxError::ExpectedCommaOrCloseBracket { location })
+        self.unexpected(SyntaxErrorKind::ExpectedCommaOrCloseBracket)
     }
 
     /// The error for the character at the scanner's position, where a field
     /// belongs.
     #[cold]
     #[inline(never)]
-    fn error_where_field_belongs(&self, expected: ExpectedError) -> SyntaxError {
+    fn error_where_field_belongs(&self, expected: SyntaxErrorKind) -> SyntaxError {
         // A comma separates fields.
         if self.scanner.peek() == Some(b',') {
-            return SyntaxError::InvalidSeparator {
+            return SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation::at(self.scanner.position()),
             };
         }
@@ -629,26 +655,26 @@ impl Parser<'_> {
 
     /// The error for the character at the scanner's position, which is not
     /// the start of what belongs there, or for the end of the source.
-    /// `expected` builds the error for the end of the source and for a
+    /// `expected` is the kind of error for the end of the source and for a
     /// character that DCL allows elsewhere.
     #[cold]
-    fn unexpected(&self, expected: ExpectedError) -> SyntaxError {
-        let location = SourceLocation::at(self.scanner.position());
-        match self.scanner.peek_character() {
-            Some('\t') => SyntaxError::TabNotAllowed { location },
-            Some('\r') => SyntaxError::CarriageReturnNotAllowed { location },
-            Some(';') => SyntaxError::InvalidSeparator { location },
-            Some('<') => SyntaxError::AngleBracketsNotAllowed { location },
-            Some('\'') => self.single_quotes_not_allowed(),
+    fn unexpected(&self, expected: SyntaxErrorKind) -> SyntaxError {
+        let kind = match self.scanner.peek_character() {
+            Some('\t') => SyntaxErrorKind::TabNotAllowed,
+            Some('\r') => SyntaxErrorKind::CarriageReturnNotAllowed,
+            Some(';') => SyntaxErrorKind::InvalidSeparator,
+            Some('<') => SyntaxErrorKind::AngleBracketsNotAllowed,
+            Some('\'') => return self.single_quotes_not_allowed(),
             Some(character)
                 if !character.is_ascii_alphanumeric() && !"_-.\"{}[]:,".contains(character) =>
             {
-                SyntaxError::UnexpectedCharacter {
-                    location,
-                    character,
-                }
+                SyntaxErrorKind::UnexpectedCharacter { character }
             }
-            _ => expected(location),
+            _ => expected,
+        };
+        SyntaxError {
+            kind,
+            location: SourceLocation::at(self.scanner.position()),
         }
     }
 
@@ -663,13 +689,15 @@ impl Parser<'_> {
         loop {
             match lookahead.peek() {
                 None | Some(b'\n') => {
-                    return SyntaxError::SingleQuotesNotAllowed {
+                    return SyntaxError {
+                        kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                         location: SourceLocation::at(start),
                     };
                 }
                 Some(b'\'') => {
                     lookahead.advance();
-                    return SyntaxError::SingleQuotesNotAllowed {
+                    return SyntaxError {
+                        kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                         location: SourceLocation::new(start, lookahead.last_consumed()),
                     };
                 }

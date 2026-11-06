@@ -11,4 +11,4 @@ mod test_support;
 pub use descriptor_proto::google::protobuf::FileDescriptorSet;
 pub use schema::{Schema, SchemaError};
 pub use semantic_checks::check_semantics;
-pub use semantic_error::SemanticError;
+pub use semantic_error::{SemanticError, SemanticErrorKind};

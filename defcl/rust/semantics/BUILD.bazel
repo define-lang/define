@@ -28,6 +28,7 @@ rust_library(
     deps = [
         ":descriptor_proto",
         "//defcl/rust/parser",
+        "@crates//:derive_more",
         "@crates//:rustc-hash",
     ],
 )

@@ -1,6 +1,6 @@
 use crate::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, SourceLocation, SyntaxError,
-    TopLevelMessage, Value, parse,
+    SyntaxErrorKind, TopLevelMessage, Value, parse,
 };
 use googletest::prelude::*;
 
@@ -951,7 +951,8 @@ mod invalid_booleans {
             parse(include_str!(
                 "../../testdata/invalid/syntax/booleans/false_literal.defcl"
             )),
-            eq(&Err(SyntaxError::BooleanNotSupported {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::BooleanNotSupported,
                 location: SourceLocation {
                     line: 2,
                     column: 14,
@@ -968,7 +969,8 @@ mod invalid_booleans {
             parse(include_str!(
                 "../../testdata/invalid/syntax/booleans/true_literal.defcl"
             )),
-            eq(&Err(SyntaxError::BooleanNotSupported {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::BooleanNotSupported,
                 location: SourceLocation {
                     line: 2,
                     column: 14,
@@ -989,7 +991,8 @@ mod invalid_enums {
             parse(include_str!(
                 "../../testdata/invalid/syntax/enums/lowercase_enum.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEnumCase {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEnumCase,
                 location: SourceLocation {
                     line: 2,
                     column: 13,
@@ -1006,7 +1009,8 @@ mod invalid_enums {
             parse(include_str!(
                 "../../testdata/invalid/syntax/enums/mixed_case_enum.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEnumCase {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEnumCase,
                 location: SourceLocation {
                     line: 2,
                     column: 13,
@@ -1027,7 +1031,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/double_underscore.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1044,7 +1049,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/hyphen.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1061,7 +1067,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/leading_digit.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1078,7 +1085,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/leading_underscore.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1095,7 +1103,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/period.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1112,7 +1121,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/trailing_underscore.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1129,7 +1139,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/underscore_digit.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1146,7 +1157,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/uppercase.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1163,7 +1175,8 @@ mod invalid_field_names {
             parse(include_str!(
                 "../../testdata/invalid/syntax/field_names/top_level_message_name.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
                     line: 1,
                     column: 1,
@@ -1184,7 +1197,8 @@ mod invalid_file_format {
             parse(include_str!(
                 "../../testdata/invalid/syntax/file_format/bom.defcl"
             )),
-            eq(&Err(SyntaxError::ByteOrderMark {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ByteOrderMark,
                 location: SourceLocation {
                     line: 1,
                     column: 1,
@@ -1201,7 +1215,8 @@ mod invalid_file_format {
             parse(include_str!(
                 "../../testdata/invalid/syntax/file_format/no_trailing_newline.defcl"
             )),
-            eq(&Err(SyntaxError::MissingTrailingNewline {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTrailingNewline,
                 location: SourceLocation {
                     line: 3,
                     column: 1,
@@ -1218,7 +1233,8 @@ mod invalid_file_format {
             parse(include_str!(
                 "../../testdata/invalid/syntax/file_format/no_trailing_newline_after_comment.defcl"
             )),
-            eq(&Err(SyntaxError::MissingTrailingNewline {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTrailingNewline,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1235,7 +1251,8 @@ mod invalid_file_format {
             parse(include_str!(
                 "../../testdata/invalid/syntax/file_format/empty_file.defcl"
             )),
-            eq(&Err(SyntaxError::MissingTopLevelMessage {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTopLevelMessage,
                 location: SourceLocation {
                     line: 1,
                     column: 1,
@@ -1252,7 +1269,8 @@ mod invalid_file_format {
             parse(include_str!(
                 "../../testdata/invalid/syntax/file_format/only_a_comment.defcl"
             )),
-            eq(&Err(SyntaxError::MissingTopLevelMessage {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingTopLevelMessage,
                 location: SourceLocation {
                     line: 2,
                     column: 1,
@@ -1273,7 +1291,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/angle_brackets.defcl"
             )),
-            eq(&Err(SyntaxError::AngleBracketsNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::AngleBracketsNotAllowed,
                 location: SourceLocation {
                     line: 1,
                     column: 10,
@@ -1290,7 +1309,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/nested_angle_brackets.defcl"
             )),
-            eq(&Err(SyntaxError::AngleBracketsNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::AngleBracketsNotAllowed,
                 location: SourceLocation {
                     line: 2,
                     column: 13,
@@ -1307,7 +1327,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/quoted_field_name.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedFieldNameOrCloseBrace {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
                 location: SourceLocation {
                     line: 2,
                     column: 5,
@@ -1324,7 +1345,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/fields_without_whitespace_between_them.defcl"
             )),
-            eq(&Err(SyntaxError::MissingWhitespace {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingWhitespace,
                 location: SourceLocation {
                     line: 2,
                     column: 11,
@@ -1341,7 +1363,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/top_level_messages_without_whitespace_between_them.defcl"
             )),
-            eq(&Err(SyntaxError::MissingWhitespace {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingWhitespace,
                 location: SourceLocation {
                     line: 1,
                     column: 6,
@@ -1358,7 +1381,8 @@ mod invalid_messages {
             parse(include_str!(
                 "../../testdata/invalid/syntax/messages/unclosed_message.defcl"
             )),
-            eq(&Err(SyntaxError::UnclosedMessage {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnclosedMessage,
                 location: SourceLocation {
                     line: 1,
                     column: 4,
@@ -1379,7 +1403,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/hex.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1396,7 +1421,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/octal.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1413,7 +1439,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/scientific_int.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1430,7 +1457,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/scientific_float.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1447,7 +1475,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/leading_zeros.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1464,7 +1493,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/leading_decimal.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1481,7 +1511,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/trailing_decimal.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1498,7 +1529,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/plus_sign.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1515,7 +1547,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/space_after_sign.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1532,7 +1565,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/type_suffix_f.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1549,7 +1583,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/type_suffix_upper_f.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -1566,7 +1601,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/type_suffix_d.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1583,7 +1619,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/type_suffix_l.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1600,7 +1637,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/bare_e_suffix.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1617,7 +1655,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/fraction_with_trailing_zero.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1634,7 +1673,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/fraction_of_only_zeros.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1651,7 +1691,8 @@ mod invalid_numbers {
             parse(include_str!(
                 "../../testdata/invalid/syntax/numbers/extra_decimal_after_float.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidNumberFormat {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -1672,14 +1713,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/at_sign.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                 location: SourceLocation {
                     line: 2,
                     column: 8,
                     end_line: 2,
                     end_column: 8
                 },
-                character: '@',
             }))
         )
     }
@@ -1690,14 +1731,16 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/non_ascii_character_outside_strings_and_comments.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter {
+                    character: '\u{e9}'
+                },
                 location: SourceLocation {
                     line: 2,
                     column: 8,
                     end_line: 2,
                     end_column: 8
                 },
-                character: '\u{e9}',
             }))
         )
     }
@@ -1708,14 +1751,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_string.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 10,
                     end_line: 2,
                     end_column: 10
                 },
-                character: '\0',
             }))
         )
     }
@@ -1726,14 +1769,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 1,
                     column: 10,
                     end_line: 1,
                     end_column: 10
                 },
-                character: '\0',
             }))
         )
     }
@@ -1744,14 +1787,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_file.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 1,
                     column: 2,
                     end_line: 1,
                     end_column: 2
                 },
-                character: '\0',
             }))
         )
     }
@@ -1762,14 +1805,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 1,
                     column: 5,
                     end_line: 1,
                     end_column: 5
                 },
-                character: '\0',
             }))
         )
     }
@@ -1780,14 +1823,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_colon.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 9,
                     end_line: 2,
                     end_column: 9
                 },
-                character: '\0',
             }))
         )
     }
@@ -1798,14 +1841,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_message_value.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 1,
                     column: 7,
                     end_line: 1,
                     end_column: 7
                 },
-                character: '\0',
             }))
         )
     }
@@ -1816,14 +1859,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_field.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 11,
                     end_line: 2,
                     end_column: 11
                 },
-                character: '\0',
             }))
         )
     }
@@ -1834,14 +1877,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_repeated_value.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 11,
                     end_line: 2,
                     end_column: 11
                 },
-                character: '\0',
             }))
         )
     }
@@ -1852,14 +1895,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_comma.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 13,
                     end_line: 2,
                     end_column: 13
                 },
-                character: '\0',
             }))
         )
     }
@@ -1870,14 +1913,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_repeated_element.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 2,
                     column: 12,
                     end_line: 2,
                     end_column: 12
                 },
-                character: '\0',
             }))
         )
     }
@@ -1887,14 +1930,14 @@ mod invalid_characters {
             parse(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_name.defcl"
             )),
-            eq(&Err(SyntaxError::UnexpectedCharacter {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
                     line: 1,
                     column: 4,
                     end_line: 1,
                     end_column: 4
                 },
-                character: '\0',
             }))
         )
     }
@@ -1909,7 +1952,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/comma_separator.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidSeparator {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -1926,7 +1970,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/trailing_comma_in_message.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidSeparator {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -1943,7 +1988,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/comma_between_top_level_messages.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidSeparator {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
                     line: 1,
                     column: 6,
@@ -1960,7 +2006,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/missing_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
                     line: 2,
                     column: 10,
@@ -1977,7 +2024,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/field_named_f_missing_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
                     line: 2,
                     column: 6,
@@ -1994,7 +2042,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/missing_colon_at_end_of_source.defcl"
             )),
-            eq(&Err(SyntaxError::MissingColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
                     line: 1,
                     column: 2,
@@ -2011,7 +2060,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/whitespace_before_colon.defcl"
             )),
-            eq(&Err(SyntaxError::WhitespaceBeforeColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::WhitespaceBeforeColon,
                 location: SourceLocation {
                     line: 2,
                     column: 6,
@@ -2028,7 +2078,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/comment_before_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::WhitespaceBeforeColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::WhitespaceBeforeColon,
                 location: SourceLocation {
                     line: 1,
                     column: 2,
@@ -2045,7 +2096,8 @@ mod invalid_separators {
             parse(include_str!(
                 "../../testdata/invalid/syntax/separators/semicolon.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidSeparator {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
                     line: 2,
                     column: 18,
@@ -2066,7 +2118,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/missing_comma.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedCommaOrCloseBracket {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedCommaOrCloseBracket,
                 location: SourceLocation {
                     line: 2,
                     column: 11,
@@ -2083,7 +2136,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/whitespace_before_comma.defcl"
             )),
-            eq(&Err(SyntaxError::WhitespaceBeforeComma {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::WhitespaceBeforeComma,
                 location: SourceLocation {
                     line: 2,
                     column: 10,
@@ -2100,7 +2154,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/trailing_comma.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 11,
@@ -2117,7 +2172,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/unclosed_empty_repeated_value.defcl"
             )),
-            eq(&Err(SyntaxError::UnclosedRepeatedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2134,7 +2190,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/unclosed_repeated_value.defcl"
             )),
-            eq(&Err(SyntaxError::UnclosedRepeatedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2151,7 +2208,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/semicolon_between_values.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidSeparator {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
                     line: 2,
                     column: 10,
@@ -2168,7 +2226,8 @@ mod invalid_repeated_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/repeated_values/repeated_value_in_repeated_value.defcl"
             )),
-            eq(&Err(SyntaxError::RepeatedValueInRepeatedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::RepeatedValueInRepeatedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 17,
@@ -2189,7 +2248,8 @@ mod invalid_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/values/close_brace_where_value_belongs.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2206,7 +2266,8 @@ mod invalid_values {
             parse(include_str!(
                 "../../testdata/invalid/syntax/values/end_of_source_where_value_belongs.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedValue {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
                     line: 2,
                     column: 7,
@@ -2227,7 +2288,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/raw_newline.defcl"
             )),
-            eq(&Err(SyntaxError::UnterminatedString {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -2244,7 +2306,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/unterminated_at_end_of_source.defcl"
             )),
-            eq(&Err(SyntaxError::UnterminatedString {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2261,7 +2324,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/backslash_at_end_of_line.defcl"
             )),
-            eq(&Err(SyntaxError::UnterminatedString {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2278,7 +2342,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/backslash_at_end_of_source.defcl"
             )),
-            eq(&Err(SyntaxError::UnterminatedString {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2295,7 +2360,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/single_quotes.defcl"
             )),
-            eq(&Err(SyntaxError::SingleQuotesNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                 location: SourceLocation {
                     line: 2,
                     column: 12,
@@ -2312,7 +2378,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/single_quote_without_closing_quote.defcl"
             )),
-            eq(&Err(SyntaxError::SingleQuotesNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                 location: SourceLocation {
                     line: 2,
                     column: 8,
@@ -2329,7 +2396,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/unknown_escape.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2346,7 +2414,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/non_octal_digit_escape.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2363,7 +2432,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/hex_escape_without_digits.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2380,7 +2450,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/short_unicode_escape.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2397,7 +2468,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/unicode_escape_past_last_code_point.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2414,7 +2486,8 @@ mod invalid_strings {
             parse(include_str!(
                 "../../testdata/invalid/syntax/strings/short_long_unicode_escape.defcl"
             )),
-            eq(&Err(SyntaxError::InvalidEscapeSequence {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
                     line: 2,
                     column: 9,
@@ -2435,7 +2508,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/unmatched_close_brace.defcl"
             )),
-            eq(&Err(SyntaxError::ExpectedFieldName {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExpectedFieldName,
                 location: SourceLocation {
                     line: 1,
                     column: 1,
@@ -2452,7 +2526,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/missing_toplevel_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
                     line: 1,
                     column: 8,
@@ -2469,7 +2544,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/scalar_toplevel.defcl"
             )),
-            eq(&Err(SyntaxError::ScalarAtToplevel {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ScalarAtToplevel,
                 location: SourceLocation {
                     line: 1,
                     column: 7,
@@ -2486,7 +2562,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/repeated_value_at_toplevel.defcl"
             )),
-            eq(&Err(SyntaxError::ScalarAtToplevel {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ScalarAtToplevel,
                 location: SourceLocation {
                     line: 1,
                     column: 4,
@@ -2502,7 +2579,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/no_space_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingSpaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 3,
@@ -2519,7 +2597,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/line_feed_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingSpaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 3,
@@ -2536,7 +2615,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/end_of_source_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::MissingSpaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 3,
@@ -2553,7 +2633,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/tab_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::TabNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::TabNotAllowed,
                 location: SourceLocation {
                     line: 1,
                     column: 3,
@@ -2570,7 +2651,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/two_spaces_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 4,
@@ -2587,7 +2669,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/trailing_space_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 4,
@@ -2604,7 +2687,8 @@ mod invalid_toplevel {
             parse(include_str!(
                 "../../testdata/invalid/syntax/toplevel/comment_after_space_after_top_level_colon.defcl"
             )),
-            eq(&Err(SyntaxError::ExtraWhitespaceAfterColon {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
                     line: 1,
                     column: 4,
@@ -2625,7 +2709,8 @@ mod invalid_whitespace {
             parse(include_str!(
                 "../../testdata/invalid/syntax/whitespace/carriage_return.defcl"
             )),
-            eq(&Err(SyntaxError::CarriageReturnNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     line: 1,
                     column: 10,
@@ -2642,7 +2727,8 @@ mod invalid_whitespace {
             parse(include_str!(
                 "../../testdata/invalid/syntax/whitespace/tab_char.defcl"
             )),
-            eq(&Err(SyntaxError::TabNotAllowed {
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::TabNotAllowed,
                 location: SourceLocation {
                     line: 2,
                     column: 1,

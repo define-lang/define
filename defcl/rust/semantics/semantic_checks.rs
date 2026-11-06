@@ -1,7 +1,7 @@
 //! The checks of a DCL file's syntax tree against its schema.
 
 use crate::schema::{MessageType, Schema, SchemaField};
-use crate::semantic_error::SemanticError;
+use crate::semantic_error::{SemanticError, SemanticErrorKind};
 use defcl_parser::{Field, FieldName, ParsedFile, SourceLocation, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
 
@@ -157,7 +157,8 @@ fn check_value(
 #[cold]
 #[inline(never)]
 fn field_written_twice(name: &FieldName) -> SemanticError {
-    SemanticError::FieldWrittenTwice {
+    SemanticError {
+        kind: SemanticErrorKind::FieldWrittenTwice,
         location: name.location,
         field_name: name.text.to_owned(),
     }
@@ -166,17 +167,20 @@ fn field_written_twice(name: &FieldName) -> SemanticError {
 #[cold]
 #[inline(never)]
 fn unknown_field_name(name: &FieldName, message_type: &MessageType) -> SemanticError {
-    SemanticError::UnknownFieldName {
+    SemanticError {
+        kind: SemanticErrorKind::UnknownFieldName {
+            message_type: message_type.full_name.clone(),
+        },
         location: name.location,
         field_name: name.text.to_owned(),
-        message_type: message_type.full_name.clone(),
     }
 }
 
 #[cold]
 #[inline(never)]
 fn repeated_field_without_brackets(field: &Field) -> SemanticError {
-    SemanticError::RepeatedFieldWithoutBrackets {
+    SemanticError {
+        kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
         location: field.value.location(),
         field_name: field.name.text.to_owned(),
     }
@@ -187,7 +191,8 @@ fn repeated_field_without_brackets(field: &Field) -> SemanticError {
 #[cold]
 #[inline(never)]
 fn non_repeated_field_with_brackets(field: &Field, location: SourceLocation) -> SemanticError {
-    SemanticError::NonRepeatedFieldWithBrackets {
+    SemanticError {
+        kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
         location,
         field_name: field.name.text.to_owned(),
     }
@@ -198,7 +203,8 @@ fn non_repeated_field_with_brackets(field: &Field, location: SourceLocation) -> 
 #[cold]
 #[inline(never)]
 fn message_value_for_scalar_field(name: &FieldName, location: SourceLocation) -> SemanticError {
-    SemanticError::MessageValueForScalarField {
+    SemanticError {
+        kind: SemanticErrorKind::MessageValueForScalarField,
         location,
         field_name: name.text.to_owned(),
     }
@@ -209,7 +215,8 @@ fn message_value_for_scalar_field(name: &FieldName, location: SourceLocation) ->
 #[cold]
 #[inline(never)]
 fn scalar_for_message_field(field: &Field, location: SourceLocation) -> SemanticError {
-    SemanticError::ScalarForMessageField {
+    SemanticError {
+        kind: SemanticErrorKind::ScalarForMessageField,
         location,
         field_name: field.name.text.to_owned(),
     }
@@ -220,7 +227,8 @@ fn scalar_for_message_field(field: &Field, location: SourceLocation) -> Semantic
 #[cold]
 #[inline(never)]
 fn integer_enum(field: &Field, location: SourceLocation) -> SemanticError {
-    SemanticError::IntegerEnum {
+    SemanticError {
+        kind: SemanticErrorKind::IntegerEnum,
         location,
         field_name: field.name.text.to_owned(),
     }

@@ -1,78 +1,118 @@
 //! The syntax errors that parsing a DCL file can end in.
 
 use crate::source_location::SourceLocation;
+use derive_more::{Display, Error};
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum SyntaxError {
+#[derive(Debug, PartialEq, Eq, Display, Error)]
+#[display("{kind}")]
+pub struct SyntaxError {
+    pub kind: SyntaxErrorKind,
+    pub location: SourceLocation,
+}
+
+/// Which syntax error a `SyntaxError` is. Its message does not include the
+/// location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+pub enum SyntaxErrorKind {
     /// The file starts with a byte order mark.
-    ByteOrderMark { location: SourceLocation },
+    #[display("Byte order mark not allowed")]
+    ByteOrderMark,
     /// The file has no top-level message.
-    MissingTopLevelMessage { location: SourceLocation },
+    #[display("The file has no top-level message")]
+    MissingTopLevelMessage,
     /// The file does not end with a line feed. The location is the file's
     /// last character.
-    MissingTrailingNewline { location: SourceLocation },
+    #[display("The file does not end with a newline")]
+    MissingTrailingNewline,
     /// A tab outside a string or a comment.
-    TabNotAllowed { location: SourceLocation },
+    #[display("Tabs not allowed - use spaces")]
+    TabNotAllowed,
     /// A carriage return outside a string or a comment.
-    CarriageReturnNotAllowed { location: SourceLocation },
+    #[display("Carriage returns not allowed - use LF only")]
+    CarriageReturnNotAllowed,
     /// A character that DCL does not allow outside a string or a comment, or
     /// a NUL in a string or a comment.
-    UnexpectedCharacter {
-        location: SourceLocation,
-        character: char,
-    },
+    #[display(
+        "Unexpected character '{}' (U+{:04X})",
+        character.escape_debug(),
+        u32::from(*character)
+    )]
+    UnexpectedCharacter { character: char },
     /// A field name that does not follow the rules for field names.
-    InvalidFieldName { location: SourceLocation },
+    #[display("Invalid field name")]
+    InvalidFieldName,
     /// Something other than a field name where a top-level message belongs.
-    ExpectedFieldName { location: SourceLocation },
+    #[display("Expected a field name")]
+    ExpectedFieldName,
     /// Something other than a field name or a `}` in a message value.
-    ExpectedFieldNameOrCloseBrace { location: SourceLocation },
+    #[display("Expected a field name or }}")]
+    ExpectedFieldNameOrCloseBrace,
     /// A field, or a top-level message, that follows the one before it with
     /// no whitespace between them.
-    MissingWhitespace { location: SourceLocation },
+    #[display("Missing whitespace before the field name")]
+    MissingWhitespace,
     /// A field name not followed by a colon. The location is where the colon
     /// belongs.
-    MissingColon { location: SourceLocation },
+    #[display("Missing colon after field name")]
+    MissingColon,
     /// Whitespace between a field name and its colon.
-    WhitespaceBeforeColon { location: SourceLocation },
+    #[display("No whitespace allowed before the colon")]
+    WhitespaceBeforeColon,
     /// The colon of a top-level message not followed by a space. The location
     /// is where the space belongs.
-    MissingSpaceAfterColon { location: SourceLocation },
+    #[display("Missing space after the colon")]
+    MissingSpaceAfterColon,
     /// Whitespace or comments after the one space that follows the colon of a
     /// top-level message.
-    ExtraWhitespaceAfterColon { location: SourceLocation },
+    #[display("Only one space allowed after the colon of a top-level message")]
+    ExtraWhitespaceAfterColon,
     /// Something other than a value where a value belongs.
-    ExpectedValue { location: SourceLocation },
+    #[display("Expected a value")]
+    ExpectedValue,
     /// A top-level message whose value is not a message value.
-    ScalarAtToplevel { location: SourceLocation },
+    #[display("Top-level values must be messages")]
+    ScalarAtToplevel,
     /// A `{` with no `}` that closes it. The location is the `{`.
-    UnclosedMessage { location: SourceLocation },
+    #[display("Message value has no closing }}")]
+    UnclosedMessage,
     /// A `[` with no `]` that closes it. The location is the `[`.
-    UnclosedRepeatedValue { location: SourceLocation },
+    #[display("Repeated value has no closing ]")]
+    UnclosedRepeatedValue,
     /// A repeated value as an element of a repeated value. The location is its
     /// `[`.
-    RepeatedValueInRepeatedValue { location: SourceLocation },
+    #[display("A repeated value cannot be an element of a repeated value")]
+    RepeatedValueInRepeatedValue,
     /// Something other than a `,` or a `]` after a value in a repeated value.
-    ExpectedCommaOrCloseBracket { location: SourceLocation },
+    #[display("Expected , or ] after the value")]
+    ExpectedCommaOrCloseBracket,
     /// Whitespace between a value and the `,` after it in a repeated value.
-    WhitespaceBeforeComma { location: SourceLocation },
+    #[display("No whitespace allowed before the comma")]
+    WhitespaceBeforeComma,
     /// A `,` between fields, or a `;` anywhere outside a string or a comment.
-    InvalidSeparator { location: SourceLocation },
+    #[display("Invalid separator")]
+    InvalidSeparator,
     /// A `<`, where a message value belongs or anywhere else outside a string
     /// or a comment.
-    AngleBracketsNotAllowed { location: SourceLocation },
+    #[display("Use curly braces {{}} for messages")]
+    AngleBracketsNotAllowed,
     /// A `'`, which DCL does not allow outside a string or a comment.
-    SingleQuotesNotAllowed { location: SourceLocation },
+    #[display("Use double quotes for strings")]
+    SingleQuotesNotAllowed,
     /// A string with no closing `"` on its line.
-    UnterminatedString { location: SourceLocation },
+    #[display("Unterminated string - use \\n for newlines")]
+    UnterminatedString,
     /// A `\` in a string that does not begin a valid escape.
-    InvalidEscapeSequence { location: SourceLocation },
+    #[display("Invalid escape sequence")]
+    InvalidEscapeSequence,
     /// A word that starts like a number where a value belongs, but is not an
     /// integer or a float.
-    InvalidNumberFormat { location: SourceLocation },
+    #[display("Invalid number format")]
+    InvalidNumberFormat,
     /// `true` or `false` where a value belongs.
-    BooleanNotSupported { location: SourceLocation },
+    #[display("Boolean literals not supported - use enums instead")]
+    BooleanNotSupported,
     /// A word that starts with a letter where a value belongs and has a
     /// lowercase letter.
-    InvalidEnumCase { location: SourceLocation },
+    #[display("Enum values must be ALL_CAPS")]
+    InvalidEnumCase,
 }
