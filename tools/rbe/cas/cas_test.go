@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 )
@@ -252,5 +253,27 @@ func TestRemoveTreeLeavesLinkedBlobsReadOnly(t *testing.T) {
 	}
 	if info.Mode()&0o200 != 0 {
 		t.Fatal("removing a link made the blob writable")
+	}
+}
+
+func TestUploadWaitsForATurnToUseFiles(t *testing.T) {
+	store := openStore(t, t.TempDir(), 1<<20)
+	endTurns := make([]func(), maxUploadFileOperations)
+	for index := range endTurns {
+		endTurns[index] = store.startUploadFileOperation()
+	}
+	finished := make(chan error)
+	go func() { finished <- store.Put(keyOf("contents"), []byte("contents")) }()
+	select {
+	case err := <-finished:
+		t.Fatalf("upload finished while other uploads had every turn: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	endTurns[0]()
+	if err := <-finished; err != nil {
+		t.Fatal(err)
+	}
+	for _, endTurn := range endTurns[1:] {
+		endTurn()
 	}
 }

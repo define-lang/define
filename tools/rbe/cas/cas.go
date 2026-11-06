@@ -28,6 +28,18 @@ import (
 // every input of a remotely executed action as executable.
 const blobMode = 0o555
 
+// maxUploadFileOperations limits how many blocking file system calls uploads
+// make at once. Go gives each goroutine blocked in a file system call its own
+// thread, and a build that uploaded thousands of inputs at once crashed rbe by
+// exceeding Go's limit of 10,000 threads. Disks gain nothing from that many
+// calls at once: a burst of 20,000 blobs sized like a test's runfiles took
+// about as long when 4 of them were written at a time as when 1,024 were, both
+// on an XFS file system on Linux (0.32 against 0.43 seconds) and on a Windows
+// VM whose Defender scanned each file (19 against 21 seconds). 16 was within
+// 10% of the fastest on both, and leaves room for disks that gain from more
+// calls at once.
+const maxUploadFileOperations = 16
+
 // Key identifies a blob by its SHA-256 hash and size.
 type Key struct {
 	Hash [sha256.Size]byte
@@ -98,6 +110,8 @@ type Store struct {
 	maxBytes  int64
 	tempCount atomic.Uint64
 
+	uploadFileOperations chan struct{}
+
 	mu         sync.Mutex
 	entries    map[Key]*entry
 	recency    *list.List
@@ -110,11 +124,12 @@ type Store struct {
 // already there.
 func Open(root string, maxBytes int64, maxDirectories int) (*Store, error) {
 	store := &Store{
-		root:        root,
-		maxBytes:    maxBytes,
-		entries:     map[Key]*entry{},
-		recency:     list.New(),
-		directories: newDirectoryCache(maxDirectories),
+		root:                 root,
+		maxBytes:             maxBytes,
+		uploadFileOperations: make(chan struct{}, maxUploadFileOperations),
+		entries:              map[Key]*entry{},
+		recency:              list.New(),
+		directories:          newDirectoryCache(maxDirectories),
 	}
 	if err := os.RemoveAll(store.tempDirectory()); err != nil {
 		return nil, err
@@ -351,9 +366,18 @@ type hashWriter interface {
 	Sum([]byte) []byte
 }
 
+// startUploadFileOperation waits until an upload may make blocking file system
+// calls, and returns the function that ends its turn.
+func (store *Store) startUploadFileOperation() func() {
+	store.uploadFileOperations <- struct{}{}
+	return func() { <-store.uploadFileOperations }
+}
+
 // NewWriter starts writing a blob with the given key.
 func (store *Store) NewWriter(key Key) (*Writer, error) {
+	endTurn := store.startUploadFileOperation()
 	file, err := os.CreateTemp(store.tempDirectory(), "upload-")
+	endTurn()
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +393,9 @@ func (writer *Writer) Write(data []byte) (int, error) {
 	if writer.written+int64(len(data)) > writer.key.Size {
 		return 0, fmt.Errorf("blob %s received more than %d bytes", writer.key, writer.key.Size)
 	}
+	endTurn := writer.store.startUploadFileOperation()
 	written, err := writer.file.Write(data)
+	endTurn()
 	writer.written += int64(written)
 	_, _ = writer.hash.Write(data[:written])
 	return written, err
@@ -378,6 +404,7 @@ func (writer *Writer) Write(data []byte) (int, error) {
 // Commit verifies the blob's contents and adds it to the store.
 func (writer *Writer) Commit() error {
 	writer.finished = true
+	defer writer.store.startUploadFileOperation()()
 	tempPath := writer.file.Name()
 	defer os.Remove(tempPath)
 	if err := writer.file.Close(); err != nil {
@@ -397,6 +424,7 @@ func (writer *Writer) Abort() {
 		return
 	}
 	writer.finished = true
+	defer writer.store.startUploadFileOperation()()
 	_ = writer.file.Close()
 	_ = os.Remove(writer.file.Name())
 }

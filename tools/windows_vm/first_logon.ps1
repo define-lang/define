@@ -76,8 +76,9 @@ New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name L
 # and the repository's tracked symbolic links need.
 New-Item -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock -Force | Out-Null
 New-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock -Name AllowDevelopmentWithoutDevLicense -Value 1 -PropertyType DWord -Force | Out-Null
-# Defender scanning every file that Bazel writes makes builds much slower.
-Add-MpPreference -ExclusionPath C:\src, "C:\Users\Administrator\_bazel_Administrator"
+# Defender scanning every file that Bazel or rbe writes makes builds much
+# slower. deploy_rbe.py installs rbe in C:\rbe.
+Add-MpPreference -ExclusionPath C:\src, "C:\Users\Administrator\_bazel_Administrator", C:\rbe
 
 $gitInstaller = Save-Download (Get-LatestReleaseAsset git-for-windows/git '^Git-[0-9.]+-64-bit\.exe$') git-installer.exe
 Invoke-Installer $gitInstaller @('/VERYSILENT', '/NORESTART', '/SUPPRESSMSGBOXES', '/SP-')

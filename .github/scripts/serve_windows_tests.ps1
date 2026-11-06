@@ -16,6 +16,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+# Defender scanning every file that rbe writes makes uploads many times slower.
+Add-MpPreference -ExclusionPath $Root
 $null = New-NetFirewallRule -Name rbe -DisplayName rbe -Direction Inbound -Protocol TCP -LocalPort $Port, $StatusPort -Action Allow
 
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $StatusPort)
