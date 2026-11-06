@@ -1,0 +1,9 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+import "defcl/testdata/valid/schemas/shared.proto";
+
+message Wrapper {
+  Shared shared = 1;
+}

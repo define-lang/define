@@ -3,6 +3,10 @@ deps:
   - buf.build/bufbuild/protovalidate
 modules:
   - path: defcl
+    # Bazel's proto_library resolves the test schemas' imports from the
+    # repository root, not from this module.
+    excludes:
+      - defcl/testdata
   - path: define
 lint:
   use:
@@ -16,6 +20,5 @@ lint:
   enum_zero_value_suffix: UNSPECIFIED
   ignore:
     - defcl/buf/testdata
-    - defcl/testdata
 plugins:
   - plugin: bazel-bin/defcl/buf/buf_/buf

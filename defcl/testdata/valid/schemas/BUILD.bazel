@@ -5,6 +5,21 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 proto_library(
+    name = "imports_proto",
+    srcs = ["imports.proto"],
+    deps = [
+        ":shared_proto",
+        ":wrapper_proto",
+    ],
+)
+
+py_proto_library(
+    name = "imports_proto_py",
+    visibility = ["//defcl/python2:__pkg__"],
+    deps = [":imports_proto"],
+)
+
+proto_library(
     name = "integers_proto",
     srcs = ["integers.proto"],
 )
@@ -63,13 +78,27 @@ proto_descriptor_set(
 )
 
 proto_library(
+    name = "shared_proto",
+    srcs = ["shared.proto"],
+)
+
+py_proto_library(
+    name = "shared_proto_py",
+    visibility = ["//defcl/python2:__pkg__"],
+    deps = [":shared_proto"],
+)
+
+proto_library(
     name = "single_toplevel_proto",
     srcs = ["single_toplevel.proto"],
 )
 
 py_proto_library(
     name = "single_toplevel_proto_py",
-    visibility = ["//defcl/python:__pkg__"],
+    visibility = [
+        "//defcl/python:__pkg__",
+        "//defcl/python2:__pkg__",
+    ],
     deps = [":single_toplevel_proto"],
 )
 
@@ -82,6 +111,18 @@ py_proto_library(
     name = "strings_proto_py",
     visibility = ["//defcl/python:__pkg__"],
     deps = [":strings_proto"],
+)
+
+proto_library(
+    name = "wrapper_proto",
+    srcs = ["wrapper.proto"],
+    deps = [":shared_proto"],
+)
+
+py_proto_library(
+    name = "wrapper_proto_py",
+    visibility = ["//defcl/python2:__pkg__"],
+    deps = [":wrapper_proto"],
 )
 
 check_build_file()

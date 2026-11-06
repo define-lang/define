@@ -30,7 +30,9 @@ def validate(
         message_type: The protobuf message class for the top-level message.
         path_name: Optional file path for error messages.
     """
-    msg_desc = message_type.DESCRIPTOR
+    # The stubs type a message's descriptor as either the pure-Python one or
+    # upb's, which have the same attributes that this module reads.
+    msg_desc = cast("descriptor.Descriptor", message_type.DESCRIPTOR)
     written_field_names: set[str] = set()
     for top_level in tree.children:
         top_level = cast("lark_standalone.Tree[lark_standalone.Token]", top_level)

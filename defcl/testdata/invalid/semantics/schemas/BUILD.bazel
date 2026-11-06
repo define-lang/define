@@ -22,7 +22,10 @@ proto_library(
 
 py_proto_library(
     name = "integer_enum_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
+    visibility = [
+        "//defcl/python/validator:__pkg__",
+        "//defcl/python2:__pkg__",
+    ],
     deps = [":integer_enum_proto"],
 )
 
