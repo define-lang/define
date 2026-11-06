@@ -10,7 +10,7 @@ from tools import runfiles
 
 
 def main():
-    """Lint the workspace's GitHub workflows."""
+    """Lint the workspace's GitHub workflows and actions."""
     jactionlint, shellcheck, ruff = (
         runfiles.resolve(location) for location in sys.argv[1:]
     )

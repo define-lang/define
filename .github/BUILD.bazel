@@ -4,8 +4,11 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 filegroup(
-    name = "github_workflows",
-    srcs = glob(["workflows/*.yaml"]),
+    name = "github_actions_files",
+    srcs = glob([
+        "actions/*/action.yaml",
+        "workflows/*.yaml",
+    ]),
 )
 
 # Runs every rule, including those that ask the GitHub API, which a sandboxed
@@ -34,13 +37,13 @@ py_test(
     srcs = ["jactionlint_test.py"],
     data = [
         "jactionlint.yaml",
-        ":github_workflows",
+        ":github_actions_files",
         "@multitool//tools/jactionlint",
         "@multitool//tools/ruff",
         "@multitool//tools/shellcheck",
     ],
     env = {
-        "GITHUB_WORKFLOWS": "$(rlocationpaths :github_workflows)",
+        "GITHUB_ACTIONS_FILES": "$(rlocationpaths :github_actions_files)",
         "JACTIONLINT": "$(rlocationpath @multitool//tools/jactionlint)",
         "JACTIONLINT_CONFIG": "$(rlocationpath jactionlint.yaml)",
         "RUFF": "$(rlocationpath @multitool//tools/ruff)",

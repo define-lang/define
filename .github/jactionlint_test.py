@@ -6,10 +6,10 @@ import subprocess
 from tools import runfiles
 
 
-def test_workflows_pass_jactionlint():
-    workflows = [
+def test_workflows_and_actions_pass_jactionlint():
+    files = [
         runfiles.resolve(location)
-        for location in os.environ["GITHUB_WORKFLOWS"].split()
+        for location in os.environ["GITHUB_ACTIONS_FILES"].split()
     ]
     result = subprocess.run(
         [
@@ -20,7 +20,7 @@ def test_workflows_pass_jactionlint():
             "--strict-exit",
             f"--shellcheck={runfiles.resolve_from_env('SHELLCHECK')}",
             f"--ruff={runfiles.resolve_from_env('RUFF')}",
-            *workflows,
+            *files,
         ],
         check=False,
     )
