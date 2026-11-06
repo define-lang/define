@@ -72,7 +72,7 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/equal>": _BinaryOperation(
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/equals>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",
@@ -126,7 +126,7 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equal>": _BinaryOperation(
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equals>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",
@@ -167,7 +167,7 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equal>": _BinaryOperation(
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equals>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",
@@ -202,7 +202,7 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         operand_views=("view<a>", "view<b>"),
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/equal>": _BinaryOperation(
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/equals>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",

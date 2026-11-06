@@ -222,7 +222,7 @@ define the operation<standard:/text/unicode/scalar/less_than> {
 }
 ```
 
-`standard:/text/unicode/scalar/equal` has the same views. `less_than` compares
+`standard:/text/unicode/scalar/equals` has the same views. `less_than` compares
 scalars by their position in Unicode, not by how any human language sorts its
 characters.
 
@@ -278,7 +278,7 @@ define the potential action<define-lang.org:menu:/menu/read_key> {
             with view<value> looking at position<lowercase_key>.
         }
 
-        execute the operation<standard:/text/unicode/scalar/equal> {
+        execute the operation<standard:/text/unicode/scalar/equals> {
             with view<a> looking at position<lowercase_key>.
             with view<b> looking at literal<standard:/text>"q".
             with view<result> looking at position</menu/quit_requested>.

@@ -52,7 +52,7 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 # it exists.
 BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/binary/and>": "/binary/ascii/and",
-    f"operation<{STANDARD_UNIVERSE}:/binary/equal>": "/binary/ascii/equal",
+    f"operation<{STANDARD_UNIVERSE}:/binary/equals>": "/binary/ascii/equals",
     f"operation<{STANDARD_UNIVERSE}:/binary/exclusive_or>": (
         "/binary/ascii/exclusive_or"
     ),
@@ -72,8 +72,8 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/integer/decrement>": (
         "/number/integer/ascii/decrement"
     ),
-    f"operation<{STANDARD_UNIVERSE}:/number/integer/equal>": (
-        "/number/integer/ascii/equal"
+    f"operation<{STANDARD_UNIVERSE}:/number/integer/equals>": (
+        "/number/integer/ascii/equals"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/integer/increment>": (
         "/number/integer/ascii/increment"
@@ -105,8 +105,8 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/natural/decrement_saturating>": (
         "/number/natural/ascii/decrement_saturating"
     ),
-    f"operation<{STANDARD_UNIVERSE}:/number/natural/equal>": (
-        "/number/natural/ascii/equal"
+    f"operation<{STANDARD_UNIVERSE}:/number/natural/equals>": (
+        "/number/natural/ascii/equals"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/natural/increment>": (
         "/number/natural/ascii/increment"
@@ -132,8 +132,8 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/natural/subtract_saturating>": (
         "/number/natural/ascii/subtract_saturating"
     ),
-    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/equal>": (
-        "/text/unicode/scalar/utf8/equal"
+    f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/equals>": (
+        "/text/unicode/scalar/utf8/equals"
     ),
     f"operation<{STANDARD_UNIVERSE}:/text/unicode/scalar/less_than>": (
         "/text/unicode/scalar/utf8/less_than"

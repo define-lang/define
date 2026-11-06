@@ -3,6 +3,13 @@ define the potential value<standard:/binary> {
         it may be read.
         it may be written.
     }
+    it supports the logical_operation</binary/equals> {
+        it may be read.
+    }
+    it supports the logical_operation</binary/exclusive_or> {
+        it may be read.
+        it may be written.
+    }
 }
 define the potential literal<standard:/binary> {
     it has the encoding</binary/ascii>.

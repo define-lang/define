@@ -1,9 +1,23 @@
 define the potential value<standard:/number/integer> {
+    it supports the logical_operation</number/absolute_value> {
+        it may be read.
+    }
     it supports the logical_operation</number/add> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation</number/subtract> {
+    it supports the logical_operation</number/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation</number/minimum> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</number/multiply> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation</number/negate> {
         it may be read.
         it may be written.
     }

@@ -441,8 +441,12 @@ def test_standard_reference_loads_its_standard_file_non_filesystem(
         "target.dfn",
         standard_library_file("number/natural.dfn"),
         "leaf.dfn",
+        standard_library_file("number/absolute_value.dfn"),
         standard_library_file("number/add.dfn"),
-        standard_library_file("number/subtract.dfn"),
+        standard_library_file("number/less_than.dfn"),
+        standard_library_file("number/minimum.dfn"),
+        standard_library_file("number/multiply.dfn"),
+        standard_library_file("number/negate.dfn"),
     ]
 
 

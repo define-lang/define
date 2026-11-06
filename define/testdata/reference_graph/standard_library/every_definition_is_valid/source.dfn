@@ -228,7 +228,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/binary>"110".
             with view<result> looking at position</differing>.
         }
-        execute the operation<standard:/binary/equal> {
+        execute the operation<standard:/binary/equals> {
             with view<a> looking at position</bits>.
             with view<b> looking at literal<standard:/binary>"1011".
             with view<result> looking at position</bits_match>.
@@ -308,7 +308,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</natural_larger>.
         }
-        execute the operation<standard:/number/natural/equal> {
+        execute the operation<standard:/number/natural/equals> {
             with view<a> looking at position</count>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</natural_equal>.
@@ -354,7 +354,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</integer_larger>.
         }
-        execute the operation<standard:/number/integer/equal> {
+        execute the operation<standard:/number/integer/equals> {
             with view<a> looking at position</offset>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</integer_equal>.
@@ -388,7 +388,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</letter_at_most>.
         create a particle in position</letter_at_least>.
         set the value of position</letter> from literal<standard:/text>"q".
-        execute the operation<standard:/text/unicode/scalar/equal> {
+        execute the operation<standard:/text/unicode/scalar/equals> {
             with view<a> looking at position</letter>.
             with view<b> looking at literal<standard:/text>"r".
             with view<result> looking at position</letter_equal>.

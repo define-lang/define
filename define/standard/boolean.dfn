@@ -1,4 +1,7 @@
 define the potential value<standard:/boolean> {
+    it supports the logical_operation</binary/equals> {
+        it may be written.
+    }
     it supports the logical_operation</boolean/and> {
         it may be read.
         it may be written.
@@ -7,7 +10,10 @@ define the potential value<standard:/boolean> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation</text/equals> {
+    it supports the logical_operation</number/less_than> {
+        it may be written.
+    }
+    it supports the logical_operation</text/less_than> {
         it may be written.
     }
 }

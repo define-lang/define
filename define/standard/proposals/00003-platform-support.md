@@ -612,7 +612,7 @@ define the potential action<define-lang.org:container:/container/check_init> {
         }
 
         create a particle in position<is_init>.
-        execute the operation<standard:/number/natural/equal> {
+        execute the operation<standard:/number/natural/equals> {
             with view<a> looking at position<process_id>.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at position<is_init>.

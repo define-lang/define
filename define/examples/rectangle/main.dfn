@@ -77,7 +77,7 @@ define the potential action<define-lang.org:rectangle:/main> {
         # true.
         # TODO: Once we have I/O we can print this out.
         create a particle in position</same_volume>.
-        execute the operation<standard:/number/natural/equal> {
+        execute the operation<standard:/number/natural/equals> {
             with view<a> looking at position<square_volume>.
             with view<b> looking at position<volume>.
             with view<result> looking at position</same_volume>.

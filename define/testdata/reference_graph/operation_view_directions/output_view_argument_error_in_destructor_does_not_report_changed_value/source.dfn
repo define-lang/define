@@ -18,7 +18,7 @@ define the operation<my.domain.com:my_lib:/copy> {
     }
 }
 define the potential value<my.domain.com:my_lib:/text> {
-    it supports the logical_operation<standard:/text/equals> {
+    it supports the logical_operation<standard:/text/less_than> {
         it may be read.
     }
 }
