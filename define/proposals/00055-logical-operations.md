@@ -202,6 +202,22 @@ intermediate product of `a` and `b` is 20,000.
 If every intermediate value was forced into some fixed encoding, these would
 either give the wrong answer or couldn't be done in one instruction.
 
+### 9: Updating Views in Place
+
+A Value Operation can have a read/write interface view, which reads a value and
+then writes a new value in its place. It's important that we have these so that
+programmers can explicitly express that they want to update the meaning of a
+single particle, not set a new value on a new particle.
+
+However, Value Operations can also execute other Value Operations. Those
+sub-operations can have their own read/write interface views. This starts to
+place a strange restriction on the code: the _only_ thing that could possibly be
+passed into that read/write interface view is the (probably single) read/write
+interface view of the outer Value Operation.
+
+This also creates other complexities in analysis, discussed in more depth in the
+Solution and Why sections.
+
 ## Solution
 
 We add a new name type, `logical_operation`, and remove
@@ -405,15 +421,6 @@ This enforces a set of rules on how and when views may be written and read:
 | Read/write interface view  | Exactly one statement | Statements before that one |
 | Local view                 | Exactly one statement | Statements after that one  |
 
-There is one exception: a Value Operation may execute another Value Operation
-that has a read/write interface view. In that case, we can send any of _our_
-read/write interface views to that Value Operation's read/write interface view
-as part of an Operation Execution Statement that executes that other Value
-Operation. The executed operation follows these same rules, so it inherently
-reads the value before it writes the new one. In this situation, this does
-"count" as a write to the interface view, though, so after that point it may not
-be read or written further.
-
 As an example, here's a saturating subtraction that subtracts `view<b>` from
 `view<a>` in place (storing the result in `view<a>`), stopping at 0, and says
 whether it had to stop. This isn't really _good_ code, it's just one that shows
@@ -423,9 +430,7 @@ rules and how they apply:
 ```define
 define the operation<mv:example.com:example:/saturating_subtract> {
     # Read/write: statements may only read view<a> before the statement that
-    # writes it (or in it, when it passes view<a> to a read/write view of an
-    # operation it executes), so every read means the value the operation was
-    # given.
+    # writes it, so every read means the value the operation was given.
     define the view<a> {
         it is read.
         it is written.
@@ -517,6 +522,17 @@ define the operation<mv:example.com:example:/saturating_subtract> {
     }
 }
 ```
+
+### Read/Write Callees Are Banned
+
+An Operation Statements Block may not execute a Value Operation that has a
+read/write interface view. Only actions may execute those Value Operations. (A
+Value Operation may still _have_ a read/write interface view. It writes it with
+a View Setting Statement, as described in
+[Setting Values in Operations](#setting-values-in-operations).)
+
+This resolves the problems of Single Assignment that otherwise crop up around
+read/write interface views.
 
 ### Setting Values in Operations
 
@@ -1062,23 +1078,37 @@ define the operation<mv:example.com:example:/add_two> {
 
 ### Updating a View in Place
 
-Executing an operation that has a read/write view can read and write a
-read/write view of the operation that executes it, in one statement.
+A Value Operation updates its read/write interface view by writing the new value
+to a local view and then setting the read/write interface view from it.
 
 ```define
-define the operation<mv:example.com:example:/count_one_more> {
-    define the view<count> {
+define the operation<mv:example.com:example:/add_bonus> {
+    define the view<score> {
         it is read.
         it is written.
         it may only contain particles where {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<bonus> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the operation<standard:/number/natural/increment> {
-            with view<value> looking at view<count>.
+        define the view<new_score> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
         }
+        execute the logical_operation<standard:/number/add> {
+            with view<a> looking at view<score>.
+            with view<b> looking at view<bonus>.
+            with view<result> looking at view<new_score>.
+        }
+        set the value of view<score> from view<new_score>.
     }
 }
 ```
@@ -1229,6 +1259,24 @@ define the operation<mv:example.com:example:/bad_read_after_write> {
             with view<a> looking at view<value>.
             with view<b> looking at literal<standard:/number>"1".
             with view<result> looking at view<result>.
+        }
+    }
+}
+
+define the operation<mv:example.com:example:/bad_count_one_more> {
+    define the view<count> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        # Error: operation<standard:/number/natural/increment> has a read/write
+        # interface view, so only an action may execute it.
+        execute the operation<standard:/number/natural/increment> {
+            with view<value> looking at view<count>.
         }
     }
 }
@@ -1538,17 +1586,6 @@ Also, with Single Assignment, nobody reading an operation has to ask "which
 `view<result>` is this?" In actions, we already differentiate that because we
 have particles, but value operations don't see that.
 
-Passing a read/write view to a read/write view of an executed operation is
-allowed even though it _looks_ like that one statement both reads and writes it.
-In reality, the executed operation follows these same rules: it always reads the
-value it was given before it writes the new one. Thus, the rule is never
-actually violated.
-
-It is a bit awkward that we don't allow passing _local_ views into a read/write
-interface view of a value operation (because it violates single assignment for
-them). My suspicion is that the need for this will be rare and this should not
-cause too much trouble, but we will see what happens.
-
 This is also how compilers already work inside. LLVM, MLIR, GCC, and most other
 optimizing compilers convert programs to _static single assignment_ form (SSA),
 where every value is assigned exactly once and every use of a value refers to
@@ -1571,6 +1608,93 @@ Once again, I don't expect a ton of value operations to be written, so I'm okay
 with imposing even more confusing and draconian restrictions on them than we do
 on the rest of Define, especially if it makes compilation faster and simpler, or
 makes the program easier to reason about for the compiler.
+
+### Why Only Actions Execute Read/Write Value Operations
+
+Originally, this DLP had a special exception to Single Assignment:
+
+> A Value Operation may execute another Value Operation that has a read/write
+> interface view. In that case, we can send any of _our_ read/write interface
+> views to that Value Operation's read/write interface view as part of an
+> Operation Execution Statement that executes that other Value Operation. The
+> executed operation follows these same rules, so it inherently reads the value
+> before it writes the new one. In this situation, this does "count" as a write
+> to the interface view, though, so after that point it may not be read or
+> written further.
+
+This allowed situations that were very hard to handle. For example, imagine you
+wanted to compose `less_than_or_equal(a, b)` as `not(less_than(b, a))`.
+Intuitively, you would write it as:
+
+```define
+define the operation<mv:example.com:example:/less_than_or_equal> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/boolean>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/less_than> {
+            with view<a> looking at view<b>.
+            with view<b> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
+        execute the operation<standard:/boolean/not> {
+            with view<value> looking at view<result>.
+        }
+    }
+}
+```
+
+That's all great, except `view<result>` is an output view, and so it can't be
+read by `/number/less_than`. So let's try out different fixes:
+
+1. Make `less_than` write to a local view, say `view<less_than_result>`. We then
+   could not pass that local view to `/boolean/not` because that would mean
+   writing the value twice.
+2. We see that error, so copy `view<less_than_result>` into a new view, let's
+   call it `view<not_input>`. But then `/boolean/not` would write it again,
+   violating our Single Assignment rules.
+
+We could have relaxed the Single Assignment rule in that one case. However, not
+only did that complicate analysis (and make it harder to reason about what the
+rules were) but it also allowed two ways to write the same thing: you could
+choose either the in-place-updating operation, or the input/output operation.
+With particles, that matters because the compiler might think of them as a
+memory model or some such thing, we track their lifetime, etc. With Value
+Operations that distinction doesn't matter at all; a Value Operation is merely
+an abstract description of a formula for transformation and the compiler has
+much greater freedom to mangle it however it wants.
+
+Another way to fix it would have been to ban read/write views entirely, and
+instead allow aliasing just for one input and one output of a Value Operation.
+That meant that every Value Operation would have to behave as though one input
+and one output _could_ be aliased, without knowing which one, basically
+defeating the purpose of our "no aliasing" rule.
+
+So basically, we had a construct that was minimally useful (awkward uses of
+read/write interface views as callees of Value Operations) and which caused
+various problems in its existence, so I got rid of it.
+
+The annoying thing is that a read/write Value Operation is now a special thing
+that can only be used by actions. This could result in some library shipping
+only a read/write value operation. Probably we need to have some rule that if
+you ship a read/write Value Operation, you _must_ also ship an input/output
+Value Operation in the same library that does the same thing.
 
 ### Why The View Setting Restrictions?
 
@@ -1654,11 +1778,12 @@ there's no conflict because you can't directly call logical operations.)
 ### Why No Read/Write Views for Logical Operations?
 
 With [Single Assignment](#single-assignment), it is not possible to pass in a
-local view as a read/write view of anything. This is fine for value operations,
-because at the worst, you could write out your logic using logical operations.
-But if the only available logical operation is one that only has a read/write
-view, Define would totally prevent you from being able to write your logic _at
-all_.
+local view as a read/write view of anything. This restriction is fine for value
+operations, because you can always write out your logic using logical
+operations, if you have to. But if the only available logical operation were one
+that had only a read/write view, Single Assignment could totally prevent you
+from being able to write your logic _at all_ (because you might need to pass in
+some intermediate value to the logical operation).
 
 With Value Operations we allow read/write views because it's conceptually
 idiomatic and simplifies the logic for the compiler at the action level: if I
@@ -1715,7 +1840,9 @@ Most value operations won't need an extension at all, though, because anything
 that can be written as a sequence of existing logical operations already works.
 
 We've also made the strictest choice about writing views: each view is written
-at most once. That can be relaxed later without breaking existing programs.
+at most once. Similarly, only actions may execute Value Operations that have
+read/write interface views. Both can be relaxed later without breaking existing
+programs.
 
 ## Refactoring Existing Systems
 
