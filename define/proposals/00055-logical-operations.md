@@ -1651,7 +1651,7 @@ define the operation<mv:example.com:example:/less_than_or_equal> {
         execute the logical_operation<standard:/number/less_than> {
             with view<a> looking at view<b>.
             with view<b> looking at view<a>.
-            with view<result> looking at view<result>.
+            with view<is_less_than> looking at view<result>.
         }
         execute the operation<standard:/boolean/not> {
             with view<value> looking at view<result>.
@@ -1661,7 +1661,7 @@ define the operation<mv:example.com:example:/less_than_or_equal> {
 ```
 
 That's all great, except `view<result>` is an output view, and so it can't be
-read by `/number/less_than`. So let's try out different fixes:
+written again by `/boolean/not`. So let's try out different fixes:
 
 1. Make `less_than` write to a local view, say `view<less_than_result>`. We then
    could not pass that local view to `/boolean/not` because that would mean
