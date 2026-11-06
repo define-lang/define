@@ -1922,11 +1922,11 @@ by" column, and may only be read by statements in the "Read by" column. Every
 input view and every local view must be read by at least one of those
 statements.
 
-There is one exception: an Operation Execution Statement may pass a read/write
-interface view of the current operation to a read/write interface view of the
-executed operation. That statement counts as both a statement that reads the
-read/write interface view and the one statement that writes it, so no later
-statement may read or write it.
+### Execution of Inner Read/Write Operations
+
+An Operation Statements Block may not execute a Value Operation or an Encoding
+Operation that has a read/write interface view. Only actions may execute Value
+Operations that have read/write interface views.
 
 ### View Setting Statements
 

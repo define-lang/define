@@ -84,6 +84,9 @@ Definitions and View Setting Statements. They behave identically to local views
 in Value Operations, with one difference: a local view in an Encoding Operation
 is assigned exactly one encoding instead of exactly one value quality.
 
+Similar to a Value Operation, an Encoding Operation may not execute an Encoding
+Operation that has a read/write interface view.
+
 Once we apply the Single Assignment rules, you can't write
 `execute the computer operation` and any other statement together in the same
 block, because `execute the computer operation` reads from and writes to every
