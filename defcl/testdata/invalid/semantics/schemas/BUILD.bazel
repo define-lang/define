@@ -124,11 +124,11 @@ py_library(
     deps = ["//defcl/testdata/invalid/semantics"],
 )
 
-# Every schema in this package, for the Rust tests of //defcl/rust/semantics.
+# Every schema in this package, for the tests of the crates in //defcl/rust.
 proto_descriptor_set(
     name = "schemas_descriptor_set",
     testonly = True,
-    visibility = ["//defcl/rust/semantics:__pkg__"],
+    visibility = ["//defcl/rust:__subpackages__"],
     deps = [
         ":field_written_twice_proto",
         ":integer_enum_proto",
