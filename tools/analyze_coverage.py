@@ -39,6 +39,9 @@ _RUST_PYTHON_EXCEPTION_ARM = re.compile(
 # Coverage puts the code that this attribute generates, such as the methods of
 # a complex enum's base class, on the attribute's line.
 _RUST_PYCLASS_ATTRIBUTE = "#[pyclass"
+# The lcov comments around lines whose regions do not need coverage.
+_EXCLUSION_START = "// LCOV_EXCL_START"
+_EXCLUSION_STOP = "// LCOV_EXCL_STOP"
 _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
@@ -152,6 +155,18 @@ class SourceAnalysis:
         """Return whether a code region is on the line of a `#[pyclass]` attribute."""
         line = self._lines(region.source_file)[region.start_line - 1]
         return line.lstrip().startswith(_RUST_PYCLASS_ATTRIBUTE)
+
+    def region_is_excluded(self, region: UncoveredRegion) -> bool:
+        """Return whether a code region is between `// LCOV_EXCL_START` and `// LCOV_EXCL_STOP` comments."""
+        start_line: int | None = None
+        for line_number, line in enumerate(self._lines(region.source_file), start=1):
+            if line.strip() == _EXCLUSION_START:
+                start_line = line_number
+            elif line.strip() == _EXCLUSION_STOP and start_line is not None:
+                if start_line < region.start_line and region.end_line < line_number:
+                    return True
+                start_line = None
+        return False
 
     def region_only_panics(self, region: UncoveredRegion) -> bool:
         """Return whether a code region only calls a macro that ends the program."""
@@ -326,6 +341,8 @@ class RustRegions(msgspec.Struct, frozen=True):
     """Uncovered Rust code regions, by whether covering them is worthwhile."""
 
     actionable: list[UncoveredRegion]
+    excluded: list[UncoveredRegion]
+    """Regions between `// LCOV_EXCL_START` and `// LCOV_EXCL_STOP` comments."""
     pyclass_generated: list[UncoveredRegion]
     """Regions of code that a `#[pyclass]` attribute generates."""
     panic_only: list[UncoveredRegion]
@@ -349,6 +366,7 @@ def analyze_rust_regions(
     selection = _SourceSelection(source_analysis, source_paths)
     regions = RustRegions(
         actionable=[],
+        excluded=[],
         pyclass_generated=[],
         panic_only=[],
         python_exception_only=[],
@@ -357,7 +375,9 @@ def analyze_rust_regions(
         region = _rust_region(branch)
         if region is None or not selection.includes(region.source_file):
             continue
-        if source_analysis.region_is_pyclass_attribute(region):
+        if source_analysis.region_is_excluded(region):
+            regions.excluded.append(region)
+        elif source_analysis.region_is_pyclass_attribute(region):
             regions.pyclass_generated.append(region)
         elif source_analysis.region_only_panics(region):
             regions.panic_only.append(region)
@@ -497,6 +517,7 @@ def format_rust_regions(regions: RustRegions, source_root: Path) -> str:
         )
     output_lines.append(
         f"{len(regions.actionable)} uncovered Rust code regions reported; "
+        + f"{len(regions.excluded)} excluded regions omitted; "
         + f"{len(regions.pyclass_generated)} pyclass-generated regions omitted; "
         + f"{len(regions.panic_only)} panic-only regions omitted; "
         + f"{len(regions.python_exception_only)} Python-exception-only regions omitted."
@@ -585,6 +606,7 @@ def main(source_paths: tuple[Path, ...]):
     all files in Bazel's combined LCOV report are analyzed. Branches whose
     destination only raises a Python exception are omitted. Rust coverage has
     code regions instead of branches, which are reported first, apart from
+    regions between `// LCOV_EXCL_START` and `// LCOV_EXCL_STOP` comments,
     regions that only panic, report source the parser does not support yet,
     or pass on an exception that Python raised.
     """
@@ -614,6 +636,7 @@ def main(source_paths: tuple[Path, ...]):
     )
     if (
         regions.actionable
+        or regions.excluded
         or regions.pyclass_generated
         or regions.panic_only
         or regions.python_exception_only
