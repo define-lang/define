@@ -1,6 +1,6 @@
 //! The errors that checking a DCL file against its schema can end in.
 
-use defcl_parser::SourceLocation;
+use defcl_parser::{SourceLines, SourceLocation};
 use derive_more::{Display, Error};
 use strum::{IntoStaticStr, VariantNames};
 
@@ -11,6 +11,15 @@ pub struct SemanticError {
     pub location: SourceLocation,
     /// The name of the field that the error is in.
     pub field_name: String,
+}
+
+impl SemanticError {
+    /// The error as the Define compiler shows errors: the location as
+    /// `SourceLocation::render` shows it in `source_lines`, the text of the
+    /// file at `file_path`, then the message.
+    pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
+        format!("{}\n{self}", self.location.render(source_lines, file_path))
+    }
 }
 
 /// Which semantic error a `SemanticError` is. Its message does not include the
@@ -47,4 +56,31 @@ pub enum SemanticErrorKind {
     /// An integer as the value of an enum field. The location is the integer.
     #[display("Integer enum values are not allowed")]
     IntegerEnum,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SemanticError, SemanticErrorKind};
+    use defcl_parser::{SourceLines, SourceLocation};
+    use googletest::prelude::*;
+
+    #[gtest]
+    fn shows_its_location_then_its_message() -> Result<()> {
+        verify_that!(
+            SemanticError {
+                kind: SemanticErrorKind::IntegerEnum,
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 13
+                },
+                field_name: "status".to_owned(),
+            }
+            .render(&SourceLines::new("config: {\n    status: 1\n}\n"), None),
+            eq(
+                "line 2, column 13\n    status: 1\n            ^\nstatus: Integer enum values are not allowed"
+            )
+        )
+    }
 }

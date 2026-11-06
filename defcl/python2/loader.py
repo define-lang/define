@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pathlib
 import typing
 
 import msgspec
@@ -45,9 +44,24 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
 def load_file[M: message.Message](
     path: str | os.PathLike[str], message_type: type[M]
 ) -> LoadResult[M]:
-    """Load the DCL file at `path` into a message of `message_type`."""
-    source = pathlib.Path(path).read_text(encoding="utf-8", newline="")
-    return load(source, message_type)
+    """Load the DCL file at `path` into a message of `message_type`.
+
+    Raises:
+        OSError: If the file cannot be read.
+        DclError: If the file has a syntax error.
+        text_format.ParseError: If the file fails a check that only protobuf's
+            text format parser makes.
+    """
+    source, diagnostics = validator.validate_file(
+        path,
+        _descriptor_set(message_type),
+        message_type.DESCRIPTOR.full_name,
+    )
+    if diagnostics:
+        return LoadResult(message=None, diagnostics=diagnostics)
+    # The file's text, not a second read of the file, so that the text that is
+    # parsed is the text that was validated.
+    return LoadResult(message=text_format.Parse(source, message_type()), diagnostics=[])
 
 
 # TODO: Move the walk over the imports into defcl/rust when the Rust crate

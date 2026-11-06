@@ -59,6 +59,12 @@ def test_semantic_errors_are_diagnostics_without_a_message():
     assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
     assert integer_enum.message_type is None
+    assert integer_enum.rendered == (
+        "line 2, column 13\n"
+        "    status: 0\n"
+        "            ^\n"
+        "status: Integer enum values are not allowed"
+    )
 
 
 def test_syntax_error_raises_dcl_error():
@@ -71,6 +77,9 @@ def test_syntax_error_raises_dcl_error():
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
     assert exc_info.value.location == errors.SourceLocation(2, 8, 2, 8)
     assert exc_info.value.character == "@"
+    assert str(exc_info.value) == (
+        "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
+    )
 
 
 def test_load_file_reads_the_file():
@@ -83,3 +92,22 @@ def test_load_file_reads_the_file():
         project=single_toplevel_pb2.SingleToplevelFile.Project(universe_name="example")
     )
     assert result.diagnostics == []
+
+
+def test_load_file_diagnostics_name_the_file():
+    path = _testdata_path("invalid/semantics/enums/integer_enum.defcl")
+
+    result = loader.load_file(path, integer_enum_pb2.IntegerEnumFile)
+
+    assert result.message is None
+    (integer_enum,) = result.diagnostics
+    assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
+    assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
+    assert integer_enum.field_name == "status"
+    assert integer_enum.message_type is None
+    assert integer_enum.rendered == (
+        f'File "{path}", line 2, column 13\n'
+        "    status: 0\n"
+        "            ^\n"
+        "status: Integer enum values are not allowed"
+    )

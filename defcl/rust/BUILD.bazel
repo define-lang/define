@@ -20,11 +20,12 @@ rust_library(
 rust_test(
     name = "validator_test",
     size = "small",
-    # The tests read their DCL files with include_str!, and their schemas from
-    # runfiles.
+    # The tests read most of their DCL files with include_str!, and their
+    # schemas and the files that validate_file reads from runfiles.
     compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":validator",
     data = [
+        "//defcl/testdata:testdata_files",
         "//defcl/testdata/invalid/semantics/schemas:schemas_descriptor_set",
         "//defcl/testdata/valid/schemas:schemas_descriptor_set",
     ],

@@ -1,6 +1,6 @@
 //! The syntax errors that parsing a DCL file can end in.
 
-use crate::source_location::SourceLocation;
+use crate::source_location::{SourceLines, SourceLocation};
 use derive_more::{Display, Error};
 use strum::{IntoStaticStr, VariantNames};
 
@@ -9,6 +9,15 @@ use strum::{IntoStaticStr, VariantNames};
 pub struct SyntaxError {
     pub kind: SyntaxErrorKind,
     pub location: SourceLocation,
+}
+
+impl SyntaxError {
+    /// The error as the Define compiler shows errors: the location as
+    /// `SourceLocation::render` shows it in `source_lines`, the text of the
+    /// file at `file_path`, then the message.
+    pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
+        format!("{}\n{self}", self.location.render(source_lines, file_path))
+    }
 }
 
 /// Which syntax error a `SyntaxError` is. Its message does not include the
@@ -117,4 +126,30 @@ pub enum SyntaxErrorKind {
     /// lowercase letter.
     #[display("Enum values must be ALL_CAPS")]
     InvalidEnumCase,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SyntaxError, SyntaxErrorKind};
+    use crate::{SourceLines, SourceLocation};
+    use googletest::prelude::*;
+
+    #[gtest]
+    fn shows_its_location_then_its_message() -> Result<()> {
+        verify_that!(
+            SyntaxError {
+                kind: SyntaxErrorKind::MissingColon,
+                location: SourceLocation {
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 6
+                },
+            }
+            .render(&SourceLines::new("count {}\n"), Some("config.defcl")),
+            eq(
+                "File \"config.defcl\", line 1, column 6\n    count {}\n         ^\nMissing colon after field name"
+            )
+        )
+    }
 }

@@ -25,7 +25,11 @@ class SourceLocation(msgspec.Struct, frozen=True, gc=False):
 
 
 class DclError(Exception):
-    """The first syntax error in a DCL file."""
+    """The first syntax error in a DCL file.
+
+    Its string is its location, as its source line underlined with carets,
+    then its message.
+    """
 
     kind: error_types.DclErrorKind
     message: str
@@ -39,9 +43,10 @@ class DclError(Exception):
         message: str,
         location: SourceLocation,
         character: str | None,
+        rendered: str,
     ):
-        """Initialize the error with its message, which does not include its location."""
-        super().__init__(message)
+        """Initialize the error with its message, which does not include its location, and its rendered text."""
+        super().__init__(rendered)
         self.kind = kind
         self.message = message
         self.location = location
@@ -63,3 +68,6 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     # The full name of the message type that has no field named field_name, for
     # an UNKNOWN_FIELD_NAME diagnostic.
     message_type: str | None
+    # The diagnostic's location, as its source line underlined with carets, then
+    # its message.
+    rendered: str

@@ -2,11 +2,12 @@
 
 use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
-use defcl_validator::ValidationError;
+use defcl_validator::{RenderedError, ValidationError};
 use prost::Message;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::PyType;
+use std::path::PathBuf;
 
 /// The Python classes that the module returns and raises.
 struct PythonClasses {
@@ -59,7 +60,12 @@ impl PythonClasses {
         )
     }
 
-    fn dcl_error<'py>(&self, py: Python<'py>, error: &SyntaxError) -> PyResult<Bound<'py, PyAny>> {
+    fn dcl_error<'py>(
+        &self,
+        py: Python<'py>,
+        rendered_error: &RenderedError<SyntaxError>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let error = &rendered_error.error;
         let kind: &'static str = error.kind.into();
         let character = match error.kind {
             SyntaxErrorKind::UnexpectedCharacter { character } => Some(character),
@@ -70,14 +76,16 @@ impl PythonClasses {
             error.to_string(),
             self.source_location(py, error.location)?,
             character,
+            &rendered_error.rendered,
         ))
     }
 
     fn dcl_diagnostic<'py>(
         &self,
         py: Python<'py>,
-        error: &SemanticError,
+        rendered_error: &RenderedError<SemanticError>,
     ) -> PyResult<Bound<'py, PyAny>> {
+        let error = &rendered_error.error;
         let kind: &'static str = (&error.kind).into();
         let message_type = match &error.kind {
             SemanticErrorKind::UnknownFieldName { message_type } => Some(message_type),
@@ -89,6 +97,7 @@ impl PythonClasses {
             self.source_location(py, error.location)?,
             &error.field_name,
             message_type,
+            &rendered_error.rendered,
         ))
     }
 }
@@ -123,9 +132,48 @@ fn validate<'py>(
     top_level_message_type: &str,
 ) -> PyResult<Vec<Bound<'py, PyAny>>> {
     let classes = PythonClasses::get(py)?;
-    let descriptor_set = FileDescriptorSet::decode(descriptor_set)
-        .map_err(|error| classes.invalid_schema_error(py, &error))?;
-    match defcl_validator::validate(source, descriptor_set, top_level_message_type) {
+    let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
+    diagnostics(
+        py,
+        classes,
+        defcl_validator::validate(source, descriptor_set, top_level_message_type),
+    )
+}
+
+/// Validates the DCL file at `path` as `validate` validates its text, with
+/// errors that name the file, and returns the file's text with the
+/// diagnostics. Raises `OSError` if the file cannot be read.
+#[pyfunction]
+fn validate_file<'py>(
+    py: Python<'py>,
+    path: PathBuf,
+    descriptor_set: &[u8],
+    top_level_message_type: &str,
+) -> PyResult<(String, Vec<Bound<'py, PyAny>>)> {
+    let classes = PythonClasses::get(py)?;
+    let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
+    let (source, result) =
+        defcl_validator::validate_file(&path, descriptor_set, top_level_message_type)?;
+    Ok((source, diagnostics(py, classes, result)?))
+}
+
+fn decode_descriptor_set(
+    py: Python<'_>,
+    classes: &PythonClasses,
+    descriptor_set: &[u8],
+) -> PyResult<FileDescriptorSet> {
+    FileDescriptorSet::decode(descriptor_set)
+        .map_err(|error| classes.invalid_schema_error(py, &error))
+}
+
+/// The `DclDiagnostic`s of `result`'s semantic errors, or the exception that
+/// its other errors raise.
+fn diagnostics<'py>(
+    py: Python<'py>,
+    classes: &PythonClasses,
+    result: Result<(), ValidationError>,
+) -> PyResult<Vec<Bound<'py, PyAny>>> {
+    match result {
         Ok(()) => Ok(Vec::new()),
         Err(ValidationError::Schema(error)) => Err(classes.invalid_schema_error(py, &error)),
         Err(ValidationError::Syntax(error)) => Err(raise(classes.dcl_error(py, &error))),
@@ -139,5 +187,5 @@ fn validate<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::validate;
+    use super::{validate, validate_file};
 }
