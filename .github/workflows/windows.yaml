@@ -1,0 +1,171 @@
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+# Grouping by branch lets a new push to a pull request cancel the tests of the
+# commit before it. Main lets each run finish rather than discard its work.
+concurrency:
+  group:
+    ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name ||
+    github.repository }}:${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  windows-cross:
+    name: Windows cross build
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: $/.github/actions/setup-bazel
+        with:
+          cache-name: windows-cross
+
+      - name: Build
+        run: bazelisk build --noshow_progress --config=windows_cross //...
+
+  # Windows tests run in two jobs at once: this one builds on Linux with
+  # --config=windows_vm, and windows-test-runner serves remote execution for its
+  # tests on Windows, with the rbe that windows-rbe builds. Runners accept no
+  # incoming connections, so they meet on a tailnet used only for CI. Fork pull
+  # requests get no OIDC token to join it.
+  windows-tests:
+    name: Windows tests
+    # The Windows test runner needs rbe, and this job would wait in vain for a
+    # runner that never started.
+    needs: windows-rbe
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write # Joins the CI tailnet.
+    env:
+      WINDOWS_HOSTNAME: ci-windows-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      # Joining first means fewer failures can stop this job before it tells
+      # the Windows test runner to stop.
+      - name: Join the CI tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ vars.TS_AUDIENCE }}
+          tags: tag:ci
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: $/.github/actions/setup-bazel
+        with:
+          cache-name: windows-tests
+
+      - name: Make the bazel_tools that Windows tests need
+        run: bazelisk run --noshow_progress //tools/windows_vm:bazel_tools_override
+
+      # Bazel fails at startup if it cannot reach the remote executor.
+      - name: Wait for the Windows test runner
+        timeout-minutes: 15
+        run: |
+          address=$(.github/scripts/wait_for_windows_test_runner.sh "$WINDOWS_HOSTNAME")
+          echo "WINDOWS_ADDRESS=$address" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: >-
+          bazelisk test --noshow_progress --config=windows_vm
+          "--remote_executor=grpc://$WINDOWS_ADDRESS:8980" //...
+
+      - name: Tell the Windows test runner that this job finished
+        if: ${{ always() && env.WINDOWS_ADDRESS }}
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: echo "$JOB_STATUS" | nc -N -w 10 "$WINDOWS_ADDRESS" 8981
+
+  windows-rbe:
+    name: Build rbe for Windows
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: $/.github/actions/setup-bazel
+        with:
+          cache-name: windows-rbe
+
+      - name: Build rbe
+        run: bazelisk build --noshow_progress --config=windows_cross //tools/rbe
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rbe
+          path: bazel-bin/tools/rbe/rbe_/rbe.exe
+          if-no-files-found: error
+          retention-days: 1
+
+  windows-test-runner:
+    name: Windows test runner
+    needs: windows-rbe
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write # Joins the CI tailnet.
+    env:
+      WINDOWS_HOSTNAME: ci-windows-${{ github.run_id }}-${{ github.run_attempt }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      # Joining first lets this job tell the Windows tests job about any later
+      # failure.
+      - name: Join the CI tailnet
+        id: tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ vars.TS_AUDIENCE }}
+          tags: tag:ci
+          hostname: ${{ env.WINDOWS_HOSTNAME }}-starting
+
+      # Some of the repository's paths are longer than Windows allows by
+      # default, and this job needs only its script.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: rbe
+          path: ${{ runner.temp }}
+
+      - name: Serve tests until the Windows tests job finishes
+        run: >-
+          .github/scripts/serve_windows_tests.ps1 -Rbe "$env:RUNNER_TEMP\rbe.exe"
+          -Root "$env:RUNNER_TEMP\rbe" -Port 8980 -StatusPort 8981
+          -ReadyHostname $env:WINDOWS_HOSTNAME
+
+      - name: Tell the Windows tests job that this job failed
+        if: ${{ failure() && steps.tailnet.outcome == 'success' }}
+        run: tailscale set "--hostname=$env:WINDOWS_HOSTNAME-failed"
