@@ -25,12 +25,16 @@ rust_library(
     crate_name = "defcl_semantics",
     crate_root = "lib.rs",
     lint_config = lint_config(),
-    visibility = ["//defcl/rust:__pkg__"],
+    visibility = [
+        "//defcl/python2:__pkg__",
+        "//defcl/rust:__pkg__",
+    ],
     deps = [
         ":descriptor_proto",
         "//defcl/rust/parser",
         "@crates//:derive_more",
         "@crates//:rustc-hash",
+        "@crates//:strum",
     ],
 )
 

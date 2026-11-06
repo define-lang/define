@@ -44,56 +44,63 @@ mod tests {
     use prost::Message;
     use runfiles::Runfiles;
 
-    const MULTIPLE_ERRORS_FILE: &str =
-        "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile";
+    /// The descriptor set of the schemas in `defcl/testdata/valid`.
+    fn valid_schemas() -> Result<FileDescriptorSet> {
+        read_descriptor_set(env!("VALID_SCHEMAS"))
+    }
 
     /// The descriptor set of the schemas in `defcl/testdata/invalid/semantics`.
     fn invalid_semantics_schemas() -> Result<FileDescriptorSet> {
+        read_descriptor_set(env!("INVALID_SEMANTICS_SCHEMAS"))
+    }
+
+    /// Decodes the descriptor set in the runfile at `rlocation_path`.
+    fn read_descriptor_set(rlocation_path: &str) -> Result<FileDescriptorSet> {
         let runfiles = Runfiles::create().or_fail()?;
-        let path = runfiles::rlocation!(runfiles, env!("INVALID_SEMANTICS_SCHEMAS")).or_fail()?;
+        let path = runfiles::rlocation!(runfiles, rlocation_path).or_fail()?;
         FileDescriptorSet::decode(std::fs::read(path).or_fail()?.as_slice()).or_fail()
+    }
+
+    #[gtest]
+    fn valid_file() -> Result<()> {
+        verify_ok!(validate(
+            include_str!("../testdata/valid/single_toplevel.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.SingleToplevelFile",
+        ))
     }
 
     #[gtest]
     fn missing_message_type() -> Result<()> {
         verify_that!(
             validate(
-                "config: {\n    name: \"a\"\n}\n",
-                invalid_semantics_schemas()?,
-                "defcl.testdata.invalid.semantics.schemas.NoSuchFile"
+                include_str!("../testdata/valid/single_toplevel.defcl"),
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.NoSuchFile",
             ),
             err(eq(&ValidationError::Schema(
                 SchemaError::MissingMessageType {
-                    message_type: "defcl.testdata.invalid.semantics.schemas.NoSuchFile".to_owned(),
+                    message_type: "defcl.testdata.valid.schemas.NoSuchFile".to_owned(),
                 }
             )))
         )
     }
 
     #[gtest]
-    fn valid_file() -> Result<()> {
-        verify_ok!(validate(
-            "config: {\n    name: \"a\"\n}\n",
-            invalid_semantics_schemas()?,
-            MULTIPLE_ERRORS_FILE
-        ))
-    }
-
-    #[gtest]
     fn syntax_error() -> Result<()> {
         verify_that!(
             validate(
-                "config: {\n    name: @\n}\n",
-                invalid_semantics_schemas()?,
-                MULTIPLE_ERRORS_FILE
+                include_str!("../testdata/invalid/syntax/characters/at_sign.defcl"),
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.SingleToplevelFile",
             ),
             err(eq(&ValidationError::Syntax(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                 location: SourceLocation {
                     line: 2,
-                    column: 11,
+                    column: 8,
                     end_line: 2,
-                    end_column: 11
+                    end_column: 8
                 },
             })))
         )
@@ -103,9 +110,11 @@ mod tests {
     fn semantic_errors() -> Result<()> {
         verify_that!(
             validate(
-                "config: {\n    size: 1\n    status: 1\n}\n",
+                include_str!(
+                    "../testdata/invalid/semantics/multiple_errors/unknown_field_written_twice.defcl"
+                ),
                 invalid_semantics_schemas()?,
-                MULTIPLE_ERRORS_FILE
+                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
             ),
             err(eq(&ValidationError::Semantic(vec![
                 SemanticError {
@@ -123,14 +132,18 @@ mod tests {
                     field_name: "size".to_owned(),
                 },
                 SemanticError {
-                    kind: SemanticErrorKind::IntegerEnum,
+                    kind: SemanticErrorKind::UnknownFieldName {
+                        message_type:
+                            "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                                .to_owned(),
+                    },
                     location: SourceLocation {
                         line: 3,
-                        column: 13,
+                        column: 5,
                         end_line: 3,
-                        end_column: 13
+                        end_column: 8
                     },
-                    field_name: "status".to_owned(),
+                    field_name: "size".to_owned(),
                 },
             ])))
         )

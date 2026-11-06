@@ -16,8 +16,8 @@ filegroup(
     ],
     visibility = [
         "//defcl/python:__subpackages__",
-        "//defcl/rust/parser:__pkg__",
-        "//defcl/rust/semantics:__pkg__",
+        "//defcl/python2:__pkg__",
+        "//defcl/rust:__subpackages__",
     ],
 )
 

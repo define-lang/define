@@ -3,6 +3,7 @@
 *_pb2.pyi
 **/lark/lark_standalone.py
 /define/compiler/codegen/literal/python/renderer.pyi
+/defcl/python2/error_types.py
 /define/compiler/parsing/ast.rs
 /define/compiler/parsing/ast_constructors.rs
 /define/compiler/parsing/parser_diagnostics.rs

@@ -18,8 +18,14 @@ rust_library(
     crate_name = "defcl_parser",
     crate_root = "lib.rs",
     lint_config = lint_config(),
-    visibility = ["//defcl/rust:__subpackages__"],
-    deps = ["@crates//:derive_more"],
+    visibility = [
+        "//defcl/python2:__pkg__",
+        "//defcl/rust:__subpackages__",
+    ],
+    deps = [
+        "@crates//:derive_more",
+        "@crates//:strum",
+    ],
 )
 
 rust_test(

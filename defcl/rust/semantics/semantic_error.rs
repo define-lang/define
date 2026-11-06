@@ -2,6 +2,7 @@
 
 use defcl_parser::SourceLocation;
 use derive_more::{Display, Error};
+use strum::{IntoStaticStr, VariantNames};
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
 #[display("{field_name}: {kind}")]
@@ -14,7 +15,8 @@ pub struct SemanticError {
 
 /// Which semantic error a `SemanticError` is. Its message does not include the
 /// location or the field name.
-#[derive(Debug, PartialEq, Eq, Display)]
+#[derive(Debug, PartialEq, Eq, Display, IntoStaticStr, VariantNames)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SemanticErrorKind {
     /// A field name that the message type has no field for.
     #[display("{message_type} has no field with this name")]

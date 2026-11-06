@@ -2,6 +2,7 @@
 
 use crate::source_location::SourceLocation;
 use derive_more::{Display, Error};
+use strum::{IntoStaticStr, VariantNames};
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
 #[display("{kind}")]
@@ -12,7 +13,8 @@ pub struct SyntaxError {
 
 /// Which syntax error a `SyntaxError` is. Its message does not include the
 /// location.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr, VariantNames)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SyntaxErrorKind {
     /// The file starts with a byte order mark.
     #[display("Byte order mark not allowed")]

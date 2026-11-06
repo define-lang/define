@@ -34,16 +34,18 @@ GENERATED_RUST_SOURCES = [
     "define/compiler/parsing/syntax_errors.rs",
 ]
 
-# Type checkers and editors read the stubs of native extensions whose stubs
-# Bazel generates from the source tree. They are in the order of their
-# command-line arguments.
-GENERATED_PYTHON_STUBS = [
+# Type checkers and editors read generated Python modules, and the stubs of
+# native extensions whose stubs Bazel generates, from the source tree. They are
+# in the order of their command-line arguments.
+GENERATED_PYTHON_FILES = [
+    "defcl/python2/error_types.py",
     "define/compiler/codegen/literal/python/renderer.pyi",
 ]
 
 # Native extensions, by the package that each is copied into, in the order of
 # their command-line arguments.
 NATIVE_EXTENSION_PACKAGES = [
+    "defcl/python2",
     "define/compiler/codegen/literal/python",
     "define/compiler/parsing",
 ]
@@ -236,12 +238,12 @@ def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
     uv_location, *locations = sys.argv[1:]
     generated_rust_locations = locations[: len(GENERATED_RUST_SOURCES)]
-    generated_stub_locations = locations[
+    generated_python_locations = locations[
         len(GENERATED_RUST_SOURCES) : len(GENERATED_RUST_SOURCES)
-        + len(GENERATED_PYTHON_STUBS)
+        + len(GENERATED_PYTHON_FILES)
     ]
     native_extension_locations = locations[
-        len(GENERATED_RUST_SOURCES) + len(GENERATED_PYTHON_STUBS) :
+        len(GENERATED_RUST_SOURCES) + len(GENERATED_PYTHON_FILES) :
     ]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
@@ -266,11 +268,11 @@ def main():
     ):
         _copy_file(runfiles.resolve(location), REPO_ROOT / source)
         print(source)
-    for stub, location in zip(
-        GENERATED_PYTHON_STUBS, generated_stub_locations, strict=True
+    for generated_file, location in zip(
+        GENERATED_PYTHON_FILES, generated_python_locations, strict=True
     ):
-        _copy_file(runfiles.resolve(location), REPO_ROOT / stub)
-        print(stub)
+        _copy_file(runfiles.resolve(location), REPO_ROOT / generated_file)
+        print(generated_file)
     _configure_git_blame()
     _install_git_hooks()
     _record_successful_run()

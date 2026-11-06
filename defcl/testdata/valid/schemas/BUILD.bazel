@@ -44,11 +44,15 @@ py_library(
     deps = ["//defcl/testdata/valid"],
 )
 
-# Every schema in this package, for the Rust tests of //defcl/rust/semantics.
+# Every schema in this package, for the tests of the crates in //defcl/rust and
+# of //defcl/python2.
 proto_descriptor_set(
     name = "schemas_descriptor_set",
     testonly = True,
-    visibility = ["//defcl/rust/semantics:__pkg__"],
+    visibility = [
+        "//defcl/python2:__pkg__",
+        "//defcl/rust:__subpackages__",
+    ],
     deps = [
         ":integers_proto",
         ":nested_messages_proto",
