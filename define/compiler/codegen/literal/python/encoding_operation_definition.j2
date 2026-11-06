@@ -22,10 +22,6 @@ or
 ==
             {%- when BinaryOperator::LessThan {} -%}
 <
-            {%- when BinaryOperator::LessThanOrEqual {} -%}
-<=
-            {%- when BinaryOperator::GreaterThanOrEqual {} -%}
->=
             {%- endmatch %} {{ right }}
         {%- when EncodingOperationStatement::PrefixOperation { operator, operand, .. } -%}
             {%- match operator.get() -%}
@@ -39,8 +35,6 @@ not{{ " " }}
             {%- match operator.get() -%}
                 {%- when ExpressionOperator::SaturatingSubtract {} -%}
 {{ operands[0] }} - {{ operands[1] }} if {{ operands[0] }} > {{ operands[1] }} else 0
-                {%- when ExpressionOperator::SaturatingDecrement {} -%}
-{{ operands[0] }} - 1 if {{ operands[0] }} > 0 else 0
             {%- endmatch -%}
         {%- when EncodingOperationStatement::Call { function, arguments, .. } -%}
 {{ function.get().name_in_module(module_name) }}({{ arguments|join(", ") }})

@@ -21,13 +21,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.create(/enabled)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.enabled.EnabledPosition
-        ).particle.value = True
-        literal.record_operation("test.set_value(/enabled, True)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.enabled.EnabledPosition
         ).particle.value = standard.boolean.ascii.not_(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.enabled.EnabledPosition
-            ).particle.value,
+            True,
         )
-        literal.record_operation("test.execute(operation<standard:/boolean/not>, /enabled)")
+        literal.record_operation("test.execute(operation<standard:/boolean/not>, True, /enabled)")

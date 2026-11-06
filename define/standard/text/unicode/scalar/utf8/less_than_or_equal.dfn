@@ -19,6 +19,19 @@ define the encoding_operation<standard:/text/unicode/scalar/utf8/less_than_or_eq
     }
 
     it does {
-        execute the computer operation.
+        define the view<greater> {
+            it may only contain particles where {
+                it has the encoding</boolean/ascii>.
+            }
+        }
+        execute the encoding_operation</text/unicode/scalar/utf8/less_than> {
+            with view<a> looking at view<b>.
+            with view<b> looking at view<a>.
+            with view<result> looking at view<greater>.
+        }
+        execute the encoding_operation</boolean/ascii/not> {
+            with view<a> looking at view<greater>.
+            with view<result> looking at view<result>.
+        }
     }
 }

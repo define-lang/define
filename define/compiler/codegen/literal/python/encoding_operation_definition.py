@@ -24,20 +24,12 @@ class _BinaryOperation(msgspec.Struct, frozen=True):
     result_view: str
 
 
-class _LiteralOperation(msgspec.Struct, frozen=True):
-    """A computer operation that combines a view with a literal and writes the result back to the view."""
-
-    operator: renderer.BinaryOperator
-    view: str
-    # Already in the view's encoding.
-    literal: str
-
-
 class _PrefixOperation(msgspec.Struct, frozen=True):
-    """A computer operation that applies a prefix operator to a view and writes the result back to the view."""
+    """A computer operation that applies a prefix operator to a view."""
 
     operator: renderer.PrefixOperator
-    view: str
+    operand_view: str
+    result_view: str
 
 
 class _ExpressionOperation(msgspec.Struct, frozen=True):
@@ -57,11 +49,7 @@ class _FunctionCall(msgspec.Struct, frozen=True):
 
 
 type _ComputerOperation = (
-    _BinaryOperation
-    | _LiteralOperation
-    | _PrefixOperation
-    | _ExpressionOperation
-    | _FunctionCall
+    _BinaryOperation | _PrefixOperation | _ExpressionOperation | _FunctionCall
 )
 
 
@@ -109,7 +97,9 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/not>": _PrefixOperation(
-        operator=renderer.PrefixOperator.Not(), view="view<value>"
+        operator=renderer.PrefixOperator.Not(),
+        operand_view="view<a>",
+        result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/or>": _BinaryOperation(
         operator=renderer.BinaryOperator.Or(),
@@ -136,30 +126,14 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/decrement>": _LiteralOperation(
-        operator=renderer.BinaryOperator.Subtract(),
-        view="view<value>",
-        literal="1",
-    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equal>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/increment>": _LiteralOperation(
-        operator=renderer.BinaryOperator.Add(),
-        view="view<value>",
-        literal="1",
-    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/less_than>": _BinaryOperation(
         operator=renderer.BinaryOperator.LessThan(),
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/less_than_or_equal>": _BinaryOperation(
-        operator=renderer.BinaryOperator.LessThanOrEqual(),
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",
@@ -177,7 +151,9 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/negate>": _PrefixOperation(
-        operator=renderer.PrefixOperator.Negate(), view="view<value>"
+        operator=renderer.PrefixOperator.Negate(),
+        operand_view="view<value>",
+        result_view="view<value>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/subtract>": _BinaryOperation(
         operator=renderer.BinaryOperator.Subtract(),
@@ -191,30 +167,14 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/decrement_saturating>": _ExpressionOperation(
-        operator=renderer.ExpressionOperator.SaturatingDecrement(),
-        operand_views=("view<value>",),
-        result_view="view<value>",
-    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equal>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/increment>": _LiteralOperation(
-        operator=renderer.BinaryOperator.Add(),
-        view="view<value>",
-        literal="1",
-    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/less_than>": _BinaryOperation(
         operator=renderer.BinaryOperator.LessThan(),
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/less_than_or_equal>": _BinaryOperation(
-        operator=renderer.BinaryOperator.LessThanOrEqual(),
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",
@@ -248,20 +208,8 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/greater_than_or_equal>": _BinaryOperation(
-        operator=renderer.BinaryOperator.GreaterThanOrEqual(),
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/less_than>": _BinaryOperation(
         operator=renderer.BinaryOperator.LessThan(),
-        left_view="view<a>",
-        right_view="view<b>",
-        result_view="view<result>",
-    ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/less_than_or_equal>": _BinaryOperation(
-        operator=renderer.BinaryOperator.LessThanOrEqual(),
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",
@@ -409,19 +357,13 @@ class EncodingOperationDefinitionGenerator:
                     right=view_names[computer_operation.right_view],
                     result=result,
                 ), [result]
-            case _LiteralOperation():
-                value = view_names[computer_operation.view]
-                return renderer.EncodingOperationStatement.BinaryOperation(
-                    operator=computer_operation.operator,
-                    left=value,
-                    right=computer_operation.literal,
-                    result=value,
-                ), [value]
             case _PrefixOperation():
-                value = view_names[computer_operation.view]
+                result = view_names[computer_operation.result_view]
                 return renderer.EncodingOperationStatement.PrefixOperation(
-                    operator=computer_operation.operator, operand=value, result=value
-                ), [value]
+                    operator=computer_operation.operator,
+                    operand=view_names[computer_operation.operand_view],
+                    result=result,
+                ), [result]
             case _ExpressionOperation():
                 result = view_names[computer_operation.result_view]
                 return renderer.EncodingOperationStatement.ExpressionOperation(

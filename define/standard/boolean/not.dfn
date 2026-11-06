@@ -7,8 +7,13 @@ define the logical_operation<standard:/boolean/not> {
     }
 }
 define the operation<standard:/boolean/not> {
-    define the view<value> {
+    define the view<a> {
         it is read.
+        it may only contain particles where {
+            it has the value</boolean>.
+        }
+    }
+    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the value</boolean>.

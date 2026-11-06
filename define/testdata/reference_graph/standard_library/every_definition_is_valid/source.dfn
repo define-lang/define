@@ -237,9 +237,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</both>.
         create a particle in position</either>.
         create a particle in position</exactly_one>.
-        set the value of position</flag> from literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
-            with view<value> looking at position</flag>.
+            with view<a> looking at literal<standard:/boolean>"true".
+            with view<result> looking at position</flag>.
         }
         execute the operation<standard:/boolean/and> {
             with view<a> looking at position</flag>.

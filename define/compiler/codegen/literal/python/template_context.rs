@@ -456,8 +456,6 @@ pub enum BinaryOperator {
     BitwiseOr {},
     Equal {},
     LessThan {},
-    LessThanOrEqual {},
-    GreaterThanOrEqual {},
 }
 
 /// An operator written before the one value it applies to.
@@ -471,7 +469,6 @@ pub enum PrefixOperator {
 #[pyclass(frozen)]
 pub enum ExpressionOperator {
     SaturatingSubtract {},
-    SaturatingDecrement {},
 }
 
 /// A statement in the function of an Encoding Operation. Each operand and

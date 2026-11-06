@@ -8,6 +8,16 @@ define the encoding_operation<standard:/number/natural/ascii/increment> {
     }
 
     it does {
-        execute the computer operation.
+        define the view<sum> {
+            it may only contain particles where {
+                it has the encoding</number/natural/ascii>.
+            }
+        }
+        execute the encoding_operation</number/natural/ascii/add> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal</number>"1".
+            with view<result> looking at view<sum>.
+        }
+        set the value of view<value> from view<sum>.
     }
 }
