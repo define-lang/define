@@ -85,9 +85,13 @@ jobs:
           address=$(.github/scripts/wait_for_windows_test_runner.sh "$WINDOWS_HOSTNAME")
           echo "WINDOWS_ADDRESS=$address" >> "$GITHUB_ENV"
 
+      # The tests run on the Windows runner's CPU, which can lack instructions
+      # that this runner's CPU has, so they cannot use native Rust code. Every
+      # CPU seen in GitHub's x64 runners has x86-64-v3's instructions.
       - name: Test
         run: >-
           bazelisk test --noshow_progress --config=windows_vm
+          --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=x86-64-v3
           "--remote_executor=grpc://$WINDOWS_ADDRESS:8980" //...
 
       - name: Tell the Windows test runner that this job finished
