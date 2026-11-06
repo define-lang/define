@@ -2184,6 +2184,59 @@ def test_view_setting_read_from_written_read_write_view_error_messages(
     ]
 
 
+def test_executed_operation_has_read_write_view_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "increment.dfn": (
+                "define the operation<my.domain.com:my_lib:/increment> {\n"
+                "    define the view<value> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<count> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the operation</increment> {\n"
+                "            with view<value> looking at view<count>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 11, column 21
+            execute the operation</increment> {
+                        ^^^^^^^^^^^^^^^^^^^^^
+        'operation</increment>' has a read/write interface view, 'view<value>', so you cannot execute it inside of another operation."""),
+    ]
+
+
 def test_logical_operation_read_not_supported_format(
     validate_project: ValidateProject,
 ):

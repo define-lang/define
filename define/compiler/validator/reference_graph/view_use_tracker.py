@@ -73,13 +73,7 @@ class _ViewUse(msgspec.Struct):
                         operation_name=operation_name,
                     )
                 )
-            # An executed view that also writes the view reads it first, so only
-            # its write can be a mistake, and that is reported below.
-            if (
-                view.is_input
-                and self.first_write is not None
-                and not executed_view.is_output
-            ):
+            if view.is_input and self.first_write is not None:
                 self.has_reported_read_or_write_violation = True
                 use_diagnostics.append(
                     diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
@@ -124,21 +118,6 @@ class _ViewUse(msgspec.Struct):
         operation_name: str,
     ) -> list[diagnostics.Diagnostic]:
         view_name = looking_at.source_typed_name
-        # No statement may both read and write a local view. The statement still
-        # counts as a read and a write of it, so the statements after it are not
-        # also reported.
-        if executed_view.is_input and executed_view.is_output:
-            self.is_read = True
-            _ = self._record_write(looking_at.location)
-            self.has_reported_read_or_write_violation = True
-            return [
-                diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
-                    location=looking_at.location,
-                    looked_at_name=view_name,
-                    view_name=argument.view.source_typed_name,
-                    operation_name=operation_name,
-                )
-            ]
         use_diagnostics: list[diagnostics.Diagnostic] = []
         if executed_view.is_input:
             self.is_read = True
@@ -374,8 +353,11 @@ class ViewUseTracker:
         view_name = looking_at.source_typed_name
         use = self._uses[view_name]
         # An undefined view of the executed operation is reported when the
-        # arguments are validated.
-        if executed_view is None:
+        # arguments are validated, and executing an operation that has a
+        # read/write interface view is reported for the whole statement.
+        if executed_view is None or (
+            executed_view.is_input and executed_view.is_output
+        ):
             use.has_unknown_use = True
             self._last_execution.has_unknown_use = True
             return []

@@ -746,17 +746,14 @@ class ViewSettingReadWriteTargetNotFromExecutionDiagnostic(Diagnostic):
     )
 
 
-class LocalViewPassedToReadWriteViewDiagnostic(Diagnostic):
-    """Diagnostic for passing a local view to a read/write interface view of an executed operation."""
+class ExecutedOperationHasReadWriteViewDiagnostic(Diagnostic):
+    """Diagnostic for an Operation Statements Block executing an operation that has a read/write interface view."""
 
-    looked_at_name: str
-    view_name: str
     operation_name: str
+    view_name: str
     message_format: ClassVar[str] = (
-        "'{self.looked_at_name}' is a local view, so it cannot be passed to"
-        " '{self.view_name}' of '{self.operation_name}', which both reads and"
-        " writes it. A local view must be written by exactly one statement and"
-        " read only by statements after that one."
+        "'{self.operation_name}' has a read/write interface view,"
+        " '{self.view_name}', so you cannot execute it inside of another operation."
     )
 
 

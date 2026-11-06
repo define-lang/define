@@ -60,36 +60,32 @@ def test_unwritten_output_view(
     assert diagnostic.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
 
-def test_write_to_input_only_view(
+def test_executes_read_write_operation_with_input_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.WriteToInputOnlyViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
-    assert diagnostic.location.column == 41
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.view_name == "view<total>"
-    assert diagnostic.operation_name == "encoding_operation</increment_by>"
+    assert result.all_diagnostics == [
+        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=53),
+            operation_name="encoding_operation</increment_by>",
+            view_name="view<total>",
+        ),
+    ]
 
 
-def test_read_from_unwritten_output_view(
+def test_executes_read_write_operation_with_output_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ReadFromUnwrittenOutputViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
-    assert diagnostic.location.column == 41
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.view_name == "view<total>"
-    assert diagnostic.operation_name == "encoding_operation</increment_by>"
+    assert result.all_diagnostics == [
+        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=53),
+            operation_name="encoding_operation</increment_by>",
+            view_name="view<total>",
+        ),
+    ]
 
 
 def test_out_of_order(
@@ -279,3 +275,17 @@ def test_view_setting_read_write_target(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
+
+
+def test_executes_read_write_operation(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=12, column=21, end_line=12, end_column=80),
+            operation_name="encoding_operation<standard:/number/integer/ascii/increment>",
+            view_name="view<value>",
+        ),
+    ]

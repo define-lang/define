@@ -1,4 +1,4 @@
-# Passing a read/write view to a read/write view of an executed operation is its one write, so it may happen only once.
+# A read/write view is written by exactly one statement.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -7,19 +7,6 @@ define the operation<my.domain.com:my_lib:/copy> {
         }
     }
     define the view<target> {
-        it is written.
-        it may only contain particles where {
-            it has the value<standard:/number/natural>.
-        }
-    }
-
-    it does {
-        execute the encoding operation.
-    }
-}
-define the operation<my.domain.com:my_lib:/increment> {
-    define the view<value> {
-        it is read.
         it is written.
         it may only contain particles where {
             it has the value<standard:/number/natural>.
@@ -51,12 +38,24 @@ define the operation<my.domain.com:my_lib:/test> {
         }
     }
 
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
     it does {
-        execute the operation</increment> {
+        execute the operation</inspect> {
             with view<value> looking at view<count>.
         }
-        execute the operation</increment> {
-            with view<value> looking at view<count>.
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<count>.
+        }
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<count>.
         }
     }
 }

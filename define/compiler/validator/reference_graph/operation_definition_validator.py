@@ -147,6 +147,18 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         operation_name = statement.operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
         )
+        read_write_view = next(
+            (view for view in executed.views if view.is_input and view.is_output),
+            None,
+        )
+        if read_write_view is not None:
+            statement_diagnostics.append(
+                diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+                    location=statement.operation.location,
+                    operation_name=operation_name,
+                    view_name=read_write_view.typed_name.source_typed_name,
+                )
+            )
         looked_at_qualities: dict[
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
         ] = {}

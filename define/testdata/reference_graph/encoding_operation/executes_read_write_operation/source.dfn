@@ -1,0 +1,16 @@
+# An Encoding Operation may not execute an Encoding Operation that has a read/write interface view.
+define the encoding_operation<my.domain.com:my_lib:/count_one_more> {
+    define the view<count> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/integer/ascii/increment> {
+            with view<value> looking at view<count>.
+        }
+    }
+}

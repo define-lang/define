@@ -204,11 +204,10 @@ def test_passed_to_read_write_view_after_write(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
-        diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=75, column=41, end_line=75, end_column=53),
-            looked_at_name="view<negated>",
-            view_name="view<value>",
+        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=74, column=21, end_line=74, end_column=47),
             operation_name="operation</negate_in_place>",
+            view_name="view<value>",
         ),
     ]
 
@@ -219,10 +218,9 @@ def test_passed_to_read_write_view_before_write(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
-        diagnostics.LocalViewPassedToReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=65, column=41, end_line=65, end_column=55),
-            looked_at_name="view<unwritten>",
-            view_name="view<value>",
+        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+            location=ast.SourceLocation(line=64, column=21, end_line=64, end_column=47),
             operation_name="operation</negate_in_place>",
+            view_name="view<value>",
         ),
     ]
