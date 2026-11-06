@@ -1,7 +1,29 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "fake_tools",
+    testonly = True,
+    srcs = ["fake_tools.py"],
+    deps = [
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "run_python_test",
+    size = "small",
+    srcs = ["run_python_test.py"],
+    data = ["run_python.sh"],
+    env = {"RUN_PYTHON": "$(rlocationpath run_python.sh)"},
+    deps = [
+        ":fake_tools",
+        "//tools:runfiles",
+        "@pypi//pytest",
+    ],
+)
 
 py_binary(
     name = "shell_command_checks",
@@ -12,9 +34,16 @@ py_test(
     name = "shell_command_checks_test",
     size = "small",
     srcs = ["shell_command_checks_test.py"],
-    data = ["shell_command_checks.sh"],
-    env = {"PREFILTER": "$(rlocationpath shell_command_checks.sh)"},
+    data = [
+        "run_python.sh",
+        "shell_command_checks.sh",
+    ],
+    env = {
+        "PREFILTER": "$(rlocationpath shell_command_checks.sh)",
+        "RUN_PYTHON": "$(rlocationpath run_python.sh)",
+    },
     deps = [
+        ":fake_tools",
         ":shell_command_checks",
         "//tools:runfiles",
         "@pypi//pytest",
@@ -31,6 +60,7 @@ py_test(
     size = "small",
     srcs = ["turn_end_checks_test.py"],
     deps = [
+        ":fake_tools",
         ":turn_end_checks",
         "@pypi//pytest",
     ],
@@ -39,6 +69,8 @@ py_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":fake_tools",
+        ":run_python_test",
         ":shell_command_checks",
         ":shell_command_checks_test",
         ":turn_end_checks",

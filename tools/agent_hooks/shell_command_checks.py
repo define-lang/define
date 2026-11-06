@@ -64,8 +64,10 @@ def _setup_local_dev_repository(
 
 
 def _has_bazel_output_base(worktree: Path) -> bool:
-    # Bazel creates this symlink when it first builds in a workspace.
-    return (worktree / "bazel-out").is_symlink()
+    # Bazel creates this link when it first builds in a workspace. On Windows
+    # it is a junction.
+    bazel_out = worktree / "bazel-out"
+    return bazel_out.is_symlink() or bazel_out.is_junction()
 
 
 def _generated_files_may_be_stale(repository: Path) -> bool:
@@ -150,7 +152,7 @@ def _git(directory: Path, *arguments: str) -> str:
         cwd=directory,
         check=True,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
     ).stdout
 
 
@@ -227,13 +229,15 @@ def _run_command(
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
+        encoding="utf-8",
     )
 
 
 def main():
     """Read the PreToolUse hook input and act on the shell command it names."""
-    hook_input = cast("_PreToolUseHookInput", json.load(sys.stdin))
+    # The agents send UTF-8, which Windows would otherwise decode with its code
+    # page.
+    hook_input = cast("_PreToolUseHookInput", json.load(sys.stdin.buffer))
     program_runs = _program_runs(
         Path(hook_input["cwd"]), hook_input["tool_input"]["command"]
     )

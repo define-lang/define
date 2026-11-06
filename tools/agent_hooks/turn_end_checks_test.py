@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tools.agent_hooks import turn_end_checks
+from tools.agent_hooks import fake_tools, turn_end_checks
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -75,8 +75,7 @@ def _install_fake_tools(
     _ = run_log.write_text("", encoding="utf-8", newline="\n")
     for tool in ("bazelisk", "uv"):
         script_lines = [
-            "#!/bin/sh",
-            f"echo \"{tool} $*\" >> '{run_log}'",
+            f"echo \"{tool} $*\" >> '{run_log.as_posix()}'",
             'case "$*" in',
         ]
         for command, shell_code in shell_code_by_command.items():
@@ -84,12 +83,8 @@ def _install_fake_tools(
             if command_tool == tool:
                 script_lines.append(f"  '{arguments}') {shell_code};;")
         script_lines.append("esac")
-        script = bin_directory / tool
-        _ = script.write_text(
-            "\n".join(script_lines) + "\n", encoding="utf-8", newline="\n"
-        )
-        script.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{bin_directory}:/usr/bin:/bin")
+        fake_tools.install(bin_directory, tool, script_lines)
+    fake_tools.put_first_on_path(monkeypatch, bin_directory)
     return run_log
 
 
@@ -97,7 +92,11 @@ def _run_hook(
     monkeypatch: pytest.MonkeyPatch, cwd: Path, *, stop_hook_active: bool = False
 ) -> str:
     hook_input = {"cwd": str(cwd), "stop_hook_active": stop_hook_active}
-    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(hook_input)))
+    # The agents send UTF-8 without escaping it.
+    hook_json = json.dumps(hook_input, ensure_ascii=False).encode()
+    monkeypatch.setattr(
+        "sys.stdin", io.TextIOWrapper(io.BytesIO(hook_json), encoding="utf-8")
+    )
     printed = io.StringIO()
     monkeypatch.setattr("sys.stdout", printed)
     turn_end_checks.main()
@@ -202,7 +201,9 @@ def test_steps_run_at_the_top_of_the_repository(
     _ = _install_fake_tools(
         tmp_path,
         monkeypatch,
-        {_FORMAT: "echo \"ran in $(pwd)\"; echo 'dprint crashed' >&2; exit 1"},
+        {
+            _FORMAT: f"echo \"ran in {fake_tools.WORKING_DIRECTORY}\"; echo 'dprint crashed' >&2; exit 1"
+        },
     )
 
     assert json.loads(_run_hook(monkeypatch, repository / "docs")) == {
@@ -210,6 +211,21 @@ def test_steps_run_at_the_top_of_the_repository(
         "reason": (
             f"{_REPORT_HEADING}\n\n$ {_FORMAT}\nran in {repository}\ndprint crashed"
         ),
+    }
+
+
+def test_non_ascii_paths_and_output_reach_the_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _repository(tmp_path)
+    _write(repository, "café.py")
+    _ = _install_fake_tools(
+        tmp_path, monkeypatch, {f"{_DEPS} café.py": "echo 'naïve ✓'; exit 1"}
+    )
+
+    assert json.loads(_run_hook(monkeypatch, repository)) == {
+        "decision": "block",
+        "reason": f"{_REPORT_HEADING}\n\n$ {_DEPS} café.py\nnaïve ✓",
     }
 
 

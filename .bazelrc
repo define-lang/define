@@ -53,8 +53,9 @@ build:windows_vm --modify_execution_info=^(?!TestRunner$).*=+no-remote
 # backslash here as an escape, even in quotes.
 # TODO: Revisit once a Bazel release sets the default PATH from the execution
 # platform: https://github.com/bazelbuild/bazel/pull/32049. Tests here also
-# need Git's directory, which Bazel's Windows default lacks.
-build:windows_vm --test_env='PATH=C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;C:\\Program Files\\PowerShell\\7;C:\\Program Files\\Git\\cmd'
+# need Git and Git Bash, which Bazel's Windows default lacks. They come first,
+# so that bash is not the WSL launcher in system32.
+build:windows_vm --test_env='PATH=C:\\Program Files\\Git\\bin;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;C:\\Program Files\\PowerShell\\7'
 # Linux runs these tests instead:
 # - Clippy's runner is a Linux program.
 # - Bazel runs a test tagged local only on this host.

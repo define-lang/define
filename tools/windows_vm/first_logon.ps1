@@ -95,6 +95,15 @@ Invoke-WebRequest -Uri (Get-LatestReleaseAsset bazelbuild/bazelisk '^bazelisk-wi
 $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
 [Environment]::SetEnvironmentVariable('Path', "$machinePath;C:\tools", 'Machine')
 
+# The agent hooks run python3 and uv. Windows' own python3 and python are
+# Microsoft Store stubs that only print an error. The machine PATH, where uv
+# puts a real python3, comes before the stubs' directory in the user's PATH.
+$uvArchive = Save-Download (Get-LatestReleaseAsset astral-sh/uv '^uv-x86_64-pc-windows-msvc\.zip$') uv.zip
+Expand-Archive -Path $uvArchive -DestinationPath C:\tools
+$env:UV_PYTHON_INSTALL_DIR = 'C:\tools\python'
+$env:UV_PYTHON_BIN_DIR = 'C:\tools'
+Invoke-Checked C:\tools\uv.exe @('python', 'install', '--default', '--preview-features', 'python-install-default')
+
 Copy-Item (Join-Path $PSScriptRoot extend_evaluation.ps1) C:\tools\extend_evaluation.ps1
 # Files copied from a CD are read-only, which would block updating the script.
 Set-ItemProperty -Path C:\tools\extend_evaluation.ps1 -Name IsReadOnly -Value $false

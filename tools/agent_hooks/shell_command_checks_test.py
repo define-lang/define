@@ -5,15 +5,13 @@ import json
 import os
 import shutil
 import subprocess
-from typing import TYPE_CHECKING
+import sys
+from pathlib import Path
 
 import pytest
 
 from tools import runfiles
-from tools.agent_hooks import shell_command_checks
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from tools.agent_hooks import fake_tools, shell_command_checks
 
 _EXPUNGE = "bazelisk clean --noshow_progress --ui_event_filters=-info --expunge_async"
 _SETUP_LOCAL_DEV = (
@@ -56,7 +54,20 @@ def _worktree(repository: Path, name: str, *, built: bool) -> Path:
     worktree = repository / "worktrees" / name
     _git(repository, "worktree", "add", "--quiet", "--detach", str(worktree))
     if built:
-        (worktree / "bazel-out").symlink_to(repository / "nowhere")
+        bazel_out = worktree / "bazel-out"
+        target = repository / "nowhere"
+        # Bazel makes this link a junction on Windows.
+        if sys.platform == "win32":
+            cmd = shutil.which("cmd")
+            if cmd is None:
+                raise FileNotFoundError("cmd is required for these tests")
+            _ = subprocess.run(
+                [cmd, "/c", "mklink", "/J", str(bazel_out), str(target)],
+                check=True,
+                capture_output=True,
+            )
+        else:
+            bazel_out.symlink_to(target)
     return worktree
 
 
@@ -67,28 +78,30 @@ def _install_fake_bazelisk(
     bin_directory.mkdir()
     run_log = tmp_path / "runs"
     _ = run_log.write_text("", encoding="utf-8", newline="\n")
-    bazelisk = bin_directory / "bazelisk"
-    script_lines = [
-        "#!/bin/sh",
-        f"echo \"bazelisk $* in $(pwd)\" >> '{run_log}'",
-        "echo 'bazelisk failed'",
-        f'[ {exit_code} = 0 ] && case "$*" in',
-        # The real setup_local_dev records its successful runs this way.
-        '  *setup_local_dev) touch "$(git rev-parse --git-path setup-local-dev-stamp)" ;;',
-        "esac",
-        f"exit {exit_code}",
-    ]
-    _ = bazelisk.write_text(
-        "\n".join(script_lines) + "\n", encoding="utf-8", newline="\n"
+    fake_tools.install(
+        bin_directory,
+        "bazelisk",
+        [
+            f"echo \"bazelisk $* in {fake_tools.WORKING_DIRECTORY}\" >> '{run_log.as_posix()}'",
+            "echo 'bazelisk failed'",
+            f'[ {exit_code} = 0 ] && case "$*" in',
+            # The real setup_local_dev records its successful runs this way.
+            '  *setup_local_dev) touch "$(git rev-parse --git-path setup-local-dev-stamp)" ;;',
+            "esac",
+            f"exit {exit_code}",
+        ],
     )
-    bazelisk.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{bin_directory}:/usr/bin:/bin")
+    fake_tools.put_first_on_path(monkeypatch, bin_directory)
     return run_log
 
 
 def _run_hook(monkeypatch: pytest.MonkeyPatch, cwd: Path, command: str) -> str:
     hook_input = {"cwd": str(cwd), "tool_input": {"command": command}}
-    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(hook_input)))
+    # The agents send UTF-8 without escaping it.
+    hook_json = json.dumps(hook_input, ensure_ascii=False).encode()
+    monkeypatch.setattr(
+        "sys.stdin", io.TextIOWrapper(io.BytesIO(hook_json), encoding="utf-8")
+    )
     printed = io.StringIO()
     monkeypatch.setattr("sys.stdout", printed)
     shell_command_checks.main()
@@ -184,6 +197,21 @@ def test_failed_expunge_is_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     run_log = _install_fake_bazelisk(tmp_path, monkeypatch, exit_code=1)
 
     assert _run_hook(monkeypatch, repository, "git worktree remove worktrees/a") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_EXPUNGE} in {worktree}"
+    ]
+
+
+def test_non_ascii_worktree_path_is_expunged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _repository(tmp_path)
+    worktree = _worktree(repository, "café", built=True)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert (
+        _run_hook(monkeypatch, repository, "git worktree remove worktrees/café") == ""
+    )
     assert run_log.read_text(encoding="utf-8").splitlines() == [
         f"{_EXPUNGE} in {worktree}"
     ]
@@ -310,11 +338,14 @@ def test_prefilter_runs_the_checks_only_for_commands_that_mention_them(
     tmp_path: Path,
 ):
     _ = shutil.copy(runfiles.resolve_from_env("PREFILTER"), tmp_path)
+    _ = shutil.copy(runfiles.resolve_from_env("RUN_PYTHON"), tmp_path)
     _ = (tmp_path / "shell_command_checks.py").write_text(
         "print('checked')\n", encoding="utf-8", newline="\n"
     )
     bash = shutil.which("bash")
     assert bash is not None
+    # run_python.sh runs this test's own Python.
+    path = os.pathsep.join([str(Path(sys.executable).parent), os.environ["PATH"]])
     commands = [
         "uv run pytest",
         "git -C /repo worktree remove a",
@@ -326,11 +357,14 @@ def test_prefilter_runs_the_checks_only_for_commands_that_mention_them(
     checked: dict[str, bool] = {}
     for command in commands:
         result = subprocess.run(
-            [bash, str(tmp_path / "shell_command_checks.sh")],
+            # The agents name the hook with forward slashes, which the hook
+            # needs to find the scripts next to it.
+            [bash, (tmp_path / "shell_command_checks.sh").as_posix()],
             input=json.dumps({"tool_input": {"command": command}}),
             check=True,
             capture_output=True,
             text=True,
+            env={**os.environ, "PATH": path},
         )
         checked[command] = result.stdout == "checked\n"
 

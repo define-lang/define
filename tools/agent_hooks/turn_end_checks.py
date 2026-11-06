@@ -120,7 +120,7 @@ def _git(directory: Path, *arguments: str) -> str:
         cwd=directory,
         check=True,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
     ).stdout
 
 
@@ -203,7 +203,7 @@ def _run_command(
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
+        encoding="utf-8",
     )
 
 
@@ -242,7 +242,9 @@ def _failure_report(failed_commands: Sequence[_FailedCommand]) -> str:
 
 def main():
     """Read the Stop hook input and print the hook's response, if any."""
-    hook_input = cast("_StopHookInput", json.load(sys.stdin))
+    # The agents send UTF-8, which Windows would otherwise decode with its code
+    # page.
+    hook_input = cast("_StopHookInput", json.load(sys.stdin.buffer))
     repository = Path(
         _git(Path(hook_input["cwd"]), "rev-parse", "--show-toplevel").strip()
     )

@@ -6,6 +6,7 @@
 IFS= read -r -d '' hook_input
 case "$hook_input" in
 *"uv run"* | *"worktree remove"*)
-	exec python3 -I "${BASH_SOURCE[0]%/*}/shell_command_checks.py" <<<"$hook_input"
+	hooks=${BASH_SOURCE[0]%/*}
+	exec "$hooks/run_python.sh" "$hooks/shell_command_checks.py" <<<"$hook_input"
 	;;
 esac
