@@ -1,5 +1,5 @@
 define the encoding_operation<standard:/number/integer/ascii/absolute_value> {
-    define the view<value> {
+    define the view<a> {
         it is read.
         it may only contain particles where {
             it has the encoding</number/integer/ascii>.

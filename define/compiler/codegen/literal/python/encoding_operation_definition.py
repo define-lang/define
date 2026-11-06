@@ -117,7 +117,7 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         function=renderer.FunctionReference(
             function_name="abs", module_name="builtins"
         ),
-        argument_views=("view<value>",),
+        argument_views=("view<a>",),
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/add>": _BinaryOperation(
@@ -152,8 +152,8 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/negate>": _PrefixOperation(
         operator=renderer.PrefixOperator.Negate(),
-        operand_view="view<value>",
-        result_view="view<value>",
+        operand_view="view<a>",
+        result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/subtract>": _BinaryOperation(
         operator=renderer.BinaryOperator.Subtract(),
