@@ -1,7 +1,7 @@
 profile: pedantic
 generated-files: report
 config-secrets: [LOCKFILE_APP_PRIVATE_KEY]
-config-variables: [LOCKFILE_APP_CLIENT_ID]
+config-variables: [LOCKFILE_APP_CLIENT_ID, TS_AUDIENCE, TS_OAUTH_CLIENT_ID]
 rules:
   # Matches minimumReleaseAge in renovate.json5, so Renovate never proposes a
   # version that this rule rejects.
@@ -19,6 +19,7 @@ rules:
       - bazel-contrib/setup-bazel
       - bufbuild/buf-action
       - codecov/codecov-action
+      - tailscale/github-action
   max-run-lines:
     max: 5
   timeout-too-long:
