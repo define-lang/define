@@ -113,13 +113,24 @@ pub enum SyntaxErrorKind {
     /// A string with no closing `"` on its line.
     #[display("Unterminated string - use \\n for newlines")]
     UnterminatedString,
-    /// A `\` in a string that does not begin a valid escape.
+    /// A `\` in a string that does not begin a valid escape, including an
+    /// octal escape whose value does not fit in a byte.
     #[display("Invalid escape sequence")]
     InvalidEscapeSequence,
+    /// A `\u` escape of a surrogate code point. The location is the escape.
+    #[display("Unicode escapes cannot be surrogates (U+D800 to U+DFFF)")]
+    SurrogateEscape,
+    /// A run of back-to-back octal and hex escapes whose bytes are not valid
+    /// UTF-8. The location is the run.
+    #[display("Escape sequences must produce valid UTF-8")]
+    InvalidUtf8,
     /// A word that starts like a number where a value belongs, but is not an
     /// integer or a float.
     #[display("Invalid number format")]
     InvalidNumberFormat,
+    /// `-0` or `-0.0`.
+    #[display("Negative zero is not allowed")]
+    NegativeZero,
     /// `true` or `false` where a value belongs.
     #[display("Boolean literals not supported - use enums instead")]
     BooleanNotSupported,

@@ -101,3 +101,17 @@ class UnknownEnumValueDiagnostic(DclDiagnostic, frozen=True):
     # The full name of the enum type that has no value with the enum value's
     # name.
     enum_type: str
+
+
+class IntegerOutOfRangeDiagnostic(DclDiagnostic, frozen=True):
+    """An INTEGER_OUT_OF_RANGE diagnostic: an integer outside the range of its field's type."""
+
+    # The field's type, such as "uint32".
+    field_type: str
+
+
+class FloatOutOfRangeDiagnostic(DclDiagnostic, frozen=True):
+    """A FLOAT_OUT_OF_RANGE diagnostic: a number too large in magnitude for its field's type."""
+
+    # The field's type, "float" or "double".
+    field_type: str

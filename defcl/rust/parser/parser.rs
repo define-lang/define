@@ -122,6 +122,74 @@ fn is_float(text: &str) -> bool {
         && fraction.bytes().last().is_some_and(|byte| byte != b'0')
 }
 
+/// The value of `digits`, digits in base `radix` that are all valid in it.
+fn digits_value(digits: &str, radix: u32) -> u32 {
+    digits
+        .bytes()
+        .fold(0, |value, digit| value * radix + hex_digit_value(digit))
+}
+
+/// The value of `digit`, a hex digit.
+const fn hex_digit_value(digit: u8) -> u32 {
+    (match digit {
+        b'0'..=b'9' => digit - b'0',
+        b'a'..=b'f' => digit - b'a' + 10,
+        _ => digit - b'A' + 10,
+    }) as u32
+}
+
+/// What an escape in a string stands for.
+enum Escape {
+    /// An octal or hex escape, which stands for one byte.
+    Byte(u8),
+    /// An escape that stands for a whole character.
+    Character,
+    /// A `\` at the end of the line.
+    Unfinished,
+}
+
+/// The bytes of a run of back-to-back octal and hex escapes in a string.
+/// Every other part of a string stands for whole characters, so each run must
+/// be valid UTF-8 by itself.
+struct ByteEscapeRun {
+    bytes: Vec<u8>,
+    /// Where the run's first escape starts.
+    start: Position,
+    /// The last character of the run's last escape.
+    end: Position,
+}
+
+impl ByteEscapeRun {
+    /// Adds the byte of the escape from `start` through `end`.
+    fn push(&mut self, byte: u8, start: Position, end: Position) {
+        if self.bytes.is_empty() {
+            self.start = start;
+        }
+        self.bytes.push(byte);
+        self.end = end;
+    }
+
+    /// Ends the run, if there is one.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the run's bytes are not valid UTF-8.
+    fn end(&mut self) -> Result<(), SyntaxError> {
+        if self.bytes.is_empty() {
+            return Ok(());
+        }
+        // The run's bytes are not valid UTF-8.
+        if str::from_utf8(&self.bytes).is_err() {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation::new(self.start, self.end),
+            });
+        }
+        self.bytes.clear();
+        Ok(())
+    }
+}
+
 #[derive(Clone, Copy)]
 struct Parser<'source> {
     scanner: Scanner<'source>,
@@ -313,6 +381,11 @@ impl<'source> Parser<'source> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         self.scanner.advance();
+        let mut byte_escape_run = ByteEscapeRun {
+            bytes: Vec::new(),
+            start,
+            end: start,
+        };
         loop {
             match self.scanner.peek() {
                 // The string has no closing quote on its line.
@@ -323,7 +396,16 @@ impl<'source> Parser<'source> {
                     });
                 }
                 Some(b'"') => break,
-                Some(b'\\') => self.consume_escape()?,
+                Some(b'\\') => {
+                    let escape_start = self.scanner.position();
+                    match self.consume_escape()? {
+                        Escape::Byte(byte) => {
+                            byte_escape_run.push(byte, escape_start, self.scanner.last_consumed());
+                        }
+                        Escape::Character => byte_escape_run.end()?,
+                        Escape::Unfinished => {}
+                    }
+                }
                 // The string has a NUL.
                 Some(b'\0') => {
                     return Err(SyntaxError {
@@ -331,9 +413,13 @@ impl<'source> Parser<'source> {
                         location: SourceLocation::at(self.scanner.position()),
                     });
                 }
-                Some(_) => self.scanner.advance(),
+                Some(_) => {
+                    byte_escape_run.end()?;
+                    self.scanner.advance();
+                }
             }
         }
+        byte_escape_run.end()?;
         self.scanner.advance();
         Ok(Value::String(Scalar {
             text: self.scanner.text_from(start_offset),
@@ -353,48 +439,65 @@ impl<'source> Parser<'source> {
     ///        | "\U000", hex, hex, hex, hex, hex
     ///        | "\U0010", hex, hex, hex, hex ;
     /// ```
-    fn consume_escape(&mut self) -> Result<(), SyntaxError> {
+    fn consume_escape(&mut self) -> Result<Escape, SyntaxError> {
         let start = self.scanner.position();
         self.scanner.advance();
         let Some(escaped) = self.scanner.peek() else {
-            return Ok(());
+            return Ok(Escape::Unfinished);
         };
         match escaped {
-            b'\n' => return Ok(()),
+            b'\n' => Ok(Escape::Unfinished),
             b'a' | b'b' | b'f' | b'n' | b'r' | b't' | b'v' | b'?' | b'\\' | b'\'' | b'"' => {
                 self.scanner.advance();
+                Ok(Escape::Character)
             }
             b'0'..=b'7' => {
+                let digits_offset = self.scanner.offset();
                 self.scanner
                     .consume_up_to(3, |byte| matches!(byte, b'0'..=b'7'));
+                let value = digits_value(self.scanner.text_from(digits_offset), 8);
+                // The octal escape's value does not fit in a byte.
+                let Ok(byte) = u8::try_from(value) else {
+                    return Err(self.invalid_escape(start, SyntaxErrorKind::InvalidEscapeSequence));
+                };
+                Ok(Escape::Byte(byte))
             }
             b'x' => {
                 self.scanner.advance();
+                let digits_offset = self.scanner.offset();
                 // The `\x` has no hex digit after it.
                 if self
                     .scanner
                     .consume_up_to(2, |byte| byte.is_ascii_hexdigit())
                     == 0
                 {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::InvalidEscapeSequence,
-                        location: SourceLocation::new(start, self.scanner.last_consumed()),
-                    });
+                    return Err(self.invalid_escape(start, SyntaxErrorKind::InvalidEscapeSequence));
                 }
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "two hex digits always fit in a byte"
+                )]
+                let byte = digits_value(self.scanner.text_from(digits_offset), 16) as u8;
+                Ok(Escape::Byte(byte))
             }
             b'u' => {
                 self.scanner.advance();
+                let digits_offset = self.scanner.offset();
                 // The `\u` has fewer than four hex digits after it.
                 if self
                     .scanner
                     .consume_up_to(4, |byte| byte.is_ascii_hexdigit())
                     < 4
                 {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::InvalidEscapeSequence,
-                        location: SourceLocation::new(start, self.scanner.last_consumed()),
-                    });
+                    return Err(self.invalid_escape(start, SyntaxErrorKind::InvalidEscapeSequence));
                 }
+                // The `\u` escape is a surrogate, which is not a character.
+                if (0xD800..=0xDFFF)
+                    .contains(&digits_value(self.scanner.text_from(digits_offset), 16))
+                {
+                    return Err(self.invalid_escape(start, SyntaxErrorKind::SurrogateEscape));
+                }
+                Ok(Escape::Character)
             }
             b'U' => {
                 self.scanner.advance();
@@ -406,22 +509,16 @@ impl<'source> Parser<'source> {
                 // The `\U` does not have eight hex digits after it that start
                 // with `000` or `0010`.
                 if count < 8 || !(digits.starts_with("000") || digits.starts_with("0010")) {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::InvalidEscapeSequence,
-                        location: SourceLocation::new(start, self.scanner.last_consumed()),
-                    });
+                    return Err(self.invalid_escape(start, SyntaxErrorKind::InvalidEscapeSequence));
                 }
+                Ok(Escape::Character)
             }
             // The `\` is followed by a character that no escape starts with.
             _ => {
                 self.scanner.advance();
-                return Err(SyntaxError {
-                    kind: SyntaxErrorKind::InvalidEscapeSequence,
-                    location: SourceLocation::new(start, self.scanner.last_consumed()),
-                });
+                Err(self.invalid_escape(start, SyntaxErrorKind::InvalidEscapeSequence))
             }
         }
-        Ok(())
     }
 
     fn parse_number(&mut self) -> Result<Value<'source>, SyntaxError> {
@@ -431,6 +528,13 @@ impl<'source> Parser<'source> {
             text,
             location: SourceLocation::new(start, self.scanner.last_consumed()),
         };
+        // The number is a negative zero.
+        if text == "-0" || text == "-0.0" {
+            return Err(SyntaxError {
+                kind: SyntaxErrorKind::NegativeZero,
+                location: scalar.location,
+            });
+        }
         if is_integer(text) {
             return Ok(Value::Integer(scalar));
         }
@@ -675,6 +779,17 @@ impl Parser<'_> {
         SyntaxError {
             kind,
             location: SourceLocation::at(self.scanner.position()),
+        }
+    }
+
+    /// The error of the kind `kind` for the escape from `start` through the
+    /// last character consumed.
+    #[cold]
+    #[inline(never)]
+    const fn invalid_escape(&self, start: Position, kind: SyntaxErrorKind) -> SyntaxError {
+        SyntaxError {
+            kind,
+            location: SourceLocation::new(start, self.scanner.last_consumed()),
         }
     }
 

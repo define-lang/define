@@ -37,6 +37,15 @@ mod valid_files {
     }
 
     #[gtest]
+    fn number_ranges() -> Result<()> {
+        verify_ok!(check_semantics_of_source(
+            include_str!("../../testdata/valid/number_ranges.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.NumberRangesFile",
+        )?)
+    }
+
+    #[gtest]
     fn nested_messages() -> Result<()> {
         verify_ok!(check_semantics_of_source(
             include_str!("../../testdata/valid/nested_messages.defcl"),
@@ -583,6 +592,211 @@ mod wrong_value_kinds {
                     end_column: 29
                 },
                 field_name: "tags".to_owned(),
+            }]))
+        )
+    }
+}
+
+mod values_out_of_range {
+    use super::*;
+    use crate::{FloatFieldType, IntegerFieldType};
+
+    #[gtest]
+    fn int32_above_maximum() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/int32_above_maximum.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Int32
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 18,
+                    end_line: 2,
+                    end_column: 27
+                },
+                field_name: "int32_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn int64_below_minimum() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/int64_below_minimum.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Int64
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 18,
+                    end_line: 2,
+                    end_column: 37
+                },
+                field_name: "int64_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn negative_in_unsigned_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/negative_in_unsigned_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Uint32
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 19,
+                    end_line: 2,
+                    end_column: 20
+                },
+                field_name: "uint32_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn uint64_above_maximum() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/uint64_above_maximum.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Uint64
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 19,
+                    end_line: 2,
+                    end_column: 38
+                },
+                field_name: "uint64_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn beyond_every_integer_type() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/beyond_every_integer_type.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Int64
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 18,
+                    end_line: 2,
+                    end_column: 57
+                },
+                field_name: "int64_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn float_rounding_to_infinity() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/float_rounding_to_infinity.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::FloatOutOfRange {
+                    field_type: FloatFieldType::Float
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 18,
+                    end_line: 2,
+                    end_column: 58
+                },
+                field_name: "float_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn negative_double_rounding_to_infinity() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/negative_double_rounding_to_infinity.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::FloatOutOfRange {
+                    field_type: FloatFieldType::Double
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 19,
+                    end_line: 2,
+                    end_column: 331
+                },
+                field_name: "double_value".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn element_of_repeated_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/out_of_range/element_of_repeated_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::IntegerOutOfRange {
+                    field_type: IntegerFieldType::Int32
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 23,
+                    end_line: 2,
+                    end_column: 33
+                },
+                field_name: "int32_values".to_owned(),
             }]))
         )
     }

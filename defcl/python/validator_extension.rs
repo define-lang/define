@@ -19,6 +19,8 @@ struct PythonClasses {
     dcl_diagnostic: Py<PyType>,
     unknown_field_name_diagnostic: Py<PyType>,
     unknown_enum_value_diagnostic: Py<PyType>,
+    integer_out_of_range_diagnostic: Py<PyType>,
+    float_out_of_range_diagnostic: Py<PyType>,
     diagnostic_kind: Py<PyType>,
 }
 
@@ -41,6 +43,8 @@ impl PythonClasses {
             dcl_diagnostic: class(&errors, "DclDiagnostic")?,
             unknown_field_name_diagnostic: class(&errors, "UnknownFieldNameDiagnostic")?,
             unknown_enum_value_diagnostic: class(&errors, "UnknownEnumValueDiagnostic")?,
+            integer_out_of_range_diagnostic: class(&errors, "IntegerOutOfRangeDiagnostic")?,
+            float_out_of_range_diagnostic: class(&errors, "FloatOutOfRangeDiagnostic")?,
             diagnostic_kind: class(&error_types, "DiagnosticKind")?,
         })
     }
@@ -109,6 +113,26 @@ impl PythonClasses {
                 .unknown_enum_value_diagnostic
                 .bind(py)
                 .call1((kind, message, location, field_name, rendered, enum_type)),
+            SemanticErrorKind::IntegerOutOfRange { field_type } => {
+                self.integer_out_of_range_diagnostic.bind(py).call1((
+                    kind,
+                    message,
+                    location,
+                    field_name,
+                    rendered,
+                    field_type.to_string(),
+                ))
+            }
+            SemanticErrorKind::FloatOutOfRange { field_type } => {
+                self.float_out_of_range_diagnostic.bind(py).call1((
+                    kind,
+                    message,
+                    location,
+                    field_name,
+                    rendered,
+                    field_type.to_string(),
+                ))
+            }
             _ => self
                 .dcl_diagnostic
                 .bind(py)

@@ -1,5 +1,6 @@
 //! The errors that checking a DCL file against its schema can end in.
 
+use crate::schema::{FloatFieldType, IntegerFieldType};
 use defcl_parser::{SourceLines, SourceLocation};
 use derive_more::{Display, Error};
 use strum::{IntoStaticStr, VariantNames};
@@ -77,6 +78,18 @@ pub enum SemanticErrorKind {
     /// An integer as the value of an enum field. The location is the integer.
     #[display("Integer enum values are not allowed")]
     IntegerEnum,
+    /// An integer outside the range of the field's type. The location is
+    /// the integer.
+    #[display(
+        "{field_type} fields take integers from {} to {}",
+        field_type.minimum(),
+        field_type.maximum()
+    )]
+    IntegerOutOfRange { field_type: IntegerFieldType },
+    /// A floating-point number too large in magnitude for the field's type,
+    /// which rounds to infinity in it. The location is the number.
+    #[display("The value is too large in magnitude for a {field_type} field")]
+    FloatOutOfRange { field_type: FloatFieldType },
     /// An enum value whose name is not a value of the field's enum type. The
     /// location is the enum value.
     #[display("{enum_type} has no value with this name")]

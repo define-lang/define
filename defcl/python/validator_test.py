@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 _MULTIPLE_ERRORS_FILE = "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile"
+_OUT_OF_RANGE_FILE = "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile"
 _SINGLE_TOPLEVEL_FILE = "defcl.testdata.valid.schemas.SingleToplevelFile"
 _WRONG_VALUE_KINDS_FILE = "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile"
 
@@ -134,6 +135,46 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
         "    status: ACTIVE\n"
         "            ^^^^^^\n"
         "status: defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status has no value with this name"
+    )
+
+
+def test_integer_out_of_range_diagnostic_has_field_type():
+    (integer_out_of_range,) = validator.validate(
+        _testdata("invalid/semantics/out_of_range/negative_in_unsigned_field.defcl"),
+        _invalid_semantics_schemas(),
+        _OUT_OF_RANGE_FILE,
+    )
+
+    assert isinstance(integer_out_of_range, errors.IntegerOutOfRangeDiagnostic)
+    assert integer_out_of_range.kind == error_types.DiagnosticKind.INTEGER_OUT_OF_RANGE
+    assert integer_out_of_range.location == errors.SourceLocation(2, 19, 2, 20)
+    assert integer_out_of_range.field_name == "uint32_value"
+    assert integer_out_of_range.field_type == "uint32"
+    assert integer_out_of_range.rendered == (
+        "line 2, column 19\n"
+        "    uint32_value: -1\n"
+        "                  ^^\n"
+        "uint32_value: uint32 fields take integers from 0 to 4294967295"
+    )
+
+
+def test_float_out_of_range_diagnostic_has_field_type():
+    (float_out_of_range,) = validator.validate(
+        _testdata("invalid/semantics/out_of_range/float_rounding_to_infinity.defcl"),
+        _invalid_semantics_schemas(),
+        _OUT_OF_RANGE_FILE,
+    )
+
+    assert isinstance(float_out_of_range, errors.FloatOutOfRangeDiagnostic)
+    assert float_out_of_range.kind == error_types.DiagnosticKind.FLOAT_OUT_OF_RANGE
+    assert float_out_of_range.location == errors.SourceLocation(2, 18, 2, 58)
+    assert float_out_of_range.field_name == "float_value"
+    assert float_out_of_range.field_type == "float"
+    assert float_out_of_range.rendered == (
+        "line 2, column 18\n"
+        "    float_value: 340282356779733661637539395458142568448.0\n"
+        "                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+        "float_value: The value is too large in magnitude for a float field"
     )
 
 

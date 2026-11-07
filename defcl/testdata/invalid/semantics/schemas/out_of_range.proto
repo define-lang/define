@@ -1,0 +1,16 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message OutOfRangeFile {
+  Config config = 1;
+  message Config {
+    int32 int32_value = 1;
+    int64 int64_value = 2;
+    uint32 uint32_value = 3;
+    uint64 uint64_value = 4;
+    float float_value = 5;
+    double double_value = 6;
+    repeated int32 int32_values = 7;
+  }
+}

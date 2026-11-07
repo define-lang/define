@@ -17,4 +17,6 @@ config: {
     unicode_bmp: "\u0041"
     unicode_smp: "\U00000041"
     unicode_spb: "\U00100000"
+    utf8_hex_escapes: "caf\xc3\xa9"
+    utf8_octal_escapes: "caf\303\251"
 }

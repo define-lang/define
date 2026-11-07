@@ -126,14 +126,15 @@ DCL has strict rules for numeric literals:
    trailing decimal points, no scientific notation, no type suffixes)
 4. The fractional part of a floating point number must not end with `0`, unless
    it is exactly `0`
+5. Zero cannot be negative: `-0` and `-0.0` are not allowed
 
 ```ebnf
 dec_lit   = "0"
           | ( dec - "0" ), { dec } ;
-INTEGER = [ "-" ], dec_lit ;
+INTEGER = ( [ "-" ], dec_lit ) - "-0" ;
 fraction  = "0"
           | { dec }, ( dec - "0" ) ;
-FLOAT = [ "-" ], dec_lit, ".", fraction ;
+FLOAT = ( [ "-" ], dec_lit, ".", fraction ) - "-0.0" ;
 ```
 
 Valid numeric literals:
@@ -154,6 +155,7 @@ Invalid numeric literals:
 - `10f` or `10F` (no type suffixes)
 - `1e5` (no scientific notation)
 - `1.5e-2` (no scientific notation)
+- `-0` or `-0.0` (negative zero)
 
 ### String Literals
 
@@ -182,15 +184,32 @@ escape = "\a"                        (* ASCII #7  (bell)                 *)
          hex, hex, hex, hex ;        (* Unicode code point between 0x100000 and 0x10ffff *)
 ```
 
+Restrictions on string literals:
+
+- An octal escape's value must fit in a byte, so it is at most `\377`.
+- A `\u` escape cannot be a surrogate (`\uD800` to `\uDFFF`), even as half of a
+  surrogate pair; write a code point above `0xffff` with `\U` instead.
+- A string must be valid UTF-8 once its escapes are replaced by what they stand
+  for. Octal and hexadecimal escapes stand for single bytes, so a run of them
+  must together form valid UTF-8.
+
 Valid string literals:
 
 - `"hello"`
 - `"hello world"`
 - `"say \"hello\""`
+- `"caf\xc3\xa9"` (the bytes of `é` in UTF-8)
+- `"caf\303\251"` (the same bytes, as octal escapes)
+- `"\U0001F600"` (a code point above `0xffff`)
 
 Invalid string literals:
 
 - `'hello'` (single quotes not allowed)
+- `"\400"` (octal escape past `\377`)
+- `"\uD83D\uDE00"` (surrogate pair; write `"\U0001F600"` instead)
+- `"\xff"` (not valid UTF-8)
+- `"\xc3"` (an incomplete UTF-8 sequence)
+- `"\xc3\n\xa9"` (an escape splits the UTF-8 sequence)
 
 ## Syntax Elements
 
@@ -261,6 +280,54 @@ value = STRING
      | message_value
      | repeated_value ;
 ```
+
+### Numeric Values
+
+A value must be the kind of value that its field's type takes, as in textproto.
+DCL is stricter for floating-point fields (`float` and `double`): their values
+must be floating-point literals, never integer literals. For a repeated field,
+this applies to each element.
+
+Valid (assuming `timeout_seconds` is a `float` field):
+
+```
+timeout_seconds: 3.0
+```
+
+Invalid:
+
+```
+timeout_seconds: 3
+```
+
+Numbers must also be within the range allowed by their field's type:
+
+- An integer must fit in the field's type, so a negative integer is not allowed
+  in an unsigned field (`uint32`, `uint64`, `fixed32` and `fixed64`).
+- A floating-point number must not be so large in magnitude that it rounds to
+  infinity in the field's type.
+
+Valid (assuming `port` is a `uint32` field, `offset` is an `int32` field and
+`ratio` is a `float` field):
+
+```
+port: 4294967295
+offset: -2147483648
+ratio: 340282346638528859811704183484516925440.0
+```
+
+`ratio`'s value is the largest finite `float`.
+
+Invalid:
+
+```
+port: -1
+port: 4294967296
+offset: 2147483648
+ratio: 1000000000000000000000000000000000000000.0
+```
+
+`ratio`'s value, 10³⁹, rounds to infinity as a `float`.
 
 ### Enum Values
 
@@ -340,8 +407,6 @@ element = STRING | INTEGER | FLOAT | enum_value | message_value ;
 
 An element of a repeated value cannot itself be a repeated value.
 
-Note that `value` is defined in the Value Types section below.
-
 Valid (repeated message values):
 
 ```
@@ -401,25 +466,6 @@ Invalid (repeated value as an element of a repeated value):
 
 ```
 tags: ["tag1", ["tag2"]]
-```
-
-### Allowed Literals
-
-A value must be the kind of value that its field's type takes, as in textproto.
-DCL is stricter for floating-point fields (`float` and `double`): their values
-must be floating-point literals, never integer literals. For a repeated field,
-this applies to each element.
-
-Valid (assuming `timeout_seconds` is a `float` field):
-
-```
-timeout_seconds: 3.0
-```
-
-Invalid:
-
-```
-timeout_seconds: 3
 ```
 
 ## Schema Restrictions

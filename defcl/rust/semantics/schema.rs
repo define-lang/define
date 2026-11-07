@@ -71,6 +71,63 @@ pub(crate) struct EnumType {
     value_names: FxHashSet<String>,
 }
 
+/// The type of an integer field.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
+pub enum IntegerFieldType {
+    #[display("int32")]
+    Int32,
+    #[display("int64")]
+    Int64,
+    #[display("uint32")]
+    Uint32,
+    #[display("uint64")]
+    Uint64,
+    #[display("sint32")]
+    Sint32,
+    #[display("sint64")]
+    Sint64,
+    #[display("fixed32")]
+    Fixed32,
+    #[display("fixed64")]
+    Fixed64,
+    #[display("sfixed32")]
+    Sfixed32,
+    #[display("sfixed64")]
+    Sfixed64,
+}
+
+impl IntegerFieldType {
+    /// The smallest value that a field of this type can have.
+    #[must_use]
+    pub const fn minimum(self) -> i128 {
+        match self {
+            Self::Int32 | Self::Sint32 | Self::Sfixed32 => i32::MIN as i128,
+            Self::Int64 | Self::Sint64 | Self::Sfixed64 => i64::MIN as i128,
+            Self::Uint32 | Self::Uint64 | Self::Fixed32 | Self::Fixed64 => 0,
+        }
+    }
+
+    /// The largest value that a field of this type can have.
+    #[must_use]
+    pub const fn maximum(self) -> i128 {
+        match self {
+            Self::Int32 | Self::Sint32 | Self::Sfixed32 => i32::MAX as i128,
+            Self::Int64 | Self::Sint64 | Self::Sfixed64 => i64::MAX as i128,
+            Self::Uint32 | Self::Fixed32 => u32::MAX as i128,
+            Self::Uint64 | Self::Fixed64 => u64::MAX as i128,
+        }
+    }
+}
+
+/// The type of a floating-point field.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
+pub enum FloatFieldType {
+    #[display("float")]
+    Float,
+    #[display("double")]
+    Double,
+}
+
 /// A message type or enum type, by its index in the schema.
 #[derive(Clone, Copy)]
 enum NamedType {
@@ -94,8 +151,8 @@ pub(crate) struct SchemaField<'schema> {
 /// The kind of value that a field takes.
 pub(crate) enum ValueType<'schema> {
     String,
-    Integer,
-    Float,
+    Integer(IntegerFieldType),
+    Float(FloatFieldType),
     Enum(&'schema EnumType),
     Message(&'schema MessageType),
 }
@@ -215,17 +272,18 @@ impl Schema {
 fn scalar_value_type(field_type: Type) -> ValueType<'static> {
     match field_type {
         Type::String => ValueType::String,
-        Type::Int32
-        | Type::Int64
-        | Type::Uint32
-        | Type::Uint64
-        | Type::Sint32
-        | Type::Sint64
-        | Type::Fixed32
-        | Type::Fixed64
-        | Type::Sfixed32
-        | Type::Sfixed64 => ValueType::Integer,
-        Type::Float | Type::Double => ValueType::Float,
+        Type::Int32 => ValueType::Integer(IntegerFieldType::Int32),
+        Type::Int64 => ValueType::Integer(IntegerFieldType::Int64),
+        Type::Uint32 => ValueType::Integer(IntegerFieldType::Uint32),
+        Type::Uint64 => ValueType::Integer(IntegerFieldType::Uint64),
+        Type::Sint32 => ValueType::Integer(IntegerFieldType::Sint32),
+        Type::Sint64 => ValueType::Integer(IntegerFieldType::Sint64),
+        Type::Fixed32 => ValueType::Integer(IntegerFieldType::Fixed32),
+        Type::Fixed64 => ValueType::Integer(IntegerFieldType::Fixed64),
+        Type::Sfixed32 => ValueType::Integer(IntegerFieldType::Sfixed32),
+        Type::Sfixed64 => ValueType::Integer(IntegerFieldType::Sfixed64),
+        Type::Float => ValueType::Float(FloatFieldType::Float),
+        Type::Double => ValueType::Float(FloatFieldType::Double),
         // Message and enum fields have a named type, and the schema
         // restrictions prohibit bool and bytes fields.
         Type::Message | Type::Group | Type::Enum | Type::Bool | Type::Bytes => {

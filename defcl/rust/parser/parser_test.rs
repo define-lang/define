@@ -701,11 +701,19 @@ mod valid_files {
                                 name("unicode_spb", 19, 5),
                                 Value::String(scalar(r#""\U00100000""#, 19, 18)),
                             ),
+                            field(
+                                name("utf8_hex_escapes", 20, 5),
+                                Value::String(scalar(r#""caf\xc3\xa9""#, 20, 23)),
+                            ),
+                            field(
+                                name("utf8_octal_escapes", 21, 5),
+                                Value::String(scalar(r#""caf\303\251""#, 21, 25)),
+                            ),
                         ],
                         location: SourceLocation {
                             line: 1,
                             column: 9,
-                            end_line: 20,
+                            end_line: 22,
                             end_column: 1
                         },
                     },
@@ -1518,6 +1526,42 @@ mod invalid_numbers {
                     column: 12,
                     end_line: 2,
                     end_column: 14
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn negative_zero_integer() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/negative_zero_integer.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::NegativeZero,
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 13
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn negative_zero_float() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/negative_zero_float.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::NegativeZero,
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 15
                 }
             }))
         )
@@ -2385,6 +2429,150 @@ mod invalid_strings {
                     column: 8,
                     end_line: 2,
                     end_column: 8
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn hex_escape_of_invalid_utf8_byte() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/hex_escape_of_invalid_utf8_byte.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 12
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn octal_escape_of_incomplete_utf8_sequence() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/octal_escape_of_incomplete_utf8_sequence.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 12
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn invalid_utf8_between_characters() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/invalid_utf8_between_characters.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation {
+                    line: 2,
+                    column: 10,
+                    end_line: 2,
+                    end_column: 17
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn utf8_sequence_split_by_escape() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/utf8_sequence_split_by_escape.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 12
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn overlong_utf8_sequence() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/overlong_utf8_sequence.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidUtf8,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 16
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn surrogate_escape() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/surrogate_escape.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::SurrogateEscape,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 14
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn octal_escape_past_last_byte() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/octal_escape_past_last_byte.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::InvalidEscapeSequence,
+                location: SourceLocation {
+                    line: 2,
+                    column: 9,
+                    end_line: 2,
+                    end_column: 12
+                }
+            }))
+        )
+    }
+
+    #[gtest]
+    fn byte_escape_before_backslash_at_end_of_line() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/strings/byte_escape_before_backslash_at_end_of_line.defcl"
+            )),
+            eq(&Err(SyntaxError {
+                kind: SyntaxErrorKind::UnterminatedString,
+                location: SourceLocation {
+                    line: 2,
+                    column: 8,
+                    end_line: 2,
+                    end_column: 13
                 }
             }))
         )

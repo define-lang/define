@@ -40,6 +40,11 @@ proto_library(
 )
 
 proto_library(
+    name = "number_ranges_proto",
+    srcs = ["number_ranges.proto"],
+)
+
+proto_library(
     name = "repeated_messages_proto",
     srcs = ["repeated_messages.proto"],
 )
@@ -69,6 +74,7 @@ proto_descriptor_set(
         ":floats_proto",
         ":integers_proto",
         ":nested_messages_proto",
+        ":number_ranges_proto",
         ":repeated_messages_proto",
         ":repeated_scalars_proto",
         ":single_toplevel_proto",

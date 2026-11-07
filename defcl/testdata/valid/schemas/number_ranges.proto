@@ -1,0 +1,15 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+message NumberRangesFile {
+  Config config = 1;
+  message Config {
+    sint32 int32_minimum = 1;
+    sfixed32 int32_maximum = 2;
+    sfixed64 int64_minimum = 3;
+    fixed64 uint64_maximum = 4;
+    float float_rounding_to_maximum = 5;
+    double double_maximum = 6;
+  }
+}

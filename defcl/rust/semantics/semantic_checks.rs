@@ -1,6 +1,8 @@
 //! The checks of a DCL file's syntax tree against its schema.
 
-use crate::schema::{EnumType, MessageType, Schema, SchemaField, ValueType};
+use crate::schema::{
+    EnumType, FloatFieldType, IntegerFieldType, MessageType, Schema, SchemaField, ValueType,
+};
 use crate::semantic_error::{SemanticError, SemanticErrorKind};
 use defcl_parser::{Field, FieldName, ParsedFile, SourceLocation, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
@@ -131,9 +133,33 @@ fn check_value(
             check_fields(schema, message_type, &message.fields, errors);
             return;
         }
-        (ValueType::String, Value::String(_))
-        | (ValueType::Integer, Value::Integer(_))
-        | (ValueType::Float, Value::Float(_)) => return,
+        (ValueType::String, Value::String(_)) => return,
+        (ValueType::Integer(field_type), Value::Integer(integer)) => {
+            // The integer is outside the field type's range.
+            if !is_integer_in_range(integer.text, *field_type) {
+                errors.push(value_error(
+                    SemanticErrorKind::IntegerOutOfRange {
+                        field_type: *field_type,
+                    },
+                    field,
+                    integer.location,
+                ));
+            }
+            return;
+        }
+        (ValueType::Float(field_type), Value::Float(float)) => {
+            // The number rounds to infinity in the field's type.
+            if !is_float_in_range(float.text, *field_type) {
+                errors.push(value_error(
+                    SemanticErrorKind::FloatOutOfRange {
+                        field_type: *field_type,
+                    },
+                    field,
+                    float.location,
+                ));
+            }
+            return;
+        }
         (ValueType::Enum(enum_type), Value::Enum(name)) => {
             // The enum type has no value with the name.
             if !enum_type.has_value(name.text) {
@@ -149,10 +175,27 @@ fn check_value(
         (ValueType::Enum(_), Value::Integer(_)) => SemanticErrorKind::IntegerEnum,
         (ValueType::Enum(_), _) => SemanticErrorKind::NonEnumValueForEnumField,
         (ValueType::String, _) => SemanticErrorKind::NonStringForStringField,
-        (ValueType::Integer, _) => SemanticErrorKind::NonIntegerForIntegerField,
-        (ValueType::Float, _) => SemanticErrorKind::NonFloatForFloatField,
+        (ValueType::Integer(_), _) => SemanticErrorKind::NonIntegerForIntegerField,
+        (ValueType::Float(_), _) => SemanticErrorKind::NonFloatForFloatField,
     };
-    errors.push(value_of_wrong_kind(kind, field, value.location()));
+    errors.push(value_error(kind, field, value.location()));
+}
+
+/// Whether the integer whose source text is `text` is within the range of
+/// `field_type`.
+fn is_integer_in_range(text: &str, field_type: IntegerFieldType) -> bool {
+    // An integer too large for an i128 is too large for every field type.
+    text.parse::<i128>()
+        .is_ok_and(|value| (field_type.minimum()..=field_type.maximum()).contains(&value))
+}
+
+/// Whether the floating-point number whose source text is `text` is finite
+/// once rounded to `field_type`.
+fn is_float_in_range(text: &str, field_type: FloatFieldType) -> bool {
+    match field_type {
+        FloatFieldType::Float => text.parse::<f32>().is_ok_and(f32::is_finite),
+        FloatFieldType::Double => text.parse::<f64>().is_ok_and(f64::is_finite),
+    }
 }
 
 // The functions that only run on an error path.
@@ -214,15 +257,10 @@ fn message_value_for_scalar_field(name: &FieldName, location: SourceLocation) ->
 }
 
 /// The error of the kind `kind` for the value at `location`, which is the
-/// value of `field` or an element of it, and is not the kind of value that
-/// `field` takes.
+/// value of `field` or an element of it.
 #[cold]
 #[inline(never)]
-fn value_of_wrong_kind(
-    kind: SemanticErrorKind,
-    field: &Field,
-    location: SourceLocation,
-) -> SemanticError {
+fn value_error(kind: SemanticErrorKind, field: &Field, location: SourceLocation) -> SemanticError {
     SemanticError {
         kind,
         location,

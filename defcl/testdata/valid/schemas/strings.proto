@@ -23,5 +23,7 @@ message StringsFile {
     string unicode_bmp = 16;
     string unicode_smp = 17;
     string unicode_spb = 18;
+    string utf8_hex_escapes = 19;
+    string utf8_octal_escapes = 20;
   }
 }
