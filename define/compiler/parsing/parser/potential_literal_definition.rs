@@ -5,7 +5,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
 use crate::parser::names::FqunWithCanonicalText;
-use crate::scanner::Position;
+use source_rendering::Position;
 use terminals::{ENCODING, IT_HAS_THE};
 
 /// The one name type that an encoding Quality Assignment Statement allows.

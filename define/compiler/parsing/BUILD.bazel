@@ -97,6 +97,7 @@ pyo3_extension(
     deps = [
         ":terminals",
         ":vector_scan",
+        "//source_rendering/rust:source_rendering",
         "@crates//:rustc-hash",
     ],
 )

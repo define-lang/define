@@ -7,8 +7,8 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
 use crate::parser::names::FqunWithCanonicalText;
-use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
+use source_rendering::Position;
 use terminals::{
     BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
     EXECUTE_THE_ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START, OPERATION,

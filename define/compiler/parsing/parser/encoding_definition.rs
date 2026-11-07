@@ -3,7 +3,7 @@
 use crate::ast;
 use crate::parse_error::ParseResult;
 use crate::parser::Parser;
-use crate::scanner::Position;
+use source_rendering::Position;
 
 impl<'py> Parser<'py, '_> {
     /// Parses the rest of an encoding definition after its `encoding`, given

@@ -4,9 +4,10 @@ use crate::ast;
 use crate::characters::{self, TextKind};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
-use crate::scanner::{Position, SourceText};
+use crate::scanner::SourceText;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
+use source_rendering::Position;
 use terminals::{
     ACTION, CHAIN_SEPARATOR, COMPONENT_SEPARATOR, NAME_CONTENT_END, NAME_CONTENT_START,
     PATH_SEPARATOR, POSITION, SPACE, TERMINATOR,
@@ -461,7 +462,9 @@ impl<'py, 'source> Parser<'py, 'source> {
             ),
             // The FQUN has more than three components.
             _ => {
-                let end = start.after(content.slice(..last)).previous_column();
+                let end = start
+                    .columns_later(content.slice(..last).character_count())
+                    .previous_column();
                 return Err(self.errors.global_name_invalid_fqun_format(start, end));
             }
         };
@@ -513,7 +516,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         name: SourceText<'source>,
         start: Position,
     ) -> PyResult<(ast::SourceLocation<'py>, Bound<'py, PyString>, Position)> {
-        let end = start.after(name);
+        let end = start.columns_later(name.character_count());
         let location = self.ast.location(start, end)?;
         Ok((location, self.ast.interned(name.bytes)?, end))
     }
@@ -579,7 +582,7 @@ impl<'source> Parser<'_, 'source> {
             // A space ends the name's first word, where its `>` belongs.
             Some(space) => {
                 let word = content.slice(..space);
-                let missing = start.after(word);
+                let missing = start.columns_later(word.character_count());
                 Some(self.errors.missing_close_angle_bracket(
                     missing,
                     missing,
@@ -631,7 +634,7 @@ impl<'source> Parser<'_, 'source> {
         else {
             unreachable!("a name with no space, `:`, or `/` is a local name");
         };
-        let position = start.after(content.slice(..index));
+        let position = start.columns_later(content.slice(..index).character_count());
         let character = char::from(content.bytes[index]).to_string();
         self.errors
             .invalid_local_name_character(position, position, &character)
@@ -648,10 +651,7 @@ impl<'source> Parser<'_, 'source> {
         if spaces > 0 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&NAME_CONTENT_START)
         {
             let first_space = self.scanner.position;
-            let last_space = Position {
-                line: first_space.line,
-                column: first_space.column + spaces - 1,
-            };
+            let last_space = first_space.columns_later(spaces - 1);
             self.diagnostics
                 .space_before_open_angle_bracket_diagnostic(first_space, last_space)?;
             self.scanner.consume_bytes(spaces + 1);

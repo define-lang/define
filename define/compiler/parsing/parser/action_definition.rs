@@ -6,10 +6,10 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
-use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
+use source_rendering::Position;
 use terminals::{
     ACTION, BLOCK_OPEN, CHAIN_SEPARATOR, CREATE_A_PARTICLE_IN, DEFINE_THE, DEFINE_THE_POSITION,
     DEFINE_THE_POTENTIAL_POSITION, DESTROY_THE_PARTICLE_IN, EXECUTE_THE, IT_ALSO_ASSIGNS_THE,
@@ -748,7 +748,9 @@ impl<'py> Parser<'py, '_> {
         let start = self.scanner.position;
         // Quality implication statements must come first in the block.
         if self.scanner.next_bytes_are(IT_ALSO_ASSIGNS_THE) {
-            let end = start.after_ascii(IT_ALSO_ASSIGNS_THE).previous_column();
+            let end = start
+                .columns_later(IT_ALSO_ASSIGNS_THE.len())
+                .previous_column();
             return self.errors.quality_implication_in_wrong_order(start, end);
         }
         if let Some(error) = self.global_position_definition_in_local_context() {
@@ -771,7 +773,7 @@ impl<'py> Parser<'py, '_> {
         // A global position definition is inside an action definition.
         if self.scanner.next_bytes_are(DEFINE_THE_POTENTIAL_POSITION) {
             let end = start
-                .after_ascii(DEFINE_THE_POTENTIAL_POSITION)
+                .columns_later(DEFINE_THE_POTENTIAL_POSITION.len())
                 .previous_column();
             return Some(
                 self.errors
@@ -790,7 +792,9 @@ impl<'py> Parser<'py, '_> {
         // A local position definition comes after the action statements block.
         if self.scanner.next_bytes_are(DEFINE_THE_POSITION) {
             let start = self.scanner.position;
-            let end = start.after_ascii(DEFINE_THE_POSITION).previous_column();
+            let end = start
+                .columns_later(DEFINE_THE_POSITION.len())
+                .previous_column();
             return self
                 .errors
                 .invalid_position_definition_location_in_action(start, end);

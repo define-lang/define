@@ -68,7 +68,7 @@ impl<'source> Scanner<'source> {
                 column: 1,
             };
         } else {
-            self.position.column += 1;
+            self.position = self.position.next_column();
         }
     }
 
@@ -91,11 +91,8 @@ impl<'source> Scanner<'source> {
             .take_while(|&&byte| is_included(byte))
             .count();
         self.offset += length;
-        self.last_consumed = Position {
-            line: self.position.line,
-            column: self.position.column + length - 1,
-        };
-        self.position.column += length;
+        self.last_consumed = self.position.columns_later(length - 1);
+        self.position = self.position.columns_later(length);
         &self.source[start..self.offset]
     }
 

@@ -5,8 +5,9 @@
 use crate::characters;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
-use crate::scanner::{Position, WORD_ENDS};
+use crate::scanner::WORD_ENDS;
 use pyo3::PyResult;
+use source_rendering::Position;
 use terminals::BLOCK_OPEN;
 use terminals::{CLOSE_BRACE, COMMENT_START, OPEN_BRACE, SPACE, TERMINATOR};
 use vector_scan::LineEnd;
@@ -46,9 +47,12 @@ impl Parser<'_, '_> {
             // letter; anything else is not a missing space but a mistake of
             // its own.
             if word.bytes.first().is_some_and(u8::is_ascii_alphabetic) {
-                return Err(self
-                    .errors
-                    .missing_whitespace(start, start.after(word).previous_column()));
+                return Err(self.errors.missing_whitespace(
+                    start,
+                    start
+                        .columns_later(word.character_count())
+                        .previous_column(),
+                ));
             }
             return Ok(false);
         }
@@ -56,10 +60,7 @@ impl Parser<'_, '_> {
         if spaces == self.scanner.rest_of_line().bytes.len() {
             return Ok(false);
         }
-        let last_space = Position {
-            line: start.line,
-            column: start.column + spaces - 1,
-        };
+        let last_space = start.columns_later(spaces - 1);
         Err(self.errors.extra_whitespace(start, last_space))
     }
 
@@ -392,7 +393,8 @@ impl Parser<'_, '_> {
             .map_or(0, |index| index + 1);
         // The comment ends with spaces.
         if content_length < comment.bytes.len() {
-            let trailing_whitespace = comment_start.after(comment.slice(..content_length));
+            let trailing_whitespace =
+                comment_start.columns_later(comment.slice(..content_length).character_count());
             self.diagnostics.trailing_whitespace_diagnostic(
                 trailing_whitespace,
                 self.scanner.position.previous_column(),
@@ -419,10 +421,7 @@ impl Parser<'_, '_> {
         let spaces = self.scanner.next_space_count();
         // More than one space comes before the `{`.
         if spaces > 1 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&OPEN_BRACE) {
-            let last_space = Position {
-                line: missing.line,
-                column: missing.column + spaces - 1,
-            };
+            let last_space = missing.columns_later(spaces - 1);
             return self.errors.extra_whitespace(missing, last_space);
         }
         // The `{` has no space before it.

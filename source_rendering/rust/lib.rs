@@ -16,6 +16,33 @@ pub struct Position {
     pub column: usize,
 }
 
+impl Position {
+    /// The position `count` columns later on the same line.
+    #[must_use]
+    pub const fn columns_later(self, count: usize) -> Self {
+        Self {
+            line: self.line,
+            column: self.column + count,
+        }
+    }
+
+    /// The position one column later on the same line.
+    #[must_use]
+    pub const fn next_column(self) -> Self {
+        self.columns_later(1)
+    }
+
+    /// The position one column earlier on the same line, which must not be the
+    /// first column.
+    #[must_use]
+    pub const fn previous_column(self) -> Self {
+        Self {
+            line: self.line,
+            column: self.column - 1,
+        }
+    }
+}
+
 /// The part of a source file that something, such as an error, covers: from
 /// `start` through `end`, the position of the last character that it covers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

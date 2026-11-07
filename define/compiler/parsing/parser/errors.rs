@@ -3,7 +3,7 @@
 use crate::characters;
 use crate::parse_error::ParseError;
 use crate::parser::Parser;
-use crate::scanner::Position;
+use source_rendering::Position;
 use terminals::SPACE;
 
 // The functions that only run on an error path.
@@ -32,11 +32,8 @@ impl Parser<'_, '_> {
             if !line[matching..].starts_with(next_word) {
                 return None;
             }
-            let word_start = Position {
-                line: start.line,
-                column: start.column + matching,
-            };
-            let word_end = word_start.after_ascii(next_word).previous_column();
+            let word_start = start.columns_later(matching);
+            let word_end = word_start.columns_later(next_word.len()).previous_column();
             return Some(self.errors.missing_whitespace(word_start, word_end));
         }
         if matching == 0 || words[matching - 1] != SPACE {
@@ -52,14 +49,8 @@ impl Parser<'_, '_> {
         if spaces == 1 || first + spaces == line.len() {
             return None;
         }
-        let spaces_start = Position {
-            line: start.line,
-            column: start.column + first,
-        };
-        let spaces_end = Position {
-            line: start.line,
-            column: start.column + first + spaces - 1,
-        };
+        let spaces_start = start.columns_later(first);
+        let spaces_end = start.columns_later(first + spaces - 1);
         Some(self.errors.extra_whitespace(spaces_start, spaces_end))
     }
 
@@ -134,7 +125,7 @@ impl Parser<'_, '_> {
     pub(crate) fn end_of_line(&self) -> Position {
         self.scanner
             .position
-            .after(self.scanner.rest_of_line())
+            .columns_later(self.scanner.rest_of_line().character_count())
             .previous_column()
     }
 }

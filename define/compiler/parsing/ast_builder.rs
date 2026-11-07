@@ -1,10 +1,10 @@
 use crate::ast::{AstClasses, SourceLocation};
 use crate::node_construction::FilePath;
-use crate::scanner::Position;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyInt, PyString};
 use rustc_hash::FxHashMap;
+use source_rendering::Position;
 
 /// Constructs the Python AST for one parse.
 pub struct AstBuilder<'py> {

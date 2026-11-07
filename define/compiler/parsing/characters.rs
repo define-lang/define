@@ -10,9 +10,10 @@ mod invisible_ranges;
 
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
-use crate::scanner::{Position, Scanner};
+use crate::scanner::Scanner;
 use crate::syntax_errors::SyntaxErrors;
 use invisible_ranges::INVISIBLE_RANGES;
+use source_rendering::Position;
 use std::fmt::Write as _;
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
@@ -260,10 +261,7 @@ pub fn disallowed_character_ahead(
     offset: usize,
 ) -> Option<ParseError> {
     let start = scanner.position;
-    let position = Position {
-        line: start.line,
-        column: start.column + offset,
-    };
+    let position = start.columns_later(offset);
     disallowed_first_character(errors, position, &scanner.rest_of_line().bytes[offset..])
 }
 

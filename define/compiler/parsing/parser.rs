@@ -20,10 +20,11 @@ use crate::node_construction::FilePath;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::operation_execution::OperationKind;
 use crate::parser_diagnostics::ParserDiagnostics;
-use crate::scanner::{Position, Scanner};
+use crate::scanner::Scanner;
 use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
+use source_rendering::Position;
 use terminals::{
     ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION,
     DEFINE_THE_LOGICAL_OPERATION, DEFINE_THE_OPERATION, DEFINE_THE_POTENTIAL,

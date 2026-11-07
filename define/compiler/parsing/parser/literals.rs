@@ -5,9 +5,10 @@ use crate::characters::{self, TextKind};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::names::FqunWithCanonicalText;
-use crate::scanner::{Position, SourceText};
+use crate::scanner::SourceText;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
+use source_rendering::Position;
 use terminals::{ESCAPE, ESCAPED_LINE_FEED, LITERAL, LITERAL_CONTENT_DELIMITER};
 
 impl<'py, 'source> Parser<'py, 'source> {
@@ -174,7 +175,7 @@ impl<'source> Parser<'_, 'source> {
         written: SourceText<'source>,
         escaped_offset: usize,
     ) -> ParseError {
-        let position = start.after(written.slice(..escaped_offset));
+        let position = start.columns_later(written.slice(..escaped_offset).character_count());
         let escaped = &written.bytes[escaped_offset..];
         if let Some(error) = characters::disallowed_first_character(&self.errors, position, escaped)
         {

@@ -8,8 +8,8 @@ use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::OperationKind;
-use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
+use source_rendering::Position;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
     EXECUTE_THE_ENCODING_OPERATION, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,

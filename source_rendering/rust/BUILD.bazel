@@ -15,6 +15,7 @@ rust_library(
     visibility = [
         "//defcl/python:__pkg__",
         "//defcl/rust:__subpackages__",
+        "//define/compiler/parsing:__pkg__",
         "//source_rendering/python:__pkg__",
     ],
 )

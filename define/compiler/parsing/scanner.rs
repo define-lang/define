@@ -1,5 +1,6 @@
 //! Moving through the source and tracking positions in it.
 
+use source_rendering::Position;
 use std::slice::SliceIndex;
 use terminals::{ESCAPE, LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
 
@@ -40,52 +41,6 @@ pub struct LiteralContent<'source> {
     pub written: SourceText<'source>,
     /// Whether the content has a `\`.
     pub has_escape: bool,
-}
-
-/// A point in the source, as a 1-based line and a 1-based column counted in
-/// characters.
-#[derive(Clone, Copy)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl Position {
-    /// Returns the position after `text`, which must not contain a line feed.
-    pub fn after(self, text: SourceText) -> Self {
-        Self {
-            line: self.line,
-            column: self.column + text.character_count(),
-        }
-    }
-
-    // Keywords and punctuation are ASCII by construction, so they need no
-    // `SourceText` (otherwise we would have to construct one pointlessly).
-    /// Returns the position after the ASCII `text`, which must not contain a
-    /// line feed.
-    pub const fn after_ascii(self, text: &[u8]) -> Self {
-        Self {
-            line: self.line,
-            column: self.column + text.len(),
-        }
-    }
-
-    /// Returns the position one column later on the same line.
-    pub const fn next_column(self) -> Self {
-        Self {
-            line: self.line,
-            column: self.column + 1,
-        }
-    }
-
-    /// Returns the position one column earlier on the same line, which must
-    /// not be the first column.
-    pub const fn previous_column(self) -> Self {
-        Self {
-            line: self.line,
-            column: self.column - 1,
-        }
-    }
 }
 
 #[expect(
@@ -166,7 +121,7 @@ impl<'source> Scanner<'source> {
             return false;
         };
         self.rest = rest;
-        self.position = self.position.after_ascii(expected);
+        self.position = self.position.columns_later(expected.len());
         true
     }
 
@@ -231,7 +186,7 @@ impl<'source> Scanner<'source> {
             is_known_ascii: false,
         };
         self.rest = rest;
-        self.position = self.position.after(text);
+        self.position = self.position.columns_later(text.character_count());
         text
     }
 
@@ -349,7 +304,9 @@ impl<'source> Scanner<'source> {
         if word.bytes.is_empty() {
             start
         } else {
-            start.after(word).previous_column()
+            start
+                .columns_later(word.character_count())
+                .previous_column()
         }
     }
 }

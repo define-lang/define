@@ -5,9 +5,9 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
-use crate::scanner::Position;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
+use source_rendering::Position;
 use terminals::{
     ACTION, BLOCK_OPEN, ENCODING, IT_HAS_THE, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, LINE_FEED,
     NAME_CONTENT_START, OPEN_BRACE, POSITION, SPACE, TERMINATOR, VALUE,
@@ -227,10 +227,7 @@ impl Parser<'_, '_> {
         let spaces = self.scanner.next_space_count();
         // More than one space comes before the `{`.
         if spaces > 1 && self.scanner.rest_of_line().bytes.get(spaces) == Some(&OPEN_BRACE) {
-            let last_space = Position {
-                line: missing.line,
-                column: missing.column + spaces - 1,
-            };
+            let last_space = missing.columns_later(spaces - 1);
             return self.errors.extra_whitespace(missing, last_space);
         }
         self.errors.missing_terminator_or_brace(missing, missing)
@@ -284,7 +281,9 @@ impl Parser<'_, '_> {
         let end = if word.bytes.is_empty() {
             start
         } else {
-            start.after(word).previous_column()
+            start
+                .columns_later(word.character_count())
+                .previous_column()
         };
         self.errors
             .expected_quality_assignment_name_type(start, end)

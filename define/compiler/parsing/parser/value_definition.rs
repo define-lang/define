@@ -5,7 +5,7 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
-use crate::scanner::Position;
+use source_rendering::Position;
 use terminals::{IT_MAY_BE_READ, IT_MAY_BE_WRITTEN, IT_SUPPORTS_THE, LOGICAL_OPERATION};
 
 /// The one name type that a Logical Operation Support Statement allows.
