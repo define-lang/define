@@ -19,7 +19,7 @@ snapshots:
     labels:
     - source: |
         filegroup(name = "testdata", srcs = glob(["**"]))
-
+        
         # check_build_file()
       style: primary
       start: 0
