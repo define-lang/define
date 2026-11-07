@@ -1,6 +1,9 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
-use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
+use defcl_parser::{
+    FieldPathElement, FieldPathLocation, SourceLines, SourceLocation, SyntaxError, SyntaxErrorKind,
+    parse,
+};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::{RenderedError, ValidationError};
 use prost::Message as _;
@@ -12,6 +15,7 @@ use std::path::PathBuf;
 /// The Python classes that the module returns and raises.
 struct PythonClasses {
     source_location: Py<PyType>,
+    field_path_location: Py<PyType>,
     dcl_error: Py<PyType>,
     unexpected_character_error: Py<PyType>,
     dcl_error_kind: Py<PyType>,
@@ -35,8 +39,10 @@ impl PythonClasses {
     fn import(py: Python<'_>) -> PyResult<Self> {
         let errors = py.import("defcl.python.errors")?;
         let error_types = py.import("defcl.python.error_types")?;
+        let locations = py.import("defcl.python.locations")?;
         Ok(Self {
-            source_location: class(&errors, "SourceLocation")?,
+            source_location: class(&locations, "SourceLocation")?,
+            field_path_location: class(&locations, "FieldPathLocation")?,
             dcl_error: class(&errors, "DclError")?,
             unexpected_character_error: class(&errors, "UnexpectedCharacterError")?,
             dcl_error_kind: class(&error_types, "DclErrorKind")?,
@@ -61,6 +67,22 @@ impl PythonClasses {
             location.column,
             location.end_line,
             location.end_column,
+        ))
+    }
+
+    fn field_path_location<'py>(
+        &self,
+        py: Python<'py>,
+        location: FieldPathLocation,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let name = location
+            .name
+            .map(|name| self.source_location(py, name))
+            .transpose()?;
+        self.field_path_location.bind(py).call1((
+            name,
+            self.source_location(py, location.value)?,
+            location.is_whole_path,
         ))
     }
 
@@ -206,6 +228,51 @@ fn validate_file<'py>(
     Ok((source, diagnostics(py, classes, result)?))
 }
 
+/// An element of a field path from Python: a field name, or the index of an
+/// element of the repeated value before it.
+#[derive(FromPyObject)]
+enum PythonFieldPathElement {
+    Field(String),
+    Index(usize),
+}
+
+/// Where the DCL text `source` writes the field at `field_path`, a sequence of
+/// field names and indices of repeated values' elements whose first element is
+/// a top-level message, or the nearest field on the path that it writes, as a
+/// `FieldPathLocation`, or `None` if it does not write the path's top-level
+/// message. Raises `DclError` for the first syntax error.
+#[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 can only extract a sequence argument as an owned Vec"
+)]
+fn location_of<'py>(
+    py: Python<'py>,
+    source: &str,
+    field_path: Vec<PythonFieldPathElement>,
+) -> PyResult<Option<Bound<'py, PyAny>>> {
+    let classes = PythonClasses::get(py)?;
+    let mut path = Vec::with_capacity(field_path.len());
+    for element in &field_path {
+        path.push(match element {
+            PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
+            PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
+        });
+    }
+    let file = parse(source).map_err(|error| {
+        raise(classes.dcl_error(
+            py,
+            &RenderedError {
+                rendered: error.render(&SourceLines::new(source), None),
+                error,
+            },
+        ))
+    })?;
+    file.location_of(&path)
+        .map(|location| classes.field_path_location(py, location))
+        .transpose()
+}
+
 fn decode_descriptor_set(
     py: Python<'_>,
     classes: &PythonClasses,
@@ -236,5 +303,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{validate, validate_file};
+    use super::{location_of, validate, validate_file};
 }

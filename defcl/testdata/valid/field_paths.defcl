@@ -1,0 +1,16 @@
+project: {
+    name: "example"
+    database: {
+        host: "localhost"
+    }
+    dependencies: [
+        { universe: "a" },
+        {
+            universe: "b"
+        }
+    ]
+    tags: ["x", "y"]
+}
+settings: {
+    log_level: 3
+}

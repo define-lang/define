@@ -136,6 +136,9 @@ See [define/spec/spec.md] for the language specification.
   directly on the full list.
 - **Never break one line of Define source code across two Python lines**, even
   if it creates a very long Python string.
+- Put a Rust module's tests in an inline `#[cfg(test)] mod tests` in the
+  module's own file. Use a separate `<module>_test.rs` file only when the tests
+  are large enough to make the module hard to read.
 
 ## Bazel
 

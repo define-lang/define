@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from defcl.python import error_types, errors, loader
+from defcl.python import error_types, errors, loader, locations
 from defcl.testdata.invalid.semantics.schemas import integer_enum_pb2
 from defcl.testdata.valid.schemas import (
     imports_pb2,
@@ -56,7 +56,7 @@ def test_semantic_errors_are_diagnostics_without_a_message():
     assert result.message is None
     (integer_enum,) = result.diagnostics
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
-    assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
+    assert integer_enum.location == locations.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
     assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
@@ -76,7 +76,7 @@ def test_syntax_error_raises_dcl_error():
 
     assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
-    assert exc_info.value.location == errors.SourceLocation(2, 8, 2, 8)
+    assert exc_info.value.location == locations.SourceLocation(2, 8, 2, 8)
     assert exc_info.value.character == "@"
     assert str(exc_info.value) == (
         "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
@@ -103,7 +103,7 @@ def test_load_file_diagnostics_name_the_file():
     assert result.message is None
     (integer_enum,) = result.diagnostics
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
-    assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
+    assert integer_enum.location == locations.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
     assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (

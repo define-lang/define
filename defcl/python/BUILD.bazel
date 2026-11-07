@@ -31,6 +31,7 @@ py_library(
     ],
     deps = [
         ":error_types",
+        ":locations",
         "@pypi//msgspec",
     ],
 )
@@ -79,6 +80,7 @@ py_test(
         ":error_types",
         ":errors",
         ":loader",
+        ":locations",
         "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
         "//defcl/testdata/valid/schemas:imports_proto_py",
         "//defcl/testdata/valid/schemas:shared_proto_py",
@@ -87,6 +89,12 @@ py_test(
         "//tools:runfiles",
         "@pypi//pytest",
     ],
+)
+
+py_library(
+    name = "locations",
+    srcs = ["locations.py"],
+    deps = ["@pypi//msgspec"],
 )
 
 py_library(
@@ -101,6 +109,7 @@ py_library(
     deps = [
         ":error_types",  # keep: the native implementation looks up its kinds
         ":errors",
+        ":locations",
         ":validator_extension",  # keep: supplies the native implementation of this stub
     ],
 )
@@ -136,6 +145,7 @@ py_test(
     deps = [
         ":error_types",
         ":errors",
+        ":locations",
         ":validator",
         "//tools:runfiles",
         "@pypi//pytest",
@@ -167,6 +177,7 @@ pyright_test(
         ":loader",
         ":loader_fuzz_test",
         ":loader_test",
+        ":locations",
         ":python",
         ":validator",
         ":validator_test",

@@ -7,21 +7,7 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from defcl.python import error_types
-
-
-class SourceLocation(msgspec.Struct, frozen=True, gc=False):
-    """The part of a DCL file that an error covers.
-
-    Lines and columns are 1-based, and columns count characters. ``end_line``
-    and ``end_column`` are the position of the last character that the
-    location covers.
-    """
-
-    line: int
-    column: int
-    end_line: int
-    end_column: int
+    from defcl.python import error_types, locations
 
 
 class DclError(Exception):
@@ -33,13 +19,13 @@ class DclError(Exception):
 
     kind: error_types.DclErrorKind
     message: str
-    location: SourceLocation
+    location: locations.SourceLocation
 
     def __init__(
         self,
         kind: error_types.DclErrorKind,
         message: str,
-        location: SourceLocation,
+        location: locations.SourceLocation,
         rendered: str,
     ):
         """Initialize the error with its message, which does not include its location, and its rendered text."""
@@ -58,7 +44,7 @@ class UnexpectedCharacterError(DclError):
         self,
         kind: error_types.DclErrorKind,
         message: str,
-        location: SourceLocation,
+        location: locations.SourceLocation,
         rendered: str,
         character: str,
     ):
@@ -77,7 +63,7 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     kind: error_types.DiagnosticKind
     # The diagnostic's message, without its location.
     message: str
-    location: SourceLocation
+    location: locations.SourceLocation
     field_name: str
     # The diagnostic's location, as its source line underlined with carets, then
     # its message.

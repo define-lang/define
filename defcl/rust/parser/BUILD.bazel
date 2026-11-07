@@ -7,6 +7,7 @@ load("//tools/bzl:rust.bzl", "lint_config")
 rust_library(
     name = "parser",
     srcs = [
+        "field_path.rs",
         "lib.rs",
         "parser.rs",
         "parser_test.rs",
