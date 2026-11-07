@@ -144,6 +144,10 @@ fn validate<'py>(
 /// errors that name the file, and returns the file's text with the
 /// diagnostics. Raises `OSError` if the file cannot be read.
 #[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 can only extract a path argument as an owned PathBuf"
+)]
 fn validate_file<'py>(
     py: Python<'py>,
     path: PathBuf,

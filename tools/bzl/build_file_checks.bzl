@@ -1,5 +1,7 @@
 """Loading-time checks for hand-maintained BUILD file conventions."""
 
+load(":rust.bzl", "lint_config")
+
 # Linting, type-checking, and package setup targets live in their own sections
 # of a BUILD file instead of among the ordered targets.
 _META_FUNCTIONS = [
@@ -13,6 +15,10 @@ _PYTHON_FUNCTIONS = ["py_binary", "py_library", "py_test"]
 # The kinds of Rust targets that a rust_clippy_test in their package must
 # check. pyo3_extension declares a rust_cdylib_library.
 _CLIPPY_CHECKED_KINDS = ["rust_binary", "rust_cdylib_library", "rust_library", "rust_test"]
+
+# How native.existing_rules() shows the lint config that every Rust target
+# must have.
+_LINT_CONFIG = str(lint_config())
 
 # Codegen testdata packages provide these targets to the generator integration
 # tests. Their expected outputs are generated Python, which must type-check.
@@ -163,6 +169,13 @@ def _clippy_coverage_violations(calls, rules):
         if rule["kind"] in _CLIPPY_CHECKED_KINDS and rule_name not in checked
     ]
 
+def _lint_config_violations(rules):
+    return [
+        'Rust target "%s" must set lint_config = lint_config() from //tools/bzl:rust.bzl' % rule_name
+        for rule_name, rule in rules
+        if rule["kind"] in _CLIPPY_CHECKED_KINDS and str(rule.get("lint_config")) != _LINT_CONFIG
+    ]
+
 def _codegen_testdata_violations(calls):
     if [call for call in calls if call.function == "pyright_test"]:
         return []
@@ -189,7 +202,8 @@ def build_file_violations(package_name, rules):
         _pyright_violations(calls, rules) +
         _codegen_testdata_violations(calls) +
         _clippy_tag_violations(calls) +
-        _clippy_coverage_violations(calls, rules)
+        _clippy_coverage_violations(calls, rules) +
+        _lint_config_violations(rules)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable

@@ -16,7 +16,7 @@ pub struct SourceText<'source> {
     pub is_known_ascii: bool,
 }
 
-impl<'source> SourceText<'source> {
+impl SourceText<'_> {
     pub fn character_count(self) -> usize {
         if self.is_known_ascii {
             self.bytes.len()
@@ -178,7 +178,7 @@ impl<'source> Scanner<'source> {
 
     /// Consumes `expected` if it is the next byte. `expected` must be ASCII and
     /// not a line feed.
-    pub fn consume_byte(&mut self, expected: u8) -> bool {
+    pub const fn consume_byte(&mut self, expected: u8) -> bool {
         let Some((&byte, rest)) = self.rest.split_first() else {
             return false;
         };

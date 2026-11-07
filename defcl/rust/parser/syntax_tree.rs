@@ -38,6 +38,7 @@ pub enum Value<'source> {
 }
 
 impl Value<'_> {
+    #[must_use]
     pub const fn location(&self) -> SourceLocation {
         match self {
             Self::String(scalar)

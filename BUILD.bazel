@@ -6,6 +6,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
     "Cargo.toml",
+    "clippy.toml",
     ".codex/rules/default.rules",
     "pyproject.toml",
     ".claude/settings.json",

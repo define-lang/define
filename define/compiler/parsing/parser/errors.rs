@@ -7,7 +7,7 @@ use crate::scanner::Position;
 use terminals::SPACE;
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for the spaces where `line`, the rest of the line at
     /// the scanner's position, which does not start with `words`, ASCII words
     /// separated by single spaces, stops matching them, if it has extra spaces

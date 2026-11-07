@@ -141,7 +141,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'source> Parser<'_, 'source> {
     /// Returns the error for a literal whose `"` before its content is missing
     /// at the scanner's position.
     #[cold]

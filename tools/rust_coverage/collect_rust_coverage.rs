@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 /// Returns the path of the tool in the environment variable `variable`, which
 /// is relative to the execution root that Bazel runs this in, or else to
-/// `runfiles_dir`, as in rules_rust's own coverage collector.
+/// `runfiles_dir`, as in `rules_rust`'s own coverage collector.
 fn tool_path(runfiles_dir: &Path, variable: &str) -> Result<PathBuf, Box<dyn Error>> {
     let path = PathBuf::from(env::var(variable)?);
     if path.exists() {

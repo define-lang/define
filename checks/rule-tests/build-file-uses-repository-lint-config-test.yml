@@ -1,0 +1,11 @@
+id: build-file-uses-repository-lint-config
+valid:
+  - |
+    load("//tools/bzl:rust.bzl", "lint_config")
+  - |
+    load("@crates//:defs.bzl", "all_crate_deps")
+invalid:
+  - |
+    load("@crates//:defs.bzl", "lint_config")
+  - |
+    load("@crates//:defs.bzl", "all_crate_deps", "lint_config")

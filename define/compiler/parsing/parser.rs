@@ -221,7 +221,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for a line at the scanner's position that does not
     /// begin a global definition.
     #[cold]

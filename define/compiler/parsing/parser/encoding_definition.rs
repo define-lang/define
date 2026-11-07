@@ -5,7 +5,7 @@ use crate::parse_error::ParseResult;
 use crate::parser::Parser;
 use crate::scanner::Position;
 
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'py> Parser<'py, '_> {
     /// Parses the rest of an encoding definition after its `encoding`, given
     /// the positions of the definition's start and of its `encoding`, and
     /// returns the definition with the position after its `.`.

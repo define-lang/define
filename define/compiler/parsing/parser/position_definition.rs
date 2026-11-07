@@ -89,7 +89,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .errors
                     .missing_position_definition_content(block_open_end, block_open_end));
             }
-        };
+        }
         let block_start = self.scanner.position;
         // The block has something other than a Position Quality Assignment Block.
         if !self.scanner.consume(IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE) {
@@ -204,7 +204,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for a definition whose `.` or ` {` is missing at the
     /// scanner's position.
     #[cold]

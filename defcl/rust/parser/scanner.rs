@@ -55,7 +55,7 @@ impl<'source> Scanner<'source> {
     }
 
     /// Consumes one byte, which must not be past the end of the source.
-    pub fn advance(&mut self) {
+    pub const fn advance(&mut self) {
         let byte = self.source.as_bytes()[self.offset];
         self.offset += 1;
         if is_continuation_byte(byte) {

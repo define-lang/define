@@ -1,0 +1,3 @@
+# Words that clippy's doc_markdown lint accepts outside backticks. ".." keeps
+# clippy's own list, such as "GitHub".
+doc-valid-idents = ["CPython", ".."]

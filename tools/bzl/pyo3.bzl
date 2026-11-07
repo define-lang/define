@@ -1,9 +1,10 @@
 """Project pyo3_extension macro."""
 
 load("@rules_rust_pyo3//:defs.bzl", _pyo3_extension = "pyo3_extension")
+load(":rust.bzl", "lint_config")
 
 def pyo3_extension(name, **kwargs):
-    """Wraps rules_rust's `pyo3_extension` with the C++ runtime linked statically.
+    """Wraps rules_rust's `pyo3_extension` with the C++ runtime linked statically and the workspace's lints.
 
     The hermetic LLVM toolchain otherwise links each extension against its own
     libc++, libc++abi, and libunwind shared libraries, which only exist inside
@@ -17,4 +18,9 @@ def pyo3_extension(name, **kwargs):
       **kwargs: Additional arguments passed through to rules_rust's
         `pyo3_extension`.
     """
-    _pyo3_extension(name = name, cc_runtime_linkage = "static", **kwargs)
+    _pyo3_extension(
+        name = name,
+        cc_runtime_linkage = "static",
+        lint_config = lint_config(),
+        **kwargs
+    )

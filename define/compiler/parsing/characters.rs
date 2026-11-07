@@ -13,6 +13,7 @@ use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use invisible_ranges::INVISIBLE_RANGES;
+use std::fmt::Write;
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
 const CARRIAGE_RETURN: char = '\r';
@@ -292,6 +293,10 @@ pub fn disallowed_first_character(
 #[inline(never)]
 fn invalid_encoding(errors: &SyntaxErrors, position: Position, bytes: &[u8]) -> ParseError {
     // The bytes are not characters, so the error shows them as escapes.
-    let escaped: String = bytes.iter().map(|byte| format!("\\x{byte:02x}")).collect();
+    let mut escaped = String::with_capacity(bytes.len() * 4);
+    for byte in bytes {
+        // Writing to a String cannot fail.
+        let _ = write!(escaped, "\\x{byte:02x}");
+    }
     errors.invalid_encoding_error(position, position, &escaped)
 }

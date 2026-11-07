@@ -19,6 +19,18 @@ pub enum SchemaError {
         "Cannot create a DCL schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
     )]
     MissingMessageType { message_type: String },
+    /// A message field's type is not a message type in the
+    /// `FileDescriptorSet`, which protoc never writes.
+    #[display(
+        "Cannot create a DCL schema: the field {message_type}.{field_name} has the type {type_name}, which the FileDescriptorSet does not define"
+    )]
+    UnknownFieldType {
+        /// The full name of the message type that has the field.
+        message_type: String,
+        field_name: String,
+        /// The field's type name, as the descriptor set has it.
+        type_name: String,
+    },
     /// The top-level message type, or a message type that its fields lead
     /// to, breaks DCL's rules for schemas.
     #[display("Cannot create a DCL schema:{}", violation_list(violations))]
@@ -91,15 +103,10 @@ impl Schema {
     ///
     /// # Errors
     ///
-    /// Returns an error if the set does not have the top-level message type,
-    /// or if that message type or the message types that its fields lead to
-    /// break DCL's rules for schemas. The error has every way that they break
-    /// them.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a message field's type name is not the full name of a
-    /// message type in the set, which protoc never writes.
+    /// Returns an error if a message field's type is not a message type in
+    /// the set, if the set does not have the top-level message type, or if
+    /// that message type or the message types that its fields lead to break
+    /// DCL's rules for schemas. The error has every way that they break them.
     pub fn from_descriptor_set(
         file_descriptor_set: FileDescriptorSet,
         top_level_message_type: &str,
@@ -119,7 +126,7 @@ impl Schema {
             indices_by_name.insert(message_type.full_name.clone(), index);
         }
         for message_type in &mut message_types {
-            index_fields(message_type, &indices_by_name);
+            index_fields(message_type, &indices_by_name)?;
         }
         let Some(&top_level_message_type) = indices_by_name.get(top_level_message_type) else {
             return Err(SchemaError::MissingMessageType {
@@ -181,7 +188,10 @@ fn add_message_type(
     });
 }
 
-fn index_fields(message_type: &mut MessageType, indices_by_name: &FxHashMap<String, usize>) {
+fn index_fields(
+    message_type: &mut MessageType,
+    indices_by_name: &FxHashMap<String, usize>,
+) -> Result<(), SchemaError> {
     let mut fields_by_name =
         FxHashMap::with_capacity_and_hasher(message_type.descriptor.field.len(), FxBuildHasher);
     for (index, field) in message_type.descriptor.field.iter().enumerate() {
@@ -189,12 +199,18 @@ fn index_fields(message_type: &mut MessageType, indices_by_name: &FxHashMap<Stri
             Type::Message | Type::Group => {
                 // A descriptor set from protoc has only fully-qualified type
                 // names, which start with a `.`.
-                let message_field_type = field
+                let Some(&message_field_type) = field
                     .type_name()
                     .strip_prefix('.')
                     .and_then(|full_name| indices_by_name.get(full_name))
-                    .expect("protoc writes the full name of a message type in the set");
-                Some(*message_field_type)
+                else {
+                    return Err(SchemaError::UnknownFieldType {
+                        message_type: message_type.full_name.clone(),
+                        field_name: field.name().to_owned(),
+                        type_name: field.type_name().to_owned(),
+                    });
+                };
+                Some(message_field_type)
             }
             _ => None,
         };
@@ -207,12 +223,17 @@ fn index_fields(message_type: &mut MessageType, indices_by_name: &FxHashMap<Stri
         );
     }
     message_type.fields_by_name = fields_by_name;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Schema, SchemaError};
     use crate::test_support::valid_schemas;
+    use descriptor_proto::google::protobuf::field_descriptor_proto::Type;
+    use descriptor_proto::google::protobuf::{
+        DescriptorProto, Edition, FieldDescriptorProto, FileDescriptorProto, FileDescriptorSet,
+    };
     use googletest::prelude::*;
 
     #[gtest]
@@ -225,6 +246,38 @@ mod tests {
             .err(),
             some(eq(&SchemaError::MissingMessageType {
                 message_type: "defcl.testdata.valid.schemas.NoSuchFile".to_owned()
+            }))
+        )
+    }
+
+    #[gtest]
+    fn message_field_whose_type_is_not_in_the_set() -> Result<()> {
+        let file_descriptor_set = FileDescriptorSet {
+            file: vec![FileDescriptorProto {
+                name: Some("file.proto".to_owned()),
+                package: Some("package".to_owned()),
+                syntax: Some("editions".to_owned()),
+                edition: Some(Edition::Edition2024.into()),
+                message_type: vec![DescriptorProto {
+                    name: Some("File".to_owned()),
+                    field: vec![FieldDescriptorProto {
+                        name: Some("config".to_owned()),
+                        number: Some(1),
+                        r#type: Some(Type::Message.into()),
+                        type_name: Some(".package.Missing".to_owned()),
+                        ..FieldDescriptorProto::default()
+                    }],
+                    ..DescriptorProto::default()
+                }],
+                ..FileDescriptorProto::default()
+            }],
+        };
+        verify_that!(
+            Schema::from_descriptor_set(file_descriptor_set, "package.File").err(),
+            some(eq(&SchemaError::UnknownFieldType {
+                message_type: "package.File".to_owned(),
+                field_name: "config".to_owned(),
+                type_name: ".package.Missing".to_owned(),
             }))
         )
     }

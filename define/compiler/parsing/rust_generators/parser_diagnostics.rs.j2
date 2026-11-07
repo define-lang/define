@@ -70,6 +70,10 @@ impl<'py> ParserDiagnostics<'py> {
 }
 
 /// The classes in `{{ module_name }}` that the parser reports.
+#[allow(
+    clippy::struct_field_names,
+    reason = "each field is named after its diagnostic class"
+)]
 struct DiagnosticClasses {
 {%- for diagnostic in diagnostics %}
     {{ diagnostic.snake_case_name }}: Py<PyType>,

@@ -9,7 +9,7 @@ use crate::scanner::Position;
 use crate::syntax_errors::SyntaxErrors;
 use terminals::{DEFINE_THE, DEFINE_THE_VIEW, IT_IS_READ, IT_IS_WRITTEN, VIEW};
 
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'py> Parser<'py, '_> {
     /// Parses the rest of a logical operation definition after its
     /// `logical_operation`, given the positions of the definition's start and
     /// of its `logical_operation`, and returns the definition with the
@@ -110,7 +110,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // The view has no View Direction Statement.
         if !is_input && !is_output {
             return Err(self.missing_view_direction_statement(
-                &line,
+                line,
                 block_open_end,
                 &VIEW_DIRECTION_STATEMENT_STARTS,
                 SyntaxErrors::missing_logical_operation_view_direction_statement,
@@ -137,7 +137,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for a statement at the scanner's position in a
     /// Logical Operation Definition Block that is not a view definition.
     #[cold]

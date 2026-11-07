@@ -3,6 +3,9 @@
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
 load(":build_file_checks.bzl", "build_file_violations")
+load(":rust.bzl", "lint_config")
+
+_LINT_CONFIG = str(lint_config())
 
 def _macro_rules(function, name, kind, attributes, helpers = []):
     rules = [
@@ -251,15 +254,16 @@ def _rust_targets_must_be_in_clippy_test_impl(ctx):
             "generator_function": "pyo3_extension",
             "generator_name": "parser_extension",
             "kind": "rust_cdylib_library",
+            "lint_config": _LINT_CONFIG,
         }),
         ("parser_extension", {
             "generator_function": "pyo3_extension",
             "generator_name": "parser_extension",
             "kind": "py_pyo3_library",
         }),
-        ("scanner", {"kind": "rust_library"}),
-        ("scanner_test", {"kind": "rust_test", "size": "small"}),
-        ("terminals", {"kind": "rust_library"}),
+        ("scanner", {"kind": "rust_library", "lint_config": _LINT_CONFIG}),
+        ("scanner_test", {"kind": "rust_test", "lint_config": _LINT_CONFIG, "size": "small"}),
+        ("terminals", {"kind": "rust_library", "lint_config": _LINT_CONFIG}),
         ("clippy_test", {
             "kind": "rust_clippy_test",
             "tags": ["clippy"],
@@ -274,6 +278,33 @@ def _rust_targets_must_be_in_clippy_test_impl(ctx):
 
 _rust_targets_must_be_in_clippy_test_test = unittest.make(
     _rust_targets_must_be_in_clippy_test_impl,
+)
+
+def _rust_targets_must_use_the_lint_config_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("descriptor_proto", {"kind": "rust_prost_library"}),
+        ("generator", {"kind": "rust_binary", "lint_config": "@crates//:other_lints"}),
+        ("scanner", {"kind": "rust_library", "lint_config": _LINT_CONFIG}),
+        ("scanner_test", {"kind": "rust_test", "size": "small"}),
+        ("clippy_test", {
+            "kind": "rust_clippy_test",
+            "tags": ["clippy"],
+            "targets": [
+                "//define/compiler/parsing:generator",
+                "//define/compiler/parsing:scanner",
+                "//define/compiler/parsing:scanner_test",
+            ],
+        }),
+    ]
+    asserts.equals(env, [
+        'Rust target "generator" must set lint_config = lint_config() from //tools/bzl:rust.bzl',
+        'Rust target "scanner_test" must set lint_config = lint_config() from //tools/bzl:rust.bzl',
+    ], build_file_violations("parsing", rules))
+    return unittest.end(env)
+
+_rust_targets_must_use_the_lint_config_test = unittest.make(
+    _rust_targets_must_use_the_lint_config_impl,
 )
 
 def build_file_checks_test_suite(name):
@@ -302,6 +333,7 @@ def build_file_checks_test_suite(name):
                 _codegen_testdata_requires_pyright_test_test,
                 _clippy_tests_must_have_the_clippy_tag_test,
                 _rust_targets_must_be_in_clippy_test_test,
+                _rust_targets_must_use_the_lint_config_test,
             ]
         ]
     )

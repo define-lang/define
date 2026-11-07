@@ -1,4 +1,3 @@
-load("@crates//:defs.bzl", "lint_config")
 load("@rules_py//py:defs.bzl", "py_library")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
@@ -171,7 +170,6 @@ pyo3_extension(
     ],
     compile_data = glob(["*.j2"]) + ["askama.toml"],
     crate_root = "renderer.rs",
-    lint_config = lint_config(),
     module_name = "renderer",
     stubs = True,
     visibility = ["//tools:__pkg__"],

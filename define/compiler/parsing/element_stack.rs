@@ -48,6 +48,10 @@ impl<'py> ElementStack<'py, PyAny> {
         self.elements.push(element.into().into_object());
     }
 
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "Taking the start by value is what lets each collection be finished only once"
+    )]
     pub fn finish_tuple<Element>(
         &mut self,
         start: ElementsStart<Element>,
@@ -65,6 +69,10 @@ impl<'py> ElementStack<'py, PyString> {
         self.elements.push(text);
     }
 
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "Taking the start by value is what lets each collection be finished only once"
+    )]
     pub fn finish_tuple(
         &mut self,
         start: ElementsStart<PyString>,
@@ -72,6 +80,10 @@ impl<'py> ElementStack<'py, PyString> {
         PyTuple::new(self.py, self.elements.drain(start.index..))
     }
 
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "Taking the start by value is what lets each collection be finished only once"
+    )]
     pub fn finish_set(
         &mut self,
         start: ElementsStart<PyString>,

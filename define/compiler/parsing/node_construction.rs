@@ -146,6 +146,10 @@ impl<const FIELD_COUNT: usize> ClassLayout<FIELD_COUNT> {
         reason = "Calling the class would run `__post_init__`, which computes \
                   derived fields that the parser has already computed."
     )]
+    #[expect(
+        clippy::cast_ptr_alignment,
+        reason = "CPython aligns each object slot of an instance for a pointer."
+    )]
     pub fn construct<'py>(
         &self,
         py: Python<'py>,

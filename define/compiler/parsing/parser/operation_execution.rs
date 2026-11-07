@@ -391,7 +391,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'py> Parser<'py, '_> {
     /// Returns the error for a name type, at the scanner's position, that is
     /// not `operation`, in a Value Operation Execution Statement.
     #[cold]

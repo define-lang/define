@@ -7,6 +7,15 @@ use template_context::{
 
 mod template_context;
 
+// askama's filter_fn turns each filter into a builder struct whose
+// `execute(self, …)` holds the filter's body, and templates apply `?` to its
+// result, so a filter without extra arguments has an unused `self` and returns
+// a Result that is never an error.
+#[expect(
+    clippy::unnecessary_wraps,
+    clippy::unused_self,
+    reason = "askama filters must have this signature"
+)]
 mod filters {
     /// Writes the text as a Python string literal.
     #[askama::filter_fn]

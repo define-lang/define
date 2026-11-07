@@ -16,6 +16,7 @@ bzl_library(
     name = "build_file_checks",
     srcs = ["build_file_checks.bzl"],
     visibility = ["//visibility:public"],
+    deps = [":rust"],
 )
 
 build_file_checks_test_suite(name = "build_file_checks_test")
@@ -97,6 +98,7 @@ bzl_library(
     name = "pyo3",
     srcs = ["pyo3.bzl"],
     visibility = ["//visibility:public"],
+    deps = [":rust"],
 )
 
 bzl_library(
@@ -121,6 +123,12 @@ bzl_library(
     name = "ruff",
     srcs = ["ruff.bzl"],
     deps = [":lint_batches"],
+)
+
+bzl_library(
+    name = "rust",
+    srcs = ["rust.bzl"],
+    visibility = ["//visibility:public"],
 )
 
 alias(

@@ -15,6 +15,7 @@ impl SyntaxError {
     /// The error as the Define compiler shows errors: the location as
     /// `SourceLocation::render` shows it in `source_lines`, the text of the
     /// file at `file_path`, then the message.
+    #[must_use]
     pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
         format!("{}\n{self}", self.location.render(source_lines, file_path))
     }

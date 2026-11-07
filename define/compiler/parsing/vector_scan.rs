@@ -22,6 +22,11 @@
 //! machine has; `wide` builds wider vectors from narrower ones on machines
 //! without AVX-512.
 
+#![expect(
+    clippy::needless_bitwise_bool,
+    reason = "The scans combine booleans with `&`, which compiles to no branch, where `&&` compiles to one."
+)]
+
 // Everything in this module is optimized for performance, not readability
 // (other than the tests). That's why the Scanner and other structs are in
 // other files.
@@ -385,7 +390,7 @@ impl LongNameBytes {
 
     /// Adds the first `length` bytes of the next vector, given its `masks`.
     #[inline]
-    fn add(&mut self, masks: NameContentMasks, length: usize) {
+    const fn add(&mut self, masks: NameContentMasks, length: usize) {
         let within = low_bits(length);
         self.unprintable_bytes |= masks.unprintable & within;
         self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
@@ -980,7 +985,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1000,7 +1005,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(2).unwrap(),
+                    count: NonZeroU32::new(2).or_fail()?,
                     first: 9,
                     second: 18,
                     last: 18
@@ -1020,7 +1025,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(4).unwrap(),
+                    count: NonZeroU32::new(4).or_fail()?,
                     first: 1,
                     second: 3,
                     last: 7
@@ -1040,7 +1045,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 0,
                     second: 0,
                     last: 0
@@ -1051,9 +1056,9 @@ mod tests {
     }
 
     #[gtest]
-    fn name_content_with_component_separators_only_in_second_vector() {
+    fn name_content_with_component_separators_only_in_second_vector() -> Result<()> {
         let source = [&[b'a'; 40][..], b":b:/c>.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 45,
@@ -1061,20 +1066,20 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(2).unwrap(),
+                    count: NonZeroU32::new(2).or_fail()?,
                     first: 40,
                     second: 42,
                     last: 42
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_too_many_component_separators_across_vectors() {
+    fn name_content_with_too_many_component_separators_across_vectors() -> Result<()> {
         let source = [&b"a:b:"[..], &[b'c'; 30][..], b":d:/e>.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 39,
@@ -1082,14 +1087,14 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(4).unwrap(),
+                    count: NonZeroU32::new(4).or_fail()?,
                     first: 1,
                     second: 3,
                     last: 36
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
@@ -1102,7 +1107,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(3).unwrap(),
+                    count: NonZeroU32::new(3).or_fail()?,
                     first: 2,
                     second: 18,
                     last: 25
@@ -1181,7 +1186,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1201,7 +1206,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 5,
                     second: 5,
                     last: 5
@@ -1221,7 +1226,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1241,7 +1246,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1261,7 +1266,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1296,7 +1301,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1316,7 +1321,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1338,7 +1343,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1357,7 +1362,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
@@ -1421,7 +1426,7 @@ mod tests {
                 character_count: 55,
                 is_printable_ascii: true,
                 is_global_name: true,
-                fqun_separators: Some(FqunSeparators { count: NonZeroU32::new(3).unwrap(), first: 10, second: 28, last: 37 }),
+                fqun_separators: Some(FqunSeparators { count: NonZeroU32::new(3).or_fail()?, first: 10, second: 28, last: 37 }),
                 is_local_name: false,
             })
         )
@@ -1437,7 +1442,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 30,
                     second: 30,
                     last: 30
@@ -1517,7 +1522,7 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 31,
                     second: 31,
                     last: 31
@@ -1552,7 +1557,7 @@ mod tests {
                 is_printable_ascii: false,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 34,
                     second: 34,
                     last: 34
@@ -1563,9 +1568,9 @@ mod tests {
     }
 
     #[gtest]
-    fn name_content_of_exactly_two_vectors() {
+    fn name_content_of_exactly_two_vectors() -> Result<()> {
         let source = [&[b'a'; 60][..], b":/bc>.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 64,
@@ -1573,20 +1578,20 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 60,
                     second: 60,
                     last: 60
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_of_exactly_two_vectors_at_end_of_source() {
+    fn name_content_of_exactly_two_vectors_at_end_of_source() -> Result<()> {
         let source = [&[b'a'; 60][..], b":/bc"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 64,
@@ -1594,20 +1599,20 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 60,
                     second: 60,
                     last: 60
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_path_in_first_of_three_vectors() {
+    fn name_content_with_path_in_first_of_three_vectors() -> Result<()> {
         let source = [&b"standard:/"[..], &[b'a'; 60][..], b">.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 70,
@@ -1615,20 +1620,20 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 8,
                     second: 8,
                     last: 8
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_longer_than_two_vectors() {
+    fn name_content_longer_than_two_vectors() -> Result<()> {
         let source = [&[b'a'; 65][..], b":/b>.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 68,
@@ -1636,20 +1641,20 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 65,
                     second: 65,
                     last: 65
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]
-    fn name_content_with_path_starting_at_last_byte_of_second_vector() {
+    fn name_content_with_path_starting_at_last_byte_of_second_vector() -> Result<()> {
         let source = [&[b'a'; 62][..], b":/b>.\n"].concat();
-        expect_that!(
+        verify_that!(
             name_content(&source),
             eq(NameContent {
                 length: 65,
@@ -1657,14 +1662,14 @@ mod tests {
                 is_printable_ascii: true,
                 is_global_name: true,
                 fqun_separators: Some(FqunSeparators {
-                    count: NonZeroU32::new(1).unwrap(),
+                    count: NonZeroU32::new(1).or_fail()?,
                     first: 62,
                     second: 62,
                     last: 62
                 }),
                 is_local_name: false,
             })
-        );
+        )
     }
 
     #[gtest]

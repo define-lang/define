@@ -171,7 +171,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for a statement at the scanner's position in a Value
     /// Definition Block that is not a Logical Operation Support Statement.
     #[cold]

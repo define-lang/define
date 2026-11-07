@@ -29,8 +29,16 @@ unsafe_code = "deny"
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
-nursery = { level = "warn", priority = -1 }
+nursery = { level = "deny", priority = -1 }
 dbg_macro = "deny"
+# The parser inlines its hot paths on purpose.
+inline_always = "allow"
+# The code writes pub(crate) to say what each item's visibility is meant to be,
+# even where a private module already limits it to the crate.
+redundant_pub_crate = "allow"
+# A match on an Option shows each case with its own arm, which reads more
+# clearly than map_or_else's two closures, None's first.
+option_if_let_else = "allow"
 expect_used = "deny"
 panic = "deny"
 todo = "deny"

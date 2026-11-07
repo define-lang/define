@@ -16,6 +16,7 @@ use vector_scan::LineEnd;
 pub(crate) const INDENTATION_WIDTH: usize = 4;
 
 /// What comes next in a block, after any blank and comment lines.
+#[derive(Clone, Copy)]
 pub(crate) enum LineInBlock {
     /// The block's `}`.
     Close,
@@ -27,7 +28,7 @@ pub(crate) enum LineInBlock {
     Unclosed,
 }
 
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Consumes the one space between a word and the word after it, and
     /// returns whether a word follows it. Returns false, without consuming
     /// anything, when the line ends after the word, with or without spaces,
@@ -403,7 +404,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl Parser<'_, '_> {
     /// Returns the error for a block whose ` {` is missing at the scanner's
     /// position.
     #[cold]

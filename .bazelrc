@@ -151,3 +151,6 @@ build:macos --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-ar
 # compiler: native code fails on CPUs without this machine's instructions, and
 # a cache shared between machines would hand native code to other CPUs.
 build --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=native
+
+# The settings of clippy's lints, which Cargo.toml cannot hold.
+build --@rules_rust//rust/settings:clippy.toml=//:clippy.toml

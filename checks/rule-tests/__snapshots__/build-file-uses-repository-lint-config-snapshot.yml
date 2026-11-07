@@ -1,0 +1,22 @@
+id: build-file-uses-repository-lint-config
+snapshots:
+  "load(\"@crates//:defs.bzl\", \"all_crate_deps\", \"lint_config\")\n":
+    labels:
+    - source: load("@crates//:defs.bzl", "all_crate_deps", "lint_config")
+      style: primary
+      start: 0
+      end: 59
+    - source: "\"lint_config\""
+      style: secondary
+      start: 45
+      end: 58
+  "load(\"@crates//:defs.bzl\", \"lint_config\")\n":
+    labels:
+    - source: load("@crates//:defs.bzl", "lint_config")
+      style: primary
+      start: 0
+      end: 41
+    - source: "\"lint_config\""
+      style: secondary
+      start: 27
+      end: 40

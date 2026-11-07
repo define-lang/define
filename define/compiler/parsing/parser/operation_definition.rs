@@ -233,7 +233,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // The view has no View Direction Statements.
         if !is_input && !is_output {
             return Err(self.missing_view_direction_statement(
-                &line,
+                line,
                 block_open_end,
                 statement_starts,
                 SyntaxErrors::missing_view_direction_statement,
@@ -531,7 +531,7 @@ const fn operation_statement_starts(kind: OperationKind) -> &'static [&'static [
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'py> Parser<'py, '_> {
     /// Returns the error for a view definition block whose first line, `line`,
     /// is not a View Direction Statement, where the block's `{` ends at
     /// `block_open_end` and its statements begin with one of
@@ -541,7 +541,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     #[inline(never)]
     pub(crate) fn missing_view_direction_statement(
         &self,
-        line: &LineInBlock,
+        line: LineInBlock,
         block_open_end: Position,
         statement_starts: &[&[u8]],
         missing: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,

@@ -113,7 +113,7 @@ impl Constructor {
 }
 
 impl Constructor {
-    fn field_count(&self) -> usize {
+    const fn field_count(&self) -> usize {
         self.parameters.len() + self.computed_on_first_use.len()
     }
 }
@@ -396,6 +396,10 @@ impl ParserDiagnosticsDescription {
 }
 
 #[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 extracts a description argument only by value"
+)]
 fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
     description
         .render()
@@ -403,6 +407,10 @@ fn render_ast_nodes(description: AstDescription) -> PyResult<String> {
 }
 
 #[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 extracts a description argument only by value"
+)]
 fn render_ast_constructors(description: AstDescription) -> PyResult<String> {
     AstConstructors {
         description: &description,
@@ -412,6 +420,10 @@ fn render_ast_constructors(description: AstDescription) -> PyResult<String> {
 }
 
 #[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 extracts a description argument only by value"
+)]
 fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String> {
     description
         .render()
@@ -419,6 +431,10 @@ fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String
 }
 
 #[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 extracts a description argument only by value"
+)]
 fn render_parser_diagnostics(description: ParserDiagnosticsDescription) -> PyResult<String> {
     description
         .render()

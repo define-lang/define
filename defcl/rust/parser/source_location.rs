@@ -11,6 +11,7 @@ pub struct SourceLines<'source> {
 }
 
 impl<'source> SourceLines<'source> {
+    #[must_use]
     pub fn new(source: &'source str) -> Self {
         let mut line_starts = vec![0];
         line_starts.extend(source.match_indices('\n').map(|(offset, _)| offset + 1));
@@ -39,9 +40,11 @@ pub struct Position {
     pub column: usize,
 }
 
-/// The part of the source that a node or an error covers. Lines and columns
-/// are 1-based, columns count characters, and `end_line` and `end_column` are
-/// the position of the last character that the location covers.
+/// The part of the source that a node or an error covers.
+///
+/// Lines and columns are 1-based, columns count characters, and `end_line` and
+/// `end_column` are the position of the last character that the location
+/// covers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SourceLocation {
     pub line: usize,
@@ -92,6 +95,7 @@ impl SourceLocation {
     /// the space, show as the escapes that Rust's `char::escape_debug` writes,
     /// such as `\t`, `\0` and `\u{200b}`, so that they cannot change what a
     /// terminal shows.
+    #[must_use]
     pub fn render(self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
         let mut rendered = match file_path {
             Some(file_path) => format!(

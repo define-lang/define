@@ -1,0 +1,18 @@
+id: build-file-uses-repository-lint-config
+language: python
+severity: error
+message:
+  Load `lint_config` from `//tools/bzl:rust.bzl`, not from `@crates//:defs.bzl`.
+note:
+  The `@crates` version returns None for every package except the Cargo package
+  `define`, so a target that uses it gets no lints.
+files:
+  - "**/BUILD.bazel"
+ignores:
+  - vendored/**
+rule:
+  pattern: load("@crates//:defs.bzl", $$$)
+  has:
+    stopBy: end
+    kind: string
+    regex: ^"lint_config"$

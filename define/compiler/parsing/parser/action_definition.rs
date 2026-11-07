@@ -353,7 +353,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .errors
                     .missing_action_definition_syntax(content_end, content_end));
             }
-        };
+        }
         let block_open_end = self.parse_block_open()?;
         let (condition, trigger_name) = match self.next_line_in_block(
             ACTION_DEFINITION_BLOCK_INDENTATION,
@@ -382,7 +382,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             LineInBlock::Unclosed => {
                 return Err(self.missing_close_brace(start, block_open_end));
             }
-        };
+        }
         self.scanner.consume_bytes(1);
         let location = self.ast.location(start, self.scanner.position)?;
         let trigger_conditions = self.ast.trigger_conditions_block(location, condition)?;
@@ -716,7 +716,7 @@ impl<'py, 'source> Parser<'py, 'source> {
 }
 
 // The functions that only run on an error path.
-impl<'py, 'source> Parser<'py, 'source> {
+impl<'py> Parser<'py, '_> {
     /// Returns the error for the name type, at the scanner's position, of a
     /// value setting statement's source, or of what an operation argument's
     /// view in an action looks at, that is not `position`, `action`, or
