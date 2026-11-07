@@ -150,11 +150,7 @@ class ConfigLoader:
                 )
             ]
         try:
-            # TODO: Remove this cast when Protovalidate's annotation is fixed:
-            # https://github.com/bufbuild/protovalidate-py/issues/522
-            typing.cast(
-                "typing.Callable[[message.Message], None]", protovalidate.validate
-            )(result)
+            protovalidate.validate(result)
         except protovalidate.ValidationError as e:
             messages: list[str] = []
             for violation in e.violations:
