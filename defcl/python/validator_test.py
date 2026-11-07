@@ -4,7 +4,7 @@ import typing
 
 import pytest
 
-from defcl.python2 import error_types, errors, validator
+from defcl.python import error_types, errors, validator
 from tools import runfiles
 
 if typing.TYPE_CHECKING:

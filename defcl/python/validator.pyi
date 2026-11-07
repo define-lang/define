@@ -1,6 +1,6 @@
 import os
 
-from defcl.python2 import errors
+from defcl.python import errors
 
 def validate(
     source: str, descriptor_set: bytes, top_level_message_type: str

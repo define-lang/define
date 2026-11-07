@@ -10,7 +10,7 @@ rust_library(
     crate_name = "defcl_validator",
     crate_root = "validator.rs",
     lint_config = lint_config(),
-    visibility = ["//defcl/python2:__pkg__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [
         "//defcl/rust/parser",
         "//defcl/rust/semantics",

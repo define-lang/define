@@ -14,7 +14,7 @@ py_library(
     ],
     deps = [
         ":source_map",
-        "//defcl/python:exceptions",
+        "//defcl/python:errors",
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler:name_types",

@@ -91,7 +91,6 @@ def _generated_files_may_be_stale(repository: Path) -> bool:
         "ls-files",
         "-z",
         "*.proto",
-        "*.lark",
         "*.rs",
         "*.j2",
         "MODULE.bazel.lock",

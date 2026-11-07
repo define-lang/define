@@ -894,10 +894,36 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/project/config.defcl", line 2, column 17
-          universe_name "bad"
-                        ^
+        File ".define/project/config.defcl", line 2, column 16
+            universe_name "bad"
+                         ^
         Missing colon after field name""")
+
+
+def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    config_dir = tmp_path / ".define" / "project"
+    config_dir.mkdir(parents=True)
+    _ = (config_dir / "config.defcl").write_text(
+        'project: {\n  universe_name: "x.com:lib"\n  owner: "y"\n}\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    _ = (tmp_path / "test.dfn").write_text(
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/project/config.defcl", line 3, column 3
+            owner: "y"
+            ^^^^^
+        owner: define.config.project.Project has no field with this name""")
 
 
 def test_config_validation_error_message(

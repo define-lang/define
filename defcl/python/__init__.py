@@ -1,1 +1,1 @@
-"""Define Configuration Language (DCL) parser package."""
+"""Python bindings for the Rust DCL parser and semantic checks."""

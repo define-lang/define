@@ -7,12 +7,12 @@ import typing
 import msgspec
 from google.protobuf import descriptor_pb2, message, text_format
 
-from defcl.python2 import validator
+from defcl.python import validator
 
 if typing.TYPE_CHECKING:
     import os
 
-    from defcl.python2 import errors
+    from defcl.python import errors
 
 
 class LoadResult[M: message.Message](msgspec.Struct, frozen=True):

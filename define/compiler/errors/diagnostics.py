@@ -16,7 +16,7 @@ from define.compiler.validator.reference_graph import action_contract
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from defcl.python import exceptions as dcl_exceptions
+    from defcl.python import errors as dcl_errors
     from define.compiler import ast
     from define.compiler.validator.structural.resolver import local_dependency_entry
 
@@ -1155,7 +1155,7 @@ class ConfigDclDiagnostic(ConfigDiagnostic):
     Its location is the part of the config file that the error covers.
     """
 
-    dcl_error: dcl_exceptions.DclSyntaxError
+    dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
 
     @typing.override
     def format(self, sources: source_map.SourceMap) -> str:

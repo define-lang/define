@@ -9,12 +9,6 @@ proto_library(
     srcs = ["field_written_twice.proto"],
 )
 
-py_proto_library(
-    name = "field_written_twice_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":field_written_twice_proto"],
-)
-
 proto_library(
     name = "integer_enum_proto",
     srcs = ["integer_enum.proto"],
@@ -22,10 +16,7 @@ proto_library(
 
 py_proto_library(
     name = "integer_enum_proto_py",
-    visibility = [
-        "//defcl/python/validator:__pkg__",
-        "//defcl/python2:__pkg__",
-    ],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [":integer_enum_proto"],
 )
 
@@ -44,21 +35,9 @@ proto_library(
     srcs = ["nested_integer_enum.proto"],
 )
 
-py_proto_library(
-    name = "nested_integer_enum_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_integer_enum_proto"],
-)
-
 proto_library(
     name = "nested_no_brackets_message_proto",
     srcs = ["nested_no_brackets_message.proto"],
-)
-
-py_proto_library(
-    name = "nested_no_brackets_message_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_no_brackets_message_proto"],
 )
 
 proto_library(
@@ -66,32 +45,14 @@ proto_library(
     srcs = ["nested_no_brackets_scalar.proto"],
 )
 
-py_proto_library(
-    name = "nested_no_brackets_scalar_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_no_brackets_scalar_proto"],
-)
-
 proto_library(
     name = "no_brackets_message_proto",
     srcs = ["no_brackets_message.proto"],
 )
 
-py_proto_library(
-    name = "no_brackets_message_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":no_brackets_message_proto"],
-)
-
 proto_library(
     name = "no_brackets_scalar_proto",
     srcs = ["no_brackets_scalar.proto"],
-)
-
-py_proto_library(
-    name = "no_brackets_scalar_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":no_brackets_scalar_proto"],
 )
 
 proto_library(
@@ -109,12 +70,6 @@ proto_library(
     srcs = ["repeated_integer_enum.proto"],
 )
 
-py_proto_library(
-    name = "repeated_integer_enum_proto_py",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":repeated_integer_enum_proto"],
-)
-
 proto_library(
     name = "scalars_for_message_fields_proto",
     srcs = ["scalars_for_message_fields.proto"],
@@ -123,17 +78,16 @@ proto_library(
 py_library(
     name = "schemas",
     srcs = ["__init__.py"],
-    visibility = ["//defcl/python/validator:__pkg__"],
     deps = ["//defcl/testdata/invalid/semantics"],
 )
 
 # Every schema in this package, for the tests of the crates in //defcl/rust and
-# of //defcl/python2.
+# of //defcl/python.
 proto_descriptor_set(
     name = "schemas_descriptor_set",
     testonly = True,
     visibility = [
-        "//defcl/python2:__pkg__",
+        "//defcl/python:__pkg__",
         "//defcl/rust:__subpackages__",
     ],
     deps = [

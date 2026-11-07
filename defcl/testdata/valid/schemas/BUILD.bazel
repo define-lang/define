@@ -15,7 +15,7 @@ proto_library(
 
 py_proto_library(
     name = "imports_proto_py",
-    visibility = ["//defcl/python2:__pkg__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [":imports_proto"],
 )
 
@@ -24,21 +24,9 @@ proto_library(
     srcs = ["integers.proto"],
 )
 
-py_proto_library(
-    name = "integers_proto_py",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":integers_proto"],
-)
-
 proto_library(
     name = "nested_messages_proto",
     srcs = ["nested_messages.proto"],
-)
-
-py_proto_library(
-    name = "nested_messages_proto_py",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":nested_messages_proto"],
 )
 
 proto_library(
@@ -46,26 +34,19 @@ proto_library(
     srcs = ["repeated_messages.proto"],
 )
 
-py_proto_library(
-    name = "repeated_messages_proto_py",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":repeated_messages_proto"],
-)
-
 py_library(
     name = "schemas",
     srcs = ["__init__.py"],
-    visibility = ["//defcl/python:__pkg__"],
     deps = ["//defcl/testdata/valid"],
 )
 
 # Every schema in this package, for the tests of the crates in //defcl/rust and
-# of //defcl/python2.
+# of //defcl/python.
 proto_descriptor_set(
     name = "schemas_descriptor_set",
     testonly = True,
     visibility = [
-        "//defcl/python2:__pkg__",
+        "//defcl/python:__pkg__",
         "//defcl/rust:__subpackages__",
     ],
     deps = [
@@ -84,7 +65,7 @@ proto_library(
 
 py_proto_library(
     name = "shared_proto_py",
-    visibility = ["//defcl/python2:__pkg__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [":shared_proto"],
 )
 
@@ -95,22 +76,13 @@ proto_library(
 
 py_proto_library(
     name = "single_toplevel_proto_py",
-    visibility = [
-        "//defcl/python:__pkg__",
-        "//defcl/python2:__pkg__",
-    ],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [":single_toplevel_proto"],
 )
 
 proto_library(
     name = "strings_proto",
     srcs = ["strings.proto"],
-)
-
-py_proto_library(
-    name = "strings_proto_py",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":strings_proto"],
 )
 
 proto_library(
@@ -121,7 +93,7 @@ proto_library(
 
 py_proto_library(
     name = "wrapper_proto_py",
-    visibility = ["//defcl/python2:__pkg__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [":wrapper_proto"],
 )
 

@@ -220,7 +220,6 @@ def test_non_ascii_worktree_path_is_expunged(
 def _project(tmp_path: Path) -> Path:
     repository = _repository(tmp_path)
     for path in (
-        "defcl/python/grammar.lark",
         "define/config/project/config.proto",
         "define/compiler/parsing/parser.rs",
         "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
@@ -252,7 +251,7 @@ def test_first_uv_run_runs_setup_local_dev_once(
 @pytest.mark.parametrize(
     "source",
     [
-        "defcl/python/grammar.lark",
+        "define/config/project/config.proto",
         "define/compiler/parsing/parser.rs",
         "define/compiler/parsing/rust_generators/ast_nodes.rs.j2",
         "MODULE.bazel.lock",

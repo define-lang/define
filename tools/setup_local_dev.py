@@ -13,14 +13,6 @@ from tools import runfiles
 
 REPO_ROOT = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 
-LARK_TARGETS = [
-    "//defcl/python/lark:lark_standalone_gen",
-]
-
-LARK_FILES = [
-    "defcl/python/lark/lark_standalone.py",
-]
-
 # Relative to the git directory. tools/agent_hooks/shell_command_checks.py reads
 # it by the same name.
 SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
@@ -38,14 +30,14 @@ GENERATED_RUST_SOURCES = [
 # native extensions whose stubs Bazel generates, from the source tree. They are
 # in the order of their command-line arguments.
 GENERATED_PYTHON_FILES = [
-    "defcl/python2/error_types.py",
+    "defcl/python/error_types.py",
     "define/compiler/codegen/literal/python/renderer.pyi",
 ]
 
 # Native extensions, by the package that each is copied into, in the order of
 # their command-line arguments.
 NATIVE_EXTENSION_PACKAGES = [
-    "defcl/python2",
+    "defcl/python",
     "define/compiler/codegen/literal/python",
     "define/compiler/parsing",
 ]
@@ -150,16 +142,6 @@ def _copy_proto_files(proto_dirs: set[Path]):
                     print(dest.relative_to(REPO_ROOT))
 
 
-def _copy_lark_files():
-    bazel_bin = REPO_ROOT / "bazel-bin"
-    for rel_path in LARK_FILES:
-        src = bazel_bin / rel_path
-        dest = REPO_ROOT / rel_path
-        if src.exists():
-            _copy_file(src, dest)
-            print(rel_path)
-
-
 def _copy_buf_validate():
     bazel_bin = REPO_ROOT / "bazel-bin"
     src_dir = bazel_bin / Path(BUF_VALIDATE_SRC)
@@ -247,13 +229,11 @@ def main():
     ]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
-    all_targets = [*LARK_TARGETS, *proto_targets]
-    print(f"Building {len(all_targets)} targets...")
-    _build_targets(all_targets)
+    print(f"Building {len(proto_targets)} targets...")
+    _build_targets(proto_targets)
 
     proto_dirs = _find_proto_dirs()
     _copy_proto_files(proto_dirs)
-    _copy_lark_files()
     _copy_buf_validate()
     _copy_re2()
     for package, location in zip(

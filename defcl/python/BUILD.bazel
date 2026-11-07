@@ -1,45 +1,78 @@
+load("@crates//:defs.bzl", "lint_config")
 load("@rules_py//py:defs.bzl", "py_library")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-exports_files(["grammar.lark"])
-
 py_library(
-    name = "exceptions",
-    srcs = ["exceptions.py"],
-    visibility = [
-        "//defcl/python:__subpackages__",
-        "//define/compiler:__pkg__",
-        "//define/compiler/errors:__pkg__",
-    ],
-    deps = ["//defcl/python/lark:lark_standalone"],
+    name = "error_types",
+    srcs = [":error_types.py"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+# The generated enums, which tools:setup_local_dev copies into the source tree.
+genrule(
+    name = "error_types_gen",
+    outs = ["error_types.py"],
+    cmd = "$(execpath :generate_error_types) $@",
+    tools = [":generate_error_types"],
+    visibility = ["//tools:__pkg__"],
 )
 
 py_library(
-    name = "parser",
-    srcs = ["parser.py"],
+    name = "errors",
+    srcs = ["errors.py"],
+    visibility = [
+        "//define/compiler:__pkg__",
+        "//define/compiler/errors:__pkg__",
+    ],
+    deps = [
+        ":error_types",
+        "@pypi//msgspec",
+    ],
+)
+
+rust_binary(
+    name = "generate_error_types",
+    srcs = ["generate_error_types.rs"],
+    lint_config = lint_config(),
+    deps = [
+        "//defcl/rust/parser",
+        "//defcl/rust/semantics",
+        "@crates//:strum",
+    ],
+)
+
+py_library(
+    name = "loader",
+    srcs = ["loader.py"],
     visibility = ["//define/compiler:__pkg__"],
     deps = [
-        "//defcl/python/validator:semantics",
-        "//defcl/python/validator:syntax",
+        ":errors",
+        ":validator",
+        "@pypi//msgspec",
         "@pypi//protobuf",
     ],
 )
 
 py_test(
-    name = "parser_test",
+    name = "loader_test",
     size = "small",
-    srcs = ["parser_test.py"],
+    srcs = ["loader_test.py"],
     data = ["//defcl/testdata:testdata_files"],
     deps = [
-        ":exceptions",
-        ":parser",
-        "//defcl/testdata/valid/schemas:integers_proto_py",
-        "//defcl/testdata/valid/schemas:nested_messages_proto_py",
-        "//defcl/testdata/valid/schemas:repeated_messages_proto_py",
+        ":error_types",
+        ":errors",
+        ":loader",
+        "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
+        "//defcl/testdata/valid/schemas:imports_proto_py",
+        "//defcl/testdata/valid/schemas:shared_proto_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
-        "//defcl/testdata/valid/schemas:strings_proto_py",
+        "//defcl/testdata/valid/schemas:wrapper_proto_py",
+        "//tools:runfiles",
         "@pypi//pytest",
     ],
 )
@@ -47,26 +80,84 @@ py_test(
 py_library(
     name = "python",
     srcs = ["__init__.py"],
-    visibility = ["//defcl/python:__subpackages__"],
     deps = ["//defcl"],
+)
+
+py_library(
+    name = "validator",
+    srcs = ["validator.pyi"],
+    deps = [
+        ":error_types",  # keep: the native implementation looks up its kinds
+        ":errors",
+        ":validator_extension",  # keep: supplies the native implementation of this stub
+    ],
+)
+
+pyo3_extension(
+    name = "validator_extension",
+    srcs = ["validator_extension.rs"],
+    crate_root = "validator_extension.rs",
+    lint_config = lint_config(),
+    module_name = "validator",
+    stubs = False,
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        "//defcl/rust:validator",
+        "//defcl/rust/parser",
+        "//defcl/rust/semantics",
+        "@crates//:prost",
+    ],
+)
+
+py_test(
+    name = "validator_test",
+    size = "small",
+    srcs = ["validator_test.py"],
+    data = [
+        "//defcl/testdata:testdata_files",
+        "//defcl/testdata/invalid/semantics/schemas:schemas_descriptor_set",
+        "//defcl/testdata/valid/schemas:schemas_descriptor_set",
+    ],
+    env = {
+        "INVALID_SEMANTICS_SCHEMAS": "$(rlocationpath //defcl/testdata/invalid/semantics/schemas:schemas_descriptor_set)",
+        "VALID_SCHEMAS": "$(rlocationpath //defcl/testdata/valid/schemas:schemas_descriptor_set)",
+    },
+    deps = [
+        ":error_types",
+        ":errors",
+        ":validator",
+        "//tools:runfiles",
+        "@pypi//pytest",
+    ],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = [
+        "clippy",
+        "precommit",
+    ],
+    targets = [
+        ":generate_error_types",
+        ":validator_extension_shared",
+    ],
 )
 
 # --- Type-checking ---
 
 pyright_test(
     name = "pyright_test",
-    tags = ["include-subpackages"],
     deps = [
-        ":exceptions",
-        ":parser",
-        ":parser_test",
+        ":error_types",  # keep: generated, so the deps fixer does not analyze it
+        ":errors",
+        ":loader",
+        ":loader_test",
         ":python",
-        "//defcl/python/lark",
-        "//defcl/python/validator",
-        "//defcl/python/validator:semantics",
-        "//defcl/python/validator:semantics_test",
-        "//defcl/python/validator:syntax",
-        "//defcl/python/validator:syntax_test",
+        ":validator",
+        ":validator_test",
     ],
 )
 

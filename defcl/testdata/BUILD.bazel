@@ -15,8 +15,7 @@ filegroup(
         "//defcl/testdata/valid:valid_files",
     ],
     visibility = [
-        "//defcl/python:__subpackages__",
-        "//defcl/python2:__pkg__",
+        "//defcl/python:__pkg__",
         "//defcl/rust:__subpackages__",
     ],
 )

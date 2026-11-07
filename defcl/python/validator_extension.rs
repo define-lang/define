@@ -1,4 +1,4 @@
-//! The Python module that validates DCL files: `defcl.python2.validator`.
+//! The Python module that validates DCL files: `defcl.python.validator`.
 
 use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
@@ -27,8 +27,8 @@ impl PythonClasses {
     }
 
     fn import(py: Python<'_>) -> PyResult<Self> {
-        let errors = py.import("defcl.python2.errors")?;
-        let error_types = py.import("defcl.python2.error_types")?;
+        let errors = py.import("defcl.python.errors")?;
+        let error_types = py.import("defcl.python.error_types")?;
         Ok(Self {
             source_location: class(&errors, "SourceLocation")?,
             dcl_error: class(&errors, "DclError")?,

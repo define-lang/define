@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import types
 import typing
-from functools import cached_property
 from pathlib import Path, PurePosixPath
 
 import msgspec
 import protovalidate
 from google.protobuf import message
 
-from defcl.python import exceptions as dcl_exceptions
-from defcl.python import parser as defcl_parser
+from defcl.python import errors as dcl_errors
+from defcl.python import loader as dcl_loader
 from define.compiler import ast, constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -64,10 +63,6 @@ class ConfigLoader:
     def __init__(self, root: define_path.DefinePath):
         """Initialize with the project root path."""
         self._root = root
-
-    @cached_property
-    def _parser(self) -> defcl_parser.Parser:
-        return defcl_parser.Parser()
 
     def config_path(self) -> PurePosixPath:
         """Return the path of the root's project config file."""
@@ -134,21 +129,20 @@ class ConfigLoader:
     ) -> M | list[diagnostics.ConfigDiagnostic]:
         """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
+        # TODO: A value whose type does not match its field, such as an integer
+        # for a string field, passes defcl's checks, so text_format.ParseError
+        # escapes and crashes the compiler. Make defcl check value types against
+        # the schema, so that these are DclDiagnostics too.
         try:
-            result = self._parser.parse_file(path, message_type)
-        except dcl_exceptions.DclSyntaxError as e:
-            return [
-                diagnostics.ConfigDclDiagnostic(
-                    location=ast.SourceLocation(
-                        line=e.line,
-                        column=e.column,
-                        end_line=e.line,
-                        end_column=e.column,
-                        file_path=path,
-                    ),
-                    dcl_error=e,
-                )
-            ]
+            loaded = dcl_loader.load_file(path, message_type)
+        except dcl_errors.DclError as e:
+            return [_dcl_diagnostic(path, e)]
+        if loaded.message is None:
+            found_diagnostics: list[diagnostics.ConfigDiagnostic] = []
+            for dcl_diagnostic in loaded.diagnostics:
+                found_diagnostics.append(_dcl_diagnostic(path, dcl_diagnostic))
+            return found_diagnostics
+        result = loaded.message
         try:
             protovalidate.validate(result)
         except protovalidate.ValidationError as e:
@@ -201,3 +195,19 @@ class ConfigLoader:
                 PurePosixPath(dep.path)
             )
         return types.MappingProxyType(deps)
+
+
+def _dcl_diagnostic(
+    path: PurePosixPath, dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
+) -> diagnostics.ConfigDclDiagnostic:
+    location = dcl_error.location
+    return diagnostics.ConfigDclDiagnostic(
+        location=ast.SourceLocation(
+            line=location.line,
+            column=location.column,
+            end_line=location.end_line,
+            end_column=location.end_column,
+            file_path=path,
+        ),
+        dcl_error=dcl_error,
+    )

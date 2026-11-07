@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from defcl.python2 import error_types, errors, loader
+from defcl.python import error_types, errors, loader
 from defcl.testdata.invalid.semantics.schemas import integer_enum_pb2
 from defcl.testdata.valid.schemas import (
     imports_pb2,

@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from defcl.python2 import error_types
+    from defcl.python import error_types
 
 
 class SourceLocation(msgspec.Struct, frozen=True, gc=False):
@@ -71,3 +71,7 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     # The diagnostic's location, as its source line underlined with carets, then
     # its message.
     rendered: str
+
+    @typing.override
+    def __str__(self) -> str:
+        return self.rendered

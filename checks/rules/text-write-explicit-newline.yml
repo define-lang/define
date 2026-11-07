@@ -8,7 +8,6 @@ files:
   - "**/*.py"
 ignores:
   - vendored/**
-  - "**/lark_standalone.py"
 rule:
   any:
     - pattern: $_.write_text($$$)

@@ -245,7 +245,6 @@ do_not_mutate = [
   "**/conftest.py",
   "**/test_helpers.py",
   "**/testdata/**",
-  "defcl/python/lark/lark_standalone.py",
 ]
 pytest_add_cli_args_test_selection = [
   "defcl/python",
@@ -280,7 +279,6 @@ exclude = [
   "**/.*.venv",
   "bazel-*",
   "**/*.pytest_main.py",
-  "defcl/python/lark",
 ]
 
 [[tool.basedpyright.executionEnvironments]]
@@ -310,7 +308,6 @@ dev = [
   # Directly declared so uv uses the Bazel-provided virtual package.
   "google-re2",
   "hypothesis",
-  "lark",
   "mutmut",
   "prek",
   "pytest>=6",

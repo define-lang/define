@@ -26,7 +26,7 @@ rust_library(
     crate_root = "lib.rs",
     lint_config = lint_config(),
     visibility = [
-        "//defcl/python2:__pkg__",
+        "//defcl/python:__pkg__",
         "//defcl/rust:__pkg__",
     ],
     deps = [
