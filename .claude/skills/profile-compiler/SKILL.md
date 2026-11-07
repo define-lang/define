@@ -11,96 +11,58 @@ description: >-
 
 Measure and explain; do not optimize unless asked.
 
-When invoked without any additional instructions, immediately run a general wall
-profile: generate every valid-source workload in the generator README at its
-default settings, capture and analyze each profile, and report the results. Do
-not ask what to profile. Treat any explicit user instructions as overriding this
-default.
+Without other instructions, immediately run a general wall profile and report
+it; do not ask what to profile. Explicit user instructions override this.
 
-Use fresh inputs from `tools/generators/`. Read
-[the generator README](../../../tools/generators/README.md) to select generators
-and understand their workloads and caveats.
-
-Invoke each generator from the workspace root through its Bazel binary:
+Generate inputs with `tools/generators/`; read
+[its README](../../../tools/generators/README.md). Run each generator from the
+workspace root with the Bazel options `run_profile` builds with, so that Bazel
+keeps its analysis cache:
 
 ```text
-bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:<generator> -- --output <path>
+bazelisk run --config=profiling --build_runfile_links --noshow_progress --ui_event_filters=-info //tools/generators:<generator> -- --output <path>
 ```
 
-Replace `<generator>` with a name from the README. Read that generator's
-`--help` for its output requirements and available options. Relative output
-paths resolve from the Bazel workspace.
+For a general profile, run each generator except `generate_diagnostics_source`
+once at its defaults. If a compile runs under about a second, by the wall time
+`run_profile` prints, raise its size options until it runs for one to a few
+seconds, and report the settings. For focused work, choose options from the
+generator's `--help` that exercise the requested code.
 
-For a general profile, run every generator that produces valid source at its
-default settings; omit generators that intentionally produce diagnostics. For
-focused work, inspect the relevant generator's `--help` and choose options that
-exercise the requested code. Regenerate inputs and require no compiler
-diagnostics or profiling errors.
+Read the complete `--help` of `uv run -m tools.run_profile` and
+`uv run -m tools.analyze_profile` before using them, and run both with
+`uv run -m` from the workspace root. If you are Codex, run `run_profile` outside
+the sandbox. Keep artifacts under `tmp/profile/`, and delete a generated
+reference project after profiling it.
 
-Read both public tools' complete help before using them:
+Capture wall profiles. Choose `--max-threads` for what the profile must show: 1,
+the default, gives each phase one worker and the clearest critical path; more
+show parallel behavior. Say which you used and why. Capture a CPU profile only
+when the user asks for one.
 
-```text
-uv run -m tools.run_profile --help
-uv run -m tools.analyze_profile --help
-```
+Start each wall analysis from `--view critical-path`, then use the other views
+for detail. Treat a nonzero capture exit, which includes compiler diagnostics,
+or an analyzer failure as a failed run.
 
-Run local entry points with `uv run -m`; invoking the `.py` paths directly does
-not put the workspace root on Python's import path. If you are Codex, run each
-`run_profile` invocation outside the sandbox. Keep artifacts under
-`tmp/profile/`.
+For each workload, report:
 
-Capture requested workloads in wall mode through `run_profile`:
-
-```text
-uv run -m tools.run_profile --source <source> --out <wall-profile>
-```
-
-Do not capture a CPU profile unless the user explicitly asks for one. When they
-do, use `--mode cpu` with the same source or project workflow. CPU mode requires
-Linux perf access and a CPython build with perf trampoline and frame-pointer
-support; it retains native `perf.data`, CPython's perf symbol map, perf's
-build-ID cache, and a small Define metadata sidecar. Use a `.data` output name
-for CPU captures.
-
-For `generate_reference_graph_project`, use `--project <directory>`. Analyze
-each exact artifact through the public analyzer:
-
-```text
-uv run -m tools.analyze_profile --profile <profile>
-```
-
-Use `--compiler-only` and the other analyzer filters for focused follow-up when
-the complete report does not expose the needed compiler rows. Filters preserve
-global lifecycle and critical-path context while narrowing attribution rows.
-
-Treat a nonzero capture exit, compiler diagnostics, an incomplete artifact, a
-discard rate above the profiler threshold, or an analyzer failure as a failed
-run. Do not interpret a partial profile as successful.
-
-Use the sampled wall critical path as the profiling result. For each workload,
-report:
-
-- the sampled completion-critical path and the dominant functions that explain
-  it. Include waits, handoffs, ambiguity, off-path concurrency, and unioned
-  occupancy only when materially relevant;
+- the critical path, phase by phase, and the functions that explain each phase,
+  including waits, handoffs, idle workers, and work off the path when they
+  matter;
+- the failed-sample rate of a wall profile, or the share of stacks not unwound
+  of a CPU profile;
 - contrasts with the other workloads and a ranked list of observations.
 
-When the user requests CPU profiling, additionally report the principal CPU
-hotspots overall and within Define compiler code. For every profiled generator,
-always include a section titled `The dominant cumulative chain is:`. Show the
-most important adjacent caller-to-callee path as an indented function-name tree.
-Every row must include cumulative CPU time and its percentage of all sampled CPU
-for that generator. Follow the chain far enough to identify the functions that
-actually consume the delegated work, rather than stopping at orchestration
-functions.
+For a CPU profile, also report the main hotspots overall and in compiler code,
+and a section titled `The dominant cumulative chain is:`: the most important
+caller-to-callee path as an indented tree, each row with its cumulative CPU time
+and share of all sampled CPU, followed down to the functions that consume the
+work rather than delegate it. Build it from the busiest thread's tree
+(`--view tree --thread <id> --focus WorkerContext.run --minimum-percent 2`),
+then focus on each function where it branches, lowering `--minimum-percent`.
+Compare CPU and wall profiles by shares, not seconds: perf support slows the
+compiler.
 
-Use the analyzer's metric definitions and caveats as the authority. A critical
-path is not the busiest thread, summed thread time, or unioned wall occupancy.
-Do not assume function rows are additive, CPU time equals wall time, or a sample
-hit represents a call. CPU percentages use all sampled CPU as their denominator,
-including filtered functions and samples without a Python frame.
-
-For follow-up questions, reuse retained profile artifacts when they contain the
-needed evidence. Drill into caller and callee relationships using the available
-stack and timing information. Use instrumentation only when exact call counts
-themselves are needed, not to rank hotspots.
+A critical path is not the busiest thread or summed thread time. Cumulative rows
+are not additive, and a sample is not a call. For follow-up questions, reuse
+retained profiles; use instrumentation only when exact call counts are needed.

@@ -1,4 +1,4 @@
-"""Profile the Define compiler through a profiler's public entry point."""
+"""Build the Define compiler and profile one compilation."""
 
 from __future__ import annotations
 
@@ -7,12 +7,19 @@ import os
 import pathlib
 import shutil
 import subprocess
-import sys
 import tempfile
 import typing
 
 import click
 import msgspec
+
+from tools.profiler import (
+    cpu_stacks,
+    perf_access,
+    perf_profiler,
+    tachyon_profile,
+    tachyon_profiler,
+)
 
 _PATH = click.Path(path_type=pathlib.Path)
 _INHERITED_RUNTIME_VARIABLES = (
@@ -25,40 +32,19 @@ _INHERITED_RUNTIME_VARIABLES = (
 )
 
 
-class ProfileInvocation(msgspec.Struct, frozen=True):
-    """Generic inputs needed to run a target through a profiler command."""
-
-    # PRF-012: Orchestration boundary.
-    profiler_command: tuple[str, ...]
-    profiler_arguments: tuple[str, ...]
-    profiler_working_directory: pathlib.Path
-    target_command: tuple[str, ...]
-    target_working_directory: pathlib.Path
-    target_stdin_path: pathlib.Path | None
-    workload_path: pathlib.Path
-    profile_path: pathlib.Path
-    environment: dict[str, str]
-
-
-class _ProfileOptions(msgspec.Struct, frozen=True):
-    source_path: pathlib.Path | None
-    project: pathlib.Path | None
-    entry: str
-    out_path: pathlib.Path
-    max_threads: int
-    output_dir: pathlib.Path
-    profile_mode: str
+class _CompilerInvocation(msgspec.Struct, frozen=True):
+    command: tuple[str, ...]
+    working_directory: pathlib.Path
+    stdin_path: pathlib.Path | None
 
 
 def chdir_to_build_workspace():
     """Resolve CLI paths from the workspace when invoked through Bazel."""
-    # PRF-012: Orchestration boundary.
     if workspace := os.environ.get("BUILD_WORKSPACE_DIRECTORY"):
         os.chdir(workspace)
 
 
 def _workspace() -> pathlib.Path:
-    # PRF-012: Orchestration boundary.
     workspace = os.environ.get("BUILD_WORKSPACE_DIRECTORY")
     if workspace is not None:
         return pathlib.Path(workspace)
@@ -66,16 +52,15 @@ def _workspace() -> pathlib.Path:
 
 
 def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
-    # PRF-012: Orchestration boundary.
     bazelisk_path = shutil.which("bazelisk")
     if bazelisk_path is None:
         raise FileNotFoundError("bazelisk is required to build the compiler")
+    click.echo("Building the compiler with --config=profiling")
     _ = subprocess.run(
         [
             bazelisk_path,
             "build",
-            "-c",
-            "opt",
+            "--config=profiling",
             # The compiler runs from bazel-bin rather than through bazel run,
             # so its runfiles tree must be built even when a bazelrc turns
             # runfiles links off.
@@ -91,105 +76,115 @@ def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
 
 
 def _target_environment() -> dict[str, str]:
-    # PRF-012: Orchestration boundary.
     environment = os.environ.copy()
     for variable in _INHERITED_RUNTIME_VARIABLES:
         _ = environment.pop(variable, None)
     return environment
 
 
-def record_profile(invocation: ProfileInvocation):
-    """Run one prepared compiler invocation through a profiling command."""
-    # PRF-012: Orchestration boundary.
-    command = [
-        *invocation.profiler_command,
-        *invocation.profiler_arguments,
-        "--profile",
-        str(invocation.profile_path),
-        "--workload",
-        str(invocation.workload_path),
-        "--working-directory",
-        str(invocation.target_working_directory),
-        "--",
-        *invocation.target_command,
-    ]
-    with contextlib.ExitStack() as contexts:
-        source_stream = (
-            contexts.enter_context(invocation.target_stdin_path.open("rb"))
-            if invocation.target_stdin_path is not None
-            else None
-        )
-        completed = subprocess.run(
-            command,
-            check=False,
-            cwd=invocation.profiler_working_directory,
-            env=invocation.environment,
-            stdin=source_stream,
-        )
-    # The profiler has already printed why it failed, so a traceback here would
-    # only bury that message.
-    if completed.returncode != 0:
-        raise SystemExit(completed.returncode)
-
-
-def _profile_invocation(
+def _compiler_invocation(  # noqa: PLR0913, PLR0917 - The compile command's inputs.
     workspace: pathlib.Path,
     compiler_path: pathlib.Path,
-    options: _ProfileOptions,
-) -> ProfileInvocation:
-    # PRF-012: Orchestration boundary. PRF-014: CPU mode.
-    if options.source_path is not None:
-        workload_path = options.source_path.absolute()
-        target_stdin_path: pathlib.Path | None = workload_path
-        target_working_directory = workspace
-        compiler_input: pathlib.Path | None = None
-    else:
-        target_working_directory = typing.cast(
-            "pathlib.Path", options.project
-        ).absolute()
-        workload_path = target_working_directory / options.entry
-        target_stdin_path = None
-        compiler_input = workload_path
-
-    target_command = [
+    source_path: pathlib.Path | None,
+    project: pathlib.Path | None,
+    entry: str,
+    output_dir: pathlib.Path,
+    max_threads: int,
+) -> _CompilerInvocation:
+    command = [
         str(compiler_path),
         "compile",
         "--out",
-        str(options.output_dir),
+        str(output_dir),
         "--max-threads",
-        str(options.max_threads),
+        str(max_threads),
     ]
-    if compiler_input is not None:
-        target_command.append(str(compiler_input))
-    return ProfileInvocation(
-        profiler_command=(sys.executable, "-m", "tools.profiler"),
-        profiler_arguments=("--mode", options.profile_mode),
-        profiler_working_directory=workspace,
-        target_command=tuple(target_command),
-        target_working_directory=target_working_directory,
-        target_stdin_path=target_stdin_path,
-        workload_path=workload_path,
-        profile_path=options.out_path.absolute(),
-        environment=_target_environment(),
+    if source_path is not None:
+        return _CompilerInvocation(
+            command=tuple(command),
+            working_directory=workspace,
+            stdin_path=source_path.absolute(),
+        )
+    # The command line requires exactly one of a source file and a project.
+    project_path = typing.cast("pathlib.Path", project).absolute()
+    return _CompilerInvocation(
+        command=(*command, str(project_path / entry)),
+        working_directory=project_path,
+        stdin_path=None,
     )
 
 
-# PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
+def _capture(
+    profile_mode: str, invocation: _CompilerInvocation, profile_path: pathlib.Path
+):
+    environment = _target_environment()
+    with contextlib.ExitStack() as contexts:
+        stdin = (
+            None
+            if invocation.stdin_path is None
+            else contexts.enter_context(invocation.stdin_path.open("rb"))
+        )
+        if profile_mode == "wall":
+            try:
+                exit_status = tachyon_profiler.capture(
+                    command=invocation.command,
+                    profile_path=profile_path,
+                    working_directory=invocation.working_directory,
+                    environment=environment,
+                    stdin=stdin,
+                )
+            except tachyon_profiler.CaptureError as error:
+                raise click.ClickException(str(error)) from error
+        else:
+            try:
+                exit_status = perf_profiler.capture(
+                    command=invocation.command,
+                    profile_path=profile_path,
+                    working_directory=invocation.working_directory,
+                    environment=environment,
+                    stdin=stdin,
+                )
+            except (
+                OSError,
+                subprocess.SubprocessError,
+                perf_access.PerfAccessError,
+            ) as error:
+                raise click.ClickException(str(error)) from error
+    click.echo(f"Profile: {profile_path}")
+    click.echo(f"Capture: compiler exit {exit_status}")
+    if profile_mode == "wall":
+        profile = tachyon_profile.load(profile_path)
+        click.echo(
+            f"Samples: {(profile.ended_ns - profile.started_ns) / 1e9:.2f} s of "
+            + f"wall time; {len(profile.samples_by_thread)} threads; failed "
+            + f"samples {profile.failed_sample_percent:.1f}%"
+        )
+    else:
+        stacks = cpu_stacks.load(profile_path, native=False)
+        cpu_ns = sum(stack.total_ns for stack in stacks.stacks)
+        click.echo(
+            f"Samples: {cpu_ns / 1e9:.2f} s of CPU time; "
+            + f"{len(stacks.thread_names)} threads; stacks not unwound "
+            + f"{100 * stacks.truncated_ns / cpu_ns:.1f}%"
+        )
+    if exit_status != 0:
+        raise click.ClickException("profile capture was not successful")
+
+
 @click.command(
     epilog=(
         "Examples:\n\n"
         "  run_profile --source SOURCE --out PROFILE\n\n"
         "  run_profile --project PROJECT --entry main.dfn --out PROFILE\n\n"
-        "The profiler records all-thread wall observations or Linux perf CPU samples. "
-        "Generated code goes to a temporary directory unless --output-dir is "
-        "provided.\n\n"
+        "Wall mode records all-thread samples with Tachyon, CPython's sampling "
+        "profiler. CPU mode records Linux perf CPU samples, including native "
+        "frames, as collapsed stacks: one line per distinct stack and thread "
+        "with its sample count. Generated code goes to a temporary directory unless "
+        "--output-dir is provided.\n\n"
         "Machine setup: CPU mode needs kernel.perf_event_paranoid set to 1 or "
         "lower, for example in a file in /etc/sysctl.d/, and a CPython that "
-        "runs with -X perf. Wall mode records scheduler tracepoints to tell "
-        "which thread woke which, so it needs kernel.perf_event_paranoid set "
-        "to -1 and /sys/kernel/tracing readable by the user, for example by "
-        "mounting tracefs with gid=GROUP,mode=0750. Each mode refuses to "
-        "start without its access and says how to grant it."
+        "runs with -X perf. It refuses to start without that access and says "
+        "how to grant it."
     )
 )
 @click.option(
@@ -198,7 +193,7 @@ def _profile_invocation(
     type=click.Choice(["wall", "cpu"]),
     default="wall",
     show_default=True,
-    help="Capture wall occupancy or sampled on-CPU time with Linux perf.",
+    help="Capture all-thread wall samples or sampled on-CPU time with Linux perf.",
 )
 @click.option(
     "--source",
@@ -234,14 +229,17 @@ def _profile_invocation(
     "out_path",
     type=_PATH,
     required=True,
-    help="Destination for wall JSON records or native perf CPU data.",
+    help="Destination for Tachyon wall samples or collapsed CPU stacks.",
 )
 @click.option(
     "--max-threads",
     type=click.IntRange(min=1),
     default=1,
     show_default=True,
-    help="Maximum threads used by each validation phase.",
+    help=(
+        "Maximum worker threads for each validation and code-generation phase; "
+        "each phase runs its own pool beside the main thread."
+    ),
 )
 @click.option(
     "--output-dir",
@@ -258,7 +256,6 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output_dir: pathlib.Path | None,
 ):
     """Capture the complete compiler pipeline with the selected profiler mode."""
-    # PRF-012: Orchestration boundary. PRF-014: CPU mode.
     if (source_path is None) == (project is None):
         raise click.UsageError("provide exactly one of --source or --project")
 
@@ -271,19 +268,24 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
                     tempfile.TemporaryDirectory(prefix="define_profile_codegen_")
                 )
             )
-        else:
-            output_dir = output_dir.absolute()
-        invocation = _profile_invocation(
-            workspace,
-            compiler_path,
-            _ProfileOptions(
-                source_path=source_path,
-                project=project,
-                entry=entry,
-                out_path=out_path,
-                max_threads=max_threads,
-                output_dir=output_dir,
-                profile_mode=profile_mode,
+            # Where generated code goes affects the cost of writing it.
+            click.echo(f"Generated code directory: {output_dir} (deleted afterward)")
+        _capture(
+            profile_mode,
+            _compiler_invocation(
+                workspace,
+                compiler_path,
+                source_path,
+                project,
+                entry,
+                output_dir.absolute(),
+                max_threads,
             ),
+            out_path.absolute(),
         )
-        record_profile(invocation)
+        generated_files = [path for path in output_dir.rglob("*") if path.is_file()]
+        generated_bytes = sum(path.stat().st_size for path in generated_files)
+        click.echo(
+            f"Generated code: {len(generated_files)} files; "
+            + f"{generated_bytes / 1_000_000:.1f} MB"
+        )

@@ -1,21 +1,15 @@
-"""Capture native Linux perf data for Python CPU analysis."""
+"""Capture Linux perf CPU samples as symbolized collapsed stacks."""
 
 from __future__ import annotations
 
-import contextlib
-import hashlib
-import json
 import os
 import pathlib
 import shlex
-import shutil
 import subprocess
-import sys
 import tempfile
-import time
 import typing
 
-from tools.profiler import perf_access
+from tools.profiler import cpu_stacks, perf_access, python_target
 
 _BAZEL_PYTHON_ENTRYPOINT_MARKER = "__PEX_PY_BINARY_ENTRYPOINT__"
 _BAZEL_PYTHON_EXEC = 'exec "python3" '
@@ -27,50 +21,9 @@ _PERF_MAP_DIRECTORY = pathlib.Path("/tmp")  # noqa: S108
 RING_BUFFER_PAGES = 32
 
 
-class Metadata(typing.TypedDict):
-    """Define invocation facts that Linux perf does not record."""
-
-    command: list[str]
-    working_directory: str
-    workload_path: str
-    workload_sha256: str
-    started_ns: int
-    ended_ns: int
-    compiler_exit_status: int
-    target_pid: int
-
-
-def metadata_path(profile_path: pathlib.Path) -> pathlib.Path:
-    """Return the Define metadata sidecar for a native perf data file."""
-    return profile_path.with_name(profile_path.name + ".json")
-
-
-def buildid_path(profile_path: pathlib.Path) -> pathlib.Path:
-    """Return the native perf build-ID cache retained with a data file."""
-    return profile_path.with_name(profile_path.name + ".buildid")
-
-
-def python_map_path(profile_path: pathlib.Path) -> pathlib.Path:
-    """Return the retained CPython perf symbol map for a data file."""
-    return profile_path.with_name(profile_path.name + ".map")
-
-
 def runtime_python_map_path(target_pid: int) -> pathlib.Path:
     """Return the path from which perf resolves one process's Python symbols."""
     return _PERF_MAP_DIRECTORY / f"perf-{target_pid}.map"
-
-
-def diagnostics_path(profile_path: pathlib.Path) -> pathlib.Path:
-    """Return the target diagnostics retained with a perf data file."""
-    return profile_path.with_name(profile_path.name + ".stderr")
-
-
-def _sha256(path: pathlib.Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source_file:
-        while chunk := source_file.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _profiled_command(
@@ -82,37 +35,18 @@ def _profiled_command(
     try:
         launcher = launcher_path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        runfiles_directory = environment.get("RUNFILES_DIR")
-        launcher_runfile: pathlib.Path | None = None
-        if runfiles_directory is None:
-            runfiles_path = launcher_path.with_name(launcher_path.name + ".runfiles")
-            launcher_parts = launcher_path.parts
-            if "bazel-bin" in launcher_parts:
-                bazel_bin_index = launcher_parts.index("bazel-bin")
-                launcher_runfile = pathlib.Path("_main").joinpath(
-                    *launcher_parts[bazel_bin_index + 1 :]
-                )
-        else:
-            runfiles_path = pathlib.Path(runfiles_directory)
-            with contextlib.suppress(ValueError):
-                launcher_runfile = launcher_path.relative_to(runfiles_path)
-        if launcher_runfile is not None:
-            interpreter = (
-                runfiles_path
-                / launcher_runfile.parent
-                / f"._{launcher_path.name}.venv/bin/python"
+        entry_point = python_target.bazel_entry_point(launcher_path, environment)
+        if entry_point is not None:
+            interpreter, main = entry_point
+            return (
+                os.fspath(interpreter),
+                "-X",
+                "perf",
+                "-B",
+                "-I",
+                os.fspath(main),
+                *command[1:],
             )
-            main = runfiles_path / launcher_runfile.with_suffix(".py")
-            if interpreter.is_file() and main.is_file():
-                return (
-                    os.fspath(interpreter),
-                    "-X",
-                    "perf",
-                    "-B",
-                    "-I",
-                    os.fspath(main),
-                    *command[1:],
-                )
         return command
     if (
         _BAZEL_PYTHON_ENTRYPOINT_MARKER not in launcher
@@ -153,95 +87,55 @@ def _target_command(
     return (os.fspath(target_launcher_path), *command), target_pid_path
 
 
-def _native_objects(
-    buildid_output: str, runtime_map_path: pathlib.Path
-) -> tuple[bool, list[str]]:
-    recorded_python_map = False
-    native_objects: list[str] = []
-    for line in buildid_output.splitlines():
-        fields = line.split(maxsplit=1)
-        if fields == [os.fspath(runtime_map_path)]:
-            recorded_python_map = True
-            continue
-        if len(fields) != 2:
-            continue
-        object_path = pathlib.Path(fields[1])
-        if object_path.is_file():
-            native_objects.append(fields[1])
-    return recorded_python_map, native_objects
-
-
-def _retain_native_objects(
-    perf_executable: str,
-    profile_path: pathlib.Path,
-    native_objects: list[str],
+def _write_collapsed_stacks(
+    perf_executable: str, recorded_data_path: pathlib.Path, profile_path: pathlib.Path
 ):
-    retained_buildid_path = buildid_path(profile_path)
-    if retained_buildid_path.exists():
-        shutil.rmtree(retained_buildid_path)
-    retained_buildid_path.mkdir()
-    if not native_objects:
-        return
-    _ = subprocess.run(
-        (
-            perf_executable,
-            "--buildid-dir",
-            os.fspath(retained_buildid_path),
-            "buildid-cache",
-            "--add",
-            ",".join(native_objects),
-        ),
+    exec_path = subprocess.run(
+        (perf_executable, "--exec-path"),
         check=True,
         capture_output=True,
         text=True,
-    )
-
-
-def _retain_recorded_native_objects(
-    perf_executable: str,
-    profile_path: pathlib.Path,
-    runtime_map_path: pathlib.Path,
-):
-    buildids = subprocess.run(
-        (
-            perf_executable,
-            "buildid-list",
-            "-i",
-            os.fspath(profile_path),
-            "--with-hits",
-        ),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    recorded_python_map, native_objects = _native_objects(
-        buildids.stdout, runtime_map_path
-    )
-    if not recorded_python_map:
-        raise RuntimeError("perf data does not reference the target's Python map")
-    _retain_native_objects(perf_executable, profile_path, native_objects)
+    ).stdout.strip()
+    with profile_path.open("w", encoding="utf-8", newline="\n") as profile_file:
+        _ = subprocess.run(
+            (
+                perf_executable,
+                "script",
+                # Inline frames come from DWARF, which is slow to read and in
+                # which perf finds many harmless faults to warn about.
+                "--no-inline",
+                "-i",
+                os.fspath(recorded_data_path),
+                "-s",
+                os.fspath(pathlib.Path(exec_path) / "scripts/python/stackcollapse.py"),
+                "--",
+                "--include-pid",
+                "--include-tid",
+            ),
+            check=True,
+            stdout=profile_file,
+        )
 
 
 def capture(
     *,
     command: tuple[str, ...],
     profile_path: pathlib.Path,
-    workload_path: pathlib.Path,
     working_directory: pathlib.Path,
-    frequency_hz: int,
-) -> Metadata:
-    """Run the complete target and retain perf data with its Python symbol map."""
-    started_ns = time.monotonic_ns()
+    environment: dict[str, str],
+    stdin: typing.BinaryIO | None,
+) -> int:
+    """Run the complete target and write its symbolized CPU stacks.
+
+    Each line of the profile is one distinct stack, from the thread's name and
+    ID through native and `py::` frames, followed by its sample count.
+    """
     perf_access.require_cpu_access()
     perf_executable = perf_access.perf_executable()
-    with (
-        tempfile.TemporaryDirectory(prefix="define-perf-") as temporary_directory,
-        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as diagnostics_file,
-    ):
+    with tempfile.TemporaryDirectory(prefix="define-perf-") as temporary_directory:
         temporary_directory_path = pathlib.Path(temporary_directory)
         recorded_data_path = temporary_directory_path / "perf.data"
-        environment = os.environ.copy()
-        environment["PYTHONPERFSUPPORT"] = "1"
+        environment = {**environment, "PYTHONPERFSUPPORT": "1"}
         profiled_command = _profiled_command(
             command,
             temporary_directory_path,
@@ -258,7 +152,7 @@ def capture(
                 "-e",
                 "cpu-clock",
                 "-F",
-                str(frequency_hz),
+                str(cpu_stacks.SAMPLING_FREQUENCY_HZ),
                 "-g",
                 "--call-graph",
                 "fp",
@@ -271,53 +165,25 @@ def capture(
             ),
             cwd=working_directory,
             env=environment,
+            stdin=stdin,
             check=False,
-            stderr=diagnostics_file,
-            text=True,
         )
-        target_ended_ns = time.monotonic_ns()
-        _ = diagnostics_file.seek(0)
-        diagnostics = diagnostics_file.read()
         if not target_pid_path.is_file():
-            if diagnostics.strip():
-                raise RuntimeError(
-                    "perf could not launch the target:\n" + diagnostics.strip()
-                )
             raise RuntimeError(
                 "perf record exited with status "
                 + f"{completed.returncode} before launching the target"
             )
-        target_pid = int(target_pid_path.read_text(encoding="utf-8"))
-        runtime_map_path = runtime_python_map_path(target_pid)
+        runtime_map_path = runtime_python_map_path(
+            int(target_pid_path.read_text(encoding="utf-8"))
+        )
         if not runtime_map_path.is_file() or runtime_map_path.stat().st_size == 0:
             raise RuntimeError(
                 "CPython did not create its perf symbol map; "
                 + "the target must support -X perf"
             )
-        _ = shutil.copy2(runtime_map_path, python_map_path(profile_path))
-        runtime_map_path.unlink()
-        _ = shutil.move(recorded_data_path, profile_path)
-        _retain_recorded_native_objects(perf_executable, profile_path, runtime_map_path)
-
-    _ = diagnostics_path(profile_path).write_text(
-        diagnostics, encoding="utf-8", newline="\n"
-    )
-    profile_path.with_name(profile_path.name + ".inject.stderr").unlink(missing_ok=True)
-    metadata: Metadata = {
-        "command": list(command),
-        "working_directory": os.fspath(working_directory),
-        "workload_path": os.fspath(workload_path),
-        "workload_sha256": _sha256(workload_path),
-        "started_ns": started_ns,
-        "ended_ns": target_ended_ns,
-        "compiler_exit_status": completed.returncode,
-        "target_pid": target_pid,
-    }
-    _ = metadata_path(profile_path).write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    if diagnostics:
-        _ = sys.stderr.write(diagnostics)
-    return metadata
+        # perf names Python frames from the map only while it is in place.
+        try:
+            _write_collapsed_stacks(perf_executable, recorded_data_path, profile_path)
+        finally:
+            runtime_map_path.unlink()
+    return completed.returncode

@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_codegen"
-DEFAULT_ACTIONS = 1000
+DEFAULT_ACTIONS = 2000
 DEFAULT_CHAINS_PER_ACTION = 16
-DEFAULT_TOPOLOGY_GROUPS = 100
+DEFAULT_TOPOLOGY_GROUPS = 200
 DEFAULT_TOPOLOGY_WIDTH = 64
 
 _OUTER_INDENT = "    "
@@ -128,32 +128,56 @@ def generate_source_lines(
 
 
 @click.command()
-@click.option("--output", type=generator_cli.OUTPUT_FILE, required=True)
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
 @click.option(
     "--actions",
     type=generator_cli.NONNEGATIVE_INTEGER,
     default=DEFAULT_ACTIONS,
     show_default=True,
+    help=(
+        "Independent actions, each with its own body to generate code for."
+        " 0 omits them."
+    ),
 )
 @click.option(
     "--chains-per-action",
     type=generator_cli.POSITIVE_INTEGER,
     default=DEFAULT_CHAINS_PER_ACTION,
     show_default=True,
+    help=(
+        "Positions per action in which the body creates and then destroys a"
+        " particle; sets the size of each action body."
+    ),
 )
 @click.option(
     "--topology-groups",
     type=generator_cli.NONNEGATIVE_INTEGER,
     default=DEFAULT_TOPOLOGY_GROUPS,
     show_default=True,
+    help=(
+        "Positions in one topology action whose particle gets a particle in"
+        " every child position and is then destroyed with them. 0 omits the"
+        " topology action and its child positions."
+    ),
 )
 @click.option(
     "--topology-width",
     type=generator_cli.POSITIVE_INTEGER,
     default=DEFAULT_TOPOLOGY_WIDTH,
     show_default=True,
+    help=(
+        "Global child positions each topology group's particle has, and so"
+        " the number of children each destruction destroys."
+    ),
 )
-@click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
 def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     actions: int,

@@ -154,3 +154,9 @@ build --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=native
 
 # The settings of clippy's lints, which Cargo.toml cannot hold.
 build --@rules_rust//rust/settings:clippy.toml=//:clippy.toml
+
+# The optimized build that tools/run_profile.py profiles. Linux perf unwinds CPU
+# profile stacks through frame pointers; without them, a sample in Rust code,
+# such as the parser's, loses its Python callers.
+build:profiling --compilation_mode=opt
+build:profiling --@rules_rust//rust/settings:extra_rustc_flag=-Cforce-frame-pointers=yes

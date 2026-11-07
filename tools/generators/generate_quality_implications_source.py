@@ -15,10 +15,10 @@ DEFAULT_FQUN_PREFIX = "mv:define-lang.org:quality_implications"
 
 
 def generate_source_lines(
-    layers: int = 100,
+    layers: int = 500,
     width: int = 2,
     fan_out: int = 2,
-    assignments: int = 10,
+    assignments: int = 50,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> list[str]:
     """Generate independently scalable implication depth, sharing, and assignments."""
@@ -87,20 +87,57 @@ def generate_source_lines(
 
 
 @click.command()
-@click.option("--output", type=generator_cli.OUTPUT_FILE, required=True)
 @click.option(
-    "--layers", type=generator_cli.POSITIVE_INTEGER, default=100, show_default=True
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
 )
 @click.option(
-    "--width", type=generator_cli.POSITIVE_INTEGER, default=2, show_default=True
+    "--layers",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=500,
+    show_default=True,
+    help=(
+        "Layers of quality actions; each action implies and triggers actions in"
+        " the next layer. Sets the depth of the Quality Implications."
+    ),
 )
 @click.option(
-    "--fan-out", type=generator_cli.POSITIVE_INTEGER, default=2, show_default=True
+    "--width",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=2,
+    show_default=True,
+    help=(
+        "Quality actions per layer. 1 gives a single chain of implications;"
+        " the source has layers times width actions."
+    ),
 )
 @click.option(
-    "--assignments", type=generator_cli.POSITIVE_INTEGER, default=10, show_default=True
+    "--fan-out",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=2,
+    show_default=True,
+    help=(
+        "Next-layer actions each action implies and triggers, at most width."
+        " Above 1, layers share implied qualities and the number of"
+        " implication paths grows exponentially with layers."
+    ),
 )
-@click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
+@click.option(
+    "--assignments",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=50,
+    show_default=True,
+    help=(
+        "Local positions in the test action that each assign every first-layer"
+        " quality, then create a particle, trigger every first-layer action on"
+        " it, and destroy it. Each repeats the whole implication graph."
+    ),
+)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
 def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     layers: int,

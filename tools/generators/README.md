@@ -4,7 +4,7 @@ Use this index to choose a generator, then consult its `--help` for sizing
 flags:
 
 ```sh
-bazelisk run //tools/generators:generate_action_graph_source -- --help
+bazelisk run --config=profiling --build_runfile_links //tools/generators:generate_action_graph_source -- --help
 ```
 
 Source generators take `--output FILE`. The reference-project generator takes
@@ -18,7 +18,7 @@ Source generators take `--output FILE`. The reference-project generator takes
 | [generate_particle_operations_source](generate_particle_operations_source.py)                       | Deep and wide particle state, move chains, independent moves, and repeated triggers.                                                                  |
 | [generate_pending_guarantees_source](generate_pending_guarantees_source.py)                         | Nonempty pending Action Guarantee maps during explicit or automatic destruction; independently scale pending and destroyed particles.                 |
 | [generate_quality_implications_source](generate_quality_implications_source.py)                     | Deep or shared Quality Implications and repeated assignments. Width and fan-out of two give exponentially many paths through linearly many qualities. |
-| [generate_triggered_children_destruction_source](generate_triggered_children_destruction_source.py) | Destroying a particle whose transitive children were filled by a tree of triggered actions. Linearly many actions give exponentially many children.   |
+| [generate_triggered_children_destruction_source](generate_triggered_children_destruction_source.py) | Destroying a particle whose triggered actions filled exponentially many transitive children; compile time grows linearly with `--depth`.              |
 | [generate_action_codegen_source](generate_action_codegen_source.py)                                 | Code generation for many actions, substantial action bodies, and wide destruction.                                                                    |
 | [generate_large_define_source](generate_large_define_source.py)                                     | Large source blocks and long chained names; `--malformed-eof` adds a late parse failure.                                                              |
 | [generate_diagnostics_source](generate_diagnostics_source.py)                                       | Many diagnostics, long diagnostic messages, and errors late in a file.                                                                                |

@@ -1,100 +1,18 @@
 from __future__ import annotations
 
-import contextlib
-import io
-import json
 import os
 import shutil
 import subprocess
 import sys
-import typing
+from typing import TYPE_CHECKING
 from unittest import mock
 
-import msgspec
 import pytest
-from click import testing
 
-from tools.profiler import (
-    analyzer,
-    analyzer_model,
-    perf_access,
-    perf_analyzer,
-    perf_profiler,
-    perf_test_support,
-    profiler,
-)
+from tools.profiler import perf_access, perf_profiler, perf_test_support
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from pathlib import Path
-
-
-def _profile(
-    weighted_functions: list[tuple[int, int, str | None]],
-) -> perf_analyzer.Profile:
-    samples = [
-        perf_analyzer.Sample(
-            os_thread_id=thread_id,
-            period_ns=period_ns,
-            python_stack_leaf_first=(
-                analyzer_model.FunctionIdentity(
-                    filename="/workspace/define/compiler/example.py",
-                    function=function,
-                ),
-            )
-            if function is not None
-            else (),
-        )
-        for period_ns, thread_id, function in weighted_functions
-    ]
-    metadata: perf_profiler.Metadata = {
-        "command": ["compiler"],
-        "working_directory": "/workspace",
-        "workload_path": "/workspace/input.define",
-        "workload_sha256": "digest",
-        "started_ns": 10,
-        "ended_ns": 110,
-        "compiler_exit_status": 0,
-        "target_pid": 999_999_999,
-    }
-    return perf_analyzer.Profile(
-        metadata=metadata,
-        event="cpu-clock",
-        frequency_hz=997,
-        diagnostics="",
-        samples=samples,
-        perf_script_warnings=[],
-    )
-
-
-def test_parses_perf_samples_and_python_frame_trampolines():
-    script = """python 101/102 1003009 cpu-clock:u:
-        7f01 native_leaf (/usr/lib/libc.so.6)
-        7f02 py::leaf:/workspace/example.py (/tmp/jitted-101-1.so)
-        7f03 py::caller:/workspace/example.py (/tmp/jitted-101-2.so)
-
-"""
-
-    samples = list(
-        perf_analyzer._parse_script_lines(  # pyright: ignore[reportPrivateUsage]
-            script.splitlines()
-        )
-    )
-
-    assert samples == [
-        perf_analyzer.Sample(
-            os_thread_id=102,
-            period_ns=1_003_009,
-            python_stack_leaf_first=(
-                analyzer_model.FunctionIdentity(
-                    filename="/workspace/example.py", function="leaf"
-                ),
-                analyzer_model.FunctionIdentity(
-                    filename="/workspace/example.py", function="caller"
-                ),
-            ),
-            unresolved_python_frame_count=0,
-        )
-    ]
 
 
 def test_adds_perf_option_to_isolated_bazel_python_launcher(tmp_path: Path):
@@ -136,14 +54,6 @@ def test_leaves_non_bazel_command_unchanged(tmp_path: Path):
 
     assert command == (str(executable_path), "compile")
     assert environment == {}
-    assert (
-        list(
-            perf_analyzer._parse_script_lines(  # pyright: ignore[reportPrivateUsage]
-                []
-            )
-        )
-        == []
-    )
 
 
 def test_adds_perf_option_to_native_bazel_python_launcher(tmp_path: Path):
@@ -202,50 +112,6 @@ def test_leaves_native_launcher_without_environment_files_unchanged(tmp_path: Pa
     )
 
     assert command == (str(launcher_path), "compile")
-
-
-def test_finds_recorded_python_map_and_existing_native_objects(tmp_path: Path):
-    runtime_map_path = perf_profiler.runtime_python_map_path(123)
-    existing_object_path = tmp_path / "existing.so"
-    _ = existing_object_path.write_bytes(b"ELF")
-    missing_object_path = tmp_path / "missing.so"
-    buildid_output = (
-        "\n"
-        + f"                                         {runtime_map_path}\n"
-        + "                                         /python/without/buildid\n"
-        + f"abc123 {existing_object_path}\n"
-        + f"def456 {missing_object_path}\n"
-    )
-
-    recorded_python_map, native_objects = perf_profiler._native_objects(  # pyright: ignore[reportPrivateUsage]
-        buildid_output, runtime_map_path
-    )
-    missing_map, no_native_objects = perf_profiler._native_objects(  # pyright: ignore[reportPrivateUsage]
-        "", runtime_map_path
-    )
-
-    assert recorded_python_map is True
-    assert native_objects == [str(existing_object_path)]
-    assert missing_map is False
-    assert no_native_objects == []
-
-
-def test_replaces_stale_buildid_cache_when_there_are_no_native_objects(
-    tmp_path: Path,
-):
-    profile_path = tmp_path / "perf.data"
-    retained_buildid_path = perf_profiler.buildid_path(profile_path)
-    retained_buildid_path.mkdir()
-    _ = (retained_buildid_path / "stale").write_text(
-        "stale", encoding="utf-8", newline="\n"
-    )
-    with mock.patch.object(subprocess, "run", autospec=True) as run:
-        perf_profiler._retain_native_objects(  # pyright: ignore[reportPrivateUsage]
-            "perf", profile_path, []
-        )
-
-    assert list(retained_buildid_path.iterdir()) == []
-    run.assert_not_called()
 
 
 def test_skips_real_perf_tests_when_perf_is_not_installed(tmp_path: Path):
@@ -321,435 +187,29 @@ def test_skips_real_perf_tests_when_perf_fails_without_a_diagnostic(
         perf_test_support.require_perf_recording(tmp_path)
 
 
-def test_rejects_malformed_perf_script_evidence():
-    with pytest.raises(
-        perf_analyzer.PerfAnalysisError,
-        match="malformed perf script line",
-    ):
-        _ = list(
-            perf_analyzer._parse_script_lines(  # pyright: ignore[reportPrivateUsage]
-                ["unexpected perf output"]
-            )
-        )
-
-    with pytest.raises(
-        perf_analyzer.PerfAnalysisError,
-        match="malformed Python perf symbol",
-    ):
-        _ = list(
-            perf_analyzer._parse_script_lines(  # pyright: ignore[reportPrivateUsage]
-                [
-                    "python 101/102 1003009 cpu-clock:u:",
-                    "  7f02 py::malformed (/tmp/jitted-101-1.so)",
-                ]
-            )
-        )
-
-
-def test_marks_unresolved_perf_map_frames_as_python_attribution_anomalies():
-    script = """python 101/102 1003009 cpu-clock:u:
-        7f01 [unknown] (/tmp/perf-101.map)
-        7f02 py::caller:/workspace/example.py (/tmp/perf-101.map)
-
-"""
-
-    samples = list(
-        perf_analyzer._parse_script_lines(  # pyright: ignore[reportPrivateUsage]
-            script.splitlines()
-        )
-    )
-
-    assert len(samples) == 1
-    assert samples[0].unresolved_python_frame_count == 1
-    assert samples[0].python_stack_leaf_first[0].function == "caller"
-
-
-def _install_fake_perf(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    stdout: str,
-    stderr: str,
-    returncode: int,
-) -> Path:
-    """Put a perf on PATH that prints fixed output and records its arguments in the returned file."""
-    stdout_path = tmp_path / "perf-stdout.txt"
-    stderr_path = tmp_path / "perf-stderr.txt"
-    arguments_path = tmp_path / "perf-arguments.txt"
-    _ = stdout_path.write_text(stdout, encoding="utf-8", newline="\n")
-    _ = stderr_path.write_text(stderr, encoding="utf-8", newline="\n")
-    executable_dir = tmp_path / "bin"
-    executable_dir.mkdir()
-    executable = executable_dir / "perf"
-    _ = executable.write_text(
-        "#!/bin/sh\n"
-        + f"printf '%s\\n' \"$@\" >> '{arguments_path}'\n"
-        + f"cat '{stdout_path}'\n"
-        + f"cat '{stderr_path}' >&2\n"
-        + f"exit {returncode}\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    executable.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{executable_dir}:{os.environ['PATH']}")
-    return arguments_path
-
-
-def _write_python_map(profile_path: Path):
-    _ = perf_profiler.python_map_path(profile_path).write_text(
-        "100 10 py::work:/workspace/example.py\n", encoding="utf-8", newline="\n"
-    )
-
-
-def test_reports_perf_script_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    profile_path = tmp_path / "perf.data"
-    _write_python_map(profile_path)
-    _ = _install_fake_perf(
-        tmp_path, monkeypatch, stdout="", stderr="decode failed\n", returncode=1
-    )
-    with pytest.raises(perf_analyzer.PerfAnalysisError, match="decode failed"):
-        _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
-            profile_path, 999_999_999
-        )
-
-
-def test_reports_perf_script_failure_rather_than_its_malformed_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    profile_path = tmp_path / "perf.data"
-    _write_python_map(profile_path)
-    _ = _install_fake_perf(
-        tmp_path,
-        monkeypatch,
-        stdout=(
-            "not perf output\n"
-            "python 101/102 1003009 cpu-clock:u:\n"
-            "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
-        ),
-        stderr="decode failed\n",
-        returncode=1,
-    )
-    with pytest.raises(perf_analyzer.PerfAnalysisError, match="decode failed"):
-        _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
-            profile_path, 999_999_999
-        )
-
-
-def test_reports_malformed_output_of_successful_perf_script(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    profile_path = tmp_path / "perf.data"
-    _write_python_map(profile_path)
-    _ = _install_fake_perf(
-        tmp_path, monkeypatch, stdout="not perf output\n", stderr="", returncode=0
-    )
-    with pytest.raises(
-        perf_analyzer.PerfAnalysisError, match="malformed perf script line"
-    ):
-        _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
-            profile_path, 999_999_999
-        )
-
-
-def test_decodes_all_threads_with_one_symbol_map(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    profile_path = tmp_path / "perf.data"
-    _write_python_map(profile_path)
-    arguments_path = _install_fake_perf(
-        tmp_path,
-        monkeypatch,
-        stdout=(
-            "python 101/102 1003009 cpu-clock:u:\n"
-            "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
-            "python 101/103 1003009 cpu-clock:u:\n"
-            "  7f03 py::second:/workspace/example.py (/tmp/perf-101.map)\n"
-            "python 101/102 1003009 cpu-clock:u:\n"
-            "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
-        ),
-        stderr="shared warning\n",
-        returncode=0,
-    )
-    samples, warnings = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
-        profile_path, 999_999_999
-    )
-
-    assert [sample.os_thread_id for sample in samples] == [102, 103, 102]
-    assert [sample.python_stack_leaf_first[0].function for sample in samples] == [
-        "first",
-        "second",
-        "first",
-    ]
-    # Samples with the same stack share it.
-    assert samples[0].python_stack_leaf_first is samples[2].python_stack_leaf_first
-    assert warnings == ["shared warning"]
-    arguments = arguments_path.read_text(encoding="utf-8").splitlines()
-    assert arguments.count("script") == 1
-    assert "--symfs" not in arguments
-
-
-def test_refuses_to_attribute_samples_with_unresolved_python_frames(
-    tmp_path: Path,
-):
-    profile_path = tmp_path / "perf.data"
-    metadata = _profile([]).metadata
-    _ = perf_profiler.metadata_path(profile_path).write_text(
-        json.dumps(metadata), encoding="utf-8", newline="\n"
-    )
-    _ = perf_profiler.diagnostics_path(profile_path).write_text(
-        "", encoding="utf-8", newline="\n"
-    )
-    unresolved_sample = perf_analyzer.Sample(
-        os_thread_id=102,
-        period_ns=1_003_009,
-        python_stack_leaf_first=(
-            analyzer_model.FunctionIdentity(
-                filename="/workspace/example.py", function="caller"
-            ),
-        ),
-        unresolved_python_frame_count=1,
-    )
+def test_reports_missing_perf_access_before_target_launch(tmp_path: Path):
+    profile_path = tmp_path / "stacks.txt"
     with (
         mock.patch.object(
-            perf_analyzer,
-            "_configuration",
+            perf_access,
+            "require_cpu_access",
             autospec=True,
-            return_value=("cpu-clock", 997),
+            side_effect=perf_access.PerfAccessError("grant CPU access"),
         ),
-        mock.patch.object(
-            perf_analyzer,
-            "_decode",
-            autospec=True,
-            return_value=([unresolved_sample], []),
-        ),
-        pytest.raises(
-            perf_analyzer.PerfAnalysisError,
-            match="refusing potentially incorrect Python attribution",
-        ),
+        pytest.raises(perf_access.PerfAccessError, match="grant CPU access"),
     ):
-        _ = perf_analyzer.load(profile_path)
-
-
-def test_refuses_to_replace_an_existing_runtime_symbol_map(tmp_path: Path):
-    profile_path = tmp_path / "perf.data"
-    target_pid = 999_999_998
-    _ = perf_profiler.python_map_path(profile_path).write_text(
-        "100 10 py::work:/workspace/example.py\n", encoding="utf-8", newline="\n"
-    )
-    runtime_map_path = perf_profiler.runtime_python_map_path(target_pid)
-    with runtime_map_path.open("x", encoding="utf-8", newline="\n") as runtime_map_file:
-        _ = runtime_map_file.write("unrelated symbols\n")
-    try:
-        with (
-            pytest.raises(
-                perf_analyzer.PerfAnalysisError,
-                match="already exists",
-            ),
-            perf_analyzer._materialized_python_map(  # pyright: ignore[reportPrivateUsage]
-                profile_path, target_pid
-            ),
-        ):
-            pass
-        assert runtime_map_path.read_text(encoding="utf-8") == "unrelated symbols\n"
-    finally:
-        runtime_map_path.unlink()
-
-
-def test_cpu_percentages_include_native_and_filtered_python_samples():
-    profile = _profile(
-        [
-            (50, 1, "compiler_work"),
-            (30, 2, "library_work"),
-            (20, 2, None),
-        ]
-    )
-
-    analysis = perf_analyzer.analyze(
-        profile,
-        analyzer_model.AnalysisFilters(function="compiler_work"),
-    )
-
-    assert analysis.sampled_cpu_ns == 100
-    assert analysis.python_attributed_cpu_ns == 80
-    assert analysis.unattributed_cpu_ns == 20
-    assert len(analysis.self_function_rows) == 1
-    assert analysis.self_function_rows[0].cpu_time_ns == 50
-    assert analysis.self_function_rows[0].percentage == 50.0  # noqa: RUF069 - This ratio is exactly one half.
-
-
-def test_filters_perf_relationships_and_threads():
-    profile = _profile([(100, 1, "leaf"), (50, 2, "other")])
-    caller = analyzer_model.FunctionIdentity(
-        filename="/workspace/define/compiler/example.py",
-        function="caller",
-    )
-    profile.samples[0] = msgspec.structs.replace(
-        profile.samples[0],
-        python_stack_leaf_first=(*profile.samples[0].python_stack_leaf_first, caller),
-    )
-
-    caller_filtered = perf_analyzer.analyze(
-        profile,
-        analyzer_model.AnalysisFilters(caller="missing"),
-    )
-    callee_filtered = perf_analyzer.analyze(
-        profile,
-        analyzer_model.AnalysisFilters(callee="missing"),
-    )
-    file_filtered = perf_analyzer.analyze(
-        profile,
-        analyzer_model.AnalysisFilters(filename="missing"),
-    )
-    thread_filtered = perf_analyzer.analyze(
-        profile,
-        analyzer_model.AnalysisFilters(thread_ids=frozenset({2})),
-    )
-
-    assert caller_filtered.relationship_rows == []
-    assert callee_filtered.relationship_rows == []
-    assert file_filtered.relationship_rows == []
-    assert [row.os_thread_id for row in thread_filtered.thread_rows] == [2]
-    assert {row.identity.function for row in thread_filtered.self_function_rows} == {
-        "other"
-    }
-
-
-def test_reports_perf_warnings():
-    profile = msgspec.structs.replace(
-        _profile([(100, 1, "compile")]),
-        perf_script_warnings=["sample warning"],
-    )
-    output = io.StringIO()
-    with contextlib.redirect_stdout(output):
-        perf_analyzer.emit_report(profile, perf_analyzer.analyze(profile), 5)
-
-    assert "Perf script warnings:\n  sample warning" in output.getvalue()
-
-
-def test_analyzer_dispatches_native_perf_data(tmp_path: Path):
-    profile_path = tmp_path / "perf.data"
-    _ = profile_path.write_bytes(b"PERFILE2")
-    profile = _profile([(100, 7, "compile")])
-    with mock.patch.object(
-        perf_analyzer,
-        "load",
-        autospec=True,
-        return_value=profile,
-    ):
-        result = testing.CliRunner().invoke(
-            analyzer.main,
-            ("--profile", str(profile_path)),
+        _ = perf_profiler.capture(
+            command=("compiler",),
+            profile_path=profile_path,
+            working_directory=tmp_path,
+            environment=dict(os.environ),
+            stdin=None,
         )
 
-    assert result.exit_code == 0
-    assert "Native perf profile: complete; successful" in result.output
-    assert "100.00%" in result.output
-
-
-def test_cpu_command_dispatches_to_perf(tmp_path: Path):
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-    metadata = _profile([(100, 1, "compile")]).metadata
-    profile_path = tmp_path / "perf.data"
-    _ = perf_profiler.diagnostics_path(profile_path).write_text(
-        "", encoding="utf-8", newline="\n"
-    )
-    with mock.patch.object(
-        perf_profiler,
-        "capture",
-        autospec=True,
-        return_value=metadata,
-    ) as capture:
-        result = testing.CliRunner().invoke(
-            profiler.main,
-            (
-                "--mode",
-                "cpu",
-                "--profile",
-                str(profile_path),
-                "--workload",
-                str(workload_path),
-                "--working-directory",
-                str(tmp_path),
-                "--",
-                "compiler",
-            ),
-        )
-
-    assert result.exit_code == 0
-    assert "Capture: complete; successful; compiler exit 0" in result.output
-    capture.assert_called_once()
-
-
-def test_cpu_command_reports_missing_perf_access_before_target_launch(
-    tmp_path: Path,
-):
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-    profile_path = tmp_path / "perf.data"
-    with mock.patch.object(
-        perf_access,
-        "require_cpu_access",
-        autospec=True,
-        side_effect=perf_access.PerfAccessError("grant CPU access"),
-    ):
-        result = testing.CliRunner().invoke(
-            profiler.main,
-            (
-                "--mode",
-                "cpu",
-                "--profile",
-                str(profile_path),
-                "--workload",
-                str(workload_path),
-                "--working-directory",
-                str(tmp_path),
-                "--",
-                "compiler",
-            ),
-        )
-
-    assert result.exit_code == 1
-    assert result.output == "Error: grant CPU access\n"
     assert not profile_path.exists()
 
 
-def test_cpu_command_rejects_wall_coordination_descriptor(tmp_path: Path):
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-
-    result = testing.CliRunner().invoke(
-        profiler.main,
-        (
-            "--mode",
-            "cpu",
-            "--profile",
-            str(tmp_path / "perf.data"),
-            "--workload",
-            str(workload_path),
-            "--event-fd",
-            "1",
-            "--",
-            "compiler",
-        ),
-    )
-
-    assert result.exit_code == 2
-    assert "--event-fd is supported only in wall mode" in result.output
-
-
 def test_reports_perf_failure_before_target_launch(tmp_path: Path):
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-
-    def fail_record(
-        *arguments: object, **keyword_arguments: object
-    ) -> subprocess.CompletedProcess[str]:
-        diagnostics_file = typing.cast("typing.TextIO", keyword_arguments["stderr"])
-        _ = diagnostics_file.write("perf is unavailable for this kernel\n")
-        command = typing.cast("tuple[str, ...]", arguments[0])
-        return subprocess.CompletedProcess(command, 255)
-
     with (
         mock.patch.object(perf_access, "require_cpu_access", autospec=True),
         mock.patch.object(
@@ -762,94 +222,75 @@ def test_reports_perf_failure_before_target_launch(tmp_path: Path):
             subprocess,
             "run",
             autospec=True,
-            side_effect=fail_record,
+            return_value=subprocess.CompletedProcess(("perf",), 255),
         ),
         pytest.raises(
             RuntimeError,
-            match="perf could not launch the target:\nperf is unavailable for this kernel",
+            match="perf record exited with status 255 before launching the target",
         ),
     ):
         _ = perf_profiler.capture(
             command=(sys.executable, "-c", "pass"),
-            profile_path=tmp_path / "perf.data",
-            workload_path=workload_path,
+            profile_path=tmp_path / "stacks.txt",
             working_directory=tmp_path,
-            frequency_hz=997,
+            environment=dict(os.environ),
+            stdin=None,
         )
 
 
-def test_records_real_python_cpu_samples_with_perf(tmp_path: Path):
+def test_records_real_python_cpu_stacks_with_perf(tmp_path: Path):
     perf_test_support.require_perf_recording(tmp_path)
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-    profile_path = tmp_path / "perf.data"
+    profile_path = tmp_path / "stacks.txt"
 
-    metadata = perf_profiler.capture(
+    exit_status = perf_profiler.capture(
         command=(
             sys.executable,
             "-c",
             "import concurrent.futures\n"
             + "import threading\n"
             + "barrier = threading.Barrier(32)\n"
-            + "def worker(task):\n"
+            + "def compiler_work(task):\n"
             + "    barrier.wait()\n"
             + "    return sum(value * value for value in range(2_000_000))\n"
             + "with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:\n"
-            + "    list(executor.map(worker, range(32)))\n",
+            + "    list(executor.map(compiler_work, range(32)))\n",
         ),
         profile_path=profile_path,
-        workload_path=workload_path,
         working_directory=tmp_path,
-        frequency_hz=997,
+        environment=dict(os.environ),
+        stdin=None,
     )
 
-    assert metadata["compiler_exit_status"] == 0
-    assert profile_path.read_bytes().startswith(b"PERFILE2")
-    assert any(perf_profiler.buildid_path(profile_path).rglob("elf"))
-    assert perf_profiler.python_map_path(profile_path).stat().st_size > 0
-    assert not perf_profiler.runtime_python_map_path(metadata["target_pid"]).exists()
-    assert (
-        json.loads(
-            perf_profiler.metadata_path(profile_path).read_text(encoding="utf-8")
-        )
-        == metadata
-    )
-    profile = perf_analyzer.load(profile_path)
-    assert not perf_profiler.runtime_python_map_path(metadata["target_pid"]).exists()
-    assert profile.success is True
-    assert len(profile.samples) > 10
-    assert all(sample.unresolved_python_frame_count == 0 for sample in profile.samples)
-    analysis = perf_analyzer.analyze(profile)
-    assert analysis.sampled_cpu_ns > 0
-    assert analysis.python_attributed_cpu_ns / analysis.sampled_cpu_ns > 0.9
-    assert sum(row.python_attributed_cpu_ns > 0 for row in analysis.thread_rows) >= 32
+    assert exit_status == 0
+    work_threads: set[str] = set()
+    for line in profile_path.read_text(encoding="utf-8").splitlines():
+        stack, _, count = line.rpartition(" ")
+        assert int(count) > 0
+        if "py::compiler_work:" in stack:
+            work_threads.add(stack.split(";", maxsplit=1)[0])
+    assert len(work_threads) == 32
 
 
-def test_preserves_target_diagnostics_for_unsuccessful_perf_capture(tmp_path: Path):
+def test_returns_target_exit_status_and_removes_its_symbol_map(
+    tmp_path: Path, capfd: pytest.CaptureFixture[str]
+):
     perf_test_support.require_perf_recording(tmp_path)
-    workload_path = tmp_path / "workload.define"
-    _ = workload_path.write_text("workload", encoding="utf-8", newline="\n")
-    profile_path = tmp_path / "perf.data"
-    diagnostics = io.StringIO()
-    with contextlib.redirect_stderr(diagnostics):
-        metadata = perf_profiler.capture(
-            command=(
-                sys.executable,
-                "-c",
-                "import sys; sys.stderr.write('target diagnostic\\n'); "
-                + "sum(value * value for value in range(4_000_000))",
-            ),
-            profile_path=profile_path,
-            workload_path=workload_path,
-            working_directory=tmp_path,
-            frequency_hz=997,
-        )
 
-    assert metadata["compiler_exit_status"] == 0
-    assert (
-        profile_path.with_name(profile_path.name + ".stderr").read_text(
-            encoding="utf-8"
-        )
-        == "target diagnostic\n"
+    exit_status = perf_profiler.capture(
+        command=(
+            sys.executable,
+            "-c",
+            "import os, sys; sys.stderr.write(f'target {os.getpid()}\\n'); "
+            + "sum(value * value for value in range(4_000_000)); sys.exit(3)",
+        ),
+        profile_path=tmp_path / "stacks.txt",
+        working_directory=tmp_path,
+        environment=dict(os.environ),
+        stdin=None,
     )
-    assert diagnostics.getvalue() == "target diagnostic\n"
+
+    assert exit_status == 3
+    diagnostics = capfd.readouterr().err
+    assert diagnostics.startswith("target ")
+    target_pid = int(diagnostics.split()[1])
+    assert not perf_profiler.runtime_python_map_path(target_pid).exists()

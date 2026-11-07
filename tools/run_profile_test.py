@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import re
 import shutil
 import subprocess
 import typing
@@ -12,12 +12,16 @@ from python.runfiles import runfiles as python_runfiles
 
 from tools import profile_orchestration as run_profile
 from tools import runfiles
-from tools.profiler import analyzer, perf_analyzer, perf_test_support, schema
+from tools.profiler import (
+    analyzer,
+    perf_test_support,
+    tachyon_profile,
+    tachyon_profiler,
+)
 
 if typing.TYPE_CHECKING:
     import pytest
 
-# PRF-041: Realistic tests.
 _CONSTRUCTOR_SOURCE = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
     "    it happens when {\n"
@@ -31,7 +35,6 @@ _CONSTRUCTOR_SOURCE = (
 
 
 def _capture(arguments: list[str]) -> click.testing.Result:
-    # PRF-012: Orchestration boundary. PRF-041: Realistic tests.
     compiler_path = runfiles.resolve_from_env("COMPILER_BINARY")
     runfiles_resolver = python_runfiles.Runfiles.Create()
     assert runfiles_resolver is not None
@@ -57,7 +60,6 @@ def _capture(arguments: list[str]) -> click.testing.Result:
 
 
 def _analyze(profile_path: Path) -> str:
-    # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
     completed = subprocess.run(
         [
             str(runfiles.resolve_from_env("ANALYZER_BINARY")),
@@ -79,7 +81,6 @@ def _analyze(profile_path: Path) -> str:
     return in_process.output
 
 
-# PRF-012: Orchestration boundary.
 def test_rejects_source_and_project_together(tmp_path: Path):
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
@@ -100,7 +101,6 @@ def test_rejects_source_and_project_together(tmp_path: Path):
     assert "Error: provide exactly one of --source or --project" in result.output
 
 
-# PRF-012: Orchestration boundary.
 def test_requires_source_or_project():
     result = click.testing.CliRunner().invoke(
         run_profile.main,
@@ -111,7 +111,6 @@ def test_requires_source_or_project():
     assert "Error: provide exactly one of --source or --project" in result.output
 
 
-# PRF-012: Orchestration boundary. PRF-020: Machine and human interfaces.
 def test_help_describes_wall_and_cpu_capture_workflow():
     result = click.testing.CliRunner().invoke(
         run_profile.main,
@@ -121,7 +120,7 @@ def test_help_describes_wall_and_cpu_capture_workflow():
 
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
-    assert "wall observations or Linux perf CPU samples" in help_text
+    assert "Wall mode records all-thread samples with Tachyon" in help_text
     assert "--mode [wall|cpu]" in help_text
     assert "--source" in help_text
     assert "--project" in help_text
@@ -130,7 +129,6 @@ def test_help_describes_wall_and_cpu_capture_workflow():
     assert "--output-dir" in help_text
 
 
-# PRF-012: Orchestration boundary.
 def test_changes_to_build_workspace(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -147,7 +145,6 @@ def test_changes_to_build_workspace(
     assert Path.cwd() == workspace
 
 
-# PRF-012: Orchestration boundary.
 def test_keeps_working_directory_outside_bazel(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -160,7 +157,6 @@ def test_keeps_working_directory_outside_bazel(
     assert Path.cwd() == tmp_path
 
 
-# PRF-012: Orchestration boundary.
 def test_builds_compiler_before_preparing_profile(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -185,10 +181,27 @@ def test_builds_compiler_before_preparing_profile(
             return_value=completed_build,
         ) as subprocess_run,
         mock.patch.object(
-            run_profile,
-            "record_profile",
+            tachyon_profiler,
+            "capture",
             autospec=True,
-        ) as record_profile,
+            return_value=0,
+        ) as capture,
+        mock.patch.object(
+            tachyon_profile,
+            "load",
+            autospec=True,
+            return_value=tachyon_profile.WallProfile(
+                python_version="3.15.2",
+                sample_interval_ns=1_000_000,
+                failed_sample_percent=0.5,
+                main_thread_id=1,
+                started_ns=0,
+                ended_ns=2_000_000_000,
+                frames=[],
+                observation_count=1,
+                samples_by_thread={1: []},
+            ),
+        ),
     ):
         result = click.testing.CliRunner().invoke(
             run_profile.main,
@@ -196,17 +209,25 @@ def test_builds_compiler_before_preparing_profile(
                 "--source",
                 str(source_path),
                 "--out",
-                str(tmp_path / "profile.jsonl"),
+                str(tmp_path / "profile.bin"),
             ],
         )
 
     assert result.exit_code == 0
+    output_lines = result.output.splitlines()
+    assert output_lines[0] == "Building the compiler with --config=profiling"
+    assert output_lines[1].startswith("Generated code directory: ")
+    assert output_lines[2:] == [
+        f"Profile: {tmp_path / 'profile.bin'}",
+        "Capture: compiler exit 0",
+        "Samples: 2.00 s of wall time; 1 threads; failed samples 0.5%",
+        "Generated code: 0 files; 0.0 MB",
+    ]
     subprocess_run.assert_called_once_with(
         [
             "/usr/bin/bazelisk",
             "build",
-            "-c",
-            "opt",
+            "--config=profiling",
             "--build_runfile_links",
             "--noshow_progress",
             "--ui_event_filters=-info",
@@ -215,27 +236,17 @@ def test_builds_compiler_before_preparing_profile(
         check=True,
         cwd=tmp_path,
     )
-    record_profile.assert_called_once()
-    invocation = typing.cast(
-        "run_profile.ProfileInvocation",
-        record_profile.call_args.args[0],
-    )
-    assert invocation.profiler_working_directory == tmp_path
-    assert invocation.profiler_arguments == ("--mode", "wall")
-    assert invocation.target_command[0] == str(
+    capture.assert_called_once()
+    assert capture.call_args.kwargs["command"][0] == str(
         tmp_path / "bazel-bin/define/compiler/main"
     )
+    assert capture.call_args.kwargs["working_directory"] == tmp_path
 
 
-# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
-# PRF-025: Failure threshold. PRF-026: No silent partial success.
-# PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
-# PRF-043: Analyzer at every checkpoint.
 def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
-    perf_test_support.require_scheduler_events()
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
-    profile_path = tmp_path / "source-profile.jsonl"
+    profile_path = tmp_path / "source-profile.bin"
 
     result = _capture(
         [
@@ -248,40 +259,20 @@ def test_profiles_source_through_public_profiler_and_analyzer(tmp_path: Path):
         ]
     )
 
-    profile = schema.load(profile_path)
-    assert result.exit_code == (0 if profile.success else 1)
-    assert profile.complete is True
-    assert profile.compiler_exit_status == 0
-    assert profile.diagnostics_status == "none"
-    assert profile.failures == []
-    assert profile.sampling_statistics is not None
-    assert profile.success is (profile.discarded_rate <= schema.MAX_DISCARDED_RATE)
-    assert profile.workload_path == str(source_path)
-    workspace = Path(run_profile.__file__).resolve().parent.parent
-    assert profile.working_directory == str(workspace)
-    assert profile.command[1:6] == [
-        "compile",
-        "--out",
-        profile.command[3],
-        "--max-threads",
-        "3",
-    ]
-    assert not Path(profile.command[3]).exists()
-    analysis = _analyze(profile_path)
-    capture_status = "successful" if profile.success else "unsuccessful"
-    assert (
-        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
-        in analysis
+    assert result.exit_code == 0
+    assert re.search(
+        r"^Samples: \d+\.\d\d s of wall time; \d+ threads; failed samples ",
+        result.output,
+        re.MULTILINE,
     )
-    assert "Self wall occupancy (union across threads):" in analysis
+    profile = tachyon_profile.load(profile_path)
+    assert profile.observation_count > 0
+    analysis = _analyze(profile_path)
+    assert "Profile: Tachyon wall samples" in analysis
+    assert " (main): " in analysis
 
 
-# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
-# PRF-025: Failure threshold. PRF-026: No silent partial success.
-# PRF-020: Machine and human interfaces. PRF-041: Realistic tests.
-# PRF-043: Analyzer at every checkpoint.
 def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: Path):
-    perf_test_support.require_scheduler_events()
     project_path = tmp_path / "project"
     project_path.mkdir()
     config_path = project_path / ".define/project/config.defcl"
@@ -297,7 +288,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
         encoding="utf-8",
         newline="\n",
     )
-    profile_path = tmp_path / "project-profile.jsonl"
+    profile_path = tmp_path / "project-profile.bin"
     output_dir = tmp_path / "generated"
 
     result = _capture(
@@ -313,37 +304,22 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
         ]
     )
 
-    profile = schema.load(profile_path)
-    assert result.exit_code == (0 if profile.success else 1)
-    assert profile.complete is True
-    assert profile.compiler_exit_status == 0
-    assert profile.diagnostics_status == "none"
-    assert profile.failures == []
-    assert profile.sampling_statistics is not None
-    assert profile.success is (profile.discarded_rate <= schema.MAX_DISCARDED_RATE)
-    assert profile.workload_path == str(entry_path)
-    assert profile.working_directory == str(project_path)
-    assert profile.command[-1] == str(entry_path)
-    assert profile.command[profile.command.index("--out") + 1] == str(output_dir)
+    assert result.exit_code == 0
     assert output_dir.is_dir()
+    generated_count = sum(1 for path in output_dir.rglob("*") if path.is_file())
+    assert f"Generated code: {generated_count} files; " in result.output
+    profile = tachyon_profile.load(profile_path)
+    assert profile.observation_count > 0
     analysis = _analyze(profile_path)
-    capture_status = "successful" if profile.success else "unsuccessful"
-    assert (
-        f"Profile schema: {schema.SCHEMA_VERSION}; complete; {capture_status}"
-        in analysis
-    )
-    assert "Cumulative wall occupancy (union across threads):" in analysis
+    assert "Profile: Tachyon wall samples" in analysis
+    assert " (main): " in analysis
 
 
-# PRF-011: Complete invocation. PRF-012: Orchestration boundary.
-# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
-# PRF-026: No silent partial success. PRF-041: Realistic tests.
-# PRF-043: Analyzer at every checkpoint.
-def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
+def test_profiles_cpu_through_public_profiler(tmp_path: Path):
     perf_test_support.require_perf_recording(tmp_path)
     source_path = tmp_path / "source.dfn"
     _ = source_path.write_text(_CONSTRUCTOR_SOURCE, encoding="utf-8", newline="\n")
-    profile_path = tmp_path / "perf.data"
+    profile_path = tmp_path / "stacks.txt"
 
     result = _capture(
         [
@@ -358,23 +334,11 @@ def test_profiles_cpu_through_public_profiler_and_analyzer(tmp_path: Path):
         ]
     )
 
-    profile = perf_analyzer.load(profile_path)
-    assert result.exit_code == (0 if profile.success else 1)
-    assert profile.metadata["compiler_exit_status"] == 0
-    assert profile.diagnostics == ""
-    assert profile.event == "cpu-clock"
-    assert profile_path.read_bytes().startswith(b"PERFILE2")
-    assert (
-        json.loads(
-            profile_path.with_name(profile_path.name + ".json").read_text(
-                encoding="utf-8"
-            )
-        )
-        == profile.metadata
+    assert result.exit_code == 0
+    assert re.search(
+        r"^Samples: \d+\.\d\d s of CPU time; \d+ threads; stacks not unwound "
+        + r"\d+\.\d%$",
+        result.output,
+        re.MULTILINE,
     )
-    analysis = _analyze(profile_path)
-    capture_status = "successful" if profile.success else "unsuccessful"
-    assert f"Native perf profile: complete; {capture_status}" in analysis
-    assert "CPU backend: linux-perf" in analysis
-    assert "Self CPU attribution:" in analysis
-    assert "Cumulative CPU attribution:" in analysis
+    assert "/define/compiler/" in profile_path.read_text(encoding="utf-8")

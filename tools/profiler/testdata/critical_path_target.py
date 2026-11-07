@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import queue
 import sys
 import threading
@@ -15,7 +14,7 @@ def _controlled_work(
     phase: bytes,
     value: int,
 ) -> int:
-    # PRF-048: Tests choose observation boundaries instead of wall-clock budgets.
+    # Tests choose phase boundaries through the control stream.
     _ = status_stream.write(phase)
     while not release.is_set():
         value += 1
@@ -26,7 +25,6 @@ def _stage_one_work(
     release: threading.Event,
     status_stream: typing.BinaryIO,
 ) -> int:
-    # PRF-048: Critical-path fixture.
     return _controlled_work(release, status_stream, b"1", 0)
 
 
@@ -36,7 +34,6 @@ def _stage_one_worker(
     status_stream: typing.BinaryIO,
     finish: threading.Event,
 ):
-    # PRF-048: Critical-path fixture.
     output_queue.put(_stage_one_work(release, status_stream))
     _ = finish.wait()
 
@@ -46,7 +43,6 @@ def _stage_two_work(
     release: threading.Event,
     status_stream: typing.BinaryIO,
 ) -> int:
-    # PRF-048: Critical-path fixture.
     return _controlled_work(release, status_stream, b"2", value)
 
 
@@ -55,7 +51,6 @@ def _stage_three_work(
     release: threading.Event,
     status_stream: typing.BinaryIO,
 ) -> int:
-    # PRF-048: Critical-path fixture.
     return _controlled_work(release, status_stream, b"3", value)
 
 
@@ -64,7 +59,6 @@ def _final_work(
     release: threading.Event,
     status_stream: typing.BinaryIO,
 ) -> int:
-    # PRF-048: Critical-path fixture.
     return _controlled_work(release, status_stream, b"4", value)
 
 
@@ -75,7 +69,6 @@ def _stage_two_worker(
     status_stream: typing.BinaryIO,
     finish: threading.Event,
 ):
-    # PRF-048: Critical-path fixture.
     value = input_queue.get()
     stage_three_queue.put(_stage_two_work(value, release, status_stream))
     _ = finish.wait()
@@ -88,14 +81,12 @@ def _stage_three_worker(
     status_stream: typing.BinaryIO,
     finish: threading.Event,
 ):
-    # PRF-048: Critical-path fixture.
     value = input_queue.get()
     output_queue.put(_stage_three_work(value, release, status_stream))
     _ = finish.wait()
 
 
 def _off_path_work(finish: threading.Event):
-    # PRF-048: Critical-path fixture.
     value = 0
     while not finish.is_set():
         value += 1
@@ -156,4 +147,6 @@ with (
         _releases[3],
         _status_stream,
     )
-os._exit(0 if _result > 0 else 1)
+# Release every worker so that the process can exit normally.
+_finish.set()
+raise SystemExit(0 if _result > 0 else 1)

@@ -460,7 +460,7 @@ def _fill_action_lines(
 
 
 def generate_source_lines(
-    depth: int = 20,
+    depth: int = 2000,
     fan_out: int = 2,
     shape: Shape = Shape.LOCAL,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
@@ -487,20 +487,62 @@ def generate_source_lines(
 
 
 @click.command()
-@click.option("--output", type=generator_cli.OUTPUT_FILE, required=True)
 @click.option(
-    "--depth", type=generator_cli.POSITIVE_INTEGER, default=20, show_default=True
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
 )
 @click.option(
-    "--fan-out", type=generator_cli.POSITIVE_INTEGER, default=2, show_default=True
+    "--depth",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=2000,
+    show_default=True,
+    help=(
+        "Number of fill actions. Each one but the last fills fan-out child"
+        " particles and triggers the next fill action on each. Source grows"
+        " linearly; the particle tree has fan-out^(depth-1) leaves."
+    ),
+)
+@click.option(
+    "--fan-out",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=2,
+    show_default=True,
+    help=(
+        "Child positions each fill action fills, and so the number of times it"
+        " triggers the next fill action."
+    ),
 )
 @click.option(
     "--shape",
     type=click.Choice([shape.value for shape in Shape]),
     default=Shape.LOCAL.value,
     show_default=True,
+    help=(
+        "Where the filled particle is destroyed. local: the entry action"
+        " destroys a local particle. destructors: as local, and every child has"
+        " a Destructor. contracted: an action destroys it from an interface"
+        " position, making a Destruction Contract. move: an action moves it"
+        " between interface positions before the entry action destroys it."
+        " rearrange: as local, and every action also moves particles its caller"
+        " and callees created and triggers another action. rearrange-destructors:"
+        " as rearrange, and every moved particle has a Destructor. error: as"
+        " local, and every action triggers a shared action with an error, so"
+        " the program reports one diagnostic. dependent-siblings: as local, and"
+        " each child also gets an action that creates a particle with a"
+        " Destructor and one that destroys it. in-destructor: a Destructor"
+        " creates and fills the local particle. in-destructor-contracted: a"
+        " Destructor triggers the first fill action in one of its implied"
+        " positions, so the program reports a diagnostic for each child"
+        " position it requires to be empty and each particle it leaves there."
+        " same-particle: each action triggers the next on its own parent"
+        " particle fan-out times, so there are no child particles."
+    ),
 )
-@click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
 def main(output: Path, depth: int, fan_out: int, shape: str, fqun_prefix: str):
     """Generate a destroyed particle with exponentially many triggered children."""
     written = generator_cli.invoke(

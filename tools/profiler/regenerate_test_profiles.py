@@ -3,55 +3,27 @@
 from __future__ import annotations
 
 import concurrent.futures
-import contextlib
-import io
+import itertools
 import os
-import select
-import subprocess
+import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tools import runfiles
-from tools.generators import generate_large_define_source
-from tools.profiler import schema, wall_analyzer, wall_critical_path
+from tools.profiler import tachyon_profile, tachyon_profiler
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_OBSERVATIONS_PER_PHASE = 20
+# Tachyon reports no sampling progress, so each phase runs long enough for
+# dozens of samples at the profiler's default frequency. Every capture is then
+# validated, and rejected captures are retried.
+_PHASE_SECONDS = 0.05
 _MAX_CAPTURE_ATTEMPTS = 10
 
 
-class _CaptureRejectedError(Exception):
-    """The profiler rejected a completed fixture capture."""
-
-
-def _wait_for_observations(
-    event_file_descriptor: int,
-    buffered: bytes,
-) -> bytes:
-    observed = 0
-    while observed < _OBSERVATIONS_PER_PHASE:
-        readable, _, _ = select.select([event_file_descriptor], [], [])
-        if not readable:
-            raise RuntimeError("profiler event stream became unreadable")
-        event_bytes = os.read(event_file_descriptor, 4096)
-        if not event_bytes:
-            raise RuntimeError("profiler event stream closed before target release")
-        buffered += event_bytes
-        *lines, buffered = buffered.split(b"\n")
-        observed += sum(line == b"successful-observation-persisted" for line in lines)
-    return buffered
-
-
-def _coordinate(
-    status_path: Path,
-    control_path: Path,
-    event_file_descriptor: int,
-    phases: bytes,
-):
-    buffered = b""
+def _coordinate(status_path: Path, control_path: Path, phases: bytes):
     with (
         status_path.open("rb", buffering=0) as status_stream,
         control_path.open("wb", buffering=0) as control_stream,
@@ -62,45 +34,10 @@ def _coordinate(
                 raise RuntimeError(
                     f"expected target phase {phase}, observed {observed_phase!r}"
                 )
-            buffered = _wait_for_observations(event_file_descriptor, buffered)
+            # Tachyon offers no sampling-progress signal to wait on instead.
+            # ast-grep-ignore: no-sleep
+            time.sleep(_PHASE_SECONDS)
             _ = control_stream.write(b"1")
-
-
-def _capture_command(  # noqa: PLR0913 - The optional capture controls are keyword-only.
-    profile_path: Path,
-    workload_path: Path,
-    workspace: Path,
-    command: tuple[str, ...],
-    *,
-    event_file_descriptor: int | None = None,
-    mean_interval_seconds: float = 0.001,
-) -> schema.RawProfile:
-    profiler_command = [
-        str(runfiles.resolve("_main/tools/profiler/__main__")),
-        "--profile",
-        str(profile_path),
-        "--workload",
-        str(workload_path),
-        "--working-directory",
-        str(workspace),
-        "--mean-interval-seconds",
-        str(mean_interval_seconds),
-    ]
-    pass_file_descriptors: tuple[int, ...] = ()
-    if event_file_descriptor is not None:
-        profiler_command.extend(["--event-fd", str(event_file_descriptor)])
-        pass_file_descriptors = (event_file_descriptor,)
-    profiler_command.extend(["--", *command])
-    capture_process = subprocess.run(
-        profiler_command,
-        capture_output=True,
-        text=True,
-        check=False,
-        pass_fds=pass_file_descriptors,
-    )
-    if capture_process.returncode != 0:
-        raise _CaptureRejectedError(capture_process.stdout + capture_process.stderr)
-    return schema.load(profile_path)
 
 
 def _capture_phased_profile(
@@ -108,239 +45,85 @@ def _capture_phased_profile(
     source: Path,
     workspace: Path,
     phases: bytes,
-    mean_interval_seconds: float,
-) -> schema.RawProfile:
+) -> tachyon_profile.WallProfile:
     with tempfile.TemporaryDirectory() as temporary_directory:
         temporary_path = Path(temporary_directory)
         status_path = temporary_path / "status"
         control_path = temporary_path / "control"
         os.mkfifo(status_path)
         os.mkfifo(control_path)
-        event_read_file_descriptor, event_write_file_descriptor = os.pipe()
-        try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                coordinator = executor.submit(
-                    _coordinate,
-                    status_path,
-                    control_path,
-                    event_read_file_descriptor,
-                    phases,
-                )
-                try:
-                    profile = _capture_command(
-                        profile_path,
-                        source,
-                        workspace,
-                        (
-                            "/bin/sh",
-                            "-c",
-                            'exec "$@"',
-                            "profile-fixture",
-                            str(Path("/proc/self/exe").resolve()),
-                            str(source),
-                            str(status_path),
-                            str(control_path),
-                        ),
-                        event_file_descriptor=event_write_file_descriptor,
-                        mean_interval_seconds=mean_interval_seconds,
-                    )
-                finally:
-                    os.close(event_write_file_descriptor)
-                coordinator.result()
-        finally:
-            os.close(event_read_file_descriptor)
-    return profile
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            coordinator = executor.submit(
+                _coordinate, status_path, control_path, phases
+            )
+            exit_status = tachyon_profiler.capture(
+                command=(
+                    sys.executable,
+                    str(source),
+                    str(status_path),
+                    str(control_path),
+                ),
+                profile_path=profile_path,
+                working_directory=workspace,
+                environment=dict(os.environ),
+                stdin=None,
+            )
+            coordinator.result()
+    if exit_status != 0:
+        raise RuntimeError(f"{source} exited with status {exit_status}")
+    return tachyon_profile.load(profile_path)
 
 
-def _analysis(profile: schema.RawProfile) -> wall_analyzer.Analysis:
-    return wall_analyzer.analyze(profile)
+_STAGES = ("_stage_one_work", "_stage_two_work", "_stage_three_work", "_final_work")
+_MINIMUM_STAGE_SAMPLES = 20
 
 
-def _critical_path_is_resolved(profile: schema.RawProfile) -> bool:
-    critical_path = _analysis(profile).critical_path
-    resolved_handoffs = [
-        handoff
-        for handoff in critical_path.handoffs
-        if isinstance(handoff, wall_critical_path.ResolvedHandoff)
-    ]
-    return len(resolved_handoffs) >= 3
-
-
-def _handoff_is_ambiguous(profile: schema.RawProfile) -> bool:
-    handoffs = _analysis(profile).critical_path.handoffs
-    return bool(
-        handoffs
-        and isinstance(handoffs[0], wall_critical_path.UnresolvedHandoff)
-        and handoffs[0].resolution == "ambiguous"
-        and len(handoffs[0].candidates) == 2
+def _stages_are_captured(profile: tachyon_profile.WallProfile) -> bool:
+    # Each stage of the chain must be sampled working, in order, on its thread.
+    working_times: dict[str, list[int]] = {stage: [] for stage in _STAGES}
+    for samples in profile.samples_by_thread.values():
+        for sample in samples:
+            if not sample.is_working:
+                continue
+            functions = {profile.frames[frame_id].function for frame_id in sample.stack}
+            for stage in _STAGES:
+                if stage in functions:
+                    working_times[stage].append(sample.interval.start_ns)
+    if any(len(times) < _MINIMUM_STAGE_SAMPLES for times in working_times.values()):
+        return False
+    stage_spans = [(min(times), max(times)) for times in working_times.values()]
+    return all(
+        earlier[1] < later[0] for earlier, later in itertools.pairwise(stage_spans)
     )
 
 
-def _worker_waited_from_first_observation(profile: schema.RawProfile) -> bool:
-    handoffs = _analysis(profile).critical_path.handoffs
-    return bool(
-        handoffs
-        and isinstance(handoffs[0], wall_critical_path.ResolvedHandoff)
-        and handoffs[0].downstream_wait_ns > 0
-    )
-
-
-def _handoff_is_unobserved(profile: schema.RawProfile) -> bool:
-    handoffs = _analysis(profile).critical_path.handoffs
-    return bool(
-        handoffs
-        and isinstance(handoffs[0], wall_critical_path.UnresolvedHandoff)
-        and handoffs[0].resolution == "unobserved"
-        and not handoffs[0].candidates
-    )
-
-
-def _continuous_lifecycles_are_observed(profile: schema.RawProfile) -> bool:
-    analysis = _analysis(profile)
-    rows = {row.identity.function: row for row in analysis.cumulative_function_rows}
-    required_functions = {
-        "_retired_worker",
-        "_deep_wait_level_two",
-        "_shallow_wait",
-        "_high_call_frequency",
-        "_low_call_frequency",
-    }
-    return bool(
-        required_functions <= rows.keys()
-        and rows["_retired_worker"].wall_occupancy_ns
-        < rows["_deep_wait_level_two"].wall_occupancy_ns
-        and rows["_retired_worker"].wall_occupancy_ns
-        < rows["_shallow_wait"].wall_occupancy_ns
-    )
-
-
-def _regenerate_phased_profile(  # noqa: PLR0913 - The interval override is named at call sites.
+def _regenerate_phased_profile(
     testdata: Path,
     workspace: Path,
     name: str,
     phases: bytes,
-    validator: Callable[[schema.RawProfile], bool],
-    *,
-    mean_interval_seconds: float = 0.001,
+    validator: Callable[[tachyon_profile.WallProfile], bool],
 ):
-    profile_path = testdata / f"{name}_profile.jsonl"
+    profile_path = testdata / f"{name}_profile.bin"
     source = testdata / f"{name}_target.py"
-    last_capture_error: _CaptureRejectedError | None = None
     for _ in range(_MAX_CAPTURE_ATTEMPTS):
-        try:
-            profile = _capture_phased_profile(
-                profile_path,
-                source,
-                workspace,
-                phases,
-                mean_interval_seconds,
-            )
-        except _CaptureRejectedError as error:
-            last_capture_error = error
-            continue
+        profile = _capture_phased_profile(profile_path, source, workspace, phases)
         if validator(profile):
             print(f"Regenerated {profile_path.relative_to(workspace)}")
             return
-    raise RuntimeError(f"could not capture the required {name} evidence") from (
-        last_capture_error
-    )
-
-
-def _regenerate_compiler_profile(
-    testdata: Path,
-    workspace: Path,
-):
-    temporary_root = workspace / "tmp"
-    temporary_root.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=temporary_root) as temporary_directory:
-        temporary_path = Path(temporary_directory)
-        config_path = temporary_path / ".define/project/config.defcl"
-        config_path.parent.mkdir(parents=True)
-        _ = config_path.write_text(
-            'project: { universe_name: "mv:define-lang.org:large_program" }\n',
-            encoding="utf-8",
-            newline="\n",
-        )
-        source = temporary_path / "compiler.dfn"
-        _ = generate_large_define_source.write_to_path(source, 30_000)
-        profile_path = testdata / "compiler_wall_profile.jsonl"
-        last_capture_error: _CaptureRejectedError | None = None
-        for attempt in range(_MAX_CAPTURE_ATTEMPTS):
-            try:
-                profile = _capture_command(
-                    profile_path,
-                    source,
-                    temporary_path,
-                    (
-                        "/bin/sh",
-                        "-c",
-                        'source_path=$1; shift; exec "$@" < "$source_path"',
-                        "compiler-fixture",
-                        str(source),
-                        str(runfiles.resolve("_main/define/compiler/main")),
-                        "compile",
-                        "--out",
-                        str(temporary_path / f"output-{attempt}"),
-                        "--max-threads",
-                        "1",
-                    ),
-                    mean_interval_seconds=0.01,
-                )
-            except _CaptureRejectedError as error:
-                last_capture_error = error
-                continue
-            report_stream = io.StringIO()
-            with contextlib.redirect_stdout(report_stream):
-                wall_analyzer.emit_report(profile, _analysis(profile), 1000)
-            if "critical thread had no Python stack" in report_stream.getvalue():
-                print(f"Regenerated {profile_path.relative_to(workspace)}")
-                return
-    raise RuntimeError("compiler profile did not capture the required evidence") from (
-        last_capture_error
-    )
+    raise RuntimeError(f"could not capture the required {name} evidence")
 
 
 def main():
-    """Regenerate and validate every checked-in raw profile."""
+    """Regenerate and validate every checked-in profile."""
     workspace = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
-    testdata = workspace / "tools/profiler/testdata"
     _regenerate_phased_profile(
-        testdata,
-        workspace,
-        "ambiguous_critical_path",
-        b"123",
-        _handoff_is_ambiguous,
-    )
-    _regenerate_phased_profile(
-        testdata,
+        workspace / "tools/profiler/testdata",
         workspace,
         "critical_path",
         b"1234",
-        _critical_path_is_resolved,
+        _stages_are_captured,
     )
-    _regenerate_phased_profile(
-        testdata,
-        workspace,
-        "continuous",
-        b"12",
-        _continuous_lifecycles_are_observed,
-        mean_interval_seconds=0.01,
-    )
-    _regenerate_phased_profile(
-        testdata,
-        workspace,
-        "initial_wait_critical_path",
-        b"123",
-        _worker_waited_from_first_observation,
-    )
-    _regenerate_phased_profile(
-        testdata,
-        workspace,
-        "unresolved_critical_path",
-        b"12",
-        _handoff_is_unobserved,
-    )
-    _regenerate_compiler_profile(testdata, workspace)
 
 
 if __name__ == "__main__":

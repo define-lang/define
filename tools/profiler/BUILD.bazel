@@ -3,67 +3,64 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
-py_binary(
-    name = "__main__",
-    srcs = ["__main__.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//tools:__pkg__"],
-    deps = [":profiler"],
-)
-
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
-# PRF-018: Focused analysis.
-# PRF-019: Concurrency semantics. PRF-020: Machine and human interfaces.
 py_library(
     name = "analyzer",
     srcs = ["analyzer.py"],
     visibility = ["//tools:__pkg__"],
     deps = [
-        ":analyzer_model",
-        ":perf_analyzer",
-        ":schema",
-        ":wall_analyzer",
+        ":call_tree",
+        ":cpu_stacks",
+        ":tachyon_profile",
+        ":wall_timeline",
         "@pypi//click",
-    ],
-)
-
-# PRF-018: Focused analysis.
-py_library(
-    name = "analyzer_model",
-    srcs = ["analyzer_model.py"],
-    visibility = ["//tools:__pkg__"],
-    deps = [
-        ":schema",
         "@pypi//msgspec",
     ],
 )
 
-# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
-# PRF-047: Multi-threaded critical path.
+py_library(
+    name = "call_tree",
+    srcs = ["call_tree.py"],
+    deps = ["@pypi//msgspec"],
+)
+
 py_test(
-    name = "compiler_profile_test",
+    name = "call_tree_test",
     size = "small",
-    srcs = ["compiler_profile_test.py"],
-    data = ["//tools/profiler/testdata:compiler_wall_profile.jsonl"],
-    env = {
-        "PROFILER_COMPILER_WALL_PROFILE": "$(rlocationpath //tools/profiler/testdata:compiler_wall_profile.jsonl)",
-    },
+    srcs = ["call_tree_test.py"],
     deps = [
-        ":analyzer",
-        "//tools:runfiles",
-        "@pypi//click",
+        ":call_tree",
+        "@pypi//pytest",
     ],
 )
 
-# PRF-020: Machine and human interfaces.
+py_library(
+    name = "cpu_stacks",
+    srcs = ["cpu_stacks.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":call_tree",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "cpu_stacks_test",
+    size = "small",
+    srcs = ["cpu_stacks_test.py"],
+    deps = [
+        ":call_tree",
+        ":cpu_stacks",
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "perf_access",
     srcs = ["perf_access.py"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//tools:__pkg__"],
 )
 
-# PRF-020: Machine and human interfaces.
 py_test(
     name = "perf_access_test",
     size = "small",
@@ -75,49 +72,27 @@ py_test(
     ],
 )
 
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
-# PRF-018: Focused analysis. PRF-019: Concurrency semantics.
-py_library(
-    name = "perf_analyzer",
-    srcs = ["perf_analyzer.py"],
-    visibility = ["//tools:__pkg__"],
-    deps = [
-        ":analyzer_model",
-        ":perf_profiler",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
 py_library(
     name = "perf_profiler",
     srcs = ["perf_profiler.py"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//tools:__pkg__"],
     deps = [
+        ":cpu_stacks",
         ":perf_access",
+        ":python_target",
     ],
 )
 
-# PRF-010: Raw-data preservation. PRF-014: CPU mode.
 py_test(
     name = "perf_profiler_test",
     size = "small",
     timeout = "moderate",
     srcs = ["perf_profiler_test.py"],
-    # perf reads symbol maps only from fixed /tmp paths, which this test writes
-    # for fixed fake process IDs. A remote worker runs as another user that
-    # shares /tmp, and neither user can replace the other's files.
-    tags = ["no-remote-exec"],
     deps = [
-        ":analyzer",
-        ":analyzer_model",
         ":perf_access",
-        ":perf_analyzer",
         ":perf_profiler",
         ":perf_test_support",
-        ":profiler",
-        "@pypi//click",
-        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -128,291 +103,133 @@ py_library(
     srcs = ["perf_test_support.py"],
     visibility = ["//tools:__pkg__"],
     deps = [
-        ":perf_access",
         ":perf_profiler",
-        ":scheduler_events",
         "@pypi//pytest",
     ],
 )
 
-# PRF-022: Launcher safety. PRF-049: Event-driven coordination.
 py_library(
-    name = "process_events",
-    srcs = ["process_events.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":schema",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-022: Launcher safety. PRF-049: Event-driven coordination.
-py_test(
-    name = "process_events_test",
-    size = "small",
-    srcs = ["process_events_test.py"],
-    deps = [
-        ":process_events",
-        "@pypi//pytest",
-    ],
-)
-
-# PRF-001: No call-correlated wall profiling work. PRF-014: CPU mode.
-py_library(
-    name = "profiler",
-    srcs = ["profiler.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":perf_access",
-        ":perf_profiler",
-        ":process_events",
-        ":remote_frame_names",
-        ":scheduler_events",
-        ":schema",
-        "@pypi//click",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-014: CPU mode. PRF-041: Realistic tests.
-# PRF-043: Analyzer at every checkpoint.
-py_test(
-    name = "profiler_test",
-    size = "small",
-    srcs = ["profiler_test.py"],
-    data = [
-        ":__main__",
-        "//tools:analyze_profile",
-        "//tools/profiler/testdata:ambiguous_critical_path_profile.jsonl",
-        "//tools/profiler/testdata:continuous_profile.jsonl",
-        "//tools/profiler/testdata:continuous_target",
-        "//tools/profiler/testdata:continuous_target.py",
-        "//tools/profiler/testdata:critical_path_profile.jsonl",
-        "//tools/profiler/testdata:exit_target",
-        "//tools/profiler/testdata:exit_target.py",
-        "//tools/profiler/testdata:failure_target",
-        "//tools/profiler/testdata:failure_target.py",
-        "//tools/profiler/testdata:initial_wait_critical_path_profile.jsonl",
-        "//tools/profiler/testdata:interrupt_target",
-        "//tools/profiler/testdata:interrupt_target.py",
-        "//tools/profiler/testdata:unresolved_critical_path_profile.jsonl",
-    ],
-    env = {
-        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
-        "PROFILER_BINARY": "$(rlocationpath :__main__)",
-        "PROFILER_AMBIGUOUS_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:ambiguous_critical_path_profile.jsonl)",
-        "PROFILER_CONTINUOUS_PROFILE": "$(rlocationpath //tools/profiler/testdata:continuous_profile.jsonl)",
-        "PROFILER_CONTINUOUS_SOURCE": "$(rlocationpath //tools/profiler/testdata:continuous_target.py)",
-        "PROFILER_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:critical_path_profile.jsonl)",
-        "PROFILER_EXIT_SOURCE": "$(rlocationpath //tools/profiler/testdata:exit_target.py)",
-        "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
-        "PROFILER_INITIAL_WAIT_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:initial_wait_critical_path_profile.jsonl)",
-        "PROFILER_INTERRUPT_SOURCE": "$(rlocationpath //tools/profiler/testdata:interrupt_target.py)",
-        "PROFILER_UNRESOLVED_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:unresolved_critical_path_profile.jsonl)",
-    },
-    deps = [
-        ":analyzer",
-        ":perf_test_support",
-        ":process_events",
-        ":profiler",
-        ":scheduler_events",
-        ":schema",
-        ":test_helpers",
-        ":wall_analyzer",
-        ":wall_critical_path",
-        ":wall_model",
-        "//tools:runfiles",
-        "@pypi//click",
-        "@pypi//pytest",
-    ],
-)
-
-# PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
-# PRF-010: Raw-data preservation. PRF-011: Complete invocation.
-# PRF-014: CPU mode. PRF-020: Machine and human interfaces.
-# PRF-023: Guaranteed resume. PRF-024: Explicit failures.
-# PRF-026: No silent partial success. PRF-049: Event-driven coordination.
-py_test(
-    name = "profiler_unit_test",
-    size = "small",
-    srcs = ["profiler_unit_test.py"],
-    deps = [
-        ":perf_access",
-        ":process_events",
-        ":profiler",
-        ":remote_frame_names",
-        ":scheduler_events",
-        ":schema",
-        "@pypi//click",
-        "@pypi//msgspec",
-        "@pypi//pytest",
-    ],
+    name = "python_target",
+    srcs = ["python_target.py"],
 )
 
 py_binary(
     name = "regenerate_test_profiles",
     srcs = ["regenerate_test_profiles.py"],
-    data = [
-        ":__main__",
-        "//define/compiler:main",
-        "//tools/profiler/testdata:ambiguous_critical_path_target.py",
-        "//tools/profiler/testdata:continuous_target.py",
-        "//tools/profiler/testdata:critical_path_target.py",
-        "//tools/profiler/testdata:initial_wait_critical_path_target.py",
-        "//tools/profiler/testdata:unresolved_critical_path_target.py",
-    ],
+    data = ["//tools/profiler/testdata:critical_path_target.py"],
     deps = [
-        ":schema",
-        ":wall_analyzer",
-        ":wall_critical_path",
-        "//tools:runfiles",
-        "//tools/generators:generate_large_define_source",
+        ":tachyon_profile",
+        ":tachyon_profiler",
     ],
 )
 
-# PRF-016: Source identity.
 py_library(
-    name = "remote_frame_names",
-    srcs = ["remote_frame_names.py"],
-    target_compatible_with = ["@platforms//os:linux"],
+    name = "tachyon_profile",
+    srcs = ["tachyon_profile.py"],
+    visibility = ["//tools:__pkg__"],
     deps = [
+        ":call_tree",
+        ":wall_model",
         "@pypi//msgspec",
     ],
 )
 
-# PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
 py_library(
-    name = "scheduler_events",
-    srcs = ["scheduler_events.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":perf_access",
-        ":perf_profiler",
-        ":schema",
-        "@pypi//msgspec",
-    ],
+    name = "tachyon_profiler",
+    srcs = ["tachyon_profiler.py"],
+    data = [":tachyon_target"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":python_target"],
 )
 
-# PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
 py_test(
-    name = "scheduler_events_test",
+    name = "tachyon_profiler_test",
     size = "small",
-    srcs = ["scheduler_events_test.py"],
+    srcs = ["tachyon_profiler_test.py"],
+    data = [
+        "//tools:analyze_profile",
+        "//tools/profiler/testdata:critical_path_profile.bin",
+        "//tools/profiler/testdata:critical_path_target.py",
+        "//tools/profiler/testdata:failure_target",
+        "//tools/profiler/testdata:failure_target.py",
+    ],
+    env = {
+        "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
+        "PROFILER_CRITICAL_PATH_PROFILE": "$(rlocationpath //tools/profiler/testdata:critical_path_profile.bin)",
+        "PROFILER_CRITICAL_PATH_SOURCE": "$(rlocationpath //tools/profiler/testdata:critical_path_target.py)",
+        "PROFILER_FAILURE_BINARY": "$(rlocationpath //tools/profiler/testdata:failure_target)",
+        "PROFILER_FAILURE_SOURCE": "$(rlocationpath //tools/profiler/testdata:failure_target.py)",
+    },
     deps = [
-        ":scheduler_events",
+        ":analyzer",
+        ":tachyon_profile",
+        ":tachyon_profiler",
+        ":wall_timeline",
+        "//tools:runfiles",
+        "@pypi//click",
         "@pypi//pytest",
     ],
 )
 
-# PRF-010: Raw-data preservation.
 py_library(
-    name = "schema",
-    srcs = ["schema.py"],
-    visibility = ["//tools:__pkg__"],
-    deps = [
-        "@pypi//msgspec",
-    ],
+    name = "tachyon_target",
+    srcs = ["tachyon_target.py"],
 )
 
-# PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
-# PRF-024: Explicit failures. PRF-041: Realistic tests.
-# PRF-049: Event-driven coordination.
-py_library(
-    name = "test_helpers",
-    testonly = True,
-    srcs = ["test_helpers.py"],
-    deps = [
-        ":schema",
-        "//tools:runfiles",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-010: Raw-data preservation. PRF-018: Focused analysis.
-# PRF-019: Concurrency semantics.
-py_library(
-    name = "wall_analyzer",
-    srcs = ["wall_analyzer.py"],
-    visibility = ["//tools:__pkg__"],
-    deps = [
-        ":analyzer_model",
-        ":schema",
-        ":wall_critical_path",
-        ":wall_model",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-047: Multi-threaded critical path.
-py_library(
-    name = "wall_critical_path",
-    srcs = ["wall_critical_path.py"],
-    deps = [
-        ":analyzer_model",
-        ":schema",
-        ":wall_model",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-047: Multi-threaded critical path.
-py_test(
-    name = "wall_critical_path_test",
-    size = "small",
-    srcs = ["wall_critical_path_test.py"],
-    deps = [
-        ":schema",
-        ":wall_critical_path",
-        ":wall_model",
-        "@pypi//msgspec",
-    ],
-)
-
-# PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
-# PRF-005: Lifecycle-bounded attribution.
-# PRF-047: Multi-threaded critical path.
 py_library(
     name = "wall_model",
     srcs = ["wall_model.py"],
     visibility = ["//tools:__pkg__"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_library(
+    name = "wall_timeline",
+    srcs = ["wall_timeline.py"],
     deps = [
-        ":schema",
+        ":call_tree",
+        ":tachyon_profile",
+        ":wall_model",
         "@pypi//msgspec",
     ],
 )
 
-# Manual because the profiler does not match Python 3.15's typed remote
-# unwinder API.
-# TODO: Make this test automatic again once Tachyon replaces the wall profiler.
+py_test(
+    name = "wall_timeline_test",
+    size = "small",
+    srcs = ["wall_timeline_test.py"],
+    deps = [
+        ":call_tree",
+        ":tachyon_profile",
+        ":wall_model",
+        ":wall_timeline",
+        "@pypi//msgspec",
+        "@pypi//pytest",
+    ],
+)
+
 pyright_test(
     name = "pyright_test",
-    tags = ["manual"],
     deps = [
-        ":__main__",
         ":analyzer",
-        ":analyzer_model",
-        ":compiler_profile_test",
+        ":call_tree",
+        ":call_tree_test",
+        ":cpu_stacks",
+        ":cpu_stacks_test",
         ":perf_access",
         ":perf_access_test",
-        ":perf_analyzer",
         ":perf_profiler",
         ":perf_profiler_test",
         ":perf_test_support",
-        ":process_events",
-        ":process_events_test",
-        ":profiler",
-        ":profiler_test",
-        ":profiler_unit_test",
+        ":python_target",
         ":regenerate_test_profiles",
-        ":remote_frame_names",
-        ":scheduler_events",
-        ":scheduler_events_test",
-        ":schema",
-        ":test_helpers",
-        ":wall_analyzer",
-        ":wall_critical_path",
-        ":wall_critical_path_test",
+        ":tachyon_profile",
+        ":tachyon_profiler",
+        ":tachyon_profiler_test",
+        ":tachyon_target",
         ":wall_model",
+        ":wall_timeline",
+        ":wall_timeline_test",
     ],
 )
 

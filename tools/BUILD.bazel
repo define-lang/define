@@ -52,7 +52,6 @@ py_test(
     ],
 )
 
-# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
 py_binary(
     name = "analyze_profile",
     srcs = ["analyze_profile.py"],
@@ -60,17 +59,12 @@ py_binary(
     deps = ["//tools/profiler:analyzer"],
 )
 
-# PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
 py_test(
     name = "analyze_profile_test",
     size = "small",
     srcs = ["analyze_profile_test.py"],
     deps = [
         "//tools/profiler:analyzer",
-        "//tools/profiler:analyzer_model",
-        "//tools/profiler:schema",
-        "//tools/profiler:wall_analyzer",
-        "//tools/profiler:wall_model",
         "@pypi//click",
         "@pypi//pytest",
     ],
@@ -204,11 +198,15 @@ py_test(
     deps = [":precommit_bazel_checks"],
 )
 
-# PRF-012: Orchestration boundary. PRF-014: CPU mode.
 py_library(
     name = "profile_orchestration",
     srcs = ["profile_orchestration.py"],
     deps = [
+        "//tools/profiler:cpu_stacks",
+        "//tools/profiler:perf_access",
+        "//tools/profiler:perf_profiler",
+        "//tools/profiler:tachyon_profile",
+        "//tools/profiler:tachyon_profiler",
         "@pypi//click",
         "@pypi//msgspec",
     ],
@@ -252,17 +250,12 @@ py_test(
     ],
 )
 
-# PRF-012: Orchestration boundary. PRF-014: CPU mode.
-# PRF-020: Machine and human interfaces.
 py_binary(
     name = "run_profile",
     srcs = ["run_profile.py"],
-    data = ["//tools/profiler:__main__"],
     deps = [":profile_orchestration"],
 )
 
-# PRF-012: Orchestration boundary. PRF-014: CPU mode.
-# PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
 py_test(
     name = "run_profile_test",
     size = "small",
@@ -271,27 +264,18 @@ py_test(
     data = [
         "//define/compiler:main",
         "//tools:analyze_profile",
-        "//tools/profiler:__main__",
     ],
     env = {
         "ANALYZER_BINARY": "$(rlocationpath //tools:analyze_profile)",
         "COMPILER_BINARY": "$(rlocationpath //define/compiler:main)",
     },
-    # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
-    # Manual because the profiler does not support Python 3.15's remote unwinder.
-    # TODO: Make this test automatic again, or remove it, once Tachyon replaces
-    # the wall profiler.
-    tags = [
-        "local",
-        "manual",
-    ],
     deps = [
         ":profile_orchestration",
         ":runfiles",
         "//tools/profiler:analyzer",
-        "//tools/profiler:perf_analyzer",
         "//tools/profiler:perf_test_support",
-        "//tools/profiler:schema",
+        "//tools/profiler:tachyon_profile",
+        "//tools/profiler:tachyon_profiler",
         "@pypi//click",
         "@pypi//pytest",
         "@rules_python//python/runfiles",

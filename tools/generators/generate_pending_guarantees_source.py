@@ -19,8 +19,8 @@ DEFAULT_FQUN_PREFIX = "mv:define-lang.org:pending_guarantees"
 class PendingGuaranteeOptions:
     """Parameters of one generated pending-guarantee workload."""
 
-    pending_positions: int = 1000
-    destroyed_positions: int = 100
+    pending_positions: int = 8000
+    destroyed_positions: int = 800
     call_depth: int = 2
     position_depth: int = 1
     automatic_destruction: bool = False
@@ -195,20 +195,41 @@ def generate_source_lines(
 
 
 @click.command()
-@click.option("--output", type=generator_cli.OUTPUT_FILE, required=True)
+@click.option(
+    "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
+)
 @click.option(
     "--pending-positions",
     type=generator_cli.POSITIVE_INTEGER,
-    default=1000,
+    default=8000,
     show_default=True,
+    help=(
+        "Interface positions of the middle action whose particles each get the"
+        " stage action chain triggered on them, leaving one pending Action"
+        " Guarantee each while the middle action destroys particles. The test"
+        " action moves each one out and consumes it. Source grows linearly."
+    ),
 )
 @click.option(
     "--destroyed-positions",
     type=generator_cli.POSITIVE_INTEGER,
-    default=100,
+    default=800,
     show_default=True,
+    help=(
+        "Interface positions whose particles the middle action destroys while"
+        " every pending Action Guarantee exists. Source grows linearly."
+    ),
 )
-@click.option("--call-depth", type=click.IntRange(min=2), default=2, show_default=True)
+@click.option(
+    "--call-depth",
+    type=click.IntRange(min=2),
+    default=2,
+    show_default=True,
+    help=(
+        "Number of stage actions in the chain that each pending trigger starts;"
+        " each stage triggers the next and the last creates the marker particle."
+    ),
+)
 @click.option(
     "--position-depth",
     type=generator_cli.POSITIVE_INTEGER,
@@ -217,9 +238,21 @@ def generate_source_lines(
     help="Number of position names preceding each pending action.",
 )
 @click.option(
-    "--automatic-destruction/--explicit-destruction", default=False, show_default=True
+    "--automatic-destruction/--explicit-destruction",
+    default=False,
+    show_default=True,
+    help=(
+        "Destroy each particle by moving it to a local position that is"
+        " destroyed when the middle action ends, instead of destroying it"
+        " explicitly."
+    ),
 )
-@click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
+@click.option(
+    "--fqun-prefix",
+    default=DEFAULT_FQUN_PREFIX,
+    show_default=True,
+    help="Universe prefix for every definition.",
+)
 def main(  # noqa: PLR0913 - Click passes the declared command options.
     output: Path,
     pending_positions: int,

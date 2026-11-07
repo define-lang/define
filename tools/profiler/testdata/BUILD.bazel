@@ -4,92 +4,29 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 
 exports_files(
     [
-        "ambiguous_critical_path_profile.jsonl",
-        "ambiguous_critical_path_target.py",
-        "compiler_wall_profile.jsonl",
-        "continuous_profile.jsonl",
-        "continuous_target.py",
-        "critical_path_profile.jsonl",
+        "critical_path_profile.bin",
         "critical_path_target.py",
-        "exit_target.py",
         "failure_target.py",
-        "initial_wait_critical_path_profile.jsonl",
-        "initial_wait_critical_path_target.py",
-        "interrupt_target.py",
-        "unresolved_critical_path_profile.jsonl",
-        "unresolved_critical_path_target.py",
     ],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
-# PRF-048: Critical-path fixture.
-py_binary(
-    name = "ambiguous_critical_path_target",
-    srcs = ["ambiguous_critical_path_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-029: Call-frequency fixture. PRF-030: Stack-depth fixture.
-# PRF-031: Retired-thread fixture. PRF-033: Waiting-thread fixture.
-py_binary(
-    name = "continuous_target",
-    srcs = ["continuous_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-048: Critical-path fixture.
 py_binary(
     name = "critical_path_target",
     srcs = ["critical_path_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
 )
 
-# PRF-024: Explicit failures. PRF-049: Event-driven coordination.
-py_binary(
-    name = "exit_target",
-    srcs = ["exit_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-024: Explicit failures. PRF-041: Realistic tests.
 py_binary(
     name = "failure_target",
     srcs = ["failure_target.py"],
     visibility = ["//tools/profiler:__pkg__"],
 )
 
-# PRF-048: Critical-path fixture.
-py_binary(
-    name = "initial_wait_critical_path_target",
-    srcs = ["initial_wait_critical_path_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-023: Guaranteed resume. PRF-041: Realistic tests.
-py_binary(
-    name = "interrupt_target",
-    srcs = ["interrupt_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
-# PRF-047: Multi-threaded critical path.
-py_binary(
-    name = "unresolved_critical_path_target",
-    srcs = ["unresolved_critical_path_target.py"],
-    visibility = ["//tools/profiler:__pkg__"],
-)
-
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":ambiguous_critical_path_target",
-        ":continuous_target",
         ":critical_path_target",
-        ":exit_target",
         ":failure_target",
-        ":initial_wait_critical_path_target",
-        ":interrupt_target",
-        ":unresolved_critical_path_target",
     ],
 )
 
