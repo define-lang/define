@@ -10,6 +10,12 @@ pub fn valid_schemas() -> Result<FileDescriptorSet> {
     read_runfile(env!("VALID_SCHEMAS"))
 }
 
+/// The descriptor set of the schemas in `defcl/testdata/invalid/schemas`, which
+/// break DCL's rules for schemas.
+pub fn invalid_schemas() -> Result<FileDescriptorSet> {
+    read_runfile(env!("INVALID_SCHEMAS"))
+}
+
 /// The descriptor set of the schemas in `defcl/testdata/invalid/semantics`.
 pub fn invalid_semantics_schemas() -> Result<FileDescriptorSet> {
     read_runfile(env!("INVALID_SEMANTICS_SCHEMAS"))

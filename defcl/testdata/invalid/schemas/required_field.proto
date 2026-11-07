@@ -1,0 +1,11 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+message RequiredFieldFile {
+  Config config = 1;
+  message Config {
+    string name = 1 [features.field_presence = LEGACY_REQUIRED];
+    string description = 2;
+  }
+}

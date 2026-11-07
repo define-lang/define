@@ -1,0 +1,20 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+import "google/protobuf/any.proto";
+
+message ProhibitedFieldTypesFile {
+  Config config = 1;
+  message Config {
+    bool enabled = 1;
+    bytes data = 2;
+    google.protobuf.Any extra = 3;
+    string name = 4;
+  }
+}
+
+// DCL files cannot write this message type, so its field breaks no rule.
+message Unreachable {
+  bool enabled = 1;
+}

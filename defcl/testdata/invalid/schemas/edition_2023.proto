@@ -1,0 +1,11 @@
+edition = "2023";
+
+package defcl.testdata.invalid.schemas;
+
+message Edition2023Config {
+  string name = 1;
+}
+
+message Edition2023Settings {
+  string name = 1;
+}

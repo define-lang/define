@@ -10,7 +10,8 @@ syntax.
 2. Build a `Schema` with
    `Schema::from_descriptor_set(file_descriptor_set, "pkg.TopLevelMessage")`. It
    indexes every message type and resolves message-typed fields to their message
-   types. Build it once and reuse it for every file with that top-level message
-   type.
+   types. It returns every way that the top-level message type, and the message
+   types that its fields lead to, break the spec's schema restrictions. Build it
+   once and reuse it for every file with that top-level message type.
 3. Call `check_semantics(&parsed_file, &schema)`. It returns every
    `SemanticError` it finds, in source order.

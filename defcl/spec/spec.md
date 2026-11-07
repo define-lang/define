@@ -409,6 +409,11 @@ Because DCL is intended to be parsed by a textproto parser, it is expected that
 its schema will be defined via protocol buffers. However, we place some
 restrictions on that schema.
 
+These restrictions apply to the top-level message type of a DCL file and to
+every message type that its fields lead to. Other message types in the same
+`.proto` files, or in the files they import, such as the definitions of field
+options, are not restricted.
+
 ### Top-Level Structure
 
 Literal values at the top level of a DCL file are not allowed. The top-level
@@ -426,10 +431,21 @@ The following field types are not allowed in DCL:
 - Extension annotations (using `[package.field]` syntax) are not allowed
 - Proto2 `group` fields are not allowed
 
+<!-- TODO: Decide whether map fields are allowed, and if so, how their entries
+are written and whether duplicate keys are errors. -->
+
+### Required Fields
+
+Fields must not set `features.field_presence = LEGACY_REQUIRED`.
+
+### UTF-8 Validation
+
+String fields must not have `features.utf8_validation = NONE`, whether it is set
+on the field or as the default of its file.
+
 ### Edition Requirement
 
-All schema files must use edition 2024 or later. The `edition = "2024";`
-declaration must appear at the top of every `.proto` file.
+All schema files must use edition 2024 or later.
 
 ### Enums Must Be Defined Inside of Messages
 

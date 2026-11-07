@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package defcl.testdata.invalid.schemas;
+
+message Proto3Config {
+  string name = 1;
+}

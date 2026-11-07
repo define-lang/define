@@ -1,12 +1,14 @@
 //! The schema that a DCL file is checked against: the message types of a
 //! `FileDescriptorSet`, with lookup tables over their descriptors.
 
+use crate::schema_restrictions::{self, SchemaFile, SchemaViolation};
 use derive_more::{Display, Error};
 use descriptor_proto::google::protobuf::field_descriptor_proto::{Label, Type};
 use descriptor_proto::google::protobuf::{
     DescriptorProto, FieldDescriptorProto, FileDescriptorSet,
 };
 use rustc_hash::{FxBuildHasher, FxHashMap};
+use std::fmt::Write;
 
 /// A schema that the crate cannot check a DCL file against.
 #[derive(Debug, PartialEq, Eq, Display, Error)]
@@ -17,6 +19,19 @@ pub enum SchemaError {
         "Cannot create a DCL schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
     )]
     MissingMessageType { message_type: String },
+    /// The top-level message type, or a message type that its fields lead
+    /// to, breaks DCL's rules for schemas.
+    #[display("Cannot create a DCL schema:{}", violation_list(violations))]
+    BreaksRestrictions { violations: Vec<SchemaViolation> },
+}
+
+fn violation_list(violations: &[SchemaViolation]) -> String {
+    let mut list = String::new();
+    for violation in violations {
+        // Writing to a String cannot fail.
+        let _ = write!(list, "\n  - {violation}");
+    }
+    list
 }
 
 /// The message types of a `FileDescriptorSet`, and which of them is the
@@ -30,7 +45,9 @@ pub struct Schema {
 pub(crate) struct MessageType {
     /// The full name, without a leading `.`.
     pub(crate) full_name: String,
-    descriptor: DescriptorProto,
+    /// The index in the descriptor set of the file that defines it.
+    pub(crate) file: usize,
+    pub(crate) descriptor: DescriptorProto,
     fields_by_name: FxHashMap<String, FieldLookup>,
 }
 
@@ -57,6 +74,14 @@ impl SchemaField<'_> {
     }
 }
 
+impl MessageType {
+    /// The index of the message type of this message type's field `name`, if
+    /// it is a message field. `name` must be the name of one of its fields.
+    pub(crate) fn field_message_type(&self, name: &str) -> Option<usize> {
+        self.fields_by_name[name].message_type
+    }
+}
+
 impl Schema {
     /// Indexes `file_descriptor_set` for checking DCL files whose top-level
     /// message type is the one with the full name `top_level_message_type`.
@@ -66,7 +91,10 @@ impl Schema {
     ///
     /// # Errors
     ///
-    /// Returns an error if the set does not have the top-level message type.
+    /// Returns an error if the set does not have the top-level message type,
+    /// or if that message type or the message types that its fields lead to
+    /// break DCL's rules for schemas. The error has every way that they break
+    /// them.
     ///
     /// # Panics
     ///
@@ -77,11 +105,13 @@ impl Schema {
         top_level_message_type: &str,
     ) -> Result<Self, SchemaError> {
         let mut message_types = Vec::new();
-        for mut file in file_descriptor_set.file {
+        let mut files = Vec::with_capacity(file_descriptor_set.file.len());
+        for (file_index, mut file) in file_descriptor_set.file.into_iter().enumerate() {
             let scope = file.package.take().unwrap_or_default();
-            for descriptor in file.message_type {
-                add_message_type(&mut message_types, &scope, descriptor);
+            for descriptor in std::mem::take(&mut file.message_type) {
+                add_message_type(&mut message_types, file_index, &scope, descriptor);
             }
+            files.push(SchemaFile::new(&file));
         }
         let mut indices_by_name =
             FxHashMap::with_capacity_and_hasher(message_types.len(), FxBuildHasher);
@@ -96,6 +126,11 @@ impl Schema {
                 message_type: top_level_message_type.to_owned(),
             });
         };
+        let violations =
+            schema_restrictions::violations(&message_types, &files, top_level_message_type);
+        if !violations.is_empty() {
+            return Err(SchemaError::BreaksRestrictions { violations });
+        }
         Ok(Self {
             message_types,
             top_level_message_type,
@@ -120,10 +155,11 @@ impl Schema {
     }
 }
 
-/// Adds the message type `descriptor`, declared in `scope`, and the message
-/// types declared in it.
+/// Adds the message type `descriptor`, declared in `scope` in the file at
+/// `file`, and the message types declared in it.
 fn add_message_type(
     message_types: &mut Vec<MessageType>,
+    file: usize,
     scope: &str,
     mut descriptor: DescriptorProto,
 ) {
@@ -135,10 +171,11 @@ fn add_message_type(
     };
     let nested_types = std::mem::take(&mut descriptor.nested_type);
     for nested_type in nested_types {
-        add_message_type(message_types, &full_name, nested_type);
+        add_message_type(message_types, file, &full_name, nested_type);
     }
     message_types.push(MessageType {
         full_name,
+        file,
         descriptor,
         fields_by_name: FxHashMap::default(),
     });

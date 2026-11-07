@@ -1,0 +1,15 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+import "defcl/testdata/invalid/schemas/edition_2023.proto";
+import "defcl/testdata/invalid/schemas/proto2_config.proto";
+import "defcl/testdata/invalid/schemas/proto3_config.proto";
+
+message OlderEditionsFile {
+  Edition2023Config older_edition = 1;
+  Proto3Config proto3_config = 2;
+  Proto2Config proto2_config = 3;
+  // A second message type from the same file, which is reported once.
+  Edition2023Settings older_edition_settings = 4;
+}

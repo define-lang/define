@@ -1,0 +1,15 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+option features.utf8_validation = NONE;
+
+message Utf8ValidationNoneFile {
+  Config config = 1;
+  message Config {
+    string unchecked = 1;
+    string checked = 2 [features.utf8_validation = VERIFY];
+    // The feature does not apply to fields that are not strings.
+    int32 count = 3;
+  }
+}

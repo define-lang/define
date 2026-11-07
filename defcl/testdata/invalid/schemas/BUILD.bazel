@@ -1,0 +1,59 @@
+load("@protobuf//bazel:proto_descriptor_set.bzl", "proto_descriptor_set")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+proto_library(
+    name = "edition_2023_proto",
+    srcs = ["edition_2023.proto"],
+)
+
+proto_library(
+    name = "older_editions_proto",
+    srcs = ["older_editions.proto"],
+    deps = [
+        ":edition_2023_proto",
+        ":proto2_config_proto",
+        ":proto3_config_proto",
+    ],
+)
+
+proto_library(
+    name = "prohibited_field_types_proto",
+    srcs = ["prohibited_field_types.proto"],
+    deps = ["@protobuf//:any_proto"],
+)
+
+proto_library(
+    name = "proto2_config_proto",
+    srcs = ["proto2_config.proto"],
+)
+
+proto_library(
+    name = "proto3_config_proto",
+    srcs = ["proto3_config.proto"],
+)
+
+proto_library(
+    name = "required_field_proto",
+    srcs = ["required_field.proto"],
+)
+
+# Every schema in this package, for the tests of //defcl/rust/semantics.
+proto_descriptor_set(
+    name = "schemas_descriptor_set",
+    testonly = True,
+    visibility = ["//defcl/rust/semantics:__pkg__"],
+    deps = [
+        ":older_editions_proto",
+        ":prohibited_field_types_proto",
+        ":required_field_proto",
+        ":utf8_validation_none_proto",
+    ],
+)
+
+proto_library(
+    name = "utf8_validation_none_proto",
+    srcs = ["utf8_validation_none.proto"],
+)
+
+check_build_file()
