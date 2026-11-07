@@ -29,6 +29,8 @@ class ReferenceEdge(msgspec.Struct, frozen=True):
         return self.enclosing_definition.typed_name.source_typed_name
 
 
+_DEFINITION_DEPTH_SPACING = 2**32
+
 # A cycle is a sequence of full typed names that begins and ends with the same
 # name. Each definition in the sequence references the definition after it.
 type DetectedCycle = list[str]
@@ -67,7 +69,16 @@ class ReferenceGraph:
         # depth, a chain of references among them would be renumbered for each
         # new reference. The offset stays positive because 2**32 names would
         # need hundreds of gigabytes of memory.
-        self._next_referenced_name_depth_offset: int = 2**32
+        #
+        # The offset also stays below the spacing between the depths of
+        # consecutively added definitions, so a newly referenced name is
+        # deeper than its referencing definition but shallower than every
+        # definition added before it. Definitions can be added out of
+        # reference order, such as when validation finishes them on parallel
+        # workers. When the newly referenced name's definition is then added,
+        # it can reference those earlier definitions without increasing the
+        # depths of the long reference chains they may begin.
+        self._next_referenced_name_depth_offset: int = _DEFINITION_DEPTH_SPACING - 1
         self._definition_by_name: dict[str, ast.GlobalDefinition] = {}
 
     def add_definition(self, definition: ast.GlobalDefinition):
@@ -145,7 +156,7 @@ class ReferenceGraph:
             # Starting each at zero would repeatedly renumber an entire chain
             # when definitions refer to previously defined names.
             self._depth_by_name[definition_name] = self._next_definition_depth
-            self._next_definition_depth -= 1
+            self._next_definition_depth -= _DEFINITION_DEPTH_SPACING
 
     # Algorithm: Worklist-based forward propagation of topological-depth
     # quality assignments.
