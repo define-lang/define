@@ -330,6 +330,10 @@ class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
 class LocalTypedNameReference(TypedName[LocalNameContent]):
     """Represents a typed local name reference."""
 
+    def as_position_reference(self) -> PositionReference:
+        """Return a reference to the position this name names, located at this name."""
+        return PositionReference(location=self.location, typed_names=(self,))
+
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 

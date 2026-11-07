@@ -80,12 +80,7 @@ class _GuaranteedParticleDestructionBuilder:
     ) -> GuaranteedParticleDestruction:
         positions: list[ast.PositionReference] = []
         for interface_position in self._definition.interface_positions:
-            positions.append(
-                ast.PositionReference(
-                    location=interface_position.location,
-                    typed_names=(interface_position.typed_name,),
-                )
-            )
+            positions.append(interface_position.typed_name.as_position_reference())
         implied_child_names, _ = self._destroyed_particles.child_names_and_destructors(
             transitive_implied_qualities.assignments
         )

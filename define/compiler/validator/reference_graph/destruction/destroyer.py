@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
@@ -23,6 +23,7 @@ from define.compiler.validator.reference_graph.destruction import (
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from define.compiler import ast
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker, validation_result
@@ -83,12 +84,7 @@ class Destroyer:
         """Destroy the particles still in the positions ``local_position_names`` name, the positions defined only in a block that is ending, simultaneously, with every particle below them, and return what the destruction produces."""
         occupied_positions: list[ast.PositionReference] = []
         for name in local_position_names:
-            # TODO: Give TypedName an as_position_reference() method, located
-            # at the typed name, and use it wherever a reference to a single
-            # name is built like this.
-            position = ast.PositionReference(
-                location=name.location, typed_names=(name,)
-            )
+            position = name.as_position_reference()
             # Spec: "If the compiler is uncertain about whether a position
             # still contains a particle, it only destroys the particle if one
             # is present."
