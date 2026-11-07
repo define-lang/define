@@ -47,6 +47,10 @@ class DefinitionStructuralValidator:
     _unreferenced_positions: typed_name_dict.TypedNameDict[
         ast.LocalTypedNameReference, ast.LocalPositionDefinition
     ]
+    _unreferenced_views: typed_name_dict.TypedNameDict[
+        ast.LocalTypedNameReference,
+        ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+    ]
 
     def __init__(
         self,
@@ -65,6 +69,7 @@ class DefinitionStructuralValidator:
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
         self._unreferenced_positions = typed_name_dict.TypedNameDict()
+        self._unreferenced_views = typed_name_dict.TypedNameDict()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -143,24 +148,17 @@ class DefinitionStructuralValidator:
             )
             if encoding_operation is not None:
                 self._process_reference(encoding_operation)
-        # TODO: Make `unreferenced_views` a member, like
-        # `_unreferenced_positions`, instead of passing it to each method that
-        # validates a view reference.
         views = scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ]()
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        ] = typed_name_dict.TypedNameDict()
         for view in definition.views:
-            self._validate_view_definition(definition, view, views, unreferenced_views)
+            self._validate_view_definition(definition, view, views)
         views.enter_child_scope()
         executes_all_views = False
         has_execution = False
 
         def validate_looked_at(looking_at: ast.LocalTypedNameReference) -> bool:
-            return self._validate_looked_at_view(looking_at, views, unreferenced_views)
+            return self._validate_looked_at_view(looking_at, views)
 
         view_setting_order = view_setting_order_tracker.ViewSettingOrderTracker()
         for statement in definition.operation_statements.statements:
@@ -170,9 +168,7 @@ class DefinitionStructuralValidator:
                 )
             match statement:
                 case ast.LocalViewDefinition():
-                    self._validate_view_definition(
-                        definition, statement, views, unreferenced_views
-                    )
+                    self._validate_view_definition(definition, statement, views)
                 case ast.OperationExecutionStatement():
                     has_execution = True
                     self._validate_execution(
@@ -190,7 +186,6 @@ class DefinitionStructuralValidator:
                         definition,
                         statement,
                         views,
-                        unreferenced_views,
                         view_setting_order,
                     )
                 case (
@@ -206,7 +201,7 @@ class DefinitionStructuralValidator:
                     location=definition.operation_statements.location
                 )
             )
-        for view in unreferenced_views.values():
+        for view in self._unreferenced_views.values():
             if isinstance(view, ast.LocalViewDefinition):
                 self._diagnostics.append(
                     diagnostics.UnreferencedLocalViewDiagnostic(
@@ -232,17 +227,13 @@ class DefinitionStructuralValidator:
         views: scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ],
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        ],
         view_setting_order: view_setting_order_tracker.ViewSettingOrderTracker,
     ):
         """Validate a View Setting Statement in `definition`, and record it in `view_setting_order`."""
         target = statement.target
         source = statement.source
-        target_ok = self._validate_looked_at_view(target, views, unreferenced_views)
-        source_ok = self._validate_looked_at_view(source, views, unreferenced_views)
+        target_ok = self._validate_looked_at_view(target, views)
+        source_ok = self._validate_looked_at_view(source, views)
         if source_ok:
             self._diagnostics.extend(view_setting_order.check_source(source))
         if not target_ok:
@@ -346,13 +337,9 @@ class DefinitionStructuralValidator:
         views: scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ],
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        ],
     ):
         if self._validate_view_name(view, views):
-            unreferenced_views[view.typed_name] = view
+            self._unreferenced_views[view.typed_name] = view
         if isinstance(view, ast.LocalViewDefinition) and isinstance(
             definition, ast.EncodingOperationDefinition
         ):
@@ -661,10 +648,6 @@ class DefinitionStructuralValidator:
         views: scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ],
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference,
-            ast.InterfaceViewDefinition | ast.LocalViewDefinition,
-        ],
     ) -> bool:
         name_diagnostics = name_validators.validate_local_name_format(view.name_content)
         self._diagnostics.extend(name_diagnostics)
@@ -678,8 +661,8 @@ class DefinitionStructuralValidator:
                 )
             )
             return False
-        if view in unreferenced_views:
-            del unreferenced_views[view]
+        if view in self._unreferenced_views:
+            del self._unreferenced_views[view]
         return True
 
     def _validate_trigger_conditions(
