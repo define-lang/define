@@ -9,13 +9,13 @@ from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from define.compiler.errors import diagnostics
-    from define.compiler.validator.reference_graph import action_contract
+    from define.compiler.validator.reference_graph import propagation_step
 
 
 class ExpectedPropagationStep(TypedDict):
     """Expected per-step data for an entry in a requirement's propagation chain."""
 
-    kind: action_contract.PropagationKind
+    kind: propagation_step.PropagationKind
     enclosing_quality_name: str
     triggered_quality_name: str | None
     line: int

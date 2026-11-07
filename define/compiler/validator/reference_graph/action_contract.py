@@ -9,7 +9,10 @@ from dataclasses import dataclass, field
 import msgspec
 
 from define.compiler import chained_name
-from define.compiler.validator.reference_graph import position_occupancy
+from define.compiler.validator.reference_graph import (
+    position_occupancy,
+    propagation_step,
+)
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
@@ -23,46 +26,6 @@ if typing.TYPE_CHECKING:
     )
 
 
-class PropagationKind(enum.Enum):
-    """How a requirement reached a given step in its propagation chain."""
-
-    # The deepest step in the chain: the definition's own body inferred the
-    # requirement directly.
-    DIRECT_INFERENCE = enum.auto()
-    # The current definition's body destroyed a caller-passed particle,
-    # firing a destructor; the destructor's requirements propagated up.
-    DESTRUCTOR_CASCADE = enum.auto()
-    # A position quality assignment directly assigned a quality to a position.
-    QUALITY_ASSIGNED = enum.auto()
-    # Creating a particle triggered one of its constructor qualities.
-    CONSTRUCTOR_TRIGGER = enum.auto()
-    # The current definition's body triggered an action; the action's
-    # requirements propagated up.
-    ACTION_TRIGGER = enum.auto()
-    # The particle whose destructor requirement is violated was originally
-    # created here.
-    PARTICLE_ORIGIN = enum.auto()
-    # The particle is automatically destroyed at the end of a body, firing the
-    # destructor whose requirement is violated.
-    AUTO_DESTRUCTION = enum.auto()
-    # The contracted position was filled here, which is what violates an
-    # empty-requirement.
-    FILL_SITE = enum.auto()
-
-
-class PropagationStep(msgspec.Struct, frozen=True):
-    """One step in a requirement's propagation chain, with its source location."""
-
-    location: ast.SourceLocation
-    kind: PropagationKind
-    # The definition, quality, or position that performs or receives the event
-    # described by this step (where ``location`` points).
-    enclosing_quality_name: str
-    # The quality triggered or assigned by an event involving two names; None
-    # when the event only describes ``enclosing_quality_name``.
-    triggered_quality_name: str | None
-
-
 class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
     """A shared sequence of the triggers between an action and a destroying action below it, one entry for each."""
 
@@ -71,12 +34,12 @@ class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
     # The triggered callee, as the caller named it where it triggered it.
     callee: ast.ActionReference
     # How the caller triggered the callee.
-    kind: PropagationKind
+    kind: propagation_step.PropagationKind
     previous: PropagationHistory | None
 
-    def step(self) -> PropagationStep:
+    def step(self) -> propagation_step.PropagationStep:
         """Return the propagation step that describes this trigger."""
-        return PropagationStep(
+        return propagation_step.PropagationStep(
             location=self.callee.location,
             kind=self.kind,
             enclosing_quality_name=self.caller.typed_name.source_typed_name,
@@ -97,11 +60,11 @@ class ActionAssignment(msgspec.Struct, frozen=True):
     quality: ast.GlobalTypedNameReference
     assigned_to_position_name: ast.TypedName[ast.NameContent]
 
-    def propagation_step(self) -> PropagationStep:
+    def propagation_step(self) -> propagation_step.PropagationStep:
         """Return the action's assignment step."""
-        return PropagationStep(
+        return propagation_step.PropagationStep(
             location=self.quality.location,
-            kind=PropagationKind.QUALITY_ASSIGNED,
+            kind=propagation_step.PropagationKind.QUALITY_ASSIGNED,
             enclosing_quality_name=self.assigned_to_position_name.full_typed_name,
             triggered_quality_name=self.quality.full_typed_name,
         )
@@ -144,9 +107,9 @@ class ActionRequirement(msgspec.Struct, frozen=True, kw_only=True):
             action_assignment=action_assignment,
         )
 
-    def propagation_chain(self) -> list[PropagationStep]:
+    def propagation_chain(self) -> list[propagation_step.PropagationStep]:
         """Return the chain of propagation steps from this requirement down to its root cause."""
-        chain: list[PropagationStep] = []
+        chain: list[propagation_step.PropagationStep] = []
         current: ActionRequirement | None = self
         while current is not None:
             if current.action_assignment is not None:
@@ -155,22 +118,22 @@ class ActionRequirement(msgspec.Struct, frozen=True, kw_only=True):
             current = current.propagated_from
         return chain
 
-    def propagation_step(self) -> PropagationStep:
+    def propagation_step(self) -> propagation_step.PropagationStep:
         """Return the event that propagated this requirement."""
         enclosing_name = self.enclosing_action.typed_name.source_typed_name
         if self.propagated_from is None:
-            return PropagationStep(
+            return propagation_step.PropagationStep(
                 location=self.inferred_at,
-                kind=PropagationKind.DIRECT_INFERENCE,
+                kind=propagation_step.PropagationKind.DIRECT_INFERENCE,
                 enclosing_quality_name=enclosing_name,
                 triggered_quality_name=None,
             )
         other_action = self.propagated_from.enclosing_action
         if other_action.is_destructor:
-            kind = PropagationKind.DESTRUCTOR_CASCADE
+            kind = propagation_step.PropagationKind.DESTRUCTOR_CASCADE
         else:
-            kind = PropagationKind.ACTION_TRIGGER
-        return PropagationStep(
+            kind = propagation_step.PropagationKind.ACTION_TRIGGER
+        return propagation_step.PropagationStep(
             location=self.inferred_at,
             kind=kind,
             enclosing_quality_name=enclosing_name,
@@ -459,7 +422,7 @@ class DestructionContracts:
             contract.position_in_child_state for contract in self.particles
         )
 
-    def propagation_steps(self) -> Iterator[PropagationStep]:
+    def propagation_steps(self) -> Iterator[propagation_step.PropagationStep]:
         """Iterate from the immediate callee to the destroying action."""
         if self.propagation is not None:
             for entry in self.propagation:

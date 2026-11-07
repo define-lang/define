@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from define.compiler import literal_parsers
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -295,7 +295,7 @@ def test_callee_requires_target(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/assign>",
             "line": 12,
@@ -303,7 +303,7 @@ def test_callee_requires_target(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/assign>",
             "triggered_quality_name": None,
             "line": 11,

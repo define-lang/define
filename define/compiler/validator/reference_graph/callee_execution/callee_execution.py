@@ -11,6 +11,7 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
+    propagation_step,
 )
 
 if typing.TYPE_CHECKING:
@@ -52,9 +53,9 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         return self.acting_on_position.location
 
     @property
-    def trigger_kind(self) -> action_contract.PropagationKind:
+    def trigger_kind(self) -> propagation_step.PropagationKind:
         """How the action being validated triggers the callee, as a propagation step names it."""
-        return action_contract.PropagationKind.ACTION_TRIGGER
+        return propagation_step.PropagationKind.ACTION_TRIGGER
 
     def requirement_violation(
         self,
@@ -72,7 +73,7 @@ class CalleeExecution(msgspec.Struct, frozen=True):
             occupant.last_position.location if occupant is not None else None,
         )
         chain = requirement.propagation_chain()
-        trigger_step = action_contract.PropagationStep(
+        trigger_step = propagation_step.PropagationStep(
             location=self.acting_on_position.location,
             kind=self.trigger_kind,
             enclosing_quality_name=definition.typed_name.source_typed_name,
@@ -112,8 +113,8 @@ class ConstructorCalleeExecution(CalleeExecution, frozen=True):
 
     @property
     @typing.override
-    def trigger_kind(self) -> action_contract.PropagationKind:
-        return action_contract.PropagationKind.CONSTRUCTOR_TRIGGER
+    def trigger_kind(self) -> propagation_step.PropagationKind:
+        return propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER
 
 
 class DestructorExecution(CalleeExecution, frozen=True):
@@ -134,15 +135,15 @@ class DestructorExecution(CalleeExecution, frozen=True):
 
     def assignment_and_origin_steps(
         self, enclosing_fqun: ast.Fqun
-    ) -> list[action_contract.PropagationStep]:
+    ) -> list[propagation_step.PropagationStep]:
         """Return the steps that lead a chain about this Destructor: its assignment to the particle, then where the particle came from, named in ``enclosing_fqun``."""
         # The destructor is assigned when the particle is created, so its
         # assignment and origin lead.
         return [
             self.action_assignment.propagation_step(),
-            action_contract.PropagationStep(
+            propagation_step.PropagationStep(
                 location=self.parent_particle.origin_position.location,
-                kind=action_contract.PropagationKind.PARTICLE_ORIGIN,
+                kind=propagation_step.PropagationKind.PARTICLE_ORIGIN,
                 enclosing_quality_name=self.acting_on_position.source_form_in_universe(
                     enclosing_fqun
                 ),
@@ -179,7 +180,7 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
         position_name = position_in_caller.source_form_in_universe(enclosing_fqun)
         if self.auto_destruction_target is None:
             location = self.acting_on_position.location
-            auto_destruction_steps: list[action_contract.PropagationStep] = []
+            auto_destruction_steps: list[propagation_step.PropagationStep] = []
         else:
             location = self.auto_destruction_target.location
             auto_destruction_steps = [
@@ -200,9 +201,9 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
             # Automatic Destruction happens at block end, just before the
             # destruction that fires the destructor.
             *auto_destruction_steps,
-            action_contract.PropagationStep(
+            propagation_step.PropagationStep(
                 location=location,
-                kind=action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+                kind=propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
                 enclosing_quality_name=definition_name,
                 triggered_quality_name=destructor_name,
             ),
@@ -352,7 +353,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         # If the destroyer auto-destroyed the particle at its block's end, that
         # happens after every trigger hop and just before the destructor fires
         # (the same placement a directly known Destructor uses).
-        auto_destruction_steps: list[action_contract.PropagationStep] = []
+        auto_destruction_steps: list[propagation_step.PropagationStep] = []
         if destruction_fact.is_automatic:
             auto_destruction_steps.append(
                 _auto_destruction_step(
@@ -388,13 +389,13 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
 
 def _fill_steps(
     position_name: str, fill_at: ast.SourceLocation | None
-) -> list[action_contract.PropagationStep]:
+) -> list[propagation_step.PropagationStep]:
     if fill_at is None:
         return []
     return [
-        action_contract.PropagationStep(
+        propagation_step.PropagationStep(
             location=fill_at,
-            kind=action_contract.PropagationKind.FILL_SITE,
+            kind=propagation_step.PropagationKind.FILL_SITE,
             enclosing_quality_name=position_name,
             triggered_quality_name=None,
         )
@@ -405,10 +406,10 @@ def _auto_destruction_step(
     local_position_name: str,
     containing_definition_name: str,
     location: ast.SourceLocation,
-) -> action_contract.PropagationStep:
-    return action_contract.PropagationStep(
+) -> propagation_step.PropagationStep:
+    return propagation_step.PropagationStep(
         location=location,
-        kind=action_contract.PropagationKind.AUTO_DESTRUCTION,
+        kind=propagation_step.PropagationKind.AUTO_DESTRUCTION,
         enclosing_quality_name=local_position_name,
         triggered_quality_name=containing_definition_name,
     )
@@ -427,7 +428,7 @@ def _diagnostic(
     position_name: str,
     requirement: action_contract.ActionRequirement,
     action_name: str,
-    steps: list[action_contract.PropagationStep],
+    steps: list[propagation_step.PropagationStep],
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     return diagnostics.InferredRequirementViolationDiagnostic(
         location=location,

@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -54,7 +54,7 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "line": 7,
@@ -62,7 +62,7 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "line": 11,
@@ -70,7 +70,7 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "triggered_quality_name": None,
             "line": 6,
@@ -247,7 +247,7 @@ def test_two_different_implier_constructors_conflict(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
             "line": 8,
@@ -255,7 +255,7 @@ def test_two_different_implier_constructors_conflict(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
             "line": 11,
@@ -263,7 +263,7 @@ def test_two_different_implier_constructors_conflict(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</implied>",
             "triggered_quality_name": None,
             "line": 6,
@@ -271,7 +271,7 @@ def test_two_different_implier_constructors_conflict(
             "file_path": "first_implier.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/second_implier>",
             "triggered_quality_name": None,
             "line": 6,
@@ -309,7 +309,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "line": 8,
@@ -317,7 +317,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "line": 11,
@@ -325,7 +325,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/requirer>",
             "triggered_quality_name": None,
             "line": 6,

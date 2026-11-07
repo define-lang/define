@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -126,7 +126,7 @@ def test_diamond_transitivity_create_conflict_detected(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<source>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
             "line": 17,
@@ -134,7 +134,7 @@ def test_diamond_transitivity_create_conflict_detected(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
             "line": 20,
@@ -142,7 +142,7 @@ def test_diamond_transitivity_create_conflict_detected(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<source>::position</implied>",
             "triggered_quality_name": None,
             "line": 6,
@@ -150,7 +150,7 @@ def test_diamond_transitivity_create_conflict_detected(
             "file_path": "implier_one.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/implier_two>",
             "triggered_quality_name": None,
             "line": 6,

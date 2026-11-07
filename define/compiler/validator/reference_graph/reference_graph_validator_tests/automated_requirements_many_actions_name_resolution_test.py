@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -51,7 +51,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": f"position<box>::action</outer>::position<iface>::position<{_DEP_FQUN}:/x>",
             "triggered_quality_name": None,
             "line": 19,
@@ -59,7 +59,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "line": 20,
@@ -67,7 +67,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "line": 18,
@@ -75,7 +75,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "triggered_quality_name": None,
             "line": 11,
@@ -121,7 +121,7 @@ def test_cross_fqun_occupied_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "line": 17,
@@ -129,7 +129,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "line": 18,
@@ -137,7 +137,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "triggered_quality_name": None,
             "line": 12,
@@ -172,7 +172,7 @@ def test_complex_chain_same_fqun_position_name(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position</leaf>",
             "triggered_quality_name": None,
             "line": 21,
@@ -180,7 +180,7 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/foo>",
             "line": 22,
@@ -188,7 +188,7 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/foo>",
             "triggered_quality_name": _MIDDLE,
             "line": 18,
@@ -196,7 +196,7 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "foo.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": "action<my.domain.com:my_lib:/bar>",
             "line": 18,
@@ -204,7 +204,7 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/bar>",
             "triggered_quality_name": None,
             "line": 11,
@@ -241,7 +241,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": f"position<local>::position</x>::action</foo>::position<iface>::position</middle_position>::position</bar_position>::position<{_DEP_FQUN}:/x>",
             "triggered_quality_name": None,
             "line": 21,
@@ -249,7 +249,7 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/test>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/foo>",
             "line": 22,
@@ -257,7 +257,7 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "line": 18,
@@ -265,7 +265,7 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "foo.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/bar>",
             "line": 18,
@@ -273,7 +273,7 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/bar>",
             "triggered_quality_name": None,
             "line": 11,

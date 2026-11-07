@@ -11,7 +11,7 @@ import msgspec
 
 from define.compiler import constants, name_types
 from define.compiler.errors import source_map
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1929,7 +1929,7 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     """
 
     position_name: str
-    propagation_chain: list[action_contract.PropagationStep]
+    propagation_chain: list[propagation_step.PropagationStep]
     required_empty: bool
     # The action whose Action Statements Block we can't run because the requirement
     # isn't satisfied.
@@ -1961,41 +1961,41 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
         return self.message_format.format(self=self, propagation_chain="\n".join(lines))
 
     @staticmethod
-    def _format_propagation_step(step: action_contract.PropagationStep) -> str:
+    def _format_propagation_step(step: propagation_step.PropagationStep) -> str:
         """Render a propagation step as a human-readable label line."""
         match step.kind:
-            case action_contract.PropagationKind.DIRECT_INFERENCE:
+            case propagation_step.PropagationKind.DIRECT_INFERENCE:
                 return f"'{step.enclosing_quality_name}' infers this requirement"
-            case action_contract.PropagationKind.DESTRUCTOR_CASCADE:
+            case propagation_step.PropagationKind.DESTRUCTOR_CASCADE:
                 return (
                     f"'{step.enclosing_quality_name}' destroys a particle,"
                     f" triggering the destructor '{step.triggered_quality_name}'"
                 )
-            case action_contract.PropagationKind.QUALITY_ASSIGNED:
+            case propagation_step.PropagationKind.QUALITY_ASSIGNED:
                 return (
                     f"'{step.triggered_quality_name}' is assigned to"
                     f" '{step.enclosing_quality_name}'"
                 )
-            case action_contract.PropagationKind.CONSTRUCTOR_TRIGGER:
+            case propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER:
                 return (
                     f"'{step.enclosing_quality_name}' creates a particle, triggering"
                     f" the constructor '{step.triggered_quality_name}'"
                 )
-            case action_contract.PropagationKind.ACTION_TRIGGER:
+            case propagation_step.PropagationKind.ACTION_TRIGGER:
                 return (
                     f"'{step.enclosing_quality_name}' triggers"
                     f" '{step.triggered_quality_name}'"
                 )
-            case action_contract.PropagationKind.PARTICLE_ORIGIN:
+            case propagation_step.PropagationKind.PARTICLE_ORIGIN:
                 return (
                     f"the particle in '{step.enclosing_quality_name}' comes from here"
                 )
-            case action_contract.PropagationKind.AUTO_DESTRUCTION:
+            case propagation_step.PropagationKind.AUTO_DESTRUCTION:
                 return (
                     f"the particle in '{step.enclosing_quality_name}' is automatically"
                     f" destroyed at the end of '{step.triggered_quality_name}'"
                 )
-            case action_contract.PropagationKind.FILL_SITE:
+            case propagation_step.PropagationKind.FILL_SITE:
                 return f"'{step.enclosing_quality_name}' is filled here"
 
 

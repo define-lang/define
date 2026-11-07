@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -127,7 +127,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</item>",
             "triggered_quality_name": None,
             "line": 12,
@@ -135,7 +135,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 13,
@@ -143,7 +143,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -151,7 +151,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,

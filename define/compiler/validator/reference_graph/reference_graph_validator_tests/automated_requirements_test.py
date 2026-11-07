@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -62,7 +62,7 @@ def test_child_operation_with_unfilled_required_parent(
         assert_propagation_chain(
             diagnostic,
             {
-                "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+                "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
                 "enclosing_quality_name": _TEST,
                 "triggered_quality_name": _OTHER,
                 "line": 13,
@@ -70,7 +70,7 @@ def test_child_operation_with_unfilled_required_parent(
                 "file_path": "test.dfn",
             },
             {
-                "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+                "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
                 "enclosing_quality_name": _OTHER,
                 "triggered_quality_name": None,
                 "line": 11,
@@ -222,7 +222,7 @@ def test_violate_occupied_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -230,7 +230,7 @@ def test_violate_occupied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 8,
@@ -263,7 +263,7 @@ def test_caller_violates_occupied_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -271,7 +271,7 @@ def test_caller_violates_occupied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 8,
@@ -314,7 +314,7 @@ def test_caller_violates_empty_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<item>",
             "triggered_quality_name": None,
             "line": 14,
@@ -322,7 +322,7 @@ def test_caller_violates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 15,
@@ -330,7 +330,7 @@ def test_caller_violates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 7,
@@ -441,7 +441,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert_propagation_chain(
         all_diags[2],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
             "line": 20,
@@ -449,7 +449,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": None,
             "line": 9,
@@ -483,7 +483,7 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
             "line": 22,
@@ -491,7 +491,7 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": None,
             "line": 12,
@@ -572,7 +572,7 @@ def test_constructor_violates_occupied_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -580,7 +580,7 @@ def test_constructor_violates_occupied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 8,
@@ -611,7 +611,7 @@ def test_constructor_violates_empty_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<item>",
             "triggered_quality_name": None,
             "line": 12,
@@ -619,7 +619,7 @@ def test_constructor_violates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 13,
@@ -627,7 +627,7 @@ def test_constructor_violates_empty_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 7,
@@ -717,7 +717,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -725,7 +725,7 @@ def test_trigger_chain_occupied_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 15,
@@ -747,7 +747,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -755,7 +755,7 @@ def test_trigger_chain_occupied_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 15,
@@ -799,7 +799,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<trigger_pos>::position</x>",
             "triggered_quality_name": None,
             "line": 18,
@@ -807,7 +807,7 @@ def test_trigger_chain_empty_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 19,
@@ -815,7 +815,7 @@ def test_trigger_chain_empty_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
@@ -848,7 +848,7 @@ def test_trigger_chain_parent_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 12,
@@ -856,7 +856,7 @@ def test_trigger_chain_parent_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 11,
@@ -887,7 +887,7 @@ def test_destroy_infers_occupied_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 14,
@@ -895,7 +895,7 @@ def test_destroy_infers_occupied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 7,

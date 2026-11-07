@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -257,7 +257,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<item>",
             "triggered_quality_name": None,
             "line": 9,
@@ -265,7 +265,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
             "file_path": "other.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 13,
@@ -273,7 +273,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 9,
@@ -305,7 +305,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<dest>",
             "triggered_quality_name": None,
             "line": 10,
@@ -313,7 +313,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
             "file_path": "other.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 19,
@@ -321,7 +321,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
@@ -353,7 +353,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 16,
@@ -361,7 +361,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
@@ -380,7 +380,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</other>::position<dest>",
             "triggered_quality_name": None,
             "line": 10,
@@ -388,7 +388,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "file_path": "other.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OTHER,
             "line": 16,
@@ -396,7 +396,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
@@ -844,7 +844,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<local>::action</outer>::position<outer_iface>::position</item>",
             "triggered_quality_name": None,
             "line": 18,
@@ -852,7 +852,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 19,
@@ -860,7 +860,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -868,7 +868,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,

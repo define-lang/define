@@ -12,7 +12,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -47,7 +47,7 @@ def test_action_occupied_requirement_for_interface_position_does_not_propagate_v
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _P,
             "triggered_quality_name": _IMPLIED_ACTION,
             "line": 6,
@@ -55,7 +55,7 @@ def test_action_occupied_requirement_for_interface_position_does_not_propagate_v
             "file_path": "p.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": None,
             "line": 7,
@@ -85,7 +85,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 7,
@@ -93,7 +93,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 10,
@@ -101,7 +101,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/p>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implied_action>",
             "line": 6,
@@ -109,7 +109,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
             "file_path": "p.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/implied_action>",
             "triggered_quality_name": None,
             "line": 7,

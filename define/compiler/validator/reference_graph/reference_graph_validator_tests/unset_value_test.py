@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -107,7 +107,7 @@ def test_trigger_requires_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</consume>::position<input>",
             "triggered_quality_name": None,
             "line": 18,
@@ -115,7 +115,7 @@ def test_trigger_requires_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 18,
@@ -123,7 +123,7 @@ def test_trigger_requires_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 12,
@@ -160,7 +160,7 @@ def test_transitive_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
             "triggered_quality_name": None,
             "line": 18,
@@ -168,7 +168,7 @@ def test_transitive_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 18,
@@ -176,7 +176,7 @@ def test_transitive_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 16,
@@ -184,7 +184,7 @@ def test_transitive_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 12,
@@ -219,7 +219,7 @@ def test_transitive_implied_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::position</value>",
             "triggered_quality_name": None,
             "line": 13,
@@ -227,7 +227,7 @@ def test_transitive_implied_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 14,
@@ -235,7 +235,7 @@ def test_transitive_implied_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/read>",
             "line": 7,
@@ -243,7 +243,7 @@ def test_transitive_implied_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
             "line": 9,
@@ -278,7 +278,7 @@ def test_implied_requirement_after_move(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::position</value>",
             "triggered_quality_name": None,
             "line": 13,
@@ -286,7 +286,7 @@ def test_implied_requirement_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/read>",
             "line": 14,
@@ -294,7 +294,7 @@ def test_implied_requirement_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
             "line": 11,
@@ -427,7 +427,7 @@ def test_destructor_direct_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 8,
@@ -435,7 +435,7 @@ def test_destructor_direct_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": None,
             "line": 12,
@@ -443,7 +443,7 @@ def test_destructor_direct_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::position</value>",
             "triggered_quality_name": None,
             "line": 13,
@@ -451,7 +451,7 @@ def test_destructor_direct_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 14,
@@ -459,7 +459,7 @@ def test_destructor_direct_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -497,7 +497,7 @@ def test_destructor_contract_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 8,
@@ -505,7 +505,7 @@ def test_destructor_contract_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
             "line": 12,
@@ -513,7 +513,7 @@ def test_destructor_contract_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 20,
@@ -521,7 +521,7 @@ def test_destructor_contract_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -529,7 +529,7 @@ def test_destructor_contract_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -588,7 +588,7 @@ def test_destructor_contract_replace_set(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 8,
@@ -596,7 +596,7 @@ def test_destructor_contract_replace_set(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
             "line": 12,
@@ -604,7 +604,7 @@ def test_destructor_contract_replace_set(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 21,
@@ -612,7 +612,7 @@ def test_destructor_contract_replace_set(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -620,7 +620,7 @@ def test_destructor_contract_replace_set(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -657,7 +657,7 @@ def test_destructor_contract_replace_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 8,
@@ -665,7 +665,7 @@ def test_destructor_contract_replace_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
             "line": 12,
@@ -673,7 +673,7 @@ def test_destructor_contract_replace_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 20,
@@ -681,7 +681,7 @@ def test_destructor_contract_replace_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -689,7 +689,7 @@ def test_destructor_contract_replace_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -733,7 +733,7 @@ def test_destructor_contract_untouched_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 8,
@@ -741,7 +741,7 @@ def test_destructor_contract_untouched_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
             "line": 12,
@@ -749,7 +749,7 @@ def test_destructor_contract_untouched_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 20,
@@ -757,7 +757,7 @@ def test_destructor_contract_untouched_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 6,
@@ -765,7 +765,7 @@ def test_destructor_contract_untouched_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -845,7 +845,7 @@ def test_requirement_after_move_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</consume>::position<input>",
             "triggered_quality_name": None,
             "line": 18,
@@ -853,7 +853,7 @@ def test_requirement_after_move_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 18,
@@ -861,7 +861,7 @@ def test_requirement_after_move_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 14,
@@ -899,7 +899,7 @@ def test_destructor_transitive_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
             "line": 13,
@@ -907,7 +907,7 @@ def test_destructor_transitive_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 20,
@@ -915,7 +915,7 @@ def test_destructor_transitive_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -923,7 +923,7 @@ def test_destructor_transitive_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 17,
@@ -931,7 +931,7 @@ def test_destructor_transitive_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -939,7 +939,7 @@ def test_destructor_transitive_requirement_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -977,7 +977,7 @@ def test_destructor_untouched_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
             "line": 13,
@@ -985,7 +985,7 @@ def test_destructor_untouched_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 20,
@@ -993,7 +993,7 @@ def test_destructor_untouched_requirement_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -1001,7 +1001,7 @@ def test_destructor_untouched_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 16,
@@ -1009,7 +1009,7 @@ def test_destructor_untouched_requirement_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 6,
@@ -1017,7 +1017,7 @@ def test_destructor_untouched_requirement_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1055,7 +1055,7 @@ def test_destructor_replaced_child_identity_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 9,
@@ -1063,7 +1063,7 @@ def test_destructor_replaced_child_identity_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1071,7 +1071,7 @@ def test_destructor_replaced_child_identity_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 31,
@@ -1079,7 +1079,7 @@ def test_destructor_replaced_child_identity_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 24,
@@ -1087,7 +1087,7 @@ def test_destructor_replaced_child_identity_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1149,7 +1149,7 @@ def test_multiple_value_requirements(
     assert_propagation_chain(
         first,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</consume>::position<input>",
             "triggered_quality_name": None,
             "line": 19,
@@ -1157,7 +1157,7 @@ def test_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 19,
@@ -1165,7 +1165,7 @@ def test_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 19,
@@ -1178,7 +1178,7 @@ def test_multiple_value_requirements(
     assert_propagation_chain(
         second,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</consume>::position<other>",
             "triggered_quality_name": None,
             "line": 18,
@@ -1186,7 +1186,7 @@ def test_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 19,
@@ -1194,7 +1194,7 @@ def test_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 20,
@@ -1233,7 +1233,7 @@ def test_interfaces_stop_value_inference(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<input>::action</consume>::position<input>",
             "triggered_quality_name": None,
             "line": 11,
@@ -1241,7 +1241,7 @@ def test_interfaces_stop_value_inference(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 12,
@@ -1249,7 +1249,7 @@ def test_interfaces_stop_value_inference(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1287,7 +1287,7 @@ def test_destructor_transitive_replaced_identity_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<replacement>",
             "triggered_quality_name": None,
             "line": 30,
@@ -1295,7 +1295,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 31,
@@ -1303,7 +1303,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -1311,7 +1311,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 23,
@@ -1319,7 +1319,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 24,
@@ -1327,7 +1327,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1374,7 +1374,7 @@ def test_multiple_destructor_requirements_unset(
     assert_propagation_chain(
         second,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
             "line": 15,
@@ -1382,7 +1382,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 23,
@@ -1390,7 +1390,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 5,
@@ -1398,7 +1398,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 18,
@@ -1406,7 +1406,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -1414,7 +1414,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1427,7 +1427,7 @@ def test_multiple_destructor_requirements_unset(
     assert_propagation_chain(
         first,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</other_value>",
             "triggered_quality_name": None,
             "line": 16,
@@ -1435,7 +1435,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 23,
@@ -1443,7 +1443,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
             "line": 4,
@@ -1451,7 +1451,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 18,
@@ -1459,7 +1459,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
             "line": 13,
@@ -1467,7 +1467,7 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1507,7 +1507,7 @@ def test_destructor_multiple_value_requirements(
     assert_propagation_chain(
         first,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
             "line": 14,
@@ -1515,7 +1515,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 22,
@@ -1523,7 +1523,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -1531,7 +1531,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 17,
@@ -1539,7 +1539,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -1547,7 +1547,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 14,
@@ -1560,7 +1560,7 @@ def test_destructor_multiple_value_requirements(
     assert_propagation_chain(
         second,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</other_value>",
             "triggered_quality_name": None,
             "line": 15,
@@ -1568,7 +1568,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 22,
@@ -1576,7 +1576,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -1584,7 +1584,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 17,
@@ -1592,7 +1592,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 13,
@@ -1600,7 +1600,7 @@ def test_destructor_multiple_value_requirements(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 23,
@@ -1638,7 +1638,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
             "line": 14,
@@ -1646,7 +1646,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
             "line": 22,
@@ -1654,7 +1654,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<input>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -1662,7 +1662,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/relay>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
             "line": 16,
@@ -1670,7 +1670,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "file_path": "relay.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 6,
@@ -1678,7 +1678,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
             "file_path": "close.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 17,
@@ -1743,7 +1743,7 @@ def test_repeated_interface_value_requirement(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<input>::action</consume>::position<input>",
             "triggered_quality_name": None,
             "line": 12,
@@ -1751,7 +1751,7 @@ def test_repeated_interface_value_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
             "line": 13,
@@ -1759,7 +1759,7 @@ def test_repeated_interface_value_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1874,7 +1874,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 3,
@@ -1882,7 +1882,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 9,
@@ -1890,7 +1890,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>::position</value>",
             "triggered_quality_name": None,
             "line": 10,
@@ -1898,7 +1898,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": "position<holder>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/test>",
             "line": 14,
@@ -1906,7 +1906,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 14,
@@ -1914,7 +1914,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,

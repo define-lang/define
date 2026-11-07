@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -52,7 +52,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 18,
@@ -60,7 +60,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 17,
@@ -68,7 +68,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 10,
@@ -103,7 +103,7 @@ def test_inner_action_requirement_propagates_after_move(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>",
             "triggered_quality_name": None,
             "line": 17,
@@ -111,7 +111,7 @@ def test_inner_action_requirement_propagates_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 18,
@@ -119,7 +119,7 @@ def test_inner_action_requirement_propagates_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 20,
@@ -127,7 +127,7 @@ def test_inner_action_requirement_propagates_after_move(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,
@@ -163,7 +163,7 @@ def test_three_deep_action_requirement_propagates_after_move(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</child>",
             "triggered_quality_name": None,
             "line": 17,
@@ -171,7 +171,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 18,
@@ -179,7 +179,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 18,
@@ -187,7 +187,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 20,
@@ -195,7 +195,7 @@ def test_three_deep_action_requirement_propagates_after_move(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,
@@ -240,7 +240,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 23,
@@ -248,7 +248,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 18,
@@ -256,7 +256,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -264,7 +264,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,
@@ -309,7 +309,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 19,
@@ -317,7 +317,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 13,
@@ -325,7 +325,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -333,7 +333,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,
@@ -379,7 +379,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
             "line": 15,
@@ -387,7 +387,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 21,
@@ -395,7 +395,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 10,
@@ -433,7 +433,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
             "line": 15,
@@ -441,7 +441,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -449,7 +449,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 17,

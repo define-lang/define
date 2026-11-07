@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -81,7 +81,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _IMPLIED,
             "line": 7,
@@ -89,7 +89,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _IMPLIED,
             "triggered_quality_name": None,
             "line": 8,
@@ -125,7 +125,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MIDDLE,
             "line": 20,
@@ -133,7 +133,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 21,
@@ -141,7 +141,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 12,

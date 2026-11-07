@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -54,7 +54,7 @@ def test_parent_validation_does_not_skip_child_destructor(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 3,
@@ -62,7 +62,7 @@ def test_parent_validation_does_not_skip_child_destructor(
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<run>::position</child>",
             "triggered_quality_name": None,
             "line": 15,
@@ -70,7 +70,7 @@ def test_parent_validation_does_not_skip_child_destructor(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 17,
@@ -78,7 +78,7 @@ def test_parent_validation_does_not_skip_child_destructor(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 10,
@@ -86,7 +86,7 @@ def test_parent_validation_does_not_skip_child_destructor(
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 7,
@@ -116,7 +116,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<source>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 9,
@@ -124,7 +124,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</middle>::position<run>",
             "triggered_quality_name": None,
             "line": 14,
@@ -132,7 +132,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
             "line": 15,
@@ -140,7 +140,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 16,
@@ -148,7 +148,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 6,
@@ -156,7 +156,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 7,
@@ -187,7 +187,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<created>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 13,
@@ -195,7 +195,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
             "file_path": "producer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</producer>::position<result>",
             "triggered_quality_name": None,
             "line": 16,
@@ -203,7 +203,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
             "file_path": "producer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _DESTRUCTOR,
             "line": 13,
@@ -211,7 +211,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -242,7 +242,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/mid>",
             "line": 22,
@@ -250,7 +250,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
             "line": 5,
@@ -258,7 +258,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 22,
@@ -266,7 +266,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
             "line": 7,
@@ -274,7 +274,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/d2>",
             "triggered_quality_name": None,
             "line": 7,
@@ -296,7 +296,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d1>",
             "line": 4,
@@ -304,7 +304,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
             "line": 19,
@@ -312,7 +312,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 22,
@@ -320,7 +320,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d1>",
             "line": 7,
@@ -328,7 +328,7 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/d1>",
             "triggered_quality_name": None,
             "line": 7,
@@ -378,7 +378,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
             "line": 21,
@@ -386,7 +386,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -394,7 +394,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 21,
@@ -402,7 +402,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 7,
@@ -410,7 +410,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 8,
@@ -432,7 +432,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -440,7 +440,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
             "line": 18,
@@ -448,7 +448,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 21,
@@ -456,7 +456,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 7,
@@ -464,7 +464,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 10,
@@ -515,7 +515,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -523,7 +523,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
             "triggered_quality_name": None,
             "line": 17,
@@ -531,7 +531,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
             "line": 18,
@@ -539,7 +539,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
             "line": 21,
@@ -547,7 +547,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 20,
@@ -555,7 +555,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 7,
@@ -563,7 +563,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 8,
@@ -585,7 +585,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -593,7 +593,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
             "triggered_quality_name": None,
             "line": 17,
@@ -601,7 +601,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
             "line": 18,
@@ -609,7 +609,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "outer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
             "line": 21,
@@ -617,7 +617,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "line": 20,
@@ -625,7 +625,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 7,
@@ -633,7 +633,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 10,
@@ -700,7 +700,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<holder>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "line": 13,
@@ -708,7 +708,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<target>",
             "triggered_quality_name": None,
             "line": 16,
@@ -716,7 +716,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 18,
@@ -724,7 +724,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "line": 12,
@@ -732,7 +732,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "triggered_quality_name": None,
             "line": 7,
@@ -763,7 +763,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<holder>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "line": 13,
@@ -771,7 +771,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<target>",
             "triggered_quality_name": None,
             "line": 16,
@@ -779,7 +779,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 19,
@@ -787,7 +787,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "line": 7,
@@ -795,7 +795,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/watcher>",
             "triggered_quality_name": None,
             "line": 7,
@@ -828,7 +828,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_2>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 3,
@@ -836,7 +836,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
             "file_path": "child_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>::position</child_2>",
             "triggered_quality_name": None,
             "line": 8,
@@ -844,7 +844,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
             "file_path": "fill_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 18,
@@ -852,7 +852,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 7,
@@ -860,7 +860,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 7,
@@ -893,7 +893,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_1>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 4,
@@ -901,7 +901,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
             "file_path": "child_1.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>",
             "triggered_quality_name": None,
             "line": 8,
@@ -909,7 +909,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
             "file_path": "fill_1.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 19,
@@ -917,7 +917,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 7,
@@ -925,7 +925,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 7,
@@ -976,7 +976,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_1>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 3,
@@ -984,7 +984,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
             "file_path": "child_1.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>",
             "triggered_quality_name": None,
             "line": 8,
@@ -992,7 +992,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
             "file_path": "fill_1.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 19,
@@ -1000,7 +1000,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 7,
@@ -1008,7 +1008,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
             "line": 13,
@@ -1039,7 +1039,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -1047,7 +1047,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</inner>::position<target>",
             "triggered_quality_name": None,
             "line": 18,
@@ -1055,7 +1055,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
             "line": 19,
@@ -1063,7 +1063,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 12,
@@ -1071,7 +1071,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 7,
@@ -1093,7 +1093,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 4,
@@ -1101,7 +1101,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</inner>::position<target>",
             "triggered_quality_name": None,
             "line": 18,
@@ -1109,7 +1109,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
             "line": 19,
@@ -1117,7 +1117,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "line": 12,
@@ -1125,7 +1125,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
             "triggered_quality_name": None,
             "line": 7,
@@ -1163,7 +1163,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>::position</reading>",
             "triggered_quality_name": None,
             "line": 20,
@@ -1171,7 +1171,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
             "line": 22,
@@ -1179,7 +1179,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1187,7 +1187,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -1195,7 +1195,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _DESTRUCTOR,
             "line": 7,
@@ -1203,7 +1203,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 13,
@@ -1283,7 +1283,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
             "line": 19,
@@ -1291,7 +1291,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _D,
             "line": 4,
@@ -1299,7 +1299,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -1307,7 +1307,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _D,
             "line": 7,
@@ -1315,7 +1315,7 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _D,
             "triggered_quality_name": None,
             "line": 7,
@@ -1358,7 +1358,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 4,
@@ -1366,7 +1366,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</inner>::position<target>",
             "triggered_quality_name": None,
             "line": 17,
@@ -1374,7 +1374,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _INNER,
             "line": 18,
@@ -1382,7 +1382,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _DESTRUCTOR,
             "line": 7,
@@ -1390,7 +1390,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
             "file_path": "inner.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -1426,7 +1426,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<left>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 8,
@@ -1434,7 +1434,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
             "file_path": "initialize.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<item>::position</left>",
             "triggered_quality_name": None,
             "line": 11,
@@ -1442,7 +1442,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
             "file_path": "initialize.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "line": 16,
@@ -1450,7 +1450,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 6,
@@ -1458,7 +1458,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
             "file_path": "cleanup.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,

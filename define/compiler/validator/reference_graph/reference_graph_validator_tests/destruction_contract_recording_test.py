@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -47,7 +47,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 14,
@@ -55,7 +55,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
             "line": 18,
@@ -63,7 +63,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
             "line": 20,
@@ -71,7 +71,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 9,
@@ -79,7 +79,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DELETE_DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -125,7 +125,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 14,
@@ -133,7 +133,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
             "line": 18,
@@ -141,7 +141,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
             "line": 20,
@@ -149,7 +149,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": "position<local_box>",
             "triggered_quality_name": _MID,
             "line": 7,
@@ -157,7 +157,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 7,
@@ -165,7 +165,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "mid.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DELETE_DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -221,7 +221,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 17,
@@ -229,7 +229,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::position</slot>",
             "triggered_quality_name": None,
             "line": 21,
@@ -237,7 +237,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
             "line": 23,
@@ -245,7 +245,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
             "line": 7,
@@ -253,7 +253,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "file_path": "close_file.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DELETE_DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -290,7 +290,7 @@ def test_destruction_contracts_validated_in_execution_order(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<one>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 14,
@@ -298,7 +298,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_two>::position<target1>",
             "triggered_quality_name": None,
             "line": 23,
@@ -306,7 +306,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_TWO,
             "line": 27,
@@ -314,7 +314,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_TWO,
             "triggered_quality_name": _DESTRUCTOR,
             "line": 8,
@@ -322,7 +322,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "close_two.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
@@ -342,7 +342,7 @@ def test_destruction_contracts_validated_in_execution_order(
     assert_propagation_chain(
         all_diags[1],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<two>",
             "triggered_quality_name": _DESTRUCTOR,
             "line": 19,
@@ -350,7 +350,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_two>::position<target2>",
             "triggered_quality_name": None,
             "line": 24,
@@ -358,7 +358,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_TWO,
             "line": 27,
@@ -366,7 +366,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_TWO,
             "triggered_quality_name": _DESTRUCTOR,
             "line": 9,
@@ -374,7 +374,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "close_two.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,

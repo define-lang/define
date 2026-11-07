@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -104,7 +104,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_2>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -112,7 +112,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
             "file_path": "child_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</child_1>::position</child_2>",
             "triggered_quality_name": None,
             "line": 8,
@@ -120,7 +120,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
             "file_path": "fill_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 13,
@@ -128,7 +128,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -136,7 +136,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -170,7 +170,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_2>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -178,7 +178,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
             "file_path": "child_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</child_1>::position</child_2>",
             "triggered_quality_name": None,
             "line": 8,
@@ -186,7 +186,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
             "file_path": "fill_2.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 13,
@@ -194,7 +194,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -202,7 +202,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -243,7 +243,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child_3>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -251,7 +251,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
             "file_path": "child_3.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</child_0>::position</child_1>::position</child_2>::position</child_3>",
             "triggered_quality_name": None,
             "line": 8,
@@ -259,7 +259,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
             "file_path": "fill_3.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 14,
@@ -267,7 +267,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 14,
@@ -275,7 +275,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -309,7 +309,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/part>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -317,7 +317,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
             "file_path": "part.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</part>",
             "triggered_quality_name": None,
             "line": 8,
@@ -325,7 +325,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
             "file_path": "builder.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 15,
@@ -333,7 +333,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 15,
@@ -341,7 +341,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -375,7 +375,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<mine>",
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -383,7 +383,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<holder>",
             "triggered_quality_name": None,
             "line": 16,
@@ -391,7 +391,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 18,
@@ -399,7 +399,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": _CLEANUP,
             "line": 12,
@@ -407,7 +407,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -441,7 +441,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _WRAPPER,
             "line": 19,
@@ -449,7 +449,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _WRAPPER,
             "triggered_quality_name": _EMPTY_MARKER,
             "line": 7,
@@ -457,7 +457,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
             "file_path": "wrapper.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/marker>",
             "triggered_quality_name": _RETIRE,
             "line": 3,
@@ -465,7 +465,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
             "file_path": "marker.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _EMPTY_MARKER,
             "triggered_quality_name": _RETIRE,
             "line": 7,
@@ -473,7 +473,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
             "file_path": "empty_marker.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _RETIRE,
             "triggered_quality_name": None,
             "line": 7,
@@ -507,7 +507,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _WRAPPER,
             "line": 22,
@@ -515,7 +515,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _WRAPPER,
             "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
             "line": 7,
@@ -523,7 +523,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
             "file_path": "wrapper.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
             "triggered_quality_name": _EMPTY_MARKER,
             "line": 7,
@@ -531,7 +531,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
             "file_path": "middle.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/marker>",
             "triggered_quality_name": _RETIRE,
             "line": 3,
@@ -539,7 +539,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
             "file_path": "marker.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _EMPTY_MARKER,
             "triggered_quality_name": _RETIRE,
             "line": 7,
@@ -547,7 +547,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
             "file_path": "empty_marker.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _RETIRE,
             "triggered_quality_name": None,
             "line": 7,
@@ -602,7 +602,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<mine>",
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -610,7 +610,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "action</destroyer>::position<holder>::position</box>",
             "triggered_quality_name": None,
             "line": 16,
@@ -618,7 +618,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "line": 20,
@@ -626,7 +626,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
             "triggered_quality_name": _CLEANUP,
             "line": 11,
@@ -634,7 +634,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "destroyer.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -668,7 +668,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/r>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -676,7 +676,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
             "file_path": "r.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</q>::position</r>",
             "triggered_quality_name": None,
             "line": 8,
@@ -684,7 +684,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
             "file_path": "builder.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 16,
@@ -692,7 +692,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 16,
@@ -700,7 +700,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 7,
@@ -838,7 +838,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -846,7 +846,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 8,
@@ -854,7 +854,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.FILL_SITE,
+            "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>::position</inner>::position</value>",
             "triggered_quality_name": None,
             "line": 10,
@@ -862,7 +862,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 13,
@@ -870,7 +870,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -878,7 +878,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
@@ -933,7 +933,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -941,7 +941,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 8,
@@ -949,7 +949,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 13,
@@ -957,7 +957,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 13,
@@ -965,7 +965,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
@@ -1020,7 +1020,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     assert_propagation_chain(
         inner,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -1028,7 +1028,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 8,
@@ -1036,7 +1036,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 12,
@@ -1044,7 +1044,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 12,
@@ -1052,7 +1052,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
@@ -1074,7 +1074,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     assert_propagation_chain(
         value,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -1082,7 +1082,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 8,
@@ -1090,7 +1090,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 12,
@@ -1098,7 +1098,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 12,
@@ -1106,7 +1106,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,
@@ -1195,7 +1195,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
             "triggered_quality_name": _CLEANUP,
             "line": 3,
@@ -1203,7 +1203,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "child.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<holder>::position</box>::position</child>",
             "triggered_quality_name": None,
             "line": 8,
@@ -1211,7 +1211,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "make.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "kind": propagation_step.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": _HOLDER,
             "triggered_quality_name": _TEST,
             "line": 12,
@@ -1219,7 +1219,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLEANUP,
             "line": 12,
@@ -1227,7 +1227,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _CLEANUP,
             "triggered_quality_name": None,
             "line": 13,

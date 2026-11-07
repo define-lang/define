@@ -192,6 +192,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph:test_helpers",
         "//define/compiler/validator/reference_graph/destruction:child_state",
@@ -204,7 +205,7 @@ py_library(
     srcs = ["test_helpers.py"],
     deps = [
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:propagation_step",
     ],
 )
 

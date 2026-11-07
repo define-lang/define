@@ -18,7 +18,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler:name_types",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/structural/resolver:local_dependency_entry",
         "@pypi//msgspec",
     ],

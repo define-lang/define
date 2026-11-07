@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -51,7 +51,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 7,
@@ -59,7 +59,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 10,
@@ -67,7 +67,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/p>",
             "triggered_quality_name": None,
             "line": 6,
@@ -99,7 +99,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 7,
@@ -107,7 +107,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 10,
@@ -115,7 +115,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/p>",
             "triggered_quality_name": None,
             "line": 7,
@@ -152,7 +152,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert_propagation_chain(
         diag_q,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 7,
@@ -160,7 +160,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
             "line": 10,
@@ -168,7 +168,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/p>",
             "triggered_quality_name": None,
             "line": 7,
@@ -187,7 +187,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert_propagation_chain(
         diag_r,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _P,
             "line": 7,
@@ -195,7 +195,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _P,
             "line": 10,
@@ -203,7 +203,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 8,
@@ -235,7 +235,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_CHILD,
             "line": 11,
@@ -243,7 +243,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_CHILD,
             "line": 14,
@@ -251,7 +251,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTROY_CHILD,
             "triggered_quality_name": None,
             "line": 6,
@@ -283,7 +283,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _MOVE_CHILD,
             "line": 10,
@@ -291,7 +291,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _MOVE_CHILD,
             "line": 13,
@@ -299,7 +299,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _MOVE_CHILD,
             "triggered_quality_name": None,
             "line": 7,
@@ -341,7 +341,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_GRANDCHILD,
             "line": 10,
@@ -349,7 +349,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_GRANDCHILD,
             "line": 13,
@@ -357,7 +357,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTROY_GRANDCHILD,
             "triggered_quality_name": None,
             "line": 6,
@@ -392,7 +392,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": _DESTROY_INTERFACE_CHILD,
             "line": 10,
@@ -400,7 +400,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": _DESTROY_INTERFACE_CHILD,
             "line": 13,
@@ -408,7 +408,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTROY_INTERFACE_CHILD,
             "triggered_quality_name": None,
             "line": 6,
@@ -442,7 +442,7 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
     assert_propagation_chain(
         diag,
         {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _P,
             "triggered_quality_name": _IMPLIED_ACTION,
             "line": 7,
@@ -450,7 +450,7 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
             "file_path": "p.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": None,
             "line": 7,
