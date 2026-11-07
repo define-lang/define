@@ -51,6 +51,10 @@ def _removed_worktree(directory: Path, arguments: Sequence[str]) -> Path | None:
 def _setup_local_dev_repository(
     directory: Path, _arguments: Sequence[str]
 ) -> Path | None:
+    # A cd to a directory that does not exist fails in the shell, so the
+    # command never runs there.
+    if not directory.is_dir():
+        return None
     try:
         repository = Path(_git(directory, "rev-parse", "--show-toplevel").strip())
     except subprocess.CalledProcessError:
@@ -184,8 +188,27 @@ def _program_and_arguments(words: Sequence[str]) -> list[str]:
     return list(words[index:])
 
 
+def _cd_target(cd_arguments: Sequence[str]) -> Path | None:
+    """Return the directory that a cd with these arguments goes to, if the hook can tell without the shell."""
+    # A cd with no argument goes to the home directory.
+    target = cd_arguments[0] if cd_arguments else "~"
+    # `cd -` goes to the previous directory, which the command does not name,
+    # and options change how cd follows links.
+    if len(cd_arguments) > 1 or target.startswith("-"):
+        return None
+    # Only the shell knows what variables and command substitutions expand to.
+    if any(character in target for character in "$`"):
+        return None
+    try:
+        return Path(target).expanduser()
+    except RuntimeError:
+        # The home directory of a `~user` that does not exist is unknown.
+        return None
+
+
 def _program_runs(hook_directory: Path, command: str) -> list[_ProgramRun]:
-    directory = hook_directory
+    # None once a cd goes somewhere that only the shell can work out.
+    directory: Path | None = hook_directory
     program_runs: list[_ProgramRun] = []
     for words in _simple_commands(command):
         program_and_arguments = _program_and_arguments(words)
@@ -194,8 +217,14 @@ def _program_runs(hook_directory: Path, command: str) -> list[_ProgramRun]:
         program = Path(program_and_arguments[0]).name
         arguments = program_and_arguments[1:]
         if program == "cd":
-            directory /= arguments[0]
-        else:
+            target = _cd_target(arguments)
+            if target is None:
+                directory = None
+            elif target.is_absolute():
+                directory = target
+            elif directory is not None:
+                directory /= target
+        elif directory is not None:
             program_runs.append(_ProgramRun(directory, program, arguments))
     return program_runs
 

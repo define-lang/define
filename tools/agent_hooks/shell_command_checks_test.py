@@ -314,6 +314,63 @@ def test_uv_run_outside_a_git_repository_does_nothing(
     assert run_log.read_text(encoding="utf-8").splitlines() == []
 
 
+@pytest.mark.parametrize(
+    "cd_command",
+    [
+        "cd $PROJECT",
+        "cd `pwd`",
+        "cd -",
+        "cd -P define",
+        "cd ~no_such_user_for_this_test",
+        "cd $PROJECT && cd define",
+        "cd missing",
+    ],
+)
+def test_uv_run_after_a_cd_the_hook_cannot_follow_does_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cd_command: str
+):
+    repository = _project(tmp_path)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert _run_hook(monkeypatch, repository, f"{cd_command} && uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == []
+
+
+def test_uv_run_after_a_cd_to_an_absolute_path_is_checked_there(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _project(tmp_path)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert (
+        _run_hook(
+            monkeypatch,
+            tmp_path,
+            f"cd $PROJECT; cd '{repository / 'define'}' && uv run x.py",
+        )
+        == ""
+    )
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_SETUP_LOCAL_DEV} in {repository}"
+    ]
+
+
+@pytest.mark.parametrize("cd_command", ["cd ~/define", "cd"])
+def test_uv_run_after_a_cd_to_the_home_directory_is_checked_there(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cd_command: str
+):
+    repository = _project(tmp_path)
+    monkeypatch.setenv("HOME", str(repository))
+    # Windows takes the home directory from USERPROFILE.
+    monkeypatch.setenv("USERPROFILE", str(repository))
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+
+    assert _run_hook(monkeypatch, tmp_path, f"{cd_command} && uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_SETUP_LOCAL_DEV} in {repository}"
+    ]
+
+
 def test_uv_run_in_a_repository_without_setup_local_dev_does_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
