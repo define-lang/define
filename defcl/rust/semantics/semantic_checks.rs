@@ -16,14 +16,13 @@ use rustc_hash::{FxBuildHasher, FxHashSet};
 pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), Vec<SemanticError>> {
     let mut errors = Vec::new();
     let top_level_message_type = schema.top_level_message_type();
-    let mut written_names =
-        FxHashSet::with_capacity_and_hasher(file.top_level_messages.len(), FxBuildHasher);
+    let mut written_fields = WrittenFields::new(file.top_level_messages.len());
     for top_level_message in &file.top_level_messages {
         let Some(schema_field) = find_field(
             schema,
             top_level_message_type,
             &top_level_message.name,
-            &mut written_names,
+            &mut written_fields,
             &mut errors,
         ) else {
             continue;
@@ -55,13 +54,13 @@ fn check_fields(
     fields: &[Field],
     errors: &mut Vec<SemanticError>,
 ) {
-    let mut written_names = FxHashSet::with_capacity_and_hasher(fields.len(), FxBuildHasher);
+    let mut written_fields = WrittenFields::new(fields.len());
     for field in fields {
         if let Some(schema_field) = find_field(
             schema,
             message_type,
             &field.name,
-            &mut written_names,
+            &mut written_fields,
             errors,
         ) {
             check_field(schema, field, &schema_field, errors);
@@ -69,14 +68,31 @@ fn check_fields(
     }
 }
 
+/// The fields written so far in a message value, or in the file's top-level
+/// messages.
+struct WrittenFields<'source> {
+    names: FxHashSet<&'source str>,
+    /// The index in the message type's descriptor of each oneof that has a
+    /// field written.
+    oneofs: Vec<i32>,
+}
+
+impl WrittenFields<'_> {
+    fn new(capacity: usize) -> Self {
+        Self {
+            names: FxHashSet::with_capacity_and_hasher(capacity, FxBuildHasher),
+            oneofs: Vec::new(),
+        }
+    }
+}
+
 /// Returns the field of `message_type` that `name` names, if it has one, and
-/// adds `name` to `written_names`, the field names written so far in the
-/// message value.
+/// adds the field to `written_fields`.
 fn find_field<'schema, 'source>(
     schema: &'schema Schema,
     message_type: &'schema MessageType,
     name: &FieldName<'source>,
-    written_names: &mut FxHashSet<&'source str>,
+    written_fields: &mut WrittenFields<'source>,
     errors: &mut Vec<SemanticError>,
 ) -> Option<SchemaField<'schema>> {
     // The message type has no field with the name.
@@ -85,8 +101,17 @@ fn find_field<'schema, 'source>(
         return None;
     };
     // The message value already has a field with this name.
-    if !written_names.insert(name.text) {
+    if !written_fields.names.insert(name.text) {
         errors.push(field_written_twice(name));
+        return Some(schema_field);
+    }
+    if let Some(oneof) = schema_field.descriptor.oneof_index {
+        // The message value already has another field of the field's oneof.
+        if written_fields.oneofs.contains(&oneof) {
+            errors.push(second_field_of_oneof(name, message_type, oneof));
+        } else {
+            written_fields.oneofs.push(oneof);
+        }
     }
     Some(schema_field)
 }
@@ -205,6 +230,26 @@ fn is_float_in_range(text: &str, field_type: FloatFieldType) -> bool {
 fn field_written_twice(name: &FieldName) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::FieldWrittenTwice,
+        location: name.location,
+        field_name: name.text.to_owned(),
+    }
+}
+
+/// The error for the field named `name`, a field of the oneof at index `oneof`
+/// in `message_type`'s descriptor, which already has another field written.
+#[cold]
+#[inline(never)]
+fn second_field_of_oneof(
+    name: &FieldName,
+    message_type: &MessageType,
+    oneof: i32,
+) -> SemanticError {
+    #[expect(clippy::cast_sign_loss, reason = "a oneof's index is never negative")]
+    let oneof_name = message_type.descriptor.oneof_decl[oneof as usize].name();
+    SemanticError {
+        kind: SemanticErrorKind::SecondFieldOfOneof {
+            oneof: format!("{}.{oneof_name}", message_type.full_name),
+        },
         location: name.location,
         field_name: name.text.to_owned(),
     }

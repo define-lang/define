@@ -46,6 +46,15 @@ mod valid_files {
     }
 
     #[gtest]
+    fn oneofs() -> Result<()> {
+        verify_ok!(check_semantics_of_source(
+            include_str!("../../testdata/valid/oneofs.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.OneofsFile",
+        )?)
+    }
+
+    #[gtest]
     fn nested_messages() -> Result<()> {
         verify_ok!(check_semantics_of_source(
             include_str!("../../testdata/valid/nested_messages.defcl"),
@@ -798,6 +807,118 @@ mod values_out_of_range {
                 },
                 field_name: "int32_values".to_owned(),
             }]))
+        )
+    }
+}
+
+mod oneofs {
+    use super::*;
+
+    #[gtest]
+    fn second_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!("../../testdata/invalid/semantics/oneofs/second_field.defcl"),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OneofsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::SecondFieldOfOneof {
+                    oneof: "defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source"
+                        .to_owned()
+                },
+                location: SourceLocation {
+                    line: 3,
+                    column: 5,
+                    end_line: 3,
+                    end_column: 7
+                },
+                field_name: "url".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn second_top_level_message() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/oneofs/second_top_level_message.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OneofsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::SecondFieldOfOneof {
+                    oneof: "defcl.testdata.invalid.semantics.schemas.OneofsFile.target".to_owned()
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 1,
+                    end_line: 2,
+                    end_column: 8
+                },
+                field_name: "fallback".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn same_field_written_twice() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/oneofs/same_field_written_twice.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OneofsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::FieldWrittenTwice,
+                location: SourceLocation {
+                    line: 3,
+                    column: 5,
+                    end_line: 3,
+                    end_column: 8
+                },
+                field_name: "path".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn value_of_second_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!("../../testdata/invalid/semantics/oneofs/value_of_second_field.defcl"),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.OneofsFile",
+            )?,
+            err(eq(&vec![
+                SemanticError {
+                    kind: SemanticErrorKind::SecondFieldOfOneof {
+                        oneof: "defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source"
+                            .to_owned()
+                    },
+                    location: SourceLocation {
+                        line: 3,
+                        column: 5,
+                        end_line: 3,
+                        end_column: 7
+                    },
+                    field_name: "url".to_owned(),
+                },
+                SemanticError {
+                    kind: SemanticErrorKind::NonStringForStringField,
+                    location: SourceLocation {
+                        line: 3,
+                        column: 10,
+                        end_line: 3,
+                        end_column: 10
+                    },
+                    field_name: "url".to_owned(),
+                }
+            ]))
         )
     }
 }

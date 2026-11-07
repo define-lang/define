@@ -39,6 +39,13 @@ pub enum SemanticErrorKind {
     /// second field name.
     #[display("A message value can have each field only once")]
     FieldWrittenTwice,
+    /// A field of a oneof that the message value already has another field
+    /// of. The location is the second field's name.
+    #[display("Only one field of the oneof {oneof} can be written in a message value")]
+    SecondFieldOfOneof {
+        /// The oneof's full name: its message type's full name, then its own.
+        oneof: String,
+    },
     /// A repeated field whose value is not a repeated value. The location is
     /// the value.
     #[display("Repeated fields must use bracket [] syntax")]

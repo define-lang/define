@@ -115,3 +115,10 @@ class FloatOutOfRangeDiagnostic(DclDiagnostic, frozen=True):
 
     # The field's type, "float" or "double".
     field_type: str
+
+
+class SecondFieldOfOneofDiagnostic(DclDiagnostic, frozen=True):
+    """A SECOND_FIELD_OF_ONEOF diagnostic: a field of a oneof that its message value already has another field of."""
+
+    # The oneof's full name: its message type's full name, then its own name.
+    oneof: str

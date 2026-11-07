@@ -1,0 +1,14 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+message OneofsFile {
+  Config config = 1;
+  message Config {
+    oneof source {
+      string path = 1;
+      string url = 2;
+    }
+    string name = 3;
+  }
+}

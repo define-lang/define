@@ -391,6 +391,25 @@ project: <
 >
 ```
 
+A message value can have at most one field of each oneof, as in textproto.
+
+Valid (assuming `path` and `url` are the fields of a oneof):
+
+```
+source: {
+    url: "https://example.com"
+}
+```
+
+Invalid:
+
+```
+source: {
+    path: "config.txt"
+    url: "https://example.com"
+}
+```
+
 ### Repeated Field Syntax
 
 Repeated fields must be written as a single list using square brackets `[]`.

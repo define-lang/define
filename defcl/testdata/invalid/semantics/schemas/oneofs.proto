@@ -1,0 +1,16 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message OneofsFile {
+  oneof target {
+    Config config = 1;
+    Config fallback = 2;
+  }
+  message Config {
+    oneof source {
+      string path = 1;
+      string url = 2;
+    }
+  }
+}

@@ -66,6 +66,11 @@ proto_library(
 )
 
 proto_library(
+    name = "oneofs_proto",
+    srcs = ["oneofs.proto"],
+)
+
+proto_library(
     name = "out_of_range_proto",
     srcs = ["out_of_range.proto"],
 )
@@ -107,6 +112,7 @@ proto_descriptor_set(
         ":no_brackets_scalar_proto",
         ":no_package_proto",
         ":non_repeated_fields_with_brackets_proto",
+        ":oneofs_proto",
         ":out_of_range_proto",
         ":repeated_integer_enum_proto",
         ":scalars_for_message_fields_proto",

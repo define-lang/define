@@ -21,6 +21,7 @@ struct PythonClasses {
     unknown_enum_value_diagnostic: Py<PyType>,
     integer_out_of_range_diagnostic: Py<PyType>,
     float_out_of_range_diagnostic: Py<PyType>,
+    second_field_of_oneof_diagnostic: Py<PyType>,
     diagnostic_kind: Py<PyType>,
 }
 
@@ -45,6 +46,7 @@ impl PythonClasses {
             unknown_enum_value_diagnostic: class(&errors, "UnknownEnumValueDiagnostic")?,
             integer_out_of_range_diagnostic: class(&errors, "IntegerOutOfRangeDiagnostic")?,
             float_out_of_range_diagnostic: class(&errors, "FloatOutOfRangeDiagnostic")?,
+            second_field_of_oneof_diagnostic: class(&errors, "SecondFieldOfOneofDiagnostic")?,
             diagnostic_kind: class(&error_types, "DiagnosticKind")?,
         })
     }
@@ -133,6 +135,10 @@ impl PythonClasses {
                     field_type.to_string(),
                 ))
             }
+            SemanticErrorKind::SecondFieldOfOneof { oneof } => self
+                .second_field_of_oneof_diagnostic
+                .bind(py)
+                .call1((kind, message, location, field_name, rendered, oneof)),
             _ => self
                 .dcl_diagnostic
                 .bind(py)

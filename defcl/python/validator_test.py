@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 _MULTIPLE_ERRORS_FILE = "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile"
+_ONEOFS_FILE = "defcl.testdata.invalid.semantics.schemas.OneofsFile"
 _OUT_OF_RANGE_FILE = "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile"
 _SINGLE_TOPLEVEL_FILE = "defcl.testdata.valid.schemas.SingleToplevelFile"
 _WRONG_VALUE_KINDS_FILE = "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile"
@@ -175,6 +176,31 @@ def test_float_out_of_range_diagnostic_has_field_type():
         "    float_value: 340282356779733661637539395458142568448.0\n"
         "                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         "float_value: The value is too large in magnitude for a float field"
+    )
+
+
+def test_second_field_of_oneof_diagnostic_has_oneof():
+    (second_field_of_oneof,) = validator.validate(
+        _testdata("invalid/semantics/oneofs/second_field.defcl"),
+        _invalid_semantics_schemas(),
+        _ONEOFS_FILE,
+    )
+
+    assert isinstance(second_field_of_oneof, errors.SecondFieldOfOneofDiagnostic)
+    assert (
+        second_field_of_oneof.kind == error_types.DiagnosticKind.SECOND_FIELD_OF_ONEOF
+    )
+    assert second_field_of_oneof.location == errors.SourceLocation(3, 5, 3, 7)
+    assert second_field_of_oneof.field_name == "url"
+    assert (
+        second_field_of_oneof.oneof
+        == "defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source"
+    )
+    assert second_field_of_oneof.rendered == (
+        "line 3, column 5\n"
+        '    url: "b"\n'
+        "    ^^^\n"
+        "url: Only one field of the oneof defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source can be written in a message value"
     )
 
 
