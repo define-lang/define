@@ -1,0 +1,10 @@
+id: rust-write-instead-of-push-str-formatting
+language: rust
+severity: error
+message:
+  Format into the string with `write!` from `std::fmt::Write` instead of
+  pushing a temporary `String` that `to_string()` or `format!` builds.
+rule:
+  any:
+    - pattern: $STRING.push_str(&$VALUE.to_string())
+    - pattern: $STRING.push_str(&format!($$$))

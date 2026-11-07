@@ -1,0 +1,23 @@
+id: rust-write-instead-of-push-str-formatting
+valid:
+  - |
+    fn f(list: &mut String) {
+        list.push_str("\n  - ");
+    }
+  - |
+    fn f(list: &mut String, name: &str) {
+        list.push_str(name);
+    }
+  - |
+    fn f(list: &mut String, violation: &Violation) {
+        let _ = write!(list, "\n  - {violation}");
+    }
+invalid:
+  - |
+    fn f(list: &mut String, violation: &Violation) {
+        list.push_str(&violation.to_string());
+    }
+  - |
+    fn f(list: &mut String, violation: &Violation) {
+        list.push_str(&format!("\n  - {violation}"));
+    }
