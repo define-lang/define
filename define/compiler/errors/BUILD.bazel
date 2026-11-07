@@ -14,11 +14,12 @@ py_library(
     ],
     deps = [
         ":source_map",
+        "//defcl/python:exceptions",
         "//define/compiler:ast",
-        "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/structural/resolver:local_dependency_entry",
         "@pypi//msgspec",
     ],
 )

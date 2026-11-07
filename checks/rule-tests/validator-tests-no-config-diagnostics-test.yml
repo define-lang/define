@@ -1,0 +1,9 @@
+id: validator-tests-no-config-diagnostics
+valid:
+  - |
+    assert result.all_diagnostics == [diagnostic]
+invalid:
+  - |
+    assert result.config_diagnostics == [diagnostic]
+  - |
+    assert result.program_result.config_diagnostics == []

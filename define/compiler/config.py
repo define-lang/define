@@ -13,180 +13,14 @@ from google.protobuf import message
 
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python import parser as defcl_parser
-from define.compiler import constants
+from define.compiler import ast, constants
 from define.compiler.data_structures import define_path
-from define.compiler.errors import exceptions
+from define.compiler.errors import diagnostics
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
-
-
-class ConfigError(exceptions.DefineError):
-    """Base class for errors raise by anything to do with configuration."""
-
-
-class NotProjectRootError(ConfigError):
-    """A directory is not a Define project root."""
-
-    config_path: PurePosixPath
-    root: str
-
-    def __init__(self, config_path: PurePosixPath, root: define_path.DefinePath):
-        """Initialize with the config path that was not found."""
-        self.config_path = config_path
-        self.root = str(root)
-        if root == constants.PROJECT_ROOT:
-            header = "The Define compiler must be run from a project root directory."
-        else:
-            header = (
-                f"The referenced subroot ({self.root}) is not a valid project root:"
-                + f" {config_path} not found."
-            )
-        super().__init__(
-            f"{header}\n"
-            + f"A project root is any directory containing {config_path}.\n"
-            + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
-        )
-
-
-class DuplicateFqunError(ConfigError):
-    """Two different sub-roots have the same fully-qualified universe name."""
-
-    fqun: str
-    existing_config: define_path.DefinePath
-    new_config: define_path.DefinePath
-
-    def __init__(
-        self,
-        fqun: str,
-        existing_root: define_path.DefinePath,
-        new_root: define_path.DefinePath,
-        config_subpath: define_path.DefinePath,
-    ):
-        """Initialize with the duplicate FQUN and both root paths."""
-        self.fqun = fqun
-        existing_config = existing_root / config_subpath
-        new_config = new_root / config_subpath
-        self.existing_config = existing_config
-        self.new_config = new_config
-        super().__init__(
-            f"Universe '{fqun}' is already defined in '{existing_config}'"
-            + f" and cannot be redefined in '{new_config}'"
-        )
-
-
-class SubRootFqunMismatchError(ConfigError):
-    """A sub-root's project config declares a different universe than expected."""
-
-    expected_fqun: str
-    actual_fqun: str
-    sub_root_path: str
-
-    def __init__(self, expected_fqun: str, actual_fqun: str, sub_root_path: str):
-        """Initialize with the expected and actual FQUNs."""
-        self.expected_fqun = expected_fqun
-        self.actual_fqun = actual_fqun
-        self.sub_root_path = sub_root_path
-        super().__init__(
-            f"Sub-root at '{sub_root_path}' is configured as a dependency"
-            + f" with universe '{expected_fqun}' but the actual project root"
-            + f" in that path says it has the universe name '{actual_fqun}'"
-        )
-
-
-class LocalDependencyEntry(msgspec.Struct, frozen=True):
-    """One entry in a project's local dependencies config."""
-
-    deps_path: PurePosixPath
-    universe: str
-    # The path as the entry writes it, relative to the project that declares it.
-    path: str
-
-    def describe(self) -> str:
-        """Describe the entry by its file and the values a developer finds in it."""
-        return (
-            f"\"{self.deps_path}\" declares universe '{self.universe}' at '{self.path}'"
-        )
-
-
-class SubRootPathAlreadyDeclaredError(ConfigError):
-    """A local dependency declares a sub-root at a path that another local dependency already declared.
-
-    The first declaration of a path wins, and the later one is not used.
-    """
-
-    # TODO: Point at both entries with caret-style diagnostics once the defcl
-    # parser records the source positions of the nodes it builds.
-
-    sub_root_path: str
-    entry: LocalDependencyEntry
-    existing_entry: LocalDependencyEntry
-
-    def __init__(
-        self,
-        sub_root_path: str,
-        entry: LocalDependencyEntry,
-        existing_entry: LocalDependencyEntry,
-    ):
-        """Initialize with the path and both local dependency entries that declare it."""
-        self.sub_root_path = sub_root_path
-        self.entry = entry
-        self.existing_entry = existing_entry
-        super().__init__(
-            f"Two local dependencies declare the sub-root '{sub_root_path}':\n"
-            + f"  {existing_entry.describe()}\n"
-            + f"  {entry.describe()}\n"
-            + "Only the first one is used."
-        )
-
-
-class LocalDependencyOnOwnUniverseError(ConfigError):
-    """A local dependency names the universe of the project that declares it.
-
-    That universe is already at the project root, so the entry is not used.
-    """
-
-    # TODO: Point at the entry with a caret-style diagnostic once the defcl
-    # parser records the source positions of the nodes it builds.
-
-    entry: LocalDependencyEntry
-
-    def __init__(self, entry: LocalDependencyEntry):
-        """Initialize with the local dependency entry."""
-        self.entry = entry
-        super().__init__(
-            f"{entry.describe()}, but that is the project's own universe, so it"
-            + " cannot be a dependency of that project."
-        )
-
-
-class ConfigSyntaxError(ConfigError):
-    """Configuration file has DCL syntax errors."""
-
-    syntax_error: dcl_exceptions.DclSyntaxError
-
-    def __init__(self, syntax_error: dcl_exceptions.DclSyntaxError):
-        """Initialize with the underlying syntax error."""
-        self.syntax_error = syntax_error
-        super().__init__(str(syntax_error))
-
-
-class ConfigValidationError(ConfigError):
-    """Project configuration failed validation."""
-
-    config_path: PurePosixPath
-    violation_messages: list[str]
-
-    def __init__(self, config_path: PurePosixPath, violation_messages: list[str]):
-        """Initialize with the config path and list of violation messages."""
-        self.config_path = config_path
-        self.violation_messages = violation_messages
-        violations_text = "\n".join(f"  - {msg}" for msg in violation_messages)
-        super().__init__(
-            f'File "{config_path}"\nInvalid configuration:\n{violations_text}'
-        )
 
 
 CONFIG_PATH = define_path.DefinePathFromPosix(
@@ -214,6 +48,14 @@ class ProjectRootConfig(msgspec.Struct):
     sub_roots: Mapping[str, define_path.DefinePath]
 
 
+class RootConfigResult(msgspec.Struct, frozen=True):
+    """A project root's resolved configuration, or the diagnostics that keep it from loading."""
+
+    # None when there are diagnostics.
+    root_config: ProjectRootConfig | None
+    diagnostics: list[diagnostics.ConfigDiagnostic]
+
+
 class ConfigLoader:
     """Loads and validates Define project configuration files."""
 
@@ -227,15 +69,86 @@ class ConfigLoader:
     def _parser(self) -> defcl_parser.Parser:
         return defcl_parser.Parser()
 
+    def config_path(self) -> PurePosixPath:
+        """Return the path of the root's project config file."""
+        return (self._root / CONFIG_PATH).as_posix_path()
+
+    def is_project_root(self) -> bool:
+        """Whether the root has a project config file."""
+        return Path(self.config_path()).exists()
+
+    def load_project_root_config(
+        self, expected_fqun: str | None = None
+    ) -> RootConfigResult:
+        """Load and resolve this root's own configuration.
+
+        If expected_fqun is given, the universe name that this root's own
+        config declares must match it.
+        """
+        loaded = self._load_project_root_config(expected_fqun)
+        if isinstance(loaded, list):
+            return RootConfigResult(root_config=None, diagnostics=loaded)
+        return RootConfigResult(root_config=loaded, diagnostics=[])
+
+    def _load_project_root_config(
+        self, expected_fqun: str | None
+    ) -> ProjectRootConfig | list[diagnostics.ConfigDiagnostic]:
+        config_path = self.config_path()
+        if not self.is_project_root():
+            location = ast.start_of_file_location(config_path)
+            if self._root == constants.PROJECT_ROOT:
+                return [
+                    diagnostics.NotRunFromProjectRootDiagnostic(
+                        location=location, config_path=str(config_path)
+                    )
+                ]
+            return [
+                diagnostics.SubRootNotProjectRootDiagnostic(
+                    location=location,
+                    config_path=str(config_path),
+                    sub_root_path=str(self._root),
+                )
+            ]
+        project_config = self._load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
+        if isinstance(project_config, list):
+            return project_config
+        fqun = project_config.project.universe_name or ""
+        if expected_fqun and fqun != expected_fqun:
+            return [
+                diagnostics.SubRootFqunMismatchDiagnostic(
+                    location=ast.start_of_file_location(config_path),
+                    expected_fqun=expected_fqun,
+                    actual_fqun=fqun,
+                    sub_root_path=str(self._root),
+                )
+            ]
+        sub_roots = self._local_deps_config()
+        if isinstance(sub_roots, list):
+            return sub_roots
+        return ProjectRootConfig(fqun=fqun, sub_roots=sub_roots)
+
     def _load_config[M: message.Message](
-        self, subpath: define_path.DefinePath, message_type: type[M]
-    ) -> M:
-        """Load and validate a defcl config file."""
+        self,
+        subpath: define_path.DefinePath,
+        message_type: type[M],
+    ) -> M | list[diagnostics.ConfigDiagnostic]:
+        """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
         try:
             result = self._parser.parse_file(path, message_type)
         except dcl_exceptions.DclSyntaxError as e:
-            raise ConfigSyntaxError(e) from e
+            return [
+                diagnostics.ConfigDclDiagnostic(
+                    location=ast.SourceLocation(
+                        line=e.line,
+                        column=e.column,
+                        end_line=e.line,
+                        end_column=e.column,
+                        file_path=path,
+                    ),
+                    dcl_error=e,
+                )
+            ]
         try:
             # TODO: Remove this cast when Protovalidate's annotation is fixed:
             # https://github.com/bufbuild/protovalidate-py/issues/522
@@ -253,23 +166,21 @@ class ConfigLoader:
                     # TODO: Add a real test for this once the config schema
                     # can produce a root-level/message-level protovalidate violation.
                     messages.append(violation.proto.message)
-            raise ConfigValidationError(path, messages) from e
+            return [
+                diagnostics.InvalidConfigDiagnostic(
+                    location=ast.start_of_file_location(path),
+                    violation_messages=messages,
+                )
+            ]
         return result
 
-    def assert_is_project_root(self):
-        """Raise NotProjectRootError if the root is not a project root."""
-        config_path = (self._root / CONFIG_PATH).as_posix_path()
-        if not Path(config_path).exists():
-            raise NotProjectRootError(config_path, self._root)
-
-    def project_config(self) -> config_pb2.ProjectConfigFile:
-        """Load and validate the project configuration."""
-        return self._load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
-
-    def local_deps_config(
+    def _local_deps_config(
         self,
-    ) -> types.MappingProxyType[str, define_path.DefinePathFromPosix]:
-        """Load and validate the local dependency overrides.
+    ) -> (
+        types.MappingProxyType[str, define_path.DefinePathFromPosix]
+        | list[diagnostics.ConfigDiagnostic]
+    ):
+        """Load and validate the local dependency overrides, or return the diagnostics for why they are not valid.
 
         Returns an immutable mapping from universe name to relative path.
         """
@@ -277,33 +188,20 @@ class ConfigLoader:
         if not Path(deps_path).exists():
             return _EMPTY_DEPS
         result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
+        if isinstance(result, list):
+            return result
         deps: dict[str, define_path.DefinePathFromPosix] = {}
         for dep in result.deps.local:
             if dep.universe_name in deps:
-                raise ConfigValidationError(
-                    deps_path,
-                    [f'deps.local: duplicate universe_name "{dep.universe_name}"'],
-                )
+                return [
+                    diagnostics.InvalidConfigDiagnostic(
+                        location=ast.start_of_file_location(deps_path),
+                        violation_messages=[
+                            f'deps.local: duplicate universe_name "{dep.universe_name}"'
+                        ],
+                    )
+                ]
             deps[dep.universe_name] = define_path.DefinePathFromPosix(
                 PurePosixPath(dep.path)
             )
         return types.MappingProxyType(deps)
-
-    def load_project_root_config(
-        self, expected_fqun: str | None = None
-    ) -> ProjectRootConfig:
-        """Load and resolve this root's own configuration.
-
-        Raises:
-            SubRootFqunMismatchError: If expected_fqun is given and does not
-                match the universe name declared by this root's own config.
-        """
-        self.assert_is_project_root()
-        fqun = self.project_config().project.universe_name or ""
-        if expected_fqun and fqun != expected_fqun:
-            raise SubRootFqunMismatchError(
-                expected_fqun=expected_fqun,
-                actual_fqun=fqun,
-                sub_root_path=str(self._root),
-            )
-        return ProjectRootConfig(fqun=fqun, sub_roots=self.local_deps_config())

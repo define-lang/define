@@ -1,0 +1,11 @@
+id: validator-tests-no-config-diagnostics
+language: python
+severity: error
+message:
+  Assert on config diagnostics through all_diagnostics, as on any other
+  diagnostic, not through config_diagnostics.
+files:
+  - define/compiler/validator/structural/program_validator_tests/*_test.py
+  - define/compiler/validator/reference_graph/reference_graph_validator_tests/*_test.py
+rule:
+  pattern: $_.config_diagnostics

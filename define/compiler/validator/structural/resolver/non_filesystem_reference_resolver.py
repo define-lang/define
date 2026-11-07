@@ -111,8 +111,9 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     ) -> config.ProjectRootConfig | None:
         """Return the project config, loading it for the first reference that needs it.
 
-        If it fails to load, reports why at that reference and returns None,
-        then and for every later reference.
+        If there is no project config, reports that at that reference. If it
+        fails to load, records the config's diagnostics. Either way, returns
+        None then and for every later reference.
         """
         existing = self._path_tracker.config_for_root(constants.PROJECT_ROOT)
         if existing is not None:
@@ -130,30 +131,25 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             # is in, which the supplied source defines, so a reference to any
             # other universe writes its FQUN.
             location = typing.cast("ast.Fqun", reference.name_content.fqun).location
-        try:
+        config_loader = config.ConfigLoader(constants.PROJECT_ROOT)
+        if config_loader.is_project_root():
             return self._load_root_config(constants.PROJECT_ROOT)
-        except config.NotProjectRootError as e:
-            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-            if names_source_universe:
-                self._source_file.file_diagnostics.append(
-                    diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-                        location=location,
-                        definition_name=reference.source_typed_name,
-                        config_path=str(e.config_path),
-                    )
-                )
-            else:
-                self._source_file.file_diagnostics.append(
-                    diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
-                        location=location,
-                        universe=reference.effective_fqun.canonical,
-                        config_path=str(e.config_path),
-                    )
-                )
-            return None
-        except config.ConfigError as e:
-            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+        self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+        config_path = str(config_loader.config_path())
+        if names_source_universe:
             self._source_file.file_diagnostics.append(
-                diagnostics.ConfigLoadErrorDiagnostic(location=location, error=e)
+                diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+                    location=location,
+                    definition_name=reference.source_typed_name,
+                    config_path=config_path,
+                )
             )
-            return None
+        else:
+            self._source_file.file_diagnostics.append(
+                diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
+                    location=location,
+                    universe=reference.effective_fqun.canonical,
+                    config_path=config_path,
+                )
+            )
+        return None

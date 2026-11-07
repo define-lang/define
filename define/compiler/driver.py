@@ -48,7 +48,10 @@ def _error_strings(
     program_result: validation_result.ProgramValidationResult,
 ) -> list[str]:
     """Format every exception and diagnostic for the command-line caller."""
-    error_strings: list[str] = []
+    error_strings = [
+        diagnostic.format(program_result.source_map)
+        for diagnostic in program_result.config_diagnostics
+    ]
     for result in program_result.file_results:
         if isinstance(result.exception, parser_exceptions.DefineSyntaxError):
             error_strings.append(result.exception.format(program_result.source_map))

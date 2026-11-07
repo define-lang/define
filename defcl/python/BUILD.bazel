@@ -11,6 +11,7 @@ py_library(
     visibility = [
         "//defcl/python:__subpackages__",
         "//define/compiler:__pkg__",
+        "//define/compiler/errors:__pkg__",
     ],
     deps = ["//defcl/python/lark:lark_standalone"],
 )

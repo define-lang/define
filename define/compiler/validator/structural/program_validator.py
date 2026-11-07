@@ -180,7 +180,7 @@ class _ProgramValidationRun:
             entry_action=entry_action,
             definition_order=definition_order,
             definition_results=self._definition_results,
-            config_errors=self._resolver.config_errors(),
+            config_diagnostics=self._resolver.config_diagnostics(),
             source_map=source_map.SourceMap(file_digests, in_memory_source),
         )
 

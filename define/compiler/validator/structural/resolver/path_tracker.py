@@ -11,6 +11,7 @@ from define.compiler import constants
 if TYPE_CHECKING:
     from define.compiler import config
     from define.compiler.data_structures import define_path
+    from define.compiler.validator.structural.resolver import local_dependency_entry
 
 
 @final
@@ -21,7 +22,8 @@ class _ProjectRootNode(msgspec.Struct, eq=False):
     # The sub-root that a loaded project's local dependency declares at this
     # path, which may not be loaded yet.
     declared_sub_root: (
-        tuple[define_path.DefinePath, config.LocalDependencyEntry] | None
+        tuple[define_path.DefinePath, local_dependency_entry.LocalDependencyEntry]
+        | None
     ) = None
 
     def get_child(self, part: str) -> _ProjectRootNode | None:
@@ -191,8 +193,8 @@ class PathTracker[T]:
     def declare_sub_root(
         self,
         sub_root_path: define_path.DefinePath,
-        entry: config.LocalDependencyEntry,
-    ) -> config.LocalDependencyEntry | None:
+        entry: local_dependency_entry.LocalDependencyEntry,
+    ) -> local_dependency_entry.LocalDependencyEntry | None:
         """Record that a local dependency declares a sub-root at a path, unless one already does.
 
         The first declaration of a path wins. Returns the entry that already
@@ -206,7 +208,10 @@ class PathTracker[T]:
 
     def declared_sub_root_containing(
         self, root: define_path.DefinePath, path: define_path.DefinePath
-    ) -> tuple[define_path.DefinePath, config.LocalDependencyEntry] | None:
+    ) -> (
+        tuple[define_path.DefinePath, local_dependency_entry.LocalDependencyEntry]
+        | None
+    ):
         """Return the sub-root declared between a loaded project root and a path in it, if there is one.
 
         A path in a more deeply declared sub-root is also in this one.

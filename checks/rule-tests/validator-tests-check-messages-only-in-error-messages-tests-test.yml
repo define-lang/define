@@ -1,0 +1,19 @@
+id: validator-tests-check-messages-only-in-error-messages-tests
+valid:
+  - |
+    assert diagnostic.reserved_name == "universe"
+  - |
+    assert result.config_diagnostics == [diagnostic]
+invalid:
+  - |
+    assert diagnostic.format(result.source_map) == "message"
+  - |
+    assert diagnostic.render_message(result.source_map) == "message"
+  - |
+    assert result.source_map.format_location(diagnostic.location) == "location"
+  - |
+    assert error.message == "message"
+  - |
+    assert diagnostic.message_format == "message"
+  - |
+    assert diagnostic.rendered == "message"

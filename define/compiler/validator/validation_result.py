@@ -10,7 +10,7 @@ import msgspec
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import ast, config
+    from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics, exceptions, source_map
     from define.compiler.graphs import reference_graph, reference_graph_order
@@ -96,24 +96,23 @@ class ProgramValidationResult(msgspec.Struct):
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,
     ]
-    # Errors in loaded configs that did not keep their projects from loading.
-    # TODO: Remove this once defcl diagnostics can point at locations in
-    # config files, and report these as diagnostics instead.
-    config_errors: list[config.ConfigError]
+    # The diagnostics of every project config that was loaded, each reported
+    # once however many files depend on its config.
+    config_diagnostics: list[diagnostics.ConfigDiagnostic]
     source_map: source_map.SourceMap
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """All diagnostics from all file results."""
-        return [d for r in self.file_results for d in r.diagnostics]
+        """The config diagnostics, then all diagnostics from all file results."""
+        all_diagnostics: list[diagnostics.Diagnostic] = list(self.config_diagnostics)
+        for result in self.file_results:
+            all_diagnostics.extend(result.diagnostics)
+        return all_diagnostics
 
     @property
     def all_exceptions(self) -> list[exceptions.DefineError]:
-        """All exceptions from all file results, and the config errors."""
-        file_exceptions: list[exceptions.DefineError] = [
-            r.exception for r in self.file_results if r.exception is not None
-        ]
-        return file_exceptions + self.config_errors
+        """All exceptions from all file results."""
+        return [r.exception for r in self.file_results if r.exception is not None]
 
     def has_errors(self) -> bool:
         """Whether any file had exceptions or diagnostics."""

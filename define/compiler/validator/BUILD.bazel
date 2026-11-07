@@ -58,7 +58,6 @@ py_library(
     deps = [
         ":codegen_input",
         "//define/compiler:ast",
-        "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",

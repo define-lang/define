@@ -1,0 +1,20 @@
+id: validator-tests-check-messages-only-in-error-messages-tests
+language: python
+severity: error
+message:
+  Check how a diagnostic or error is formatted, or what its message says, only
+  in an error_messages test. Elsewhere, assert on its fields.
+files:
+  - define/compiler/validator/structural/program_validator_tests/*_test.py
+  - define/compiler/validator/reference_graph/reference_graph_validator_tests/*_test.py
+ignores:
+  - define/compiler/validator/structural/program_validator_tests/error_messages*_test.py
+  - define/compiler/validator/reference_graph/reference_graph_validator_tests/error_messages*_test.py
+rule:
+  any:
+    - pattern: $_.format($$$)
+    - pattern: $_.render_message($$$)
+    - pattern: $_.format_location($$$)
+    - pattern: $_.message
+    - pattern: $_.message_format
+    - pattern: $_.rendered

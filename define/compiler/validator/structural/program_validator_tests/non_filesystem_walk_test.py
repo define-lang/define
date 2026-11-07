@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, config
+from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import (
@@ -103,14 +103,17 @@ def test_external_universe_invalid_local_deps(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
-    results = result.file_results
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location.file_path is None
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 29
-    assert isinstance(diags[0].error, config.ConfigValidationError)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidConfigDiagnostic(
+            location=ast.start_of_file_location(
+                PurePosixPath(".define/deps/local.defcl")
+            ),
+            violation_messages=[
+                "deps.local.universe_name: value is required",
+                "deps.local.path: value is required",
+            ],
+        )
+    ]
 
 
 def test_source_universe_definition_no_project_config(
@@ -132,29 +135,34 @@ def test_source_universe_definition_invalid_local_deps(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
-    diags = result.all_diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].location == ast.SourceLocation(
-        line=5, column=20, end_line=5, end_column=36
-    )
-    assert isinstance(diags[0].error, config.ConfigValidationError)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidConfigDiagnostic(
+            location=ast.start_of_file_location(
+                PurePosixPath(".define/deps/local.defcl")
+            ),
+            violation_messages=[
+                "deps.local.universe_name: value is required",
+                "deps.local.path: value is required",
+            ],
+        )
+    ]
 
 
 def test_external_universe_configured_but_no_sub_root_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.config_errors) == 1
-    error = result.config_errors[0]
-    assert isinstance(error, config.NotProjectRootError)
-    assert error.config_path == PurePosixPath(
-        "vendor/other/.define/project/config.defcl"
-    )
-    assert error.root == "vendor/other"
-    assert result.all_exceptions == [error]
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
-    assert result.all_diagnostics == []
+    assert result.all_diagnostics == [
+        diagnostics.SubRootNotProjectRootDiagnostic(
+            location=ast.start_of_file_location(
+                PurePosixPath("vendor/other/.define/project/config.defcl")
+            ),
+            config_path="vendor/other/.define/project/config.defcl",
+            sub_root_path="vendor/other",
+        )
+    ]
 
 
 def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_filesystem(
@@ -289,21 +297,24 @@ def test_unknown_universe_reported_with_sub_root_config_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.config_errors) == 1
-    error = result.config_errors[0]
-    assert isinstance(error, config.NotProjectRootError)
-    assert error.config_path == PurePosixPath("lib/.define/project/config.defcl")
-    assert error.root == "lib"
-    assert result.all_exceptions == [error]
+    assert result.all_exceptions == []
     assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].location.file_path is None
-    assert diags[0].universe == "unknown.com:other_lib"
-    assert diags[0].current_universe_name == "my.domain.com:my_lib"
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 29
+    assert result.all_diagnostics == [
+        diagnostics.SubRootNotProjectRootDiagnostic(
+            location=ast.start_of_file_location(
+                PurePosixPath("lib/.define/project/config.defcl")
+            ),
+            config_path="lib/.define/project/config.defcl",
+            sub_root_path="lib",
+        ),
+        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=ast.SourceLocation(
+                line=4, column=29, end_line=4, end_column=49, file_path=None
+            ),
+            universe="unknown.com:other_lib",
+            current_universe_name="my.domain.com:my_lib",
+        ),
+    ]
 
 
 def test_two_unknown_universes_for_same_path_each_diagnosed(

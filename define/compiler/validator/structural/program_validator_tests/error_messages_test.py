@@ -12,11 +12,18 @@ import textwrap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, exceptions, parser_exceptions
+from define.compiler.errors import (
+    diagnostics,
+    exceptions,
+    parser_exceptions,
+    source_map,
+)
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.structural.program_validator_tests import (
+    test_helpers as program_validator_test_helpers,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -594,17 +601,17 @@ def test_sub_root_fqun_mismatch_error_message(
         sub_roots={"lib": wrong_child_universe},
     )
     program_result = result.program_result
-    assert program_result.all_diagnostics == []
-    assert len(program_result.config_errors) == 1
-    error = program_result.config_errors[0]
-    assert isinstance(error, config.SubRootFqunMismatchError)
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
-        str(error)
-        == "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
+        diagnostic.format(program_result.source_map)
+        == 'File "lib/.define/project/config.defcl"\n'
+        + "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
 
 
-def test_config_load_error_format_for_supplied_source_project(
+def test_invalid_config_format_for_supplied_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -622,17 +629,12 @@ def test_config_load_error_format_for_supplied_source_project(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.config_errors == []
-    assert len(program_result.all_diagnostics) == 1
-    diagnostic = program_result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ConfigLoadErrorDiagnostic)
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.InvalidConfigDiagnostic)
 
     formatted = diagnostic.format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        line 3, column 29
-            it has the position<other.example.com:other_universe:/target>.
-                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        an error occurred while loading the project configuration:
         File ".define/deps/local.defcl"
         Invalid configuration:
           - deps.local.universe_name: value is required
@@ -652,7 +654,6 @@ def test_external_universe_not_configured_format_for_supplied_source_project(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.config_errors == []
     diags = program_result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -679,7 +680,6 @@ def test_no_project_root_format_for_supplied_source(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.config_errors == []
     diags = program_result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(
@@ -697,41 +697,6 @@ def test_no_project_root_format_for_supplied_source(
     )
 
 
-def test_config_load_error_format_for_supplied_source_universe(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    deps_path = tmp_path / ".define" / "deps" / "local.defcl"
-    deps_path.parent.mkdir(parents=True)
-    _ = deps_path.write_text(
-        "deps: {\n  local: [\n    {}\n  ]\n}\n", encoding="utf-8", newline="\n"
-    )
-    monkeypatch.chdir(tmp_path)
-    source = (
-        "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</target>.\n"
-        "    }\n"
-        "}\n"
-    )
-    program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.config_errors == []
-    assert len(program_result.all_diagnostics) == 1
-    diagnostic = program_result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ConfigLoadErrorDiagnostic)
-
-    formatted = diagnostic.format(program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        line 3, column 20
-            it has the position</target>.
-                       ^^^^^^^^^^^^^^^^^
-        an error occurred while loading the project configuration:
-        File ".define/deps/local.defcl"
-        Invalid configuration:
-          - deps.local.universe_name: value is required
-          - deps.local.path: value is required""")
-
-
 def test_no_project_root_for_definition_not_in_supplied_source_format(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -744,7 +709,6 @@ def test_no_project_root_for_definition_not_in_supplied_source_format(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.config_errors == []
     diags = program_result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(
@@ -766,12 +730,12 @@ def test_not_project_root_error_message_for_project_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
-    assert len(results) == 1
-    error = results[0].exception
-    assert isinstance(error, config.NotProjectRootError)
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.NotRunFromProjectRootDiagnostic)
     assert (
-        str(error)
+        diagnostic.format(program_result.source_map)
         == textwrap.dedent("""\
         The Define compiler must be run from a project root directory.
         A project root is any directory containing .define/project/config.defcl.
@@ -798,16 +762,58 @@ def test_not_project_root_error_message_for_subroot(
         max_workers=1,
     )
     program_result = result.program_result
-    assert program_result.all_diagnostics == []
-    assert len(program_result.config_errors) == 1
-    error = program_result.config_errors[0]
-    assert isinstance(error, config.NotProjectRootError)
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.SubRootNotProjectRootDiagnostic)
     assert (
-        str(error)
+        diagnostic.format(program_result.source_map)
         == textwrap.dedent("""\
         The referenced subroot (lib) is not a valid project root: lib/.define/project/config.defcl not found.
         A project root is any directory containing lib/.define/project/config.defcl.
         For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
+    )
+
+
+def test_sub_root_path_already_declared_error_message(
+    validate_project: ValidateProject,
+):
+    parent_universe = "mv:define-lang.org:parent"
+    result = validate_project(
+        {"test.dfn": f"define the potential position<{parent_universe}:/test>.\n"},
+        universe_name=parent_universe,
+        local_deps={
+            "mv:define-lang.org:first_child": "lib",
+            "mv:define-lang.org:second_child": "lib",
+        },
+    )
+    program_result = result.program_result
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/deps/local.defcl"
+        Two local dependencies declare the sub-root 'lib':
+          ".define/deps/local.defcl" declares universe 'mv:define-lang.org:first_child' at 'lib'
+          ".define/deps/local.defcl" declares universe 'mv:define-lang.org:second_child' at 'lib'
+        Only the first one is used.""")
+
+
+def test_local_dependency_on_own_universe_error_message(
+    validate_project: ValidateProject,
+):
+    parent_universe = "mv:define-lang.org:parent"
+    result = validate_project(
+        {"test.dfn": f"define the potential position<{parent_universe}:/test>.\n"},
+        universe_name=parent_universe,
+        local_deps={parent_universe: "lib"},
+    )
+    program_result = result.program_result
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
+    assert diagnostic.format(program_result.source_map) == (
+        'File ".define/deps/local.defcl"\n'
+        + "\".define/deps/local.defcl\" declares universe 'mv:define-lang.org:parent' at 'lib', but that is the project's own universe, so it cannot be a dependency of that project."
     )
 
 
@@ -848,13 +854,13 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn"), max_workers=1
     )
-    assert program_result.all_diagnostics == []
-    assert len(program_result.config_errors) == 1
-    error = program_result.config_errors[0]
-    assert isinstance(error, config.DuplicateFqunError)
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.DuplicateFqunDiagnostic)
     assert (
-        str(error)
+        diagnostic.format(program_result.source_map)
         == textwrap.dedent("""\
+        File "lib/nested/.define/project/config.defcl"
         Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
     )
 
@@ -883,11 +889,15 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
-    assert len(results) == 1
-    error = results[0].exception
-    assert isinstance(error, config.ConfigSyntaxError)
-    assert str(error) == str(error.syntax_error)
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/project/config.defcl", line 2, column 17
+          universe_name "bad"
+                        ^
+        Missing colon after field name""")
 
 
 def test_config_validation_error_message(
@@ -905,11 +915,30 @@ def test_config_validation_error_message(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.validate_program(PurePosixPath("test.dfn")).file_results
-    assert len(results) == 1
-    error = results[0].exception
-    assert isinstance(error, config.ConfigValidationError)
-    assert str(error) == textwrap.dedent("""\
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.InvalidConfigDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl"
         Invalid configuration:
           - project.universe_name: value is required""")
+
+
+def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    result = program_validator_test_helpers.parse_and_validate_file(
+        b"define the potential position<my.domain.com:my_lib:/test>.\n# caf\xe9\n",
+        tmp_path,
+        monkeypatch,
+    )
+
+    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+    assert result.source_digest is not None
+    sources = source_map.SourceMap(
+        {PurePosixPath("test.dfn"): result.source_digest}, in_memory_source=None
+    )
+    assert result.exception.format(sources) == textwrap.dedent("""\
+        File "test.dfn", line 2, column 6
+            # caf\ufffd
+                 ^
+        Invalid UTF-8 byte sequence: (\\xe9).""")

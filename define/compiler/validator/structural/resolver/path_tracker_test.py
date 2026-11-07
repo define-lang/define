@@ -7,7 +7,10 @@ import pytest
 
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
-from define.compiler.validator.structural.resolver import path_tracker
+from define.compiler.validator.structural.resolver import (
+    local_dependency_entry,
+    path_tracker,
+)
 
 
 class TestPathTracker:
@@ -204,10 +207,10 @@ class TestConflictDetection:
 class TestSubRootDeclarations:
     def test_first_declaration_of_a_path_wins(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        first = config.LocalDependencyEntry(
+        first = local_dependency_entry.LocalDependencyEntry(
             PurePosixPath(".define/deps/local.defcl"), "first.universe", "lib"
         )
-        second = config.LocalDependencyEntry(
+        second = local_dependency_entry.LocalDependencyEntry(
             PurePosixPath(".define/deps/local.defcl"), "second.universe", "lib"
         )
         sub_root = define_path.DefinePath("lib")
@@ -219,7 +222,7 @@ class TestSubRootDeclarations:
 
     def test_path_in_a_directory_under_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        entry = config.LocalDependencyEntry(
+        entry = local_dependency_entry.LocalDependencyEntry(
             PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
         )
         sub_root = define_path.DefinePath("a/b")
@@ -230,7 +233,7 @@ class TestSubRootDeclarations:
 
     def test_path_beside_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        entry = config.LocalDependencyEntry(
+        entry = local_dependency_entry.LocalDependencyEntry(
             PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
         )
         tracker.declare_sub_root(define_path.DefinePath("a/b"), entry)

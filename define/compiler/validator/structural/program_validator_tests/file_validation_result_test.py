@@ -10,9 +10,8 @@ import hashlib
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config
 from define.compiler.data_structures import define_path
-from define.compiler.errors import exceptions, parser_exceptions, source_map
+from define.compiler.errors import exceptions, parser_exceptions
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (
@@ -75,28 +74,6 @@ def test_invalid_utf8_populates_exception_and_source_digest(
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
-def test_invalid_utf8_formats_its_line_with_replacement_characters(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    result = test_helpers.parse_and_validate_file(
-        b"define the potential position<my.domain.com:my_lib:/test>.\n# caf\xe9\n",
-        tmp_path,
-        monkeypatch,
-    )
-
-    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-    assert result.source_digest is not None
-    sources = source_map.SourceMap(
-        {PurePosixPath("test.dfn"): result.source_digest}, in_memory_source=None
-    )
-    assert result.exception.format(sources) == (
-        'File "test.dfn", line 2, column 6\n'
-        "    # caf\ufffd\n"
-        "         ^\n"
-        "Invalid UTF-8 byte sequence: (\\xe9)."
-    )
-
-
 def test_name_parser_error_at_definition_populates_exception(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -133,7 +110,7 @@ def test_name_parser_error_at_reference_populates_exception(
     assert result.exception.location.file_path == PurePosixPath("test.dfn")
 
 
-def test_config_error_populates_exception_and_root_prefix(
+def test_config_error_records_entry_file_with_root_prefix(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     relative_path = PurePosixPath("test.dfn")
@@ -148,7 +125,7 @@ def test_config_error_populates_exception_and_root_prefix(
     assert len(results) == 1
     result = results[0]
 
-    assert isinstance(result.exception, config.ConfigError)
+    assert result.exception is None
     assert result.file_path == define_path.DefinePath("test.dfn")
     assert result.root_prefix == define_path.EMPTY
 

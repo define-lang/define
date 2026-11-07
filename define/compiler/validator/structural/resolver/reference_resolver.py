@@ -6,15 +6,17 @@ import typing
 
 import msgspec
 
-from define.compiler import config, constants
+from define.compiler import ast, config, constants
 from define.compiler.errors import diagnostics, exceptions
 from define.compiler.validator.structural import (
     file_validation_context,
 )
-from define.compiler.validator.structural.resolver import path_tracker
+from define.compiler.validator.structural.resolver import (
+    local_dependency_entry,
+    path_tracker,
+)
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -51,22 +53,22 @@ class ReferenceResolver:
     # sub-root path that another one already declared, so the project cannot
     # use that universe.
     _disabled_universes: set[tuple[define_path.DefinePath, str]]
-    _config_errors: list[config.ConfigError]
+    _config_diagnostics: list[diagnostics.ConfigDiagnostic]
 
     def __init__(self):
         """Initialize with no files loaded."""
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
         self._disabled_universes = set()
-        self._config_errors = []
+        self._config_diagnostics = []
 
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
-    def config_errors(self) -> list[config.ConfigError]:
-        """Return the errors in loaded configs that did not keep their projects from loading."""
-        return self._config_errors
+    def config_diagnostics(self) -> list[diagnostics.ConfigDiagnostic]:
+        """Return the diagnostics of every project config that was loaded."""
+        return self._config_diagnostics
 
     def validate_reference(
         self,
@@ -176,22 +178,15 @@ class ReferenceResolver:
     ) -> config.ProjectRootConfig | None:
         """Return the config of the project root that an edge leads into, loading it if needed.
 
-        Returns None, after recording the config error, if the config cannot
-        load.
+        Returns None, after recording the config's diagnostics, if the config
+        cannot load.
         """
         existing = self._path_tracker.config_for_root(target_root)
         if existing is not None:
             return existing
-        try:
-            return self._load_root_config(
-                target_root, edge.global_name_reference.effective_fqun.canonical
-            )
-        except config.ConfigError as e:
-            self._path_tracker.mark_root_failed(target_root)
-            # The error is in the config, not at the reference, so it is
-            # reported once, however many references lead into the root.
-            self._config_errors.append(e)
-            return None
+        return self._load_root_config(
+            target_root, edge.global_name_reference.effective_fqun.canonical
+        )
 
     def _universe_root(
         self,
@@ -305,8 +300,14 @@ class ReferenceResolver:
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
-    ) -> config.ProjectRootConfig:
-        """Load project config for a root and register it."""
+    ) -> config.ProjectRootConfig | None:
+        """Load project config for a root and register it.
+
+        If it cannot load, marks the root failed and returns None after
+        recording the config's diagnostics. They are in the config, not at a
+        reference, so they are recorded once, however many references lead
+        into the root.
+        """
         # The standard universe ships with the compiler, so its root has no
         # config file.
         # TODO: Remove this special case once the Define Standard Library
@@ -316,17 +317,27 @@ class ReferenceResolver:
                 fqun=constants.STANDARD_UNIVERSE, sub_roots={}
             )
         else:
-            root_config = config.ConfigLoader(root_prefix).load_project_root_config(
+            result = config.ConfigLoader(root_prefix).load_project_root_config(
                 expected_fqun
             )
+            if result.root_config is None:
+                self._path_tracker.mark_root_failed(root_prefix)
+                self._config_diagnostics.extend(result.diagnostics)
+                return None
+            root_config = result.root_config
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
-            raise config.DuplicateFqunError(
-                fqun=root_config.fqun,
-                existing_root=existing_root,
-                new_root=root_prefix,
-                config_subpath=config.CONFIG_PATH,
+            self._path_tracker.mark_root_failed(root_prefix)
+            new_config = (root_prefix / config.CONFIG_PATH).as_posix_path()
+            self._config_diagnostics.append(
+                diagnostics.DuplicateFqunDiagnostic(
+                    location=ast.start_of_file_location(new_config),
+                    fqun=root_config.fqun,
+                    existing_config=str(existing_root / config.CONFIG_PATH),
+                    new_config=str(root_prefix / config.CONFIG_PATH),
+                )
             )
+            return None
         self._path_tracker.register_project_root(root_prefix, root_config)
         self._declare_sub_roots(root_prefix, root_config)
         return root_config
@@ -337,20 +348,27 @@ class ReferenceResolver:
         """Record the sub-roots that a loaded project's local dependencies declare."""
         deps_path = (root_prefix / config.LOCAL_DEPS_PATH).as_posix_path()
         for universe, location in root_config.sub_roots.items():
-            entry = config.LocalDependencyEntry(deps_path, universe, str(location))
+            entry = local_dependency_entry.LocalDependencyEntry(
+                deps_path, universe, str(location)
+            )
             sub_root_path = root_prefix / location
             if universe == root_config.fqun:
                 self._disabled_universes.add((root_prefix, universe))
-                self._config_errors.append(
-                    config.LocalDependencyOnOwnUniverseError(entry)
+                self._config_diagnostics.append(
+                    diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
+                        location=ast.start_of_file_location(deps_path), entry=entry
+                    )
                 )
                 continue
             existing_entry = self._path_tracker.declare_sub_root(sub_root_path, entry)
             if existing_entry is None:
                 continue
             self._disabled_universes.add((root_prefix, universe))
-            self._config_errors.append(
-                config.SubRootPathAlreadyDeclaredError(
-                    str(sub_root_path), entry, existing_entry
+            self._config_diagnostics.append(
+                diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
+                    location=ast.start_of_file_location(deps_path),
+                    sub_root_path=str(sub_root_path),
+                    entry=entry,
+                    existing_entry=existing_entry,
                 )
             )

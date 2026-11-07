@@ -125,6 +125,58 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     )
 
 
+def test_missing_entry_file_returns_error_and_prints_to_stream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_valid_position_project(tmp_path, "x.com:lib")
+    monkeypatch.chdir(tmp_path)
+
+    error_stream = io.StringIO()
+    result = driver.Driver().run(Path("missing.dfn"), error_stream=error_stream)
+    assert result == driver.ExitCode.ERROR
+    assert error_stream.getvalue() == "Source file not found: missing.dfn\n"
+
+
+def test_referenced_project_config_error_returns_error_and_prints_to_stream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    config_dir = tmp_path / ".define" / "project"
+    config_dir.mkdir(parents=True)
+    _ = (config_dir / "config.defcl").write_text(
+        'project: { universe_name: "x.com:parent" }\n', encoding="utf-8", newline="\n"
+    )
+    deps_dir = tmp_path / ".define" / "deps"
+    deps_dir.mkdir(parents=True)
+    _ = (deps_dir / "local.defcl").write_text(
+        'deps: { local: [{ universe_name: "x.com:child" path: "lib" }] }\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    (tmp_path / "lib").mkdir()
+    _ = (tmp_path / "test.dfn").write_text(
+        (
+            "define the potential position<x.com:parent:/test> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the position<x.com:child:/target>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    error_stream = io.StringIO()
+    result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
+    assert result == driver.ExitCode.ERROR
+    assert error_stream.getvalue() == (
+        "The referenced subroot (lib) is not a valid project root:"
+        " lib/.define/project/config.defcl not found.\n"
+        "A project root is any directory containing lib/.define/project/config.defcl.\n"
+        f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
+    )
+
+
 def test_valid_file_returns_success(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ):

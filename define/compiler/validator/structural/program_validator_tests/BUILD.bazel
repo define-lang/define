@@ -100,7 +100,6 @@ py_test(
     deps = [
         ":test_helpers",
         "//define/compiler:ast",
-        "//define/compiler:config",
         "//define/compiler:conftest",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
@@ -112,6 +111,7 @@ py_test(
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
+        "//define/compiler/validator/structural/resolver:local_dependency_entry",
         "@pypi//pytest",
     ],
 )

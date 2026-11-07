@@ -1,0 +1,38 @@
+id: validator-tests-check-messages-only-in-error-messages-tests
+snapshots:
+  "assert diagnostic.format(result.source_map) == \"message\"\n":
+    labels:
+    - source: diagnostic.format(result.source_map)
+      style: primary
+      start: 7
+      end: 43
+  "assert diagnostic.message_format == \"message\"\n":
+    labels:
+    - source: diagnostic.message_format
+      style: primary
+      start: 7
+      end: 32
+  "assert diagnostic.render_message(result.source_map) == \"message\"\n":
+    labels:
+    - source: diagnostic.render_message(result.source_map)
+      style: primary
+      start: 7
+      end: 51
+  "assert diagnostic.rendered == \"message\"\n":
+    labels:
+    - source: diagnostic.rendered
+      style: primary
+      start: 7
+      end: 26
+  "assert error.message == \"message\"\n":
+    labels:
+    - source: error.message
+      style: primary
+      start: 7
+      end: 20
+  "assert result.source_map.format_location(diagnostic.location) == \"location\"\n":
+    labels:
+    - source: result.source_map.format_location(diagnostic.location)
+      style: primary
+      start: 7
+      end: 61
