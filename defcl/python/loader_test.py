@@ -58,7 +58,7 @@ def test_semantic_errors_are_diagnostics_without_a_message():
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
-    assert integer_enum.message_type is None
+    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         "line 2, column 13\n"
         "    status: 0\n"
@@ -74,6 +74,7 @@ def test_syntax_error_raises_dcl_error():
             single_toplevel_pb2.SingleToplevelFile,
         )
 
+    assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
     assert exc_info.value.location == errors.SourceLocation(2, 8, 2, 8)
     assert exc_info.value.character == "@"
@@ -104,7 +105,7 @@ def test_load_file_diagnostics_name_the_file():
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
-    assert integer_enum.message_type is None
+    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         f'File "{path}", line 2, column 13\n'
         "    status: 0\n"

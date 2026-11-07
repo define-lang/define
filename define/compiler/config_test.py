@@ -171,7 +171,7 @@ class TestProjectConfig:
         assert first.location == ast.SourceLocation(
             line=3, column=3, end_line=3, end_column=14, file_path=_PROJECT_CONFIG_PATH
         )
-        assert isinstance(first.dcl_error, errors.DclDiagnostic)
+        assert isinstance(first.dcl_error, errors.UnknownFieldNameDiagnostic)
         assert first.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
         assert first.dcl_error.field_name == "universe_nam"
         assert first.dcl_error.message_type == "define.config.project.Project"
@@ -179,7 +179,7 @@ class TestProjectConfig:
         assert second.location == ast.SourceLocation(
             line=4, column=3, end_line=4, end_column=7, file_path=_PROJECT_CONFIG_PATH
         )
-        assert isinstance(second.dcl_error, errors.DclDiagnostic)
+        assert isinstance(second.dcl_error, errors.UnknownFieldNameDiagnostic)
         assert second.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
         assert second.dcl_error.field_name == "owner"
         assert second.dcl_error.message_type == "define.config.project.Project"

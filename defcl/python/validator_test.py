@@ -55,7 +55,7 @@ def test_semantic_errors_are_diagnostics():
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
-    assert integer_enum.message_type is None
+    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         "line 2, column 13\n"
         "    status: 1\n"
@@ -68,7 +68,7 @@ def test_semantic_errors_are_diagnostics():
     )
     assert scalar_for_message_field.location == errors.SourceLocation(3, 15, 3, 25)
     assert scalar_for_message_field.field_name == "database"
-    assert scalar_for_message_field.message_type is None
+    assert type(scalar_for_message_field) is errors.DclDiagnostic
     assert scalar_for_message_field.rendered == (
         "line 3, column 15\n"
         '    database: "localhost"\n'
@@ -81,7 +81,7 @@ def test_semantic_errors_are_diagnostics():
     )
     assert message_value_for_scalar_field.location == errors.SourceLocation(5, 8, 5, 9)
     assert message_value_for_scalar_field.field_name == "count"
-    assert message_value_for_scalar_field.message_type is None
+    assert type(message_value_for_scalar_field) is errors.DclDiagnostic
     assert message_value_for_scalar_field.rendered == (
         "line 5, column 8\n"
         "    count: {}\n"
@@ -97,6 +97,7 @@ def test_unknown_field_name_diagnostic_has_message_type():
         _MULTIPLE_ERRORS_FILE,
     )
 
+    assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
     assert unknown_field_name.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
     assert unknown_field_name.location == errors.SourceLocation(2, 5, 2, 8)
     assert unknown_field_name.field_name == "size"
@@ -120,6 +121,7 @@ def test_syntax_error_raises_dcl_error():
             _SINGLE_TOPLEVEL_FILE,
         )
 
+    assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
     assert exc_info.value.location == errors.SourceLocation(2, 8, 2, 8)
     assert exc_info.value.character == "@"
@@ -128,7 +130,7 @@ def test_syntax_error_raises_dcl_error():
     )
 
 
-def test_syntax_error_without_a_character_has_none():
+def test_syntax_error_without_a_character_is_a_plain_dcl_error():
     with pytest.raises(errors.DclError) as exc_info:
         _ = validator.validate(
             _testdata("invalid/syntax/separators/missing_colon.defcl"),
@@ -138,7 +140,7 @@ def test_syntax_error_without_a_character_has_none():
 
     assert exc_info.value.kind == error_types.DclErrorKind.MISSING_COLON
     assert exc_info.value.location == errors.SourceLocation(2, 10, 2, 10)
-    assert exc_info.value.character is None
+    assert type(exc_info.value) is errors.DclError
     assert str(exc_info.value) == (
         "line 2, column 10\n"
         '    value "test"\n'
@@ -185,7 +187,7 @@ def test_validate_file_names_the_file_in_rendered_diagnostics():
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == errors.SourceLocation(2, 13, 2, 13)
     assert integer_enum.field_name == "status"
-    assert integer_enum.message_type is None
+    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         f'File "{path}", line 2, column 13\n'
         "    status: 0\n"

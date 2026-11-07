@@ -13,9 +13,11 @@ use std::path::PathBuf;
 struct PythonClasses {
     source_location: Py<PyType>,
     dcl_error: Py<PyType>,
+    unexpected_character_error: Py<PyType>,
     dcl_error_kind: Py<PyType>,
     invalid_schema_error: Py<PyType>,
     dcl_diagnostic: Py<PyType>,
+    unknown_field_name_diagnostic: Py<PyType>,
     diagnostic_kind: Py<PyType>,
 }
 
@@ -32,9 +34,11 @@ impl PythonClasses {
         Ok(Self {
             source_location: class(&errors, "SourceLocation")?,
             dcl_error: class(&errors, "DclError")?,
+            unexpected_character_error: class(&errors, "UnexpectedCharacterError")?,
             dcl_error_kind: class(&error_types, "DclErrorKind")?,
             invalid_schema_error: class(&errors, "InvalidSchemaError")?,
             dcl_diagnostic: class(&errors, "DclDiagnostic")?,
+            unknown_field_name_diagnostic: class(&errors, "UnknownFieldNameDiagnostic")?,
             diagnostic_kind: class(&error_types, "DiagnosticKind")?,
         })
     }
@@ -67,17 +71,19 @@ impl PythonClasses {
     ) -> PyResult<Bound<'py, PyAny>> {
         let error = &rendered_error.error;
         let kind: &'static str = error.kind.into();
-        let character = match error.kind {
-            SyntaxErrorKind::UnexpectedCharacter { character } => Some(character),
-            _ => None,
-        };
-        self.dcl_error.bind(py).call1((
-            self.dcl_error_kind.bind(py).getattr(kind)?,
-            error.to_string(),
-            self.source_location(py, error.location)?,
-            character,
-            &rendered_error.rendered,
-        ))
+        let kind = self.dcl_error_kind.bind(py).getattr(kind)?;
+        let message = error.to_string();
+        let location = self.source_location(py, error.location)?;
+        let rendered = &rendered_error.rendered;
+        if let SyntaxErrorKind::UnexpectedCharacter { character } = error.kind {
+            return self
+                .unexpected_character_error
+                .bind(py)
+                .call1((kind, message, location, rendered, character));
+        }
+        self.dcl_error
+            .bind(py)
+            .call1((kind, message, location, rendered))
     }
 
     fn dcl_diagnostic<'py>(
@@ -87,18 +93,24 @@ impl PythonClasses {
     ) -> PyResult<Bound<'py, PyAny>> {
         let error = &rendered_error.error;
         let kind: &'static str = (&error.kind).into();
-        let message_type = match &error.kind {
-            SemanticErrorKind::UnknownFieldName { message_type } => Some(message_type),
-            _ => None,
-        };
-        self.dcl_diagnostic.bind(py).call1((
-            self.diagnostic_kind.bind(py).getattr(kind)?,
-            error.to_string(),
-            self.source_location(py, error.location)?,
-            &error.field_name,
-            message_type,
-            &rendered_error.rendered,
-        ))
+        let kind = self.diagnostic_kind.bind(py).getattr(kind)?;
+        let message = error.to_string();
+        let location = self.source_location(py, error.location)?;
+        let field_name = &error.field_name;
+        let rendered = &rendered_error.rendered;
+        if let SemanticErrorKind::UnknownFieldName { message_type } = &error.kind {
+            return self.unknown_field_name_diagnostic.bind(py).call1((
+                kind,
+                message,
+                location,
+                field_name,
+                rendered,
+                message_type,
+            ));
+        }
+        self.dcl_diagnostic
+            .bind(py)
+            .call1((kind, message, location, field_name, rendered))
     }
 }
 

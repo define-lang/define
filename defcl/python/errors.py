@@ -34,15 +34,12 @@ class DclError(Exception):
     kind: error_types.DclErrorKind
     message: str
     location: SourceLocation
-    # The character that DCL does not allow, for an UNEXPECTED_CHARACTER error.
-    character: str | None
 
     def __init__(
         self,
         kind: error_types.DclErrorKind,
         message: str,
         location: SourceLocation,
-        character: str | None,
         rendered: str,
     ):
         """Initialize the error with its message, which does not include its location, and its rendered text."""
@@ -50,6 +47,23 @@ class DclError(Exception):
         self.kind = kind
         self.message = message
         self.location = location
+
+
+class UnexpectedCharacterError(DclError):
+    """An UNEXPECTED_CHARACTER error: a character that DCL does not allow."""
+
+    character: str
+
+    def __init__(
+        self,
+        kind: error_types.DclErrorKind,
+        message: str,
+        location: SourceLocation,
+        rendered: str,
+        character: str,
+    ):
+        """Initialize the error with the character that DCL does not allow."""
+        super().__init__(kind, message, location, rendered)
         self.character = character
 
 
@@ -65,9 +79,6 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     message: str
     location: SourceLocation
     field_name: str
-    # The full name of the message type that has no field named field_name, for
-    # an UNKNOWN_FIELD_NAME diagnostic.
-    message_type: str | None
     # The diagnostic's location, as its source line underlined with carets, then
     # its message.
     rendered: str
@@ -75,3 +86,10 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     @typing.override
     def __str__(self) -> str:
         return self.rendered
+
+
+class UnknownFieldNameDiagnostic(DclDiagnostic, frozen=True):
+    """An UNKNOWN_FIELD_NAME diagnostic: a field name that its message type has no field for."""
+
+    # The full name of the message type that has no field named field_name.
+    message_type: str
