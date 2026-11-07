@@ -10,6 +10,7 @@ _PHASE_BY_TEST_DIRECTORY = {
     "codegen": "codegen",
     "program_validator_tests": "structural",
     "reference_graph_validator_tests": "reference_graph",
+    "resource_tests": "resource_tests",
 }
 _PHASE_BY_TEST_FILE = {
     "driver_run_test.py": "driver",

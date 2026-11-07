@@ -1,0 +1,10 @@
+# An entry action that is not a constructor validates, but code generation
+# reports that it cannot be the entry point.
+define the potential action<mv:define-lang.org:cyclic_garbage:/test> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<noop>.
+        create a particle in position<noop>.
+    }
+}

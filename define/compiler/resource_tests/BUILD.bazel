@@ -4,6 +4,42 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_test(
+    name = "cyclic_garbage_test",
+    size = "small",
+    srcs = ["cyclic_garbage_test.py"],
+    data = [
+        "//define/testdata/codegen",
+        "//define/testdata/compiler_resources:cpu_growth_controls",
+        "//define/testdata/compiler_resources:deep_requirements",
+        "//define/testdata/compiler_resources:destruction_contracts",
+        "//define/testdata/compiler_resources:guarantee_expansion",
+        "//define/testdata/compiler_resources:large_operation_volume",
+        "//define/testdata/compiler_resources:many_substantial_actions",
+        "//define/testdata/compiler_resources:particle_operations",
+        "//define/testdata/compiler_resources:pending_guarantees",
+        "//define/testdata/compiler_resources:reference_graph_project",
+        "//define/testdata/compiler_resources:wide_destruction",
+        "//define/testdata/resource_tests/cyclic_garbage",
+    ],
+    deps = [
+        ":resource_cases",
+        "//defcl/python:error_types",
+        "//defcl/python:locations",
+        "//define/compiler:conftest",
+        "//define/compiler:driver",
+        "//define/compiler/codegen:test_helpers",
+        "//define/compiler/codegen:testdata_cases",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "resource_cases",
+    testonly = True,
+    srcs = ["resource_cases.py"],
+)
+
+py_test(
     name = "resource_integration_test",
     size = "small",
     timeout = "moderate",
@@ -53,51 +89,15 @@ py_test(
         "//define/testdata/compiler_resources:wide_destruction",
     ],
     env = {
-        "PENDING_GUARANTEES_GROWTH": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees_growth)",
-        "PENDING_GUARANTEES_GROWTH_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees_growth_control)",
-        "PENDING_GUARANTEES": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees)",
-        "QUALITY_IMPLICATIONS": "$(rlocationpath //define/testdata/compiler_resources:quality_implications)",
-        "QUALITY_IMPLICATIONS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:quality_implications_control)",
-        "REFERENCE_DEPTH_UPDATES": "$(rlocationpath //define/testdata/compiler_resources:reference_depth_updates)",
-        "REFERENCE_DEPTH_UPDATES_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:reference_depth_updates_control)",
         "MAIN_BINARY": "$(rlocationpath //define/compiler:main)",
-        "DEEP_REQUIREMENTS": "$(rlocationpath //define/testdata/compiler_resources:deep_requirements)",
-        "DESTRUCTION_CONTRACTS": "$(rlocationpath //define/testdata/compiler_resources:destruction_contracts)",
-        "WIDE_DESTRUCTION": "$(rlocationpath //define/testdata/compiler_resources:wide_destruction)",
-        "GUARANTEE_EXPANSION": "$(rlocationpath //define/testdata/compiler_resources:guarantee_expansion)",
-        "LARGE_OPERATION_VOLUME": "$(rlocationpath //define/testdata/compiler_resources:large_operation_volume)",
-        "MANY_SUBSTANTIAL_ACTIONS": "$(rlocationpath //define/testdata/compiler_resources:many_substantial_actions)",
-        "PARTICLE_OPERATIONS": "$(rlocationpath //define/testdata/compiler_resources:particle_operations)",
-        "REFERENCE_GRAPH_PROJECT": "$(rlocationpath //define/testdata/compiler_resources:reference_graph_project_entry)",
         "RESOURCE_LIMIT_RUNNER": "$(rlocationpath :resource_limit_runner)",
         "RESOURCE_TEST_RUNNER": "$(rlocationpath :resource_test_runner)",
-        "TRIGGERED_CHILDREN_DESTRUCTION": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_contracted)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_contracted_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_dependent_siblings)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_dependent_siblings_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_destructors)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_destructors_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_ERROR": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_error)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_ERROR_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_error_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_in_destructor)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_in_destructor_contracted)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_in_destructor_contracted_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_in_destructor_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_MOVE": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_move)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_MOVE_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_move_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_rearrange)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_rearrange_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_rearrange_destructors)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_rearrange_destructors_control)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_same_particle)",
-        "TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_same_particle_control)",
     },
     shard_count = 8,
     tags = ["no-coverage"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":resource_cases",
         ":resource_test_runner",
         "//tools:runfiles",
         "@pypi//pytest",
@@ -148,9 +148,18 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = ["cyclic_garbage_test.py"],
+    visibility = ["//define/testdata:__pkg__"],
+)
+
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":cyclic_garbage_test",
+        ":resource_cases",
         ":resource_integration_test",
         ":resource_limit_runner",
         ":resource_test_runner",

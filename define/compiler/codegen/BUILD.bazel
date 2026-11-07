@@ -92,6 +92,7 @@ py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
     deps = [
         ":testdata_cases",
         "@pypi//pytest",
@@ -111,7 +112,10 @@ py_test(
 py_library(
     name = "testdata_cases",
     srcs = ["testdata_cases.py"],
-    visibility = ["//tools:__pkg__"],
+    visibility = [
+        "//define/compiler/resource_tests:__pkg__",
+        "//tools:__pkg__",
+    ],
     deps = ["//define/compiler:driver"],
 )
 

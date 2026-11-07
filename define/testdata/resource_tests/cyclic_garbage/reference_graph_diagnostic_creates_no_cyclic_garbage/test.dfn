@@ -1,0 +1,11 @@
+# Creating a second particle in an occupied position is a diagnostic that
+# reference graph validation reports.
+define the potential action<mv:define-lang.org:cyclic_garbage:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target>.
+        create a particle in position<target>.
+        create a particle in position<target>.
+    }
+}

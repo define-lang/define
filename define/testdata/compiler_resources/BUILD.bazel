@@ -52,6 +52,28 @@ filegroup(
 )
 
 filegroup(
+    name = "cpu_growth_controls",
+    testonly = True,
+    srcs = [
+        "pending_guarantees_growth_control.dfn",
+        "quality_implications_control.dfn",
+        "triggered_children_destruction_contracted_control.dfn",
+        "triggered_children_destruction_control.dfn",
+        "triggered_children_destruction_dependent_siblings_control.dfn",
+        "triggered_children_destruction_destructors_control.dfn",
+        "triggered_children_destruction_error_control.dfn",
+        "triggered_children_destruction_in_destructor_contracted_control.dfn",
+        "triggered_children_destruction_in_destructor_control.dfn",
+        "triggered_children_destruction_move_control.dfn",
+        "triggered_children_destruction_rearrange_control.dfn",
+        "triggered_children_destruction_rearrange_destructors_control.dfn",
+        "triggered_children_destruction_same_particle_control.dfn",
+        ":project_config",
+    ],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
     name = "deep_requirements",
     testonly = True,
     srcs = ["deep_requirements.dfn"],

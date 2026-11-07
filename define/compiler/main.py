@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import gc
 import io
 import os
 import stat
@@ -125,4 +126,9 @@ def compile_cmd(
 
 
 if __name__ == "__main__":  # pragma: no cover
+    # The compiler's data forms almost no reference cycles, so cyclic garbage
+    # collections free nearly nothing. On free-threaded CPython each one
+    # stops every thread and visits the whole heap, which cost up to a sixth
+    # of a compile's wall time.
+    gc.disable()
     main()

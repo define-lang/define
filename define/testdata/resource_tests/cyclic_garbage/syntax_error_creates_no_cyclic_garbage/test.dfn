@@ -1,0 +1,2 @@
+# A misspelled keyword makes the parser raise a syntax error.
+defin the potential position<mv:define-lang.org:cyclic_garbage:/test>.

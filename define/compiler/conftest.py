@@ -152,7 +152,7 @@ def _testdata_directory(request: pytest.FixtureRequest) -> Path:
     test_class_name = test_class.name if isinstance(test_class, pytest.Class) else None
     return path_resolver.directory_for(
         request.path,
-        test_function.name,
+        test_function.originalname,
         test_class_name,
     )
 

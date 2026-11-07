@@ -1,0 +1,2 @@
+# The project config has no universe name, so loading it raises an error.
+define the potential position<mv:define-lang.org:cyclic_garbage:/test>.

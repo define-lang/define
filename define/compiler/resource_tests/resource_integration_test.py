@@ -2,40 +2,22 @@
 
 from __future__ import annotations
 
-import dataclasses
 import math
 from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.resource_tests import resource_test_runner
+from define.compiler.resource_tests import resource_cases, resource_test_runner
 from tools import runfiles
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from pathlib import Path, PurePosixPath
 
 _MIB = 1024**2
 _CPU_SAFETY_SECONDS = 10
 _CPU_GROWTH_SAFETY_SECONDS = 30
 _WALL_SAFETY_SECONDS = 20
 _WALL_GROWTH_SAFETY_SECONDS = 45
-
-
-@dataclasses.dataclass(kw_only=True)
-class MemoryCase:
-    source_variable: str
-    filesystem: bool
-    rss_mib: int
-
-
-@dataclasses.dataclass(kw_only=True)
-class CpuGrowthCase:
-    control_variable: str
-    source_variable: str
-    filesystem: bool
-    maximum_ratio: float
-    # Whether both programs are expected to report diagnostics and fail.
-    expect_diagnostics: bool = False
 
 
 def _measure(
@@ -78,71 +60,20 @@ def _stderr(directory: Path) -> str:
     return (directory / "resources" / "stderr").read_text(encoding="utf-8")
 
 
+def _compiler_resource(path: PurePosixPath) -> Path:
+    directory = resource_cases.COMPILER_RESOURCES_DIRECTORY
+    return runfiles.resolve(f"_main/{directory / path}")
+
+
 @pytest.mark.parametrize(
     "case",
-    [
-        pytest.param(
-            MemoryCase(
-                source_variable="LARGE_OPERATION_VOLUME", filesystem=False, rss_mib=192
-            ),
-            id="large_operation_volume",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="DESTRUCTION_CONTRACTS", filesystem=False, rss_mib=192
-            ),
-            id="destruction_contracts",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="MANY_SUBSTANTIAL_ACTIONS",
-                filesystem=False,
-                rss_mib=192,
-            ),
-            id="many_substantial_actions",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="WIDE_DESTRUCTION", filesystem=False, rss_mib=192
-            ),
-            id="wide_destruction",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="REFERENCE_GRAPH_PROJECT", filesystem=True, rss_mib=192
-            ),
-            id="reference_graph_project",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="PARTICLE_OPERATIONS", filesystem=False, rss_mib=192
-            ),
-            id="particle_operations",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="GUARANTEE_EXPANSION", filesystem=False, rss_mib=192
-            ),
-            id="guarantee_expansion",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="DEEP_REQUIREMENTS", filesystem=False, rss_mib=192
-            ),
-            id="deep_requirements",
-        ),
-        pytest.param(
-            MemoryCase(
-                source_variable="PENDING_GUARANTEES", filesystem=False, rss_mib=384
-            ),
-            id="pending_guarantees",
-        ),
-    ],
+    resource_cases.RETAINED_MEMORY_CASES,
+    ids=[case.name for case in resource_cases.RETAINED_MEMORY_CASES],
 )
-def test_retained_memory(case: MemoryCase, tmp_path: Path):
+def test_retained_memory(case: resource_cases.RetainedMemoryCase, tmp_path: Path):
     directory = tmp_path / "compilation"
     measured = _measure(
-        runfiles.resolve_from_env(case.source_variable),
+        _compiler_resource(case.source),
         directory,
         filesystem=case.filesystem,
         workers=4,
@@ -157,142 +88,14 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
 
 @pytest.mark.parametrize(
     "case",
-    [
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="PENDING_GUARANTEES_GROWTH_CONTROL",
-                source_variable="PENDING_GUARANTEES_GROWTH",
-                filesystem=False,
-                maximum_ratio=8,
-            ),
-            id="pending_guarantees",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="REFERENCE_DEPTH_UPDATES_CONTROL",
-                source_variable="REFERENCE_DEPTH_UPDATES",
-                filesystem=True,
-                maximum_ratio=2,
-            ),
-            id="reference_depth_updates",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="QUALITY_IMPLICATIONS_CONTROL",
-                source_variable="QUALITY_IMPLICATIONS",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="shared_quality_implications",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_destructors",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_contracted",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_MOVE_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_MOVE",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_move",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_rearrange",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_rearrange_destructors",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_ERROR_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_ERROR",
-                filesystem=False,
-                maximum_ratio=4,
-                expect_diagnostics=True,
-            ),
-            id="triggered_children_destruction_error",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_dependent_siblings",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_in_destructor",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED",
-                filesystem=False,
-                maximum_ratio=4,
-                expect_diagnostics=True,
-            ),
-            id="triggered_children_destruction_in_destructor_contracted",
-        ),
-        pytest.param(
-            CpuGrowthCase(
-                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE_CONTROL",
-                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE",
-                filesystem=False,
-                maximum_ratio=4,
-            ),
-            id="triggered_children_destruction_same_particle",
-        ),
-    ],
+    resource_cases.CPU_GROWTH_CASES,
+    ids=[case.name for case in resource_cases.CPU_GROWTH_CASES],
 )
-def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
+def test_cpu_growth(case: resource_cases.CpuGrowthCase, tmp_path: Path):
     expected_returncode = 1 if case.expect_diagnostics else 0
     control_directory = tmp_path / "control"
     control = _measure(
-        runfiles.resolve_from_env(case.control_variable),
+        _compiler_resource(case.control),
         control_directory,
         filesystem=case.filesystem,
         workers=1,
@@ -316,7 +119,7 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
     cpu_limit = math.floor(control.cpu_seconds * case.maximum_ratio) + 1
     directory = tmp_path / "adversarial"
     measured = _measure(
-        runfiles.resolve_from_env(case.source_variable),
+        _compiler_resource(case.source),
         directory,
         filesystem=case.filesystem,
         workers=1,

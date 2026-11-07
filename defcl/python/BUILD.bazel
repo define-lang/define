@@ -10,7 +10,10 @@ load("//tools/bzl:rust.bzl", "lint_config")
 py_library(
     name = "error_types",
     srcs = [":error_types.py"],
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = [
+        "//define/compiler:__pkg__",
+        "//define/compiler/resource_tests:__pkg__",
+    ],
 )
 
 # The generated enums, which tools:setup_local_dev copies into the source tree.
@@ -94,6 +97,7 @@ py_test(
 py_library(
     name = "locations",
     srcs = ["locations.py"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
     deps = ["@pypi//msgspec"],
 )
 

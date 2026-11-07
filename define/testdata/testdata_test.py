@@ -21,6 +21,7 @@ _TEST_SOURCE_ROOTS = {
     "reference_graph": Path(
         "define/compiler/validator/reference_graph/reference_graph_validator_tests"
     ),
+    "resource_tests": Path("define/compiler/resource_tests"),
 }
 _NON_FILESYSTEM_FIXTURES = {
     "validate_testdata_structural_non_filesystem",

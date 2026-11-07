@@ -18,6 +18,7 @@ filegroup(
     ],
     visibility = [
         "//define/compiler/codegen:__pkg__",
+        "//define/compiler/resource_tests:__pkg__",
         "//define/testdata:__pkg__",
     ],
 )
