@@ -69,6 +69,11 @@ define the potential position<my.domain.com:my_lib:/natural_difference> {
         it has the value<standard:/number/integer>.
     }
 }
+define the potential position<my.domain.com:my_lib:/natural_composed_difference> {
+    it may only contain particles where {
+        it has the value<standard:/number/integer>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/natural_saturated_difference> {
     it may only contain particles where {
         it has the value<standard:/number/natural>.
@@ -169,6 +174,43 @@ define the potential position<my.domain.com:my_lib:/letter_at_least> {
         it has the value<standard:/boolean>.
     }
 }
+define the operation<my.domain.com:my_lib:/natural_subtract> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<negated_b> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<negated_b>.
+        }
+        execute the logical_operation<standard:/number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<negated_b>.
+            with view<result> looking at view<result>.
+        }
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</bits>.
     it also assigns the position</masked>.
@@ -184,6 +226,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</natural_sum>.
     it also assigns the position</natural_product>.
     it also assigns the position</natural_difference>.
+    it also assigns the position</natural_composed_difference>.
     it also assigns the position</natural_saturated_difference>.
     it also assigns the position</natural_smaller>.
     it also assigns the position</natural_larger>.
@@ -263,6 +306,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</natural_sum>.
         create a particle in position</natural_product>.
         create a particle in position</natural_difference>.
+        create a particle in position</natural_composed_difference>.
         create a particle in position</natural_saturated_difference>.
         create a particle in position</natural_smaller>.
         create a particle in position</natural_larger>.
@@ -292,6 +336,11 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<a> looking at position</count>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</natural_difference>.
+        }
+        execute the operation</natural_subtract> {
+            with view<a> looking at position</count>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</natural_composed_difference>.
         }
         execute the operation<standard:/number/natural/subtract_saturating> {
             with view<a> looking at position</count>.

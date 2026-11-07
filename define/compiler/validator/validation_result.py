@@ -39,6 +39,15 @@ class ActionPostorderValidationResult(PostorderValidationResult):
     codegen_input: codegen_input.ActionCodegenInput
 
 
+class LogicalOperationPostorderValidationResult(PostorderValidationResult):
+    """Result of validating a logical operation definition during the DFS post-order walk."""
+
+    # The Encoding Operations that perform the logical operation, keyed by the
+    # full typed names of the encodings of their views, in the order of the
+    # logical operation's views.
+    encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition]
+
+
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
 

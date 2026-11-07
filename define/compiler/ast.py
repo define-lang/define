@@ -181,6 +181,16 @@ class EncodingOperationDefinition(OperationDefinition):
         name_types.NameType.ENCODING_OPERATION
     )
 
+    def view_encodings(self) -> tuple[str, ...] | None:
+        """Return the full typed names of the encodings of the interface views, in view order, or None if a view has no encoding, which structural validation reports."""
+        encodings: list[str] = []
+        for view in self.views:
+            encoding = view.quality_assignment_block.encoding
+            if encoding is None:
+                return None
+            encodings.append(encoding.full_typed_name)
+        return tuple(encodings)
+
 
 class LogicalOperationDefinition(ExecutableDefinition[LogicalOperationViewDefinition]):
     """Represents a logical operation definition."""

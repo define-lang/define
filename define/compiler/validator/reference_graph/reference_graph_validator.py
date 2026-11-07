@@ -14,6 +14,7 @@ from define.compiler.graphs import (
 from define.compiler.validator import codegen_input, validation_result
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
+    logical_operation_definition_validator,
     operation_definition_validator,
     position_occupancy,
     reference_graph_validation_state,
@@ -32,12 +33,14 @@ def _requires_validation(
     ast.ActionDefinition
     | ast.ValueOperationDefinition
     | ast.EncodingOperationDefinition
+    | ast.LogicalOperationDefinition
 ]:
     return isinstance(
         definition,
         ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.EncodingOperationDefinition,
+        | ast.EncodingOperationDefinition
+        | ast.LogicalOperationDefinition,
     )
 
 
@@ -139,7 +142,8 @@ class ReferenceGraphValidator:
         self,
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.EncodingOperationDefinition,
+        | ast.EncodingOperationDefinition
+        | ast.LogicalOperationDefinition,
     ) -> validation_result.PostorderValidationResult:
         match definition:
             case ast.ActionDefinition():
@@ -155,6 +159,13 @@ class ReferenceGraphValidator:
                     operation_definition_validator.EncodingOperationDefinitionValidator(
                         definition, self._definition_results
                     ).analyze()
+                )
+            case ast.LogicalOperationDefinition():
+                result = logical_operation_definition_validator.LogicalOperationDefinitionValidator(
+                    definition, self._definition_results
+                ).analyze()
+                self._validation_state.publish_encoding_operations(
+                    definition.typed_name, result.encoding_operations
                 )
         definition_result = self._definition_results[definition.typed_name]
         for d in result.diagnostics:

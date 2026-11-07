@@ -1,0 +1,187 @@
+"""Reference graph validation of the Encoding Operations associated with a logical operation."""
+
+from __future__ import annotations
+
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
+
+from define.compiler import ast, constants
+from define.compiler.errors import diagnostics
+from define.compiler.validator.test_helpers import standard_library_file
+
+if TYPE_CHECKING:
+    import pytest
+
+    from define.compiler.conftest import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
+    )
+
+
+# TODO: Associate these Encoding Operations through association configuration
+# files once they exist (DLP 48), instead of replacing built-in associations.
+def test_encoding_operation_with_fewer_views(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setitem(
+        constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS,
+        "logical_operation<my.domain.com:my_lib:/negate>",
+        ("/number/integer/ascii/add",),
+    )
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.AssociatedEncodingOperationViewCountDiagnostic(
+            location=ast.SourceLocation(
+                line=1,
+                column=12,
+                end_line=1,
+                end_column=65,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/add.dfn")
+                ),
+            ),
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
+            view_count=3,
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            logical_operation_view_count=2,
+        )
+    ]
+
+
+def test_encoding_operation_with_different_view_name(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setitem(
+        constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS,
+        "logical_operation<my.domain.com:my_lib:/negate>",
+        ("/number/integer/ascii/negate",),
+    )
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=16,
+                end_line=2,
+                end_column=22,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/negate.dfn")
+                ),
+            ),
+            view_number=1,
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
+            view_name="view<a>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            logical_operation_view_name="view<value>",
+        )
+    ]
+
+
+def test_encoding_operation_with_different_view_direction(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setitem(
+        constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS,
+        "logical_operation<my.domain.com:my_lib:/negate>",
+        ("/number/integer/ascii/negate",),
+    )
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=16,
+                end_line=2,
+                end_column=22,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/negate.dfn")
+                ),
+            ),
+            view_name="view<a>",
+            direction="read",
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
+            logical_operation_direction="written",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+        )
+    ]
+
+
+def test_encoding_operation_with_views_in_different_order(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setitem(
+        constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS,
+        "logical_operation<my.domain.com:my_lib:/negate>",
+        ("/number/integer/ascii/negate",),
+    )
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=16,
+                end_line=2,
+                end_column=22,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/negate.dfn")
+                ),
+            ),
+            view_number=1,
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
+            view_name="view<a>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            logical_operation_view_name="view<result>",
+        ),
+        diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
+            location=ast.SourceLocation(
+                line=8,
+                column=16,
+                end_line=8,
+                end_column=27,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/negate.dfn")
+                ),
+            ),
+            view_number=2,
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
+            view_name="view<result>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            logical_operation_view_name="view<a>",
+        ),
+    ]
+
+
+def test_encoding_operations_with_same_encodings(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setitem(
+        constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS,
+        "logical_operation<my.domain.com:my_lib:/combine>",
+        ("/number/integer/ascii/add", "/number/integer/ascii/multiply"),
+    )
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == [
+        diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
+            location=ast.SourceLocation(
+                line=1,
+                column=12,
+                end_line=1,
+                end_column=70,
+                file_path=PurePosixPath(
+                    standard_library_file("number/integer/ascii/multiply.dfn")
+                ),
+            ),
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/multiply>",
+            first_encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+        )
+    ]

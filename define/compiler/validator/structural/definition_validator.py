@@ -171,16 +171,32 @@ class DefinitionStructuralValidator:
                     self._validate_view_definition(definition, statement, views)
                 case ast.OperationExecutionStatement():
                     has_execution = True
-                    self._validate_execution(
+                    _ = self._validate_execution(
                         statement.operation, statement.arguments, validate_looked_at
                     )
                 case ast.LogicalOperationExecutionStatement():
                     has_execution = True
-                    self._validate_execution(
+                    if self._validate_execution(
                         statement.logical_operation,
                         statement.arguments,
                         validate_looked_at,
-                    )
+                    ):
+                        # Executing a logical operation executes one of the
+                        # Encoding Operations that perform it, so the
+                        # execution references all of them.
+                        # TODO: Load only the Encoding Operation chosen for
+                        # each instance's encodings, instead of every
+                        # candidate. That needs the association table to
+                        # state each Encoding Operation's encodings, so the
+                        # choice needs no loading, and loading during
+                        # reference graph validation, when instances are
+                        # built.
+                        for encoding_operation in encoding_operation_associations.logical_operation_encoding_operation_references(
+                            statement.logical_operation.full_typed_name,
+                            statement.logical_operation.location,
+                            definition.typed_name.name_content.fqun,
+                        ):
+                            self._process_reference(encoding_operation)
                 case ast.ViewSettingStatement():
                     self._validate_view_setting(
                         definition,
@@ -559,8 +575,8 @@ class DefinitionStructuralValidator:
         executed: ast.GlobalTypedNameReference,
         arguments: Sequence[ast.OperationArgumentStatement[LookedAt | ast.Literal]],
         validate_looked_at: Callable[[LookedAt], bool],
-    ):
-        """Validate an Operation Execution Statement or a Logical Operation Execution Statement.
+    ) -> bool:
+        """Validate an Operation Execution Statement or a Logical Operation Execution Statement, and return whether the executed name is valid.
 
         validate_looked_at validates a looked-at position or view and returns
         whether it is valid to check for aliasing.
@@ -572,6 +588,7 @@ class DefinitionStructuralValidator:
         if not executed_diagnostics:
             self._process_reference(executed)
         self._validate_operation_arguments(arguments, validate_looked_at)
+        return not executed_diagnostics
 
     def _validate_operation_arguments[
         LookedAt: (ast.PositionReference, ast.LocalTypedNameReference)
@@ -698,7 +715,7 @@ class DefinitionStructuralValidator:
                 case ast.DestroyParticleStatement():
                     self._validate_destroy_particle(stmt, scope)
                 case ast.OperationExecutionStatement():
-                    self._validate_execution(
+                    _ = self._validate_execution(
                         stmt.operation,
                         stmt.arguments,
                         lambda looking_at: self._validate_looked_at_in_action(

@@ -35,6 +35,9 @@ class ReferenceGraphValidationState:
         self._quality_assignments_by_key: dict[
             chained_name.PositionReferenceTuple, quality_assignment.QualityAssignments
         ] = {}
+        self._encoding_operations_by_logical_operation: dict[
+            str, dict[tuple[str, ...], ast.EncodingOperationDefinition]
+        ] = {}
 
     def publish_contract(
         self,
@@ -55,6 +58,29 @@ class ReferenceGraphValidationState:
     ) -> action_contract.ActionContract | None:
         """Return a published action contract, if one exists."""
         return self._contract_by_name.get(action_name.full_typed_name)
+
+    def publish_encoding_operations(
+        self,
+        logical_operation_name: ast.GlobalTypedName[
+            ast.GlobalNameContent[ast.Fqun | None]
+        ],
+        encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition],
+    ):
+        """Publish a validated logical operation's Encoding Operations."""
+        self._encoding_operations_by_logical_operation[
+            logical_operation_name.full_typed_name
+        ] = encoding_operations
+
+    def get_encoding_operations(
+        self,
+        logical_operation_name: ast.GlobalTypedName[
+            ast.GlobalNameContent[ast.Fqun | None]
+        ],
+    ) -> dict[tuple[str, ...], ast.EncodingOperationDefinition]:
+        """Return a previously published logical operation's Encoding Operations."""
+        return self._encoding_operations_by_logical_operation[
+            logical_operation_name.full_typed_name
+        ]
 
     def get_or_build_quality_assignments(
         self,

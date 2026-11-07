@@ -748,6 +748,81 @@ class ViewSettingReadWriteTargetNotFromExecutionDiagnostic(Diagnostic):
     )
 
 
+# TODO: Name the association's entry in its association configuration file,
+# instead of the built-in table, once those files exist (DLP 48). This applies
+# to every diagnostic about an associated Encoding Operation, including
+# DuplicateAssociatedEncodingOperationDiagnostic.
+
+
+class AssociatedEncodingOperationViewCountDiagnostic(Diagnostic):
+    """Diagnostic for an Encoding Operation associated with a logical operation that has a different number of views."""
+
+    encoding_operation_name: str
+    view_count: int
+    logical_operation_name: str
+    logical_operation_view_count: int
+    message_format: ClassVar[str] = (
+        "'{self.encoding_operation_name}' has {self.view_count} views, but"
+        " '{self.logical_operation_name}',"
+        " which the compiler's built-in"
+        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
+        " with, has {self.logical_operation_view_count}"
+    )
+
+
+class AssociatedEncodingOperationViewNameDiagnostic(Diagnostic):
+    """Diagnostic for a view of an associated Encoding Operation whose name differs from the logical operation's view at the same place."""
+
+    view_number: int
+    encoding_operation_name: str
+    view_name: str
+    logical_operation_name: str
+    logical_operation_view_name: str
+    message_format: ClassVar[str] = (
+        "view {self.view_number} of '{self.encoding_operation_name}' is"
+        " '{self.view_name}', but view {self.view_number} of"
+        " '{self.logical_operation_name}',"
+        " which the compiler's built-in"
+        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
+        " with, is '{self.logical_operation_view_name}'"
+    )
+
+
+class AssociatedEncodingOperationViewDirectionDiagnostic(Diagnostic):
+    """Diagnostic for a view of an associated Encoding Operation whose direction differs from the logical operation's view of the same name."""
+
+    view_name: str
+    direction: str
+    encoding_operation_name: str
+    logical_operation_direction: str
+    logical_operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is {self.direction} in"
+        " '{self.encoding_operation_name}', but"
+        " {self.logical_operation_direction} in"
+        " '{self.logical_operation_name}',"
+        " which the compiler's built-in"
+        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
+        " with"
+    )
+
+
+class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
+    """Diagnostic for two Encoding Operations that are associated with the same logical operation and have the same encodings."""
+
+    encoding_operation_name: str
+    first_encoding_operation_name: str
+    logical_operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.encoding_operation_name}' and"
+        " '{self.first_encoding_operation_name}' are both associated with"
+        " '{self.logical_operation_name}' by the compiler's built-in"
+        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry for"
+        " '{self.logical_operation_name}', and their views have the same"
+        " encodings, so the compiler cannot choose between them"
+    )
+
+
 class ExecutedOperationHasReadWriteViewDiagnostic(Diagnostic):
     """Diagnostic for an Operation Statements Block executing an operation that has a read/write interface view."""
 
