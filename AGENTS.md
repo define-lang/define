@@ -205,8 +205,8 @@ BUILD file generator.
 
 ### Python Dependencies
 
-- All Python dependencies are managed via `aspect_rules_py`'s uv extension with
-  a single `pypi` hub backed by the root `uv.lock`.
+- All Python dependencies are managed via `rules_py`'s uv extension with a
+  single `pypi` hub backed by the root `uv.lock`.
 - Dependencies are in the root `pyproject.toml`; build and test tooling
   dependencies are in its `dev` group.
 - After changing dependencies in `pyproject.toml`, update the uv lock file:

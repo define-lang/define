@@ -1,6 +1,6 @@
 """Basedpyright type-checking test macro."""
 
-load("@aspect_rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
+load("@rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
 load("@rules_python//python:py_info.bzl", LegacyPyInfo = "PyInfo")
 
 # Native extensions must be present so stub imports can resolve to their

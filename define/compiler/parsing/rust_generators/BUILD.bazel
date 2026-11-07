@@ -1,5 +1,5 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("@crates//:defs.bzl", "lint_config")
+load("@rules_py//py:defs.bzl", "py_binary", "py_library")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")

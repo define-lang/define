@@ -1,5 +1,5 @@
 diff --git a/docs/interpreter.md b/docs/interpreter.md
-index be50c9d9..746f14c4 100644
+index e2505494..7cf19f9d 100644
 --- a/docs/interpreter.md
 +++ b/docs/interpreter.md
 @@ -29,6 +29,15 @@ import libraries. Regular runtimes also expose stable-ABI headers.
@@ -12,7 +12,7 @@ index be50c9d9..746f14c4 100644
 +not compile it from source in every sandbox or on every remote executor.
 +CPython's own test suite is not precompiled, and images built with
 +`py_image_layer` leave the bytecode out. Setting
-+`--@aspect_rules_py//uv/private/pyc:precompile=False`, which also turns off
++`--@rules_py//uv/private/pyc:precompile=False`, which also turns off
 +wheel precompilation, leaves the bytecode out of the interpreter's files.
 +
  ## Quickstart
@@ -20,11 +20,11 @@ index be50c9d9..746f14c4 100644
  ```starlark
 diff --git a/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel b/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel
 new file mode 100644
-index 00000000..ce9ede88
+index 00000000..68552baf
 --- /dev/null
 +++ b/e2e/cases/interpreter-precompiled-stdlib/BUILD.bazel
 @@ -0,0 +1,28 @@
-+load("@aspect_rules_py//py:defs.bzl", "py_test")
++load("@rules_py//py:defs.bzl", "py_test")
 +load("@bazel_lib//lib:transitions.bzl", "platform_transition_test")
 +
 +py_test(
@@ -35,7 +35,7 @@ index 00000000..ce9ede88
 +
 +platform(
 +    name = "no_precompile",
-+    flags = ["--@aspect_rules_py//uv/private/pyc:precompile=False"],
++    flags = ["--@rules_py//uv/private/pyc:precompile=False"],
 +    parents = ["@platforms//host"],
 +)
 +
@@ -113,7 +113,7 @@ index 00000000..1edd4a05
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/e2e/interpreter-toolchain-settings/test.sh b/e2e/interpreter-toolchain-settings/test.sh
-index 24289d37..45227c11 100755
+index 3ae9b484..ab6ce61a 100755
 --- a/e2e/interpreter-toolchain-settings/test.sh
 +++ b/e2e/interpreter-toolchain-settings/test.sh
 @@ -114,12 +114,12 @@ if ! grep -q "Conflicting root toolchain settings for Python 3.11" "$failure_log
@@ -156,7 +156,7 @@ index 24289d37..45227c11 100755
  fi
  
 diff --git a/py/private/interpreter/BUILD.bazel b/py/private/interpreter/BUILD.bazel
-index 36412293..7553352a 100644
+index 8650a59d..b15ba920 100644
 --- a/py/private/interpreter/BUILD.bazel
 +++ b/py/private/interpreter/BUILD.bazel
 @@ -117,6 +117,7 @@ bzl_library(
@@ -168,7 +168,7 @@ index 36412293..7553352a 100644
  )
  
 diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
-index 2078c148..1345ec3d 100644
+index 390040ff..d56e3a26 100644
 --- a/py/private/interpreter/repository.bzl
 +++ b/py/private/interpreter/repository.bzl
 @@ -1,6 +1,7 @@
@@ -177,7 +177,7 @@ index 2078c148..1345ec3d 100644
  load(":exclude_feature.bzl", "INTERPRETER_FEATURES")
 +load(":resolve.bzl", "host_platform_triple")
  
- _PYTHON_VERSION_FLAG = "@aspect_rules_py//py/private/interpreter:python_version"
+ _PYTHON_VERSION_FLAG = "@rules_py//py/private/interpreter:python_version"
  _RPY_VERSION_FLAG = "@rules_python//python/config_settings:python_version"
 @@ -43,8 +44,18 @@ def _python_interpreter_impl(rctx):
      if "linux" in platform:
@@ -189,18 +189,18 @@ index 2078c148..1345ec3d 100644
 +    # from source. Only a host that can run this interpreter can compile it.
 +    precompiled = host_platform_triple(rctx) == platform
 +    if precompiled:
-+        stdlib = "Lib" if is_windows else "lib/python{}.{}{}".format(major, minor, rctx.attr.abi_flags)
++        stdlib = "Lib" if is_windows else "lib/python{}.{}{}".format(major, minor, "t" if "t" in rctx.attr.abi_flags else "")
 +        _precompile_stdlib(rctx, python_bin, stdlib)
 +
      rctx.file("BUILD.bazel", content = _build_file_content(
          abi_flags = rctx.attr.abi_flags,
 +        precompiled = precompiled,
+         symlinks = {} if is_windows else _find_symlinks(rctx.path(".")),
          major = major,
          minor = minor,
-         micro = micro,
-@@ -57,7 +68,61 @@ def _python_interpreter_impl(rctx):
- 
-     return rctx.repo_metadata(reproducible = True)
+@@ -99,7 +110,61 @@ def _find_symlinks(root):
+                 pending.append((entry, rel + "/"))
+     return links
  
 -def _feature_filegroups(stdlib, is_windows):
 +def _precompile_stdlib(rctx, python_bin, stdlib):
@@ -241,7 +241,7 @@ index 2078c148..1345ec3d 100644
 +    "**/tests/**/__pycache__/**",
 +]
 +
-+_PRECOMPILE_SETTING = "@aspect_rules_py//uv/private/pyc:is_precompile"
++_PRECOMPILE_SETTING = "@rules_py//uv/private/pyc:is_precompile"
 +
 +def _files_glob(include, exclude, precompiled, allow_empty = False):
 +    """A glob of interpreter files that keeps precompiled bytecode when the precompile flag is set."""
@@ -261,7 +261,7 @@ index 2078c148..1345ec3d 100644
      """Generate per-feature filegroup targets and config_settings.
  
      Returns a tuple of (feature_targets_str, all_feature_exclude_patterns).
-@@ -86,19 +151,19 @@ config_setting(
+@@ -128,19 +193,19 @@ config_setting(
          lines.append("""\
  filegroup(
      name = "_feature_{feature}",
@@ -273,8 +273,8 @@ index 2078c148..1345ec3d 100644
  
      return "\n".join(lines), all_excludes
  
--def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial):
-+def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial, precompiled):
+-def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial, symlinks = {}):
++def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, abi_flags, releaselevel, serial, precompiled = False, symlinks = {}):
      """Generate the full BUILD.bazel content for an interpreter repo."""
  
      # A free-threaded build's standard library is lib/python3.14t, not
@@ -285,7 +285,7 @@ index 2078c148..1345ec3d 100644
  
      include_dirs = ["include"]
      if not is_windows:
-@@ -196,19 +261,15 @@ filegroup(
+@@ -238,19 +303,15 @@ filegroup(
  
  """
          venv_dlls_attr = "    venv_dlls = [\":venv_dlls\"],\n"
@@ -313,7 +313,7 @@ index 2078c148..1345ec3d 100644
  
      # Build the select() expressions for optional features
      feature_selects = ""
-@@ -237,10 +298,7 @@ package(default_visibility = ["//visibility:public"])
+@@ -279,10 +340,7 @@ package(default_visibility = ["//visibility:public"])
  
  filegroup(
      name = "_core",
@@ -325,7 +325,7 @@ index 2078c148..1345ec3d 100644
  )
  
  filegroup(
-@@ -302,8 +360,7 @@ py_cc_toolchain(
+@@ -345,8 +403,7 @@ py_cc_toolchain(
          serial = serial,
          feature_targets = feature_targets,
          feature_selects = feature_selects,
@@ -334,7 +334,7 @@ index 2078c148..1345ec3d 100644
 +        core_srcs = _files_glob(core_include, core_exclude, precompiled),
          venv_dlls_target = venv_dlls_target,
          venv_dlls_attr = venv_dlls_attr,
-     )
+         symlinks = repr(dict(sorted(symlinks.items()))),
 diff --git a/py/private/interpreter/resolve.bzl b/py/private/interpreter/resolve.bzl
 index 76647e6f..593a1c6c 100644
 --- a/py/private/interpreter/resolve.bzl
@@ -358,7 +358,7 @@ index 76647e6f..593a1c6c 100644
          return None
  
 diff --git a/py/private/interpreter/tests/repository_test.bzl b/py/private/interpreter/tests/repository_test.bzl
-index 3b3a5f23..43cebc11 100644
+index 796040dc..150752e5 100644
 --- a/py/private/interpreter/tests/repository_test.bzl
 +++ b/py/private/interpreter/tests/repository_test.bzl
 @@ -9,7 +9,7 @@ _PYCACHE_EXCLUDE = 'exclude = ["**/__pycache__/*.pyc*"]'
@@ -417,9 +417,9 @@ index 3b3a5f23..43cebc11 100644
          asserts.true(env, repr(stdlib + "/**/test/**") in content, abi_flags)
          asserts.true(env, repr(stdlib + "/pydoc_data/**") in content, abi_flags)
          asserts.false(env, "lib/python3.14d" in content, abi_flags)
-@@ -74,9 +75,37 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+@@ -158,6 +159,33 @@ def _build_file_records_symlinks_test_impl(ctx):
  
- freethreaded_stdlib_excludes_test = unittest.make(_freethreaded_stdlib_excludes_test_impl)
+ build_file_records_symlinks_test = unittest.make(_build_file_records_symlinks_test_impl)
  
 +_PRECOMPILED_PATTERNS = ["**/__pycache__/*.opt-*.pyc*", "**/test/**/__pycache__/**", "**/tests/**/__pycache__/**"]
 +
@@ -433,7 +433,7 @@ index 3b3a5f23..43cebc11 100644
 +        # Without the flag, every glob leaves out all bytecode, as it does
 +        # when nothing was precompiled.
 +        content = _build_file(True, is_windows = is_windows)
-+        asserts.equals(env, globs, content.count(repr("@aspect_rules_py//uv/private/pyc:is_precompile")))
++        asserts.equals(env, globs, content.count(repr("@rules_py//uv/private/pyc:is_precompile")))
 +        asserts.equals(env, globs, content.count(repr("**/__pycache__/*.pyc*")))
 +        for pattern in _PRECOMPILED_PATTERNS:
 +            asserts.equals(env, globs, content.count(repr(pattern)), pattern)
@@ -451,18 +451,20 @@ index 3b3a5f23..43cebc11 100644
  def repository_test_suite():
      unittest.suite(
          "repository_tests",
-         feature_filegroups_exclude_pycache_test,
-         freethreaded_stdlib_excludes_test,
+@@ -166,4 +194,5 @@ def repository_test_suite():
+         find_symlinks_test,
+         relative_link_test,
+         build_file_records_symlinks_test,
 +        precompiled_stdlib_keeps_bytecode_test,
      )
 diff --git a/py/private/py_image_layer.bzl b/py/private/py_image_layer.bzl
-index a65510b9..bd5e495a 100644
+index 9d7963f9..51f4e757 100644
 --- a/py/private/py_image_layer.bzl
 +++ b/py/private/py_image_layer.bzl
-@@ -440,6 +440,11 @@ def _layer_aspect_impl(target, ctx):
-         interp_depset, _ = interpreter_files_and_version(target)
+@@ -442,6 +442,11 @@ def _layer_aspect_impl(target, ctx):
          if interp_depset == None:
              return []
+         interp_symlinks = interpreter_symlinks(target)
 +
 +        # Images leave out bytecode, as they do for packages
 +        # (_should_skip_pkg_path), including the interpreter's precompiled

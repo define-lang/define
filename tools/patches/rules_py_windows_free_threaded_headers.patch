@@ -1,8 +1,8 @@
 diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
-index 196b891..54bb16d 100644
+index 66813d0d..390040ff 100644
 --- a/py/private/interpreter/repository.bzl
 +++ b/py/private/interpreter/repository.bzl
-@@ -103,6 +103,13 @@ def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, a
+@@ -148,6 +148,13 @@ def _build_file_content(major, minor, micro, python_bin, is_macos, is_windows, a
  
      library_targets = ""
      header_interface_deps = []
@@ -16,7 +16,7 @@ index 196b891..54bb16d 100644
      abi3_header_target = ""
      headers_abi3_attr = ""
      libs_attr = ""
-@@ -237,6 +244,7 @@ filegroup(
+@@ -295,6 +302,7 @@ filegroup(
  {abi3_header_target}cc_library(
      name = "python_headers",
      hdrs = [":includes"],
@@ -24,7 +24,7 @@ index 196b891..54bb16d 100644
      includes = {include_dirs},
      visibility = ["//visibility:private"],
      deps = {header_interface_deps},
-@@ -264,6 +272,7 @@ py_cc_toolchain(
+@@ -323,6 +331,7 @@ py_cc_toolchain(
  """.format(
          abi_flags = abi_flags,
          abi3_header_target = abi3_header_target,

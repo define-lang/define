@@ -1,6 +1,6 @@
 """Proposal validation test macro."""
 
-load("@aspect_rules_py//py:defs.bzl", _py_test = "py_test")
+load("@rules_py//py:defs.bzl", _py_test = "py_test")
 
 def validate_proposals_test(name, proposals, **kwargs):
     """Validate this package's proposal files.

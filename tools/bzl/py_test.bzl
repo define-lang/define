@@ -1,13 +1,13 @@
 """Project py_test macro using pytest."""
 
-load("@aspect_rules_py//py:defs.bzl", "py_pytest_test")
+load("@rules_py//py:defs.bzl", "py_pytest_test")
 
 def py_test(name, **kwargs):
-    """Wraps aspect_rules_py's pytest test driver.
+    """Wraps rules_py's pytest test driver.
 
     Args:
       name: Name of the test target.
-      **kwargs: Additional arguments passed through to aspect_rules_py's
+      **kwargs: Additional arguments passed through to rules_py's
         `py_pytest_test`.
     """
     deps = kwargs.pop("deps", [])
