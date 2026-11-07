@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -157,7 +157,7 @@
+             return False
+         if isinstance(ext, Extension):
+             # the "build by default" behavior is implemented by this returning None
+-            with_ext = getattr(self, ext.attr_name) or os.environ.get('PYYAML_FORCE_{0}'.format(ext.feature_name.upper()))
++            with_ext = getattr(self, ext.attr_name) or os.environ.get('PYYAML_FORCE_{0}'.format(ext.feature_name.upper()), '0')
+             try:
+                 with_ext = int(with_ext)  # attempt coerce envvar to int
+             except TypeError:

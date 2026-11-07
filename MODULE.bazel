@@ -30,6 +30,17 @@ bazel_dep(name = "rules_foreign_cc", version = "0.17.0")  # Bazel 9 compat
 bazel_dep(name = "with_cfg.bzl", version = "1.0.2")  # incompatible_stop_exporting_language_modules
 bazel_dep(name = "hermetic_launcher", version = "0.0.17")  # Windows test launcher fixes
 
+# protobuf's Python libraries in //python add a python/python import path,
+# where nothing exists, and Python 3.15 reports every .pth path that does not
+# exist. The import paths patch names their own package instead.
+# TODO: Remove the import paths patch once a protobuf release includes
+# https://github.com/protocolbuffers/protobuf/pull/31391.
+single_version_override(
+    module_name = "protobuf",
+    patch_strip = 1,
+    patches = ["//tools/patches:protobuf_python_import_paths.patch"],
+)
+
 local_path_override(
     module_name = "re2",
     path = "vendored/re2",
@@ -45,6 +56,11 @@ local_path_override(
 # compiles the standard library once with bytecode that never goes stale.
 # TODO: Remove the precompiled stdlib patch once rules_py merges
 # https://github.com/aspect-build/rules_py/pull/1620.
+# A py_library with neither sources nor data puts nothing at its repository's
+# root, yet adds that root to sys.path, and Python 3.15 reports every .pth path
+# that does not exist. The empty library imports patch leaves that root out.
+# TODO: Remove the empty library imports patch once rules_py merges
+# https://github.com/aspect-build/rules_py/pull/1673.
 git_override(
     module_name = "rules_py",
     commit = "0f6bd3be5095a2c2b7fcc4d532a07d5c498ca5dd",
@@ -52,6 +68,7 @@ git_override(
     patches = [
         "//tools/patches:rules_py_windows_free_threaded_headers.patch",
         "//tools/patches:rules_py_precompiled_stdlib.patch",
+        "//tools/patches:rules_py_empty_library_imports.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
@@ -75,7 +92,7 @@ single_version_override(
 interpreters = use_extension("@rules_py//py:extensions.bzl", "python_interpreters")
 interpreters.configure(releases = ["20261026"])
 interpreters.toolchain(
-    python_version = "3.14",
+    python_version = "3.15",
 )
 use_repo(interpreters, "python_interpreters")
 
@@ -96,6 +113,23 @@ pypi.project(
     hub_name = "pypi",
     lock = "//:uv.lock",
     pyproject = "//:pyproject.toml",
+)
+pypi.annotate_packages(
+    src = "//:uv_annotations.toml",
+    lock = "//:uv.lock",
+)
+
+# PyYAML builds its libyaml extension by default, and then names its wheel for
+# one platform, even for a pure-Python build. Its --without-libyaml option does
+# not change that, so the without libyaml patch leaves the extension out unless
+# PYYAML_FORCE_LIBYAML asks for it.
+# TODO: Remove the PyYAML annotation and patch once PyYAML publishes
+# free-threaded CPython 3.15 wheels: https://github.com/yaml/pyyaml/issues/951.
+pypi.override_package(
+    name = "pyyaml",
+    lock = "//:uv.lock",
+    pre_build_patch_strip = 1,
+    pre_build_patches = ["//tools/patches:pyyaml_without_libyaml.patch"],
 )
 
 # The PyPI wheel's abi3 extension segfaults when imported by free-threaded CPython.

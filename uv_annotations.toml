@@ -1,0 +1,7 @@
+# PyYAML has no free-threaded CPython 3.15 wheels, so it builds from source.
+# Built as pure Python, it needs no C toolchain, so a Linux host can also build
+# it for Windows.
+[[package]]
+name = "pyyaml"
+version = "6.0.3"
+native = false

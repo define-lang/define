@@ -1,0 +1,29 @@
+--- a/python/build_targets.bzl
++++ b/python/build_targets.bzl
+@@ -213,7 +213,7 @@
+     py_library(
+         name = "python_srcs",
+         srcs = [":python_src_files"],
+-        imports = ["python"],
++        imports = ["."],
+         srcs_version = "PY2AND3",
+         visibility = [
+             "//:__pkg__",
+@@ -231,7 +231,7 @@
+             "//python/google/protobuf/internal/numpy:__init__.py",
+             "//python/google/protobuf/internal/numpy:numpy_test.py",
+         ],
+-        imports = ["python"],
++        imports = ["."],
+         srcs_version = "PY3",
+         visibility = [
+             "//:__pkg__",
+@@ -351,7 +351,7 @@
+             "google/protobuf/internal/import_test_package/__init__.py",
+             "google/protobuf/internal/test_util.py",
+         ],
+-        imports = ["python"],
++        imports = ["."],
+         srcs_version = "PY2AND3",
+         visibility = ["//python:__subpackages__"],
+         deps = [

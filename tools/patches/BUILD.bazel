@@ -1,10 +1,13 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
+    "bufplugin_checktest_windows_file_paths.patch",
+    "protobuf_python_import_paths.patch",
+    "pyyaml_without_libyaml.patch",
+    "rules_multitool_target_toolchains.patch",
+    "rules_py_empty_library_imports.patch",
     "rules_py_precompiled_stdlib.patch",
     "rules_py_windows_free_threaded_headers.patch",
-    "bufplugin_checktest_windows_file_paths.patch",
-    "rules_multitool_target_toolchains.patch",
     "rules_rust_coverage_collector_flag.patch",
     "rules_rust_msvc_lld_link.patch",
 ])

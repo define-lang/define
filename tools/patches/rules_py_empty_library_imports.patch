@@ -1,0 +1,56 @@
+diff --git a/py/private/pth.bzl b/py/private/pth.bzl
+index 2fd30a0f..c3303029 100644
+--- a/py/private/pth.bzl
++++ b/py/private/pth.bzl
+@@ -35,7 +35,7 @@ def _make_import_path(label, workspace, imp):
+     else:
+         return paths.normalize(paths.join(workspace, label.package, imp))
+ 
+-def make_imports_depset(deps, imports, workspace_name, label = None, extra_imports_depsets = []):
++def make_imports_depset(deps, imports, workspace_name, label = None, extra_imports_depsets = [], include_repo_root = True):
+     """Build an imports depset from PyInfo providers and explicit import paths.
+ 
+     This helper merges transitive imports from `deps` and resolves any relative
+@@ -44,7 +44,8 @@ def make_imports_depset(deps, imports, workspace_name, label = None, extra_impor
+ 
+     - The current `workspace_name` is always appended.
+     - If `label` is provided and it originates from an external workspace,
+-      `label.repo_name` is appended as well.
++      `label.repo_name` is appended as well, unless `include_repo_root` is
++      False.
+ 
+     This means callers do not need to manually add the workspace root.
+ 
+@@ -55,6 +56,7 @@ def make_imports_depset(deps, imports, workspace_name, label = None, extra_impor
+         workspace_name: The workspace name to include for repo-relative imports.
+         label: Optional label used to resolve relative import paths.
+         extra_imports_depsets: Additional depsets of imports to merge.
++        include_repo_root: Whether to append the external repository's root.
+ 
+     Returns:
+         A depset of import path strings.
+@@ -69,7 +71,7 @@ def make_imports_depset(deps, imports, workspace_name, label = None, extra_impor
+ 
+     import_paths.append(workspace_name)
+ 
+-    if label and label.repo_name:
++    if include_repo_root and label and label.repo_name:
+         import_paths.append(label.repo_name)
+ 
+     # `deps` may carry rules_py's PyInfo or native @rules_python's; both expose
+diff --git a/py/private/py_library.bzl b/py/private/py_library.bzl
+index e2ef6f5b..223256da 100644
+--- a/py/private/py_library.bzl
++++ b/py/private/py_library.bzl
+@@ -149,6 +149,11 @@ def _make_imports_depset(ctx, extra_imports_depsets = []):
+         workspace_name = ctx.workspace_name,
+         label = ctx.label,
+         extra_imports_depsets = extra_imports_depsets,
++        # A library with neither sources nor data puts nothing at its
++        # repository's root, and Python 3.15 reports every `.pth` path that does
++        # not exist. Data can hold an importable file, such as a prebuilt
++        # extension module.
++        include_repo_root = bool(getattr(ctx.attr, "srcs", []) or getattr(ctx.attr, "data", [])),
+     )
+ 
+ def _make_wheels_depset(ctx):

@@ -381,8 +381,12 @@ py_library(
     ],
 )
 
+# Manual because the profiler does not match Python 3.15's typed remote
+# unwinder API.
+# TODO: Make this test automatic again once Tachyon replaces the wall profiler.
 pyright_test(
     name = "pyright_test",
+    tags = ["manual"],
     deps = [
         ":__main__",
         ":analyzer",

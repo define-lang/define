@@ -278,7 +278,13 @@ py_test(
         "COMPILER_BINARY": "$(rlocationpath //define/compiler:main)",
     },
     # PRF-041: Realistic tests. Remote memory reads cannot cross Bazel's sandbox.
-    tags = ["local"],
+    # Manual because the profiler does not support Python 3.15's remote unwinder.
+    # TODO: Make this test automatic again, or remove it, once Tachyon replaces
+    # the wall profiler.
+    tags = [
+        "local",
+        "manual",
+    ],
     deps = [
         ":profile_orchestration",
         ":runfiles",
