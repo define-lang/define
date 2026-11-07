@@ -170,11 +170,14 @@ class ReferenceGraph:
                 original_depth_by_name[current_name] = depth_by_name[current_name]
             depth_by_name[current_name] = required_depth
 
-            for next_referenced_name in references_by_name[current_name]:
-                if next_referenced_name == referencing_name:
-                    for changed_name, original_depth in original_depth_by_name.items():
-                        depth_by_name[changed_name] = original_depth
-                    return True
+            next_referenced_names = references_by_name[current_name]
+            # A definition can have very many references, so look up the
+            # referencing definition among them instead of scanning for it.
+            if referencing_name in next_referenced_names:
+                for changed_name, original_depth in original_depth_by_name.items():
+                    depth_by_name[changed_name] = original_depth
+                return True
+            for next_referenced_name in next_referenced_names:
                 if depth_by_name[next_referenced_name] <= required_depth:
                     pending_depth_changes.append(
                         (next_referenced_name, required_depth + 1)
@@ -192,7 +195,14 @@ class ReferenceGraph:
         while destination_name not in predecessor_by_name:
             names_at_next_distance: list[str] = []
             for current_name in names_at_current_distance:
-                for referenced_name in self._references_by_name[current_name]:
+                referenced_names = self._references_by_name[current_name]
+                # A definition can have very many references, so look up the
+                # destination among them instead of scanning for it. The first
+                # name at this distance that references it is its predecessor.
+                if destination_name in referenced_names:
+                    predecessor_by_name[destination_name] = current_name
+                    break
+                for referenced_name in referenced_names:
                     if referenced_name not in predecessor_by_name:
                         predecessor_by_name[referenced_name] = current_name
                         names_at_next_distance.append(referenced_name)
