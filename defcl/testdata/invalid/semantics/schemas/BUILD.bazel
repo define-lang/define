@@ -104,7 +104,13 @@ proto_descriptor_set(
         ":non_repeated_fields_with_brackets_proto",
         ":repeated_integer_enum_proto",
         ":scalars_for_message_fields_proto",
+        ":wrong_value_kinds_proto",
     ],
+)
+
+proto_library(
+    name = "wrong_value_kinds_proto",
+    srcs = ["wrong_value_kinds.proto"],
 )
 
 check_build_file()

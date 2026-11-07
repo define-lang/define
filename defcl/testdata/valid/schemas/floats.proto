@@ -1,0 +1,13 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+message FloatsFile {
+  Config config = 1;
+  message Config {
+    float pi = 1;
+    double negative_float = 2;
+    float small = 3;
+    double precise = 4;
+  }
+}

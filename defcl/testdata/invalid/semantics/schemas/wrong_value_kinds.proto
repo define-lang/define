@@ -1,0 +1,18 @@
+edition = "2024";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message WrongValueKindsFile {
+  Config config = 1;
+  message Config {
+    string name = 1;
+    int64 count = 2;
+    double ratio = 3;
+    Status status = 4;
+    repeated string tags = 5;
+  }
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+  }
+}

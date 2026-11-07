@@ -403,6 +403,25 @@ Invalid (repeated value as an element of a repeated value):
 tags: ["tag1", ["tag2"]]
 ```
 
+### Allowed Literals
+
+A value must be the kind of value that its field's type takes, as in textproto.
+DCL is stricter for floating-point fields (`float` and `double`): their values
+must be floating-point literals, never integer literals. For a repeated field,
+this applies to each element.
+
+Valid (assuming `timeout_seconds` is a `float` field):
+
+```
+timeout_seconds: 3.0
+```
+
+Invalid:
+
+```
+timeout_seconds: 3
+```
+
 ## Schema Restrictions
 
 Because DCL is intended to be parsed by a textproto parser, it is expected that

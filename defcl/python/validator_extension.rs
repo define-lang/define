@@ -18,6 +18,7 @@ struct PythonClasses {
     invalid_schema_error: Py<PyType>,
     dcl_diagnostic: Py<PyType>,
     unknown_field_name_diagnostic: Py<PyType>,
+    unknown_enum_value_diagnostic: Py<PyType>,
     diagnostic_kind: Py<PyType>,
 }
 
@@ -39,6 +40,7 @@ impl PythonClasses {
             invalid_schema_error: class(&errors, "InvalidSchemaError")?,
             dcl_diagnostic: class(&errors, "DclDiagnostic")?,
             unknown_field_name_diagnostic: class(&errors, "UnknownFieldNameDiagnostic")?,
+            unknown_enum_value_diagnostic: class(&errors, "UnknownEnumValueDiagnostic")?,
             diagnostic_kind: class(&error_types, "DiagnosticKind")?,
         })
     }
@@ -98,19 +100,20 @@ impl PythonClasses {
         let location = self.source_location(py, error.location)?;
         let field_name = &error.field_name;
         let rendered = &rendered_error.rendered;
-        if let SemanticErrorKind::UnknownFieldName { message_type } = &error.kind {
-            return self.unknown_field_name_diagnostic.bind(py).call1((
-                kind,
-                message,
-                location,
-                field_name,
-                rendered,
-                message_type,
-            ));
+        match &error.kind {
+            SemanticErrorKind::UnknownFieldName { message_type } => self
+                .unknown_field_name_diagnostic
+                .bind(py)
+                .call1((kind, message, location, field_name, rendered, message_type)),
+            SemanticErrorKind::UnknownEnumValue { enum_type } => self
+                .unknown_enum_value_diagnostic
+                .bind(py)
+                .call1((kind, message, location, field_name, rendered, enum_type)),
+            _ => self
+                .dcl_diagnostic
+                .bind(py)
+                .call1((kind, message, location, field_name, rendered)),
         }
-        self.dcl_diagnostic
-            .bind(py)
-            .call1((kind, message, location, field_name, rendered))
     }
 }
 

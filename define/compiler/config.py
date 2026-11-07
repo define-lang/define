@@ -129,10 +129,6 @@ class ConfigLoader:
     ) -> M | list[diagnostics.ConfigDiagnostic]:
         """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
-        # TODO: A value whose type does not match its field, such as an integer
-        # for a string field, passes defcl's checks, so text_format.ParseError
-        # escapes and crashes the compiler. Make defcl check value types against
-        # the schema, so that these are DclDiagnostics too.
         try:
             loaded = dcl_loader.load_file(path, message_type)
         except dcl_errors.DclError as e:

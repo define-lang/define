@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
 
 _MULTIPLE_ERRORS_FILE = "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile"
 _SINGLE_TOPLEVEL_FILE = "defcl.testdata.valid.schemas.SingleToplevelFile"
+_WRONG_VALUE_KINDS_FILE = "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile"
 
 
 def _testdata_path(path: str) -> pathlib.Path:
@@ -110,6 +111,29 @@ def test_unknown_field_name_diagnostic_has_message_type():
         "    size: {\n"
         "    ^^^^\n"
         "size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
+    )
+
+
+def test_unknown_enum_value_diagnostic_has_enum_type():
+    (unknown_enum_value,) = validator.validate(
+        _testdata("invalid/semantics/wrong_value_kinds/unknown_enum_value.defcl"),
+        _invalid_semantics_schemas(),
+        _WRONG_VALUE_KINDS_FILE,
+    )
+
+    assert isinstance(unknown_enum_value, errors.UnknownEnumValueDiagnostic)
+    assert unknown_enum_value.kind == error_types.DiagnosticKind.UNKNOWN_ENUM_VALUE
+    assert unknown_enum_value.location == errors.SourceLocation(2, 13, 2, 18)
+    assert unknown_enum_value.field_name == "status"
+    assert (
+        unknown_enum_value.enum_type
+        == "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status"
+    )
+    assert unknown_enum_value.rendered == (
+        "line 2, column 13\n"
+        "    status: ACTIVE\n"
+        "            ^^^^^^\n"
+        "status: defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status has no value with this name"
     )
 
 

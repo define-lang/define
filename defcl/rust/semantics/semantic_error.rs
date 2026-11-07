@@ -54,9 +54,36 @@ pub enum SemanticErrorKind {
     /// type. The location is the value.
     #[display("The field is a message field, so its value must be a message value")]
     ScalarForMessageField,
+    /// A value other than a string for a string field. The location is the
+    /// value.
+    #[display("The field is a string field, so its value must be a string")]
+    NonStringForStringField,
+    /// A value other than an integer for an integer field. The location is the
+    /// value.
+    #[display("The field is an integer field, so its value must be an integer")]
+    NonIntegerForIntegerField,
+    /// A value other than a floating-point number for a floating-point field,
+    /// including an integer. The location is the value.
+    #[display(
+        "The field is a floating-point field, so its value must be a floating-point number, such as 1.0"
+    )]
+    NonFloatForFloatField,
+    /// A string or floating-point number for an enum field. The location is
+    /// the value.
+    #[display(
+        "The field is an enum field, so its value must be the name of one of its enum's values"
+    )]
+    NonEnumValueForEnumField,
     /// An integer as the value of an enum field. The location is the integer.
     #[display("Integer enum values are not allowed")]
     IntegerEnum,
+    /// An enum value whose name is not a value of the field's enum type. The
+    /// location is the enum value.
+    #[display("{enum_type} has no value with this name")]
+    UnknownEnumValue {
+        /// The full name of the enum type.
+        enum_type: String,
+    },
 }
 
 #[cfg(test)]

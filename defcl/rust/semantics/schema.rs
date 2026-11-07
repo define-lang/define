@@ -5,9 +5,9 @@ use crate::schema_restrictions::{self, SchemaFile, SchemaViolation};
 use derive_more::{Display, Error};
 use descriptor_proto::google::protobuf::field_descriptor_proto::{Label, Type};
 use descriptor_proto::google::protobuf::{
-    DescriptorProto, FieldDescriptorProto, FileDescriptorSet,
+    DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorSet,
 };
-use rustc_hash::{FxBuildHasher, FxHashMap};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use std::fmt::Write as _;
 
 /// A schema that the crate cannot check a DCL file against.
@@ -19,8 +19,8 @@ pub enum SchemaError {
         "Cannot create a DCL schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
     )]
     MissingMessageType { message_type: String },
-    /// A message field's type is not a message type in the
-    /// `FileDescriptorSet`, which protoc never writes.
+    /// A message or enum field's type is not a message type or enum type in
+    /// the `FileDescriptorSet`, which protoc never writes.
     #[display(
         "Cannot create a DCL schema: the field {message_type}.{field_name} has the type {type_name}, which the FileDescriptorSet does not define"
     )]
@@ -46,10 +46,11 @@ fn violation_list(violations: &[SchemaViolation]) -> String {
     list
 }
 
-/// The message types of a `FileDescriptorSet`, and which of them is the
-/// type of a whole DCL file.
+/// The message types and enum types of a `FileDescriptorSet`, and which
+/// message type is the type of a whole DCL file.
 pub struct Schema {
     message_types: Vec<MessageType>,
+    enum_types: Vec<EnumType>,
     top_level_message_type: usize,
 }
 
@@ -63,26 +64,45 @@ pub(crate) struct MessageType {
     fields_by_name: FxHashMap<String, FieldLookup>,
 }
 
+/// An enum type's full name, and the names of its values.
+pub(crate) struct EnumType {
+    /// The full name, without a leading `.`.
+    pub(crate) full_name: String,
+    value_names: FxHashSet<String>,
+}
+
+/// A message type or enum type, by its index in the schema.
+#[derive(Clone, Copy)]
+enum NamedType {
+    Message(usize),
+    Enum(usize),
+}
+
 struct FieldLookup {
     /// The index of the field in its message type's descriptor.
     index: usize,
-    /// The index of the field's message type, for a message field.
-    message_type: Option<usize>,
+    /// The field's type, for a message or enum field.
+    named_type: Option<NamedType>,
 }
 
 /// A field of a message type in the schema.
 pub(crate) struct SchemaField<'schema> {
     pub(crate) descriptor: &'schema FieldDescriptorProto,
-    pub(crate) message_type: Option<&'schema MessageType>,
+    pub(crate) value_type: ValueType<'schema>,
+}
+
+/// The kind of value that a field takes.
+pub(crate) enum ValueType<'schema> {
+    String,
+    Integer,
+    Float,
+    Enum(&'schema EnumType),
+    Message(&'schema MessageType),
 }
 
 impl SchemaField<'_> {
     pub(crate) fn is_repeated(&self) -> bool {
         self.descriptor.label() == Label::Repeated
-    }
-
-    pub(crate) fn is_enum(&self) -> bool {
-        self.descriptor.r#type() == Type::Enum
     }
 }
 
@@ -90,7 +110,10 @@ impl MessageType {
     /// The index of the message type of this message type's field `name`, if
     /// it is a message field. `name` must be the name of one of its fields.
     pub(crate) fn field_message_type(&self, name: &str) -> Option<usize> {
-        self.fields_by_name[name].message_type
+        match self.fields_by_name[name].named_type {
+            Some(NamedType::Message(index)) => Some(index),
+            Some(NamedType::Enum(_)) | None => None,
+        }
     }
 }
 
@@ -112,23 +135,41 @@ impl Schema {
         top_level_message_type: &str,
     ) -> Result<Self, SchemaError> {
         let mut message_types = Vec::new();
+        let mut enum_types = Vec::new();
         let mut files = Vec::with_capacity(file_descriptor_set.file.len());
         for (file_index, mut file) in file_descriptor_set.file.into_iter().enumerate() {
             let scope = file.package.take().unwrap_or_default();
             for descriptor in std::mem::take(&mut file.message_type) {
-                add_message_type(&mut message_types, file_index, &scope, descriptor);
+                add_message_type(
+                    &mut message_types,
+                    &mut enum_types,
+                    file_index,
+                    &scope,
+                    descriptor,
+                );
+            }
+            for descriptor in std::mem::take(&mut file.enum_type) {
+                enum_types.push(EnumType::new(&scope, &descriptor));
             }
             files.push(SchemaFile::new(&file));
         }
-        let mut indices_by_name =
-            FxHashMap::with_capacity_and_hasher(message_types.len(), FxBuildHasher);
+        // Message types and enum types share one namespace.
+        let mut types_by_name = FxHashMap::with_capacity_and_hasher(
+            message_types.len() + enum_types.len(),
+            FxBuildHasher,
+        );
         for (index, message_type) in message_types.iter().enumerate() {
-            indices_by_name.insert(message_type.full_name.clone(), index);
+            types_by_name.insert(message_type.full_name.clone(), NamedType::Message(index));
+        }
+        for (index, enum_type) in enum_types.iter().enumerate() {
+            types_by_name.insert(enum_type.full_name.clone(), NamedType::Enum(index));
         }
         for message_type in &mut message_types {
-            index_fields(message_type, &indices_by_name)?;
+            index_fields(message_type, &types_by_name)?;
         }
-        let Some(&top_level_message_type) = indices_by_name.get(top_level_message_type) else {
+        let Some(&NamedType::Message(top_level_message_type)) =
+            types_by_name.get(top_level_message_type)
+        else {
             return Err(SchemaError::MissingMessageType {
                 message_type: top_level_message_type.to_owned(),
             });
@@ -140,6 +181,7 @@ impl Schema {
         }
         Ok(Self {
             message_types,
+            enum_types,
             top_level_message_type,
         })
     }
@@ -155,30 +197,85 @@ impl Schema {
         name: &str,
     ) -> Option<SchemaField<'schema>> {
         let lookup = message_type.fields_by_name.get(name)?;
+        let descriptor = &message_type.descriptor.field[lookup.index];
+        let value_type = match lookup.named_type {
+            Some(NamedType::Message(index)) => ValueType::Message(&self.message_types[index]),
+            Some(NamedType::Enum(index)) => ValueType::Enum(&self.enum_types[index]),
+            None => scalar_value_type(descriptor.r#type()),
+        };
         Some(SchemaField {
-            descriptor: &message_type.descriptor.field[lookup.index],
-            message_type: lookup.message_type.map(|index| &self.message_types[index]),
+            descriptor,
+            value_type,
         })
     }
 }
 
+/// The kind of value that a field of the type `field_type` takes, for a field
+/// that is neither a message field nor an enum field.
+fn scalar_value_type(field_type: Type) -> ValueType<'static> {
+    match field_type {
+        Type::String => ValueType::String,
+        Type::Int32
+        | Type::Int64
+        | Type::Uint32
+        | Type::Uint64
+        | Type::Sint32
+        | Type::Sint64
+        | Type::Fixed32
+        | Type::Fixed64
+        | Type::Sfixed32
+        | Type::Sfixed64 => ValueType::Integer,
+        Type::Float | Type::Double => ValueType::Float,
+        // Message and enum fields have a named type, and the schema
+        // restrictions prohibit bool and bytes fields.
+        Type::Message | Type::Group | Type::Enum | Type::Bool | Type::Bytes => {
+            unreachable!("a {field_type:?} field takes no scalar value")
+        }
+    }
+}
+
+impl EnumType {
+    /// The enum type `descriptor`, declared in `scope`.
+    fn new(scope: &str, descriptor: &EnumDescriptorProto) -> Self {
+        let mut value_names =
+            FxHashSet::with_capacity_and_hasher(descriptor.value.len(), FxBuildHasher);
+        for value in &descriptor.value {
+            value_names.insert(value.name().to_owned());
+        }
+        Self {
+            full_name: full_name(scope, descriptor.name()),
+            value_names,
+        }
+    }
+
+    pub(crate) fn has_value(&self, name: &str) -> bool {
+        self.value_names.contains(name)
+    }
+}
+
+fn full_name(scope: &str, name: &str) -> String {
+    if scope.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{scope}.{name}")
+    }
+}
+
 /// Adds the message type `descriptor`, declared in `scope` in the file at
-/// `file`, and the message types declared in it.
+/// `file`, and the message types and enum types declared in it.
 fn add_message_type(
     message_types: &mut Vec<MessageType>,
+    enum_types: &mut Vec<EnumType>,
     file: usize,
     scope: &str,
     mut descriptor: DescriptorProto,
 ) {
-    let name = descriptor.name();
-    let full_name = if scope.is_empty() {
-        name.to_owned()
-    } else {
-        format!("{scope}.{name}")
-    };
-    let nested_types = std::mem::take(&mut descriptor.nested_type);
-    for nested_type in nested_types {
-        add_message_type(message_types, file, &full_name, nested_type);
+    let full_name = full_name(scope, descriptor.name());
+    for nested_type in std::mem::take(&mut descriptor.nested_type) {
+        add_message_type(message_types, enum_types, file, &full_name, nested_type);
+    }
+    for enum_type in std::mem::take(&mut descriptor.enum_type) {
+        enum_types.push(EnumType::new(&full_name, &enum_type));
     }
     message_types.push(MessageType {
         full_name,
@@ -190,19 +287,19 @@ fn add_message_type(
 
 fn index_fields(
     message_type: &mut MessageType,
-    indices_by_name: &FxHashMap<String, usize>,
+    types_by_name: &FxHashMap<String, NamedType>,
 ) -> Result<(), SchemaError> {
     let mut fields_by_name =
         FxHashMap::with_capacity_and_hasher(message_type.descriptor.field.len(), FxBuildHasher);
     for (index, field) in message_type.descriptor.field.iter().enumerate() {
-        let message_field_type = match field.r#type() {
-            Type::Message | Type::Group => {
+        let named_type = match field.r#type() {
+            Type::Message | Type::Group | Type::Enum => {
                 // A descriptor set from protoc has only fully-qualified type
                 // names, which start with a `.`.
-                let Some(&message_field_type) = field
+                let Some(&named_type) = field
                     .type_name()
                     .strip_prefix('.')
-                    .and_then(|full_name| indices_by_name.get(full_name))
+                    .and_then(|full_name| types_by_name.get(full_name))
                 else {
                     return Err(SchemaError::UnknownFieldType {
                         message_type: message_type.full_name.clone(),
@@ -210,17 +307,11 @@ fn index_fields(
                         type_name: field.type_name().to_owned(),
                     });
                 };
-                Some(message_field_type)
+                Some(named_type)
             }
             _ => None,
         };
-        fields_by_name.insert(
-            field.name().to_owned(),
-            FieldLookup {
-                index,
-                message_type: message_field_type,
-            },
-        );
+        fields_by_name.insert(field.name().to_owned(), FieldLookup { index, named_type });
     }
     message_type.fields_by_name = fields_by_name;
     Ok(())

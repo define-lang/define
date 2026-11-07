@@ -184,6 +184,30 @@ class TestProjectConfig:
         assert second.dcl_error.field_name == "owner"
         assert second.dcl_error.message_type == "define.config.project.Project"
 
+    def test_value_of_the_wrong_kind_is_a_diagnostic(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_project_config(tmp_path, "project: {\n  universe_name: 5\n}\n")
+        monkeypatch.chdir(tmp_path)
+
+        result = _load()
+        assert result.root_config is None
+        (diagnostic,) = result.diagnostics
+        assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+        assert diagnostic.location == ast.SourceLocation(
+            line=2,
+            column=18,
+            end_line=2,
+            end_column=18,
+            file_path=_PROJECT_CONFIG_PATH,
+        )
+        assert type(diagnostic.dcl_error) is errors.DclDiagnostic
+        assert (
+            diagnostic.dcl_error.kind
+            == error_types.DiagnosticKind.NON_STRING_FOR_STRING_FIELD
+        )
+        assert diagnostic.dcl_error.field_name == "universe_name"
+
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_project_config(tmp_path, 'project: {\n  universe_name: ""\n}\n')
         monkeypatch.chdir(tmp_path)

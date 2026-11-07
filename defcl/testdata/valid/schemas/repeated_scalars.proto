@@ -1,0 +1,18 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+message RepeatedScalarsFile {
+  Config config = 1;
+  message Config {
+    repeated string tags = 1;
+    repeated int32 counts = 2;
+    repeated double values = 3;
+    repeated Mode modes = 4;
+  }
+  enum Mode {
+    UNSPECIFIED = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+  }
+}

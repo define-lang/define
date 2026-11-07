@@ -1,6 +1,6 @@
 //! The checks of a DCL file's syntax tree against its schema.
 
-use crate::schema::{MessageType, Schema, SchemaField};
+use crate::schema::{EnumType, MessageType, Schema, SchemaField, ValueType};
 use crate::semantic_error::{SemanticError, SemanticErrorKind};
 use defcl_parser::{Field, FieldName, ParsedFile, SourceLocation, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
@@ -27,7 +27,7 @@ pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), Vec<Sem
             continue;
         };
         // The top-level message's field is not a message field.
-        let Some(message_type) = schema_field.message_type else {
+        let ValueType::Message(message_type) = schema_field.value_type else {
             errors.push(message_value_for_scalar_field(
                 &top_level_message.name,
                 top_level_message.value.location,
@@ -123,33 +123,36 @@ fn check_value(
     value: &Value,
     errors: &mut Vec<SemanticError>,
 ) {
-    match value {
-        // The enum field's value is an integer.
-        Value::Integer(integer) if schema_field.is_enum() => {
-            errors.push(integer_enum(field, integer.location));
-        }
-        Value::Message(message) => {
-            // The field is not a message field.
-            let Some(message_type) = schema_field.message_type else {
-                errors.push(message_value_for_scalar_field(
-                    &field.name,
-                    message.location,
-                ));
-                return;
-            };
+    let kind = match (&schema_field.value_type, value) {
+        // The parser does not allow a repeated value as an element, and
+        // check_field checks a field's repeated value element by element.
+        (_, Value::Repeated(_)) => unreachable!("a repeated value is checked by its elements"),
+        (ValueType::Message(message_type), Value::Message(message)) => {
             check_fields(schema, message_type, &message.fields, errors);
+            return;
+        }
+        (ValueType::String, Value::String(_))
+        | (ValueType::Integer, Value::Integer(_))
+        | (ValueType::Float, Value::Float(_)) => return,
+        (ValueType::Enum(enum_type), Value::Enum(name)) => {
+            // The enum type has no value with the name.
+            if !enum_type.has_value(name.text) {
+                errors.push(unknown_enum_value(field, enum_type, name.location));
+            }
+            return;
         }
         // The message field's value is a string, number or enum value.
-        Value::String(scalar)
-        | Value::Integer(scalar)
-        | Value::Float(scalar)
-        | Value::Enum(scalar)
-            if schema_field.message_type.is_some() =>
-        {
-            errors.push(scalar_for_message_field(field, scalar.location));
-        }
-        _ => {}
-    }
+        (ValueType::Message(_), _) => SemanticErrorKind::ScalarForMessageField,
+        // The field is not a message field.
+        (_, Value::Message(_)) => SemanticErrorKind::MessageValueForScalarField,
+        // The enum field's value is an integer.
+        (ValueType::Enum(_), Value::Integer(_)) => SemanticErrorKind::IntegerEnum,
+        (ValueType::Enum(_), _) => SemanticErrorKind::NonEnumValueForEnumField,
+        (ValueType::String, _) => SemanticErrorKind::NonStringForStringField,
+        (ValueType::Integer, _) => SemanticErrorKind::NonIntegerForIntegerField,
+        (ValueType::Float, _) => SemanticErrorKind::NonFloatForFloatField,
+    };
+    errors.push(value_of_wrong_kind(kind, field, value.location()));
 }
 
 // The functions that only run on an error path.
@@ -210,25 +213,36 @@ fn message_value_for_scalar_field(name: &FieldName, location: SourceLocation) ->
     }
 }
 
-/// The error for the string, number or enum value at `location`, which is the
-/// value of `field`, a message field.
+/// The error of the kind `kind` for the value at `location`, which is the
+/// value of `field` or an element of it, and is not the kind of value that
+/// `field` takes.
 #[cold]
 #[inline(never)]
-fn scalar_for_message_field(field: &Field, location: SourceLocation) -> SemanticError {
+fn value_of_wrong_kind(
+    kind: SemanticErrorKind,
+    field: &Field,
+    location: SourceLocation,
+) -> SemanticError {
     SemanticError {
-        kind: SemanticErrorKind::ScalarForMessageField,
+        kind,
         location,
         field_name: field.name.text.to_owned(),
     }
 }
 
-/// The error for the integer at `location`, which is the value of `field`, an
-/// enum field.
+/// The error for the enum value at `location`, which is the value of
+/// `field` or an element of it, and whose name `enum_type` has no value for.
 #[cold]
 #[inline(never)]
-fn integer_enum(field: &Field, location: SourceLocation) -> SemanticError {
+fn unknown_enum_value(
+    field: &Field,
+    enum_type: &EnumType,
+    location: SourceLocation,
+) -> SemanticError {
     SemanticError {
-        kind: SemanticErrorKind::IntegerEnum,
+        kind: SemanticErrorKind::UnknownEnumValue {
+            enum_type: enum_type.full_name.clone(),
+        },
         location,
         field_name: field.name.text.to_owned(),
     }

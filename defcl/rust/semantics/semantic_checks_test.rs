@@ -62,6 +62,33 @@ mod valid_files {
             "defcl.testdata.valid.schemas.StringsFile",
         )?)
     }
+
+    #[gtest]
+    fn enums() -> Result<()> {
+        verify_ok!(check_semantics_of_source(
+            include_str!("../../testdata/valid/enums.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.EnumsFile",
+        )?)
+    }
+
+    #[gtest]
+    fn floats() -> Result<()> {
+        verify_ok!(check_semantics_of_source(
+            include_str!("../../testdata/valid/floats.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.FloatsFile",
+        )?)
+    }
+
+    #[gtest]
+    fn repeated_scalars() -> Result<()> {
+        verify_ok!(check_semantics_of_source(
+            include_str!("../../testdata/valid/repeated_scalars.defcl"),
+            valid_schemas()?,
+            "defcl.testdata.valid.schemas.RepeatedScalarsFile",
+        )?)
+    }
 }
 
 mod non_repeated_fields_with_brackets {
@@ -412,6 +439,150 @@ mod integer_enums {
                     end_column: 17
                 },
                 field_name: "status".to_owned(),
+            }]))
+        )
+    }
+}
+
+mod wrong_value_kinds {
+    use super::*;
+
+    #[gtest]
+    fn non_string_for_string_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/wrong_value_kinds/string_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::NonStringForStringField,
+                location: SourceLocation {
+                    line: 2,
+                    column: 11,
+                    end_line: 2,
+                    end_column: 11
+                },
+                field_name: "name".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn non_integer_for_integer_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/wrong_value_kinds/integer_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::NonIntegerForIntegerField,
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 14
+                },
+                field_name: "count".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn integer_for_float_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/wrong_value_kinds/float_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::NonFloatForFloatField,
+                location: SourceLocation {
+                    line: 2,
+                    column: 12,
+                    end_line: 2,
+                    end_column: 12
+                },
+                field_name: "ratio".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn string_for_enum_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!("../../testdata/invalid/semantics/wrong_value_kinds/enum_field.defcl"),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::NonEnumValueForEnumField,
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 27
+                },
+                field_name: "status".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn unknown_enum_value() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/wrong_value_kinds/unknown_enum_value.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::UnknownEnumValue {
+                    enum_type:
+                        "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status"
+                            .to_owned()
+                },
+                location: SourceLocation {
+                    line: 2,
+                    column: 13,
+                    end_line: 2,
+                    end_column: 18
+                },
+                field_name: "status".to_owned(),
+            }]))
+        )
+    }
+
+    #[gtest]
+    fn element_of_repeated_field() -> Result<()> {
+        verify_that!(
+            check_semantics_of_source(
+                include_str!(
+                    "../../testdata/invalid/semantics/wrong_value_kinds/repeated_field.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            )?,
+            err(eq(&vec![SemanticError {
+                kind: SemanticErrorKind::NonStringForStringField,
+                location: SourceLocation {
+                    line: 2,
+                    column: 17,
+                    end_line: 2,
+                    end_column: 29
+                },
+                field_name: "tags".to_owned(),
             }]))
         )
     }

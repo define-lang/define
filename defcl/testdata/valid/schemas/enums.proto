@@ -1,0 +1,35 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+// An enum type outside of any message.
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+}
+
+message EnumsFile {
+  Config config = 1;
+  message Config {
+    Activity status = 1;
+    Status mode = 2;
+    Version version = 3;
+    Level level = 4;
+    Activity state = 5;
+    enum Activity {
+      UNSPECIFIED = 0;
+      ACTIVE = 1;
+    }
+  }
+  enum Version {
+    VERSION_UNSPECIFIED = 0;
+    V1 = 1;
+  }
+  enum Level {
+    // DCL allows a digit after an underscore in an enum value's name, which
+    // edition 2024's naming style does not.
+    option features.enforce_naming_style = STYLE_LEGACY;
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_2 = 2;
+  }
+}

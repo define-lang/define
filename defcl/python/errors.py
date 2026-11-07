@@ -93,3 +93,11 @@ class UnknownFieldNameDiagnostic(DclDiagnostic, frozen=True):
 
     # The full name of the message type that has no field named field_name.
     message_type: str
+
+
+class UnknownEnumValueDiagnostic(DclDiagnostic, frozen=True):
+    """An UNKNOWN_ENUM_VALUE diagnostic: an enum value whose name its field's enum type has no value for."""
+
+    # The full name of the enum type that has no value with the enum value's
+    # name.
+    enum_type: str

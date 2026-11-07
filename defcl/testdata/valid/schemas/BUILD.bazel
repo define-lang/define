@@ -5,6 +5,16 @@ load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 proto_library(
+    name = "enums_proto",
+    srcs = ["enums.proto"],
+)
+
+proto_library(
+    name = "floats_proto",
+    srcs = ["floats.proto"],
+)
+
+proto_library(
     name = "imports_proto",
     srcs = ["imports.proto"],
     deps = [
@@ -34,6 +44,11 @@ proto_library(
     srcs = ["repeated_messages.proto"],
 )
 
+proto_library(
+    name = "repeated_scalars_proto",
+    srcs = ["repeated_scalars.proto"],
+)
+
 py_library(
     name = "schemas",
     srcs = ["__init__.py"],
@@ -50,9 +65,12 @@ proto_descriptor_set(
         "//defcl/rust:__subpackages__",
     ],
     deps = [
+        ":enums_proto",
+        ":floats_proto",
         ":integers_proto",
         ":nested_messages_proto",
         ":repeated_messages_proto",
+        ":repeated_scalars_proto",
         ":single_toplevel_proto",
         ":strings_proto",
     ],
