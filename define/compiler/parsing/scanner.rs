@@ -88,6 +88,10 @@ impl Position {
     }
 }
 
+#[expect(
+    clippy::partial_pub_fields,
+    reason = "The parser reads the position directly, while the rest of the source changes only through the scanner's methods."
+)]
 pub struct Scanner<'source> {
     /// The source that has not been consumed yet.
     rest: &'source [u8],

@@ -622,12 +622,12 @@ pub fn rest_of_line(source: &[u8]) -> RestOfLine {
         // copying it into a zeroed array.
         _ => {
             let mut line_feeds = 0;
-            let mut unprintable = 0;
+            let mut remainder_unprintable = 0;
             for (index, &byte) in remainder.iter().enumerate() {
                 line_feeds |= u32::from(byte == LINE_FEED) << index;
-                unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
+                remainder_unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
             }
-            (line_feeds, unprintable)
+            (line_feeds, remainder_unprintable)
         }
     };
     let length = if line_feeds == 0 {
@@ -699,17 +699,17 @@ pub fn literal_content(source: &[u8]) -> LiteralContent {
         // copying it into a zeroed array.
         _ => {
             let mut stops = 0;
-            let mut unprintable = 0;
+            let mut remainder_unprintable = 0;
             let mut continuation = 0;
             for (index, &byte) in remainder.iter().enumerate() {
                 stops |= u32::from(matches!(
                     byte,
                     LITERAL_CONTENT_DELIMITER | ESCAPE | LINE_FEED
                 )) << index;
-                unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
+                remainder_unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
                 continuation |= u32::from(byte & 0b1100_0000 == 0b1000_0000) << index;
             }
-            (stops, unprintable, continuation)
+            (stops, remainder_unprintable, continuation)
         }
     };
     let remainder_length = if stops == 0 {

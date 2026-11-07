@@ -3,8 +3,8 @@
 
 use defcl_parser::SyntaxErrorKind;
 use defcl_semantics::SemanticErrorKind;
-use std::fmt::Write;
-use strum::VariantNames;
+use std::fmt::Write as _;
+use strum::VariantNames as _;
 
 /// Appends a Python enum class named `name` with the docstring `docstring` and
 /// a member for each of `members`.

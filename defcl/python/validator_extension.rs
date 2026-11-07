@@ -3,7 +3,7 @@
 use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::{RenderedError, ValidationError};
-use prost::Message;
+use prost::Message as _;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::PyType;

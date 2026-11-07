@@ -482,16 +482,21 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
             None => None,
         };
-        let (location, name, end) = self.fqun_component(universe, component_start)?;
-        let universe = self.ast.universe(location, name)?;
+        let (universe_location, universe_name, end) =
+            self.fqun_component(universe, component_start)?;
+        let universe_node = self.ast.universe(universe_location, universe_name)?;
         let location = self.ast.location(start, end)?;
         // The FQUN's canonical form is its components joined by `:`, as they
         // are written.
         let canonical = content.slice(..last);
         let canonical_name = self.ast.interned(canonical.bytes)?;
-        let node = self
-            .ast
-            .fqun(location, multiverse, authority, universe, canonical_name)?;
+        let node = self.ast.fqun(
+            location,
+            multiverse,
+            authority,
+            universe_node,
+            canonical_name,
+        )?;
         Ok((
             FqunWithCanonicalText {
                 node,

@@ -3,12 +3,12 @@
 
 
 use crate::ast::SourceLocation;
-use crate::node_construction::{FilePath, Node};
+use crate::node_construction::{FilePath, Node as _};
 use crate::parse_error::ParseError;
 use crate::scanner::Position;
 use pyo3::prelude::*;
 use pyo3::types::PyInt;
-use pyo3::{PyTypeInfo, import_exception};
+use pyo3::{PyTypeInfo as _, import_exception};
 {% for exception in exceptions %}
 import_exception!({{ module_name }}, {{ exception.name }});
 {%- endfor %}

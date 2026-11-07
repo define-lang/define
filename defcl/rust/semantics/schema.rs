@@ -8,7 +8,7 @@ use descriptor_proto::google::protobuf::{
     DescriptorProto, FieldDescriptorProto, FileDescriptorSet,
 };
 use rustc_hash::{FxBuildHasher, FxHashMap};
-use std::fmt::Write;
+use std::fmt::Write as _;
 
 /// A schema that the crate cannot check a DCL file against.
 #[derive(Debug, PartialEq, Eq, Display, Error)]

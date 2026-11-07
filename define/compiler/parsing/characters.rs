@@ -13,7 +13,7 @@ use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::{Position, Scanner};
 use crate::syntax_errors::SyntaxErrors;
 use invisible_ranges::INVISIBLE_RANGES;
-use std::fmt::Write;
+use std::fmt::Write as _;
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
 const CARRIAGE_RETURN: char = '\r';
@@ -284,8 +284,13 @@ pub fn disallowed_first_character(
         next: None,
     };
     let disallowed = disallowed_character(character, TextKind::Syntax, neighbors)?;
-    let text = &chunk.valid()[..character.len_utf8()];
-    Some(character_error(errors, position, text, disallowed))
+    let character_text = &chunk.valid()[..character.len_utf8()];
+    Some(character_error(
+        errors,
+        position,
+        character_text,
+        disallowed,
+    ))
 }
 
 /// Returns the error for the bytes at `position` that are not valid UTF-8.

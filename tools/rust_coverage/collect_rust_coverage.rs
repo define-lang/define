@@ -16,7 +16,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::env;
 use std::error::Error;
-use std::fmt::Write;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;

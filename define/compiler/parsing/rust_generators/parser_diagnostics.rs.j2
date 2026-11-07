@@ -2,7 +2,7 @@
 // //define/compiler/parsing/rust_generators:generate_parser_diagnostics.
 
 use crate::ast::SourceLocation;
-use crate::node_construction::{FilePath, Node};
+use crate::node_construction::{FilePath, Node as _};
 use crate::scanner::Position;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
@@ -70,7 +70,7 @@ impl<'py> ParserDiagnostics<'py> {
 }
 
 /// The classes in `{{ module_name }}` that the parser reports.
-#[allow(
+#[expect(
     clippy::struct_field_names,
     reason = "each field is named after its diagnostic class"
 )]

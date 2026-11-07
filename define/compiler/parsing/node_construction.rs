@@ -124,11 +124,12 @@ impl<const FIELD_COUNT: usize> ClassLayout<FIELD_COUNT> {
                     "{class_name}.{field_name} is not stored in a slot"
                 )));
             }
-            // SAFETY: `descriptor` is a member descriptor, whose member
-            // definition lives as long as the class, which the module keeps.
-            *offset = unsafe {
-                (*(*descriptor.as_ptr().cast::<ffi::PyMemberDescrObject>()).d_member).offset
-            };
+            // SAFETY: `descriptor` is a member descriptor.
+            let member =
+                unsafe { (*descriptor.as_ptr().cast::<ffi::PyMemberDescrObject>()).d_member };
+            // SAFETY: A member descriptor's member definition lives as long as
+            // the class, which the module keeps.
+            *offset = unsafe { (*member).offset };
         }
         Ok(Self {
             class: class.unbind(),
@@ -155,24 +156,23 @@ impl<const FIELD_COUNT: usize> ClassLayout<FIELD_COUNT> {
         py: Python<'py>,
         fields: [Bound<'py, PyAny>; FIELD_COUNT],
     ) -> PyResult<Bound<'py, PyAny>> {
-        // SAFETY: `allocate` is the class's allocator, which returns a new
-        // reference to an instance whose slots are all null, or null with an
-        // exception set. msgspec's classes have no items.
-        let instance = unsafe {
-            Bound::from_owned_ptr_or_err(py, (self.allocate)(self.class.as_ptr().cast(), 0))?
-        };
+        // SAFETY: `allocate` is the class's allocator. msgspec's classes have
+        // no items.
+        let allocated = unsafe { (self.allocate)(self.class.as_ptr().cast(), 0) };
+        // SAFETY: The allocator returns a new reference to an instance whose
+        // slots are all null, or null with an exception set.
+        let instance = unsafe { Bound::from_owned_ptr_or_err(py, allocated)? };
         let start = instance.as_ptr().cast::<u8>();
         for (offset, field) in self.field_offsets.iter().zip(fields) {
             // SAFETY: `offset` is the offset of a slot in instances of the
-            // class, which holds a reference to an object. The slot is null,
-            // so the write drops no reference, and the instance takes the
-            // field's reference. No other thread can read the slot before this
+            // class.
+            let slot = unsafe { start.offset(*offset) }.cast::<*mut ffi::PyObject>();
+            // SAFETY: The slot holds a reference to an object. It is null, so
+            // the write drops no reference, and the instance takes the field's
+            // reference. No other thread can read the slot before this
             // function returns the instance.
             unsafe {
-                start
-                    .offset(*offset)
-                    .cast::<*mut ffi::PyObject>()
-                    .write(field.into_ptr());
+                slot.write(field.into_ptr());
             }
         }
         Ok(instance)

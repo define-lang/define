@@ -30,17 +30,112 @@ unsafe_code = "deny"
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "deny", priority = -1 }
-dbg_macro = "deny"
+restriction = { level = "deny", priority = -1 }
+# Clippy warns against turning on the whole restriction group, since some of its
+# lints contradict each other and new ones arrive with each toolchain. Every
+# lint that does not fit the code is allowed below instead, with its reason.
+blanket_clippy_restriction_lints = "allow"
+
+# --- nursery and pedantic lints that do not fit the code ---
+
 # The parser inlines its hot paths on purpose.
 inline_always = "allow"
-# The code writes pub(crate) to say what each item's visibility is meant to be,
-# even where a private module already limits it to the crate.
-redundant_pub_crate = "allow"
 # A match on an Option shows each case with its own arm, which reads more
 # clearly than map_or_else's two closures, None's first.
 option_if_let_else = "allow"
-expect_used = "deny"
-panic = "deny"
-todo = "deny"
-unimplemented = "deny"
-unwrap_used = "deny"
+# The code writes pub(crate) to say what each item's visibility is meant to be,
+# even where a private module already limits it to the crate.
+redundant_pub_crate = "allow"
+
+# --- restriction lints that contradict the code's style ---
+
+# Tail expressions are idiomatic Rust; `return` marks an early exit.
+implicit_return = "allow"
+# `?` is how errors propagate.
+question_mark_used = "allow"
+# Items whose names explain them need no doc comment.
+missing_docs_in_private_items = "allow"
+# Items are ordered for reading, not alphabetically.
+arbitrary_source_item_ordering = "allow"
+# Small helpers are named for what they do, even when only one place calls
+# them.
+single_call_fn = "allow"
+# Shadowing a name with the value derived from it is idiomatic.
+shadow_reuse = "allow"
+# Tests are inline `mod tests` modules.
+inline_modules = "allow"
+# Crate roots re-export the items that make up their API.
+pub_use = "allow"
+# A full path is clearer than an import for a name used once.
+absolute_paths = "allow"
+# The code writes trait bounds inline when they are short.
+inline_trait_bounds = "allow"
+# `impl Trait` parameters are idiomatic.
+impl_trait_in_params = "allow"
+# Patterns use `..` for the fields they do not need.
+rest_pattern_accessible_field = "allow"
+# Match ergonomics bind through references.
+pattern_type_mismatch = "allow"
+# Trait implementations rely on the trait's default methods.
+missing_trait_methods = "allow"
+# Large types, such as the parser, split their methods across files.
+multiple_inherent_impl = "allow"
+# Fields have the visibility each one needs.
+field_scoped_visibility_modifiers = "allow"
+# An `if` without `else` needs no empty `else` branch.
+else_if_without_else = "allow"
+# Asserts have no messages, since a failing test shows the values.
+missing_assert_message = "allow"
+# Literals and shift amounts take their type from where they are used.
+default_numeric_fallback = "allow"
+# Matches over large enums, such as protobuf's field types, name only the
+# variants they handle.
+wildcard_enum_match_arm = "allow"
+# `let _ =` already says that a result is ignored on purpose, such as the
+# fmt::Result of writing to a String, which is never an error.
+let_underscore_must_use = "allow"
+# unreachable! marks a branch that an invariant rules out.
+unreachable = "allow"
+# pyo3's macros generate single-letter lifetimes in our code.
+single_char_lifetime_names = "allow"
+# pyo3's import_exception! generates inherent methods named like trait methods.
+same_name_method = "allow"
+# pyo3 gives each variant of an enum a class that Python constructs, such as
+# BinaryOperator.Add(), only when the variant has braces, even empty ones.
+empty_enum_variants_with_brackets = "allow"
+
+# --- restriction lints for code that is not published or not no_std ---
+
+# The crates are not published, so their types need no #[non_exhaustive].
+exhaustive_enums = "allow"
+exhaustive_structs = "allow"
+# Inlining across crates is left to the compiler.
+missing_inline_in_public_items = "allow"
+# The crates use std; none is no_std.
+std_instead_of_alloc = "allow"
+std_instead_of_core = "allow"
+
+# --- restriction lints that would flag the parser's deliberate low-level code ---
+
+# Offsets and counts are bounded by the source's length.
+arithmetic_side_effects = "allow"
+# Casts between integer widths are checked by the surrounding invariants.
+as_conversions = "allow"
+# Indexing is bounds-checked, and its invariants make it succeed.
+indexing_slicing = "allow"
+# Strings are sliced at byte offsets the scanner knows are character
+# boundaries.
+string_slice = "allow"
+# Tests, error messages and diagnostics contain non-ASCII text.
+non_ascii_literal = "allow"
+
+# --- one of each pair of restriction lints that contradict each other ---
+
+# The code writes pub(crate), not pub(in crate).
+pub_with_shorthand = "allow"
+# The code writes 0u32, not 0_u32.
+unseparated_literal_suffix = "allow"
+# The code puts a block's semicolon inside it.
+semicolon_outside_block = "allow"
+# Modules are files named after the module, such as parser.rs and parser/.
+self_named_module_files = "allow"

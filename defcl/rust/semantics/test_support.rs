@@ -2,7 +2,7 @@
 
 use descriptor_proto::google::protobuf::FileDescriptorSet;
 use googletest::prelude::*;
-use prost::Message;
+use prost::Message as _;
 use runfiles::Runfiles;
 
 /// The descriptor set of the schemas in `defcl/testdata/valid`.

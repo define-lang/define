@@ -1,3 +1,7 @@
 # Words that clippy's doc_markdown lint accepts outside backticks. ".." keeps
 # clippy's own list, such as "GitHub".
 doc-valid-idents = ["CPython", ".."]
+
+# Traits whose implementations may name their parameters for what they are,
+# such as `formatter` instead of fmt's `f`. ".." keeps clippy's own list.
+allow-renamed-params-for = ["core::fmt::Debug", "core::fmt::Display", ".."]

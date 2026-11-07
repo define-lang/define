@@ -101,7 +101,7 @@ mod tests {
     use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
-    use prost::Message;
+    use prost::Message as _;
     use runfiles::Runfiles;
     use std::io;
     use std::path::Path;

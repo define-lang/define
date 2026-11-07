@@ -141,7 +141,7 @@ impl AstClasses {
         AST_CLASSES.get_or_try_init(py, || Self::load(py))
     }
 
-    #[allow(clippy::too_many_lines, reason = "it loads every AST class")]
+    #[expect(clippy::too_many_lines, reason = "it loads every AST class")]
     fn load(py: Python<'_>) -> PyResult<Self> {
         let module = py.import("{{ module_name }}")?;
 {%- for enum_type in enums %}

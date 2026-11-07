@@ -1,15 +1,15 @@
 // Generated from `{{ description.module_name }}` by
 // //define/compiler/parsing/rust_generators:generate_ast_constructors.
 
-#![allow(
+#![expect(
     clippy::too_many_arguments,
     reason = "a constructor takes each field of its node"
 )]
-#![allow(clippy::wildcard_imports, reason = "the constructors use every AST type")]
+#![expect(clippy::wildcard_imports, reason = "the constructors use every AST type")]
 
 use crate::ast::*;
 use crate::ast_builder::AstBuilder;
-use crate::node_construction::{FieldValue, FilePath, NodeTuple};
+use crate::node_construction::{FieldValue as _, FilePath, NodeTuple};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyFrozenSet, PyInt, PyNone, PyString, PyTuple};
 

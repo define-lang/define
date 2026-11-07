@@ -19,7 +19,7 @@ mod parser_diagnostics;
 #[rustfmt::skip]
 mod syntax_errors;
 
-use node_construction::{FilePath, Node};
+use node_construction::{FilePath, Node as _};
 use parse_error::ParseError;
 use parser::Parser;
 use pyo3::prelude::*;

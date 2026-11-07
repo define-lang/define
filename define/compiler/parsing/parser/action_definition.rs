@@ -1,7 +1,7 @@
 //! Action definitions and the statements in them.
 
 use crate::ast;
-use crate::node_construction::{Node, NodeTuple};
+use crate::node_construction::{Node as _, NodeTuple};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
@@ -384,8 +384,10 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         }
         self.scanner.consume_bytes(1);
-        let location = self.ast.location(start, self.scanner.position)?;
-        let trigger_conditions = self.ast.trigger_conditions_block(location, condition)?;
+        let trigger_conditions_location = self.ast.location(start, self.scanner.position)?;
+        let trigger_conditions = self
+            .ast
+            .trigger_conditions_block(trigger_conditions_location, condition)?;
         let statements_start = self.scanner.position.next_column();
         // There is no ` and it does` after the `}`.
         if !self.scanner.consume(SPACE_AND_IT_DOES) {
@@ -414,8 +416,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let end = self.parse_block_close()?;
         let statements = self.nodes.finish_tuple(statements)?;
-        let location = self.ast.location(statements_start, end)?;
-        let action_statements = self.ast.action_statements_block(location, statements)?;
+        let action_statements_location = self.ast.location(statements_start, end)?;
+        let action_statements = self
+            .ast
+            .action_statements_block(action_statements_location, statements)?;
         Ok((trigger_conditions, trigger_name, action_statements))
     }
 
