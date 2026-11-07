@@ -33,6 +33,7 @@ rust_library(
     deps = [
         ":descriptor_proto",
         "//defcl/rust/parser",
+        "//source_rendering/rust:source_rendering",
         "@crates//:derive_more",
         "@crates//:rustc-hash",
         "@crates//:strum",

@@ -331,6 +331,7 @@ py_binary(
         "$(rlocationpath //defcl/python:validator_extension)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
         "$(rlocationpath //define/compiler/parsing:parser_extension)",
+        "$(rlocationpath //source_rendering/python:rendering_extension)",
     ],
     data = [
         "//defcl/python:error_types_gen",
@@ -342,6 +343,7 @@ py_binary(
         "//define/compiler/parsing:parser_diagnostics",
         "//define/compiler/parsing:parser_extension",
         "//define/compiler/parsing:syntax_errors",
+        "//source_rendering/python:rendering_extension",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],

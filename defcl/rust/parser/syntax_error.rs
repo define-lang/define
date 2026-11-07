@@ -1,7 +1,7 @@
 //! The syntax errors that parsing a DCL file can end in.
 
-use crate::source_location::{SourceLines, SourceLocation};
 use derive_more::{Display, Error};
+use source_rendering::{SourceLines, SourceLocation};
 use strum::{IntoStaticStr, VariantNames};
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
@@ -13,11 +13,11 @@ pub struct SyntaxError {
 
 impl SyntaxError {
     /// The error as the Define compiler shows errors: the location as
-    /// `SourceLocation::render` shows it in `source_lines`, the text of the
+    /// `SourceLines::render` shows it in `source_lines`, the text of the
     /// file at `file_path`, then the message.
     #[must_use]
     pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
-        format!("{}\n{self}", self.location.render(source_lines, file_path))
+        format!("{}\n{self}", source_lines.render(self.location, file_path))
     }
 }
 
@@ -143,8 +143,8 @@ pub enum SyntaxErrorKind {
 #[cfg(test)]
 mod tests {
     use super::{SyntaxError, SyntaxErrorKind};
-    use crate::{SourceLines, SourceLocation};
     use googletest::prelude::*;
+    use source_rendering::{Position, SourceLines, SourceLocation};
 
     #[gtest]
     fn shows_its_location_then_its_message() -> Result<()> {
@@ -152,10 +152,8 @@ mod tests {
             SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 6,
-                    end_line: 1,
-                    end_column: 6
+                    start: Position { line: 1, column: 6 },
+                    end: Position { line: 1, column: 6 }
                 },
             }
             .render(&SourceLines::new("count {}\n"), Some("config.defcl")),

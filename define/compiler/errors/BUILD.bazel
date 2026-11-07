@@ -20,6 +20,7 @@ py_library(
         "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/structural/resolver:local_dependency_entry",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -47,6 +48,7 @@ py_library(
         ":source_map",
         "//define/compiler:ast",
         "//define/compiler:constants",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -56,6 +58,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//source_rendering/python:rendering",
     ],
 )
 

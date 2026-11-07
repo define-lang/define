@@ -8,6 +8,8 @@ import typing
 import unicodedata
 from pathlib import Path
 
+from source_rendering.python import rendering
+
 if typing.TYPE_CHECKING:
     from pathlib import PurePosixPath
 
@@ -17,20 +19,6 @@ if typing.TYPE_CHECKING:
 def source_digest(source: bytes) -> bytes:
     """Return the digest that shows whether a source file is unchanged."""
     return hashlib.sha256(source).digest()
-
-
-_CODE_INDENTATION = "    "
-
-
-def escape_invisible(text: str) -> str:
-    """Replace non-printable characters with their Python escape sequences."""
-    characters: list[str] = []
-    for character in text:
-        if character.isprintable():
-            characters.append(character)
-        else:
-            characters.append(repr(character)[1:-1])
-    return "".join(characters)
 
 
 def describe_invisible_character(character: str) -> str:
@@ -48,37 +36,14 @@ def _format_location_with_source_line(
 
     A location with no source line is formatted without one.
     """
-    if location.file_path is not None:
-        header = f'File "{location.file_path}", line {location.line}, column {location.column}'
-    else:
-        header = f"line {location.line}, column {location.column}"
-    if source_line is None:
-        return header
-    # Only our own indentation should show, not the source's, unless the
-    # location is in that indentation.
-    code = source_line.lstrip(" ")
-    indentation = len(source_line) - len(code)
-    if location.column - 1 < indentation:
-        code = source_line
-        indentation = 0
-    start = location.column - 1 - indentation
-    # A span that continues onto later lines is underlined to the end of its
-    # first line, so that the context stays one line long.
-    if location.end_line == location.line:
-        # end_column is the column of the span's last character.
-        end = location.end_column - indentation
-    else:
-        end = len(code)
-    # A raw control character could change what the terminal shows, so any
-    # character that is not printable shows as its escape.
-    if not code.isprintable():
-        # Escaped characters are wider, so the underline moves with them.
-        start = len(escape_invisible(code[:start]))
-        end = len(escape_invisible(code[:end]))
-        code = escape_invisible(code)
-    underline = "^" * max(end - start, 1)
-    code_line = f"{_CODE_INDENTATION}{code}" if code else ""
-    return f"{header}\n{code_line}\n{_CODE_INDENTATION}{' ' * start}{underline}"
+    return rendering.render_location(
+        line=location.line,
+        column=location.column,
+        end_line=location.end_line,
+        end_column=location.end_column,
+        source_line=source_line,
+        file_path=None if location.file_path is None else str(location.file_path),
+    )
 
 
 @typing.final

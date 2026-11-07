@@ -1,7 +1,7 @@
 //! Finding where a DCL file writes the field that a field path names.
 
-use crate::source_location::SourceLocation;
 use crate::syntax_tree::{Field, ParsedFile, Value};
+use source_rendering::SourceLocation;
 
 /// One element of a field path.
 // TODO: Add map keys once the spec decides how DCL files write maps.
@@ -82,8 +82,9 @@ impl ParsedFile<'_> {
 mod tests {
     use super::FieldPathElement::{Field, Index};
     use super::{FieldPathElement, FieldPathLocation};
-    use crate::{SourceLocation, parse};
+    use crate::parse;
     use googletest::prelude::*;
+    use source_rendering::{Position, SourceLocation};
 
     const SOURCE: &str = include_str!("../../testdata/valid/field_paths.defcl");
 
@@ -94,10 +95,11 @@ mod tests {
         end_column: usize,
     ) -> SourceLocation {
         SourceLocation {
-            line,
-            column,
-            end_line,
-            end_column,
+            start: Position { line, column },
+            end: Position {
+                line: end_line,
+                column: end_column,
+            },
         }
     }
 

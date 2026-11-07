@@ -108,7 +108,7 @@ extend-select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["define", "defcl", "tools"]
+known-first-party = ["define", "defcl", "source_rendering", "tools"]
 required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.flake8-type-checking]

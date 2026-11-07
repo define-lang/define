@@ -1,0 +1,45 @@
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "lint_config")
+
+rust_library(
+    name = "source_rendering",
+    srcs = [
+        "lib.rs",
+        "source_lines.rs",
+    ],
+    crate_root = "lib.rs",
+    lint_config = lint_config(),
+    visibility = [
+        "//defcl/python:__pkg__",
+        "//defcl/rust:__subpackages__",
+        "//source_rendering/python:__pkg__",
+    ],
+)
+
+rust_test(
+    name = "source_rendering_test",
+    size = "small",
+    crate = ":source_rendering",
+    lint_config = lint_config(),
+    deps = ["@crates//:googletest"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = [
+        "clippy",
+        "precommit",
+    ],
+    targets = [
+        ":source_rendering",
+        ":source_rendering_test",
+    ],
+)
+
+check_build_file()

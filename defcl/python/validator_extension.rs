@@ -1,15 +1,13 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
-use defcl_parser::{
-    FieldPathElement, FieldPathLocation, SourceLines, SourceLocation, SyntaxError, SyntaxErrorKind,
-    parse,
-};
+use defcl_parser::{FieldPathElement, FieldPathLocation, SyntaxError, SyntaxErrorKind, parse};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::{RenderedError, ValidationError};
 use prost::Message as _;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::PyType;
+use source_rendering::{SourceLines, SourceLocation};
 use std::path::PathBuf;
 
 /// The Python classes that the module returns and raises.
@@ -63,10 +61,10 @@ impl PythonClasses {
         location: SourceLocation,
     ) -> PyResult<Bound<'py, PyAny>> {
         self.source_location.bind(py).call1((
-            location.line,
-            location.column,
-            location.end_line,
-            location.end_column,
+            location.start.line,
+            location.start.column,
+            location.end.line,
+            location.end.column,
         ))
     }
 

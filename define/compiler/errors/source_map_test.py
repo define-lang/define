@@ -148,14 +148,14 @@ def test_format_location_shows_printable_non_ascii_characters_unescaped():
 def test_format_location_escapes_invisible_characters_and_shifts_underline():
     sources = source_map.SourceMap({}, in_memory_source="a\u200dbc\n")
     assert sources.format_location(_location(1, 3, 4, None)) == (
-        "line 1, column 3\n    a\\u200dbc\n           ^^"
+        "line 1, column 3\n    a\\u{200d}bc\n             ^^"
     )
 
 
 def test_format_location_escapes_control_characters_and_shifts_underline():
     sources = source_map.SourceMap({}, in_memory_source="a\x01bc\n")
     assert sources.format_location(_location(1, 3, 4, None)) == (
-        "line 1, column 3\n    a\\x01bc\n         ^^"
+        "line 1, column 3\n    a\\u{1}bc\n          ^^"
     )
 
 

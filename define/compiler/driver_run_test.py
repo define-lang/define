@@ -351,8 +351,8 @@ def test_trojan_source_bidi_override_in_comment_blocks_code_generation(tmp_path:
     assert list(tmp_path.iterdir()) == []
     assert error_stream.getvalue() == (
         "line 6, column 51\n"
-        "    create a particle in position<created>. # \\u202e note\n"
-        "                                              ^^^^^^\n"
+        "    create a particle in position<created>. # \\u{202e} note\n"
+        "                                              ^^^^^^^^\n"
         "comments may not have the invisible character U+202E RIGHT-TO-LEFT OVERRIDE\n"
     )
 

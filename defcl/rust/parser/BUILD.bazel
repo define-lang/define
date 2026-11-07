@@ -12,7 +12,6 @@ rust_library(
         "parser.rs",
         "parser_test.rs",
         "scanner.rs",
-        "source_location.rs",
         "syntax_error.rs",
         "syntax_tree.rs",
     ],
@@ -24,6 +23,7 @@ rust_library(
         "//defcl/rust:__subpackages__",
     ],
     deps = [
+        "//source_rendering/rust:source_rendering",
         "@crates//:derive_more",
         "@crates//:strum",
     ],

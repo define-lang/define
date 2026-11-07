@@ -64,9 +64,9 @@ def test_error_message_without_path(parse: Parse):
         )
         == textwrap.dedent("""\
         line 1, column 1
-            \\ufeffdefine the potential position<standard:/path>.
-            ^^^^^^
-        UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files.""")
+            \\u{feff}define the potential position<standard:/path>.
+            ^^^^^^^^
+        UTF-8 Byte Order Marks (\\u{feff}) are not allowed in Define source code files.""")
     )
 
 
@@ -142,8 +142,8 @@ def test_invisible_character_error_message(parse: Parse):
         "define the potential position<mv:define-lang.org:parser:/path>.\u200b\n",
     ) == (
         "line 1, column 64\n"
-        + "    define the potential position<mv:define-lang.org:parser:/path>.\\u200b\n"
-        + "                                                                   ^^^^^^\n"
+        + "    define the potential position<mv:define-lang.org:parser:/path>.\\u{200b}\n"
+        + "                                                                   ^^^^^^^^\n"
         + "Invisible character U+200B ZERO WIDTH SPACE is not allowed here."
     )
 
@@ -162,9 +162,9 @@ def test_control_character_in_comment_diagnostic_message(
         source_map.SourceMap({}, in_memory_source=source)
     ) == textwrap.dedent("""\
         line 1, column 4
-            # a\\x01b
-               ^^^^
-        comments may not have the control character \\x01""")
+            # a\\u{1}b
+               ^^^^^
+        comments may not have the control character \\u{1}""")
 
 
 def test_invisible_character_in_comment_diagnostic_message(
@@ -181,6 +181,6 @@ def test_invisible_character_in_comment_diagnostic_message(
         source_map.SourceMap({}, in_memory_source=source)
     ) == textwrap.dedent("""\
         line 1, column 4
-            # a\\u200bb
-               ^^^^^^
+            # a\\u{200b}b
+               ^^^^^^^^
         comments may not have the invisible character U+200B ZERO WIDTH SPACE""")

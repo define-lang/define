@@ -1,18 +1,20 @@
 use crate::{
-    Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, SourceLocation, SyntaxError,
+    Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, SyntaxError,
     SyntaxErrorKind, TopLevelMessage, Value, parse,
 };
 use googletest::prelude::*;
+use source_rendering::{Position, SourceLocation};
 
 /// A field name written in ASCII on one line.
 const fn name(text: &str, line: usize, column: usize) -> FieldName<'_> {
     FieldName {
         text,
         location: SourceLocation {
-            line,
-            column,
-            end_line: line,
-            end_column: column + text.len() - 1,
+            start: Position { line, column },
+            end: Position {
+                line,
+                column: column + text.len() - 1,
+            },
         },
     }
 }
@@ -22,22 +24,20 @@ const fn scalar(text: &str, line: usize, column: usize) -> Scalar<'_> {
     Scalar {
         text,
         location: SourceLocation {
-            line,
-            column,
-            end_line: line,
-            end_column: column + text.len() - 1,
+            start: Position { line, column },
+            end: Position {
+                line,
+                column: column + text.len() - 1,
+            },
         },
     }
 }
 
 /// A field, which covers its name through its value.
 fn field<'source>(name: FieldName<'source>, value: Value<'source>) -> Field<'source> {
-    let value_location = value.location();
     let location = SourceLocation {
-        line: name.location.line,
-        column: name.location.column,
-        end_line: value_location.end_line,
-        end_column: value_location.end_column,
+        start: name.location.start,
+        end: value.location().end,
     };
     Field {
         name,
@@ -52,10 +52,8 @@ const fn top_level_message<'source>(
     value: MessageValue<'source>,
 ) -> TopLevelMessage<'source> {
     let location = SourceLocation {
-        line: name.location.line,
-        column: name.location.column,
-        end_line: value.location.end_line,
-        end_column: value.location.end_column,
+        start: name.location.start,
+        end: value.location.end,
     };
     TopLevelMessage {
         name,
@@ -80,10 +78,11 @@ mod valid_files {
                             Value::String(scalar("\"example\"", 2, 20)),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 10,
-                            end_line: 3,
-                            end_column: 1
+                            start: Position {
+                                line: 1,
+                                column: 10
+                            },
+                            end: Position { line: 3, column: 1 }
                         },
                     },
                 )],
@@ -105,10 +104,11 @@ mod valid_files {
                                 Value::String(scalar("\"example\"", 2, 20)),
                             )],
                             location: SourceLocation {
-                                line: 1,
-                                column: 10,
-                                end_line: 3,
-                                end_column: 1
+                                start: Position {
+                                    line: 1,
+                                    column: 10
+                                },
+                                end: Position { line: 3, column: 1 }
                             },
                         },
                     ),
@@ -120,10 +120,11 @@ mod valid_files {
                                 Value::Integer(scalar("3", 5, 16)),
                             )],
                             location: SourceLocation {
-                                line: 4,
-                                column: 11,
-                                end_line: 6,
-                                end_column: 1
+                                start: Position {
+                                    line: 4,
+                                    column: 11
+                                },
+                                end: Position { line: 6, column: 1 }
                             },
                         },
                     ),
@@ -146,10 +147,11 @@ mod valid_files {
                                 Value::String(scalar("\"example\"", 4, 20)),
                             )],
                             location: SourceLocation {
-                                line: 2,
-                                column: 10,
-                                end_line: 5,
-                                end_column: 1
+                                start: Position {
+                                    line: 2,
+                                    column: 10
+                                },
+                                end: Position { line: 5, column: 1 }
                             },
                         },
                     ),
@@ -161,10 +163,11 @@ mod valid_files {
                                 Value::Integer(scalar("3", 8, 16)),
                             )],
                             location: SourceLocation {
-                                line: 7,
-                                column: 11,
-                                end_line: 9,
-                                end_column: 1
+                                start: Position {
+                                    line: 7,
+                                    column: 11
+                                },
+                                end: Position { line: 9, column: 1 }
                             },
                         },
                     ),
@@ -183,10 +186,14 @@ mod valid_files {
                     MessageValue {
                         fields: vec![],
                         location: SourceLocation {
-                            line: 1,
-                            column: 10,
-                            end_line: 1,
-                            end_column: 11
+                            start: Position {
+                                line: 1,
+                                column: 10
+                            },
+                            end: Position {
+                                line: 1,
+                                column: 11
+                            }
                         },
                     },
                 )],
@@ -209,18 +216,23 @@ mod valid_files {
                             Value::Repeated(RepeatedValue {
                                 values: vec![],
                                 location: SourceLocation {
-                                    line: 2,
-                                    column: 19,
-                                    end_line: 2,
-                                    end_column: 20
+                                    start: Position {
+                                        line: 2,
+                                        column: 19
+                                    },
+                                    end: Position {
+                                        line: 2,
+                                        column: 20
+                                    }
                                 },
                             }),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 10,
-                            end_line: 3,
-                            end_column: 1
+                            start: Position {
+                                line: 1,
+                                column: 10
+                            },
+                            end: Position { line: 3, column: 1 }
                         },
                     },
                 )],
@@ -244,10 +256,14 @@ mod valid_files {
                                 Value::Repeated(RepeatedValue {
                                     values: vec![],
                                     location: SourceLocation {
-                                        line: 2,
-                                        column: 11,
-                                        end_line: 2,
-                                        end_column: 12
+                                        start: Position {
+                                            line: 2,
+                                            column: 11
+                                        },
+                                        end: Position {
+                                            line: 2,
+                                            column: 12
+                                        }
                                     },
                                 }),
                             ),
@@ -256,19 +272,21 @@ mod valid_files {
                                 Value::Repeated(RepeatedValue {
                                     values: vec![],
                                     location: SourceLocation {
-                                        line: 3,
-                                        column: 12,
-                                        end_line: 3,
-                                        end_column: 13
+                                        start: Position {
+                                            line: 3,
+                                            column: 12
+                                        },
+                                        end: Position {
+                                            line: 3,
+                                            column: 13
+                                        }
                                     },
                                 }),
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 4,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 4, column: 1 }
                         },
                     },
                 )],
@@ -298,10 +316,8 @@ mod valid_files {
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 7,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 7, column: 1 }
                         },
                     },
                 )],
@@ -344,10 +360,8 @@ mod valid_files {
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 8,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 8, column: 1 }
                         },
                     },
                 )],
@@ -376,10 +390,8 @@ mod valid_files {
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 6,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 6, column: 1 }
                         },
                     },
                 )],
@@ -402,10 +414,8 @@ mod valid_files {
                             field(name("large", 5, 5), Value::Integer(scalar("999999", 5, 12)),),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 6,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 6, column: 1 }
                         },
                     },
                 )],
@@ -446,28 +456,34 @@ mod valid_files {
                                                     Value::Integer(scalar("10", 7, 30)),
                                                 )],
                                                 location: SourceLocation {
-                                                    line: 6,
-                                                    column: 15,
-                                                    end_line: 8,
-                                                    end_column: 9
+                                                    start: Position {
+                                                        line: 6,
+                                                        column: 15
+                                                    },
+                                                    end: Position { line: 8, column: 9 }
                                                 },
                                             }),
                                         ),
                                     ],
                                     location: SourceLocation {
-                                        line: 3,
-                                        column: 15,
-                                        end_line: 9,
-                                        end_column: 5
+                                        start: Position {
+                                            line: 3,
+                                            column: 15
+                                        },
+                                        end: Position { line: 9, column: 5 }
                                     },
                                 }),
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 10,
-                            end_line: 10,
-                            end_column: 1
+                            start: Position {
+                                line: 1,
+                                column: 10
+                            },
+                            end: Position {
+                                line: 10,
+                                column: 1
+                            }
                         },
                     },
                 )],
@@ -495,10 +511,11 @@ mod valid_files {
                                             ),
                                         )],
                                         location: SourceLocation {
-                                            line: 3,
-                                            column: 9,
-                                            end_line: 3,
-                                            end_column: 43
+                                            start: Position { line: 3, column: 9 },
+                                            end: Position {
+                                                line: 3,
+                                                column: 43
+                                            }
                                         },
                                     }),
                                     Value::Message(MessageValue {
@@ -509,26 +526,29 @@ mod valid_files {
                                             ),
                                         )],
                                         location: SourceLocation {
-                                            line: 4,
-                                            column: 9,
-                                            end_line: 4,
-                                            end_column: 43
+                                            start: Position { line: 4, column: 9 },
+                                            end: Position {
+                                                line: 4,
+                                                column: 43
+                                            }
                                         },
                                     }),
                                 ],
                                 location: SourceLocation {
-                                    line: 2,
-                                    column: 19,
-                                    end_line: 5,
-                                    end_column: 5
+                                    start: Position {
+                                        line: 2,
+                                        column: 19
+                                    },
+                                    end: Position { line: 5, column: 5 }
                                 },
                             }),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 10,
-                            end_line: 6,
-                            end_column: 1
+                            start: Position {
+                                line: 1,
+                                column: 10
+                            },
+                            end: Position { line: 6, column: 1 }
                         },
                     },
                 )],
@@ -554,10 +574,14 @@ mod valid_files {
                                         Value::String(scalar("\"tag3\"", 2, 28)),
                                     ],
                                     location: SourceLocation {
-                                        line: 2,
-                                        column: 11,
-                                        end_line: 2,
-                                        end_column: 34
+                                        start: Position {
+                                            line: 2,
+                                            column: 11
+                                        },
+                                        end: Position {
+                                            line: 2,
+                                            column: 34
+                                        }
                                     },
                                 }),
                             ),
@@ -570,10 +594,14 @@ mod valid_files {
                                         Value::Integer(scalar("3", 3, 20)),
                                     ],
                                     location: SourceLocation {
-                                        line: 3,
-                                        column: 13,
-                                        end_line: 3,
-                                        end_column: 21
+                                        start: Position {
+                                            line: 3,
+                                            column: 13
+                                        },
+                                        end: Position {
+                                            line: 3,
+                                            column: 21
+                                        }
                                     },
                                 }),
                             ),
@@ -585,10 +613,14 @@ mod valid_files {
                                         Value::Float(scalar("2.5", 4, 19)),
                                     ],
                                     location: SourceLocation {
-                                        line: 4,
-                                        column: 13,
-                                        end_line: 4,
-                                        end_column: 22
+                                        start: Position {
+                                            line: 4,
+                                            column: 13
+                                        },
+                                        end: Position {
+                                            line: 4,
+                                            column: 22
+                                        }
                                     },
                                 }),
                             ),
@@ -600,19 +632,21 @@ mod valid_files {
                                         Value::Enum(scalar("INACTIVE", 5, 21)),
                                     ],
                                     location: SourceLocation {
-                                        line: 5,
-                                        column: 12,
-                                        end_line: 5,
-                                        end_column: 29
+                                        start: Position {
+                                            line: 5,
+                                            column: 12
+                                        },
+                                        end: Position {
+                                            line: 5,
+                                            column: 29
+                                        }
                                     },
                                 }),
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 6,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position { line: 6, column: 1 }
                         },
                     },
                 )],
@@ -711,10 +745,11 @@ mod valid_files {
                             ),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 9,
-                            end_line: 22,
-                            end_column: 1
+                            start: Position { line: 1, column: 9 },
+                            end: Position {
+                                line: 22,
+                                column: 1
+                            }
                         },
                     },
                 )],
@@ -736,10 +771,11 @@ mod valid_files {
                                 Value::String(scalar("\"test\"", 2, 11)),
                             )],
                             location: SourceLocation {
-                                line: 1,
-                                column: 10,
-                                end_line: 3,
-                                end_column: 1
+                                start: Position {
+                                    line: 1,
+                                    column: 10
+                                },
+                                end: Position { line: 3, column: 1 }
                             },
                         },
                     ),
@@ -751,10 +787,11 @@ mod valid_files {
                                 Value::Integer(scalar("1", 6, 12)),
                             )],
                             location: SourceLocation {
-                                line: 5,
-                                column: 11,
-                                end_line: 7,
-                                end_column: 1
+                                start: Position {
+                                    line: 5,
+                                    column: 11
+                                },
+                                end: Position { line: 7, column: 1 }
                             },
                         },
                     ),
@@ -781,20 +818,19 @@ mod valid_source {
                                 Value::String(Scalar {
                                     text: "\"caf\u{e9}\"",
                                     location: SourceLocation {
-                                        line: 2,
-                                        column: 8,
-                                        end_line: 2,
-                                        end_column: 13
+                                        start: Position { line: 2, column: 8 },
+                                        end: Position {
+                                            line: 2,
+                                            column: 13
+                                        }
                                     },
                                 }),
                             ),
                             field(name("c", 3, 5), Value::Integer(scalar("1", 3, 8))),
                         ],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 4,
-                            end_column: 1
+                            start: Position { line: 1, column: 4 },
+                            end: Position { line: 4, column: 1 }
                         },
                     },
                 )],
@@ -815,10 +851,8 @@ mod valid_source {
                             Value::String(scalar("\"x\t\ry\"", 2, 8)),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 3,
-                            end_column: 1
+                            start: Position { line: 1, column: 4 },
+                            end: Position { line: 3, column: 1 }
                         },
                     },
                 )],
@@ -836,10 +870,8 @@ mod valid_source {
                     MessageValue {
                         fields: vec![field(name("b", 2, 5), Value::Float(scalar("1.05", 2, 8)))],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 3,
-                            end_column: 1
+                            start: Position { line: 1, column: 4 },
+                            end: Position { line: 3, column: 1 }
                         },
                     },
                 )],
@@ -860,10 +892,8 @@ mod valid_source {
                             Value::String(scalar("\"\\0\\x4\"", 2, 8)),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 3,
-                            end_column: 1
+                            start: Position { line: 1, column: 4 },
+                            end: Position { line: 3, column: 1 }
                         },
                     },
                 )],
@@ -889,27 +919,30 @@ mod valid_source {
                                             Value::Integer(scalar("1", 1, 11)),
                                         )],
                                         location: SourceLocation {
-                                            line: 1,
-                                            column: 8,
-                                            end_line: 1,
-                                            end_column: 12
+                                            start: Position { line: 1, column: 8 },
+                                            end: Position {
+                                                line: 1,
+                                                column: 12
+                                            }
                                         },
                                     }),
                                     Value::Float(scalar("2.5", 1, 14)),
                                 ],
                                 location: SourceLocation {
-                                    line: 1,
-                                    column: 7,
-                                    end_line: 1,
-                                    end_column: 17
+                                    start: Position { line: 1, column: 7 },
+                                    end: Position {
+                                        line: 1,
+                                        column: 17
+                                    }
                                 },
                             }),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 1,
-                            end_column: 18
+                            start: Position { line: 1, column: 4 },
+                            end: Position {
+                                line: 1,
+                                column: 18
+                            }
                         },
                     },
                 )],
@@ -930,18 +963,14 @@ mod valid_source {
                             Value::Repeated(RepeatedValue {
                                 values: vec![Value::Integer(scalar("1", 2, 9))],
                                 location: SourceLocation {
-                                    line: 2,
-                                    column: 8,
-                                    end_line: 3,
-                                    end_column: 5
+                                    start: Position { line: 2, column: 8 },
+                                    end: Position { line: 3, column: 5 }
                                 },
                             }),
                         )],
                         location: SourceLocation {
-                            line: 1,
-                            column: 4,
-                            end_line: 4,
-                            end_column: 1
+                            start: Position { line: 1, column: 4 },
+                            end: Position { line: 4, column: 1 }
                         },
                     },
                 )],
@@ -962,10 +991,14 @@ mod invalid_booleans {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::BooleanNotSupported,
                 location: SourceLocation {
-                    line: 2,
-                    column: 14,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 14
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -980,10 +1013,14 @@ mod invalid_booleans {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::BooleanNotSupported,
                 location: SourceLocation {
-                    line: 2,
-                    column: 14,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 14
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -1002,10 +1039,14 @@ mod invalid_enums {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEnumCase,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -1020,10 +1061,14 @@ mod invalid_enums {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEnumCase,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -1042,10 +1087,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -1060,10 +1106,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -1078,10 +1125,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -1096,10 +1144,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -1114,10 +1163,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -1132,10 +1182,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -1150,10 +1201,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -1168,10 +1220,11 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 16
+                    start: Position { line: 2, column: 5 },
+                    end: Position {
+                        line: 2,
+                        column: 16
+                    }
                 }
             }))
         )
@@ -1186,10 +1239,8 @@ mod invalid_field_names {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidFieldName,
                 location: SourceLocation {
-                    line: 1,
-                    column: 1,
-                    end_line: 1,
-                    end_column: 7
+                    start: Position { line: 1, column: 1 },
+                    end: Position { line: 1, column: 7 }
                 }
             }))
         )
@@ -1208,10 +1259,8 @@ mod invalid_file_format {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ByteOrderMark,
                 location: SourceLocation {
-                    line: 1,
-                    column: 1,
-                    end_line: 1,
-                    end_column: 1
+                    start: Position { line: 1, column: 1 },
+                    end: Position { line: 1, column: 1 }
                 }
             }))
         )
@@ -1226,10 +1275,8 @@ mod invalid_file_format {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingTrailingNewline,
                 location: SourceLocation {
-                    line: 3,
-                    column: 1,
-                    end_line: 3,
-                    end_column: 1
+                    start: Position { line: 3, column: 1 },
+                    end: Position { line: 3, column: 1 }
                 }
             }))
         )
@@ -1244,10 +1291,8 @@ mod invalid_file_format {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingTrailingNewline,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 5
+                    start: Position { line: 2, column: 5 },
+                    end: Position { line: 2, column: 5 }
                 }
             }))
         )
@@ -1262,10 +1307,8 @@ mod invalid_file_format {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingTopLevelMessage,
                 location: SourceLocation {
-                    line: 1,
-                    column: 1,
-                    end_line: 1,
-                    end_column: 1
+                    start: Position { line: 1, column: 1 },
+                    end: Position { line: 1, column: 1 }
                 }
             }))
         )
@@ -1280,10 +1323,8 @@ mod invalid_file_format {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingTopLevelMessage,
                 location: SourceLocation {
-                    line: 2,
-                    column: 1,
-                    end_line: 2,
-                    end_column: 1
+                    start: Position { line: 2, column: 1 },
+                    end: Position { line: 2, column: 1 }
                 }
             }))
         )
@@ -1302,10 +1343,14 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::AngleBracketsNotAllowed,
                 location: SourceLocation {
-                    line: 1,
-                    column: 10,
-                    end_line: 1,
-                    end_column: 10
+                    start: Position {
+                        line: 1,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 1,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -1320,10 +1365,14 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::AngleBracketsNotAllowed,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -1338,10 +1387,8 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 5
+                    start: Position { line: 2, column: 5 },
+                    end: Position { line: 2, column: 5 }
                 }
             }))
         )
@@ -1356,10 +1403,14 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingWhitespace,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1374,10 +1425,8 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingWhitespace,
                 location: SourceLocation {
-                    line: 1,
-                    column: 6,
-                    end_line: 1,
-                    end_column: 6
+                    start: Position { line: 1, column: 6 },
+                    end: Position { line: 1, column: 6 }
                 }
             }))
         )
@@ -1392,10 +1441,8 @@ mod invalid_messages {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedMessage,
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 4
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 4 }
                 }
             }))
         )
@@ -1414,10 +1461,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 15
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 15
+                    }
                 }
             }))
         )
@@ -1432,10 +1483,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 15
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 15
+                    }
                 }
             }))
         )
@@ -1450,10 +1505,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1468,10 +1527,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -1486,10 +1549,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1504,10 +1571,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -1522,10 +1593,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1540,10 +1615,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::NegativeZero,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -1558,10 +1637,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::NegativeZero,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 15
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 15
+                    }
                 }
             }))
         )
@@ -1576,10 +1659,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1594,10 +1681,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -1612,10 +1703,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1630,10 +1725,14 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -1648,10 +1747,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1666,10 +1766,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1684,10 +1785,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1702,10 +1804,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1720,10 +1823,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -1738,10 +1842,11 @@ mod invalid_numbers {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidNumberFormat,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -1760,10 +1865,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 },
             }))
         )
@@ -1780,10 +1883,8 @@ mod invalid_characters {
                     character: '\u{e9}'
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 },
             }))
         )
@@ -1798,10 +1899,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 10,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position {
+                        line: 2,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 },
             }))
         )
@@ -1816,10 +1921,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 1,
-                    column: 10,
-                    end_line: 1,
-                    end_column: 10
+                    start: Position {
+                        line: 1,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 1,
+                        column: 10
+                    }
                 },
             }))
         )
@@ -1834,10 +1943,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 1,
-                    column: 2,
-                    end_line: 1,
-                    end_column: 2
+                    start: Position { line: 1, column: 2 },
+                    end: Position { line: 1, column: 2 }
                 },
             }))
         )
@@ -1852,10 +1959,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 1,
-                    column: 5,
-                    end_line: 1,
-                    end_column: 5
+                    start: Position { line: 1, column: 5 },
+                    end: Position { line: 1, column: 5 }
                 },
             }))
         )
@@ -1870,10 +1975,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 9
+                    start: Position { line: 2, column: 9 },
+                    end: Position { line: 2, column: 9 }
                 },
             }))
         )
@@ -1888,10 +1991,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 1,
-                    column: 7,
-                    end_line: 1,
-                    end_column: 7
+                    start: Position { line: 1, column: 7 },
+                    end: Position { line: 1, column: 7 }
                 },
             }))
         )
@@ -1906,10 +2007,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 },
             }))
         )
@@ -1924,10 +2029,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 },
             }))
         )
@@ -1942,10 +2051,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 },
             }))
         )
@@ -1960,10 +2073,14 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 },
             }))
         )
@@ -1977,10 +2094,8 @@ mod invalid_characters {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 4
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 4 }
                 },
             }))
         )
@@ -1999,10 +2114,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 9
+                    start: Position { line: 2, column: 9 },
+                    end: Position { line: 2, column: 9 }
                 }
             }))
         )
@@ -2017,10 +2130,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 9
+                    start: Position { line: 2, column: 9 },
+                    end: Position { line: 2, column: 9 }
                 }
             }))
         )
@@ -2035,10 +2146,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
-                    line: 1,
-                    column: 6,
-                    end_line: 1,
-                    end_column: 6
+                    start: Position { line: 1, column: 6 },
+                    end: Position { line: 1, column: 6 }
                 }
             }))
         )
@@ -2053,10 +2162,14 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
-                    line: 2,
-                    column: 10,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position {
+                        line: 2,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2071,10 +2184,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
-                    line: 2,
-                    column: 6,
-                    end_line: 2,
-                    end_column: 6
+                    start: Position { line: 2, column: 6 },
+                    end: Position { line: 2, column: 6 }
                 }
             }))
         )
@@ -2089,10 +2200,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 2,
-                    end_line: 1,
-                    end_column: 2
+                    start: Position { line: 1, column: 2 },
+                    end: Position { line: 1, column: 2 }
                 }
             }))
         )
@@ -2107,10 +2216,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeColon,
                 location: SourceLocation {
-                    line: 2,
-                    column: 6,
-                    end_line: 2,
-                    end_column: 6
+                    start: Position { line: 2, column: 6 },
+                    end: Position { line: 2, column: 6 }
                 }
             }))
         )
@@ -2125,10 +2232,8 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 2,
-                    end_line: 1,
-                    end_column: 6
+                    start: Position { line: 1, column: 2 },
+                    end: Position { line: 1, column: 6 }
                 }
             }))
         )
@@ -2143,10 +2248,14 @@ mod invalid_separators {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
-                    line: 2,
-                    column: 18,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 18
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -2165,10 +2274,14 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedCommaOrCloseBracket,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -2183,10 +2296,14 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeComma,
                 location: SourceLocation {
-                    line: 2,
-                    column: 10,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position {
+                        line: 2,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2201,10 +2318,14 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 }
             }))
         )
@@ -2219,10 +2340,8 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 }
             }))
         )
@@ -2237,10 +2356,8 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 }
             }))
         )
@@ -2255,10 +2372,14 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidSeparator,
                 location: SourceLocation {
-                    line: 2,
-                    column: 10,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position {
+                        line: 2,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2273,10 +2394,14 @@ mod invalid_repeated_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::RepeatedValueInRepeatedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 17,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 17
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -2295,10 +2420,8 @@ mod invalid_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 }
             }))
         )
@@ -2313,10 +2436,8 @@ mod invalid_values {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
                 location: SourceLocation {
-                    line: 2,
-                    column: 7,
-                    end_line: 2,
-                    end_column: 7
+                    start: Position { line: 2, column: 7 },
+                    end: Position { line: 2, column: 7 }
                 }
             }))
         )
@@ -2335,10 +2456,14 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -2353,10 +2478,8 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 9
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 9 }
                 }
             }))
         )
@@ -2371,10 +2494,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2389,10 +2513,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2407,10 +2532,14 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -2425,10 +2554,8 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::SingleQuotesNotAllowed,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 }
             }))
         )
@@ -2443,10 +2570,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -2461,10 +2589,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -2479,10 +2608,14 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
                 location: SourceLocation {
-                    line: 2,
-                    column: 10,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -2497,10 +2630,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -2515,10 +2649,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 16
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 16
+                    }
                 }
             }))
         )
@@ -2533,10 +2668,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::SurrogateEscape,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 }
             }))
         )
@@ -2551,10 +2687,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -2569,10 +2706,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
                 location: SourceLocation {
-                    line: 2,
-                    column: 8,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position { line: 2, column: 8 },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -2587,10 +2725,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2605,10 +2744,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2623,10 +2763,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 10
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2641,10 +2782,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 }
             }))
         )
@@ -2659,10 +2801,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 }
             }))
         )
@@ -2677,10 +2820,11 @@ mod invalid_strings {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
                 location: SourceLocation {
-                    line: 2,
-                    column: 9,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position { line: 2, column: 9 },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 }
             }))
         )
@@ -2699,10 +2843,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedFieldName,
                 location: SourceLocation {
-                    line: 1,
-                    column: 1,
-                    end_line: 1,
-                    end_column: 1
+                    start: Position { line: 1, column: 1 },
+                    end: Position { line: 1, column: 1 }
                 }
             }))
         )
@@ -2717,10 +2859,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 8,
-                    end_line: 1,
-                    end_column: 8
+                    start: Position { line: 1, column: 8 },
+                    end: Position { line: 1, column: 8 }
                 }
             }))
         )
@@ -2735,10 +2875,11 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
                 location: SourceLocation {
-                    line: 1,
-                    column: 7,
-                    end_line: 1,
-                    end_column: 13
+                    start: Position { line: 1, column: 7 },
+                    end: Position {
+                        line: 1,
+                        column: 13
+                    }
                 }
             }))
         )
@@ -2753,10 +2894,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 6
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 6 }
                 }
             }))
         )
@@ -2770,10 +2909,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 3,
-                    end_line: 1,
-                    end_column: 3
+                    start: Position { line: 1, column: 3 },
+                    end: Position { line: 1, column: 3 }
                 }
             }))
         )
@@ -2788,10 +2925,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 3,
-                    end_line: 1,
-                    end_column: 3
+                    start: Position { line: 1, column: 3 },
+                    end: Position { line: 1, column: 3 }
                 }
             }))
         )
@@ -2806,10 +2941,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingSpaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 3,
-                    end_line: 1,
-                    end_column: 3
+                    start: Position { line: 1, column: 3 },
+                    end: Position { line: 1, column: 3 }
                 }
             }))
         )
@@ -2824,10 +2957,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
                 location: SourceLocation {
-                    line: 1,
-                    column: 3,
-                    end_line: 1,
-                    end_column: 3
+                    start: Position { line: 1, column: 3 },
+                    end: Position { line: 1, column: 3 }
                 }
             }))
         )
@@ -2842,10 +2973,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 4
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 4 }
                 }
             }))
         )
@@ -2860,10 +2989,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 4
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 4 }
                 }
             }))
         )
@@ -2878,10 +3005,8 @@ mod invalid_toplevel {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
                 location: SourceLocation {
-                    line: 1,
-                    column: 4,
-                    end_line: 1,
-                    end_column: 7
+                    start: Position { line: 1, column: 4 },
+                    end: Position { line: 1, column: 7 }
                 }
             }))
         )
@@ -2900,10 +3025,14 @@ mod invalid_whitespace {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
-                    line: 1,
-                    column: 10,
-                    end_line: 1,
-                    end_column: 10
+                    start: Position {
+                        line: 1,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 1,
+                        column: 10
+                    }
                 }
             }))
         )
@@ -2918,10 +3047,8 @@ mod invalid_whitespace {
             eq(&Err(SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
                 location: SourceLocation {
-                    line: 2,
-                    column: 1,
-                    end_line: 2,
-                    end_column: 1
+                    start: Position { line: 2, column: 1 },
+                    end: Position { line: 2, column: 1 }
                 }
             }))
         )

@@ -4,8 +4,9 @@ use crate::schema::{
     EnumType, FloatFieldType, IntegerFieldType, MessageType, Schema, SchemaField, ValueType,
 };
 use crate::semantic_error::{SemanticError, SemanticErrorKind};
-use defcl_parser::{Field, FieldName, ParsedFile, SourceLocation, Value};
+use defcl_parser::{Field, FieldName, ParsedFile, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
+use source_rendering::SourceLocation;
 
 /// Checks the syntax tree of a DCL file against `schema`.
 ///

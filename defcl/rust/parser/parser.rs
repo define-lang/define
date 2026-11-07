@@ -1,11 +1,11 @@
 //! The parser: a DCL file into its syntax tree.
 
 use crate::scanner::Scanner;
-use crate::source_location::{Position, SourceLocation};
 use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };
+use source_rendering::{Position, SourceLocation};
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
 
@@ -182,7 +182,10 @@ impl ByteEscapeRun {
         if str::from_utf8(&self.bytes).is_err() {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation::new(self.start, self.end),
+                location: SourceLocation {
+                    start: self.start,
+                    end: self.end,
+                },
             });
         }
         self.bytes.clear();
@@ -301,7 +304,10 @@ impl<'source> Parser<'source> {
                 location: value.location(),
             });
         };
-        let location = SourceLocation::new(name.location.start(), value.location.end());
+        let location = SourceLocation {
+            start: name.location.start,
+            end: value.location.end,
+        };
         Ok(TopLevelMessage {
             name,
             value,
@@ -319,7 +325,10 @@ impl<'source> Parser<'source> {
         let name = self.parse_field_name_and_colon()?;
         self.skip_whitespace()?;
         let value = self.parse_value()?;
-        let location = SourceLocation::new(name.location.start(), value.location().end());
+        let location = SourceLocation {
+            start: name.location.start,
+            end: value.location().end,
+        };
         Ok(Field {
             name,
             value,
@@ -330,7 +339,10 @@ impl<'source> Parser<'source> {
     fn parse_field_name_and_colon(&mut self) -> Result<FieldName<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_field_name_word_character);
-        let location = SourceLocation::new(start, self.scanner.last_consumed());
+        let location = SourceLocation {
+            start,
+            end: self.scanner.last_consumed(),
+        };
         // The word where the field name belongs is not a valid field name.
         if !is_field_name(text) {
             return Err(SyntaxError {
@@ -392,7 +404,10 @@ impl<'source> Parser<'source> {
                 None | Some(b'\n') => {
                     return Err(SyntaxError {
                         kind: SyntaxErrorKind::UnterminatedString,
-                        location: SourceLocation::new(start, self.scanner.last_consumed()),
+                        location: SourceLocation {
+                            start,
+                            end: self.scanner.last_consumed(),
+                        },
                     });
                 }
                 Some(b'"') => break,
@@ -423,7 +438,10 @@ impl<'source> Parser<'source> {
         self.scanner.advance();
         Ok(Value::String(Scalar {
             text: self.scanner.text_from(start_offset),
-            location: SourceLocation::new(start, self.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: self.scanner.last_consumed(),
+            },
         }))
     }
 
@@ -526,7 +544,10 @@ impl<'source> Parser<'source> {
         let text = self.scanner.consume_while(is_number_word_character);
         let scalar = Scalar {
             text,
-            location: SourceLocation::new(start, self.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: self.scanner.last_consumed(),
+            },
         };
         // The number is a negative zero.
         if text == "-0" || text == "-0.0" {
@@ -551,7 +572,10 @@ impl<'source> Parser<'source> {
     fn parse_enum_value(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_enum_word_character);
-        let location = SourceLocation::new(start, self.scanner.last_consumed());
+        let location = SourceLocation {
+            start,
+            end: self.scanner.last_consumed(),
+        };
         // The word is a boolean literal.
         if text == "true" || text == "false" {
             return Err(SyntaxError {
@@ -612,7 +636,10 @@ impl<'source> Parser<'source> {
         self.scanner.advance();
         Ok(MessageValue {
             fields,
-            location: SourceLocation::new(start, self.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: self.scanner.last_consumed(),
+            },
         })
     }
 
@@ -649,7 +676,10 @@ impl<'source> Parser<'source> {
         }
         Ok(RepeatedValue {
             values,
-            location: SourceLocation::new(start, self.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: self.scanner.last_consumed(),
+            },
         })
     }
 }
@@ -669,7 +699,10 @@ impl Parser<'_> {
             Ok(true) if lookahead.scanner.peek() == Some(b':') => {
                 return SyntaxError {
                     kind: SyntaxErrorKind::WhitespaceBeforeColon,
-                    location: SourceLocation::new(after_name, lookahead.scanner.last_consumed()),
+                    location: SourceLocation {
+                        start: after_name,
+                        end: lookahead.scanner.last_consumed(),
+                    },
                 };
             }
             Ok(_) => {}
@@ -711,7 +744,10 @@ impl Parser<'_> {
         }
         SyntaxError {
             kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
-            location: SourceLocation::new(start, lookahead.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: lookahead.scanner.last_consumed(),
+            },
         }
     }
 
@@ -736,7 +772,10 @@ impl Parser<'_> {
         if self.scanner.peek() == Some(b',') {
             return SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeComma,
-                location: SourceLocation::new(whitespace_start, self.scanner.last_consumed()),
+                location: SourceLocation {
+                    start: whitespace_start,
+                    end: self.scanner.last_consumed(),
+                },
             };
         }
         self.unexpected(SyntaxErrorKind::ExpectedCommaOrCloseBracket)
@@ -789,7 +828,10 @@ impl Parser<'_> {
     const fn invalid_escape(&self, start: Position, kind: SyntaxErrorKind) -> SyntaxError {
         SyntaxError {
             kind,
-            location: SourceLocation::new(start, self.scanner.last_consumed()),
+            location: SourceLocation {
+                start,
+                end: self.scanner.last_consumed(),
+            },
         }
     }
 
@@ -813,7 +855,10 @@ impl Parser<'_> {
                     lookahead.advance();
                     return SyntaxError {
                         kind: SyntaxErrorKind::SingleQuotesNotAllowed,
-                        location: SourceLocation::new(start, lookahead.last_consumed()),
+                        location: SourceLocation {
+                            start,
+                            end: lookahead.last_consumed(),
+                        },
                     };
                 }
                 Some(_) => lookahead.advance(),

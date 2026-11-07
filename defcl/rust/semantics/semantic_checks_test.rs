@@ -1,7 +1,8 @@
 use crate::test_support::{invalid_semantics_schemas, valid_schemas};
 use crate::{FileDescriptorSet, Schema, SemanticError, SemanticErrorKind, check_semantics};
-use defcl_parser::{SourceLocation, parse};
+use defcl_parser::parse;
 use googletest::prelude::*;
+use source_rendering::{Position, SourceLocation};
 
 /// Parses `source` and checks it against the schema in `descriptor_set` whose
 /// top-level message type is `top_level_message_type`.
@@ -125,10 +126,14 @@ mod non_repeated_fields_with_brackets {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 15
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 15
+                    }
                 },
                 field_name: "name".to_owned(),
             }]))
@@ -148,10 +153,14 @@ mod non_repeated_fields_with_brackets {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 },
                 field_name: "name".to_owned(),
             }]))
@@ -171,10 +180,14 @@ mod non_repeated_fields_with_brackets {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 },
                 field_name: "database".to_owned(),
             }]))
@@ -198,10 +211,8 @@ mod message_values_for_scalar_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::MessageValueForScalarField,
                 location: SourceLocation {
-                    line: 1,
-                    column: 8,
-                    end_line: 1,
-                    end_column: 9
+                    start: Position { line: 1, column: 8 },
+                    end: Position { line: 1, column: 9 }
                 },
                 field_name: "count".to_owned(),
             }]))
@@ -221,10 +232,14 @@ mod message_values_for_scalar_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::MessageValueForScalarField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 },
                 field_name: "basic".to_owned(),
             }]))
@@ -244,10 +259,14 @@ mod message_values_for_scalar_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::MessageValueForScalarField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 17,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 17
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 },
                 field_name: "tags".to_owned(),
             }]))
@@ -271,10 +290,14 @@ mod scalars_for_message_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::ScalarForMessageField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 25
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 25
+                    }
                 },
                 field_name: "database".to_owned(),
             }]))
@@ -294,10 +317,14 @@ mod scalars_for_message_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::ScalarForMessageField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 },
                 field_name: "database".to_owned(),
             }]))
@@ -317,10 +344,14 @@ mod scalars_for_message_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::ScalarForMessageField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 17
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 17
+                    }
                 },
                 field_name: "database".to_owned(),
             }]))
@@ -340,10 +371,14 @@ mod scalars_for_message_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::ScalarForMessageField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 21
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 21
+                    }
                 },
                 field_name: "database".to_owned(),
             }]))
@@ -363,10 +398,14 @@ mod scalars_for_message_fields {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::ScalarForMessageField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 20,
-                    end_line: 2,
-                    end_column: 30
+                    start: Position {
+                        line: 2,
+                        column: 20
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 30
+                    }
                 },
                 field_name: "replicas".to_owned(),
             }]))
@@ -388,10 +427,14 @@ mod integer_enums {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::IntegerEnum,
                 location: SourceLocation {
-                    line: 5,
-                    column: 13,
-                    end_line: 5,
-                    end_column: 13
+                    start: Position {
+                        line: 5,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 5,
+                        column: 13
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -409,10 +452,14 @@ mod integer_enums {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::IntegerEnum,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -430,10 +477,14 @@ mod integer_enums {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::IntegerEnum,
                 location: SourceLocation {
-                    line: 4,
-                    column: 19,
-                    end_line: 4,
-                    end_column: 19
+                    start: Position {
+                        line: 4,
+                        column: 19
+                    },
+                    end: Position {
+                        line: 4,
+                        column: 19
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -451,10 +502,14 @@ mod integer_enums {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::IntegerEnum,
                 location: SourceLocation {
-                    line: 3,
-                    column: 17,
-                    end_line: 3,
-                    end_column: 17
+                    start: Position {
+                        line: 3,
+                        column: 17
+                    },
+                    end: Position {
+                        line: 3,
+                        column: 17
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -478,10 +533,14 @@ mod wrong_value_kinds {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonStringForStringField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 2,
-                    end_column: 11
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 11
+                    }
                 },
                 field_name: "name".to_owned(),
             }]))
@@ -501,10 +560,14 @@ mod wrong_value_kinds {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonIntegerForIntegerField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 14
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 14
+                    }
                 },
                 field_name: "count".to_owned(),
             }]))
@@ -524,10 +587,14 @@ mod wrong_value_kinds {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonFloatForFloatField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 12,
-                    end_line: 2,
-                    end_column: 12
+                    start: Position {
+                        line: 2,
+                        column: 12
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 12
+                    }
                 },
                 field_name: "ratio".to_owned(),
             }]))
@@ -545,10 +612,14 @@ mod wrong_value_kinds {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonEnumValueForEnumField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 27
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 27
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -572,10 +643,14 @@ mod wrong_value_kinds {
                             .to_owned()
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 18
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 18
+                    }
                 },
                 field_name: "status".to_owned(),
             }]))
@@ -595,10 +670,14 @@ mod wrong_value_kinds {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonStringForStringField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 17,
-                    end_line: 2,
-                    end_column: 29
+                    start: Position {
+                        line: 2,
+                        column: 17
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 29
+                    }
                 },
                 field_name: "tags".to_owned(),
             }]))
@@ -625,10 +704,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Int32
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 18,
-                    end_line: 2,
-                    end_column: 27
+                    start: Position {
+                        line: 2,
+                        column: 18
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 27
+                    }
                 },
                 field_name: "int32_value".to_owned(),
             }]))
@@ -650,10 +733,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Int64
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 18,
-                    end_line: 2,
-                    end_column: 37
+                    start: Position {
+                        line: 2,
+                        column: 18
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 37
+                    }
                 },
                 field_name: "int64_value".to_owned(),
             }]))
@@ -675,10 +762,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Uint32
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 19,
-                    end_line: 2,
-                    end_column: 20
+                    start: Position {
+                        line: 2,
+                        column: 19
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 20
+                    }
                 },
                 field_name: "uint32_value".to_owned(),
             }]))
@@ -700,10 +791,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Uint64
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 19,
-                    end_line: 2,
-                    end_column: 38
+                    start: Position {
+                        line: 2,
+                        column: 19
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 38
+                    }
                 },
                 field_name: "uint64_value".to_owned(),
             }]))
@@ -725,10 +820,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Int64
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 18,
-                    end_line: 2,
-                    end_column: 57
+                    start: Position {
+                        line: 2,
+                        column: 18
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 57
+                    }
                 },
                 field_name: "int64_value".to_owned(),
             }]))
@@ -750,10 +849,14 @@ mod values_out_of_range {
                     field_type: FloatFieldType::Float
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 18,
-                    end_line: 2,
-                    end_column: 58
+                    start: Position {
+                        line: 2,
+                        column: 18
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 58
+                    }
                 },
                 field_name: "float_value".to_owned(),
             }]))
@@ -775,10 +878,14 @@ mod values_out_of_range {
                     field_type: FloatFieldType::Double
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 19,
-                    end_line: 2,
-                    end_column: 331
+                    start: Position {
+                        line: 2,
+                        column: 19
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 331
+                    }
                 },
                 field_name: "double_value".to_owned(),
             }]))
@@ -800,10 +907,14 @@ mod values_out_of_range {
                     field_type: IntegerFieldType::Int32
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 23,
-                    end_line: 2,
-                    end_column: 33
+                    start: Position {
+                        line: 2,
+                        column: 23
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 33
+                    }
                 },
                 field_name: "int32_values".to_owned(),
             }]))
@@ -828,10 +939,8 @@ mod oneofs {
                         .to_owned()
                 },
                 location: SourceLocation {
-                    line: 3,
-                    column: 5,
-                    end_line: 3,
-                    end_column: 7
+                    start: Position { line: 3, column: 5 },
+                    end: Position { line: 3, column: 7 }
                 },
                 field_name: "url".to_owned(),
             }]))
@@ -853,10 +962,8 @@ mod oneofs {
                     oneof: "defcl.testdata.invalid.semantics.schemas.OneofsFile.target".to_owned()
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 1,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 1 },
+                    end: Position { line: 2, column: 8 }
                 },
                 field_name: "fallback".to_owned(),
             }]))
@@ -876,10 +983,8 @@ mod oneofs {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::FieldWrittenTwice,
                 location: SourceLocation {
-                    line: 3,
-                    column: 5,
-                    end_line: 3,
-                    end_column: 8
+                    start: Position { line: 3, column: 5 },
+                    end: Position { line: 3, column: 8 }
                 },
                 field_name: "path".to_owned(),
             }]))
@@ -901,20 +1006,22 @@ mod oneofs {
                             .to_owned()
                     },
                     location: SourceLocation {
-                        line: 3,
-                        column: 5,
-                        end_line: 3,
-                        end_column: 7
+                        start: Position { line: 3, column: 5 },
+                        end: Position { line: 3, column: 7 }
                     },
                     field_name: "url".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::NonStringForStringField,
                     location: SourceLocation {
-                        line: 3,
-                        column: 10,
-                        end_line: 3,
-                        end_column: 10
+                        start: Position {
+                            line: 3,
+                            column: 10
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 10
+                        }
                     },
                     field_name: "url".to_owned(),
                 }
@@ -938,30 +1045,36 @@ mod repeated_fields_without_brackets {
                 SemanticError {
                     kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                     location: SourceLocation {
-                        line: 2,
-                        column: 11,
-                        end_line: 2,
-                        end_column: 16
+                        start: Position {
+                            line: 2,
+                            column: 11
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 16
+                        }
                     },
                     field_name: "tags".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::FieldWrittenTwice,
                     location: SourceLocation {
-                        line: 3,
-                        column: 5,
-                        end_line: 3,
-                        end_column: 8
+                        start: Position { line: 3, column: 5 },
+                        end: Position { line: 3, column: 8 }
                     },
                     field_name: "tags".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                     location: SourceLocation {
-                        line: 3,
-                        column: 11,
-                        end_line: 3,
-                        end_column: 16
+                        start: Position {
+                            line: 3,
+                            column: 11
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 16
+                        }
                     },
                     field_name: "tags".to_owned(),
                 },
@@ -982,10 +1095,14 @@ mod repeated_fields_without_brackets {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                 location: SourceLocation {
-                    line: 3,
-                    column: 23,
-                    end_line: 3,
-                    end_column: 42
+                    start: Position {
+                        line: 3,
+                        column: 23
+                    },
+                    end: Position {
+                        line: 3,
+                        column: 42
+                    }
                 },
                 field_name: "dependencies".to_owned(),
             }]))
@@ -1005,10 +1122,14 @@ mod repeated_fields_without_brackets {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                 location: SourceLocation {
-                    line: 3,
-                    column: 15,
-                    end_line: 3,
-                    end_column: 20
+                    start: Position {
+                        line: 3,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 3,
+                        column: 20
+                    }
                 },
                 field_name: "tags".to_owned(),
             }]))
@@ -1027,30 +1148,39 @@ mod repeated_fields_without_brackets {
                 SemanticError {
                     kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                     location: SourceLocation {
-                        line: 2,
-                        column: 19,
-                        end_line: 2,
-                        end_column: 38
+                        start: Position {
+                            line: 2,
+                            column: 19
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 38
+                        }
                     },
                     field_name: "dependencies".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::FieldWrittenTwice,
                     location: SourceLocation {
-                        line: 3,
-                        column: 5,
-                        end_line: 3,
-                        end_column: 16
+                        start: Position { line: 3, column: 5 },
+                        end: Position {
+                            line: 3,
+                            column: 16
+                        }
                     },
                     field_name: "dependencies".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                     location: SourceLocation {
-                        line: 3,
-                        column: 19,
-                        end_line: 3,
-                        end_column: 38
+                        start: Position {
+                            line: 3,
+                            column: 19
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 38
+                        }
                     },
                     field_name: "dependencies".to_owned(),
                 },
@@ -1075,10 +1205,11 @@ mod fields_written_twice {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::FieldWrittenTwice,
                 location: SourceLocation {
-                    line: 3,
-                    column: 5,
-                    end_line: 3,
-                    end_column: 16
+                    start: Position { line: 3, column: 5 },
+                    end: Position {
+                        line: 3,
+                        column: 16
+                    }
                 },
                 field_name: "dependencies".to_owned(),
             }]))
@@ -1098,10 +1229,11 @@ mod fields_written_twice {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::FieldWrittenTwice,
                 location: SourceLocation {
-                    line: 3,
-                    column: 5,
-                    end_line: 3,
-                    end_column: 17
+                    start: Position { line: 3, column: 5 },
+                    end: Position {
+                        line: 3,
+                        column: 17
+                    }
                 },
                 field_name: "universe_name".to_owned(),
             }]))
@@ -1121,10 +1253,8 @@ mod fields_written_twice {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::FieldWrittenTwice,
                 location: SourceLocation {
-                    line: 4,
-                    column: 1,
-                    end_line: 4,
-                    end_column: 7
+                    start: Position { line: 4, column: 1 },
+                    end: Position { line: 4, column: 7 }
                 },
                 field_name: "project".to_owned(),
             }]))
@@ -1144,10 +1274,14 @@ mod fields_written_twice {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::FieldWrittenTwice,
                 location: SourceLocation {
-                    line: 6,
-                    column: 13,
-                    end_line: 6,
-                    end_column: 20
+                    start: Position {
+                        line: 6,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 6,
+                        column: 20
+                    }
                 },
                 field_name: "universe".to_owned(),
             }]))
@@ -1174,10 +1308,8 @@ mod unknown_field_names {
                         .to_owned()
                 },
                 location: SourceLocation {
-                    line: 4,
-                    column: 1,
-                    end_line: 4,
-                    end_column: 8
+                    start: Position { line: 4, column: 1 },
+                    end: Position { line: 4, column: 8 }
                 },
                 field_name: "settings".to_owned(),
             }]))
@@ -1201,10 +1333,14 @@ mod unknown_field_names {
                             .to_owned()
                 },
                 location: SourceLocation {
-                    line: 5,
-                    column: 13,
-                    end_line: 5,
-                    end_column: 19
+                    start: Position {
+                        line: 5,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 5,
+                        column: 19
+                    }
                 },
                 field_name: "version".to_owned(),
             }]))
@@ -1226,10 +1362,8 @@ mod unknown_field_names {
                     message_type: "NoPackageFile.Config".to_owned()
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 5 },
+                    end: Position { line: 2, column: 8 }
                 },
                 field_name: "size".to_owned(),
             }]))
@@ -1254,30 +1388,36 @@ mod multiple_errors {
                 SemanticError {
                     kind: SemanticErrorKind::IntegerEnum,
                     location: SourceLocation {
-                        line: 2,
-                        column: 13,
-                        end_line: 2,
-                        end_column: 13
+                        start: Position {
+                            line: 2,
+                            column: 13
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 13
+                        }
                     },
                     field_name: "status".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::ScalarForMessageField,
                     location: SourceLocation {
-                        line: 3,
-                        column: 15,
-                        end_line: 3,
-                        end_column: 25
+                        start: Position {
+                            line: 3,
+                            column: 15
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 25
+                        }
                     },
                     field_name: "database".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::MessageValueForScalarField,
                     location: SourceLocation {
-                        line: 5,
-                        column: 8,
-                        end_line: 5,
-                        end_column: 9
+                        start: Position { line: 5, column: 8 },
+                        end: Position { line: 5, column: 9 }
                     },
                     field_name: "count".to_owned(),
                 },
@@ -1299,20 +1439,28 @@ mod multiple_errors {
                 SemanticError {
                     kind: SemanticErrorKind::MessageValueForScalarField,
                     location: SourceLocation {
-                        line: 2,
-                        column: 12,
-                        end_line: 2,
-                        end_column: 13
+                        start: Position {
+                            line: 2,
+                            column: 12
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 13
+                        }
                     },
                     field_name: "tags".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::MessageValueForScalarField,
                     location: SourceLocation {
-                        line: 2,
-                        column: 21,
-                        end_line: 2,
-                        end_column: 22
+                        start: Position {
+                            line: 2,
+                            column: 21
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 22
+                        }
                     },
                     field_name: "tags".to_owned(),
                 },
@@ -1337,10 +1485,8 @@ mod multiple_errors {
                             .to_owned()
                 },
                 location: SourceLocation {
-                    line: 2,
-                    column: 5,
-                    end_line: 2,
-                    end_column: 8
+                    start: Position { line: 2, column: 5 },
+                    end: Position { line: 2, column: 8 }
                 },
                 field_name: "size".to_owned(),
             },]))
@@ -1361,20 +1507,25 @@ mod multiple_errors {
                 SemanticError {
                     kind: SemanticErrorKind::FieldWrittenTwice,
                     location: SourceLocation {
-                        line: 3,
-                        column: 5,
-                        end_line: 3,
-                        end_column: 10
+                        start: Position { line: 3, column: 5 },
+                        end: Position {
+                            line: 3,
+                            column: 10
+                        }
                     },
                     field_name: "status".to_owned(),
                 },
                 SemanticError {
                     kind: SemanticErrorKind::IntegerEnum,
                     location: SourceLocation {
-                        line: 3,
-                        column: 13,
-                        end_line: 3,
-                        end_column: 13
+                        start: Position {
+                            line: 3,
+                            column: 13
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 13
+                        }
                     },
                     field_name: "status".to_owned(),
                 },
@@ -1400,10 +1551,8 @@ mod multiple_errors {
                                 .to_owned()
                     },
                     location: SourceLocation {
-                        line: 2,
-                        column: 5,
-                        end_line: 2,
-                        end_column: 8
+                        start: Position { line: 2, column: 5 },
+                        end: Position { line: 2, column: 8 }
                     },
                     field_name: "size".to_owned(),
                 },
@@ -1414,10 +1563,8 @@ mod multiple_errors {
                                 .to_owned()
                     },
                     location: SourceLocation {
-                        line: 3,
-                        column: 5,
-                        end_line: 3,
-                        end_column: 8
+                        start: Position { line: 3, column: 5 },
+                        end: Position { line: 3, column: 8 }
                     },
                     field_name: "size".to_owned(),
                 },
@@ -1438,10 +1585,11 @@ mod multiple_errors {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::MessageValueForScalarField,
                 location: SourceLocation {
-                    line: 2,
-                    column: 11,
-                    end_line: 4,
-                    end_column: 5
+                    start: Position {
+                        line: 2,
+                        column: 11
+                    },
+                    end: Position { line: 4, column: 5 }
                 },
                 field_name: "name".to_owned(),
             },]))
@@ -1461,10 +1609,14 @@ mod multiple_errors {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 27
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 27
+                    }
                 },
                 field_name: "database".to_owned(),
             },]))
@@ -1484,10 +1636,14 @@ mod multiple_errors {
             err(eq(&vec![SemanticError {
                 kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
                 location: SourceLocation {
-                    line: 2,
-                    column: 15,
-                    end_line: 2,
-                    end_column: 25
+                    start: Position {
+                        line: 2,
+                        column: 15
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 25
+                    }
                 },
                 field_name: "replicas".to_owned(),
             },]))

@@ -1,8 +1,8 @@
 //! The errors that checking a DCL file against its schema can end in.
 
 use crate::schema::{FloatFieldType, IntegerFieldType};
-use defcl_parser::{SourceLines, SourceLocation};
 use derive_more::{Display, Error};
+use source_rendering::{SourceLines, SourceLocation};
 use strum::{IntoStaticStr, VariantNames};
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
@@ -16,11 +16,11 @@ pub struct SemanticError {
 
 impl SemanticError {
     /// The error as the Define compiler shows errors: the location as
-    /// `SourceLocation::render` shows it in `source_lines`, the text of the
+    /// `SourceLines::render` shows it in `source_lines`, the text of the
     /// file at `file_path`, then the message.
     #[must_use]
     pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
-        format!("{}\n{self}", self.location.render(source_lines, file_path))
+        format!("{}\n{self}", source_lines.render(self.location, file_path))
     }
 }
 
@@ -109,8 +109,8 @@ pub enum SemanticErrorKind {
 #[cfg(test)]
 mod tests {
     use super::{SemanticError, SemanticErrorKind};
-    use defcl_parser::{SourceLines, SourceLocation};
     use googletest::prelude::*;
+    use source_rendering::{Position, SourceLines, SourceLocation};
 
     #[gtest]
     fn shows_its_location_then_its_message() -> Result<()> {
@@ -118,10 +118,14 @@ mod tests {
             SemanticError {
                 kind: SemanticErrorKind::IntegerEnum,
                 location: SourceLocation {
-                    line: 2,
-                    column: 13,
-                    end_line: 2,
-                    end_column: 13
+                    start: Position {
+                        line: 2,
+                        column: 13
+                    },
+                    end: Position {
+                        line: 2,
+                        column: 13
+                    }
                 },
                 field_name: "status".to_owned(),
             }

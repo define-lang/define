@@ -1,6 +1,6 @@
 //! The syntax tree of a DCL file, with the location of every node.
 
-use crate::source_location::SourceLocation;
+use source_rendering::SourceLocation;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParsedFile<'source> {

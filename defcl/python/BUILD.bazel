@@ -125,6 +125,7 @@ pyo3_extension(
         "//defcl/rust:validator",
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
+        "//source_rendering/rust:source_rendering",
         "@crates//:prost",
     ],
 )

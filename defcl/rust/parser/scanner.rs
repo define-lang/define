@@ -1,6 +1,6 @@
 //! Moving through the source and tracking positions in it.
 
-use crate::source_location::Position;
+use source_rendering::Position;
 
 const LINE_FEED: u8 = b'\n';
 

@@ -1,8 +1,9 @@
 //! The validation of a DCL file's text against its schema: parsing it, then
 //! checking it.
 
-use defcl_parser::{SourceLines, SyntaxError, parse};
+use defcl_parser::{SyntaxError, parse};
 use defcl_semantics::{FileDescriptorSet, Schema, SchemaError, SemanticError, check_semantics};
+use source_rendering::SourceLines;
 use std::io;
 use std::path::Path;
 
@@ -98,11 +99,12 @@ fn validate_source(
 #[cfg(test)]
 mod tests {
     use super::{RenderedError, ValidationError, validate, validate_file};
-    use defcl_parser::{SourceLocation, SyntaxError, SyntaxErrorKind};
+    use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
     use prost::Message as _;
     use runfiles::Runfiles;
+    use source_rendering::{Position, SourceLocation};
     use std::io;
     use std::path::Path;
 
@@ -160,10 +162,8 @@ mod tests {
                 error: SyntaxError {
                     kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                     location: SourceLocation {
-                        line: 2,
-                        column: 8,
-                        end_line: 2,
-                        end_column: 8
+                        start: Position { line: 2, column: 8 },
+                        end: Position { line: 2, column: 8 }
                     },
                 },
                 rendered: "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
@@ -190,12 +190,7 @@ mod tests {
                                 "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
                                     .to_owned(),
                         },
-                        location: SourceLocation {
-                            line: 2,
-                            column: 5,
-                            end_line: 2,
-                            end_column: 8
-                        },
+                        location: SourceLocation { start: Position { line: 2, column: 5 }, end: Position { line: 2, column: 8 } },
                         field_name: "size".to_owned(),
                     },
                     rendered: "line 2, column 5\n    size: 1\n    ^^^^\nsize: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
@@ -208,12 +203,7 @@ mod tests {
                                 "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
                                     .to_owned(),
                         },
-                        location: SourceLocation {
-                            line: 3,
-                            column: 5,
-                            end_line: 3,
-                            end_column: 8
-                        },
+                        location: SourceLocation { start: Position { line: 3, column: 5 }, end: Position { line: 3, column: 8 } },
                         field_name: "size".to_owned(),
                     },
                     rendered: "line 3, column 5\n    size: 2\n    ^^^^\nsize: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
@@ -244,10 +234,8 @@ mod tests {
                     error: SyntaxError {
                         kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                         location: SourceLocation {
-                            line: 2,
-                            column: 8,
-                            end_line: 2,
-                            end_column: 8
+                            start: Position { line: 2, column: 8 },
+                            end: Position { line: 2, column: 8 }
                         },
                     },
                     rendered: format!(

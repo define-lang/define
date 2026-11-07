@@ -12,6 +12,7 @@ import msgspec
 from define.compiler import constants, name_types
 from define.compiler.errors import source_map
 from define.compiler.validator.reference_graph import propagation_step
+from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1978,7 +1979,7 @@ class ControlCharacterInCommentDiagnostic(Diagnostic):
     @property
     def escaped_character(self) -> str:
         """The character as an escape sequence."""
-        return source_map.escape_invisible(self.character)
+        return rendering.escape_invisible(self.character)
 
 
 class InvisibleCharacterInCommentDiagnostic(Diagnostic):

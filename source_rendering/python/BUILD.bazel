@@ -1,0 +1,63 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "python",
+    srcs = ["__init__.py"],
+    deps = ["//source_rendering"],
+)
+
+py_library(
+    name = "rendering",
+    srcs = ["rendering.pyi"],
+    visibility = ["//define/compiler/errors:__pkg__"],
+    deps = [
+        ":rendering_extension",  # keep
+    ],
+)
+
+pyo3_extension(
+    name = "rendering_extension",
+    srcs = ["rendering_extension.rs"],
+    crate_root = "rendering_extension.rs",
+    module_name = "rendering",
+    stubs = False,
+    visibility = ["//tools:__pkg__"],
+    deps = ["//source_rendering/rust:source_rendering"],
+)
+
+py_test(
+    name = "rendering_test",
+    size = "small",
+    srcs = ["rendering_test.py"],
+    deps = [":rendering"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = [
+        "clippy",
+        "precommit",
+    ],
+    targets = [":rendering_extension_shared"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":python",
+        ":rendering",
+        ":rendering_test",
+    ],
+)
+
+check_build_file()

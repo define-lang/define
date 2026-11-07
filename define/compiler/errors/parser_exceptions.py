@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, ClassVar, override
 
 from define.compiler import constants
 from define.compiler.errors import exceptions, source_map
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler import ast
@@ -56,7 +57,7 @@ class DefineCharError(DefineSyntaxError):
     @property
     def escaped_char(self) -> str:
         """The character in a readable escaped form."""
-        return source_map.escape_invisible(self.char)
+        return rendering.escape_invisible(self.char)
 
     @override
     def _message_fields(self) -> dict[str, object]:
