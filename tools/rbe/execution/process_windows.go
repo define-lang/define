@@ -117,19 +117,6 @@ func exitCode(exitErr *exec.ExitError) int32 {
 	return int32(uint32(exitErr.ExitCode()))
 }
 
-// startablePath lets a program whose name has no extension start, such as one
-// that Bazel on Linux built for Windows. os/exec refuses such a path, but
-// Windows runs the file it names when given the path with a trailing dot,
-// which it drops.
-// TODO: Remove this once rules_py names its Windows launchers .exe:
-// https://github.com/aspect-build/rules_py/pull/1644
-func startablePath(program string) string {
-	if filepath.Ext(program) == "" {
-		return program + "."
-	}
-	return program
-}
-
 // makeInputDirectory makes a directory of an input tree. NTFS ignores case, so
 // two directories whose names differ only in case are the same directory, which
 // gets the entries of both.

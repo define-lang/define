@@ -280,7 +280,7 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	defer stderr.Close()
 
 	process := &exec.Cmd{
-		Path:   startablePath(program),
+		Path:   program,
 		Args:   command.Arguments,
 		Env:    environment,
 		Dir:    workingDirectory,

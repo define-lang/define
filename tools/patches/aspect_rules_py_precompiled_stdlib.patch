@@ -168,7 +168,7 @@ index 36412293..7553352a 100644
  )
  
 diff --git a/py/private/interpreter/repository.bzl b/py/private/interpreter/repository.bzl
-index 9c573a06..0aae3eb5 100644
+index 2078c148..1345ec3d 100644
 --- a/py/private/interpreter/repository.bzl
 +++ b/py/private/interpreter/repository.bzl
 @@ -1,6 +1,7 @@
@@ -279,16 +279,16 @@ index 9c573a06..0aae3eb5 100644
  
      # A free-threaded build's standard library is lib/python3.14t, not
      # lib/python3.14.
-     stdlib = "lib/python{}.{}{}".format(major, minor, abi_flags)
+     stdlib = "lib/python{}.{}{}".format(major, minor, "t" if "t" in abi_flags else "")
 -    feature_targets, feature_excludes = _feature_filegroups(stdlib, is_windows)
 +    feature_targets, feature_excludes = _feature_filegroups(stdlib, is_windows, precompiled)
  
      include_dirs = ["include"]
      if not is_windows:
-@@ -176,19 +241,15 @@ cc_library(
-             headers_abi3_attr = "    headers_abi3 = \":python_headers\",\n"
+@@ -196,19 +261,15 @@ filegroup(
  
-     if is_windows:
+ """
+         venv_dlls_attr = "    venv_dlls = [\":venv_dlls\"],\n"
 -        core_include = '["**/*.py", "**/*.pyd", "**/*.dll", "**/*.exe", "include/**", "Lib/**"]'
 -        core_exclude = '["Lib/**/test/**", "Lib/**/tests/**", "**/__pycache__/*.pyc*"]'
 +        core_include = ["**/*.py", "**/*.pyd", "**/*.dll", "**/*.exe", "include/**", "Lib/**"]
@@ -313,7 +313,7 @@ index 9c573a06..0aae3eb5 100644
  
      # Build the select() expressions for optional features
      feature_selects = ""
-@@ -217,10 +278,7 @@ package(default_visibility = ["//visibility:public"])
+@@ -237,10 +298,7 @@ package(default_visibility = ["//visibility:public"])
  
  filegroup(
      name = "_core",
@@ -325,16 +325,16 @@ index 9c573a06..0aae3eb5 100644
  )
  
  filegroup(
-@@ -280,8 +338,7 @@ py_cc_toolchain(
+@@ -302,8 +360,7 @@ py_cc_toolchain(
          serial = serial,
          feature_targets = feature_targets,
          feature_selects = feature_selects,
 -        core_include = core_include,
 -        core_exclude = core_exclude,
 +        core_srcs = _files_glob(core_include, core_exclude, precompiled),
+         venv_dlls_target = venv_dlls_target,
+         venv_dlls_attr = venv_dlls_attr,
      )
- 
- python_interpreter = repository_rule(
 diff --git a/py/private/interpreter/resolve.bzl b/py/private/interpreter/resolve.bzl
 index 76647e6f..593a1c6c 100644
 --- a/py/private/interpreter/resolve.bzl
@@ -358,7 +358,7 @@ index 76647e6f..593a1c6c 100644
          return None
  
 diff --git a/py/private/interpreter/tests/repository_test.bzl b/py/private/interpreter/tests/repository_test.bzl
-index 7544cec6..3e399884 100644
+index 3b3a5f23..43cebc11 100644
 --- a/py/private/interpreter/tests/repository_test.bzl
 +++ b/py/private/interpreter/tests/repository_test.bzl
 @@ -9,7 +9,7 @@ _PYCACHE_EXCLUDE = 'exclude = ["**/__pycache__/*.pyc*"]'
@@ -408,16 +408,16 @@ index 7544cec6..3e399884 100644
      for pattern in [
          "lib/python3.14t/**/test/**",
          "lib/python3.14t/**/tests/**",
-@@ -58,7 +59,7 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
-         asserts.true(env, repr(pattern) in content, pattern)
-     asserts.false(env, "lib/python3.14/" in content)
- 
--    content = _build_file("")
-+    content = _build_file(abi_flags = "")
-     asserts.true(env, repr("lib/python3.14/**/test/**") in content)
-     asserts.true(env, repr("lib/python3.14/pydoc_data/**") in content)
-     asserts.false(env, "lib/python3.14t/" in content)
-@@ -67,9 +68,37 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+@@ -62,7 +63,7 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
+     # build's is lib/python3.14 and a free-threaded debug build's is
+     # lib/python3.14t.
+     for abi_flags, stdlib in [("", "lib/python3.14"), ("d", "lib/python3.14"), ("td", "lib/python3.14t")]:
+-        content = _build_file(abi_flags)
++        content = _build_file(abi_flags = abi_flags)
+         asserts.true(env, repr(stdlib + "/**/test/**") in content, abi_flags)
+         asserts.true(env, repr(stdlib + "/pydoc_data/**") in content, abi_flags)
+         asserts.false(env, "lib/python3.14d" in content, abi_flags)
+@@ -74,9 +75,37 @@ def _freethreaded_stdlib_excludes_test_impl(ctx):
  
  freethreaded_stdlib_excludes_test = unittest.make(_freethreaded_stdlib_excludes_test_impl)
  

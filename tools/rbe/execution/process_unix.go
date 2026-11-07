@@ -41,10 +41,6 @@ func exitCode(exitErr *exec.ExitError) int32 {
 	return int32(exitErr.ExitCode())
 }
 
-func startablePath(program string) string {
-	return program
-}
-
 func makeInputDirectory(path string) error {
 	return os.Mkdir(path, 0o755)
 }

@@ -2,13 +2,10 @@ package execution
 
 import (
 	"context"
-	"crypto/sha256"
-	"os"
 	"testing"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 
-	"github.com/define-lang/define/tools/rbe/cas"
 	"github.com/define-lang/define/tools/rbe/testprogram"
 )
 
@@ -22,31 +19,6 @@ func TestReportsWindowsStatusCodeExitCode(t *testing.T) {
 	}
 	if uint32(result.ExitCode) != 0xC0000135 {
 		t.Errorf("exited with %#x", uint32(result.ExitCode))
-	}
-}
-
-func TestRunsAProgramWhoseNameHasNoExtension(t *testing.T) {
-	executor, store := newExecutor(t)
-	command := testprogram.Command(t, "exit", "7")
-	contents, err := os.ReadFile(command.Arguments[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	program := cas.Key{Hash: sha256.Sum256(contents), Size: int64(len(contents))}
-	if err := store.Put(program, contents); err != nil {
-		t.Fatal(err)
-	}
-	root := putDirectory(t, store, &repb.Directory{
-		Files: []*repb.FileNode{{Name: "program", Digest: program.Digest(), IsExecutable: true}},
-	})
-	command.Arguments[0] = `.\program`
-
-	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.ExitCode != 7 {
-		t.Errorf("exited with %d", result.ExitCode)
 	}
 }
 

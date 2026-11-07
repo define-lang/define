@@ -36,54 +36,22 @@ local_path_override(
 )
 
 # Windows free-threaded CPython's headers need Py_GIL_DISABLED defined for
-# extensions to compile for the interpreter's ABI, which this patch adds.
-# TODO: Remove the patch once an aspect_rules_py release includes
-# https://github.com/aspect-build/rules_py/pull/1611.
-# Windows CPython reads only a venv's Lib/site-packages, and it resolves a
-# relative pyvenv.cfg home against its startup directory rather than the venv,
-# so Python in a Windows venv finds neither its packages nor its stdlib. The
-# venv layout patch puts site-packages and home where Windows CPython expects.
-# TODO: Remove the venv layout patch once an aspect_rules_py release includes
-# https://github.com/aspect-build/rules_py/pull/1614.
-# Windows fails to load an extension module with an embedded manifest from a
-# path longer than about 250 characters, even with long paths enabled, and
-# Bazel's runfiles paths are often longer. The long extension paths patch loads
-# such modules through extended-length paths.
-# TODO: Remove the long extension paths patch once an aspect_rules_py release
-# includes https://github.com/aspect-build/rules_py/pull/1625.
-# The interpreter repository's test-suite and feature excludes name
-# lib/python3.14 rather than a free-threaded build's lib/python3.14t, so every
-# Python action's inputs carry CPython's own tests. The free-threaded test
-# excludes patch uses the real standard library directory.
-# TODO: Remove the free-threaded test excludes patch once an aspect_rules_py
-# release includes https://github.com/aspect-build/rules_py/pull/1619.
+# extensions to compile for the interpreter's ABI, which the free-threaded
+# headers patch adds.
+# TODO: Remove the free-threaded headers patch once an aspect_rules_py release
+# includes https://github.com/aspect-build/rules_py/pull/1611.
 # The interpreter repository leaves out all bytecode, so every Python process
 # compiles the standard library from source. The precompiled stdlib patch
 # compiles the standard library once with bytecode that never goes stale.
 # TODO: Remove the precompiled stdlib patch once an aspect_rules_py release
 # includes https://github.com/aspect-build/rules_py/pull/1620.
-# Windows finds a command on PATH only by an executable extension, and loads a
-# program's DLLs from the directory it was started from, so a Windows venv's
-# extensionless bin/python is neither found on PATH nor startable directly. The
-# venv bin patch adds bin/python.exe and the interpreter's DLLs.
-# TODO: Remove the venv bin patch once an aspect_rules_py release includes
-# https://github.com/aspect-build/rules_py/pull/1626.
-# A Windows py_binary or py_test launcher is a Windows program named without
-# .exe, so Windows can't start it by name. The exe name patch adds .exe.
-# TODO: Remove the exe name patch once an aspect_rules_py release includes
-# https://github.com/aspect-build/rules_py/pull/1644.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "edfd58e83d9828b47783687fd6960c3121a7ba82",
+    commit = "b7f1f0abbe9a89930cbe4327854322df51323d12",
     patch_strip = 1,
     patches = [
         "//tools/patches:aspect_rules_py_windows_free_threaded_headers.patch",
-        "//tools/patches:aspect_rules_py_windows_venv_layout.patch",
-        "//tools/patches:aspect_rules_py_windows_long_extension_paths.patch",
-        "//tools/patches:aspect_rules_py_freethreaded_test_excludes.patch",
         "//tools/patches:aspect_rules_py_precompiled_stdlib.patch",
-        "//tools/patches:aspect_rules_py_windows_venv_bin.patch",
-        "//tools/patches:aspect_rules_py_windows_exe_name.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
