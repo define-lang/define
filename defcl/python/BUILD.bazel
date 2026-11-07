@@ -59,6 +59,18 @@ py_library(
 )
 
 py_test(
+    name = "loader_fuzz_test",
+    size = "small",
+    srcs = ["loader_fuzz_test.py"],
+    deps = [
+        ":errors",
+        ":loader",
+        "//defcl/testdata/valid/schemas:every_field_type_proto_py",
+        "@pypi//hypothesis",
+    ],
+)
+
+py_test(
     name = "loader_test",
     size = "small",
     srcs = ["loader_test.py"],
@@ -153,6 +165,7 @@ pyright_test(
         ":error_types",  # keep: generated, so the deps fixer does not analyze it
         ":errors",
         ":loader",
+        ":loader_fuzz_test",
         ":loader_test",
         ":python",
         ":validator",

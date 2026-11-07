@@ -1,0 +1,39 @@
+edition = "2024";
+
+package defcl.testdata.valid.schemas;
+
+// A field of every type that DCL allows, for generating DCL files.
+message EveryFieldTypeFile {
+  Values values = 1;
+  message Values {
+    int32 int32_value = 1;
+    int64 int64_value = 2;
+    uint32 uint32_value = 3;
+    uint64 uint64_value = 4;
+    sint32 sint32_value = 5;
+    sint64 sint64_value = 6;
+    fixed32 fixed32_value = 7;
+    fixed64 fixed64_value = 8;
+    sfixed32 sfixed32_value = 9;
+    sfixed64 sfixed64_value = 10;
+    float float_value = 11;
+    double double_value = 12;
+    string string_value = 13;
+    Mode enum_value = 14;
+    Values message_value = 15;
+    Values delimited_value = 16 [features.message_encoding = DELIMITED];
+    repeated uint32 uint32_values = 17;
+    repeated float float_values = 18;
+    repeated string string_values = 19;
+    repeated Mode enum_values = 20;
+    repeated Values message_values = 21;
+    oneof choice {
+      string first_choice = 22;
+      sint64 second_choice = 23;
+    }
+  }
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_ACTIVE = 1;
+  }
+}

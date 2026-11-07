@@ -10,6 +10,17 @@ proto_library(
 )
 
 proto_library(
+    name = "every_field_type_proto",
+    srcs = ["every_field_type.proto"],
+)
+
+py_proto_library(
+    name = "every_field_type_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":every_field_type_proto"],
+)
+
+proto_library(
     name = "floats_proto",
     srcs = ["floats.proto"],
 )
@@ -76,6 +87,7 @@ proto_descriptor_set(
     ],
     deps = [
         ":enums_proto",
+        ":every_field_type_proto",
         ":floats_proto",
         ":integers_proto",
         ":nested_messages_proto",
