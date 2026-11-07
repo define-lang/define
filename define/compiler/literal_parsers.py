@@ -127,9 +127,9 @@ def _parse_binary_ascii(content: str) -> str:
 
 
 def _binary_as_decimal(bits: str) -> str:
-    # TODO: Convert binary literals longer than about 14,000 bits, which exceed
-    # Python's limit on converting an int to a decimal string and so raise
-    # ValueError.
+    # TODO: Low priority. Convert binary literals longer than about 14,000
+    # bits, which exceed Python's limit on converting an int to a decimal
+    # string and so raise ValueError.
     return str(int(bits, 2))
 
 
@@ -162,9 +162,9 @@ def _parse_decimal_ascii_as_binary_ascii(content: str) -> str:
     decimal = _parse_decimal_ascii(content)
     _reject_negative(decimal)
     _reject_fraction(decimal)
-    # TODO: Convert decimal literals longer than 4300 digits, which exceed
-    # Python's limit on converting a decimal string to an int and so raise
-    # ValueError.
+    # TODO: Low priority. Convert decimal literals longer than 4300 digits,
+    # which exceed Python's limit on converting a decimal string to an int and
+    # so raise ValueError.
     return format(int(decimal), "b")
 
 
@@ -251,9 +251,9 @@ def _hex_number_error(content: str, start: int) -> LiteralParseError:
 
 
 def _hex_as_decimal(digits: str) -> str:
-    # TODO: Convert hex literals longer than about 3,500 digits, which exceed
-    # Python's limit on converting an int to a decimal string and so raise
-    # ValueError.
+    # TODO: Low priority. Convert hex literals longer than about 3,500
+    # digits, which exceed Python's limit on converting an int to a decimal
+    # string and so raise ValueError.
     return str(int(digits, 16))
 
 
