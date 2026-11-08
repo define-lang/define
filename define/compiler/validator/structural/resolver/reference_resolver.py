@@ -335,13 +335,13 @@ class ReferenceResolver:
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             self._path_tracker.mark_root_failed(root_prefix)
-            new_config = (root_prefix / config.CONFIG_PATH).as_posix_path()
+            new_config = str(root_prefix / config.CONFIG_PATH)
             self._config_diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
                     location=ast.start_of_file_location(new_config),
                     fqun=root_config.fqun,
                     existing_config=str(existing_root / config.CONFIG_PATH),
-                    new_config=str(root_prefix / config.CONFIG_PATH),
+                    new_config=new_config,
                 )
             )
             return None
@@ -363,7 +363,7 @@ class ReferenceResolver:
                 self._disabled_universes.add((root_prefix, universe))
                 self._config_diagnostics.append(
                     diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-                        location=ast.start_of_file_location(deps_path), entry=entry
+                        location=ast.start_of_file_location(str(deps_path)), entry=entry
                     )
                 )
                 continue
@@ -373,7 +373,7 @@ class ReferenceResolver:
             self._disabled_universes.add((root_prefix, universe))
             self._config_diagnostics.append(
                 diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-                    location=ast.start_of_file_location(deps_path),
+                    location=ast.start_of_file_location(str(deps_path)),
                     sub_root_path=str(sub_root_path),
                     entry=entry,
                     existing_entry=existing_entry,

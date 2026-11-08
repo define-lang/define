@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -43,7 +42,7 @@ def test_occupied_implied_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert all_diags[0].position_name == "position<box>::position</marker>"
@@ -97,7 +96,7 @@ def test_destructor_requiring_empty_implied_position_is_reported(
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("destructor_empty.dfn")
+    assert all_diags[0].location.file_path == "destructor_empty.dfn"
     assert all_diags[0].position_name == "position</marker>"
     assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR_EMPTY)]
 
@@ -113,7 +112,7 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].location.file_path == "p.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert all_diags[0].position_name == "position</carrier>::position</marker>"

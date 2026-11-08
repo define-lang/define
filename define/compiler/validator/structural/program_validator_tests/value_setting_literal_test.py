@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -91,7 +90,7 @@ def test_missing_literal_file(validate_testdata_structural: ValidateTestdataStru
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.file_path == "missing.dfn"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 54
@@ -105,7 +104,7 @@ def test_wrong_definition_type(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 8
@@ -120,7 +119,7 @@ def test_literal_must_precede_reference(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 8
@@ -142,7 +141,7 @@ def test_unconfigured_external_literal(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.universe == "literals.org:literals"
     assert diagnostic.location.line == 7
@@ -164,7 +163,7 @@ def test_undefined_standard_literal(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 46
     assert diagnostic.definition_name == "literal<standard:/missing>"

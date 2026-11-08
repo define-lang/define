@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import literal_parsers
@@ -48,7 +47,7 @@ def test_empty_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == ""
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
@@ -65,7 +64,7 @@ def test_invalid_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "+5"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
@@ -82,7 +81,7 @@ def test_invalid_literal_in_destructor_does_not_report_changed_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.content == "+5"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
@@ -99,7 +98,7 @@ def test_invalid_literal_content_with_undefined_target(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.local_name == "position<missing>"
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 26
@@ -113,7 +112,7 @@ def test_no_literal_parser(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
     assert diagnostic.value_quality == "value<standard:/number/natural>"
@@ -139,7 +138,7 @@ def test_only_matching_encodings_suggested(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
     assert diagnostic.value_quality == "value<standard:/number/natural>"
@@ -160,7 +159,7 @@ def test_value_has_no_encoding(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.value_quality == "value</number>"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
@@ -174,7 +173,7 @@ def test_missing_potential_literal(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.file_path == "missing.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 57
@@ -188,7 +187,7 @@ def test_target_missing_type(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
@@ -204,7 +203,7 @@ def test_target_empty(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position</target>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 9
     assert diagnostic.location.column == 26
 
@@ -218,7 +217,7 @@ def test_undefined_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.local_name == "position<missing>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 26
 
@@ -234,7 +233,7 @@ def test_prior_error(
     assert diagnostic.position_name == "position<empty>"
     assert diagnostic.is_action_interface_position is False
     assert diagnostic.inferred_at is None
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 30
 
@@ -256,7 +255,7 @@ def test_empty_parent(
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.parent_position_name == "position<parent>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 26
 
@@ -271,7 +270,7 @@ def test_invalid_child(
     assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 44
 
@@ -312,7 +311,7 @@ def test_callee_requires_target(
         },
     )
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/assign>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert (
@@ -330,7 +329,7 @@ def test_callee_target_missing_value_quality(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("assign.dfn")
+    assert diagnostic.location.file_path == "assign.dfn"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
@@ -352,7 +351,7 @@ def test_invalid_boolean_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "True"
     assert diagnostic.potential_literal == "literal<standard:/boolean>"
     assert diagnostic.value_encoding == "encoding<standard:/boolean/ascii>"
@@ -369,7 +368,7 @@ def test_boolean_literal_sets_natural(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.potential_literal == "literal<standard:/boolean>"
     assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
     assert diagnostic.value_quality == "value<standard:/number/natural>"
@@ -397,7 +396,7 @@ def test_invalid_binary_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "1021"
     assert diagnostic.potential_literal == "literal<standard:/binary>"
     assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
@@ -414,7 +413,7 @@ def test_binary_literal_sets_boolean(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.potential_literal == "literal<standard:/binary>"
     assert diagnostic.literal_encoding == "encoding<standard:/binary/ascii>"
     assert diagnostic.value_quality == "value<standard:/boolean>"
@@ -445,7 +444,7 @@ def test_negative_decimal_literal_sets_binary(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "-3"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
@@ -469,7 +468,7 @@ def test_negative_decimal_literal_sets_natural(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "-3"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
@@ -486,7 +485,7 @@ def test_fractional_decimal_literal_sets_integer(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "2.5"
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.value_encoding == "encoding<standard:/number/integer/ascii>"
@@ -510,7 +509,7 @@ def test_text_literal_with_two_scalars(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "é"
     assert diagnostic.potential_literal == "literal<standard:/text>"
     assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
@@ -534,7 +533,7 @@ def test_invalid_code_point_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "U+0301"
     assert diagnostic.potential_literal == "literal<standard:/text/unicode/code_point>"
     assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
@@ -558,7 +557,7 @@ def test_invalid_hex_literal_content(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.content == "0x1F"
     assert diagnostic.potential_literal == "literal<standard:/number/hex>"
     assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -32,7 +31,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_implied(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _P
     assert all_diags[0].position_name == "position<box>::position</q>"
@@ -67,7 +66,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_implied(
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == _P
     assert (
@@ -121,7 +120,7 @@ def test_constructor_empty_requirement_via_create_in_child_of_moved_implied(
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert diag.location.line == 11
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -174,7 +173,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_to_impli
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert diag.location.line == 11
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -219,7 +218,7 @@ def test_constructor_empty_requirement_via_create_in_child_of_moved_to_implied(
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert diag.location.line == 11
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {

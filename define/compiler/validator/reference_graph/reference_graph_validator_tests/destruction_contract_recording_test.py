@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -37,7 +36,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert not all_diags[0].required_empty
     assert all_diags[0].action_name == _MID
     assert (
@@ -115,7 +114,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert not all_diags[0].required_empty
     assert all_diags[0].action_name == _MID
     assert (
@@ -212,7 +211,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert not all_diags[0].required_empty
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -286,7 +285,7 @@ def test_destruction_contracts_validated_in_execution_order(
     )
     assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[0],
         {
@@ -338,7 +337,7 @@ def test_destruction_contracts_validated_in_execution_order(
     )
     assert all_diags[1].location.line == 27
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[1],
         {

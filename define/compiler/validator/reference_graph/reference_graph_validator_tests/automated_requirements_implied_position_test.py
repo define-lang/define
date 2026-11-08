@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -36,7 +35,7 @@ def test_caller_violates_empty_via_create_in_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::position</implied>"
@@ -83,7 +82,7 @@ def test_caller_violates_occupied_via_move_from_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</implied>"
@@ -122,7 +121,7 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</implied>"
@@ -181,7 +180,7 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert (
@@ -231,7 +230,7 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -273,7 +272,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -335,7 +334,7 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert (
@@ -394,7 +393,7 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -445,7 +444,7 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -496,7 +495,7 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert (
@@ -555,7 +554,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -606,7 +605,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (

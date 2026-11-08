@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -71,12 +70,12 @@ def test_destroy_already_emptied_interface_position(
     )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 30
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].inferred_at.file_path == "other.dfn"
 
 
 def test_destroy_parent_not_occupied(
@@ -89,7 +88,7 @@ def test_destroy_parent_not_occupied(
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<parent>::position</child_pos>"
     assert all_diags[0].parent_position_name == "position<parent>"
 
@@ -104,7 +103,7 @@ def test_destroy_prunes_children_within_action(
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<parent>::position</child_pos>"
     assert all_diags[0].parent_position_name == "position<parent>"
 
@@ -119,16 +118,16 @@ def test_destroy_clears_error_state_on_children(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 72
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 13
     assert all_diags[0].occupied_at.column == 30
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].occupied_at.file_path == "test.dfn"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].position_name == "position<parent>::position</child_pos>"
     assert all_diags[1].parent_position_name == "position<parent>"
 
@@ -152,7 +151,7 @@ def test_destroy_chained_name_not_assigned(
     assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 46
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
     assert all_diags[0].parent_name == "position<x>"
 
@@ -173,4 +172,4 @@ def test_destroy_chained_name_not_in_action(
     assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/child>"
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 66
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"

@@ -7,12 +7,10 @@ from typing import TYPE_CHECKING
 from define.compiler.parsing import parser
 
 if TYPE_CHECKING:
-    from pathlib import PurePosixPath
-
     from define.compiler import ast
 
 
-def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
+def parse(source: str, file_path: str | None = None) -> ast.Program:
     """Parse source into an AST Program, which must have no diagnostics."""
     result = parse_with_diagnostics(source, file_path)
     assert result.diagnostics == []
@@ -23,7 +21,7 @@ def parse(source: str, file_path: PurePosixPath | None = None) -> ast.Program:
 
 
 def parse_with_diagnostics(
-    source: str, file_path: PurePosixPath | None = None
+    source: str, file_path: str | None = None
 ) -> parser.ParseResult:
     """Parse source, and return the parser's result."""
     # A lone surrogate in source becomes invalid UTF-8, as it would be in a

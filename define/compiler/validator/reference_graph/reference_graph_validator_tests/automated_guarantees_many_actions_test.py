@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -60,7 +59,7 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert diag.location.column == 33
     assert diag.location.end_line == 34
     assert diag.location.end_column == 103
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert (
         diag.position_name
         == "position<gateway>::action</middle>::position<target>::position</marker>"
@@ -70,7 +69,7 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert diag.inferred_at.column == 33
     assert diag.inferred_at.end_line == 7
     assert diag.inferred_at.end_column == 49
-    assert diag.inferred_at.file_path == PurePosixPath("empty_marker.dfn")
+    assert diag.inferred_at.file_path == "empty_marker.dfn"
     assert action_graph(result.reference_graph_result) == [
         (
             _TEST,
@@ -117,7 +116,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is True
     assert (
@@ -175,14 +174,14 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 15
     assert all_diags[0].populated_at.column == 83
-    assert all_diags[0].populated_at.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].populated_at.file_path == "outer.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::position</output>"
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -199,14 +198,14 @@ def test_callee_guarantee_below_particle_its_caller_replaced_does_not_apply(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 15
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>"
     )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
@@ -223,14 +222,14 @@ def test_caller_guarantee_below_particle_its_callee_created_applies(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].populated_at.file_path == "middle.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>"
     )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
@@ -247,11 +246,11 @@ def test_earlier_callee_move_applies_before_later_callee_refills_its_origin(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 9
     assert all_diags[0].populated_at.column == 46
-    assert all_diags[0].populated_at.file_path == PurePosixPath("mover.dfn")
+    assert all_diags[0].populated_at.file_path == "mover.dfn"
     assert all_diags[0].position_name == "position<holder>::position</b>"
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_guarantee_below_particle_its_caller_moved_follows_particle(
@@ -264,14 +263,14 @@ def test_callee_guarantee_below_particle_its_caller_moved_follows_particle(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("fill_child.dfn")
+    assert all_diags[0].populated_at.file_path == "fill_child.dfn"
     assert (
         all_diags[0].position_name
         == "position<top>::position</h>::position</box2>::position</child>"
     )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_caller_emptying_position_its_child_particle_callee_filled_reads_empty(
@@ -284,14 +283,14 @@ def test_caller_emptying_position_its_child_particle_callee_filled_reads_empty(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>"
     )
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_later_of_two_callees_on_child_particle_decides_position(
@@ -304,14 +303,14 @@ def test_later_of_two_callees_on_child_particle_decides_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("fill.dfn")
+    assert all_diags[0].populated_at.file_path == "fill.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>"
     )
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_child_particle_callee_guarantee_below_position_its_caller_replaced_does_not_apply(
@@ -324,14 +323,14 @@ def test_child_particle_callee_guarantee_below_position_its_caller_replaced_does
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 18
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>::position</leaf>"
     )
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_move_into_particle_its_caller_then_moved_follows_particle(
@@ -344,11 +343,11 @@ def test_callee_move_into_particle_its_caller_then_moved_follows_particle(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 9
     assert all_diags[0].populated_at.column == 46
-    assert all_diags[0].populated_at.file_path == PurePosixPath("mover.dfn")
+    assert all_diags[0].populated_at.file_path == "mover.dfn"
     assert all_diags[0].position_name == "position<second>::position</s>::position</b>"
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_particle_below_new_particle_in_its_origin_applies(
@@ -361,14 +360,14 @@ def test_callee_moving_particle_below_new_particle_in_its_origin_applies(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 47
-    assert all_diags[0].populated_at.file_path == PurePosixPath("mover.dfn")
+    assert all_diags[0].populated_at.file_path == "mover.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</slot>::position</inner>"
     )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_particle_and_one_below_it_moves_each_to_its_own_destination(
@@ -381,11 +380,11 @@ def test_callee_moving_particle_and_one_below_it_moves_each_to_its_own_destinati
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 65
-    assert all_diags[0].populated_at.file_path == PurePosixPath("mover.dfn")
+    assert all_diags[0].populated_at.file_path == "mover.dfn"
     assert all_diags[0].position_name == "position<holder>::position</moved_part>"
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_particle_back_below_new_particle_leaves_it_there(
@@ -398,14 +397,14 @@ def test_callee_moving_particle_back_below_new_particle_leaves_it_there(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 13
     assert all_diags[0].populated_at.column == 55
-    assert all_diags[0].populated_at.file_path == PurePosixPath("mover.dfn")
+    assert all_diags[0].populated_at.file_path == "mover.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</part>"
     )
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_transitive_child_guarantee_follows_particle_through_move(
@@ -418,10 +417,10 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 27
     assert all_diags[0].populated_at.column == 57
-    assert all_diags[0].populated_at.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].populated_at.file_path == "outer.dfn"
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<gateway>::action</outer>::position<destination>::position</result>"
@@ -446,7 +445,7 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 14
     assert diagnostic.location.end_column == 105
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<gateway>::action</middle>::position<destination>::position</result>"
@@ -455,7 +454,7 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     assert diagnostic.populated_at.column == 30
     assert diagnostic.populated_at.end_line == 7
     assert diagnostic.populated_at.end_column == 46
-    assert diagnostic.populated_at.file_path == PurePosixPath("inner.dfn")
+    assert diagnostic.populated_at.file_path == "inner.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_MIDDLE, _OUTER),
@@ -476,7 +475,7 @@ def test_body_move_carries_pending_callee_guarantees(
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 22
     assert diagnostic.location.end_column == 109
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<destination>::position</holder>::position</child_1>::position</child_2>"
@@ -485,7 +484,7 @@ def test_body_move_carries_pending_callee_guarantees(
     assert diagnostic.populated_at.column == 30
     assert diagnostic.populated_at.end_line == 8
     assert diagnostic.populated_at.end_column == 47
-    assert diagnostic.populated_at.file_path == PurePosixPath("fill_2.dfn")
+    assert diagnostic.populated_at.file_path == "fill_2.dfn"
 
 
 def test_guarantee_move_carries_pending_callee_guarantees(
@@ -501,7 +500,7 @@ def test_guarantee_move_carries_pending_callee_guarantees(
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 17
     assert diagnostic.location.end_column == 132
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<box>::action</mover>::position<out>::position</holder>::position</child_1>::position</child_2>"
@@ -510,7 +509,7 @@ def test_guarantee_move_carries_pending_callee_guarantees(
     assert diagnostic.populated_at.column == 30
     assert diagnostic.populated_at.end_line == 8
     assert diagnostic.populated_at.end_column == 47
-    assert diagnostic.populated_at.file_path == PurePosixPath("fill_2.dfn")
+    assert diagnostic.populated_at.file_path == "fill_2.dfn"
 
 
 def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
@@ -526,7 +525,7 @@ def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 17
     assert diagnostic.location.end_column == 81
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name == "position<holder>::position</box>::position</item>"
     )
@@ -545,7 +544,7 @@ def test_callee_of_callee_empties_position_its_caller_filled(
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 17
     assert diagnostic.location.end_column == 81
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name == "position<holder>::position</box>::position</item>"
     )
@@ -564,7 +563,7 @@ def test_implied_callee_of_callee_empties_position_its_caller_filled(
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 18
     assert diagnostic.location.end_column == 81
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name == "position<holder>::position</box>::position</item>"
     )
@@ -581,7 +580,7 @@ def test_callee_guarantee_below_particle_the_same_callee_moved_is_published(
     assert all_diags[0].position_name == "position</destination>::position</marker>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_particle_then_its_child_particle_moves_what_is_below_it(
@@ -594,14 +593,14 @@ def test_callee_moving_particle_then_its_child_particle_moves_what_is_below_it(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position</destination>::position</b>::position</x>"
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_particle_below_child_particle_a_callee_moved_then_destroyed_is_not_published(
@@ -615,7 +614,7 @@ def test_particle_below_child_particle_a_callee_moved_then_destroyed_is_not_publ
     assert all_diags[0].position_name == "position</destination>::position</a>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_child_particle_then_its_parent_particle_moves_what_is_below_it(
@@ -628,11 +627,11 @@ def test_callee_moving_child_particle_then_its_parent_particle_moves_what_is_bel
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</elsewhere>::position</x>"
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_caller_publishes_child_particle_its_callee_moved_after_its_parent_particle(
@@ -645,14 +644,14 @@ def test_caller_publishes_child_particle_its_callee_moved_after_its_parent_parti
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].populated_at.file_path == "middle.dfn"
     assert (
         all_diags[0].position_name
         == "position</destination>::position</b>::position</x>"
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_particle_out_of_two_particles_it_then_moves_follows_all_three(
@@ -665,11 +664,11 @@ def test_callee_moving_particle_out_of_two_particles_it_then_moves_follows_all_t
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 78
-    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.file_path == "inner.dfn"
     assert all_diags[0].position_name == "position</y>"
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_child_particle_then_destroying_its_parent_particle_keeps_child_particle(
@@ -682,11 +681,11 @@ def test_callee_moving_child_particle_then_destroying_its_parent_particle_keeps_
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</elsewhere>::position</x>"
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_replacing_particle_removes_what_its_caller_tracked_below_it(
@@ -700,7 +699,7 @@ def test_callee_replacing_particle_removes_what_its_caller_tracked_below_it(
     assert all_diags[0].position_name == "position</input>::position</a>::position</x>"
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_callee_moving_two_child_particles_out_then_destroying_their_parent_keeps_both(
@@ -713,16 +712,16 @@ def test_callee_moving_two_child_particles_out_then_destroying_their_parent_keep
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert all_diags[0].populated_at.file_path == "filler.dfn"
     assert all_diags[0].position_name == "position</first>::position</x>"
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].populated_at.line == 8
     assert all_diags[1].populated_at.column == 30
-    assert all_diags[1].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert all_diags[1].populated_at.file_path == "filler.dfn"
     assert all_diags[1].position_name == "position</second>::position</x>"
     assert all_diags[1].location.line == 23
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"

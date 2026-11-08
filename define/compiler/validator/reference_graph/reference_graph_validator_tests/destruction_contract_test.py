@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -43,7 +42,7 @@ def test_circular_destructor_contract_is_skipped(
     assert all_diags[0].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
-    assert all_diags[0].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[0].location.file_path == "close_file.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
 
 
@@ -58,7 +57,7 @@ def test_circular_caller_attached_destructor_contract_is_skipped(
     assert all_diags[0].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
-    assert all_diags[0].location.file_path == PurePosixPath("caller.dfn")
+    assert all_diags[0].location.file_path == "caller.dfn"
     assert action_graph(result.reference_graph_result) == [(_CALLER, _CLOSE_FILE)]
 
 
@@ -73,7 +72,7 @@ def test_missing_caller_attached_destructor_is_reported_and_skipped(
     assert all_diags[0].file_path == "missing_destructor.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 35
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
 
 
@@ -99,7 +98,7 @@ def test_caller_known_child_state_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -166,7 +165,7 @@ def test_caller_unknown_child_state_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _TOUCH
     assert all_diags[0].position_name == "position<my_file>::position</file>"
@@ -193,7 +192,7 @@ def test_caller_unknown_child_state_requirement_violated(
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 22
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == _CLOSE_FILE
     assert (
@@ -262,9 +261,7 @@ def test_caller_attached_destructor_requiring_empty_position_is_reported_only_on
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath(
-        "delete_empty_destructor.dfn"
-    )
+    assert all_diags[0].location.file_path == "delete_empty_destructor.dfn"
     assert all_diags[0].position_name == "position</file>"
 
 
@@ -279,7 +276,7 @@ def test_two_caller_attached_destructors_validated_independently(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -359,7 +356,7 @@ def test_three_destructors_with_two_violated(
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 25
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == _CLOSE_FILE
     assert (
@@ -413,7 +410,7 @@ def test_three_destructors_with_two_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -482,7 +479,7 @@ def test_declared_quality_destructor_validated_once(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -563,7 +560,7 @@ def test_constructor_consumer_caller_known_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -630,7 +627,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -676,7 +673,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == _CLOSE_FILE
     assert (
@@ -748,9 +745,7 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     )
     assert through_caller_attached_destructor.location.line == 21
     assert through_caller_attached_destructor.location.column == 30
-    assert through_caller_attached_destructor.location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert through_caller_attached_destructor.location.file_path == "test.dfn"
     assert (
         through_caller_attached_destructor.position_name
         == "position<box>::action</close_file>::position<target>::position</file>::position</detail>"
@@ -824,7 +819,7 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     )
     assert directly_known.location.line == 21
     assert directly_known.location.column == 30
-    assert directly_known.location.file_path == PurePosixPath("test.dfn")
+    assert directly_known.location.file_path == "test.dfn"
     assert (
         directly_known.position_name
         == "position<box>::action</close_file>::position<target>::position</file>::position</detail>"
@@ -882,7 +877,5 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     )
     assert emptied_file.location.line == 7
     assert emptied_file.location.column == 30
-    assert emptied_file.location.file_path == PurePosixPath(
-        "delete_file_destructor.dfn"
-    )
+    assert emptied_file.location.file_path == "delete_file_destructor.dfn"
     assert emptied_file.position_name == "position</file>"

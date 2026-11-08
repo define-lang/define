@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -71,7 +70,7 @@ class TestCreateParticle:
         assert diags[0].location.column == 30
         assert diags[0].location.end_line == 5
         assert diags[0].location.end_column == 62
-        assert diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert diags[0].location.file_path == "test.dfn"
 
     def test_invalid_local_name_char(
         self,
@@ -278,7 +277,7 @@ class TestCreateParticle:
         assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
         assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 30
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
         assert isinstance(
             all_diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -286,7 +285,7 @@ class TestCreateParticle:
         assert all_diags[1].preceding_name == "position<my.domain.com:my_lib:/other>"
         assert all_diags[1].location.line == 5
         assert all_diags[1].location.column == 48
-        assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[1].location.file_path == "test.dfn"
 
     def test_undefined_local_position_in_chain(
         self,
@@ -369,7 +368,7 @@ class TestMoveParticle:
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 11
         assert all_diags[0].location.column == 47
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_ending_with_action_in_to(
         self,
@@ -384,7 +383,7 @@ class TestMoveParticle:
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 12
         assert all_diags[0].location.column == 69
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_single_action_in_from_position(
         self,
@@ -401,11 +400,11 @@ class TestMoveParticle:
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/act_x>"
         assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 30
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
         assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[1].location.line == 6
         assert all_diags[1].location.column == 30
-        assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[1].location.file_path == "test.dfn"
 
     def test_single_action_in_to_position(
         self,
@@ -422,11 +421,11 @@ class TestMoveParticle:
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/act_y>"
         assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 52
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
         assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[1].location.line == 6
         assert all_diags[1].location.column == 52
-        assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[1].location.file_path == "test.dfn"
 
     def test_valid_chained_through_action(
         self,
@@ -459,7 +458,7 @@ class TestMoveParticle:
         assert all_diags[0].location.column == 63
         assert all_diags[0].location.end_line == 13
         assert all_diags[0].location.end_column == 79
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_not_assigned(
         self,
@@ -476,7 +475,7 @@ class TestMoveParticle:
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 11
         assert all_diags[0].location.column == 65
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
 
 class TestDestroyParticle:

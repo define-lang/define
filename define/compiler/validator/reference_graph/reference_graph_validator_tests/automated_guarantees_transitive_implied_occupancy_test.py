@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -59,7 +58,7 @@ def test_shared_position_on_callee_does_not_satisfy_same_position_on_caller(
     )
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<gateway>::position</shared>"
@@ -102,7 +101,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 85
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<output>"
@@ -111,7 +110,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 45
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].populated_at.file_path == "implied_action.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
@@ -132,7 +131,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 84
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<input>"
@@ -143,7 +142,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert all_diags[0].inferred_at.column == 30
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 44
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].inferred_at.file_path == "implied_action.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
@@ -190,13 +189,13 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 66
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 51
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].populated_at.file_path == "implied_action.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
@@ -217,7 +216,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 16
     assert all_diags[0].location.end_column == 66
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -241,13 +240,13 @@ def test_occupied_implied_position_guarantee_propagates_through_directly_implied
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 9
     assert all_diags[0].location.end_column == 51
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</implied_pos>"
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 51
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].populated_at.file_path == "implied_action.dfn"
     assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/middle>",
@@ -269,7 +268,7 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 51
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -294,7 +293,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 77
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name == "position<box>::position</slot>::position</color>"
     )
@@ -302,7 +301,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 45
-    assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert all_diags[0].populated_at.file_path == "filler.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_IMPLIER, _FILLER),
         (_TEST, _IMPLIER),
@@ -321,7 +320,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 106
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::position</slot_outer>::position</slot_inner>::position</color>"
@@ -330,7 +329,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 45
-    assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
+    assert all_diags[0].populated_at.file_path == "filler.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _FILLER),
         (_IMPLIER, _MIDDLE),
@@ -350,7 +349,7 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 21
     assert all_diags[0].location.end_column == 92
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<host>::position</mid>::position</result>::position</x>"
@@ -359,7 +358,7 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
     assert all_diags[0].populated_at.column == 80
     assert all_diags[0].populated_at.end_line == 11
     assert all_diags[0].populated_at.end_column == 110
-    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.file_path == "inner.dfn"
 
 
 def test_sibling_action_guarantee_and_requirement_share_implied_position_key(

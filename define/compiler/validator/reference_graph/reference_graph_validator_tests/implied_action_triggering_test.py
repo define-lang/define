@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -74,7 +73,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     assert diag.required_value is False
     assert diag.location.line == 7
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("middle.dfn")
+    assert diag.location.file_path == "middle.dfn"
     assert diag.action_name == _IMPLIED
     assert diag.required_empty is False
     assert diag.position_name == "action</implied_action>::position<extra>"
@@ -115,7 +114,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert diag.required_value is False
     assert diag.location.line == 20
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _MIDDLE
     assert diag.required_empty is False
     assert (

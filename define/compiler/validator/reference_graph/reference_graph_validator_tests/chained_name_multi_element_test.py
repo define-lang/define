@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -40,7 +39,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 65
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_third_element_position_no_quality_assignments(
         self,
@@ -57,7 +56,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 65
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_element_inside_action_valid(
         self,
@@ -87,7 +86,7 @@ class TestCreateParticle:
         assert all_diags[0].location.column == 63
         assert all_diags[0].location.end_line == 16
         assert all_diags[0].location.end_column == 79
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_element_inside_action_not_found(
         self,
@@ -106,7 +105,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 63
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_element_inside_action_no_block(
         self,
@@ -125,7 +124,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 63
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_five_element_alternating_chain(
         self,
@@ -162,7 +161,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/foo>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 57
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_action_cannot_contain_action_stops_at_first_failure(
         self,
@@ -181,7 +180,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/a>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_action_then_action_short(
         self,
@@ -196,7 +195,7 @@ class TestCreateParticle:
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
 
 class TestChainActionValidation:
@@ -214,11 +213,11 @@ class TestChainActionValidation:
         assert all_diags[0].local_name == "bad"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
         assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[1].location.line == 10
         assert all_diags[1].location.column == 55
-        assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[1].location.file_path == "test.dfn"
 
     def test_chain_through_action_with_local_position_with_qualities(
         self,
@@ -235,7 +234,7 @@ class TestChainActionValidation:
         assert all_diags[0].parent_name == "position<inner>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 74
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_through_action_valid_continuation(
         self,
@@ -261,4 +260,4 @@ class TestChainActionValidation:
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/target>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 93
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"

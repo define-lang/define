@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
@@ -131,7 +130,7 @@ def test_reference_to_wrong_type(
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 20
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "value<my.domain.com:my_lib:/number>"
     assert diagnostic.file_path == "number.dfn"
 

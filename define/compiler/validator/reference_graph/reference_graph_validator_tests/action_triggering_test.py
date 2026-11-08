@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics, parser_exceptions
@@ -132,7 +131,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 125
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<gateway>::action</other>::position<trigger_pos>"
@@ -194,9 +193,7 @@ def test_self_trigger(
     )
     assert result.program_result.all_diagnostics[0].location.line == 8
     assert result.program_result.all_diagnostics[0].location.column == 30
-    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.program_result.all_diagnostics[0].location.file_path == "test.dfn"
     assert (
         result.program_result.all_diagnostics[0].action_name
         == "action<my.domain.com:my_lib:/test>"
@@ -215,9 +212,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
         result.program_result.all_diagnostics[0],
         diagnostics.DuplicateDefinitionDiagnostic,
     )
-    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.program_result.all_diagnostics[0].location.file_path == "test.dfn"
     assert result.program_result.all_diagnostics[0].definition_type == "action"
     assert result.program_result.all_diagnostics[0].path == "/test"
     assert result.program_result.all_diagnostics[0].first_definition_line == 1
@@ -244,9 +239,7 @@ def test_no_body_effect_when_create_target_has_error_state(
         result.program_result.all_diagnostics[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
-    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.program_result.all_diagnostics[0].location.file_path == "test.dfn"
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
     assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
@@ -266,9 +259,7 @@ def test_no_body_effect_when_move_target_has_error_state(
         result.program_result.all_diagnostics[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
-    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.program_result.all_diagnostics[0].location.file_path == "test.dfn"
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
     assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
@@ -288,7 +279,7 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert action_graph(result.reference_graph_result) == []
@@ -336,7 +327,7 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     ]
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 61
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
     assert all_diags[1].action_name == "action</test>"
     assert (
@@ -345,7 +336,7 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     )
     assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 61
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert isinstance(all_diags[2], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diags[2].cycle == [
         "action<my.domain.com:my_lib:/test>",
@@ -354,7 +345,7 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     ]
     assert all_diags[2].location.line == 3
     assert all_diags[2].location.column == 20
-    assert all_diags[2].location.file_path == PurePosixPath("pos.dfn")
+    assert all_diags[2].location.file_path == "pos.dfn"
 
 
 def test_records_statement_triggers_including_constructors(
@@ -381,7 +372,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     )
     assert all_diagnostics[0].location.line == 2
     assert all_diagnostics[0].location.column == 25
-    assert all_diagnostics[0].location.file_path == PurePosixPath("initialize.dfn")
+    assert all_diagnostics[0].location.file_path == "initialize.dfn"
     assert all_diagnostics[0].file_path == "child.dfn"
     assert all_diagnostics[0].definition_name == "position<my.domain.com:my_lib:/child>"
     assert isinstance(
@@ -389,7 +380,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     )
     assert all_diagnostics[1].location.line == 2
     assert all_diagnostics[1].location.column == 25
-    assert all_diagnostics[1].location.file_path == PurePosixPath("cleanup.dfn")
+    assert all_diagnostics[1].location.file_path == "cleanup.dfn"
     assert all_diagnostics[1].file_path == "child.dfn"
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
     all_exceptions = result.program_result.all_exceptions

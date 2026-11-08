@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing
-from pathlib import PurePosixPath
 
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input
@@ -93,7 +92,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
     assert diagnostic.location.end_column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</child_1>::position</child_2>::position</needed>"
@@ -159,7 +158,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
     assert diagnostic.location.end_column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</child_1>::position</child_2>::position</needed>"
@@ -215,7 +214,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.end_line == 9
     assert all_diags[1].location.end_column == 47
-    assert all_diags[1].location.file_path == PurePosixPath("fill_1.dfn")
+    assert all_diags[1].location.file_path == "fill_1.dfn"
     assert all_diags[1].position_name == "position<spare>"
 
 
@@ -232,7 +231,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 14
     assert diagnostic.location.end_column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</child_0>::position</child_1>::position</child_2>::position</child_3>::position</needed>"
@@ -298,7 +297,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15
     assert diagnostic.location.end_column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</part>::position</needed>"
@@ -364,7 +363,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 18
     assert diagnostic.location.end_column == 62
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "action</destroyer>::position<holder>::position</child_1>::position</child_2>"
@@ -430,7 +429,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 19
     assert diagnostic.location.end_column == 78
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</box>::position</marker>::position</needed>"
@@ -496,7 +495,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 22
     assert diagnostic.location.end_column == 78
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</box>::position</inner>::position</marker>::position</needed>"
@@ -570,7 +569,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     assert diagnostic.location.column == 27
     assert diagnostic.location.end_line == 3
     assert diagnostic.location.end_column == 34
-    assert diagnostic.location.file_path == PurePosixPath("child_2.dfn")
+    assert diagnostic.location.file_path == "child_2.dfn"
     assert diagnostic.file_path == "missing.dfn"
     assert _destroyed_positions(result) == [
         (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
@@ -591,7 +590,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 20
     assert diagnostic.location.end_column == 62
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "action</destroyer>::position<holder>::position</box>::position</child_a>::position</child_2>"
@@ -657,7 +656,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 16
     assert diagnostic.location.end_column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</q>::position</r>::position</needed>"
@@ -723,7 +722,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     assert untriggered.location.column == 28
     assert untriggered.location.end_line == 7
     assert untriggered.location.end_column == 42
-    assert untriggered.location.file_path == PurePosixPath("cleanup.dfn")
+    assert untriggered.location.file_path == "cleanup.dfn"
     assert untriggered.quality_name == "action</fill_1>"
     assert untriggered.position_name == "position<dependency>"
     circular = all_diags[1]
@@ -732,7 +731,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     assert circular.location.column == 20
     assert circular.location.end_line == 3
     assert circular.location.end_column == 35
-    assert circular.location.file_path == PurePosixPath("child_2.dfn")
+    assert circular.location.file_path == "child_2.dfn"
     assert circular.cycle == [
         _CLEANUP,
         "action<my.domain.com:my_lib:/fill_1>",
@@ -827,7 +826,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
@@ -922,7 +921,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
@@ -1009,7 +1008,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     assert isinstance(inner, diagnostics.InferredRequirementViolationDiagnostic)
     assert inner.location.line == 12
     assert inner.location.column == 30
-    assert inner.location.file_path == PurePosixPath("test.dfn")
+    assert inner.location.file_path == "test.dfn"
     assert (
         inner.position_name
         == "position<holder>::position</box>::position</child>::position</inner>"
@@ -1063,7 +1062,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     assert isinstance(value, diagnostics.InferredRequirementViolationDiagnostic)
     assert value.location.line == 12
     assert value.location.column == 30
-    assert value.location.file_path == PurePosixPath("test.dfn")
+    assert value.location.file_path == "test.dfn"
     assert (
         value.position_name
         == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
@@ -1150,11 +1149,11 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49
-    assert diagnostic.location.file_path == PurePosixPath("make.dfn")
+    assert diagnostic.location.file_path == "make.dfn"
     assert diagnostic.position_name == "position</child>::position</inner>"
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
-    assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
+    assert diagnostic.occupied_at.file_path == "make.dfn"
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert step.contribution.work.destructors == []
@@ -1184,7 +1183,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert (
         diagnostic.position_name
         == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
@@ -1271,13 +1270,13 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49
-    assert diagnostic.location.file_path == PurePosixPath("build.dfn")
+    assert diagnostic.location.file_path == "build.dfn"
     assert (
         diagnostic.position_name == "position</box>::position</child>::position</inner>"
     )
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
-    assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
+    assert diagnostic.occupied_at.file_path == "make.dfn"
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
     assert step.contribution.work.destructors == []

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -76,7 +75,7 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
@@ -111,7 +110,7 @@ def test_destroy_empty_position_does_not_fire_destructor(
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
 
@@ -126,13 +125,13 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 33
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
@@ -149,7 +148,7 @@ def test_missing_destructor_file_is_reported_and_skipped(
     assert all_diags[0].file_path == "destructor.dfn"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == []
 
 
@@ -191,10 +190,10 @@ def test_destroy_triggers_destructor_with_occupied_interface_below_implied_posit
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 33
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 64
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _CHILD),
         (_TEST, _DESTRUCTOR),
@@ -220,10 +219,10 @@ def test_automatic_destruction_triggers_destructor_with_occupied_interface_below
     )
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 64
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _CHILD),
         (_TEST, _DESTRUCTOR),

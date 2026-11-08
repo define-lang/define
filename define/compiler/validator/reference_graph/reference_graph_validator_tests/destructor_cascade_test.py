@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -40,12 +39,12 @@ def test_invalid_destructor_child_guarantee_during_auto_destruction(
         all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
     )
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("cleanup.dfn")
+    assert all_diags[0].location.file_path == "cleanup.dfn"
     assert all_diags[0].location.line == 7
     assert all_diags[0].position_name == "position</child>"
     assert isinstance(all_diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("cleanup.dfn")
+    assert all_diags[1].location.file_path == "cleanup.dfn"
     assert all_diags[1].location.line == 8
     assert all_diags[1].local_name == "position<emporary>"
 
@@ -127,7 +126,7 @@ def test_cascade_skips_error_position_own_destructor(
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 98
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<box>::position</child>"
     assert (
         all_diags[0].target_position
@@ -146,7 +145,7 @@ def test_cascade_does_not_walk_subtree_of_error_position(
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 98
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<box>::position</child>"
     assert (
         all_diags[0].target_position
@@ -165,7 +164,7 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</child>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []

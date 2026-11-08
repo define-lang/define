@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -64,7 +63,7 @@ def test_empty_local_position_does_not_fire_destructor(
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 20
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == []
 
 
@@ -117,7 +116,7 @@ def test_auto_destruction_failing_occupied_requirement(
     assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _DESTRUCTOR
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::action</destructor>::position<item>"
@@ -176,7 +175,7 @@ def test_constructor_auto_destruction_failing_requirement(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<item>"
@@ -239,7 +238,7 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box_a>::action</destructor>::position<item>"
@@ -293,7 +292,7 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert (
         all_diags[1].position_name
         == "position<box_b>::action</destructor>::position<item>"
@@ -356,7 +355,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::position</child_q>::action</destructor>::position<item>"
@@ -421,7 +420,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 52
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<local>::action</destructor>::position<item>"
@@ -486,7 +485,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 54
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<local>::action</destructor>::position<item>"
@@ -549,7 +548,7 @@ def test_destructor_requirement_propagates_to_caller_via_implied_position(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<incoming>::position</item>"

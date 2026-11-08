@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -37,7 +36,7 @@ def test_move_from_a_chained_position_to_itself(
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 72
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<a>::position</x>"
 
 
@@ -53,6 +52,6 @@ def test_move_to_chained_prefix_position(
     assert isinstance(diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert diags[0].location.line == 11
     assert diags[0].location.column == 74
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].source_position == "position<local_pos>"
     assert diags[0].target_position == "position<local_pos>::position</target_pos>"

@@ -13,7 +13,6 @@ from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
-    from pathlib import PurePosixPath
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 
@@ -154,7 +153,7 @@ def _distinct_characters(name: str, indexes: Iterable[int]) -> tuple[str, ...]:
 
 
 def _character_location(
-    line: int, column: int, file_path: PurePosixPath | None
+    line: int, column: int, file_path: str | None
 ) -> rendering.SourceLocation:
     return rendering.SourceLocation(
         line=line,
@@ -274,7 +273,7 @@ def _validate_authority_path_segment(
     line: int,
     column: int,
     segment: str,
-    file_path: PurePosixPath | None = None,
+    file_path: str | None = None,
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
         return diagnostics.AuthorityPathEmptySegmentDiagnostic(

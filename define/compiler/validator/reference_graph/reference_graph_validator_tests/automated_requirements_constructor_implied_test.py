@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -47,7 +46,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     assert diag.location.column == 30
     assert diag.location.end_line == 10
     assert diag.location.end_column == 42
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -95,7 +94,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 10
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -148,7 +147,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert diag_q.position_name == "position<box>::position</q>"
     assert diag_q.location.line == 10
     assert diag_q.location.column == 30
-    assert diag_q.location.file_path == PurePosixPath("test.dfn")
+    assert diag_q.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag_q,
         {
@@ -183,7 +182,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert diag_r.position_name == "position<box>::position</r>"
     assert diag_r.location.line == 10
     assert diag_r.location.column == 30
-    assert diag_r.location.file_path == PurePosixPath("test.dfn")
+    assert diag_r.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag_r,
         {
@@ -231,7 +230,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 14
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -279,7 +278,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 13
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -337,7 +336,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
     )
     assert diag.location.line == 13
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -388,7 +387,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
     )
     assert diag.location.line == 13
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -432,7 +431,7 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
     assert diag.location.column == 30
     assert diag.location.end_line == 7
     assert diag.location.end_column == 95
-    assert diag.location.file_path == PurePosixPath("p.dfn")
+    assert diag.location.file_path == "p.dfn"
     assert diag.action_name == _IMPLIED_ACTION
     assert diag.required_empty is False
     assert (

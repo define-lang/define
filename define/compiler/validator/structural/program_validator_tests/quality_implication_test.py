@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -29,7 +28,7 @@ def test_non_self_ref_global_in_action_body(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 5
@@ -120,7 +119,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].implication_name == f"position<{implied_fqun}:/foo>"
     assert diags[0].first_implication_line == 2
     assert diags[0].location.line == 3
@@ -220,7 +219,7 @@ def test_circular_implication_emits_diagnostic(
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("bar.dfn")
+    assert diags[0].location.file_path == "bar.dfn"
     assert diags[0].cycle == [
         "action<my.domain.com:my_lib:/test>",
         "action<my.domain.com:my_lib:/bar>",
@@ -243,7 +242,7 @@ def test_unused_implication_in_constructor_error(
     assert diags[0].location.column == 25
     assert diags[0].location.end_line == 2
     assert diags[0].location.end_column == 57
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
 
 
 def test_unused_implication_on_action_error(
@@ -298,7 +297,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "nonexistent.dfn"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 34

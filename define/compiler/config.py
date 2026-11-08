@@ -91,7 +91,7 @@ class ConfigLoader:
     ) -> ProjectRootConfig | list[diagnostics.ConfigDiagnostic]:
         config_path = self.config_path()
         if not self.is_project_root():
-            location = ast.start_of_file_location(config_path)
+            location = ast.start_of_file_location(str(config_path))
             if self._root == constants.PROJECT_ROOT:
                 return [
                     diagnostics.NotRunFromProjectRootDiagnostic(
@@ -112,7 +112,7 @@ class ConfigLoader:
         if expected_fqun and fqun != expected_fqun:
             return [
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    location=ast.start_of_file_location(config_path),
+                    location=ast.start_of_file_location(str(config_path)),
                     expected_fqun=expected_fqun,
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
@@ -133,11 +133,11 @@ class ConfigLoader:
         try:
             loaded = dcl_loader.load_file(path, message_type)
         except dcl_errors.DclError as e:
-            return [_dcl_diagnostic(path, e)]
+            return [_dcl_diagnostic(str(path), e)]
         if loaded.message is None:
             found_diagnostics: list[diagnostics.ConfigDiagnostic] = []
             for dcl_diagnostic in loaded.diagnostics:
-                found_diagnostics.append(_dcl_diagnostic(path, dcl_diagnostic))
+                found_diagnostics.append(_dcl_diagnostic(str(path), dcl_diagnostic))
             return found_diagnostics
         result = loaded.message
         try:
@@ -155,7 +155,7 @@ class ConfigLoader:
                     messages.append(violation.proto.message)
             return [
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(path),
+                    location=ast.start_of_file_location(str(path)),
                     violation_messages=messages,
                 )
             ]
@@ -182,7 +182,7 @@ class ConfigLoader:
             if dep.universe_name in deps:
                 return [
                     diagnostics.InvalidConfigDiagnostic(
-                        location=ast.start_of_file_location(deps_path),
+                        location=ast.start_of_file_location(str(deps_path)),
                         violation_messages=[
                             f'deps.local: duplicate universe_name "{dep.universe_name}"'
                         ],
@@ -195,7 +195,7 @@ class ConfigLoader:
 
 
 def _dcl_diagnostic(
-    path: PurePosixPath, dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
+    path: str, dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
 ) -> diagnostics.ConfigDclDiagnostic:
     location = dcl_error.location
     return diagnostics.ConfigDclDiagnostic(

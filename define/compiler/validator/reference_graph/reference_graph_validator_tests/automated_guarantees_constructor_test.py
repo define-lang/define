@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -37,8 +36,8 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<box>::position</color>"
     assert all_diags[0].populated_at.line == 6
-    assert all_diags[0].populated_at.file_path == PurePosixPath("construct.dfn")
+    assert all_diags[0].populated_at.file_path == "construct.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]

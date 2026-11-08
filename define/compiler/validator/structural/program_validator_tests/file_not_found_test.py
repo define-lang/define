@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -36,7 +35,7 @@ def test_referenced_file_not_found(
     assert len(result.file_results[0].diagnostics) == 1
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.file_path == "missing.dfn"
     assert diag.location.line == 3
     assert diag.location.column == 29
@@ -57,9 +56,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     )
     assert result.file_results[0].diagnostics[0].location.line == 3
     assert result.file_results[0].diagnostics[0].location.column == 29
-    assert result.file_results[0].diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
     assert result.file_results[0].diagnostics[0].file_path == "missing.dfn"
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[1].exception is None
@@ -70,9 +67,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     )
     assert result.file_results[1].diagnostics[0].location.line == 3
     assert result.file_results[1].diagnostics[0].location.column == 29
-    assert result.file_results[1].diagnostics[0].location.file_path == PurePosixPath(
-        "target.dfn"
-    )
+    assert result.file_results[1].diagnostics[0].location.file_path == "target.dfn"
     assert result.file_results[1].diagnostics[0].file_path == "missing.dfn"
 
 
@@ -86,9 +81,9 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     diags = result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].location.file_path == "test.dfn"
     assert diags[0].file_path == "missing.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -107,12 +102,12 @@ def test_same_missing_file_referenced_as_two_types_in_one_definition(
     diags = result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "missing.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].location.file_path == "test.dfn"
     assert diags[1].file_path == "missing.dfn"
     assert diags[1].location.line == 4
     assert diags[1].location.column == 27

@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -89,7 +88,7 @@ def test_single_level_transitivity_does_not_include_unrelated(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<source>"
     assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
@@ -123,7 +122,7 @@ def test_diamond_transitivity_create_conflict_detected(
     assert diag.position_name == "position<source>::position</implied>"
     assert diag.location.line == 20
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -189,7 +188,7 @@ def test_matching_implied_but_not_matching_impliers_for_move(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<source>"
     assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
@@ -249,7 +248,7 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<source>"
     assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
@@ -276,13 +275,13 @@ def test_constructor_filled_position_blocks_caller_create(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 65
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<source>::position</implied>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 47
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].populated_at.file_path == "implier.dfn"
 
 
 def test_unresolved_implication_target_is_skipped(
@@ -293,7 +292,7 @@ def test_unresolved_implication_target_is_skipped(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].location.file_path == "implier.dfn"
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 34
@@ -311,7 +310,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=25,
                 end_line=2,
                 end_column=34,
-                file_path=PurePosixPath("a.dfn"),
+                file_path="a.dfn",
             ),
             implied_action_name="action</b>",
         ),
@@ -321,7 +320,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=30,
                 end_line=8,
                 end_column=39,
-                file_path=PurePosixPath("a.dfn"),
+                file_path="a.dfn",
             ),
             action_name="action</b>",
             position_name="action</b>::position<kept>",
@@ -332,7 +331,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=25,
                 end_line=2,
                 end_column=34,
-                file_path=PurePosixPath("b.dfn"),
+                file_path="b.dfn",
             ),
             implication_name="action</a>",
         ),
@@ -342,7 +341,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=25,
                 end_line=2,
                 end_column=34,
-                file_path=PurePosixPath("b.dfn"),
+                file_path="b.dfn",
             ),
             cycle=[
                 "action<my.domain.com:my_lib:/a>",
@@ -356,7 +355,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=25,
                 end_line=2,
                 end_column=34,
-                file_path=PurePosixPath("b.dfn"),
+                file_path="b.dfn",
             ),
             implied_action_name="action</a>",
         ),
@@ -366,7 +365,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 column=16,
                 end_line=3,
                 end_column=29,
-                file_path=PurePosixPath("b.dfn"),
+                file_path="b.dfn",
             ),
             position_name="position<kept>",
         ),

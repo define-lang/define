@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from pprint import pformat
 from typing import TYPE_CHECKING, TypedDict
 
@@ -40,17 +39,7 @@ def assert_propagation_chain(
         }
         for step in diag.propagation_chain
     ]
-    expected = [
-        {
-            "kind": entry["kind"],
-            "enclosing_quality_name": entry["enclosing_quality_name"],
-            "triggered_quality_name": entry["triggered_quality_name"],
-            "line": entry["line"],
-            "column": entry["column"],
-            "file_path": PurePosixPath(entry["file_path"]),
-        }
-        for entry in expected_steps
-    ]
+    expected = list(expected_steps)
     assert actual == expected, (
         f"propagation chain mismatch:\nactual:\n{pformat(actual)}\n"
         f"expected:\n{pformat(expected)}"

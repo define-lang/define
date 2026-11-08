@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import types
-from pathlib import PurePosixPath
 
 from define.compiler import config
 from define.compiler.data_structures import define_path
@@ -16,7 +15,7 @@ from define.compiler.validator.structural import (
 class TestDefinitionStructuralValidator:
     def test_validate_definition_returns_result_object(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        program = test_helpers.parse(source, PurePosixPath("/test.dfn"))
+        program = test_helpers.parse(source, "/test.dfn")
         validator = definition_validator.DefinitionStructuralValidator(
             definition=program.definitions[0],
             context=file_validation_context.FileValidationContext(

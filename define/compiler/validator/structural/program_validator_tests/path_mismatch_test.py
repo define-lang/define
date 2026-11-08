@@ -5,7 +5,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -36,7 +35,7 @@ def test_path_mismatch_error(
     assert diags[0].location.column == 52
     assert diags[0].location.end_line == 1
     assert diags[0].location.end_column == 62
-    assert diags[0].location.file_path == PurePosixPath("foo/bar.dfn")
+    assert diags[0].location.file_path == "foo/bar.dfn"
 
 
 def test_no_file_path_skips_validation(

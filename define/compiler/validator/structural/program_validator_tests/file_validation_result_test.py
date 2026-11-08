@@ -107,7 +107,7 @@ def test_name_parser_error_at_reference_populates_exception(
     assert result.exception.location.line == 3
     assert result.exception.location.column == 29
     assert result.exception.location.end_column == 50
-    assert result.exception.location.file_path == PurePosixPath("test.dfn")
+    assert result.exception.location.file_path == "test.dfn"
 
 
 def test_config_error_records_entry_file_with_root_prefix(

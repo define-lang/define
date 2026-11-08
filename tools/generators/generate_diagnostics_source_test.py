@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 import click.testing
@@ -69,7 +68,7 @@ def test_cli(tmp_path: Path):
 @pytest.mark.parametrize("width", [1, 1000])
 def test_indentation_diagnostics(width: int):
     source = "\n".join(gen.generate_source_lines(errors=2, indent_width=width)) + "\n"
-    result = parser.parse(source.encode(), PurePosixPath("test.dfn"))
+    result = parser.parse(source.encode(), "test.dfn")
     assert result.exception is None
     assert [type(diagnostic) for diagnostic in result.diagnostics] == [
         diagnostics.IncorrectIndentationDiagnostic

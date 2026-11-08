@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -124,7 +123,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</x>"
@@ -183,7 +182,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::position</x>"
@@ -261,7 +260,7 @@ def test_caller_filled_implied_position_does_not_propagate_inner_action_requirem
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].location.file_path == "middle.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
@@ -301,7 +300,7 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].location.file_path == "middle.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
@@ -342,7 +341,7 @@ def test_grandchild_requirement_below_locally_created_particle_does_not_propagat
     assert diag.required_value is False
     assert diag.location.line == 9
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("create_parent.dfn")
+    assert diag.location.file_path == "create_parent.dfn"
     assert diag.action_name == _INSPECT_GRANDCHILD
     assert diag.required_empty is False
     assert diag.position_name == (
@@ -386,7 +385,7 @@ def test_doubly_nested_implied_action_requirement_is_reported_where_inner_action
     assert diag.required_value is False
     assert diag.location.line == 7
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("middle.dfn")
+    assert diag.location.file_path == "middle.dfn"
     assert diag.action_name == _INNER
     assert diag.required_empty is False
     assert diag.position_name == "action</inner>::position<extra>"

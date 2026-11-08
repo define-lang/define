@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -39,7 +38,7 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is True
     assert (
@@ -98,7 +97,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is True
     assert (
@@ -136,7 +135,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     assert all_diags[1].position_name == "position<extra>"
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 16
-    assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].location.file_path == "inner.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -155,7 +154,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert diag.required_value is False
     assert diag.location.line == 25
     assert diag.location.column == 49
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -193,7 +192,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert all_diags[1].position_name == "position<extra>"
     assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 16
-    assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].location.file_path == "inner.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -212,7 +211,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     assert diag.required_value is False
     assert diag.location.line == 14
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -272,7 +271,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -332,7 +331,7 @@ def test_complex_chain_interaction_iface(
     assert diag.required_value is False
     assert diag.location.line == 17
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -392,10 +391,10 @@ def test_caller_cannot_occupy_implied_action_interface_when_implied_moved_to_loc
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].arrived_at.line == 13
     assert all_diags[0].arrived_at.column == 65
-    assert all_diags[0].arrived_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].arrived_at.file_path == "test.dfn"
     assert all_diags[0].action_name == "action</outer>"
     assert (
         all_diags[0].position_name
@@ -419,7 +418,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is True
     assert (
@@ -479,7 +478,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -539,7 +538,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert diag.required_value is False
     assert diag.location.line == 16
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -599,7 +598,7 @@ def test_complex_chain_interaction_implied(
     assert diag.required_value is False
     assert diag.location.line == 18
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (
@@ -669,7 +668,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is False
     assert (
@@ -711,7 +710,7 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _OUTER
     assert all_diags[0].required_empty is True
     assert (
@@ -781,7 +780,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     assert diag.required_value is False
     assert diag.location.line == 13
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.action_name == _OUTER
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</implied_a>::position</input>"

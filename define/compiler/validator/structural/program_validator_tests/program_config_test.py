@@ -26,9 +26,7 @@ def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.NotRunFromProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath(".define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location(".define/project/config.defcl"),
             config_path=".define/project/config.defcl",
         )
     ]
@@ -52,9 +50,7 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.InvalidConfigDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath(".define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location(".define/project/config.defcl"),
             violation_messages=["project.universe_name: value is required"],
         )
     ]

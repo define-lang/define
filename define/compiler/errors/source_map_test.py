@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -29,7 +28,7 @@ def _location(
         column=column,
         end_line=line,
         end_column=end_column,
-        file_path=None if file_path is None else PurePosixPath(file_path),
+        file_path=file_path,
     )
 
 
@@ -76,7 +75,7 @@ def test_format_location_underlines_multi_line_span_to_end_of_first_line(
         column=5,
         end_line=4,
         end_column=5,
-        file_path=PurePosixPath("test.dfn"),
+        file_path="test.dfn",
     )
     assert sources.format_location(location) == (
         'File "test.dfn", line 2, column 5\n'

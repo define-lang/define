@@ -9,8 +9,6 @@ import unicodedata
 from pathlib import Path
 
 if typing.TYPE_CHECKING:
-    from pathlib import PurePosixPath
-
     from define.compiler.data_structures import define_path
     from source_rendering.python import rendering
 
@@ -43,7 +41,7 @@ class SourceMap:
         """Initialize with each validated file's digest and any source validated without a file."""
         self._file_digests_by_define_path = file_digests
         self._in_memory_source = in_memory_source
-        self._file_lines: dict[PurePosixPath, list[str] | None] = {}
+        self._file_lines: dict[str, list[str] | None] = {}
 
     def format_location(self, location: rendering.SourceLocation) -> str:
         """Format a location with its source code, underlined with carets."""
@@ -63,18 +61,18 @@ class SourceMap:
         return self._in_memory_source.split("\n")
 
     @functools.cached_property
-    def _file_digests(self) -> dict[PurePosixPath, bytes]:
-        # Diagnostic locations name their files by PurePosixPath, so finding a
-        # file's digest needs a table keyed that way. Converting every file's
-        # path takes noticeable time in a program with many files, and most
-        # compiles report no diagnostics, so the table is built only when the
-        # first location is formatted.
-        file_digests: dict[PurePosixPath, bytes] = {}
+    def _file_digests(self) -> dict[str, bytes]:
+        # Diagnostic locations name their files by string, so finding a file's
+        # digest needs a table keyed that way. Converting every file's path
+        # takes time in a program with many files, and most compiles report no
+        # diagnostics, so the table is built only when the first location is
+        # formatted.
+        file_digests: dict[str, bytes] = {}
         for file_path, digest in self._file_digests_by_define_path.items():
-            file_digests[file_path.as_posix_path()] = digest
+            file_digests[str(file_path)] = digest
         return file_digests
 
-    def _source_lines(self, file_path: PurePosixPath | None) -> list[str] | None:
+    def _source_lines(self, file_path: str | None) -> list[str] | None:
         # Locations in the in-memory source are the only ones without a file.
         if file_path is None:
             return self._in_memory_lines
@@ -82,7 +80,7 @@ class SourceMap:
             self._file_lines[file_path] = self._read_lines(file_path)
         return self._file_lines[file_path]
 
-    def _read_lines(self, file_path: PurePosixPath) -> list[str] | None:
+    def _read_lines(self, file_path: str) -> list[str] | None:
         digest = self._file_digests[file_path]
         try:
             source = Path(file_path).read_bytes()

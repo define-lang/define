@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -53,7 +52,7 @@ def test_child_operation_with_unfilled_required_parent(
         assert isinstance(
             diagnostic, diagnostics.InferredRequirementViolationDiagnostic
         )
-        assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+        assert diagnostic.location.file_path == "test.dfn"
         assert diagnostic.location.line == 13
         assert diagnostic.location.column == 30
         assert diagnostic.location.end_line == 13
@@ -112,7 +111,7 @@ def test_occupied_requirement_is_not_inferred_after_action_in_chain(
     assert diagnostic.is_action_interface_position is True
     assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "action</parent>::position<input>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
     ]
@@ -134,7 +133,7 @@ def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
     assert diagnostic.is_action_interface_position is True
     assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
     ]
@@ -156,7 +155,7 @@ def test_occupied_requirement_is_not_inferred_after_action_on_interface_position
     assert diagnostic.is_action_interface_position is True
     assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
     ]
@@ -182,7 +181,7 @@ def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
         diagnostic.parent_position_name
         == "position<box>::action</parent>::position<input>"
     )
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
     ]
@@ -215,7 +214,7 @@ def test_violate_occupied_requirement(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -256,7 +255,7 @@ def test_caller_violates_occupied_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 81
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -307,7 +306,7 @@ def test_caller_violates_empty_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 81
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -354,7 +353,7 @@ def test_empty_requirement_with_error_state_is_silent(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].position_name == "position<spare>"
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -364,8 +363,8 @@ def test_empty_requirement_with_error_state_is_silent(
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
     assert all_diags[1].occupied_at.column == 49
-    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].occupied_at.file_path == "test.dfn"
+    assert all_diags[1].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]
@@ -382,7 +381,7 @@ def test_occupied_requirement_with_error_state_is_silent(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].position_name == "position<spare>"
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -392,8 +391,8 @@ def test_occupied_requirement_with_error_state_is_silent(
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
     assert all_diags[1].occupied_at.column == 49
-    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].occupied_at.file_path == "test.dfn"
+    assert all_diags[1].location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]
@@ -411,7 +410,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
     assert all_diags[0].location.end_column == 42
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<src>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -420,21 +419,21 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[1].location.column == 47
     assert all_diags[1].location.end_line == 19
     assert all_diags[1].location.end_column == 88
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].position_name == "position<box>::action</inner>::position<a>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 18
     assert all_diags[1].occupied_at.column == 47
     assert all_diags[1].occupied_at.end_line == 18
     assert all_diags[1].occupied_at.end_column == 88
-    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].occupied_at.file_path == "test.dfn"
     assert isinstance(all_diags[2], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[2].required_value is False
     assert all_diags[2].location.line == 20
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 20
     assert all_diags[2].location.end_column == 81
-    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[2].location.file_path == "test.dfn"
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
     assert all_diags[2].required_empty is False
     assert all_diags[2].position_name == "position<box>::action</inner>::position<b>"
@@ -475,7 +474,7 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</parent>"
@@ -502,7 +501,7 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
     assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[1].location.file_path == "close_file.dfn"
     assert all_diags[1].position_name == "position<spare>"
     assert all_diags[1].is_action_interface_position is False
     assert all_diags[1].inferred_at is None
@@ -565,7 +564,7 @@ def test_constructor_violates_occupied_requirement(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -604,7 +603,7 @@ def test_constructor_violates_empty_requirement(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -670,7 +669,7 @@ def test_empty_child_of_locally_created_parent_is_a_local_violation(
     assert diag.location.column == 33
     assert diag.location.end_line == 7
     assert diag.location.end_column == 67
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.position_name == "position</parent>::position</child>"
 
 
@@ -684,7 +683,7 @@ def test_no_requirement_check_on_unknown_global_chain_start(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
 
@@ -711,7 +710,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert_propagation_chain(
@@ -741,7 +740,7 @@ def test_trigger_chain_occupied_requirement_violated(
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is False
     assert_propagation_chain(
@@ -789,7 +788,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 49
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert (
@@ -844,7 +843,7 @@ def test_trigger_chain_parent_requirement_violated(
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[0],
         {
@@ -880,7 +879,7 @@ def test_destroy_infers_occupied_requirement(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
@@ -918,7 +917,7 @@ def test_inner_action_local_failure_does_not_propagate_to_caller(
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].location.file_path == "other.dfn"
     assert all_diags[0].position_name == "position<body_local>"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),

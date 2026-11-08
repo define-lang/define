@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -50,7 +49,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is True
     assert (
@@ -120,7 +119,7 @@ def test_inner_chained_action_occupied_requirement_is_reported_where_inner_actio
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].location.file_path == "outer.dfn"
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
@@ -235,7 +234,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert parent_marker_diagnostic.location.column == 30
     assert parent_marker_diagnostic.location.end_line == 33
     assert parent_marker_diagnostic.location.end_column == 92
-    assert parent_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert parent_marker_diagnostic.location.file_path == "test.dfn"
     assert (
         parent_marker_diagnostic.position_name
         == "position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</parent_marker>"
@@ -286,7 +285,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert child_marker_diagnostic.location.column == 30
     assert child_marker_diagnostic.location.end_line == 33
     assert child_marker_diagnostic.location.end_column == 92
-    assert child_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert child_marker_diagnostic.location.file_path == "test.dfn"
     assert (
         child_marker_diagnostic.position_name
         == "position<box>::action</consume_combined>::position<left>::position</prepared_input>::position</child>::position</child_marker>"
@@ -336,7 +335,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert item_diagnostic.location.column == 30
     assert item_diagnostic.location.end_line == 33
     assert item_diagnostic.location.end_column == 92
-    assert item_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert item_diagnostic.location.file_path == "test.dfn"
     assert (
         item_diagnostic.position_name
         == "position<box>::action</consume_combined>::position<right>::position</fillable>::position</item>"
@@ -399,7 +398,7 @@ def test_three_deep_action_chain_requirement_propagates(
     assert diag.required_value is False
     assert diag.location.line == 23
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -467,7 +466,7 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is True
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/a>"
     assert (
@@ -545,7 +544,7 @@ def test_both_requirements_propagate_when_inner_has_both(
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -604,7 +603,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     assert diag.required_value is False
     assert diag.location.line == 23
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -663,7 +662,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -57,7 +56,7 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -136,7 +135,7 @@ def test_cascade_validates_child_destructor_requirement_violated(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</child>::position</file>"
@@ -215,7 +214,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</file>"
@@ -291,7 +290,7 @@ def test_constructor_attaches_destructor_and_validates_via_contract(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -369,7 +368,7 @@ def test_constructor_resolves_implied_action_destruction_contract(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 47
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "action</callee>::position<incoming>::position</item>"
@@ -448,7 +447,7 @@ def test_middle_knows_destructor_but_not_child_state_requires_it_of_its_caller_v
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</file>"
@@ -513,7 +512,7 @@ def test_required_position_error_in_child_state_skips_validation(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[0].location.file_path == "close_file.dfn"
     assert all_diags[0].position_name == "position<spare>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -536,7 +535,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_validates(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</file>"
@@ -620,7 +619,7 @@ def test_cascade_re_records_through_middle_and_owner_validates_parent_and_child(
     assert all_diags[1].required_empty is False
     assert all_diags[1].location.line == 22
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert (
         all_diags[1].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</child>::position</cfile>"
@@ -682,7 +681,7 @@ def test_cascade_re_records_through_middle_and_owner_validates_parent_and_child(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</pfile>"
@@ -759,7 +758,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</c>::position</file>"
@@ -826,7 +825,7 @@ def test_knower_three_actions_above_destroyer_requires_state_of_its_caller(
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</file>"

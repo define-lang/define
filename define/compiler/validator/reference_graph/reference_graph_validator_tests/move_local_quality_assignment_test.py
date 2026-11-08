@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -20,7 +19,7 @@ def test_move_missing_dest_qualities(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -38,7 +37,7 @@ def test_move_from_position_without_qualities_to_position_with_qualities(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -70,7 +69,7 @@ def test_local_move_missing_qualities_marks_error(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -97,7 +96,7 @@ def test_definition_local_to_statement_local_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 51
     assert all_diags[0].source_position == "position<def_pos>"
@@ -128,7 +127,7 @@ def test_statement_local_to_definition_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<stmt_pos>"
     assert all_diags[0].target_position == "position<def_pos>"
     assert all_diags[0].missing_qualities == [
@@ -157,7 +156,7 @@ def test_definition_local_to_definition_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 52
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<from_pos>"
     assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [

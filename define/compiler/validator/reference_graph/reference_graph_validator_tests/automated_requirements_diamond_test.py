@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -151,7 +150,7 @@ def test_diamond_one_path_violates_empty_requirement(
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::position</value>"
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
@@ -212,7 +211,7 @@ def test_diamond_other_path_violates_empty_requirement(
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
@@ -236,7 +235,7 @@ def test_diamond_occupied_requirement_independent_per_path(
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 27
     assert all_diags[0].location.column == 30
     assert_propagation_chain(
@@ -304,7 +303,7 @@ def test_diamond_one_path_violates_occupied_requirement(
     )
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[0],
         {
@@ -357,7 +356,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     )
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[0],
         {
@@ -395,7 +394,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     )
     assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[1],
         {

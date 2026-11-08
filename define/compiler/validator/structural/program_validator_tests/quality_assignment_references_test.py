@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -33,7 +32,7 @@ def test_action_local_position_requires_missing_global(
     assert diags[0].location.column == 28
     assert diags[0].location.end_line == 7
     assert diags[0].location.end_column == 42
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
 
 
 def test_same_fqun_quality_assignment_reference_in_global_position_must_use_short_form(
@@ -128,7 +127,7 @@ def test_invalid_quality_assignment_does_not_skip_remaining_quality_assignments(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].segment == "Bad"
     assert diags[0].chars == ("B",)
     assert diags[0].location.line == 3
@@ -147,7 +146,7 @@ def test_referenced_global_name_wrong_type_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "target.dfn"
     assert (
         diags[0].definition_name
@@ -167,9 +166,9 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].location.file_path == "test.dfn"
     assert diags[0].file_path == "target.dfn"
     assert (
         diags[0].definition_name

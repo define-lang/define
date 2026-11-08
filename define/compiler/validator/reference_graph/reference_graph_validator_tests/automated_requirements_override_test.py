@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -73,7 +72,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is True
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -111,7 +110,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[1].location.file_path == "outer.dfn"
     assert all_diags[1].required_empty is True
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (

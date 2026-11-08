@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -82,12 +81,12 @@ def test_move_to_occupied_interface_chained(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 47
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 12
     assert all_diags[0].occupied_at.column == 30
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].occupied_at.file_path == "test.dfn"
 
 
 def test_create_in_interface_chained(
@@ -111,11 +110,11 @@ def test_create_twice_in_interface_chained(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
 
 
 def test_move_then_create_in_interface_chained(
@@ -157,11 +156,11 @@ def test_create_twice_in_trigger_chained(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
 
 
 def test_move_from_trigger_chained_then_create(
@@ -185,8 +184,8 @@ def test_3_item_position_chain_via_moved_local_infers_occupied(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<local>::position</x>"
     assert all_diags[0].populated_at.line == 16
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"

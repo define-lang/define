@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import constants
@@ -38,9 +37,7 @@ def test_encoding_operation_with_fewer_views(
                 column=12,
                 end_line=1,
                 end_column=65,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/add.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/add.dfn"),
             ),
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
             view_count=3,
@@ -68,9 +65,7 @@ def test_encoding_operation_with_different_view_name(
                 column=16,
                 end_line=2,
                 end_column=22,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/negate.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/negate.dfn"),
             ),
             view_number=1,
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
@@ -99,9 +94,7 @@ def test_encoding_operation_with_different_view_direction(
                 column=16,
                 end_line=2,
                 end_column=22,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/negate.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/negate.dfn"),
             ),
             view_name="view<a>",
             direction="read",
@@ -130,9 +123,7 @@ def test_encoding_operation_with_views_in_different_order(
                 column=16,
                 end_line=2,
                 end_column=22,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/negate.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/negate.dfn"),
             ),
             view_number=1,
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
@@ -146,9 +137,7 @@ def test_encoding_operation_with_views_in_different_order(
                 column=16,
                 end_line=8,
                 end_column=27,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/negate.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/negate.dfn"),
             ),
             view_number=2,
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
@@ -177,9 +166,7 @@ def test_encoding_operations_with_same_encodings(
                 column=12,
                 end_line=1,
                 end_column=70,
-                file_path=PurePosixPath(
-                    standard_library_file("number/integer/ascii/multiply.dfn")
-                ),
+                file_path=standard_library_file("number/integer/ascii/multiply.dfn"),
             ),
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/multiply>",
             first_encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",

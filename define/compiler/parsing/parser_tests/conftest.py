@@ -9,8 +9,6 @@ import pytest
 from define.compiler.parsing import test_helpers
 
 if TYPE_CHECKING:
-    import pathlib
-
     from define.compiler import ast
     from define.compiler.parsing import parser
 
@@ -21,7 +19,7 @@ class Parse(Protocol):
     def __call__(
         self,
         source: str,
-        file_path: pathlib.PurePosixPath | None = ...,
+        file_path: str | None = ...,
     ) -> ast.Program:
         """Parse source and return the program."""
         ...
@@ -33,7 +31,7 @@ class ParseWithDiagnostics(Protocol):
     def __call__(
         self,
         source: str,
-        file_path: pathlib.PurePosixPath | None = ...,
+        file_path: str | None = ...,
     ) -> parser.ParseResult:
         """Parse source and return the result."""
         ...

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -72,7 +71,7 @@ class TestCreateParticle:
         assert all_diags[0].parent_name == "position<x>"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 43
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_second_element_position_has_no_quality_assignments(
         self,
@@ -129,7 +128,7 @@ class TestCreateParticle:
         assert all_diags[0].first_definition_line == 2
         assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 16
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_duplicate_source_definition_does_not_add_chain_diagnostics(
         self,
@@ -145,7 +144,7 @@ class TestCreateParticle:
         assert all_diags[0].first_definition_line == 1
         assert all_diags[0].location.line == 9
         assert all_diags[0].location.column == 1
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_chain_second_element_wrong_type_in_quality_assignments(
         self,

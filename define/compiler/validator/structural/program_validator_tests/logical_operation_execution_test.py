@@ -5,7 +5,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -139,7 +138,7 @@ def test_missing_logical_operation_file(
                 column=39,
                 end_line=17,
                 end_column=45,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="negate.dfn",
         )
@@ -158,7 +157,7 @@ def test_wrong_logical_operation_definition_type(
                 column=21,
                 end_line=17,
                 end_column=46,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="negate.dfn",
             definition_name="logical_operation<my.domain.com:my_lib:/negate>",

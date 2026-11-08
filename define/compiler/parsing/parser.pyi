@@ -1,5 +1,3 @@
-import pathlib
-
 from define.compiler import ast
 from define.compiler.errors import diagnostics as diagnostics_mod
 from define.compiler.errors import parser_exceptions
@@ -14,7 +12,7 @@ class ParseResult:
 
 def parse(
     source: bytes,
-    file_path: pathlib.PurePosixPath | None,
+    file_path: str | None,
     *,
     check_indentation: bool = True,
 ) -> ParseResult: ...

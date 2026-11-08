@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -25,7 +24,7 @@ def test_interface_position_is_rejected(
     assert result.all_diagnostics[0].position_name == "position<input>"
     assert result.all_diagnostics[0].location.line == 2
     assert result.all_diagnostics[0].location.column == 16
-    assert result.all_diagnostics[0].location.file_path == PurePosixPath("test.dfn")
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
 
 
 def test_each_interface_position_is_rejected(
@@ -40,14 +39,14 @@ def test_each_interface_position_is_rejected(
     assert result.all_diagnostics[0].position_name == "position<run>"
     assert result.all_diagnostics[0].location.line == 2
     assert result.all_diagnostics[0].location.column == 16
-    assert result.all_diagnostics[0].location.file_path == PurePosixPath("test.dfn")
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
     assert isinstance(
         result.all_diagnostics[1], diagnostics.EntryPointInterfacePositionDiagnostic
     )
     assert result.all_diagnostics[1].position_name == "position<input>"
     assert result.all_diagnostics[1].location.line == 3
     assert result.all_diagnostics[1].location.column == 16
-    assert result.all_diagnostics[1].location.file_path == PurePosixPath("test.dfn")
+    assert result.all_diagnostics[1].location.file_path == "test.dfn"
 
 
 def test_validation_escape_allows_interface_positions(

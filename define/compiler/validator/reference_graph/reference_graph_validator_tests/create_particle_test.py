@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -27,7 +26,7 @@ def test_short_form_global_reference(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 5
@@ -45,7 +44,7 @@ def test_create_in_interface_of_missing_action_reports_reference_error(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
     assert all_diags[0].file_path == "missing.dfn"
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_create_in_missing_global_position_reports_reference_errors(
@@ -60,12 +59,12 @@ def test_create_in_missing_global_position_reports_reference_errors(
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/missing>"
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[1].location.line == 5
     assert all_diags[1].location.column == 39
     assert all_diags[1].file_path == "missing.dfn"
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
 
 
 def test_same_fqun_reference_must_use_short_form(
@@ -198,11 +197,11 @@ def test_create_twice_in_local_chained_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<src>::position</x>"
     assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
 
 
 def test_create_in_chained_position_in_constructor(
@@ -222,8 +221,8 @@ def test_create_twice_in_chained_position_in_constructor(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
+    assert all_diags[0].location.file_path == "construct.dfn"
     assert all_diags[0].position_name == "position</x>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("construct.dfn")
+    assert all_diags[0].populated_at.file_path == "construct.dfn"

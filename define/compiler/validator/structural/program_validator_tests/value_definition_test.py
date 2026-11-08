@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
@@ -73,7 +72,7 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 49
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.expected_path == "/test"
     assert diagnostic.actual_path == "/number"
 
@@ -86,7 +85,7 @@ def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 28
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.expected == "my.domain.com:my_lib"
     assert diagnostic.actual == "other.org:my_lib"
 
@@ -190,7 +189,7 @@ def test_missing_logical_operation_file(
                 column=39,
                 end_line=3,
                 end_column=46,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="missing.dfn",
         )

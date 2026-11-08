@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -32,7 +31,7 @@ def test_cross_fqun_local_to_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<from_pos>"
     assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
@@ -57,7 +56,7 @@ def test_cross_fqun_local_to_chained_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 52
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<from_pos>"
     assert (
         all_diags[0].target_position
@@ -85,7 +84,7 @@ def test_cross_fqun_chained_to_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 86
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].source_position
         == "position<src>::position<mv:define-lang.org:child:/x>"
@@ -113,7 +112,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 47
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position<src>"
     assert (
         all_diags[0].target_position
@@ -134,7 +133,7 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_position_with_qualiti
     assert isinstance(
         all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].element_name == "position<no_such>"
     assert all_diags[0].parent_name == f"action<{_CHILD}:/act>"
     assert all_diags[0].location.line == 17

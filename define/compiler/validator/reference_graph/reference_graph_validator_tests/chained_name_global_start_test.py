@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -118,7 +117,7 @@ class TestUnknownGlobalChainStart:
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
         assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 30
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
 
 class TestImpliedQualityChainStart:
@@ -143,7 +142,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].location.column == 48
         assert all_diags[0].location.end_line == 6
         assert all_diags[0].location.end_column == 63
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_valid_chain_past_implied_position(
         self,
@@ -167,7 +166,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
         assert all_diags[0].location.line == 6
         assert all_diags[0].location.column == 44
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_valid_chain_past_implied_action_iface(
         self,
@@ -191,7 +190,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
         assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 42
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"
 
     def test_valid_three_element_chain_past_implied_position(
         self,
@@ -216,4 +215,4 @@ class TestMissingDefinitionInChain:
         assert all_diags[0].file_path == "middle.dfn"
         assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 37
-        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert all_diags[0].location.file_path == "test.dfn"

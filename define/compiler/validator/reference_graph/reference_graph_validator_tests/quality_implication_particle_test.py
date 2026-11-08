@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -42,7 +41,7 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
     assert all_diags[0].first_assignment_line == 7
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 28
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].required_value is False
     assert all_diags[1].required_empty is False
@@ -50,7 +49,7 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
     assert all_diags[1].position_name == "position<box>::position</slot>"
     assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert_propagation_chain(
         all_diags[1],
         {
@@ -106,7 +105,7 @@ def test_child_of_locally_created_implied_particle_is_known_empty(
     assert diag.location.column == 33
     assert diag.location.end_line == 7
     assert diag.location.end_column == 67
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.position_name == "position</parent>::position</child>"
 
 
@@ -127,7 +126,7 @@ def test_move_into_implied_position_missing_quality(
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_position == "position</plain>"
     assert all_diags[0].target_position == "position</parent>"
     assert all_diags[0].missing_qualities == [
@@ -145,11 +144,11 @@ def test_create_in_occupied_implied_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</implied>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.file_path == "test.dfn"
 
 
 def test_destroy_in_empty_implied_position_infers_created(
@@ -194,7 +193,7 @@ def test_move_from_local_to_implied_marks_local_empty(
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<local>"
 
 
@@ -208,7 +207,7 @@ def test_move_from_implied_to_local_marks_implied_empty(
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</implied>"
 
 
@@ -243,7 +242,7 @@ def test_two_different_implier_constructors_conflict(
     assert diag.location.column == 30
     assert diag.location.end_line == 11
     assert diag.location.end_column == 42
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -305,7 +304,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     assert diag.location.column == 30
     assert diag.location.end_line == 11
     assert diag.location.end_column == 42
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert_propagation_chain(
         diag,
         {
@@ -348,5 +347,5 @@ def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
     assert diag.location.column == 33
     assert diag.location.end_line == 13
     assert diag.location.end_column == 68
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.position_name == "position<source>::position</emptier>"

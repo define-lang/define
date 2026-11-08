@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -46,7 +45,7 @@ def test_triggered_action_interface_particle_must_depart_before_caller_ends(
     )
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -68,7 +67,7 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     )
     assert first_diagnostic.location.line == 16
     assert first_diagnostic.location.column == 47
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     second_diagnostic = all_diags[1]
     assert isinstance(
         second_diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic
@@ -80,7 +79,7 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     )
     assert second_diagnostic.location.line == 18
     assert second_diagnostic.location.column == 47
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
@@ -104,7 +103,7 @@ def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
     )
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 47
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
@@ -128,7 +127,7 @@ def test_destroyed_action_parent_does_not_duplicate_replacement_diagnostic(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
@@ -161,7 +160,7 @@ def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
     assert diagnostic.position_name == "position<box>::action</worker>::position<input>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
@@ -185,7 +184,7 @@ def test_caller_move_between_callee_interfaces_does_not_consume_particle(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
@@ -209,7 +208,7 @@ def test_callee_move_between_its_interfaces_requires_caller_consumption(
     )
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -231,7 +230,7 @@ def test_constructor_interface_particle_must_depart_before_caller_ends(
     )
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 24
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
@@ -261,7 +260,7 @@ def test_moved_particle_callee_interface_must_be_consumed_in_interface_position(
     )
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -281,7 +280,7 @@ def test_moved_particle_callee_interface_must_be_consumed_in_implied_position(
     )
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 45
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -298,7 +297,7 @@ def test_implied_action_interface_must_be_consumed_by_implying_action(
     assert diagnostic.position_name == "action</foo>::position<result>"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("outer.dfn")
+    assert diagnostic.location.file_path == "outer.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _FOO),
         (_TEST, _OUTER),
@@ -358,10 +357,10 @@ def test_child_guarantee_must_be_consumed_before_parent_triggers(
     )
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 12
     assert diagnostic.arrived_at.column == 79
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -388,10 +387,10 @@ def test_particle_with_child_guarantee_must_be_clean_before_moving_to_parent_int
     )
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 18
     assert diagnostic.arrived_at.column == 50
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -418,10 +417,10 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
     )
     assert first_diagnostic.location.line == 19
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 18
     assert first_diagnostic.arrived_at.column == 50
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
@@ -434,10 +433,10 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
     )
     assert second_diagnostic.location.line == 19
     assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert second_diagnostic.arrived_at.line == 18
     assert second_diagnostic.arrived_at.column == 50
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -464,10 +463,10 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
     )
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 19
     assert diagnostic.arrived_at.column == 98
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -494,10 +493,10 @@ def test_action_on_position_child_must_be_clean_before_parent_triggers(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 98
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -526,10 +525,10 @@ def test_child_guarantee_on_callers_interface_particle_must_be_consumed_before_p
     )
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 11
     assert diagnostic.arrived_at.column == 79
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -556,10 +555,10 @@ def test_existing_particle_guarantee_must_be_consumed_before_parent_triggers(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 12
     assert diagnostic.arrived_at.column == 30
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -586,10 +585,10 @@ def test_unchanged_guarantee_preserves_caller_move_as_diagnostic_source(
     )
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 14
     assert diagnostic.arrived_at.column == 50
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -612,7 +611,7 @@ def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee(
     )
     assert diagnostic.location.line == 9
     assert diagnostic.location.column == 47
-    assert diagnostic.location.file_path == PurePosixPath("middle.dfn")
+    assert diagnostic.location.file_path == "middle.dfn"
 
 
 def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee_when_particle_above_is_destroyed(
@@ -630,7 +629,7 @@ def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee_when
     )
     assert diagnostic.location.line == 9
     assert diagnostic.location.column == 47
-    assert diagnostic.location.file_path == PurePosixPath("middle.dfn")
+    assert diagnostic.location.file_path == "middle.dfn"
 
 
 def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
@@ -647,11 +646,11 @@ def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 50
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.occupied_at is not None
     assert diagnostic.occupied_at.line == 7
     assert diagnostic.occupied_at.column == 30
-    assert diagnostic.occupied_at.file_path == PurePosixPath("worker.dfn")
+    assert diagnostic.occupied_at.file_path == "worker.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -667,11 +666,11 @@ def test_error_on_action_parent_suppresses_unconsumed_diagnostic(
     assert diagnostic.position_name == "position<occupied>"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 47
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.occupied_at is not None
     assert diagnostic.occupied_at.line == 12
     assert diagnostic.occupied_at.column == 30
-    assert diagnostic.occupied_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.occupied_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
@@ -690,11 +689,11 @@ def test_error_on_occupied_child_action_interface_suppresses_parent_trigger_diag
     )
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 50
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.occupied_at is not None
     assert diagnostic.occupied_at.line == 7
     assert diagnostic.occupied_at.column == 30
-    assert diagnostic.occupied_at.file_path == PurePosixPath("child.dfn")
+    assert diagnostic.occupied_at.file_path == "child.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -721,10 +720,10 @@ def test_implied_parent_action_must_receive_clean_interface_particle(
     )
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 7
     assert diagnostic.arrived_at.column == 64
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -751,10 +750,10 @@ def test_action_on_deeper_position_descendant_must_be_clean_before_parent_trigge
     )
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 14
     assert diagnostic.arrived_at.column == 115
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -781,10 +780,10 @@ def test_action_interface_two_actions_below_callee_interface_occupied_when_calle
     )
     assert first_diagnostic.location.line == 15
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 12
     assert first_diagnostic.arrived_at.column == 30
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_CHILD, _WORKER),
         (_PARENT, _CHILD),
@@ -813,10 +812,10 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
     )
     assert first_diagnostic.location.line == 18
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 17
     assert first_diagnostic.arrived_at.column == 81
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
@@ -829,10 +828,10 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
     )
     assert second_diagnostic.location.line == 22
     assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert second_diagnostic.arrived_at.line == 21
     assert second_diagnostic.arrived_at.column == 81
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -861,10 +860,10 @@ def test_action_interface_entry_rule_is_checked_at_each_parent_trigger(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 79
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
         (_TEST, _CHILD),
@@ -891,10 +890,10 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
     )
     assert first_diagnostic.location.line == 13
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 12
     assert first_diagnostic.arrived_at.column == 79
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
@@ -907,10 +906,10 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
     )
     assert second_diagnostic.location.line == 15
     assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert second_diagnostic.arrived_at.line == 14
     assert second_diagnostic.arrived_at.column == 79
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -938,10 +937,10 @@ def test_one_child_interface_create_before_two_parent_triggers_is_diagnosed_once
     )
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 12
     assert diagnostic.arrived_at.column == 30
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
         (_TEST, _PARENT),
@@ -968,10 +967,10 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
     )
     assert first_diagnostic.location.line == 13
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 12
     assert first_diagnostic.arrived_at.column == 79
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
@@ -984,10 +983,10 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
     )
     assert second_diagnostic.location.line == 13
     assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert second_diagnostic.arrived_at.line == 12
     assert second_diagnostic.arrived_at.column == 79
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
@@ -1049,10 +1048,10 @@ def test_implied_position_action_interface_occupied_when_callee_triggers(
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 65
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _INNER),
@@ -1078,10 +1077,10 @@ def test_transitively_implied_position_action_interface_occupied_when_callee_tri
     )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 13
     assert diagnostic.arrived_at.column == 65
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_HELPER, _INNER),
         (_OUTER, _HELPER),
@@ -1105,10 +1104,10 @@ def test_implied_action_interface_occupied_when_callee_triggers(
     assert diagnostic.position_name == "position<box>::action</inner>::position<item>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 12
     assert diagnostic.arrived_at.column == 45
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _INNER),
@@ -1131,10 +1130,10 @@ def test_transitively_implied_action_interface_occupied_when_callee_triggers(
     assert diagnostic.position_name == "position<box>::action</inner>::position<item>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 12
     assert diagnostic.arrived_at.column == 45
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_HELPER, _INNER),
         (_OUTER, _HELPER),
@@ -1161,10 +1160,10 @@ def test_action_interface_under_implied_position_child_occupied_when_callee_trig
     )
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 14
     assert diagnostic.arrived_at.column == 84
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _INNER),
@@ -1187,10 +1186,10 @@ def test_current_particle_implied_action_interface_occupied_when_implied_callee_
     assert diagnostic.position_name == "action</inner>::position<item>"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 7
     assert diagnostic.arrived_at.column == 30
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _INNER),
@@ -1220,18 +1219,18 @@ def test_circular_implied_action_does_not_count_as_implying_itself(
     assert all_diags[0].cycle == [_OUTER, _INNER, _OUTER]
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
-    assert all_diags[0].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].location.file_path == "inner.dfn"
     assert isinstance(all_diags[1], diagnostics.UntriggeredImpliedActionDiagnostic)
     assert all_diags[1].implied_action_name == "action</outer>"
     assert all_diags[1].location.line == 2
     assert all_diags[1].location.column == 25
-    assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].location.file_path == "inner.dfn"
     assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
     assert all_diags[2].action_name == "action</outer>"
     assert all_diags[2].position_name == "action</outer>::position<run>"
     assert all_diags[2].location.line == 7
     assert all_diags[2].location.column == 30
-    assert all_diags[2].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[2].location.file_path == "inner.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -1268,10 +1267,10 @@ def test_implied_position_action_interface_is_reported_once_for_two_implying_cal
     )
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 14
     assert diagnostic.arrived_at.column == 65
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _INNER),
         (_TEST, _OUTER_A),
@@ -1298,10 +1297,10 @@ def test_each_implied_position_action_interface_is_reported(
     )
     assert first_diagnostic.location.line == 17
     assert first_diagnostic.location.column == 30
-    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.location.file_path == "test.dfn"
     assert first_diagnostic.arrived_at.line == 14
     assert first_diagnostic.arrived_at.column == 63
-    assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert first_diagnostic.arrived_at.file_path == "test.dfn"
     second_diagnostic = all_diags[1]
     assert isinstance(
         second_diagnostic,
@@ -1314,10 +1313,10 @@ def test_each_implied_position_action_interface_is_reported(
     )
     assert second_diagnostic.location.line == 17
     assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.location.file_path == "test.dfn"
     assert second_diagnostic.arrived_at.line == 16
     assert second_diagnostic.arrived_at.column == 64
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert second_diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_OUTER, _INNER),
@@ -1345,10 +1344,10 @@ def test_implied_position_action_interface_is_checked_only_for_callees_implying_
     )
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 30
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.arrived_at.line == 16
     assert diagnostic.arrived_at.column == 64
-    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.file_path == "test.dfn"
     assert action_graph(result.reference_graph_result) == [
         (_OUTER_A, _INNER),
         (_OUTER_B, _INNER),

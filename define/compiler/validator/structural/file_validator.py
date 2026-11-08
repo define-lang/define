@@ -131,7 +131,7 @@ class FileStructuralValidator:
     ) -> LoadedFile:
         """Parse UTF-8 source text and check the rules that concern the whole file."""
         parser_file_path = (
-            context.full_path.as_posix_path() if context.is_filesystem_context else None
+            str(context.full_path) if context.is_filesystem_context else None
         )
         parse_result = parser.parse(
             source,

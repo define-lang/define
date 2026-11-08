@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import constants
@@ -44,7 +43,7 @@ def test_move_mismatched_value(
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 50
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.missing_qualities == ["value</text>"]
@@ -60,7 +59,7 @@ def test_move_without_value(
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 50
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
@@ -88,14 +87,14 @@ def test_action_mismatched_value(
     assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
     assert untriggered.location.line == 9
     assert untriggered.location.column == 28
-    assert untriggered.location.file_path == PurePosixPath("test.dfn")
+    assert untriggered.location.file_path == "test.dfn"
     assert untriggered.position_name == "position<worker>"
     assert untriggered.quality_name == "action</consume>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 50
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.source_position == "position<source>"
     assert (
         diagnostic.target_position
@@ -128,7 +127,7 @@ def test_value_use_keeps_only_origin_alive(
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 14
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
 
 
 def test_value_setting_target_keeps_only_origin_alive(
@@ -143,12 +142,12 @@ def test_value_setting_target_keeps_only_origin_alive(
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 13
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     dead_write = result.all_diagnostics[1]
     assert isinstance(dead_write, diagnostics.DeadValueWriteDiagnostic)
     assert dead_write.location.line == 26
     assert dead_write.location.column == 26
-    assert dead_write.location.file_path == PurePosixPath("test.dfn")
+    assert dead_write.location.file_path == "test.dfn"
     assert dead_write.position_name == "position<target>"
 
 
@@ -184,7 +183,7 @@ def test_guaranteed_value_through_local(
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.line == 18
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
 
 
 def test_required_value_used_after_move(
@@ -208,7 +207,7 @@ def test_callee_contract_keeps_only_origin_alive(
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 18
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
 
 
 def test_callee_contract_through_position_without_qualities(
@@ -228,7 +227,7 @@ def test_unused_local_value_is_dead(
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<item>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
 
@@ -243,14 +242,14 @@ def test_moving_values_does_not_keep_quality_assignments_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 28
 
@@ -265,7 +264,7 @@ def test_callee_without_qualities_does_not_keep_value_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 28
 
@@ -282,7 +281,7 @@ def test_value_read_keeps_only_interface_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<moved>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 28
 
@@ -299,6 +298,6 @@ def test_unused_interface_value_is_dead(
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
     assert diagnostic.position_name == "position<input>"
     assert diagnostic.quality_name == "value</number>"
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 5
     assert diagnostic.location.column == 24

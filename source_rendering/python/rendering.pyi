@@ -1,4 +1,3 @@
-from pathlib import PurePosixPath
 from typing import final
 
 @final
@@ -10,7 +9,7 @@ class SourceLocation:
         column: int,
         end_line: int,
         end_column: int,
-        file_path: PurePosixPath | None = None,
+        file_path: str | None = None,
     ) -> SourceLocation: ...
     @property
     def line(self) -> int: ...
@@ -21,5 +20,5 @@ class SourceLocation:
     @property
     def end_column(self) -> int: ...
     @property
-    def file_path(self) -> PurePosixPath | None: ...
+    def file_path(self) -> str | None: ...
     def render(self, source_line: str | None) -> str: ...

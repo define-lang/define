@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 import click.testing
@@ -16,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:
-    result = parser.parse(source.encode(), PurePosixPath("generated.dfn"))
+    result = parser.parse(source.encode(), "generated.dfn")
     assert result.exception is None
     assert result.diagnostics == []
     assert result.program is not None

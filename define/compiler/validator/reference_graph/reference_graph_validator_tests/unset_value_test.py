@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -23,7 +22,7 @@ def test_new_particle_is_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 48
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -58,7 +57,7 @@ def test_move_preserves_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 49
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -72,7 +71,7 @@ def test_replacement_is_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 24
     assert diagnostic.location.column == 48
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -93,7 +92,7 @@ def test_trigger_requires_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -147,7 +146,7 @@ def test_transitive_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -208,7 +207,7 @@ def test_transitive_implied_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -267,7 +266,7 @@ def test_implied_requirement_after_move(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -318,7 +317,7 @@ def test_guarantee_new_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -341,7 +340,7 @@ def test_guarantee_existing_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -350,7 +349,7 @@ def test_guarantee_existing_unset(
     )
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
+    assert diagnostic.location.file_path == "provide.dfn"
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<item>"
@@ -370,7 +369,7 @@ def test_guarantee_unchanged_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -393,7 +392,7 @@ def test_guarantee_moved_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -416,7 +415,7 @@ def test_destructor_direct_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 33
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -483,7 +482,7 @@ def test_destructor_contract_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -547,7 +546,7 @@ def test_destructor_contract_set_set(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
@@ -561,7 +560,7 @@ def test_destructor_contract_set_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
@@ -574,7 +573,7 @@ def test_destructor_contract_replace_set(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -630,7 +629,7 @@ def test_destructor_contract_replace_set(
     )
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
@@ -643,7 +642,7 @@ def test_destructor_contract_replace_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -699,7 +698,7 @@ def test_destructor_contract_replace_unset(
     )
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
@@ -719,7 +718,7 @@ def test_destructor_contract_untouched_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -789,7 +788,7 @@ def test_transitive_implied_guarantee_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -810,7 +809,7 @@ def test_constructor_guarantee_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -831,7 +830,7 @@ def test_requirement_after_move_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -885,7 +884,7 @@ def test_destructor_transitive_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -963,7 +962,7 @@ def test_destructor_untouched_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1041,7 +1040,7 @@ def test_destructor_replaced_child_identity_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1105,7 +1104,7 @@ def test_destructor_callee_cannot_set_contracted_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 30
     assert diagnostic.position_name == "position</value>"
@@ -1118,7 +1117,7 @@ def test_destructor_cannot_set_contracted_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 26
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -1132,10 +1131,10 @@ def test_multiple_value_requirements(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.file_path == "test.dfn"
     assert first.location.line == 19
     assert first.location.column == 50
-    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.location.file_path == "test.dfn"
     assert second.location.line == 19
     assert second.location.column == 50
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1220,7 +1219,7 @@ def test_interfaces_stop_value_inference(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1273,7 +1272,7 @@ def test_destructor_transitive_replaced_identity_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1351,10 +1350,10 @@ def test_multiple_destructor_requirements_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.location.file_path == "test.dfn"
     assert second.location.line == 23
     assert second.location.column == 47
-    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.file_path == "test.dfn"
     assert first.location.line == 23
     assert first.location.column == 47
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1484,10 +1483,10 @@ def test_destructor_multiple_value_requirements(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.file_path == "test.dfn"
     assert first.location.line == 22
     assert first.location.column == 47
-    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.location.file_path == "test.dfn"
     assert second.location.line == 22
     assert second.location.column == 47
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1624,7 +1623,7 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1696,7 +1695,7 @@ def test_repeated_unset_reads(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 49
     assert diagnostic.position_name == "position<source>"
@@ -1710,12 +1709,12 @@ def test_value_error_preserves_occupancy(
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.UnsetValueDiagnostic)
-    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.file_path == "test.dfn"
     assert first.location.line == 18
     assert first.location.column == 48
     assert first.position_name == "position<source>"
     assert isinstance(second, diagnostics.ValueSettingEmptyPositionDiagnostic)
-    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.location.file_path == "test.dfn"
     assert second.location.line == 20
     assert second.location.column == 48
     assert second.position_name == "position<source>"
@@ -1731,7 +1730,7 @@ def test_repeated_interface_value_requirement(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert (
@@ -1777,7 +1776,7 @@ def test_value_error_new_guarantee(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
+    assert diagnostic.location.file_path == "provide.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
@@ -1791,7 +1790,7 @@ def test_value_error_existing_guarantee(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
+    assert diagnostic.location.file_path == "provide.dfn"
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
@@ -1805,13 +1804,13 @@ def test_value_error_recovered_by_literal(
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position</value>"
@@ -1825,7 +1824,7 @@ def test_destructor_value_error(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
@@ -1839,13 +1838,13 @@ def test_value_error_recovered_by_copy(
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position</value>"
@@ -1863,7 +1862,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 45
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert (
         all_diags[0].position_name
         == "position<holder>::position</box>::position</child>::position</value>"

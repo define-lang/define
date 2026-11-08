@@ -47,7 +47,7 @@ def test_sub_root_redeclares_parent_fqun(
     assert result.all_diagnostics == [
         diagnostics.DuplicateFqunDiagnostic(
             location=ast.start_of_file_location(
-                PurePosixPath("lib/nested/.define/project/config.defcl")
+                "lib/nested/.define/project/config.defcl"
             ),
             fqun="mv:define-lang.org:parent",
             existing_config=".define/project/config.defcl",
@@ -106,7 +106,7 @@ def test_cross_fqun_file_not_found(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 63
     assert diags[0].file_path == "lib/missing.dfn"
@@ -122,9 +122,7 @@ def test_cross_fqun_sub_root_missing_config(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -142,9 +140,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -161,9 +157,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootFqunMismatchDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             expected_fqun=_CHILD_UNIVERSE,
             actual_fqun="mv:define-lang.org:actual_child",
             sub_root_path="lib",
@@ -183,7 +177,7 @@ def test_second_universe_declared_at_same_sub_root_path(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location(deps_path),
+            location=ast.start_of_file_location(str(deps_path)),
             sub_root_path="lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 deps_path, "mv:define-lang.org:second_child", "lib"
@@ -209,7 +203,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location(deps_path),
+            location=ast.start_of_file_location(str(deps_path)),
             sub_root_path="lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 deps_path, "mv:define-lang.org:second_child", "lib"
@@ -224,7 +218,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
                 column=20,
                 end_line=3,
                 end_column=31,
-                file_path=PurePosixPath("lib/b.dfn"),
+                file_path="lib/b.dfn",
             ),
             cycle=[
                 "position<mv:define-lang.org:child_universe:/a>",
@@ -249,7 +243,7 @@ def test_path_inside_other_universe_before_its_sub_root_loads(
     assert len(diags) == 1
     path_diag = diags[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.location.file_path == PurePosixPath("test.dfn")
+    assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 29
     assert path_diag.path == "lib/parent_target.dfn"
@@ -268,9 +262,7 @@ def test_sub_root_path_declared_by_outer_project_wins(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("p/.define/deps/local.defcl")
-            ),
+            location=ast.start_of_file_location("p/.define/deps/local.defcl"),
             sub_root_path="p/lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 PurePosixPath("p/.define/deps/local.defcl"),
@@ -298,7 +290,7 @@ def test_reference_naming_universe_into_its_declared_sub_root(
     assert len(diags) == 1
     path_diag = diags[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.location.file_path == PurePosixPath("test.dfn")
+    assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 63
     assert path_diag.path == "lib/inner/x.dfn"
@@ -318,9 +310,7 @@ def test_sub_root_is_current_universe(
     assert result.file_results[1].exception is None
     assert result.all_diagnostics == [
         diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath(".define/deps/local.defcl")
-            ),
+            location=ast.start_of_file_location(".define/deps/local.defcl"),
             entry=local_dependency_entry.LocalDependencyEntry(
                 PurePosixPath(".define/deps/local.defcl"),
                 "mv:define-lang.org:test_parent",
@@ -333,7 +323,7 @@ def test_sub_root_is_current_universe(
                 column=20,
                 end_line=3,
                 end_column=40,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="lib/target.dfn",
             definition_name="position<mv:define-lang.org:test_parent:/lib/target>",
@@ -344,7 +334,7 @@ def test_sub_root_is_current_universe(
                 column=29,
                 end_line=4,
                 end_column=35,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="target.dfn",
         ),
@@ -354,7 +344,7 @@ def test_sub_root_is_current_universe(
                 column=62,
                 end_line=1,
                 end_column=68,
-                file_path=PurePosixPath("lib/target.dfn"),
+                file_path="lib/target.dfn",
             ),
             expected_path="/lib/target",
             actual_path="/target",
@@ -374,7 +364,7 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     assert len(diags) == 2
     path_diag = diags[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.location.file_path == PurePosixPath("test.dfn")
+    assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 29
     assert path_diag.path == "lib/parent_target.dfn"
@@ -382,7 +372,7 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     assert path_diag.sub_root_path == "lib"
     not_found_diag = diags[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert not_found_diag.location.file_path == PurePosixPath("test.dfn")
+    assert not_found_diag.location.file_path == "test.dfn"
     assert not_found_diag.location.line == 6
     assert not_found_diag.location.column == 63
     assert not_found_diag.file_path == "lib/missing_target.dfn"
@@ -401,9 +391,7 @@ def test_path_inside_other_universe(
         result.file_results[0].diagnostics[0],
         diagnostics.PathInsideOtherUniverseDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
     assert result.file_results[0].diagnostics[0].path == "lib/parent_target.dfn"
     assert result.file_results[0].diagnostics[0].location.line == 4
     assert result.file_results[0].diagnostics[0].location.column == 29
@@ -430,7 +418,7 @@ def test_path_inside_other_universe_skips_further_validation(
     assert isinstance(
         wrong_type_diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
-    assert wrong_type_diag.location.file_path == PurePosixPath("test.dfn")
+    assert wrong_type_diag.location.file_path == "test.dfn"
     assert wrong_type_diag.location.line == 3
     assert wrong_type_diag.location.column == 20
     assert wrong_type_diag.file_path == "lib/child_action.dfn"
@@ -440,7 +428,7 @@ def test_path_inside_other_universe_skips_further_validation(
     )
     path_diag = result.file_results[0].diagnostics[1]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.location.file_path == PurePosixPath("test.dfn")
+    assert path_diag.location.file_path == "test.dfn"
     assert path_diag.path == "lib/child_action.dfn"
     assert path_diag.location.line == 4
     assert path_diag.location.column == 29
@@ -468,9 +456,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         result.file_results[0].diagnostics[0],
         diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
     assert result.file_results[0].diagnostics[0].location.line == 3
     assert result.file_results[0].diagnostics[0].location.column == 20
     assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
@@ -484,9 +470,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     assert isinstance(
         result.file_results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic
     )
-    assert result.file_results[1].diagnostics[0].location.file_path == PurePosixPath(
-        "lib/target.dfn"
-    )
+    assert result.file_results[1].diagnostics[0].location.file_path == "lib/target.dfn"
     assert result.file_results[1].diagnostics[0].location.line == 1
     assert result.file_results[1].diagnostics[0].location.column == 31
     assert result.file_results[1].diagnostics[0].expected == _CHILD_UNIVERSE
@@ -506,9 +490,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
         result.file_results[0].diagnostics[0],
         diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].location.file_path == PurePosixPath(
-        "test.dfn"
-    )
+    assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
     assert result.file_results[0].diagnostics[0].location.line == 3
     assert result.file_results[0].diagnostics[0].location.column == 20
     assert result.file_results[0].diagnostics[0].file_path == "lib/target.dfn"
@@ -557,9 +539,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib_b/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib_b/.define/project/config.defcl"),
             config_path="lib_b/.define/project/config.defcl",
             sub_root_path="lib_b",
         ),
@@ -578,7 +558,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
     assert diags[0].universe == child_b
@@ -601,9 +581,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -621,9 +599,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                PurePosixPath("lib/.define/project/config.defcl")
-            ),
+            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -633,7 +609,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
                 column=20,
                 end_line=4,
                 end_column=40,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             file_path="wrong_type.dfn",
             definition_name="position<mv:define-lang.org:parent_universe:/wrong_type>",
@@ -652,13 +628,13 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 31
     assert diags[0].expected == _PARENT_UNIVERSE
     assert diags[0].actual == foreign_universe
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].location.file_path == "test.dfn"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 29
     assert diags[1].universe == foreign_universe
@@ -675,7 +651,7 @@ def test_same_path_in_known_and_unknown_universes_still_walks_into_known(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].universe == "unknown.com:other_lib"
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
     assert diags[0].location.line == 3
@@ -694,13 +670,13 @@ def test_same_path_in_two_unknown_universes_diagnoses_each(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].universe == "unknown.com:lib_a"
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert diags[1].location.file_path == "test.dfn"
     assert diags[1].universe == "unknown.com:lib_b"
     assert diags[1].current_universe_name == _PARENT_UNIVERSE
     assert diags[1].location.line == 4
@@ -757,7 +733,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
                 column=31,
                 end_line=2,
                 end_column=58,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             expected=_PARENT_UNIVERSE,
             actual=foreign_universe,
@@ -768,7 +744,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
                 column=60,
                 end_line=2,
                 end_column=61,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             expected_path="/test",
             actual_path="/a",
@@ -779,7 +755,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
                 column=31,
                 end_line=3,
                 end_column=58,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             expected=_PARENT_UNIVERSE,
             actual=foreign_universe,
@@ -790,7 +766,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
                 column=60,
                 end_line=3,
                 end_column=61,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             expected_path="/test",
             actual_path="/b",
@@ -801,7 +777,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
                 column=29,
                 end_line=6,
                 end_column=56,
-                file_path=PurePosixPath("test.dfn"),
+                file_path="test.dfn",
             ),
             universe=foreign_universe,
             current_universe_name=_PARENT_UNIVERSE,

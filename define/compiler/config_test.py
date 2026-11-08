@@ -47,7 +47,7 @@ def _invalid_local_deps(violation_message: str) -> config.RootConfigResult:
         root_config=None,
         diagnostics=[
             diagnostics.InvalidConfigDiagnostic(
-                location=ast.start_of_file_location(_LOCAL_DEPS_PATH),
+                location=ast.start_of_file_location(str(_LOCAL_DEPS_PATH)),
                 violation_messages=[violation_message],
             )
         ],
@@ -113,7 +113,7 @@ class TestLoadProjectRootConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.NotRunFromProjectRootDiagnostic(
-                    location=ast.start_of_file_location(_PROJECT_CONFIG_PATH),
+                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
                     config_path=str(_PROJECT_CONFIG_PATH),
                 )
             ],
@@ -146,7 +146,7 @@ class TestLoadProjectRootConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    location=ast.start_of_file_location(_PROJECT_CONFIG_PATH),
+                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
                     expected_fqun="other.example.com:other_lib",
                     actual_fqun="test.example.com:my_lib",
                     sub_root_path=str(constants.PROJECT_ROOT),
@@ -170,7 +170,11 @@ class TestProjectConfig:
         first, second = result.diagnostics
         assert isinstance(first, diagnostics.ConfigDclDiagnostic)
         assert first.location == rendering.SourceLocation(
-            line=3, column=3, end_line=3, end_column=14, file_path=_PROJECT_CONFIG_PATH
+            line=3,
+            column=3,
+            end_line=3,
+            end_column=14,
+            file_path=str(_PROJECT_CONFIG_PATH),
         )
         assert isinstance(first.dcl_error, errors.UnknownFieldNameDiagnostic)
         assert first.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
@@ -178,7 +182,11 @@ class TestProjectConfig:
         assert first.dcl_error.message_type == "define.config.project.Project"
         assert isinstance(second, diagnostics.ConfigDclDiagnostic)
         assert second.location == rendering.SourceLocation(
-            line=4, column=3, end_line=4, end_column=7, file_path=_PROJECT_CONFIG_PATH
+            line=4,
+            column=3,
+            end_line=4,
+            end_column=7,
+            file_path=str(_PROJECT_CONFIG_PATH),
         )
         assert isinstance(second.dcl_error, errors.UnknownFieldNameDiagnostic)
         assert second.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
@@ -200,7 +208,7 @@ class TestProjectConfig:
             column=18,
             end_line=2,
             end_column=18,
-            file_path=_PROJECT_CONFIG_PATH,
+            file_path=str(_PROJECT_CONFIG_PATH),
         )
         assert type(diagnostic.dcl_error) is errors.DclDiagnostic
         assert (
@@ -217,7 +225,7 @@ class TestProjectConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(_PROJECT_CONFIG_PATH),
+                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
                     violation_messages=[
                         "project.universe_name: must be at least 1 characters"
                     ],
@@ -235,7 +243,7 @@ class TestProjectConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(_PROJECT_CONFIG_PATH),
+                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
                     violation_messages=["project.universe_name: value is required"],
                 )
             ],
@@ -256,7 +264,7 @@ class TestProjectConfig:
             column=16,
             end_line=2,
             end_column=16,
-            file_path=_PROJECT_CONFIG_PATH,
+            file_path=str(_PROJECT_CONFIG_PATH),
         )
         assert isinstance(diagnostic.dcl_error, errors.DclError)
         assert diagnostic.dcl_error.kind == error_types.DclErrorKind.MISSING_COLON
@@ -413,7 +421,7 @@ class TestLocalDepsConfig:
             column=34,
             end_line=1,
             end_column=38,
-            file_path=_LOCAL_DEPS_PATH,
+            file_path=str(_LOCAL_DEPS_PATH),
         )
         assert isinstance(diagnostic.dcl_error, errors.DclError)
         assert (
@@ -432,7 +440,7 @@ class TestSubRoot:
             diagnostics=[
                 diagnostics.SubRootNotProjectRootDiagnostic(
                     location=ast.start_of_file_location(
-                        PurePosixPath("subroot/.define/project/config.defcl")
+                        "subroot/.define/project/config.defcl"
                     ),
                     config_path="subroot/.define/project/config.defcl",
                     sub_root_path="subroot",
@@ -485,7 +493,7 @@ class TestSubRoot:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(config_path),
+                    location=ast.start_of_file_location(str(config_path)),
                     violation_messages=["project.universe_name: value is required"],
                 )
             ],
@@ -509,7 +517,7 @@ class TestSubRoot:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(deps_path),
+                    location=ast.start_of_file_location(str(deps_path)),
                     violation_messages=["deps.local.path: value is required"],
                 )
             ],

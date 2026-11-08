@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -281,9 +280,9 @@ def test_move_from_chained_to_occupied_local_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].occupied_at is not None
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].occupied_at.file_path == "test.dfn"
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 61
     assert all_diags[0].position_name == "position<dest>"
@@ -301,7 +300,7 @@ def test_move_from_empty_local_chained(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<src>::position</x>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -317,12 +316,12 @@ def test_move_to_occupied_local_chained(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 47
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<dest>::position</x>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 13
     assert all_diags[0].occupied_at.column == 30
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].occupied_at.file_path == "test.dfn"
 
 
 def test_double_move_from_local_chained_fails(
@@ -335,7 +334,7 @@ def test_double_move_from_local_chained_fails(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<src>::position</x>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
@@ -370,7 +369,7 @@ def test_error_state_on_child_position_moves_with_particle(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
     assert all_diags[0].position_name == "position<a>::position</x>"
@@ -384,12 +383,12 @@ def test_error_state_on_child_position_does_not_stay_at_move_source(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
     assert all_diags[0].position_name == "position<a>::position</x>"
     assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 33
     assert all_diags[1].position_name == "position<a>::position</x>"
@@ -403,13 +402,13 @@ def test_move_clears_error_state_below_target(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
     assert all_diags[0].position_name == "position<b>::position</x>"
     assert all_diags[0].parent_position_name == "position<b>"
     assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 33
     assert all_diags[1].position_name == "position<b>::position</x>"

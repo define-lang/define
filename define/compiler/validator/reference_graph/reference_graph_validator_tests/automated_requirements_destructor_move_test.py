@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -41,7 +40,7 @@ def test_interface_to_local_occupied_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -97,7 +96,7 @@ def test_implied_to_local_occupied_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -153,7 +152,7 @@ def test_interface_to_implied_occupied_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -203,7 +202,7 @@ def test_interface_to_implied_occupied_violated(
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 50
-    assert all_diags[1].location.file_path == PurePosixPath("destructor.dfn")
+    assert all_diags[1].location.file_path == "destructor.dfn"
     assert all_diags[1].position_name == "position</dest_marker>"
 
 
@@ -218,7 +217,7 @@ def test_implied_to_implied_occupied_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -268,5 +267,5 @@ def test_implied_to_implied_occupied_violated(
     )
     assert all_diags[1].location.line == 8
     assert all_diags[1].location.column == 58
-    assert all_diags[1].location.file_path == PurePosixPath("destructor.dfn")
+    assert all_diags[1].location.file_path == "destructor.dfn"
     assert all_diags[1].position_name == "position</dest_marker>"

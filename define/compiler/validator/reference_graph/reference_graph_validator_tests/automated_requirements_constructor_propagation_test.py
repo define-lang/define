@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -40,7 +39,7 @@ def test_action_occupied_requirement_for_interface_position_does_not_propagate_v
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 6
     assert all_diags[0].location.end_column == 75
-    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].location.file_path == "p.dfn"
     assert all_diags[0].action_name == _IMPLIED_ACTION
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "action</implied_action>::position<item>"
@@ -78,7 +77,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 10
     assert all_diags[0].location.end_column == 42
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _P
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</q>"

@@ -19,7 +19,7 @@ def test_case(validate_testdata_structural):
     assert isinstance(diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert diags[0].location.line == 7
     assert diags[0].location.column == 33
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].position_name == "position<target>"
 """)
         == []
@@ -59,7 +59,7 @@ def test_case(validate_testdata_structural):
     assert isinstance(second, diagnostics.DestroyInEmptyPositionDiagnostic)
     assert first.location.line == 7
     assert first.location.column == 33
-    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.file_path == "test.dfn"
     assert first.position_name == "position<target>"
 """) == [
         "line 5: validate_testdata_structural().all_diagnostics[1] is a DestroyInEmptyPositionDiagnostic, but the test does not assert on location.line, location.column, location.file_path, position_name"
@@ -91,7 +91,7 @@ def test_case(validate_testdata_structural):
     for diag in diags:
         assert diag.location.line == 7
         assert diag.location.column == 33
-        assert diag.location.file_path == PurePosixPath("test.dfn")
+        assert diag.location.file_path == "test.dfn"
 """)
         == []
     )

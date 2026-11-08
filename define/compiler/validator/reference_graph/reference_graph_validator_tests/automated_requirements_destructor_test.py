@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -63,7 +62,7 @@ def test_occupied_interface_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -120,7 +119,7 @@ def test_destructor_requiring_empty_interface_position_is_reported(
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("destructor_empty.dfn")
+    assert all_diags[0].location.file_path == "destructor_empty.dfn"
     assert all_diags[0].position_name == "position<item>"
     assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR_EMPTY)]
 
@@ -136,7 +135,7 @@ def test_intermediate_position_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _NESTED_DESTRUCTOR
     assert (
@@ -194,7 +193,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -251,7 +250,7 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.required_empty is False
     assert diag.action_name == _DESTROY_CARRIER
     assert diag.position_name == (
@@ -309,7 +308,7 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].location.file_path == "p.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -368,7 +367,7 @@ def test_callee_attached_destructor_requirement_validated_at_owning_caller(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _DESTRUCTOR
     assert (
@@ -430,7 +429,7 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
     )
     assert first_violation.location.line == 13
     assert first_violation.location.column == 33
-    assert first_violation.location.file_path == PurePosixPath("test.dfn")
+    assert first_violation.location.file_path == "test.dfn"
     assert first_violation.position_name == "position<thing>::position</p>"
     assert first_violation.action_name == _FIRST_DESTRUCTOR
     assert first_violation.required_empty is False
@@ -477,7 +476,7 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
     )
     assert second_violation.location.line == 13
     assert second_violation.location.column == 33
-    assert second_violation.location.file_path == PurePosixPath("test.dfn")
+    assert second_violation.location.file_path == "test.dfn"
     assert second_violation.position_name == "position<thing>::position</p>"
     assert second_violation.action_name == _SECOND_DESTRUCTOR
     assert second_violation.required_empty is False
@@ -522,5 +521,5 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
     assert isinstance(emptied_p, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic)
     assert emptied_p.location.line == 7
     assert emptied_p.location.column == 30
-    assert emptied_p.location.file_path == PurePosixPath("first_destructor.dfn")
+    assert emptied_p.location.file_path == "first_destructor.dfn"
     assert emptied_p.position_name == "position</p>"

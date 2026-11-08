@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -41,7 +40,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert diag.required_value is False
     assert diag.location.line == 20
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.required_empty is True
     assert diag.action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
@@ -111,7 +110,7 @@ def test_cross_fqun_occupied_requirement_violated(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
@@ -162,7 +161,7 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].required_empty is True
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/foo>"
     assert (
@@ -231,7 +230,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert diag.required_value is False
     assert diag.location.line == 22
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.location.file_path == "test.dfn"
     assert diag.required_empty is True
     assert diag.action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (

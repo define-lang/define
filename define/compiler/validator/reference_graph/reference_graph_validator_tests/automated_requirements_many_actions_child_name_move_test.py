@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -48,7 +47,7 @@ def test_move_without_the_carried_child_violates_inner_occupied_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 17
     assert all_diags[0].location.end_column == 73
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert (
@@ -101,7 +100,7 @@ def test_filled_carried_child_violates_inner_empty_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 73
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is True
     assert (
@@ -169,7 +168,7 @@ def test_empty_carried_grandchild_and_parent_violate_inner_occupied_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 73
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert (
@@ -209,7 +208,7 @@ def test_empty_carried_grandchild_and_parent_violate_inner_occupied_requirement(
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13
     assert all_diags[1].location.end_column == 73
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].action_name == _MIDDLE
     assert all_diags[1].required_empty is False
     assert (
@@ -269,7 +268,7 @@ def test_filled_carried_grandchild_violates_inner_empty_requirement(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 73
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is True
     assert (

@@ -6,7 +6,6 @@ import sys
 
 # Code that reads the constructor signature of an AST class, such as the
 # parser's AST node generator, resolves the field annotations at runtime.
-from pathlib import PurePosixPath  # noqa: TC003
 from typing import (
     ClassVar,
     Final,
@@ -42,7 +41,7 @@ type ParsedOrComputedOnFirstUse[T] = T
 
 
 def start_of_file_location(
-    file_path: PurePosixPath | None = None,
+    file_path: str | None = None,
 ) -> rendering.SourceLocation:
     """Return a location pointing to the very start of a file."""
     return rendering.SourceLocation(

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
@@ -73,7 +72,7 @@ def test_duplicate_source_definition_does_not_add_missing_quality_diagnostics(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].definition_type == "action"
     assert all_diags[0].path == "/test"
     assert all_diags[0].first_definition_line == 1
@@ -121,7 +120,7 @@ def test_undefined_move_destination_is_not_treated_as_defined_position(
     diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
-    assert diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert diags[0].location.file_path == "test.dfn"
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 12
     assert diags[0].location.column == 52
@@ -157,7 +156,7 @@ def test_same_fqun_must_use_short_form_in_from(
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].fqun == "my.domain.com:my_lib"
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 58
@@ -173,7 +172,7 @@ def test_same_fqun_must_use_short_form_in_to(
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].fqun == "my.domain.com:my_lib"
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 80
@@ -189,7 +188,7 @@ def test_valid_global_to_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "position</global_pos>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/global_pos>"
     assert all_diags[0].location.line == 6
@@ -229,7 +228,7 @@ def test_move_to_chained_prefix_marks_error(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 74
     assert all_diags[0].source_position == "position<local_pos>"
