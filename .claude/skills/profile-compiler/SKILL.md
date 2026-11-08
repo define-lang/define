@@ -54,6 +54,12 @@ When asked to make the compiler faster, also:
   never from a profile;
 - profile a workload at two or three sizes and compare its phases, to find costs
   that grow faster than the input;
+- capture CPU profiles without being asked when a wall profile can't name a
+  cost, such as a function whose self time rises with the thread count; native
+  frames show contention between threads. Past the physical core count, every
+  function slows about evenly from SMT and clock speed, which isn't contention;
+- weigh a phase's threads by selecting that phase with `--start-seconds` and
+  `--end-seconds`, not by their share of the whole run;
 - measure each change with `uv run -m tools.compare_compilers`, which also
   checks that the output is unchanged, and profile a worktree by running
   `run_profile` from it. Nothing else may run Bazel in either checkout
