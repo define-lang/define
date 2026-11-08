@@ -14,9 +14,11 @@ import click
 import msgspec
 
 from tools.profiler import (
+    call_counter,
     cpu_stacks,
     perf_access,
     perf_profiler,
+    python_target,
     tachyon_profile,
     tachyon_profiler,
 )
@@ -32,7 +34,9 @@ _INHERITED_RUNTIME_VARIABLES = (
 )
 
 
-class _CompilerInvocation(msgspec.Struct, frozen=True):
+class CompilerInvocation(msgspec.Struct, frozen=True):
+    """A compile command and where it runs."""
+
     command: tuple[str, ...]
     working_directory: pathlib.Path
     stdin_path: pathlib.Path | None
@@ -44,14 +48,16 @@ def chdir_to_build_workspace():
         os.chdir(workspace)
 
 
-def _workspace() -> pathlib.Path:
+def workspace_path() -> pathlib.Path:
+    """Return the checkout this tool runs from."""
     workspace = os.environ.get("BUILD_WORKSPACE_DIRECTORY")
     if workspace is not None:
         return pathlib.Path(workspace)
     return pathlib.Path(__file__).resolve().parent.parent
 
 
-def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
+def build_compiler(workspace: pathlib.Path) -> pathlib.Path:
+    """Build the checkout's compiler for profiling and return its launcher."""
     bazelisk_path = shutil.which("bazelisk")
     if bazelisk_path is None:
         raise FileNotFoundError("bazelisk is required to build the compiler")
@@ -72,42 +78,71 @@ def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
         check=True,
         cwd=workspace,
     )
-    return workspace / "bazel-bin/define/compiler/main"
+    launcher = workspace / "bazel-bin/define/compiler/main"
+    _precompile_bytecode(launcher)
+    return launcher
 
 
-def _target_environment() -> dict[str, str]:
+def _precompile_bytecode(launcher: pathlib.Path):
+    # The launcher runs Python with -B, so a runfiles tree that lacks bytecode
+    # recompiles every module on every run, and two checkouts compare unevenly.
+    entry_point = python_target.bazel_entry_point(launcher, target_environment())
+    if entry_point is None:
+        raise ValueError(f"{launcher} is not a Bazel Python launcher")
+    interpreter, _ = entry_point
+    runfiles = launcher.with_name(launcher.name + ".runfiles")
+    directories = [
+        os.fspath(directory)
+        for directory in sorted(runfiles.iterdir())
+        # The interpreter ships its standard library's bytecode.
+        if directory.is_dir() and "python_interpreters" not in directory.name
+    ]
+    _ = subprocess.run(
+        [
+            os.fspath(interpreter),
+            "-I",
+            "-m",
+            "compileall",
+            "-q",
+            "-j",
+            "0",
+            *directories,
+        ],
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def target_environment() -> dict[str, str]:
+    """Return this process's environment without its own runfiles settings."""
     environment = os.environ.copy()
     for variable in _INHERITED_RUNTIME_VARIABLES:
         _ = environment.pop(variable, None)
     return environment
 
 
-def _compiler_invocation(  # noqa: PLR0913, PLR0917 - The compile command's inputs.
+def compiler_invocation(  # noqa: PLR0913, PLR0917 - The compile command's inputs.
     workspace: pathlib.Path,
     compiler_path: pathlib.Path,
     source_path: pathlib.Path | None,
     project: pathlib.Path | None,
     entry: str,
     output_dir: pathlib.Path,
-    max_threads: int,
-) -> _CompilerInvocation:
-    command = [
-        str(compiler_path),
-        "compile",
-        "--out",
-        str(output_dir),
-        "--max-threads",
-        str(max_threads),
-    ]
+    max_threads: int | None,
+) -> CompilerInvocation:
+    """Return the command that compiles a source file or a project."""
+    command = [str(compiler_path), "compile", "--out", str(output_dir)]
+    if max_threads is not None:
+        command += ["--max-threads", str(max_threads)]
     if source_path is not None:
-        return _CompilerInvocation(
+        return CompilerInvocation(
             command=tuple(command),
             working_directory=workspace,
             stdin_path=source_path.absolute(),
         )
     # The command line requires exactly one of a source file and a project.
     project_path = typing.cast("pathlib.Path", project).absolute()
-    return _CompilerInvocation(
+    return CompilerInvocation(
         command=(*command, str(project_path / entry)),
         working_directory=project_path,
         stdin_path=None,
@@ -115,16 +150,29 @@ def _compiler_invocation(  # noqa: PLR0913, PLR0917 - The compile command's inpu
 
 
 def _capture(
-    profile_mode: str, invocation: _CompilerInvocation, profile_path: pathlib.Path
+    profile_mode: str,
+    invocation: CompilerInvocation,
+    profile_path: pathlib.Path,
 ):
-    environment = _target_environment()
+    environment = target_environment()
     with contextlib.ExitStack() as contexts:
         stdin = (
             None
             if invocation.stdin_path is None
             else contexts.enter_context(invocation.stdin_path.open("rb"))
         )
-        if profile_mode == "wall":
+        if profile_mode == "calls":
+            try:
+                exit_status = call_counter.capture(
+                    command=invocation.command,
+                    counts_path=profile_path,
+                    working_directory=invocation.working_directory,
+                    environment=environment,
+                    stdin=stdin,
+                )
+            except tachyon_profiler.CaptureError as error:
+                raise click.ClickException(str(error)) from error
+        elif profile_mode == "wall":
             try:
                 exit_status = tachyon_profiler.capture(
                     command=invocation.command,
@@ -152,7 +200,10 @@ def _capture(
                 raise click.ClickException(str(error)) from error
     click.echo(f"Profile: {profile_path}")
     click.echo(f"Capture: compiler exit {exit_status}")
-    if profile_mode == "wall":
+    if profile_mode == "calls":
+        calls = call_counter.load(profile_path)
+        click.echo(f"Calls: {sum(calls.values()):,} calls of {len(calls):,} functions")
+    elif profile_mode == "wall":
         profile = tachyon_profile.load(profile_path)
         click.echo(
             f"Samples: {(profile.ended_ns - profile.started_ns) / 1e9:.2f} s of "
@@ -179,21 +230,28 @@ def _capture(
         "Wall mode records all-thread samples with Tachyon, CPython's sampling "
         "profiler. CPU mode records Linux perf CPU samples, including native "
         "frames, as collapsed stacks: one line per distinct stack and thread "
-        "with its sample count. Generated code goes to a temporary directory unless "
-        "--output-dir is provided.\n\n"
+        "with its sample count. Calls mode counts every Python function call "
+        "on every thread, which slows the compile, so its times mean nothing. "
+        "Generated code goes to a temporary directory unless --output-dir is "
+        "provided.\n\n"
         "Machine setup: CPU mode needs kernel.perf_event_paranoid set to 1 or "
         "lower, for example in a file in /etc/sysctl.d/, and a CPython that "
         "runs with -X perf. It refuses to start without that access and says "
-        "how to grant it."
+        "how to grant it. perf cuts stacks deeper than "
+        "kernel.perf_event_max_stack frames, 127 by default; raising it, such "
+        "as to 1024, unwinds deep compiler stacks."
     )
 )
 @click.option(
     "--mode",
     "profile_mode",
-    type=click.Choice(["wall", "cpu"]),
+    type=click.Choice(["wall", "cpu", "calls"]),
     default="wall",
     show_default=True,
-    help="Capture all-thread wall samples or sampled on-CPU time with Linux perf.",
+    help=(
+        "Capture all-thread wall samples, sampled on-CPU time with Linux perf, "
+        + "or exact call counts."
+    ),
 )
 @click.option(
     "--source",
@@ -229,7 +287,7 @@ def _capture(
     "out_path",
     type=_PATH,
     required=True,
-    help="Destination for Tachyon wall samples or collapsed CPU stacks.",
+    help="Destination for Tachyon wall samples, collapsed CPU stacks, or call counts.",
 )
 @click.option(
     "--max-threads",
@@ -259,8 +317,8 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     if (source_path is None) == (project is None):
         raise click.UsageError("provide exactly one of --source or --project")
 
-    workspace = _workspace()
-    compiler_path = _build_compiler(workspace)
+    workspace = workspace_path()
+    compiler_path = build_compiler(workspace)
     with contextlib.ExitStack() as contexts:
         if output_dir is None:
             output_dir = pathlib.Path(
@@ -272,7 +330,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
             click.echo(f"Generated code directory: {output_dir} (deleted afterward)")
         _capture(
             profile_mode,
-            _compiler_invocation(
+            compiler_invocation(
                 workspace,
                 compiler_path,
                 source_path,

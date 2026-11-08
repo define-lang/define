@@ -127,6 +127,32 @@ py_test(
 )
 
 py_binary(
+    name = "compare_compilers",
+    srcs = ["compare_compilers.py"],
+    deps = [
+        ":profile_orchestration",
+        "@pypi//click",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "compare_compilers_test",
+    size = "small",
+    srcs = ["compare_compilers_test.py"],
+    data = ["//define/compiler:main"],
+    env = {"COMPILER_BINARY": "$(rlocationpath //define/compiler:main)"},
+    deps = [
+        ":compare_compilers",
+        ":profile_orchestration",
+        ":runfiles",
+        "@pypi//click",
+        "@pypi//pytest",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
     name = "cpu_fingerprint",
     srcs = ["cpu_fingerprint.py"],
 )
@@ -202,9 +228,11 @@ py_library(
     name = "profile_orchestration",
     srcs = ["profile_orchestration.py"],
     deps = [
+        "//tools/profiler:call_counter",
         "//tools/profiler:cpu_stacks",
         "//tools/profiler:perf_access",
         "//tools/profiler:perf_profiler",
+        "//tools/profiler:python_target",
         "//tools/profiler:tachyon_profile",
         "//tools/profiler:tachyon_profiler",
         "@pypi//click",
@@ -274,6 +302,7 @@ py_test(
         ":runfiles",
         "//tools/profiler:analyzer",
         "//tools/profiler:perf_test_support",
+        "//tools/profiler:python_target",
         "//tools/profiler:tachyon_profile",
         "//tools/profiler:tachyon_profiler",
         "@pypi//click",
@@ -442,6 +471,8 @@ pyright_test(
         ":check_python_deps_test",
         ":check_symlinks",
         ":check_symlinks_test",
+        ":compare_compilers",
+        ":compare_compilers_test",
         ":cpu_fingerprint",
         ":cpu_fingerprint_test",
         ":generate_invisible_characters",

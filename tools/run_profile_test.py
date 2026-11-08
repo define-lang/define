@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
-import typing
+import sys
 from pathlib import Path
 from unittest import mock
 
 import click.testing
+import pytest
 from python.runfiles import runfiles as python_runfiles
 
 from tools import profile_orchestration as run_profile
@@ -15,12 +16,10 @@ from tools import runfiles
 from tools.profiler import (
     analyzer,
     perf_test_support,
+    python_target,
     tachyon_profile,
     tachyon_profiler,
 )
-
-if typing.TYPE_CHECKING:
-    import pytest
 
 _CONSTRUCTOR_SOURCE = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -38,18 +37,18 @@ def _capture(arguments: list[str]) -> click.testing.Result:
     compiler_path = runfiles.resolve_from_env("COMPILER_BINARY")
     runfiles_resolver = python_runfiles.Runfiles.Create()
     assert runfiles_resolver is not None
-    target_environment = run_profile._target_environment()  # pyright: ignore[reportPrivateUsage]
+    target_environment = run_profile.target_environment()
     target_environment.update(runfiles_resolver.EnvVars())
     with (
         mock.patch.object(
             run_profile,
-            "_build_compiler",
+            "build_compiler",
             autospec=True,
             return_value=compiler_path,
         ) as build_compiler,
         mock.patch.object(
             run_profile,
-            "_target_environment",
+            "target_environment",
             autospec=True,
             return_value=target_environment,
         ),
@@ -121,7 +120,7 @@ def test_help_describes_wall_and_cpu_capture_workflow():
     assert result.exit_code == 0
     help_text = " ".join(result.output.split())
     assert "Wall mode records all-thread samples with Tachyon" in help_text
-    assert "--mode [wall|cpu]" in help_text
+    assert "--mode [wall|cpu|calls]" in help_text
     assert "--source" in help_text
     assert "--project" in help_text
     assert "--entry" in help_text
@@ -180,6 +179,7 @@ def test_builds_compiler_before_preparing_profile(
             autospec=True,
             return_value=completed_build,
         ) as subprocess_run,
+        mock.patch.object(run_profile, "_precompile_bytecode", autospec=True),
         mock.patch.object(
             tachyon_profiler,
             "capture",
@@ -342,3 +342,30 @@ def test_profiles_cpu_through_public_profiler(tmp_path: Path):
         re.MULTILINE,
     )
     assert "/define/compiler/" in profile_path.read_text(encoding="utf-8")
+
+
+def test_precompiles_runfiles_bytecode_except_the_interpreter(tmp_path: Path):
+    launcher = tmp_path / "main"
+    runfiles = tmp_path / "main.runfiles"
+    for directory in ("_main", "rules_py++python_interpreters+python"):
+        (runfiles / directory).mkdir(parents=True)
+        _ = (runfiles / directory / "module.py").write_text(
+            "VALUE = 1\n", encoding="utf-8", newline="\n"
+        )
+    with mock.patch.object(
+        python_target,
+        "bazel_entry_point",
+        autospec=True,
+        return_value=(Path(sys.executable), runfiles / "_main/main.py"),
+    ):
+        run_profile._precompile_bytecode(launcher)  # pyright: ignore[reportPrivateUsage]
+
+    assert [path.name for path in (runfiles / "_main/__pycache__").iterdir()] == [
+        f"module.{sys.implementation.cache_tag}.pyc"
+    ]
+    assert not (runfiles / "rules_py++python_interpreters+python/__pycache__").exists()
+
+
+def test_refuses_to_precompile_without_a_bazel_launcher(tmp_path: Path):
+    with pytest.raises(ValueError, match=r"is not a Bazel Python launcher$"):
+        run_profile._precompile_bytecode(tmp_path / "main")  # pyright: ignore[reportPrivateUsage]

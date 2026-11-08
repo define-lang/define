@@ -7,20 +7,31 @@ import pathlib
 import click
 import msgspec
 
-from tools.profiler import call_tree, cpu_stacks, tachyon_profile, wall_timeline
+from tools.profiler import (
+    call_counter,
+    call_tree,
+    cpu_stacks,
+    tachyon_profile,
+    wall_timeline,
+)
 
 _TACHYON_MAGIC = b"HCAT"
+_CALL_COUNTS_START = b'{"calls"'
 
 
 @click.command(
     epilog=(
         "A wall profile is a Tachyon .bin file; a CPU profile is the collapsed "
-        "stacks a CPU capture writes. Views: timeline (wall only, the default "
+        "stacks a CPU capture writes; a calls file from --mode calls prints "
+        "the functions called most, or those containing --focus. Views: "
+        "timeline (wall only, the default "
         "for wall) prints each thread's runs of work and waiting; "
         "critical-path (wall only) prints the runs the main thread's progress "
         "waited on, in order; functions "
         "(the default for CPU) prints the functions with the most cumulative "
-        "and self time; tree prints the call tree. --thread, --start-seconds, "
+        "and self time; tree prints the call tree; callers prints, for the "
+        "function --focus names, the call paths that lead to it, inverted. "
+        "--thread, --start-seconds, "
         "and --end-seconds select the samples every view uses, and --focus "
         "starts each stack at its outermost function containing TEXT, so the "
         "tables and tree show what that function spends its time on; "
@@ -45,7 +56,7 @@ _TACHYON_MAGIC = b"HCAT"
 )
 @click.option(
     "--view",
-    type=click.Choice(["timeline", "critical-path", "functions", "tree"]),
+    type=click.Choice(["timeline", "critical-path", "functions", "tree", "callers"]),
     help="What to print. Defaults to timeline for wall and functions for CPU.",
 )
 @click.option(
@@ -68,12 +79,25 @@ _TACHYON_MAGIC = b"HCAT"
 @click.option(
     "--focus",
     metavar="TEXT",
-    help="Functions and tree: start each stack at a function containing TEXT.",
+    help=(
+        "Functions and tree: start each stack at a function containing TEXT. "
+        + "Callers: the function whose callers to print."
+    ),
 )
 @click.option(
     "--native",
     is_flag=True,
-    help="CPU: keep native frames, so self time shows the native functions.",
+    help=(
+        "CPU: keep the native frames below each stack's innermost Python "
+        + "function, so self time shows the native functions."
+    ),
+)
+@click.option(
+    "--levels",
+    type=click.IntRange(min=1),
+    default=6,
+    show_default=True,
+    help="Callers: how many callers above the function to print.",
 )
 @click.option(
     "--depth",
@@ -94,7 +118,7 @@ _TACHYON_MAGIC = b"HCAT"
     type=click.FloatRange(min=0.0),
     default=1.0,
     show_default=True,
-    help="Tree: omit calls below this share of the selected time.",
+    help="Tree and callers: omit calls below this share of the selected time.",
 )
 @click.option(
     "--limit",
@@ -112,10 +136,13 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     minimum_run_ms: float,
     minimum_percent: float,
     limit: int | None,
+    levels: int,
     *,
     native: bool,
 ):
     """Analyze one wall or CPU profile."""
+    if view == "callers" and focus is None:
+        raise click.UsageError("--view callers needs --focus")
     request = _Request(
         view=view,
         thread_ids=frozenset(thread_ids),
@@ -127,7 +154,11 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
         minimum_run_ms=minimum_run_ms,
     )
     with profile_path.open("rb") as profile_file:
-        is_wall = profile_file.read(len(_TACHYON_MAGIC)) == _TACHYON_MAGIC
+        start = profile_file.read(len(_CALL_COUNTS_START))
+    if start == _CALL_COUNTS_START:
+        call_tree.emit_call_counts(call_counter.load(profile_path), focus, limit or 30)
+        return
+    is_wall = start.startswith(_TACHYON_MAGIC)
     try:
         selection = (
             _wall_selection(profile_path, request, limit or 5)
@@ -146,6 +177,13 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
         shows_working=is_wall,
     )
     call_tree.emit_threads(stacks, report, thread_names)
+    # The usage check above guarantees a focus for the callers view.
+    if view == "callers" and focus is not None:
+        try:
+            call_tree.emit_callers(stacks, report, focus, minimum_percent, levels)
+        except ValueError as error:
+            raise click.ClickException(str(error)) from error
+        return
     if focus is not None:
         stacks = call_tree.focused(stacks, focus)
         if not stacks:
@@ -201,7 +239,9 @@ def _wall_selection(
             if request.thread_ids:
                 raise click.UsageError("the critical path follows every thread")
             wall_timeline.emit_critical_path(
-                profile, wall_timeline.thread_runs(profile, options), request.depth
+                profile,
+                wall_timeline.thread_runs(profile, options),
+                request.depth,
             )
             return None
         wall_timeline.emit_report(
@@ -232,6 +272,14 @@ def _cpu_selection(profile_path: pathlib.Path, request: _Request) -> _Selection:
         + "perf could not unwind to their thread's start, which appear under "
         + f"{cpu_stacks.NOT_UNWOUND}"
     )
+    if loaded.other_processes:
+        print(
+            "Left out: samples of other processes perf followed: "
+            + "; ".join(
+                f"{name} {duration_ns / 1_000_000_000:.3f} s"
+                for name, duration_ns in loaded.other_processes.items()
+            )
+        )
     stacks = [
         stack
         for stack in loaded.stacks

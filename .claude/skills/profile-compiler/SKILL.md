@@ -41,8 +41,24 @@ show parallel behavior. Say which you used and why. Capture a CPU profile only
 when the user asks for one.
 
 Start each wall analysis from `--view critical-path`, then use the other views
-for detail. Treat a nonzero capture exit, which includes compiler diagnostics,
-or an analyzer failure as a failed run.
+for detail; raise `--depth` when a phase's label doesn't explain its time. Treat
+a nonzero capture exit or an analyzer failure as a failed run, unless the
+workload is meant to produce diagnostics; it then exits 1 and still writes a
+profile.
+
+When asked to make the compiler faster, also:
+
+- profile with `--max-threads` at the machine's core count, where garbage
+  collection, coordination, and file-system contention show. Sampling slows the
+  compiler, more with more threads, so take real times from `compare_compilers`,
+  never from a profile;
+- profile a workload at two or three sizes and compare its phases, to find costs
+  that grow faster than the input;
+- measure each change with `uv run -m tools.compare_compilers`, which also
+  checks that the output is unchanged, and profile a worktree by running
+  `run_profile` from it. Nothing else may run Bazel in either checkout
+  meanwhile. Each checkout runs its own Bazel server; run
+  `bazelisk clean --expunge` in a worktree before leaving it.
 
 For each workload, report:
 
@@ -59,10 +75,12 @@ caller-to-callee path as an indented tree, each row with its cumulative CPU time
 and share of all sampled CPU, followed down to the functions that consume the
 work rather than delegate it. Build it from the busiest thread's tree
 (`--view tree --thread <id> --focus WorkerContext.run --minimum-percent 2`),
-then focus on each function where it branches, lowering `--minimum-percent`.
-Compare CPU and wall profiles by shares, not seconds: perf support slows the
-compiler.
+then focus on each function where it branches, lowering `--minimum-percent`. For
+a hot function, `--view callers --focus <function>` shows what calls it. To tell
+many cheap calls from a few expensive ones, divide a function's time by its
+count from `run_profile --mode calls` of the same input. Compare CPU and wall
+profiles by shares, not seconds: perf support slows the compiler.
 
 A critical path is not the busiest thread or summed thread time. Cumulative rows
 are not additive, and a sample is not a call. For follow-up questions, reuse
-retained profiles; use instrumentation only when exact call counts are needed.
+retained profiles.

@@ -54,7 +54,7 @@ def test_help_describes_the_views():
     assert "--thread" in help_text
     assert "--depth" in help_text
     assert "--focus" in help_text
-    assert "--view [timeline|critical-path|functions|tree]" in help_text
+    assert "--view [timeline|critical-path|functions|tree|callers]" in help_text
     assert "--minimum-run-ms" in help_text
     assert "--start-seconds" in help_text
     assert "prints each thread's runs of work and waiting" in help_text
@@ -90,6 +90,22 @@ def test_cpu_tree_focuses_on_a_function_within_selected_threads(tmp_path: Path):
         "\nFocus: stacks from the outermost function containing 'generate'\n"
         + "\nCall tree, with each function's own self time:\n"
         + "     0.003 s  33.3%  self 33.3%  generate\n"
+    )
+
+
+def test_reports_samples_of_other_processes(tmp_path: Path):
+    profile_path = tmp_path / "stacks.txt"
+    _ = profile_path.write_text(
+        _CPU_STACKS + "ldconfig-11/11;_start 1\n", encoding="utf-8", newline="\n"
+    )
+
+    result = click.testing.CliRunner().invoke(
+        analyzer.main, ["--profile", str(profile_path)]
+    )
+
+    assert result.exit_code == 0
+    assert result.output.splitlines()[1] == (
+        "Left out: samples of other processes perf followed: ldconfig 11 0.001 s"
     )
 
 
@@ -129,3 +145,31 @@ def test_reports_an_empty_selection(tmp_path: Path, arguments: list[str], messag
 
     assert result.exit_code == 1
     assert result.stderr == f"Error: {message}\n"
+
+
+def test_cpu_callers_view(tmp_path: Path):
+    result = _analyze_cpu(tmp_path, "--view", "callers", "--focus", "generate")
+
+    assert result.exit_code == 0
+    assert result.output.endswith(
+        "under the function it calls:\n"
+        + "     0.003 s  30.0%  generate\n"
+        + "     0.003 s  30.0%    Worker.run\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        (["--view", "callers"], "Error: --view callers needs --focus\n"),
+        (
+            ["--view", "callers", "--focus", "absent"],
+            "Error: no selected stack contains 'absent'\n",
+        ),
+    ],
+)
+def test_callers_need_a_function(tmp_path: Path, arguments: list[str], message: str):
+    result = _analyze_cpu(tmp_path, *arguments)
+
+    assert result.exit_code != 0
+    assert message in result.output

@@ -27,9 +27,10 @@ as a handoff between phases. Under each phase, each call holding at least a
 tenth of the phase, shown through the calls that hold nearly all of its own
 time, with its share of the phase and the share of it spent working; then each
 other thread that worked for at least a tenth of the phase, with what it mostly
-did. (self) is time in a function
-itself, including C code below it, such as acquiring a lock or freeing objects
-as they go out of scope. Other labels are as in the timeline."""
+did. (self) is time in a function itself, including C code below it, such as
+acquiring a lock or freeing objects as they go out of scope. A garbage
+collection ([<GC>]) stops every thread, so it delays all of them for as long as
+one thread's samples show. Other labels are as in the timeline."""
 _LEGEND = """\
 Times are seconds from the first sample. A thread works while it executes Python
 and waits while it has released its Python thread state: in a lock, a queue, or

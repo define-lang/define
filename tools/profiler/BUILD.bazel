@@ -8,12 +8,39 @@ py_library(
     srcs = ["analyzer.py"],
     visibility = ["//tools:__pkg__"],
     deps = [
+        ":call_counter",
         ":call_tree",
         ":cpu_stacks",
         ":tachyon_profile",
         ":wall_timeline",
         "@pypi//click",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "call_count_target",
+    srcs = ["call_count_target.py"],
+)
+
+py_library(
+    name = "call_counter",
+    srcs = ["call_counter.py"],
+    data = [":call_count_target"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":call_tree",
+        ":tachyon_profiler",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "call_counter_test",
+    size = "small",
+    srcs = ["call_counter_test.py"],
+    deps = [
+        ":call_counter",
     ],
 )
 
@@ -111,6 +138,7 @@ py_library(
 py_library(
     name = "python_target",
     srcs = ["python_target.py"],
+    visibility = ["//tools:__pkg__"],
 )
 
 py_binary(
@@ -212,6 +240,9 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":analyzer",
+        ":call_count_target",
+        ":call_counter",
+        ":call_counter_test",
         ":call_tree",
         ":call_tree_test",
         ":cpu_stacks",

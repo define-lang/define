@@ -117,3 +117,52 @@ def test_a_thread_without_a_dominant_function_names_none(
     assert capsys.readouterr().out.splitlines()[1] == (
         "     3.000 s  30.0%  work 100%  1"
     )
+
+
+def test_callers_invert_the_paths_to_a_function(capsys: pytest.CaptureFixture[str]):
+    stacks = [
+        _stack("main", "validate", "check", "check", seconds=4),
+        _stack("main", "generate", "check", seconds=2),
+        _stack("main", "generate", seconds=1),
+    ]
+
+    call_tree.emit_callers(stacks, _REPORT, "check", 0.0, 2)
+
+    assert capsys.readouterr().out == (
+        "\nCallers of the outermost function containing 'check', each indented "
+        + "under the function it calls:\n"
+        + "     6.000 s  60.0%  work 100%  check\n"
+        + "     4.000 s  40.0%  work 100%    validate\n"
+        + "     4.000 s  40.0%  work 100%      main\n"
+        + "     2.000 s  20.0%  work 100%    generate\n"
+        + "     2.000 s  20.0%  work 100%      main\n"
+    )
+
+
+def test_callers_need_a_matching_function():
+    with pytest.raises(ValueError, match=r"^no selected stack contains 'absent'$"):
+        call_tree.emit_callers(_STACKS, _REPORT, "absent", 0.0, 2)
+
+
+def test_callers_stop_at_the_requested_level(capsys: pytest.CaptureFixture[str]):
+    call_tree.emit_callers(
+        [_stack("main", "validate", "check", seconds=4)], _REPORT, "check", 0.0, 1
+    )
+
+    assert capsys.readouterr().out.splitlines()[2:] == [
+        "     4.000 s  40.0%  work 100%  check",
+        "     4.000 s  40.0%  work 100%    validate",
+    ]
+
+
+def test_call_counts_list_the_matching_functions_called_most(
+    capsys: pytest.CaptureFixture[str],
+):
+    call_tree.emit_call_counts(
+        {"validate": 10, "check": 30, "validate_name": 20, "other": 40}, "valid", 5
+    )
+
+    assert capsys.readouterr().out.splitlines()[1:] == [
+        "             20  validate_name",
+        "             10  validate",
+    ]

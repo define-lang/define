@@ -56,15 +56,20 @@ def test_loads_python_frames_and_thread_names(tmp_path: Path):
     ]
 
 
-def test_keeps_native_frames_when_requested(tmp_path: Path):
+def test_keeps_native_frames_below_the_innermost_python_frame(tmp_path: Path):
     profile_path = _write(
-        tmp_path, "python-10/10;_start;py::Driver.run:/repo/define/driver.py;malloc 1\n"
+        tmp_path,
+        "python-10/10;_start;py::Driver.run:/repo/define/driver.py;"
+        + "_PyEval_EvalFrameDefault;py::check:/repo/define/check.py;"
+        + "_PyEval_EvalFrameDefault;malloc 1\n"
+        + "python-10/11;__GI___clone3;start_thread 1\n",
     )
 
     loaded = cpu_stacks.load(profile_path, native=True)
 
     assert [stack.functions for stack in loaded.stacks] == [
-        ("_start", "Driver.run", "malloc")
+        ("Driver.run", "check", "_PyEval_EvalFrameDefault", "malloc"),
+        ("__GI___clone3", "start_thread"),
     ]
 
 
@@ -83,10 +88,21 @@ def test_rejects_a_line_that_is_not_a_collapsed_stack(tmp_path: Path):
         )
 
 
-def test_rejects_stacks_from_more_than_one_process(tmp_path: Path):
-    with pytest.raises(
-        ValueError, match=r"^profile does not contain exactly one process$"
-    ):
-        _ = cpu_stacks.load(
-            _write(tmp_path, "python-10/10;_start 1\nsh-11/11;_start 1\n"), native=False
-        )
+def test_leaves_out_processes_other_than_the_compiler(tmp_path: Path):
+    loaded = cpu_stacks.load(
+        _write(tmp_path, "python-10/10;_start 2\nldconfig-11/11;_start 1\n"),
+        native=False,
+    )
+
+    assert loaded.main_thread_id == 10
+    assert loaded.thread_names == {10: "python"}
+    assert loaded.other_processes == {"ldconfig 11": 1_003_009}
+
+
+def test_a_main_thread_stack_may_end_at_the_python_entry(tmp_path: Path):
+    loaded = cpu_stacks.load(
+        _write(tmp_path, "python-10/10;pymain_main 1\npython-10/10;Py_Main 1\n"),
+        native=False,
+    )
+
+    assert loaded.truncated_ns == 1_003_009

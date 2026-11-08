@@ -172,6 +172,18 @@ def emit_functions(stacks: list[WeightedStack], report: Report, limit: int):
     _emit_rows("Self", self_weights, report, limit)
 
 
+def emit_call_counts(calls: dict[str, int], focus: str | None, limit: int):
+    """Print the functions called most often, optionally only those matching."""
+    print("Calls, counted by running the compiler under sys.monitoring:")
+    matching = [
+        (function, count)
+        for function, count in calls.items()
+        if focus is None or focus in function
+    ]
+    for function, count in sorted(matching, key=lambda item: -item[1])[:limit]:
+        print(f"  {count:>13,}  {function}")
+
+
 def _tree(stacks: collections.abc.Iterable[WeightedStack]) -> _Node:
     root = _Node(weight=_Weight(), children={})
     for stack in stacks:
@@ -189,8 +201,51 @@ def _tree(stacks: collections.abc.Iterable[WeightedStack]) -> _Node:
 
 def emit_tree(stacks: list[WeightedStack], report: Report, minimum_percent: float):
     """Print the call tree, omitting calls below the minimum share."""
-    minimum_ns = report.denominator_ns * minimum_percent / 100
     print("\nCall tree, with each function's own self time:")
+    _emit_nodes(_tree(stacks), report, minimum_percent, shows_self=True)
+
+
+def emit_callers(
+    stacks: list[WeightedStack],
+    report: Report,
+    focus: str,
+    minimum_percent: float,
+    levels: int,
+):
+    """Print who calls the functions containing the text, callers indented."""
+    root = _Node(weight=_Weight(), children={})
+    for stack in stacks:
+        functions = stack.functions
+        # From the outermost match, so that a recursive function's callers
+        # are not itself.
+        index = next(
+            (index for index, function in enumerate(functions) if focus in function),
+            None,
+        )
+        if index is None:
+            continue
+        node = root
+        # The function itself and that many callers above it.
+        for function in functions[index::-1][: levels + 1]:
+            child = node.children.get(function)
+            if child is None:
+                child = _Node(weight=_Weight(), children={})
+                node.children[function] = child
+            child.weight.add(stack)
+            node = child
+    if not root.children:
+        raise ValueError(f"no selected stack contains {focus!r}")
+    print(
+        f"\nCallers of the outermost function containing {focus!r}, each "
+        + "indented under the function it calls:"
+    )
+    _emit_nodes(root, report, minimum_percent, shows_self=False)
+
+
+def _emit_nodes(
+    root: _Node, report: Report, minimum_percent: float, *, shows_self: bool
+):
+    minimum_ns = report.denominator_ns * minimum_percent / 100
     pending: list[tuple[int, str, _Node]] = []
 
     def push_children(depth: int, node: _Node):
@@ -203,17 +258,16 @@ def emit_tree(stacks: list[WeightedStack], report: Report, minimum_percent: floa
         children.sort(key=lambda item: item[1].weight.total_ns)
         pending.extend((depth, name, child) for name, child in children)
 
-    push_children(0, _tree(stacks))
+    push_children(0, root)
     while pending:
         depth, name, node = pending.pop()
-        weight_text = report.weight_text(node.weight.total_ns, node.weight.working_ns)
-        # Self time says whether a function consumes its time or delegates it,
-        # including to calls too small to show.
-        self_ns = node.weight.total_ns - sum(
-            child.weight.total_ns for child in node.children.values()
-        )
-        print(
-            f"  {weight_text}  self {100 * self_ns / report.denominator_ns:4.1f}%  "
-            + f"{'  ' * depth}{name}"
-        )
+        text = f"  {report.weight_text(node.weight.total_ns, node.weight.working_ns)}"
+        if shows_self:
+            # Self time says whether a function consumes its time or delegates
+            # it, including to calls too small to show.
+            self_ns = node.weight.total_ns - sum(
+                child.weight.total_ns for child in node.children.values()
+            )
+            text += f"  self {100 * self_ns / report.denominator_ns:4.1f}%"
+        print(f"{text}  {'  ' * depth}{name}")
         push_children(depth + 1, node)

@@ -19,9 +19,10 @@ class CaptureError(Exception):
     """Raised when Tachyon could not capture the target."""
 
 
-def _interpreter_and_script(
+def interpreter_and_script(
     command: tuple[str, ...], environment: dict[str, str]
 ) -> tuple[str, str, tuple[str, ...]]:
+    """Return the interpreter, script, and script arguments that a command runs."""
     entry_point = python_target.bazel_entry_point(pathlib.Path(command[0]), environment)
     if entry_point is not None:
         interpreter, main = entry_point
@@ -43,7 +44,7 @@ def capture(
     stdin: typing.BinaryIO | None,
 ) -> int:
     """Profile the target until it exits and return its exit status."""
-    interpreter, script, arguments = _interpreter_and_script(command, environment)
+    interpreter, script, arguments = interpreter_and_script(command, environment)
     with tempfile.TemporaryDirectory(prefix="define-tachyon-") as temporary_directory:
         status_path = pathlib.Path(temporary_directory) / "exit-status"
         completed = subprocess.run(
