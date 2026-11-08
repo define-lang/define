@@ -57,15 +57,23 @@ class QualityAssignments:
         assignments: list[ast.GlobalTypedNameReference],
     ):
         """Expand one assignment in semantic assignment order."""
-        for implied_quality in implications_for(quality):
-            implied_name = implied_quality.full_typed_name
-            if implied_name in seen:
-                continue
-            seen.add(implied_name)
-            QualityAssignments._expand_depth_first(
-                implied_quality, implications_for, seen, assignments
-            )
-        assignments.append(quality)
+        # An explicit stack instead of recursion, because a Quality
+        # Implication chain can be deeper than Python's recursion limit.
+        pending = [(quality, iter(implications_for(quality)))]
+        while pending:
+            current, implied_qualities = pending[-1]
+            for implied_quality in implied_qualities:
+                implied_name = implied_quality.full_typed_name
+                if implied_name in seen:
+                    continue
+                seen.add(implied_name)
+                pending.append(
+                    (implied_quality, iter(implications_for(implied_quality)))
+                )
+                break
+            else:
+                _ = pending.pop()
+                assignments.append(current)
 
     @cached_property
     def _by_name(self) -> dict[str, ast.GlobalTypedNameReference]:

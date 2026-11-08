@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
@@ -102,6 +104,20 @@ def test_direct_assignment_value_quality():
 
 def test_sixty_four_element_chain_is_iterative():
     qualities = tuple(_quality(f"quality_{index}") for index in range(64))
+    graph = {
+        quality.full_typed_name: (qualities[index + 1],)
+        for index, quality in enumerate(qualities[:-1])
+    }
+
+    assignments = _build((qualities[0],), graph)
+
+    assert tuple(assignments) == tuple(reversed(qualities))
+
+
+def test_chain_deeper_than_recursion_limit():
+    qualities = tuple(
+        _quality(f"quality_{index}") for index in range(sys.getrecursionlimit() + 1)
+    )
     graph = {
         quality.full_typed_name: (qualities[index + 1],)
         for index, quality in enumerate(qualities[:-1])
