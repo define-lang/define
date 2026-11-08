@@ -37,6 +37,9 @@ class DefinitionStructuralValidator:
     _definition: ast.GlobalDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _seen_edge_targets: set[str]
+    # The source typed names that already validated without diagnostics in
+    # this definition.
+    _valid_typed_names: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
     _unknown_fquns: set[str]
@@ -63,6 +66,7 @@ class DefinitionStructuralValidator:
         self._diagnostics = []
         self._reference_edges = []
         self._seen_edge_targets = set()
+        self._valid_typed_names = set()
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
         self._unknown_fquns = set()
@@ -93,9 +97,7 @@ class DefinitionStructuralValidator:
                 )
             case ast.PotentialLiteralDefinition() as definition:
                 encoding = definition.encoding
-                encoding_diagnostics = name_validators.validate_typed_name(
-                    encoding, definition
-                )
+                encoding_diagnostics = self._typed_name_diagnostics(encoding)
                 self._diagnostics.extend(encoding_diagnostics)
                 if not encoding_diagnostics:
                     self._process_reference(encoding)
@@ -512,9 +514,7 @@ class DefinitionStructuralValidator:
         greatest_name: str | None = None
         for statement in statements:
             logical_operation = statement.logical_operation
-            reference_diagnostics = name_validators.validate_typed_name(
-                logical_operation, self._definition
-            )
+            reference_diagnostics = self._typed_name_diagnostics(logical_operation)
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
@@ -581,9 +581,7 @@ class DefinitionStructuralValidator:
         validate_looked_at validates a looked-at position or view and returns
         whether it is valid to check for aliasing.
         """
-        executed_diagnostics = name_validators.validate_typed_name(
-            executed, self._definition
-        )
+        executed_diagnostics = self._typed_name_diagnostics(executed)
         self._diagnostics.extend(executed_diagnostics)
         if not executed_diagnostics:
             self._process_reference(executed)
@@ -753,9 +751,7 @@ class DefinitionStructuralValidator:
     def _validate_literal(self, literal: ast.Literal) -> bool:
         """Validate a literal's Potential Literal name and return whether it is valid."""
         potential_literal = literal.potential_literal
-        name_diagnostics = name_validators.validate_typed_name(
-            potential_literal, self._definition
-        )
+        name_diagnostics = self._typed_name_diagnostics(potential_literal)
         self._diagnostics.extend(name_diagnostics)
         if name_diagnostics:
             return False
@@ -981,6 +977,23 @@ class DefinitionStructuralValidator:
 
         return may_continue
 
+    def _typed_name_diagnostics(
+        self, typed_name: ast.TypedNameReference
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate a typed name reference's format."""
+        # A definition names the same few typed names many times. A name's
+        # diagnostics depend only on its source text and on the definition,
+        # so a name that was valid once is valid at every later site.
+        source_typed_name = typed_name.source_typed_name
+        if source_typed_name in self._valid_typed_names:
+            return []
+        name_diagnostics = name_validators.validate_typed_name(
+            typed_name, self._definition
+        )
+        if not name_diagnostics:
+            self._valid_typed_names.add(source_typed_name)
+        return name_diagnostics
+
     def _validate_chained_name_element(
         self,
         chain_element: ast.TypedNameReference,
@@ -989,9 +1002,7 @@ class DefinitionStructuralValidator:
 
         Returns whether or not the name was valid.
         """
-        name_diagnostics = name_validators.validate_typed_name(
-            chain_element, self._definition
-        )
+        name_diagnostics = self._typed_name_diagnostics(chain_element)
         self._diagnostics.extend(name_diagnostics)
         if name_diagnostics:
             return
@@ -1017,8 +1028,8 @@ class DefinitionStructuralValidator:
         )
         first_value: ast.GlobalTypedNameReference | None = None
         for statement in statements:
-            reference_diagnostics = name_validators.validate_typed_name(
-                statement.typed_global_name, self._definition
+            reference_diagnostics = self._typed_name_diagnostics(
+                statement.typed_global_name
             )
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
@@ -1057,8 +1068,8 @@ class DefinitionStructuralValidator:
             typed_name_dict.TypedNameDict()
         )
         for implication in implications:
-            name_diagnostics = name_validators.validate_typed_name(
-                implication.typed_global_name, self._definition
+            name_diagnostics = self._typed_name_diagnostics(
+                implication.typed_global_name
             )
             self._diagnostics.extend(name_diagnostics)
             if name_diagnostics:
