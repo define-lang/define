@@ -98,14 +98,10 @@ class DeadQualityAssignmentValidator:
         origin_position = _origin_position(particle)
         if origin_position is None:
             return
-        for quality in particle.qualities:
-            if (
-                quality.name_type
-                in dead_quality_assignment_tracker.VALUE_AND_ENCODING_NAME_TYPES
-            ):
-                self._dead_quality_assignment_tracker.mark_value_or_encoding_alive(
-                    origin_position, quality
-                )
+        for quality in particle.qualities.value_and_encoding_qualities:
+            self._dead_quality_assignment_tracker.mark_value_or_encoding_alive(
+                origin_position, quality
+            )
 
     def _particle_origin_position(
         self, position: ast.PositionReference

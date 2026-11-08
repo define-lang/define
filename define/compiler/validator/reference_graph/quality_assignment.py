@@ -18,6 +18,11 @@ if typing.TYPE_CHECKING:
     ]
 
 
+VALUE_AND_ENCODING_NAME_TYPES = frozenset(
+    (name_types.NameType.VALUE, name_types.NameType.ENCODING)
+)
+
+
 @typing.final
 class QualityAssignments:
     """An immutable, ordered collection of qualities assigned to a particle."""
@@ -99,6 +104,17 @@ class QualityAssignments:
             if quality.name_type == name_types.NameType.VALUE:
                 return quality
         return None
+
+    @cached_property
+    def value_and_encoding_qualities(self) -> tuple[ast.GlobalTypedNameReference, ...]:
+        """The value qualities and encodings assigned to the particle, in assignment order."""
+        # This is needed every time the particle's value is used. A particle
+        # can have many qualities, so scanning them all on every use was slow.
+        return tuple(
+            quality
+            for quality in self.assignments
+            if quality.name_type in VALUE_AND_ENCODING_NAME_TYPES
+        )
 
     def __iter__(self) -> Iterator[ast.GlobalTypedNameReference]:
         """Iterate over assigned qualities in semantic assignment order."""

@@ -7,19 +7,13 @@ import typing
 import msgspec
 
 from define.compiler import ast, name_types
+from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
-
-
-# Quality assignments that a particle's use in a Value Setting Statement or Operation
-# Execution Statement keeps alive.
-VALUE_AND_ENCODING_NAME_TYPES = frozenset(
-    (name_types.NameType.VALUE, name_types.NameType.ENCODING)
-)
 
 
 class DeadQualityAssignmentCandidate(msgspec.Struct, frozen=True):
@@ -75,7 +69,7 @@ class DeadQualityAssignmentTracker:
         candidate = DeadQualityAssignmentCandidate(position=position, quality=quality)
         if quality.name_type == name_types.NameType.ACTION:
             self._child_action_candidates[candidate.key] = candidate
-        elif quality.name_type in VALUE_AND_ENCODING_NAME_TYPES:
+        elif quality.name_type in quality_assignment.VALUE_AND_ENCODING_NAME_TYPES:
             self._value_and_encoding_candidates[candidate.key] = candidate
         else:
             quality_name = quality.full_typed_name
@@ -216,7 +210,7 @@ class DeadQualityAssignmentTracker:
         if not self.has_candidates():
             return
         for quality in qualities:
-            if quality.name_type in VALUE_AND_ENCODING_NAME_TYPES:
+            if quality.name_type in quality_assignment.VALUE_AND_ENCODING_NAME_TYPES:
                 self._mark_quality_assignment_alive(
                     self._value_and_encoding_candidates,
                     current_position,
