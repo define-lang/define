@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import threading
 import typing
-from pathlib import Path
 
 import msgspec
 
@@ -21,6 +20,7 @@ from define.compiler.graphs import reference_graph_executor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from define.compiler.validator import codegen_input as codegen_input_types
 
@@ -64,20 +64,23 @@ class _SharedModule:
         return sorted(self._parts, key=lambda part: part.definition_index)
 
 
+# A tuple, because isinstance checks a tuple of types faster than a union.
+_DEFINITIONS_WITHOUT_MODULE_PARTS = (
+    ast.ValueDefinition,
+    ast.EncodingDefinition,
+    ast.PotentialLiteralDefinition,
+    ast.ValueOperationDefinition,
+    ast.LogicalOperationDefinition,
+)
+
+
 def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
     # Literals are already in their values' encodings in generated code, so
     # values, encodings, and Potential Literals need no code of their own.
     # Executing a Value Operation runs the Encoding Operation that performs it,
     # so Value Operations need no code either. Logical operations are part of
     # the compiler, not of the generated program.
-    return not isinstance(
-        definition,
-        ast.ValueDefinition
-        | ast.EncodingDefinition
-        | ast.PotentialLiteralDefinition
-        | ast.ValueOperationDefinition
-        | ast.LogicalOperationDefinition,
-    )
+    return not isinstance(definition, _DEFINITIONS_WITHOUT_MODULE_PARTS)
 
 
 def _typing_names(*, classvar: bool, never: bool, override: bool) -> list[str]:
@@ -179,22 +182,31 @@ class _DefinitionGenerator:
         self,
         *,
         max_workers: int | None,
-    ) -> tuple[renderer.ActionDefinition, set[Path]]:
-        """Generate every definition with bounded worker concurrency."""
-        package_dirs: set[Path] = set()
+    ) -> tuple[renderer.ActionDefinition, set[str]]:
+        """Generate every definition with bounded worker concurrency.
+
+        Also returns the dotted name of each package that holds a generated
+        module's package.
+        """
+        # Dotted names rather than paths: this loop runs on the main thread
+        # alone, after the workers finish, once per definition, so all of its
+        # cost adds to the compile's wall time. Each result would be a new
+        # Path, and hashing a new Path first assembles its string from its
+        # parts in Python code, while a string hashes in C.
+        packages: set[str] = set()
         # TODO: Generate only the definitions that the entry point reaches.
         # The order holds every validated definition, which includes entry
         # file definitions that the entry point never references.
-        for package_dir in reference_graph_executor.process_definitions(
+        for package in reference_graph_executor.process_definitions(
             self._codegen_input.definition_order,
             self._generate_definition,
             max_workers=max_workers,
         ):
-            if package_dir is not None:
-                package_dirs.add(package_dir)
-        return self._entry_definition, package_dirs
+            if package is not None:
+                packages.add(package)
+        return self._entry_definition, packages
 
-    def _generate_definition(self, definition: ast.GlobalDefinition) -> Path | None:
+    def _generate_definition(self, definition: ast.GlobalDefinition) -> str | None:
         if not _generates_module_part(definition):
             return None
         definition_index = self._module_plan.definition_indexes[
@@ -269,8 +281,8 @@ class _DefinitionGenerator:
             self._entry_definition = context
         return context
 
-    def _write_module(self, module_name: str, parts: list[_ModulePart]) -> Path:
-        """Write a module containing the given definitions' classes."""
+    def _write_module(self, module_name: str, parts: list[_ModulePart]) -> str:
+        """Write a module containing the given definitions' classes, and return the dotted name of the package that holds its package."""
         imports: set[str] = set()
         typing_names: set[str] = set()
         for part in parts:
@@ -287,7 +299,7 @@ class _DefinitionGenerator:
         file_path = self._output_dir / relative_file_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         _ = file_path.write_text(content, encoding="utf-8", newline="\n")
-        return relative_file_path.parent.parent
+        return module_name.rpartition(".")[0]
 
 
 class PythonLiteralCodeGenerator:
@@ -307,7 +319,7 @@ class PythonLiteralCodeGenerator:
         module_plan = _ModulePlan.from_definitions(
             codegen_input.definition_order.definitions, converter
         )
-        entry_definition, package_dirs = _DefinitionGenerator(
+        entry_definition, packages = _DefinitionGenerator(
             codegen_input,
             entry_point,
             converter,
@@ -316,22 +328,25 @@ class PythonLiteralCodeGenerator:
             trace_operations=trace_operations,
         ).generate(max_workers=max_workers)
 
-        self._write_init_files(package_dirs, output_dir)
+        self._write_init_files(packages, output_dir)
         self._write_entry_point(entry_definition, output_dir)
 
     @staticmethod
-    def _write_init_files(package_dirs: set[Path], output_dir: Path):
-        """Write empty __init__.py files for intermediate packages."""
-        needed_dirs: set[Path] = set()
-        for package_dir in package_dirs:
-            needed_dirs.add(package_dir)
-            for parent in package_dir.parents:
-                if parent == Path():
-                    continue
-                needed_dirs.add(parent)
+    def _write_init_files(packages: set[str], output_dir: Path):
+        """Write empty __init__.py files for intermediate packages, given by dotted name."""
+        needed_packages: set[str] = set()
+        for package in packages:
+            # The empty name is the output directory, which holds the
+            # packages of top-level modules.
+            needed_packages.add(package)
+            parent = package.rpartition(".")[0]
+            # A package already needed was added with all of its parents.
+            while parent and parent not in needed_packages:
+                needed_packages.add(parent)
+                parent = parent.rpartition(".")[0]
 
-        for dir_path in sorted(needed_dirs):
-            init_file = output_dir / dir_path / "__init__.py"
+        for package in sorted(needed_packages):
+            init_file = output_dir.joinpath(*package.split(".")) / "__init__.py"
             if not init_file.exists():
                 _ = init_file.write_text(_PACKAGE_INIT, encoding="utf-8", newline="\n")
 

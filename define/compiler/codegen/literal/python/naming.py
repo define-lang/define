@@ -225,9 +225,13 @@ class NameConverter:
     # Keyed by the FQUN and path segments of the package that holds the names.
     _package_components: dict[tuple[str, tuple[str, ...]], dict[str, str]]
     _used_package_names: dict[tuple[str, tuple[str, ...]], set[str]]
+    # The module name components that name each FQUN, keyed by its canonical
+    # form.
+    _universe_module_name_parts: dict[str, list[str]]
 
     def __init__(self):
         """Initialize with empty name caches."""
+        self._universe_module_name_parts = {}
         self._class_names = {}
         self._class_references = {}
         self._package_components = {}
@@ -352,6 +356,21 @@ class NameConverter:
         self, fqun: ast.Fqun, path_segments: Sequence[str]
     ) -> list[str]:
         """Compute module name segments from an FQUN and definition path segments."""
+        parts = self._universe_module_name_parts.get(fqun.canonical)
+        if parts is None:
+            parts = self._universe_parts(fqun)
+            self._universe_module_name_parts[fqun.canonical] = parts
+        parts = parts.copy()
+        for index, segment in enumerate(path_segments):
+            parts.append(
+                _truncate_module_component(
+                    self._package_component(fqun, tuple(path_segments[:index]), segment)
+                )
+            )
+        return parts
+
+    @staticmethod
+    def _universe_parts(fqun: ast.Fqun) -> list[str]:
         parts: list[str] = []
         # Only the standard universe is written without an authority.
         if fqun.authority is not None:
@@ -361,10 +380,6 @@ class NameConverter:
                 parts.append(constants.DEFAULT_MULTIVERSE)
             parts.append(authority_segment(fqun.authority.name))
         parts.append(_escape_module_component(fqun.universe.name))
-        for index, segment in enumerate(path_segments):
-            parts.append(
-                self._package_component(fqun, tuple(path_segments[:index]), segment)
-            )
         return [_truncate_module_component(part) for part in parts]
 
     def module_name(self, name_content: ast.DefinitionGlobalNameContent) -> str:
