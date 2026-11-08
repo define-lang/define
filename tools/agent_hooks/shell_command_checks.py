@@ -3,7 +3,8 @@
 Before `git worktree remove`, it expunges the worktree's Bazel output base, so
 that no output base or Bazel server is left behind. Before `uv run` in a
 repository that has `setup_local_dev`, it runs `setup_local_dev` when the
-Bazel-generated files that it copies into the source tree may be out of date.
+Bazel-generated files that it copies into the source tree may be out of date,
+or when the local venv's Python is gone.
 """
 
 from __future__ import annotations
@@ -74,6 +75,26 @@ def _has_bazel_output_base(worktree: Path) -> bool:
     return bazel_out.is_symlink() or bazel_out.is_junction()
 
 
+def _needs_setup_local_dev(repository: Path) -> bool:
+    return _local_venv_python_is_missing(repository) or _generated_files_may_be_stale(
+        repository
+    )
+
+
+def _local_venv_python_is_missing(repository: Path) -> bool:
+    # setup_local_dev makes the venv from Bazel's Python, which lives in the
+    # checkout's Bazel output base. Expunging the output base deletes it, and
+    # uv run would then replace the venv with one on another Python.
+    venv_config = repository / ".venv" / "pyvenv.cfg"
+    if not venv_config.is_file():
+        return True
+    for line in venv_config.read_text(encoding="utf-8").splitlines():
+        key, _, value = line.partition("=")
+        if key.strip() == "home":
+            return not Path(value.strip()).is_dir()
+    return True
+
+
 def _generated_files_may_be_stale(repository: Path) -> bool:
     # tools/setup_local_dev.py writes this after each successful run.
     stamp = (
@@ -132,7 +153,7 @@ _SHELL_COMMAND_CHECKS = (
         program="uv",
         subcommand=("run",),
         finds_directory=_setup_local_dev_repository,
-        needs_run=_generated_files_may_be_stale,
+        needs_run=_needs_setup_local_dev,
         command=("bazelisk", "run", *_BAZEL_FLAGS, "//tools:setup_local_dev"),
         shows_agent_failure_output=True,
     ),

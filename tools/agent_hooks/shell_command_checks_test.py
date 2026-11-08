@@ -85,8 +85,11 @@ def _install_fake_bazelisk(
             f"echo \"bazelisk $* in {fake_tools.WORKING_DIRECTORY}\" >> '{run_log.as_posix()}'",
             "echo 'bazelisk failed'",
             f'[ {exit_code} = 0 ] && case "$*" in',
-            # The real setup_local_dev records its successful runs this way.
-            '  *setup_local_dev) touch "$(git rev-parse --git-path setup-local-dev-stamp)" ;;',
+            # The real setup_local_dev makes the venv from Bazel's Python and
+            # records its successful runs this way.
+            "  *setup_local_dev) mkdir -p .venv python-home",
+            '    echo "home = $PWD/python-home" > .venv/pyvenv.cfg',
+            '    touch "$(git rev-parse --git-path setup-local-dev-stamp)" ;;',
             "esac",
             f"exit {exit_code}",
         ],
@@ -270,6 +273,21 @@ def test_changed_source_makes_uv_run_refresh_again(
         repository / source,
         ns=(stamp.st_atime_ns, stamp.st_mtime_ns + 1_000_000_000),
     )
+
+    assert _run_hook(monkeypatch, repository, "uv run x.py") == ""
+    assert run_log.read_text(encoding="utf-8").splitlines() == [
+        f"{_SETUP_LOCAL_DEV} in {repository}",
+        f"{_SETUP_LOCAL_DEV} in {repository}",
+    ]
+
+
+def test_missing_venv_python_makes_uv_run_refresh_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = _project(tmp_path)
+    run_log = _install_fake_bazelisk(tmp_path, monkeypatch)
+    _ = _run_hook(monkeypatch, repository, "uv run x.py")
+    (repository / "python-home").rmdir()
 
     assert _run_hook(monkeypatch, repository, "uv run x.py") == ""
     assert run_log.read_text(encoding="utf-8").splitlines() == [
