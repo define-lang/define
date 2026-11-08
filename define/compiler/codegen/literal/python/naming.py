@@ -349,7 +349,7 @@ class NameConverter:
     ) -> Iterator[str]:
         """Yield modules referenced by a position or action."""
         for name in position.typed_names:
-            if isinstance(name, ast.GlobalTypedNameReference):
+            if ast.is_global_reference(name):
                 yield self.class_reference(name).module_name
 
     def _module_name_parts(

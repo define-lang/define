@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 import msgspec
 
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 # Repeated executions of the same action must remain distinct while nested
 # Guarantees move with or disappear with their particles.
+@final
 class ActionExecution(msgspec.Struct, eq=False):
     """An action execution with its caller's destruction connections."""
 
@@ -27,6 +28,7 @@ class ActionExecution(msgspec.Struct, eq=False):
     )
 
 
+@final
 class Destruction(msgspec.Struct):
     """A Simultaneous Transitive Destruction the action performs."""
 
@@ -60,12 +62,14 @@ class ValueSetting(msgspec.Struct):
     value_quality: ast.GlobalTypedNameReference
 
 
+@final
 class LiteralValueSetting(ValueSetting):
     """A Value Setting Statement whose source is a literal."""
 
     value: EncodedLiteral
 
 
+@final
 class PositionValueSetting(ValueSetting):
     """A Value Setting Statement whose source is another position."""
 
@@ -79,6 +83,7 @@ class OperationArgument[LookedAt](msgspec.Struct):
     looking_at: LookedAt | EncodedLiteral
 
 
+@final
 class ActionOperationExecution(msgspec.Struct):
     """A validated Operation Execution Statement in an action."""
 

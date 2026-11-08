@@ -900,10 +900,7 @@ class DefinitionStructuralValidator:
         last_typed_name = chain.typed_names[-1]
         may_continue = True
 
-        if (
-            isinstance(first, ast.LocalTypedNameReference)
-            and first in self._unreferenced_positions
-        ):
+        if ast.is_local_reference(first) and first in self._unreferenced_positions:
             del self._unreferenced_positions[first]
 
         is_self_reference = (
@@ -919,9 +916,7 @@ class DefinitionStructuralValidator:
             )
             return False
 
-        if not scope.is_defined(first) and isinstance(
-            first, ast.LocalTypedNameReference
-        ):
+        if not scope.is_defined(first) and ast.is_local_reference(first):
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
                     location=first.location,
@@ -930,7 +925,7 @@ class DefinitionStructuralValidator:
             )
             may_continue = False
 
-        if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
+        if not is_self_reference and ast.is_global_reference(first):
             if first in self._implied_qualities:
                 self._used_implied_qualities.add(first.full_typed_name)
             else:
@@ -949,9 +944,9 @@ class DefinitionStructuralValidator:
             # Local names in chains may only come right after global action names.
             if (
                 previous_element
-                and isinstance(typed_name, ast.LocalTypedNameReference)
+                and ast.is_local_reference(typed_name)
                 and not (
-                    isinstance(previous_element, ast.GlobalTypedNameReference)
+                    ast.is_global_reference(previous_element)
                     and previous_element.name_type == name_types.NameType.ACTION
                 )
             ):
@@ -1007,7 +1002,7 @@ class DefinitionStructuralValidator:
         if name_diagnostics:
             return
 
-        if isinstance(chain_element, ast.GlobalTypedNameReference):
+        if ast.is_global_reference(chain_element):
             self._process_reference(chain_element)
         elif chain_element.name_type == name_types.NameType.ACTION:
             self._diagnostics.append(

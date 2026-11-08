@@ -12,8 +12,10 @@ from typing import (
     Final,
     Generic,
     Self,
+    TypeIs,
     TypeVar,
     cast,
+    final,
     override,
 )
 
@@ -246,6 +248,7 @@ class LocalNameContent(NameContent):
         return self.name
 
 
+@final
 class LocalPositionDefinition(LocalDefinition):
     """Represents a local position definition."""
 
@@ -304,6 +307,7 @@ class GlobalTypedName(
     """A typed global name, at either a definition site or a reference site."""
 
 
+@final
 class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
     """Represents a typed global name reference."""
 
@@ -337,6 +341,7 @@ class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
         return self.source_typed_name
 
 
+@final
 class LocalTypedNameReference(TypedName[LocalNameContent]):
     """Represents a typed local name reference."""
 
@@ -346,6 +351,26 @@ class LocalTypedNameReference(TypedName[LocalNameContent]):
 
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
+
+
+# These check the exact type instead of calling isinstance, because on
+# free-threaded Python isinstance gets much slower with many threads. When the
+# object's type isn't exactly the class being checked, isinstance updates a
+# counter that all threads share, so the threads wait on each other: at 32
+# threads such a check took about 80 times as long. These classes are final,
+# so checking the exact type gives the same answer.
+def is_global_reference(
+    typed_name: TypedNameReference,
+) -> TypeIs[GlobalTypedNameReference]:
+    """Whether a typed name reference is a global one."""
+    return type(typed_name) is GlobalTypedNameReference
+
+
+def is_local_reference(
+    typed_name: TypedNameReference,
+) -> TypeIs[LocalTypedNameReference]:
+    """Whether a typed name reference is a local one."""
+    return type(typed_name) is LocalTypedNameReference
 
 
 class SourceFormTypedNameParts(msgspec.Struct, frozen=True):
@@ -458,8 +483,8 @@ class ChainedName(ASTNode, Generic[ChainedNameTupleT_co]):
     def get_last_action(self) -> GlobalTypedNameReference | None:
         """Return the last action element in the chain, or None."""
         for elem in reversed(self.typed_names):
-            if elem.name_type == name_types.NameType.ACTION and isinstance(
-                elem, GlobalTypedNameReference
+            if elem.name_type == name_types.NameType.ACTION and is_global_reference(
+                elem
             ):
                 return elem
         return None
@@ -650,16 +675,19 @@ class ParticleStatement(ASTNode):
     target_position: PositionReference
 
 
+@final
 class CreateParticleStatement(ParticleStatement):
     """Represents a 'create a particle in' statement."""
 
 
+@final
 class MoveParticleStatement(ParticleStatement):
     """Represents a 'move the particle in ... to' statement."""
 
     source_position: PositionReference
 
 
+@final
 class DestroyParticleStatement(ParticleStatement):
     """Represents a 'destroy the particle in' statement."""
 
@@ -686,6 +714,7 @@ class Literal(ASTNode):
         )
 
 
+@final
 class ValueSettingStatement(ParticleStatement):
     """Represents a 'set the value of ... from' statement."""
 
@@ -715,6 +744,7 @@ class OperationArgumentStatement(ASTNode, Generic[LookedAtT_co]):  # noqa: UP046
     looking_at: Final[LookedAtT_co]
 
 
+@final
 class OperationExecutionStatement(ASTNode, Generic[LookedAtT_co]):  # noqa: UP046
     """Represents an 'execute the operation<...>' or 'execute the encoding_operation<...>' statement.
 
