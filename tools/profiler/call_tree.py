@@ -68,7 +68,9 @@ def function_name(function: str, filename: str) -> str:
     return function
 
 
-def focused(stacks: list[WeightedStack], focus: str) -> list[WeightedStack]:
+def focused(
+    stacks: collections.abc.Iterable[WeightedStack], focus: str
+) -> list[WeightedStack]:
     """Return each stack's part from its outermost function containing the text."""
     result: list[WeightedStack] = []
     for stack in stacks:
@@ -126,7 +128,9 @@ def _dominant_function(node: _Node) -> str:
 
 
 def emit_threads(
-    stacks: list[WeightedStack], report: Report, thread_names: dict[int, str]
+    stacks: collections.abc.Iterable[WeightedStack],
+    report: Report,
+    thread_names: dict[int, str],
 ):
     """Print each thread's total, largest first, with its dominant function."""
     stacks_by_thread: dict[int, list[WeightedStack]] = collections.defaultdict(list)
@@ -158,7 +162,9 @@ def _emit_rows(title: str, weights: dict[str, _Weight], report: Report, limit: i
         print(f"  {report.weight_text(weight.total_ns, weight.working_ns)}  {function}")
 
 
-def emit_functions(stacks: list[WeightedStack], report: Report, limit: int):
+def emit_functions(
+    stacks: collections.abc.Iterable[WeightedStack], report: Report, limit: int
+):
     """Print the functions with the most cumulative time and the most self time."""
     cumulative: dict[str, _Weight] = collections.defaultdict(_Weight)
     self_weights: dict[str, _Weight] = collections.defaultdict(_Weight)
@@ -206,7 +212,7 @@ def emit_tree(stacks: list[WeightedStack], report: Report, minimum_percent: floa
 
 
 def emit_callers(
-    stacks: list[WeightedStack],
+    stacks: collections.abc.Iterable[WeightedStack],
     report: Report,
     focus: str,
     minimum_percent: float,

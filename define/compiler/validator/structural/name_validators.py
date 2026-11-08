@@ -11,6 +11,7 @@ from define.compiler import ast, constants
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import PurePosixPath
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
@@ -147,7 +148,7 @@ _AUTHORITY_PATH_CHARACTERS = _NameCharacters(
 # ---------------------------------------------------------------------------
 
 
-def _distinct_characters(name: str, indexes: list[int]) -> tuple[str, ...]:
+def _distinct_characters(name: str, indexes: Iterable[int]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(name[index] for index in indexes))
 
 

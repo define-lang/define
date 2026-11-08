@@ -7,6 +7,8 @@ import typing
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler import ast, chained_name
     from define.compiler.validator.reference_graph import action_contract
     from define.compiler.validator.reference_graph.particles import (
@@ -49,7 +51,7 @@ class DeadValueWriteValidator:
 
     def mark_required_values_used(
         self,
-        value_requirements: list[action_contract.ValueRequirementInCaller],
+        value_requirements: Iterable[action_contract.ValueRequirementInCaller],
     ):
         """Mark the values a triggered action requires as used."""
         for requirement in value_requirements:

@@ -9,6 +9,8 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
@@ -48,7 +50,7 @@ class ParticleOperationValidator:
         self,
         source: ast.PositionReference,
         target: ast.PositionReference,
-        target_required_qualities: tuple[ast.GlobalTypedNameReference, ...],
+        target_required_qualities: Iterable[ast.GlobalTypedNameReference],
     ) -> list[diagnostics.Diagnostic]:
         """Validate a Move."""
         parent_diags: list[diagnostics.Diagnostic] = []

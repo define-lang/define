@@ -6,12 +6,18 @@ import json
 import os
 import subprocess
 import sys
+import typing
 from pathlib import Path
 
 from tools import runfiles
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
 
-def _write_config(pyproject: Path, import_paths: list[str], directory: Path) -> Path:
+
+def _write_config(
+    pyproject: Path, import_paths: Iterable[str], directory: Path
+) -> Path:
     """Write a config that extends pyproject and imports from import_paths."""
     # Only a venv's .pth files can add import paths to every execution
     # environment in pyproject at once, so import_paths go in a stand-in venv.

@@ -49,7 +49,7 @@ from define.compiler import ast
 from define.compiler.parsing.rust_generators import rust_names, rust_renderer
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
 _SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
     str: rust_renderer.FieldType.String(),
@@ -324,7 +324,7 @@ def _annotation_classes(annotation: object, classes: list[type]) -> list[object]
 
 def _describe_class(
     node_type: object,
-    classes: list[object],
+    classes: Collection[object],
     field_types: _FieldTypes,
     module: types.ModuleType,
 ) -> rust_renderer.NodeClass:

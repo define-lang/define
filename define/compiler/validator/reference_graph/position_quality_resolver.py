@@ -8,6 +8,8 @@ from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import (
@@ -141,7 +143,7 @@ class PositionQualityResolver:
         return self._build_quality_assignments(implied_qualities)
 
     def get_transitive_implied_quality_names(
-        self, implied_qualities: tuple[ast.GlobalTypedNameReference, ...]
+        self, implied_qualities: Iterable[ast.GlobalTypedNameReference]
     ) -> frozenset[str]:
         """Return the names of the implied qualities and everything they transitively imply."""
         names: set[str] = set()

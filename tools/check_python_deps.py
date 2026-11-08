@@ -8,9 +8,12 @@ import importlib.metadata
 import re
 import sys
 from pathlib import Path
-from typing import Final, cast
+from typing import TYPE_CHECKING, Final, cast
 
 import msgspec
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
 
 PYTHON_RULE_CLASSES: Final = frozenset({"py_binary", "py_library", "py_test"})
 BAZEL_IMPORTS: Final = {"python.runfiles": "@rules_python//python/runfiles"}
@@ -180,7 +183,7 @@ def _declared_deps(call: ast.Call, package: Path) -> frozenset[str]:
     )
 
 
-def _kept_deps(lines: list[str], call: ast.Call, package: Path) -> frozenset[str]:
+def _kept_deps(lines: Sequence[str], call: ast.Call, package: Path) -> frozenset[str]:
     if call.end_lineno is None:
         raise ValueError("Could not locate the end of a rule with a # keep dependency")
     kept: set[str] = set()
@@ -619,7 +622,7 @@ def replace_deps(
     return rule_lines[:closing] + rendered + rule_lines[closing:]
 
 
-def _apply_changes(repository: Path, changes: list[DependencyChanges]):
+def _apply_changes(repository: Path, changes: Iterable[DependencyChanges]):
     by_build_file: dict[Path, list[DependencyChanges]] = {}
     for change in changes:
         by_build_file.setdefault(change.target.build_file, []).append(change)
@@ -638,7 +641,7 @@ def _apply_changes(repository: Path, changes: list[DependencyChanges]):
         _ = build_file.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
-def _relative_files(files: list[Path], repository: Path) -> frozenset[Path]:
+def _relative_files(files: Iterable[Path], repository: Path) -> frozenset[Path]:
     return frozenset(
         path.resolve().relative_to(repository) if path.is_absolute() else path
         for path in files
@@ -732,7 +735,7 @@ def _pyright_owner(
 
 def _pyright_dependency_changes(
     repository_analysis: RepositoryAnalysis,
-    selected_targets: tuple[ParsedTarget, ...],
+    selected_targets: Iterable[ParsedTarget],
     selected_files: frozenset[Path],
 ) -> tuple[DependencyChanges, ...]:
     pyright_targets = repository_analysis.pyright_targets

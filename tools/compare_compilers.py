@@ -10,11 +10,15 @@ import statistics
 import subprocess
 import tempfile
 import time
+import typing
 
 import click
 import msgspec
 
 from tools import profile_orchestration
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Collection
 
 
 class _Run(msgspec.Struct, frozen=True):
@@ -153,7 +157,7 @@ def _difference(baseline: _Outcome, candidate: _Outcome) -> str | None:
     return None
 
 
-def _summary(name: str, runs: list[_Run]) -> str:
+def _summary(name: str, runs: Collection[_Run]) -> str:
     seconds = [run.seconds for run in runs]
     peak_mb = max(run.peak_rss_kb for run in runs) / 1024
     cpu_seconds = statistics.median(run.cpu_seconds for run in runs)

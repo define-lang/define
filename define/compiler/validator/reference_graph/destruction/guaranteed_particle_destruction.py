@@ -16,6 +16,8 @@ from define.compiler.validator.reference_graph.destruction import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
@@ -211,7 +213,7 @@ class _GuaranteedParticleDestructionBuilder:
     def _on_destruction_for_own_destructors(
         self,
         position: ast.PositionReference,
-        destructors: list[ast.GlobalTypedNameReference],
+        destructors: Iterable[ast.GlobalTypedNameReference],
     ) -> tuple[action_contract.OnDestruction, list[ast.GlobalTypedNameReference]]:
         """Return what running ``destructors``, the Destructors on the particle in ``position``, takes, and those of them that have a contract.
 
@@ -241,7 +243,7 @@ class _GuaranteedParticleDestructionBuilder:
         self,
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
-        child_names: list[tuple[ast.TypedNameReference, ...]],
+        child_names: Iterable[tuple[ast.TypedNameReference, ...]],
         position_in_action: chained_name.PositionReferenceTuple,
         destruction: GuaranteedParticleDestruction,
     ) -> tuple[
@@ -338,7 +340,7 @@ def _on_destruction_needing_the_most_work(
 
 def _with_names(
     position_in_action: chained_name.PositionReferenceTuple,
-    names: tuple[ast.TypedNameReference, ...],
+    names: Iterable[ast.TypedNameReference],
 ) -> chained_name.PositionReferenceTuple:
     """Return the child position ``names`` of ``position_in_action``."""
     return chained_name.position(

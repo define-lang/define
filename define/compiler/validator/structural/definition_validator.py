@@ -21,7 +21,7 @@ from define.compiler.validator.structural import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from define.compiler.validator.structural import file_validation_context
 
@@ -1057,7 +1057,7 @@ class DefinitionStructuralValidator:
 
     def _validate_quality_implications(
         self,
-        implications: tuple[ast.QualityImplicationStatement, ...],
+        implications: Iterable[ast.QualityImplicationStatement],
     ):
         seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()

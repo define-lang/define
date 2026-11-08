@@ -71,7 +71,9 @@ def _runs(
     return wall_timeline.thread_runs(profile, options)
 
 
-def _summary(runs: list[wall_timeline.Run]) -> list[tuple[int, int, int, str]]:
+def _summary(
+    runs: collections.abc.Iterable[wall_timeline.Run],
+) -> list[tuple[int, int, int, str]]:
     return [
         (
             run.start_ns // 1_000_000,

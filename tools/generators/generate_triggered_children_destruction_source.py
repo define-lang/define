@@ -10,6 +10,7 @@ import click
 from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:triggered_children_destruction"
@@ -60,7 +61,7 @@ def _rearranges(shape: Shape) -> bool:
 
 
 def _position_with_fill(
-    name: str, indent: str, additional_qualities: tuple[str, ...] = ()
+    name: str, indent: str, additional_qualities: Iterable[str] = ()
 ) -> list[str]:
     return [
         f"{indent}define the position<{name}> {{",

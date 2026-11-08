@@ -1,0 +1,119 @@
+id: concrete-sequence-parameter-only-read
+valid:
+  - |
+    def extend(names: tuple[str, ...]) -> tuple[str, ...]:
+        return names + ("last",)
+  - |
+    def same(names: tuple[str, ...], other: tuple[str, ...]) -> bool:
+        return names == other
+  - |
+    def rest(names: tuple[str, ...]) -> tuple[str, ...]:
+        return names[1:]
+  - |
+    def prefixes(names: tuple[str, ...]) -> None:
+        for length in range(len(names)):
+            cache[names[:length]] = True
+  - |
+    def forward(names: tuple[str, ...]) -> None:
+        for name in names:
+            print(name)
+        consume(names)
+  - |
+    def remember(names: tuple[str, ...]) -> None:
+        cache[names] = True
+  - |
+    def spread(names: tuple[str, ...]) -> None:
+        print(*names)
+  - |
+    def ignore(names: tuple[str, ...]) -> None:
+        pass
+  - |
+    def collect(names: list[str]) -> None:
+        for name in names:
+            print(name)
+        names.append("last")
+  - |
+    def grow(names: list[str]) -> None:
+        names += ["last"]
+  - |
+    def replace(names: list[str]) -> None:
+        names[0] = "first"
+  - |
+    def bump(counts: list[int]) -> None:
+        counts[0] += 1
+  - |
+    def drop(names: list[str]) -> None:
+        del names[0]
+  - |
+    def drop_pair(names: list[str]) -> None:
+        del names[0], names[1]
+  - |
+    def swap(names: list[str]) -> None:
+        names[0], names[1] = names[1], names[0]
+  - |
+    def order(names: list[str]) -> None:
+        names.sort()
+  - |
+    def fill(names: list[str]) -> None:
+        populate(names)
+  - |
+    def rest(names: list[str]) -> list[str]:
+        return names[1:]
+  - |
+    def show(names: Iterable[str]) -> None:
+        for name in names:
+            print(name)
+  - |
+    def pair(names: tuple[str, str] = ("a", "b")) -> tuple[str, str]:
+        return names
+invalid:
+  - |
+    def first(names: tuple[str, ...]) -> str:
+        return names[0]
+  - |
+    def rest(names: tuple[str, ...]) -> None:
+        for name in names[1:]:
+            print(name)
+  - |
+    def rest_count(names: tuple[str, ...]) -> int:
+        return len(names[1:])
+  - |
+    def rest_upper(names: tuple[str, ...]) -> list[str]:
+        return [name.upper() for name in names[1:]]
+  - |
+    def pair(names: tuple[str, str] = ("a", "b")) -> str:
+        return names[1]
+  - |
+    def show(names: tuple[str, ...]) -> None:
+        for name in names:
+            print(name)
+  - |
+    def upper(names: tuple[str, ...]) -> list[str]:
+        return [name.upper() for name in names]
+  - |
+    def has_name(names: tuple[str, ...], name: str) -> bool:
+        return name in names
+  - |
+    def lacks_name(names: tuple[str, ...], name: str) -> bool:
+        return name not in names
+  - |
+    def count(names: tuple[str, ...]) -> int:
+        return len(names)
+  - |
+    def show(names: tuple[str, ...] = ()) -> None:
+        for name in names:
+            print(name)
+  - |
+    def show_all(names: list[str]) -> None:
+        for name in names:
+            print(name)
+  - |
+    def has_member(names: list[str], name: str) -> bool:
+        return name in names and len(names) > 1
+  - |
+    def last(names: list[str]) -> str:
+        return names[-1]
+  - |
+    def show_rest(names: list[str] = []) -> None:
+        for name in names[1:]:
+            print(name)

@@ -13,6 +13,8 @@ import msgspec
 from tools.profiler import call_tree
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     from tools.profiler import tachyon_profile, wall_model
 
 _NO_STACK = "(no Python stack)"
@@ -161,7 +163,7 @@ def dominant_path(path_durations: dict[Path, int], prefix: Path = ()) -> Path:
     return _deepest_path(path_durations, prefix, 0.5)
 
 
-def _combine(runs: list[Run]) -> Run:
+def _combine(runs: Sequence[Run]) -> Run:
     path_durations: collections.Counter[Path] = collections.Counter()
     path_working: collections.Counter[Path] = collections.Counter()
     for run in runs:
@@ -178,7 +180,7 @@ def _combine(runs: list[Run]) -> Run:
 
 
 def _exact_runs(
-    samples: list[wall_model.ThreadSample],
+    samples: Iterable[wall_model.ThreadSample],
     frames: list[wall_model.Frame],
     options: TimelineOptions,
 ) -> list[Run]:
@@ -219,7 +221,7 @@ def _is_short(run: Run, options: TimelineOptions) -> bool:
     return run.duration_ns < options.minimum_run_ns
 
 
-def _folded_short_runs(runs: list[Run], options: TimelineOptions) -> list[Run]:
+def _folded_short_runs(runs: Iterable[Run], options: TimelineOptions) -> list[Run]:
     # Consecutive short runs become one run, so that a thread that switches
     # rapidly between functions, such as a loop calling a small helper, reads
     # as one stretch.
@@ -253,7 +255,7 @@ def _is_interruption(
     )
 
 
-def _absorbed_interruptions(runs: list[Run], options: TimelineOptions) -> list[Run]:
+def _absorbed_interruptions(runs: Iterable[Run], options: TimelineOptions) -> list[Run]:
     # A short run between two longer runs at the same label interrupts one
     # activity, such as a pool's dispatcher briefly waking, so all three become
     # one run at that label.
@@ -285,7 +287,7 @@ def _can_join(earlier: Run, later: Run, options: TimelineOptions) -> bool:
     )
 
 
-def _joined_runs(runs: list[Run], options: TimelineOptions) -> list[Run]:
+def _joined_runs(runs: Iterable[Run], options: TimelineOptions) -> list[Run]:
     result: list[Run] = []
     for run in runs:
         if result and _can_join(result[-1], run, options):
@@ -361,7 +363,7 @@ def _common_length(first: Path, second: Path) -> int:
     return length
 
 
-def shared_prefix(runs: list[Run]) -> Path:
+def shared_prefix(runs: Iterable[Run]) -> Path:
     """Return the path that nearly all of a thread's time shares.
 
     The main thread runs the command line and driver before any activity, so a
@@ -507,7 +509,7 @@ def _critical_rows(
     return rows
 
 
-def _phases(rows: list[tuple[int, int, str, Run]]) -> list[_Phase]:
+def _phases(rows: Iterable[tuple[int, int, str, Run]]) -> list[_Phase]:
     phases: list[_Phase] = []
     for start_ns, end_ns, thread, run in rows:
         if not phases or phases[-1].thread != thread:

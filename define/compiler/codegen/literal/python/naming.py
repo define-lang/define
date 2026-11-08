@@ -416,7 +416,7 @@ class NameConverter:
 
     def implied_qualities_to_class_references(
         self,
-        quality_implications: tuple[ast.QualityImplicationStatement, ...],
+        quality_implications: Iterable[ast.QualityImplicationStatement],
     ) -> list[renderer.ClassReference]:
         """Extract class references from a list of quality implication statements."""
         return [

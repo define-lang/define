@@ -49,6 +49,7 @@ import click
 from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_graph"
@@ -161,7 +162,7 @@ def _emit_src_definition(*, carries_destructor: bool) -> list[str]:
     ]
 
 
-def _emit_out_definition(target_paths: list[str]) -> list[str]:
+def _emit_out_definition(target_paths: Iterable[str]) -> list[str]:
     lines = [
         f"{_OUTER_INDENT}define the position<out> {{",
         f"{_INNER_INDENT}it may only contain particles where {{",

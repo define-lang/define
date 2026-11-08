@@ -29,6 +29,9 @@ import click
 from tools import runfiles
 from tools.windows_vm import vm
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
 _CACHE_HOME = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
 _DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
@@ -102,7 +105,7 @@ def _missing_commands() -> list[str]:
     return [command for command in _REQUIRED_COMMANDS if shutil.which(command) is None]
 
 
-def _install_packages(installs: tuple[tuple[str, ...], ...]):
+def _install_packages(installs: Iterable[tuple[str, ...]]):
     sudo = shutil.which("sudo")
     if sudo is None:
         raise click.ClickException(

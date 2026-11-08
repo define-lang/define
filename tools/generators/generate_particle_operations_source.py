@@ -38,6 +38,7 @@ import click
 from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:particle_operations"
@@ -212,7 +213,7 @@ def _emit_sink_action(prefix: str) -> list[str]:
 
 
 def _emit_interface_with_qualities(
-    name: str, quality_paths: list[str], *, is_action: bool = False
+    name: str, quality_paths: Iterable[str], *, is_action: bool = False
 ) -> list[str]:
     kind = "action" if is_action else "position"
     lines = [

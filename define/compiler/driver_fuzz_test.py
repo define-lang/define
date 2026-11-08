@@ -19,6 +19,8 @@ from define.compiler import driver
 from define.compiler.errors import exceptions, parser_exceptions
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.validator import validation_result
 
 
@@ -100,7 +102,7 @@ def _action_simple(universe_name: str, rel_def_file: str) -> str:
 def _position_with_requirements(
     universe_name: str,
     rel_def_file: str,
-    requirements: list[tuple[str, str]],
+    requirements: Iterable[tuple[str, str]],
     *,
     indent: str = "    ",
 ) -> str:
@@ -125,7 +127,7 @@ def _local_position_simple(name: str, *, indent: str) -> str:
 
 def _local_position_with_requirements(
     name: str,
-    requirements: list[tuple[str, str]],
+    requirements: Iterable[tuple[str, str]],
     *,
     indent: str,
 ) -> str:
@@ -217,8 +219,8 @@ def create_particle_references(draw: st.DrawFn) -> str:
 def _action_block_with_name(  # noqa: PLR0913 - Callers name independent syntax variations.
     action_name: str,
     *,
-    outer_locals: list[str],
-    inner_locals: list[str],
+    outer_locals: Iterable[str],
+    inner_locals: Iterable[str],
     indent: str = "    ",
     include_trigger_comment: bool = False,
     include_action_close_comment: bool = False,
@@ -419,7 +421,9 @@ def action_definitions_simple(draw: st.DrawFn) -> str:
     )
 
 
-def _draw_local_positions(draw: st.DrawFn, names: list[str], indent: str) -> list[str]:
+def _draw_local_positions(
+    draw: st.DrawFn, names: Iterable[str], indent: str
+) -> list[str]:
     locals_: list[str] = []
     for local_name in names:
         if draw(st.booleans()):

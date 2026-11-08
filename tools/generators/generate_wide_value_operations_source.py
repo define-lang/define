@@ -9,6 +9,7 @@ import click
 from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:wide_value_operations"
@@ -56,7 +57,9 @@ def _interface_views(views: int) -> list[str]:
     return lines
 
 
-def _execution(name: str, arguments: list[tuple[str, str]], depth: int) -> list[str]:
+def _execution(
+    name: str, arguments: Iterable[tuple[str, str]], depth: int
+) -> list[str]:
     lines = [f"{_indent(depth)}execute the {name} {{"]
     for view, target in arguments:
         lines.append(f"{_indent(depth + 1)}with view<{view}> looking at {target}.")

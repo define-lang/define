@@ -204,7 +204,7 @@ class DeadQualityAssignmentTracker:
         self,
         current_position: ast.PositionReference | None,
         origin_position: ast.PositionReference | None,
-        qualities: tuple[ast.GlobalTypedNameReference, ...],
+        qualities: Iterable[ast.GlobalTypedNameReference],
     ):
         """Keep matching quality assignments alive through an action contract."""
         if not self.has_candidates():

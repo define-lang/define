@@ -9,7 +9,10 @@ import json
 import shlex
 import sys
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def translate_permission(permission: str) -> str:
@@ -85,7 +88,7 @@ def quote_codex_rule(value: str) -> str:
     return f'"{escaped}"'
 
 
-def render_codex_pattern(pattern_parts: list[str]) -> str:
+def render_codex_pattern(pattern_parts: Iterable[str]) -> str:
     """Render a Codex pattern list in Starlark syntax."""
     quoted_parts = [quote_codex_rule(part) for part in pattern_parts]
     return f"[{', '.join(quoted_parts)}]"

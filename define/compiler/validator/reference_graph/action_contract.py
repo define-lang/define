@@ -16,7 +16,7 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
@@ -290,7 +290,7 @@ class ChildPositionParticles(msgspec.Struct, frozen=True):
     # are never here: they are empty when the action ends.
     particles: dict[str, ParticleLeftBelow]
 
-    def particle_left_below(self, names: tuple[str, ...]) -> ParticleLeftBelow | None:
+    def particle_left_below(self, names: Iterable[str]) -> ParticleLeftBelow | None:
         """Return what was left at the position ``names`` below the particle, or None when it is empty."""
         left: ParticleLeftBelow | None = None
         current: ChildPositionParticles | None = self
@@ -486,7 +486,7 @@ class ActionContract(msgspec.Struct, frozen=True):
 
     @staticmethod
     def _requirements_in_caller[Requirement: ActionRequirement](
-        requirements: list[Requirement],
+        requirements: Iterable[Requirement],
         action_chain: ast.ActionReference,
         action_assignment: ActionAssignment | None,
     ) -> list[ActionRequirementInCaller[Requirement]]:

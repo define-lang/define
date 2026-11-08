@@ -19,7 +19,7 @@ from define.compiler.codegen.literal.python import (
 from define.compiler.graphs import reference_graph_executor
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Collection, Sequence
     from pathlib import Path
 
     from define.compiler.validator import codegen_input as codegen_input_types
@@ -283,7 +283,7 @@ class _DefinitionGenerator:
             self._entry_definition = context
         return context
 
-    def _write_module(self, module_name: str, parts: list[_ModulePart]) -> str:
+    def _write_module(self, module_name: str, parts: Collection[_ModulePart]) -> str:
         """Write a module containing the given definitions' classes, and return the dotted name of the package that holds its package."""
         imports: set[str] = set()
         typing_names: set[str] = set()

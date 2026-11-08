@@ -9,6 +9,7 @@ from typing import cast
 
 if typing.TYPE_CHECKING:
     import http.client
+    from collections.abc import Collection
 
 UNICODE_VERSION = "18.0.0"
 UNICODE_DATA_URL = "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
@@ -117,7 +118,7 @@ def _hex_literal(code_point: int) -> str:
     return "0x" + "_".join(groups)
 
 
-def render_rust(ranges: list[tuple[int, int]]) -> str:
+def render_rust(ranges: Collection[tuple[int, int]]) -> str:
     """Render the generated Rust module."""
     lines = [
         "//! Invisible non-ASCII characters for the Invisible Characters rule, from",

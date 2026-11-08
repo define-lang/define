@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import shutil
+import typing
 from pathlib import Path
 
 import msgspec
@@ -12,6 +13,9 @@ import pytest
 from define.compiler import driver
 from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _TESTDATA_ROOT = Path("define/testdata/codegen")
 _ADDITIONAL_CALLER_ROOT = Path(
@@ -176,7 +180,7 @@ def _copy_project(source: Path, destination: Path):
 def _remove_destructor_quality_assignments(
     project: Path,
     additional_destructor: str,
-    contributing_sources: tuple[str, ...],
+    contributing_sources: Iterable[str],
 ) -> set[Path]:
     contributing_modules: set[Path] = set()
     quality_assignment = f"it has the action</{additional_destructor}>."

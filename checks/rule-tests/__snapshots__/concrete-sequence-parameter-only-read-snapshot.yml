@@ -1,0 +1,427 @@
+id: concrete-sequence-parameter-only-read
+snapshots:
+  "def count(names: tuple[str, ...]) -> int:\n    return len(names)\n":
+    labels:
+    - source: |-
+        def count(names: tuple[str, ...]) -> int:
+            return len(names)
+      style: primary
+      start: 0
+      end: 63
+    - source: names
+      style: secondary
+      start: 10
+      end: 15
+    - source: tuple[str, ...]
+      style: secondary
+      start: 17
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: names
+      style: secondary
+      start: 57
+      end: 62
+  "def first(names: tuple[str, ...]) -> str:\n    return names[0]\n":
+    labels:
+    - source: |-
+        def first(names: tuple[str, ...]) -> str:
+            return names[0]
+      style: primary
+      start: 0
+      end: 61
+    - source: names
+      style: secondary
+      start: 10
+      end: 15
+    - source: tuple[str, ...]
+      style: secondary
+      start: 17
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: names
+      style: secondary
+      start: 53
+      end: 58
+  "def has_member(names: list[str], name: str) -> bool:\n    return name in names and len(names) > 1\n":
+    labels:
+    - source: |-
+        def has_member(names: list[str], name: str) -> bool:
+            return name in names and len(names) > 1
+      style: primary
+      start: 0
+      end: 96
+    - source: names
+      style: secondary
+      start: 15
+      end: 20
+    - source: list[str]
+      style: secondary
+      start: 22
+      end: 31
+    - source: "names: list[str]"
+      style: secondary
+      start: 15
+      end: 31
+    - source: "names: list[str]"
+      style: secondary
+      start: 15
+      end: 31
+    - source: names
+      style: secondary
+      start: 72
+      end: 77
+  "def has_name(names: tuple[str, ...], name: str) -> bool:\n    return name in names\n":
+    labels:
+    - source: |-
+        def has_name(names: tuple[str, ...], name: str) -> bool:
+            return name in names
+      style: primary
+      start: 0
+      end: 81
+    - source: names
+      style: secondary
+      start: 13
+      end: 18
+    - source: tuple[str, ...]
+      style: secondary
+      start: 20
+      end: 35
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 13
+      end: 35
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 13
+      end: 35
+    - source: names
+      style: secondary
+      start: 76
+      end: 81
+  "def lacks_name(names: tuple[str, ...], name: str) -> bool:\n    return name not in names\n":
+    labels:
+    - source: |-
+        def lacks_name(names: tuple[str, ...], name: str) -> bool:
+            return name not in names
+      style: primary
+      start: 0
+      end: 87
+    - source: names
+      style: secondary
+      start: 15
+      end: 20
+    - source: tuple[str, ...]
+      style: secondary
+      start: 22
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: names
+      style: secondary
+      start: 82
+      end: 87
+  "def last(names: list[str]) -> str:\n    return names[-1]\n":
+    labels:
+    - source: |-
+        def last(names: list[str]) -> str:
+            return names[-1]
+      style: primary
+      start: 0
+      end: 55
+    - source: names
+      style: secondary
+      start: 9
+      end: 14
+    - source: list[str]
+      style: secondary
+      start: 16
+      end: 25
+    - source: "names: list[str]"
+      style: secondary
+      start: 9
+      end: 25
+    - source: "names: list[str]"
+      style: secondary
+      start: 9
+      end: 25
+    - source: names
+      style: secondary
+      start: 46
+      end: 51
+  "def pair(names: tuple[str, str] = (\"a\", \"b\")) -> str:\n    return names[1]\n":
+    labels:
+    - source: |-
+        def pair(names: tuple[str, str] = ("a", "b")) -> str:
+            return names[1]
+      style: primary
+      start: 0
+      end: 73
+    - source: names
+      style: secondary
+      start: 9
+      end: 14
+    - source: tuple[str, str]
+      style: secondary
+      start: 16
+      end: 31
+    - source: "names: tuple[str, str] = (\"a\", \"b\")"
+      style: secondary
+      start: 9
+      end: 44
+    - source: "names: tuple[str, str] = (\"a\", \"b\")"
+      style: secondary
+      start: 9
+      end: 44
+    - source: names
+      style: secondary
+      start: 65
+      end: 70
+  "def rest(names: tuple[str, ...]) -> None:\n    for name in names[1:]:\n        print(name)\n":
+    labels:
+    - source: |-
+        def rest(names: tuple[str, ...]) -> None:
+            for name in names[1:]:
+                print(name)
+      style: primary
+      start: 0
+      end: 88
+    - source: names
+      style: secondary
+      start: 9
+      end: 14
+    - source: tuple[str, ...]
+      style: secondary
+      start: 16
+      end: 31
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 9
+      end: 31
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 9
+      end: 31
+    - source: names
+      style: secondary
+      start: 58
+      end: 63
+  "def rest_count(names: tuple[str, ...]) -> int:\n    return len(names[1:])\n":
+    labels:
+    - source: |-
+        def rest_count(names: tuple[str, ...]) -> int:
+            return len(names[1:])
+      style: primary
+      start: 0
+      end: 72
+    - source: names
+      style: secondary
+      start: 15
+      end: 20
+    - source: tuple[str, ...]
+      style: secondary
+      start: 22
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: names
+      style: secondary
+      start: 62
+      end: 67
+  "def rest_upper(names: tuple[str, ...]) -> list[str]:\n    return [name.upper() for name in names[1:]]\n":
+    labels:
+    - source: |-
+        def rest_upper(names: tuple[str, ...]) -> list[str]:
+            return [name.upper() for name in names[1:]]
+      style: primary
+      start: 0
+      end: 100
+    - source: names
+      style: secondary
+      start: 15
+      end: 20
+    - source: tuple[str, ...]
+      style: secondary
+      start: 22
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 15
+      end: 37
+    - source: names
+      style: secondary
+      start: 90
+      end: 95
+  "def show(names: tuple[str, ...] = ()) -> None:\n    for name in names:\n        print(name)\n":
+    labels:
+    - source: |-
+        def show(names: tuple[str, ...] = ()) -> None:
+            for name in names:
+                print(name)
+      style: primary
+      start: 0
+      end: 89
+    - source: names
+      style: secondary
+      start: 9
+      end: 14
+    - source: tuple[str, ...]
+      style: secondary
+      start: 16
+      end: 31
+    - source: "names: tuple[str, ...] = ()"
+      style: secondary
+      start: 9
+      end: 36
+    - source: "names: tuple[str, ...] = ()"
+      style: secondary
+      start: 9
+      end: 36
+    - source: names
+      style: secondary
+      start: 63
+      end: 68
+  "def show(names: tuple[str, ...]) -> None:\n    for name in names:\n        print(name)\n":
+    labels:
+    - source: |-
+        def show(names: tuple[str, ...]) -> None:
+            for name in names:
+                print(name)
+      style: primary
+      start: 0
+      end: 84
+    - source: names
+      style: secondary
+      start: 9
+      end: 14
+    - source: tuple[str, ...]
+      style: secondary
+      start: 16
+      end: 31
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 9
+      end: 31
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 9
+      end: 31
+    - source: names
+      style: secondary
+      start: 58
+      end: 63
+  "def show_all(names: list[str]) -> None:\n    for name in names:\n        print(name)\n":
+    labels:
+    - source: |-
+        def show_all(names: list[str]) -> None:
+            for name in names:
+                print(name)
+      style: primary
+      start: 0
+      end: 82
+    - source: names
+      style: secondary
+      start: 13
+      end: 18
+    - source: list[str]
+      style: secondary
+      start: 20
+      end: 29
+    - source: "names: list[str]"
+      style: secondary
+      start: 13
+      end: 29
+    - source: "names: list[str]"
+      style: secondary
+      start: 13
+      end: 29
+    - source: names
+      style: secondary
+      start: 56
+      end: 61
+  "def show_rest(names: list[str] = []) -> None:\n    for name in names[1:]:\n        print(name)\n":
+    labels:
+    - source: |-
+        def show_rest(names: list[str] = []) -> None:
+            for name in names[1:]:
+                print(name)
+      style: primary
+      start: 0
+      end: 92
+    - source: names
+      style: secondary
+      start: 14
+      end: 19
+    - source: list[str]
+      style: secondary
+      start: 21
+      end: 30
+    - source: "names: list[str] = []"
+      style: secondary
+      start: 14
+      end: 35
+    - source: "names: list[str] = []"
+      style: secondary
+      start: 14
+      end: 35
+    - source: names
+      style: secondary
+      start: 62
+      end: 67
+  "def upper(names: tuple[str, ...]) -> list[str]:\n    return [name.upper() for name in names]\n":
+    labels:
+    - source: |-
+        def upper(names: tuple[str, ...]) -> list[str]:
+            return [name.upper() for name in names]
+      style: primary
+      start: 0
+      end: 91
+    - source: names
+      style: secondary
+      start: 10
+      end: 15
+    - source: tuple[str, ...]
+      style: secondary
+      start: 17
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: "names: tuple[str, ...]"
+      style: secondary
+      start: 10
+      end: 32
+    - source: names
+      style: secondary
+      start: 85
+      end: 90

@@ -16,6 +16,8 @@ from define.compiler.validator.reference_graph.dead_code import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler import chained_name
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
@@ -56,7 +58,7 @@ class DeadQualityAssignmentValidator:
         )
 
     def register_implied_actions(
-        self, quality_implications: tuple[ast.QualityImplicationStatement, ...]
+        self, quality_implications: Iterable[ast.QualityImplicationStatement]
     ):
         """Register implied Actions before analyzing the Action's statements."""
         for implication in quality_implications:
@@ -136,7 +138,7 @@ class DeadQualityAssignmentValidator:
 
     def mark_callee_contract_quality_assignments_alive(
         self,
-        requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
+        requirements_in_caller: Iterable[action_contract.OccupancyRequirementInCaller],
         scope: scope_tracker.PositionScopeTracker,
     ):
         """Keep quality assignments alive through occupied callee requirements."""

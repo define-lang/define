@@ -8,6 +8,8 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import chained_name
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
@@ -151,7 +153,7 @@ class ChainedNameValidator:
         self,
         chain: ast.PositionReference,
         child: ast.TypedNameReference,
-        elements: tuple[ast.TypedNameReference, ...],
+        elements: Sequence[ast.TypedNameReference],
         child_index: int,
         action_def: ast.ActionDefinition,
         parent_name: str,

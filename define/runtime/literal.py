@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Never, cast, overload, override
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
 # TODO: Make operation tracing thread-safe somehow. Not a high priority.
 _operation_trace: list[str] | None = None
@@ -219,7 +219,7 @@ class Position(ABC):
 
 
 def _reject_duplicate_quality_assignments(
-    assigned_qualities: tuple[type[Quality], ...],
+    assigned_qualities: Iterable[type[Quality]],
 ):
     """Raise if the same quality is assigned more than once."""
     seen: set[type[Quality]] = set()

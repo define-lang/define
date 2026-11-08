@@ -11,6 +11,8 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler import ast, chained_name
     from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
@@ -169,7 +171,7 @@ class ActionRequirementValidator:
     def check_occupancy_requirements(
         self,
         execution: callee_execution.CalleeExecution,
-        requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
+        requirements_in_caller: Iterable[action_contract.OccupancyRequirementInCaller],
     ) -> list[diagnostics.Diagnostic]:
         """Emit diagnostics for every occupancy requirement of the callee that doesn't hold before ``execution``.
 
@@ -248,7 +250,7 @@ class ActionRequirementValidator:
     def propagate_value_requirements(
         self,
         inferred_at: ast.SourceLocation,
-        requirements: list[action_contract.ValueRequirementInCaller],
+        requirements: Iterable[action_contract.ValueRequirementInCaller],
     ):
         """Propagate the value requirements of a callee triggered at ``inferred_at``, after occupancy requirements are resolved."""
         for requirement in requirements:
@@ -262,7 +264,7 @@ class ActionRequirementValidator:
     def check_value_requirements(
         self,
         execution: callee_execution.CalleeExecution,
-        requirements: list[action_contract.ValueRequirementInCaller],
+        requirements: Iterable[action_contract.ValueRequirementInCaller],
     ) -> list[diagnostics.Diagnostic]:
         """Check the callee's value requirements using the state immediately before ``execution``."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []

@@ -7,6 +7,9 @@ import sys
 import threading
 import typing
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 def _controlled_work(
     release: threading.Event,
@@ -94,7 +97,7 @@ def _off_path_work(finish: threading.Event):
 
 def _release_phases(
     control_stream: typing.BinaryIO,
-    releases: tuple[threading.Event, ...],
+    releases: Iterable[threading.Event],
 ):
     for release in releases:
         _ = control_stream.read(1)

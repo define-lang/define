@@ -12,6 +12,7 @@ from tools.profiler import call_tree
 
 if typing.TYPE_CHECKING:
     import pathlib
+    from collections.abc import Iterable
 
 # A rate that is not a round number does not stay in step with periodic work.
 SAMPLING_FREQUENCY_HZ = 997
@@ -47,7 +48,7 @@ class CpuStacks(msgspec.Struct, frozen=True):
     other_processes: dict[str, int]
 
 
-def _functions(frames: list[str], *, native: bool) -> tuple[str, ...]:
+def _functions(frames: Iterable[str], *, native: bool) -> tuple[str, ...]:
     functions: list[str] = []
     # The native frames below the innermost Python frame, or every native frame
     # of a stack without Python frames.

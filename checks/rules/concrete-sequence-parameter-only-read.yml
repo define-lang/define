@@ -1,0 +1,77 @@
+id: concrete-sequence-parameter-only-read
+language: python
+severity: error
+message: >-
+  This function only reads this `tuple[...]` or `list[...]` parameter.
+  Annotate it as the narrowest of `collections.abc.Iterable[...]` (only
+  iterated), `collections.abc.Collection[...]` (also used with `len()` or
+  `in`), or `collections.abc.Sequence[...]` (also indexed or sliced).
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  kind: function_definition
+  all:
+    - has:
+        field: parameters
+        has:
+          any:
+            - kind: typed_parameter
+              all:
+                - has: { kind: identifier, pattern: $P }
+                - has: { field: type, regex: "^(tuple|list)\\[" }
+            - kind: typed_default_parameter
+              all:
+                - has: { field: name, pattern: $P }
+                - has: { field: type, regex: "^(tuple|list)\\[" }
+    - has:
+        field: body
+        stopBy: end
+        kind: identifier
+        pattern: $P
+    # Any other use, such as mutating the parameter or passing it to a call,
+    # may need the concrete type, and a caller may rely on the function
+    # mutating its list.
+    - not:
+        has:
+          field: body
+          stopBy: end
+          kind: identifier
+          pattern: $P
+          not:
+            any:
+              - inside: { kind: for_statement, field: right }
+              - inside: { kind: for_in_clause, field: right }
+              - inside: { pattern: $X in $P }
+              - inside: { pattern: $X not in $P }
+              - inside: { kind: argument_list, inside: { pattern: len($P) } }
+              - inside:
+                  kind: subscript
+                  field: value
+                  not:
+                    any:
+                      - has: { field: subscript, kind: slice }
+                      - inside: { kind: assignment, field: left }
+                      - inside: { kind: augmented_assignment, field: left }
+                      - inside: { kind: delete_statement }
+                      - inside: { kind: pattern_list }
+                      - inside: { kind: tuple_pattern }
+                      - inside: {
+                          kind: expression_list,
+                          inside: { kind: delete_statement },
+                        }
+              # A slice has the parameter's concrete type, so a slice counts
+              # only when its result does not need that type either.
+              - inside:
+                  kind: subscript
+                  field: value
+                  has: { field: subscript, kind: slice }
+                  any:
+                    - inside: { kind: for_statement, field: right }
+                    - inside: { kind: for_in_clause, field: right }
+                    - inside:
+                        kind: argument_list
+                        inside:
+                          kind: call
+                          has: { field: function, regex: "^len$" }
