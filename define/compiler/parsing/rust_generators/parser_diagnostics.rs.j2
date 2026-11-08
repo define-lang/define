@@ -1,22 +1,22 @@
 // Generated from `{{ module_name }}` by
 // //define/compiler/parsing/rust_generators:generate_parser_diagnostics.
 
-use crate::node_construction::{FilePath, Node as _, SourceLocation};
+use crate::node_construction::{Node as _, SourceLocation};
 use source_rendering::Position;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::{PyInt, PyList, PyType};
+use pyo3::types::{PyInt, PyList, PyString, PyType};
 
 /// Collects the diagnostics of one parse, as instances of classes from
 /// `{{ module_name }}`.
 pub struct ParserDiagnostics<'py> {
     py: Python<'py>,
-    file_path: Option<FilePath<'py>>,
+    file_path: Option<Bound<'py, PyString>>,
     diagnostics: Vec<Bound<'py, PyAny>>,
 }
 
 impl<'py> ParserDiagnostics<'py> {
-    pub const fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> Self {
+    pub const fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> Self {
         Self {
             py,
             file_path,

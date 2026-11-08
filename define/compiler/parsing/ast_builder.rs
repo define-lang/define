@@ -1,5 +1,5 @@
 use crate::ast::AstClasses;
-use crate::node_construction::{FilePath, SourceLocation};
+use crate::node_construction::SourceLocation;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
@@ -10,14 +10,14 @@ use source_rendering::Position;
 pub struct AstBuilder<'py> {
     py: Python<'py>,
     classes: &'static AstClasses,
-    file_path: Option<FilePath<'py>>,
+    file_path: Option<Bound<'py, PyString>>,
     /// The interned Python string for each distinct text that this parse
     /// interns.
     interned_texts: FxHashMap<Box<[u8]>, Bound<'py, PyString>>,
 }
 
 impl<'py> AstBuilder<'py> {
-    pub fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> PyResult<Self> {
+    pub fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> PyResult<Self> {
         Ok(Self {
             py,
             classes: AstClasses::get(py)?,

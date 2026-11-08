@@ -2,10 +2,11 @@
 // //define/compiler/parsing/rust_generators:generate_syntax_errors.
 
 
-use crate::node_construction::{FilePath, Node as _, SourceLocation};
+use crate::node_construction::{Node as _, SourceLocation};
 use crate::parse_error::ParseError;
 use source_rendering::Position;
 use pyo3::prelude::*;
+use pyo3::types::PyString;
 use pyo3::{PyTypeInfo as _, import_exception};
 {% for exception in exceptions %}
 import_exception!({{ module_name }}, {{ exception.name }});
@@ -15,11 +16,11 @@ import_exception!({{ module_name }}, {{ exception.name }});
 /// `{{ module_name }}`.
 pub struct SyntaxErrors<'py> {
     py: Python<'py>,
-    file_path: Option<FilePath<'py>>,
+    file_path: Option<Bound<'py, PyString>>,
 }
 
 impl<'py> SyntaxErrors<'py> {
-    pub const fn new(py: Python<'py>, file_path: Option<FilePath<'py>>) -> Self {
+    pub const fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> Self {
         Self { py, file_path }
     }
 

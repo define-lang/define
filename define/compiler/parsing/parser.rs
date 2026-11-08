@@ -16,7 +16,6 @@ mod value_definition;
 use crate::ast;
 use crate::ast_builder::AstBuilder;
 use crate::element_stack::ElementStack;
-use crate::node_construction::FilePath;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::operation_execution::OperationKind;
 use crate::parser_diagnostics::ParserDiagnostics;
@@ -64,7 +63,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     pub(crate) fn new(
         py: Python<'py>,
         source: &'source [u8],
-        file_path: Option<FilePath<'py>>,
+        file_path: Option<Bound<'py, PyString>>,
         checks_indentation: bool,
     ) -> PyResult<Self> {
         Ok(Self {

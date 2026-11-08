@@ -19,11 +19,11 @@ mod parser_diagnostics;
 #[rustfmt::skip]
 mod syntax_errors;
 
-use node_construction::{FilePath, Node as _};
+use node_construction::Node as _;
 use parse_error::ParseError;
 use parser::Parser;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyList, PyString};
 
 /// The result of parsing Define source code.
 #[pyclass(
@@ -48,10 +48,9 @@ struct PythonParseResult {
 fn parse<'py>(
     py: Python<'py>,
     source: &[u8],
-    file_path: Option<Bound<'py, PyAny>>,
+    file_path: Option<Bound<'py, PyString>>,
     check_indentation: bool,
 ) -> PyResult<PythonParseResult> {
-    let file_path = file_path.map(FilePath::new);
     let mut parser = Parser::new(py, source, file_path, check_indentation)?;
     let (program, exception) = match parser.parse_program() {
         Ok(program) => (Some(program.into_object().unbind()), None),

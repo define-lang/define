@@ -4,7 +4,7 @@ use crate::ast::AstClasses;
 use pyo3::exceptions::PyTypeError;
 use pyo3::ffi;
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyNone, PyTuple, PyType};
+use pyo3::types::{PyBool, PyNone, PyString, PyTuple, PyType};
 use std::marker::PhantomData;
 
 /// An AST class or a union of AST classes, as generated in `ast`.
@@ -40,16 +40,6 @@ impl<'py, Value> FieldValue<'py> for Bound<'py, Value> {
     }
 }
 
-/// A `pathlib.PurePosixPath`.
-#[derive(Clone)]
-pub struct FilePath<'py>(Bound<'py, PyAny>);
-
-impl<'py> FilePath<'py> {
-    pub const fn new(path: Bound<'py, PyAny>) -> Self {
-        Self(path)
-    }
-}
-
 /// A `source_rendering.python.rendering.SourceLocation`.
 #[derive(Clone)]
 pub struct SourceLocation<'py>(Bound<'py, PyAny>);
@@ -58,14 +48,9 @@ impl<'py> SourceLocation<'py> {
     pub fn new(
         py: Python<'py>,
         location: source_rendering::SourceLocation,
-        file_path: Option<&FilePath<'py>>,
+        file_path: Option<&Bound<'py, PyString>>,
     ) -> PyResult<Self> {
-        source_rendering_capsule::new_source_location(
-            py,
-            location,
-            file_path.map(|file_path| &file_path.0),
-        )
-        .map(Self)
+        source_rendering_capsule::new_source_location(py, location, file_path).map(Self)
     }
 }
 

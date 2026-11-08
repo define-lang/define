@@ -4,7 +4,7 @@
 use pyo3::basic::CompareOp;
 use pyo3::ffi;
 use pyo3::prelude::*;
-use pyo3::types::PyCapsule;
+use pyo3::types::{PyCapsule, PyString};
 use rustc_hash::FxHasher;
 use source_rendering::Position;
 use source_rendering_capsule::NewSourceLocation;
@@ -22,7 +22,22 @@ use std::hash::{Hash as _, Hasher as _};
 )]
 struct PySourceLocation {
     location: source_rendering::SourceLocation,
-    file_path: Option<Py<PyAny>>,
+    file_path: Option<Py<PyString>>,
+}
+
+const fn location(
+    line: u32,
+    column: u32,
+    end_line: u32,
+    end_column: u32,
+) -> source_rendering::SourceLocation {
+    source_rendering::SourceLocation {
+        start: Position { line, column },
+        end: Position {
+            line: end_line,
+            column: end_column,
+        },
+    }
 }
 
 #[pymethods]
@@ -34,16 +49,10 @@ impl PySourceLocation {
         column: u32,
         end_line: u32,
         end_column: u32,
-        file_path: Option<Py<PyAny>>,
+        file_path: Option<Py<PyString>>,
     ) -> Self {
         Self {
-            location: source_rendering::SourceLocation {
-                start: Position { line, column },
-                end: Position {
-                    line: end_line,
-                    column: end_column,
-                },
-            },
+            location: location(line, column, end_line, end_column),
             file_path,
         }
     }
@@ -69,10 +78,20 @@ impl PySourceLocation {
     }
 
     #[getter]
-    fn file_path(&self, py: Python<'_>) -> Option<Py<PyAny>> {
+    fn file_path(&self, py: Python<'_>) -> Option<Py<PyString>> {
         self.file_path
             .as_ref()
             .map(|file_path| file_path.clone_ref(py))
+    }
+
+    /// The location from `line`, `column` through `end_line`, `end_column` in
+    /// the same file as this one.
+    #[pyo3(signature = (*, line, column, end_line, end_column))]
+    fn at(&self, py: Python<'_>, line: u32, column: u32, end_line: u32, end_column: u32) -> Self {
+        Self {
+            location: location(line, column, end_line, end_column),
+            file_path: self.file_path(py),
+        }
     }
 
     /// The location as diagnostics show it: a header that names its file, if
@@ -80,11 +99,7 @@ impl PySourceLocation {
     /// under the part that it covers. With no `source_line`, only the header.
     fn render(&self, py: Python<'_>, source_line: Option<&str>) -> PyResult<String> {
         let file_path = match &self.file_path {
-            Some(file_path) => Some(file_path.bind(py).str()?),
-            None => None,
-        };
-        let file_path = match &file_path {
-            Some(file_path) => Some(file_path.to_str()?),
+            Some(file_path) => Some(file_path.bind(py).to_str()?),
             None => None,
         };
         Ok(self.location.render(source_line, file_path))
@@ -100,7 +115,8 @@ impl PySourceLocation {
             && match (&self.file_path, &other.file_path) {
                 (None, None) => true,
                 (Some(file_path), Some(other_file_path)) => {
-                    file_path.bind(py).eq(other_file_path.bind(py))?
+                    file_path.is(other_file_path)
+                        || file_path.bind(py).as_any().eq(other_file_path.bind(py))?
                 }
                 _ => false,
             };
@@ -155,7 +171,10 @@ unsafe extern "C" fn new_source_location(
     let py = unsafe { Python::assume_attached() };
     // SAFETY: `file_path` is null or a reference that the caller holds for the
     // whole call.
-    let file_path = unsafe { Bound::from_borrowed_ptr_or_opt(py, file_path) }.map(Bound::unbind);
+    let file_path = unsafe { Bound::from_borrowed_ptr_or_opt(py, file_path) };
+    // SAFETY: Callers pass a `str`, as `NewSourceLocation` requires.
+    let file_path =
+        file_path.map(|file_path| unsafe { file_path.cast_into_unchecked::<PyString>() }.unbind());
     match Py::new(
         py,
         PySourceLocation {

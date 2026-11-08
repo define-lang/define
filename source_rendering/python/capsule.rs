@@ -6,15 +6,15 @@
 use pyo3::ffi;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::PyCapsule;
+use pyo3::types::{PyCapsule, PyString};
 use source_rendering::SourceLocation;
 use std::ffi::CStr;
 
 /// The constructor that the capsule holds.
 ///
-/// It takes the location's file path as a borrowed reference, or null for no
-/// file path, and returns a new reference, or null with an exception set. The
-/// caller must be attached to the interpreter.
+/// It takes the location's file path as a borrowed reference to a `str`, or
+/// null for no file path, and returns a new reference, or null with an
+/// exception set. Callers must be attached to the interpreter.
 pub type NewSourceLocation =
     unsafe extern "C" fn(SourceLocation, *mut ffi::PyObject) -> *mut ffi::PyObject;
 
@@ -38,12 +38,12 @@ static CONSTRUCTOR: PyOnceLock<NewSourceLocation> = PyOnceLock::new();
 pub fn new_source_location<'py>(
     py: Python<'py>,
     location: SourceLocation,
-    file_path: Option<&Bound<'py, PyAny>>,
+    file_path: Option<&Bound<'py, PyString>>,
 ) -> PyResult<Bound<'py, PyAny>> {
     let constructor = *CONSTRUCTOR.get_or_try_init(py, || import_constructor(py))?;
     let file_path = file_path.map_or(std::ptr::null_mut(), Bound::as_ptr);
     // SAFETY: `py` shows that the caller is attached, and `file_path` is null
-    // or a reference that the caller holds for the whole call.
+    // or a `str` that the caller holds for the whole call.
     let location = unsafe { constructor(location, file_path) };
     // SAFETY: The constructor returns a new reference, or null with an
     // exception set.

@@ -9,10 +9,11 @@ from pathlib import Path
 
 from define.compiler import ast, constants
 from define.compiler.errors import diagnostics
-from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from source_rendering.python import rendering
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 
@@ -153,14 +154,14 @@ def _distinct_characters(name: str, indexes: Iterable[int]) -> tuple[str, ...]:
 
 
 def _character_location(
-    line: int, column: int, file_path: str | None
+    name_location: rendering.SourceLocation, column: int
 ) -> rendering.SourceLocation:
-    return rendering.SourceLocation(
-        line=line,
+    """Return the location of the character at ``column`` on the first line of ``name_location``."""
+    return name_location.at(
+        line=name_location.line,
         column=column,
-        end_line=line,
+        end_line=name_location.line,
         end_column=column,
-        file_path=file_path,
     )
 
 
@@ -182,9 +183,8 @@ def _validate_multiverse_name_format(
         result.append(
             diagnostics.MultiverseNameInvalidCharDiagnostic(
                 location=_character_location(
-                    multiverse.location.line,
+                    multiverse.location,
                     multiverse.location.column + invalid_indexes[0],
-                    multiverse.location.file_path,
                 ),
                 multiverse_name=name,
                 chars=_distinct_characters(name, invalid_indexes),
@@ -236,9 +236,8 @@ def _validate_authority_domain_format(
         result.append(
             diagnostics.AuthorityDomainInvalidCharDiagnostic(
                 location=_character_location(
-                    authority.location.line,
+                    authority.location,
                     authority.location.column + invalid_indexes[0],
-                    authority.location.file_path,
                 ),
                 domain=domain,
                 chars=_distinct_characters(domain, invalid_indexes),
@@ -255,12 +254,10 @@ def _validate_authority_path_format(
     result: list[diagnostics.Diagnostic] = []
 
     col = authority.location.column + len(domain)
-    line = authority.location.line
-    file_path = authority.location.file_path
     for segment in path.split("/"):
         col += 1  # skip '/' separator in source text
         diagnostic = _validate_authority_path_segment(
-            authority.name, line, col, segment, file_path
+            authority.name, authority.location, col, segment
         )
         if diagnostic is not None:
             result.append(diagnostic)
@@ -270,27 +267,20 @@ def _validate_authority_path_format(
 
 def _validate_authority_path_segment(
     authority_name: str,
-    line: int,
+    authority_location: rendering.SourceLocation,
     column: int,
     segment: str,
-    file_path: str | None = None,
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
         return diagnostics.AuthorityPathEmptySegmentDiagnostic(
-            location=rendering.SourceLocation(
-                line=line,
-                column=column - 1,
-                end_line=line,
-                end_column=column - 1,
-                file_path=file_path,
-            ),
+            location=_character_location(authority_location, column - 1),
             authority=authority_name,
         )
     invalid_indexes = _AUTHORITY_PATH_CHARACTERS.invalid_indexes(segment)
     if not invalid_indexes:
         return None
     return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
-        location=_character_location(line, column + invalid_indexes[0], file_path),
+        location=_character_location(authority_location, column + invalid_indexes[0]),
         segment=segment,
         chars=_distinct_characters(segment, invalid_indexes),
     )
@@ -365,9 +355,8 @@ def _validate_universe_name_format(
         result.append(
             diagnostics.UniverseNameInvalidCharDiagnostic(
                 location=_character_location(
-                    universe.location.line,
+                    universe.location,
                     universe.location.column + invalid_indexes[0],
-                    universe.location.file_path,
                 ),
                 universe_name=name,
                 chars=_distinct_characters(name, invalid_indexes),
@@ -473,12 +462,11 @@ def _validate_global_name_path(
     if path_name.endswith("/"):
         result.append(
             diagnostics.GlobalNamePathTrailingSlashDiagnostic(
-                location=rendering.SourceLocation(
+                location=path.location.at(
                     line=path.location.line,
                     column=path.location.column + len(path_name) - 1,
                     end_line=path.location.end_line,
                     end_column=path.location.end_column,
-                    file_path=path.location.file_path,
                 ),
                 path=path_name,
             )
@@ -492,12 +480,11 @@ def _validate_global_name_path(
         if segment == "":
             result.append(
                 diagnostics.GlobalNamePathEmptySegmentDiagnostic(
-                    location=rendering.SourceLocation(
+                    location=path.location.at(
                         line=path.location.line,
                         column=path.location.column + segment_start - 1,
                         end_line=path.location.end_line,
                         end_column=path.location.end_column,
-                        file_path=path.location.file_path,
                     ),
                     path=path_name,
                 )
@@ -507,9 +494,8 @@ def _validate_global_name_path(
             result.append(
                 diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
                     location=_character_location(
-                        path.location.line,
+                        path.location,
                         path.location.column + segment_start + invalid_indexes[0],
-                        path.location.file_path,
                     ),
                     segment=segment,
                     chars=_distinct_characters(segment, invalid_indexes),
@@ -537,9 +523,8 @@ def validate_local_name_format(
     return [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=_character_location(
-                local_name.location.line,
+                local_name.location,
                 local_name.location.column + invalid_indexes[0],
-                local_name.location.file_path,
             ),
             local_name=name,
             chars=_distinct_characters(name, invalid_indexes),

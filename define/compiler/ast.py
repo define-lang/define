@@ -680,12 +680,11 @@ class Literal(ASTNode):
         escaped_count = sum(1 for char in self.content[:index] if char in '"\\\n')
         # The Potential Literal reference ends just before the opening quote.
         column = self.potential_literal.location.end_column + 2 + index + escaped_count
-        return rendering.SourceLocation(
+        return self.location.at(
             line=self.location.line,
             column=column,
             end_line=self.location.line,
             end_column=column,
-            file_path=self.location.file_path,
         )
 
 

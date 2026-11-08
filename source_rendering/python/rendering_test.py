@@ -93,3 +93,19 @@ def test_repr():
     assert repr(
         rendering.SourceLocation(line=1, column=2, end_line=3, end_column=4)
     ) == ("SourceLocation(line=1, column=2, end_line=3, end_column=4, file_path=None)")
+
+
+def test_at_is_another_position_in_the_same_file():
+    location = rendering.SourceLocation(
+        line=1, column=2, end_line=3, end_column=4, file_path="a.dfn"
+    )
+    assert location.at(line=5, column=6, end_line=7, end_column=8) == (
+        rendering.SourceLocation(
+            line=5, column=6, end_line=7, end_column=8, file_path="a.dfn"
+        )
+    )
+
+
+def test_at_without_a_file_is_in_no_file():
+    location = rendering.SourceLocation(line=1, column=2, end_line=3, end_column=4)
+    assert location.at(line=5, column=6, end_line=7, end_column=8).file_path is None
