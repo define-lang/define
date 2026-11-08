@@ -19,6 +19,9 @@ from tools import profile_orchestration
 
 class _Run(msgspec.Struct, frozen=True):
     seconds: float
+    # User and system time of every thread, which shows what parallel work
+    # costs beyond its wall time.
+    cpu_seconds: float
     peak_rss_kb: int
 
 
@@ -83,13 +86,18 @@ def _run(
             stdout=stdout,
             stderr=stderr,
         )
-        # wait4 reports this child's own peak memory, which the cumulative
-        # resource usage of all children does not.
+        # wait4 reports this child's own CPU time and peak memory, which the
+        # cumulative resource usage of all children does not.
         _, status, usage = os.wait4(process.pid, 0)
         seconds = time.perf_counter() - started
         # Popen did not reap the child, so it must not wait for it again.
         process.returncode = os.waitstatus_to_exitcode(status)
-    return _Run(seconds=seconds, peak_rss_kb=usage.ru_maxrss), process.returncode
+    run = _Run(
+        seconds=seconds,
+        cpu_seconds=usage.ru_utime + usage.ru_stime,
+        peak_rss_kb=usage.ru_maxrss,
+    )
+    return run, process.returncode
 
 
 def _measure(
@@ -148,11 +156,13 @@ def _difference(baseline: _Outcome, candidate: _Outcome) -> str | None:
 def _summary(name: str, runs: list[_Run]) -> str:
     seconds = [run.seconds for run in runs]
     peak_mb = max(run.peak_rss_kb for run in runs) / 1024
+    cpu_seconds = statistics.median(run.cpu_seconds for run in runs)
     return (
         f"{name:9} median {statistics.median(seconds):7.3f} s  "
         + f"mean {statistics.mean(seconds):7.3f}  "
         + f"stdev {statistics.stdev(seconds):6.3f}  "
         + f"min {min(seconds):7.3f}  max {max(seconds):7.3f}  "
+        + f"median CPU {cpu_seconds:7.3f} s  "
         + f"peak RSS {peak_mb:,.0f} MB"
     )
 
@@ -258,6 +268,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
             round_name = f"Round {round_index}" if round_index else "Warm-up"
             click.echo(
                 f"{round_name} {compiler.name}: {run.seconds:.3f} s; "
+                + f"CPU {run.cpu_seconds:.3f} s; "
                 + f"peak RSS {run.peak_rss_kb / 1024:,.0f} MB"
             )
             if round_index:
@@ -282,10 +293,14 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     median_ratio = statistics.median(candidate_seconds) / statistics.median(
         baseline_seconds
     )
+    cpu_ratio = statistics.median(
+        run.cpu_seconds for run in runs["candidate"]
+    ) / statistics.median(run.cpu_seconds for run in runs["baseline"])
     click.echo(
         f"Candidate/baseline: median {median_ratio:.3f}; mean "
         + f"{statistics.mean(candidate_seconds) / statistics.mean(baseline_seconds):.3f}"
         + f"; min {min(candidate_seconds) / min(baseline_seconds):.3f}"
+        + f"; median CPU {cpu_ratio:.3f}"
     )
 
 

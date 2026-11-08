@@ -35,7 +35,8 @@ _CALL_COUNTS_START = b'{"calls"'
         "and --end-seconds select the samples every view uses, and --focus "
         "starts each stack at its outermost function containing TEXT, so the "
         "tables and tree show what that function spends its time on; "
-        "critical-path always follows every thread. "
+        "critical-path always follows every thread. Each view begins with "
+        "every thread's total, except with --focus. "
         "Percentages divide by the time of every selected sample, before "
         "--focus. Wall time per thread counts waiting too; 'work' is the share "
         "spent executing Python. A sample is an observation, not a call."
@@ -176,7 +177,10 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
         denominator_ns=sum(stack.total_ns for stack in stacks),
         shows_working=is_wall,
     )
-    call_tree.emit_threads(stacks, report, thread_names)
+    # A focused view is about one function, and with many workers the
+    # threads' totals would run longer than the view itself.
+    if focus is None:
+        call_tree.emit_threads(stacks, report, thread_names)
     # The usage check above guarantees a focus for the callers view.
     if view == "callers" and focus is not None:
         try:

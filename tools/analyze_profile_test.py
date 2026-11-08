@@ -86,8 +86,11 @@ def test_cpu_tree_focuses_on_a_function_within_selected_threads(tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    assert result.output.endswith(
-        "\nFocus: stacks from the outermost function containing 'generate'\n"
+    assert result.output == (
+        "Profile: Linux perf CPU samples at 997 Hz; times are sampled CPU time; "
+        + "0.0% of samples have stacks perf could not unwind to their thread's "
+        + "start, which appear under (stack not unwound to its thread's start)\n"
+        + "\nFocus: stacks from the outermost function containing 'generate'\n"
         + "\nCall tree, with each function's own self time:\n"
         + "     0.003 s  33.3%  self 33.3%  generate\n"
     )

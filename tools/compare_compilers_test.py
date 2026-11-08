@@ -30,7 +30,7 @@ _CONSTRUCTOR_SOURCE = (
 _OUTCOME = compare_compilers._Outcome(  # pyright: ignore[reportPrivateUsage]
     exit_code=0, stdout=b"", stderr=b"", generated_digests={"a.py": "1"}
 )
-_RUN = compare_compilers._Run(seconds=1.0, peak_rss_kb=2048)  # pyright: ignore[reportPrivateUsage]
+_RUN = compare_compilers._Run(seconds=1.0, cpu_seconds=3.0, peak_rss_kb=2048)  # pyright: ignore[reportPrivateUsage]
 
 
 def _invoke(
@@ -86,7 +86,7 @@ def test_compares_one_compiler_with_itself(
     result = _invoke(tmp_path, ["--rounds", "2", "--max-threads", "1"])
     assert result.exit_code == 0, result.output
     lines = result.output.splitlines()
-    run = r"[\d.]+ s; peak RSS [\d,]+ MB"
+    run = r"[\d.]+ s; CPU [\d.]+ s; peak RSS [\d,]+ MB"
     assert re.fullmatch(rf"Warm-up baseline: {run}", lines[0])
     assert re.fullmatch(rf"Warm-up candidate: {run}", lines[1])
     assert re.fullmatch(
@@ -99,7 +99,8 @@ def test_compares_one_compiler_with_itself(
     assert re.fullmatch(r"baseline  median .* peak RSS [\d,]+ MB", lines[7])
     assert re.fullmatch(r"candidate median .* peak RSS [\d,]+ MB", lines[8])
     assert re.fullmatch(
-        r"Candidate/baseline: median \d\.\d{3}; mean \d\.\d{3}; min \d\.\d{3}",
+        r"Candidate/baseline: median \d\.\d{3}; mean \d\.\d{3}; min \d\.\d{3}; "
+        + r"median CPU \d\.\d{3}",
         lines[9],
     )
     assert len(lines) == 10
@@ -118,8 +119,8 @@ def test_reports_outputs_that_differ(tmp_path: Path):
     result = _invoke(tmp_path, [], measured)
     assert result.exit_code == 1
     assert result.output == (
-        "Warm-up baseline: 1.000 s; peak RSS 2 MB\n"
-        + "Warm-up candidate: 1.000 s; peak RSS 2 MB\n"
+        "Warm-up baseline: 1.000 s; CPU 3.000 s; peak RSS 2 MB\n"
+        + "Warm-up candidate: 1.000 s; CPU 3.000 s; peak RSS 2 MB\n"
         + "Error: the outputs differ: exit 0 became 1\n"
     )
 
