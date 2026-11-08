@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import typing
 
-from tools.profiler import call_counter
+from tools.profiler import call_counter, call_tree
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -42,4 +42,4 @@ def test_counts_every_call_on_every_thread(tmp_path: Path):
     counts = call_counter.load(counts_path)
     assert counts["work"] == 6
     assert counts["run_twice"] == 3
-    assert counts["<module target.py>"] == 1
+    assert counts[call_tree.function_name("<module>", str(script))] == 1

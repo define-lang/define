@@ -76,8 +76,21 @@ jobs:
         with:
           cache-name: ${{ matrix.os }}
 
+      # Tachyon needs elevated permissions to inspect process memory on macOS.
+      # Run only its tests with sudo, outside the sandbox that restricts it.
+      - name: Test macOS process inspection
+        if: ${{ matrix.os == 'macos-26' }}
+        run: >-
+          bazelisk test --noshow_progress --strategy=TestRunner=local
+          --run_under='sudo -n -E' //tools/profiler:tachyon_profiler_test
+
       - name: Test
-        run: bazelisk test --noshow_progress //...
+        run: |
+          test_args=()
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            test_args+=(--test_tag_filters=-requires-macos-admin)
+          fi
+          bazelisk test --noshow_progress "${test_args[@]}" //...
 
       - name: Additional Build
         run: bazelisk build --noshow_progress //...

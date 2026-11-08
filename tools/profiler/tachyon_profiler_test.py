@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import concurrent.futures
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -59,8 +59,12 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
     control_path = tmp_path / "control"
     os.mkfifo(status_path)
     os.mkfifo(control_path)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        releaser = executor.submit(_release_phases, status_path, control_path, b"1234")
+    # A process can be stopped if capture fails before the target opens its FIFOs.
+    releaser = multiprocessing.get_context("spawn").Process(
+        target=_release_phases, args=(status_path, control_path, b"1234")
+    )
+    releaser.start()
+    try:
         exit_status = _capture(
             profile_path,
             sys.executable,
@@ -68,7 +72,13 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
             str(status_path),
             str(control_path),
         )
-        releaser.result()
+        releaser.join(timeout=10)
+        assert releaser.exitcode == 0
+    finally:
+        if releaser.is_alive():
+            releaser.terminate()
+        releaser.join()
+        releaser.close()
 
     assert exit_status == 0
     analysis = _analyze(profile_path)
