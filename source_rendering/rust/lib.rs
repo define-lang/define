@@ -12,17 +12,33 @@ const CODE_INDENTATION: &str = "    ";
 /// characters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Position {
-    pub line: usize,
-    pub column: usize,
+    pub line: u32,
+    pub column: u32,
 }
 
 impl Position {
+    /// The 0-based index of the line.
+    #[must_use]
+    pub const fn line_index(self) -> usize {
+        self.line as usize - 1
+    }
+
+    /// The 0-based index of the column, counted in characters.
+    #[must_use]
+    pub const fn column_index(self) -> usize {
+        self.column as usize - 1
+    }
+
     /// The position `count` columns later on the same line.
     #[must_use]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "Positions are u32 to keep locations small, which limits a line to 4 Gi characters."
+    )]
     pub const fn columns_later(self, count: usize) -> Self {
         Self {
             line: self.line,
-            column: self.column + count,
+            column: self.column + count as u32,
         }
     }
 
@@ -85,17 +101,19 @@ impl SourceLocation {
         };
         // Only our own indentation should show, not the source's, unless the
         // location is in that indentation.
+        let start_index = self.start.column_index();
         let mut indentation = source_line.len() - source_line.trim_start_matches(' ').len();
-        if self.start.column - 1 < indentation {
+        if start_index < indentation {
             indentation = 0;
         }
         // Spaces are one byte each, so the indentation's length in bytes is
         // its length in characters.
         let code = &source_line[indentation..];
-        let start = self.start.column - 1 - indentation;
-        // The end is the location's last character. A location that
-        // continues onto later lines has no end on this line.
-        let end = (self.end.line == self.start.line).then(|| self.end.column - indentation);
+        let start = start_index - indentation;
+        // The underline ends after the location's last character. A location
+        // that continues onto later lines has no end on this line.
+        let end =
+            (self.end.line == self.start.line).then(|| self.end.column_index() + 1 - indentation);
         rendered.push('\n');
         if !code.is_empty() {
             rendered.push_str(CODE_INDENTATION);
@@ -169,12 +187,7 @@ mod tests {
     use super::{Position, SourceLocation, escape_invisible};
     use googletest::prelude::*;
 
-    const fn location(
-        line: usize,
-        column: usize,
-        end_line: usize,
-        end_column: usize,
-    ) -> SourceLocation {
+    const fn location(line: u32, column: u32, end_line: u32, end_column: u32) -> SourceLocation {
         SourceLocation {
             start: Position { line, column },
             end: Position {

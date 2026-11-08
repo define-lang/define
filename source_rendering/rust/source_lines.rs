@@ -25,15 +25,15 @@ impl<'source> SourceLines<'source> {
     /// file that it starts on, in the file at `file_path`.
     #[must_use]
     pub fn render(&self, location: SourceLocation, file_path: Option<&str>) -> String {
-        location.render(Some(self.line(location.start.line)), file_path)
+        location.render(Some(self.line(location.start.line_index())), file_path)
     }
 
-    /// The text of the 1-based line `line`, without its line feed.
-    fn line(&self, line: usize) -> &'source str {
-        let start = self.line_starts[line - 1];
+    /// The text of the line at the 0-based `index`, without its line feed.
+    fn line(&self, index: usize) -> &'source str {
+        let start = self.line_starts[index];
         let end = self
             .line_starts
-            .get(line)
+            .get(index + 1)
             .map_or(self.source.len(), |&next_start| next_start - 1);
         &self.source[start..end]
     }

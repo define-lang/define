@@ -88,12 +88,7 @@ mod tests {
 
     const SOURCE: &str = include_str!("../../testdata/valid/field_paths.defcl");
 
-    const fn location(
-        line: usize,
-        column: usize,
-        end_line: usize,
-        end_column: usize,
-    ) -> SourceLocation {
+    const fn location(line: u32, column: u32, end_line: u32, end_column: u32) -> SourceLocation {
         SourceLocation {
             start: Position { line, column },
             end: Position {

@@ -57,8 +57,8 @@ impl<'py> AstBuilder<'py> {
     }
 
     pub fn location(&mut self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
-        let line = self.line_number(start.line);
-        let end_line = self.line_number(end.line);
+        let line = self.line_number(start);
+        let end_line = self.line_number(end);
         self.source_location(
             line,
             PyInt::new(self.py, start.column),
@@ -69,12 +69,13 @@ impl<'py> AstBuilder<'py> {
         )
     }
 
-    fn line_number(&mut self, line: usize) -> Bound<'py, PyInt> {
-        while self.line_numbers.len() < line {
+    fn line_number(&mut self, position: Position) -> Bound<'py, PyInt> {
+        let index = position.line_index();
+        while self.line_numbers.len() <= index {
             let next_line = self.line_numbers.len() + 1;
             self.line_numbers.push(PyInt::new(self.py, next_line));
         }
-        self.line_numbers[line - 1].clone()
+        self.line_numbers[index].clone()
     }
 }
 

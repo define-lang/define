@@ -145,7 +145,7 @@ impl<'source> Scanner<'source> {
             return false;
         }
         self.rest = rest;
-        self.position.column += 1;
+        self.position = self.position.columns_later(1);
         true
     }
 
@@ -160,7 +160,7 @@ impl<'source> Scanner<'source> {
     /// feed.
     pub fn consume_bytes(&mut self, count: usize) {
         self.rest = &self.rest[count..];
-        self.position.column += count;
+        self.position = self.position.columns_later(count);
     }
 
     /// Consumes the `words` that begin a definition and the `name_type` after
@@ -215,7 +215,7 @@ impl<'source> Scanner<'source> {
             is_known_ascii: scanned.is_printable_ascii,
         };
         self.rest = rest;
-        self.position.column += scanned.character_count;
+        self.position = self.position.columns_later(scanned.character_count);
         (text, scanned)
     }
 
@@ -255,7 +255,7 @@ impl<'source> Scanner<'source> {
         }
         let (bytes, rest) = self.rest.split_at(length);
         self.rest = rest;
-        self.position.column += character_count;
+        self.position = self.position.columns_later(character_count);
         LiteralContent {
             written: SourceText {
                 bytes,
@@ -276,7 +276,7 @@ impl<'source> Scanner<'source> {
             is_known_ascii: scanned.is_printable_ascii,
         };
         self.rest = rest;
-        self.position.column += scanned.character_count;
+        self.position = self.position.columns_later(scanned.character_count);
         (text, scanned)
     }
 }

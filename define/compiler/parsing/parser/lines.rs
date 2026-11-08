@@ -480,10 +480,7 @@ impl Parser<'_, '_> {
     ) -> PyResult<()> {
         // The location covers the indentation, or the first character if there
         // is none.
-        let end = Position {
-            line: line_start.line,
-            column: actual.max(1),
-        };
+        let end = line_start.columns_later(actual.saturating_sub(1));
         self.diagnostics
             .incorrect_indentation_diagnostic(line_start, end, expected, actual)
     }

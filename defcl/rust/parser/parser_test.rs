@@ -6,29 +6,23 @@ use googletest::prelude::*;
 use source_rendering::{Position, SourceLocation};
 
 /// A field name written in ASCII on one line.
-const fn name(text: &str, line: usize, column: usize) -> FieldName<'_> {
+const fn name(text: &str, line: u32, column: u32) -> FieldName<'_> {
     FieldName {
         text,
         location: SourceLocation {
             start: Position { line, column },
-            end: Position {
-                line,
-                column: column + text.len() - 1,
-            },
+            end: Position { line, column }.columns_later(text.len() - 1),
         },
     }
 }
 
 /// A scalar written in ASCII on one line.
-const fn scalar(text: &str, line: usize, column: usize) -> Scalar<'_> {
+const fn scalar(text: &str, line: u32, column: u32) -> Scalar<'_> {
     Scalar {
         text,
         location: SourceLocation {
             start: Position { line, column },
-            end: Position {
-                line,
-                column: column + text.len() - 1,
-            },
+            end: Position { line, column }.columns_later(text.len() - 1),
         },
     }
 }

@@ -11,10 +11,10 @@ use source_rendering::{Position, SourceLocation};
 #[pyfunction]
 #[pyo3(signature = (*, line, column, end_line, end_column, source_line, file_path))]
 fn render_location(
-    line: usize,
-    column: usize,
-    end_line: usize,
-    end_column: usize,
+    line: u32,
+    column: u32,
+    end_line: u32,
+    end_column: u32,
     source_line: Option<&str>,
     file_path: Option<&str>,
 ) -> String {
