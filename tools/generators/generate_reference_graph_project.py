@@ -47,6 +47,7 @@ class Shape(enum.StrEnum):
     CYCLES = "cycles"
     MISSING = "missing"
     CONFIG_CHAIN = "config-chain"
+    UNIVERSES = "universes"
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,67 @@ def _config_chain(modules: int, universe_name: str, path_depth: int) -> dict[str
     return files
 
 
+def _dependency_universe(universe_name: str, index: int) -> str:
+    return f"{universe_name}_universe_{index}"
+
+
+def _universes(modules: int, universe_name: str, path_depth: int) -> dict[str, str]:
+    files = {
+        ".define/project/config.defcl": (
+            f'project: {{ universe_name: "{universe_name}" }}\n'
+        )
+    }
+    dependencies: list[str] = []
+    entry_quality_assignments: list[str] = []
+    entry_references: list[str] = []
+    for index in range(modules):
+        universe = _dependency_universe(universe_name, index)
+        directory = f"universes/u{index}/"
+        dependencies.append(
+            f'{{ universe_name: "{universe}" path: "universes/u{index}" }}'
+        )
+        files[directory + ".define/project/config.defcl"] = (
+            f'project: {{ universe_name: "{universe}" }}\n'
+        )
+        files[directory + _file_path(index, path_depth)] = _definition(
+            universe, index, [], path_depth
+        )
+        target = f"{universe}:{_definition_path(index, path_depth)}"
+        entry_quality_assignments.append(
+            f"                it has the position<{target}>.\n"
+        )
+        entry_references.append(
+            f"        create a particle in position<references>::position<{target}>.\n"
+        )
+    files[".define/deps/local.defcl"] = (
+        "deps: { local: [" + ", ".join(dependencies) + "] }\n"
+    )
+    files["test.dfn"] = _entry_file(
+        universe_name, "".join(entry_quality_assignments), "".join(entry_references)
+    )
+    return files
+
+
+def _entry_file(
+    universe_name: str, entry_quality_assignments: str, entry_references: str
+) -> str:
+    return (
+        f"define the potential action<{universe_name}:/test> {{\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<references> {\n"
+        "            it may only contain particles where {\n"
+        f"{entry_quality_assignments}"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<references>.\n"
+        f"{entry_references}"
+        "    }\n"
+        "}\n"
+    )
+
+
 def _validate_options(options: ProjectOptions):
     modules = options.modules
     layers = options.layers
@@ -260,6 +322,8 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
     reverse_references = options.reverse_references
     if shape == Shape.CONFIG_CHAIN:
         return _config_chain(modules, universe_name, path_depth)
+    if shape == Shape.UNIVERSES:
+        return _universes(modules, universe_name, path_depth)
 
     files = {
         ".define/project/config.defcl": (
@@ -319,20 +383,8 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
         )
         for target in entry_targets
     )
-    files["test.dfn"] = (
-        f"define the potential action<{universe_name}:/test> {{\n"
-        "    it happens when {\n"
-        "        this particle is created.\n"
-        "    } and it does {\n"
-        "        define the position<references> {\n"
-        "            it may only contain particles where {\n"
-        f"{entry_quality_assignments}"
-        "            }\n"
-        "        }\n"
-        "        create a particle in position<references>.\n"
-        f"{entry_references}"
-        "    }\n"
-        "}\n"
+    files["test.dfn"] = _entry_file(
+        universe_name, entry_quality_assignments, entry_references
     )
     return files
 
@@ -378,7 +430,9 @@ def write_project(output: Path, files: dict[str, str]):
     show_default=True,
     help=(
         "Definitions to emit, one per file; at most "
-        + f"{MAXIMUM_CONFIG_CHAIN_MODULES} for config-chain."
+        + f"{MAXIMUM_CONFIG_CHAIN_MODULES} for config-chain. For universes,"
+        + " this counts universes, and the default takes about 12 minutes to"
+        + " compile; use about 150 for a 1-3 second compile."
     ),
 )
 @click.option(
@@ -438,6 +492,12 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     reference resolution, and the reference graph. --utility-fraction of
     references aim at a small set of deepest-layer definitions, giving the graph
     the high fan-in that real dependency graphs have.
+
+    The universes shape instead gives each of --modules definitions its own
+    universe, each a local dependency of the root project with its own
+    configuration, so --modules counts universes. Each universe costs about
+    9 ms to compile, so the default --modules takes about 12 minutes; use
+    --modules 150 for a 1-3 second compile.
 
     Scale it with --modules for file count and --layers for reference depth.
     --seed makes the shape reproducible. Compile the generated project with

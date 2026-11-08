@@ -119,6 +119,28 @@ py_test(
 )
 
 py_binary(
+    name = "generate_encoding_operations_source",
+    srcs = ["generate_encoding_operations_source.py"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "generate_encoding_operations_source_test",
+    size = "small",
+    srcs = ["generate_encoding_operations_source_test.py"],
+    deps = [
+        ":generate_encoding_operations_source",
+        "//define/compiler:driver",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
     name = "generate_large_define_source",
     srcs = ["generate_large_define_source.py"],
     visibility = ["//tools:__subpackages__"],
@@ -256,6 +278,50 @@ py_test(
     ],
 )
 
+py_binary(
+    name = "generate_value_setting_source",
+    srcs = ["generate_value_setting_source.py"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "generate_value_setting_source_test",
+    size = "small",
+    srcs = ["generate_value_setting_source_test.py"],
+    deps = [
+        ":generate_value_setting_source",
+        "//define/compiler:driver",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "generate_wide_value_operations_source",
+    srcs = ["generate_wide_value_operations_source.py"],
+    deps = [
+        ":generator_cli",
+        ":generator_io",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "generate_wide_value_operations_source_test",
+    size = "small",
+    srcs = ["generate_wide_value_operations_source_test.py"],
+    deps = [
+        ":generate_wide_value_operations_source",
+        "//define/compiler:driver",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "generator_cli",
     srcs = ["generator_cli.py"],
@@ -290,6 +356,8 @@ pyright_test(
         ":generate_destruction_contracts_source_test",
         ":generate_diagnostics_source",
         ":generate_diagnostics_source_test",
+        ":generate_encoding_operations_source",
+        ":generate_encoding_operations_source_test",
         ":generate_large_define_source",
         ":generate_large_define_source_test",
         ":generate_particle_operations_source",
@@ -302,6 +370,10 @@ pyright_test(
         ":generate_reference_graph_project_test",
         ":generate_triggered_children_destruction_source",
         ":generate_triggered_children_destruction_source_test",
+        ":generate_value_setting_source",
+        ":generate_value_setting_source_test",
+        ":generate_wide_value_operations_source",
+        ":generate_wide_value_operations_source_test",
         ":generator_cli",
         ":generator_io",
         ":generator_io_test",

@@ -152,6 +152,7 @@ class TestGeneratedProjectCompiles:
         gen.Shape.DIAMONDS,
         gen.Shape.BOTTLENECKS,
         gen.Shape.CONFIG_CHAIN,
+        gen.Shape.UNIVERSES,
     ],
 )
 @pytest.mark.parametrize("modules", [1, 7])
@@ -221,6 +222,38 @@ def test_structured_reference_patterns(
         else:
             expected = [f"{declaration}."]
         assert files[f"lib/pkg{index}/m{index}.dfn"].splitlines() == expected
+
+
+def test_universes_shape_gives_every_dependency_its_own_universe():
+    files = gen.generate_project_files(
+        gen.ProjectOptions(modules=2, shape=gen.Shape.UNIVERSES)
+    )
+
+    first = f"{gen.DEFAULT_UNIVERSE_NAME}_universe_0"
+    second = f"{gen.DEFAULT_UNIVERSE_NAME}_universe_1"
+    assert sorted(files) == [
+        ".define/deps/local.defcl",
+        ".define/project/config.defcl",
+        "test.dfn",
+        "universes/u0/.define/project/config.defcl",
+        "universes/u0/lib/pkg0/m0.dfn",
+        "universes/u1/.define/project/config.defcl",
+        "universes/u1/lib/pkg1/m1.dfn",
+    ]
+    assert files[".define/deps/local.defcl"] == (
+        f'deps: {{ local: [{{ universe_name: "{first}" path: "universes/u0" }}, '
+        f'{{ universe_name: "{second}" path: "universes/u1" }}] }}\n'
+    )
+    assert files["universes/u1/.define/project/config.defcl"] == (
+        f'project: {{ universe_name: "{second}" }}\n'
+    )
+    assert files["universes/u1/lib/pkg1/m1.dfn"] == (
+        f"define the potential position<{second}:/lib/pkg1/m1>.\n"
+    )
+    assert (
+        f"        create a particle in position<references>::position<{second}:/lib/pkg1/m1>.\n"
+        in files["test.dfn"]
+    )
 
 
 @pytest.mark.parametrize("modules", [4, 8])

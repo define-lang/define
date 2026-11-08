@@ -10,31 +10,38 @@ bazelisk run --config=profiling --build_runfile_links //tools/generators:generat
 Source generators take `--output FILE`. The reference-project generator takes
 `--output NEW_DIRECTORY`; compile its `test.dfn` entry file.
 
-| Generator                                                                                           | Use for                                                                                                                                               |
-| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [generate_action_graph_source](generate_action_graph_source.py)                                     | Deep or wide action call graphs, shared calls, bottlenecks, and destructor cascades.                                                                  |
-| [generate_deep_pipeline_source](generate_deep_pipeline_source.py)                                   | Requirement propagation through deep calls; `--violate-requirements` adds diagnostic histories.                                                       |
-| [generate_destruction_contracts_source](generate_destruction_contracts_source.py)                   | Destruction-time state across repeated callers, with shared or disjoint child names.                                                                  |
-| [generate_particle_operations_source](generate_particle_operations_source.py)                       | Deep and wide particle state, move chains, independent moves, and repeated triggers.                                                                  |
-| [generate_pending_guarantees_source](generate_pending_guarantees_source.py)                         | Nonempty pending Action Guarantee maps during explicit or automatic destruction; independently scale pending and destroyed particles.                 |
-| [generate_quality_implications_source](generate_quality_implications_source.py)                     | Deep or shared Quality Implications and repeated assignments. Width and fan-out of two give exponentially many paths through linearly many qualities. |
-| [generate_triggered_children_destruction_source](generate_triggered_children_destruction_source.py) | Destroying a particle whose triggered actions filled exponentially many transitive children; compile time grows linearly with `--depth`.              |
-| [generate_action_codegen_source](generate_action_codegen_source.py)                                 | Code generation for many actions, substantial action bodies, and wide destruction.                                                                    |
-| [generate_large_define_source](generate_large_define_source.py)                                     | Large source blocks and long chained names; `--malformed-eof` adds a late parse failure.                                                              |
-| [generate_diagnostics_source](generate_diagnostics_source.py)                                       | Many diagnostics, long diagnostic messages, and errors late in a file.                                                                                |
-| [generate_reference_graph_project](generate_reference_graph_project.py)                             | Many files, deep paths, dependency graphs, and configuration chains; select the graph with `--shape`.                                                 |
+| Generator                                                                                           | Use for                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [generate_action_graph_source](generate_action_graph_source.py)                                     | Deep or wide action call graphs, shared calls, bottlenecks, and destructor cascades.                                                                                                 |
+| [generate_deep_pipeline_source](generate_deep_pipeline_source.py)                                   | Requirement propagation through deep calls; `--values-per-stage` and `--destructor-reads` add value and destructor requirements; `--violate-requirements` adds diagnostic histories. |
+| [generate_destruction_contracts_source](generate_destruction_contracts_source.py)                   | Destruction-time state across repeated callers, with shared or disjoint child names.                                                                                                 |
+| [generate_particle_operations_source](generate_particle_operations_source.py)                       | Deep and wide particle state, move chains, independent moves, and repeated triggers.                                                                                                 |
+| [generate_pending_guarantees_source](generate_pending_guarantees_source.py)                         | Nonempty pending Action Guarantee maps during explicit or automatic destruction; independently scale pending and destroyed particles.                                                |
+| [generate_quality_implications_source](generate_quality_implications_source.py)                     | Deep or shared Quality Implications and repeated assignments. Width and fan-out of two give exponentially many paths through linearly many qualities.                                |
+| [generate_triggered_children_destruction_source](generate_triggered_children_destruction_source.py) | Destroying a particle whose triggered actions filled exponentially many transitive children; compile time grows linearly with `--depth`.                                             |
+| [generate_action_codegen_source](generate_action_codegen_source.py)                                 | Code generation for many actions, substantial action bodies, and wide destruction.                                                                                                   |
+| [generate_wide_value_operations_source](generate_wide_value_operations_source.py)                   | A Value Operation with many Interface Views, executed many times; compile time grows quadratically with `--views`.                                                                   |
+| [generate_value_setting_source](generate_value_setting_source.py)                                   | Long chains of literal arguments and Value Setting Statements on particles with many qualities; `--binary-values` converts every decimal literal to binary.                          |
+| [generate_encoding_operations_source](generate_encoding_operations_source.py)                       | Many Encoding Operations with long bodies of local views, literals, and View Setting Statements, chained by executing each other.                                                    |
+| [generate_large_define_source](generate_large_define_source.py)                                     | Large source blocks and long chained names; `--malformed-eof` adds a late parse failure.                                                                                             |
+| [generate_diagnostics_source](generate_diagnostics_source.py)                                       | Many diagnostics, long diagnostic messages, and errors late in a file.                                                                                                               |
+| [generate_reference_graph_project](generate_reference_graph_project.py)                             | Many files, deep paths, dependency graphs, and configuration chains; select the graph with `--shape`.                                                                                |
 
 Reference-project shapes: `layered` (seeded random), `independent`, `chain`,
-`fan-in`, `depth-updates`, `diamonds`, `bottlenecks`, `config-chain`, `cycles`,
-and `missing`. The last two intentionally produce diagnostics. Random `layered`
-projects can include unreachable files; deterministic shapes make every emitted
-source file reachable.
+`fan-in`, `depth-updates`, `diamonds`, `bottlenecks`, `config-chain`,
+`universes`, `cycles`, and `missing`. The last two intentionally produce
+diagnostics. Random `layered` projects can include unreachable files;
+deterministic shapes make every emitted source file reachable.
 
 Use one compiler worker with `depth-updates` to preserve the adversarial
 reference insertion order. `--modules` includes the first position, which
 references all others before their predecessor references force repeated depth
 updates. Add `--reverse-references` to generate the same dependency graph in the
 opposite reference order for a control project.
+
+With `universes`, `--modules` counts universes, each a local dependency with its
+own configuration. Each costs about 9 ms to compile, so the default `--modules`
+takes about 12 minutes; use `--modules 150` for a 1–3 second compile.
 
 Indentation diagnostics from `generate_diagnostics_source --indent-width`
 require parsing with a file path; validation without filesystem context omits
