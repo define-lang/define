@@ -143,24 +143,16 @@ class ExecutableDefinition(GlobalDefinition, Generic[ViewDefinitionT_co]):  # no
 
     views: Final[tuple[ViewDefinitionT_co, ...]]
 
-    def view_index(self, view_name: str) -> int | None:
-        """Return the index of the first view with this name, if there is one."""
-        # Operations have only a few views, so scanning them is as fast as a
-        # dict lookup, and it avoids storing a dict on every operation
-        # definition for the whole compile.
+    def view_indexes_by_name(self) -> dict[str, int]:
+        """Return the index of the first view with each name."""
+        # Scanning the views for each argument would make an execution
+        # quadratic in its operation's views, and keeping a dict on every
+        # operation definition would hold memory for the whole compile, so
+        # callers build this once per execution.
+        view_indexes: dict[str, int] = {}
         for index, view in enumerate(self.views):
-            if view.typed_name.source_typed_name == view_name:
-                return index
-        return None
-
-    def get_view(self, view_name: str) -> ViewDefinitionT_co | None:
-        """Return the first view with this name, if there is one."""
-        # This scans the views instead of keeping a dict of them for the same
-        # reason view_index does.
-        index = self.view_index(view_name)
-        if index is None:
-            return None
-        return self.views[index]
+            _ = view_indexes.setdefault(view.typed_name.source_typed_name, index)
+        return view_indexes
 
 
 class OperationDefinition(ExecutableDefinition[InterfaceViewDefinition]):

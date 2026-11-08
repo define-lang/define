@@ -115,8 +115,9 @@ class OperationArgumentsValidator:
                     )
                 )
             return {}
+        view_indexes = executed.view_indexes_by_name()
         arguments_by_index = self._collect_arguments(
-            arguments, executed, operation_name, validation_diagnostics
+            arguments, executed, view_indexes, operation_name, validation_diagnostics
         )
         self._check_argument_order(
             arguments_by_index, executed, operation_name, validation_diagnostics
@@ -125,6 +126,7 @@ class OperationArgumentsValidator:
             executed_name,
             arguments_by_index,
             executed,
+            view_indexes,
             operation_name,
             validation_diagnostics,
         )
@@ -142,11 +144,13 @@ class OperationArgumentsValidator:
     ) -> list[codegen_input.OperationArgument[LookedAtT]] | None:
         """Describe the statement's arguments for code generation, if all of them could be resolved."""
         arguments: list[codegen_input.OperationArgument[LookedAtT]] = []
+        view_indexes = executed.view_indexes_by_name()
         for argument in statement.arguments:
-            interface_view = executed.get_view(argument.view.source_typed_name)
+            view_index = view_indexes.get(argument.view.source_typed_name)
             # Validation reports arguments that name undefined views.
-            if interface_view is None:
+            if view_index is None:
                 return None
+            interface_view = executed.views[view_index]
             looking_at = argument.looking_at
             if isinstance(looking_at, ast.Literal):
                 literal_value = literal_values.get(argument)
@@ -196,6 +200,7 @@ class OperationArgumentsValidator:
     def _collect_arguments(
         arguments: Sequence[ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
+        view_indexes: Mapping[str, int],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
@@ -206,7 +211,7 @@ class OperationArgumentsValidator:
             if name_validators.validate_local_name_format(argument.view.name_content):
                 continue
             view_name = argument.view.source_typed_name
-            index = executed.view_index(view_name)
+            index = view_indexes.get(view_name)
             if index is None:
                 validation_diagnostics.append(
                     diagnostics.UndefinedOperationViewDiagnostic(
@@ -257,13 +262,14 @@ class OperationArgumentsValidator:
         executed_name: ast.GlobalTypedNameReference,
         arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
+        view_indexes: Mapping[str, int],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
         for view in executed.views:
             view_name = view.typed_name.source_typed_name
             # A duplicate view shares the first definition's argument.
-            if executed.view_index(view_name) not in arguments:
+            if view_indexes[view_name] not in arguments:
                 validation_diagnostics.append(
                     diagnostics.MissingOperationArgumentDiagnostic(
                         location=executed_name.location,
