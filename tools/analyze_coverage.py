@@ -235,9 +235,10 @@ class SourceAnalysis:
                     node.body, branch.target_line
                 ) or _suite_only_exits_pytest(node.orelse, branch.target_line):
                     return True
-            elif isinstance(node, ast.match_case):
-                if _case_is_final_raise(node, branch.target_line):
-                    return True
+            elif isinstance(node, ast.match_case) and _case_is_final_raise(
+                node, branch.target_line
+            ):
+                return True
         return False
 
     def branch_is_final_case_nonmatch(self, branch: UncoveredBranch) -> bool:
