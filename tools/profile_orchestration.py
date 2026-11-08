@@ -141,7 +141,11 @@ def compiler_invocation(  # noqa: PLR0913, PLR0917 - The compile command's input
             stdin_path=source_path.absolute(),
         )
     # The command line requires exactly one of a source file and a project.
-    project_path = typing.cast("pathlib.Path", project).absolute()
+    # The compiler rejects an entry path with `..` components as outside its
+    # project root, so the path is normalized as well as made absolute.
+    project_path = pathlib.Path(
+        os.path.abspath(typing.cast("pathlib.Path", project))  # noqa: PTH100 - Path.absolute keeps `..` components.
+    )
     return CompilerInvocation(
         command=(*command, str(project_path / entry)),
         working_directory=project_path,

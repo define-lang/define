@@ -369,3 +369,30 @@ def test_precompiles_runfiles_bytecode_except_the_interpreter(tmp_path: Path):
 def test_refuses_to_precompile_without_a_bazel_launcher(tmp_path: Path):
     with pytest.raises(ValueError, match=r"is not a Bazel Python launcher$"):
         run_profile._precompile_bytecode(tmp_path / "main")  # pyright: ignore[reportPrivateUsage]
+
+
+def test_compiler_invocation_normalizes_a_project_path(tmp_path: Path):
+    project = tmp_path / "project"
+    project.mkdir()
+
+    invocation = run_profile.compiler_invocation(
+        workspace=tmp_path,
+        compiler_path=tmp_path / "main",
+        source_path=None,
+        project=tmp_path / "elsewhere" / ".." / "project",
+        entry="test.dfn",
+        output_dir=tmp_path / "out",
+        max_threads=None,
+    )
+
+    assert invocation == run_profile.CompilerInvocation(
+        command=(
+            str(tmp_path / "main"),
+            "compile",
+            "--out",
+            str(tmp_path / "out"),
+            str(project / "test.dfn"),
+        ),
+        working_directory=project,
+        stdin_path=None,
+    )
