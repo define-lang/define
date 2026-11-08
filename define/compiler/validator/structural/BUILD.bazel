@@ -94,6 +94,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/errors:diagnostics",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -106,6 +107,7 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
+        "//source_rendering/python:rendering",
     ],
 )
 

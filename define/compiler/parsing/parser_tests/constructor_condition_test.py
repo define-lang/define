@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -33,7 +34,7 @@ def test_constructor_with_no_interface_positions(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=33
     )
     assert definition.interface_positions == ()
@@ -54,7 +55,7 @@ def test_constructor_with_comments(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=33
     )
 
@@ -74,7 +75,7 @@ def test_constructor_with_blank_lines(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=33
     )
 
@@ -93,7 +94,9 @@ def test_constructor_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=33, end_line=3, end_column=33)
+            location=rendering.SourceLocation(
+                line=3, column=33, end_line=3, end_column=33
+            )
         )
     ]
     assert result.program is not None
@@ -101,7 +104,7 @@ def test_constructor_without_terminator_gets_a_diagnostic(
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.ConstructorConditionStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=32
     )
 
@@ -209,12 +212,14 @@ def test_constructor_action_block_missing_close_brace(
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=5, column=1, end_line=5, end_column=1),
+            location=rendering.SourceLocation(
+                line=5, column=1, end_line=5, end_column=1
+            ),
             expected_indent=4,
             actual_indent=0,
         )

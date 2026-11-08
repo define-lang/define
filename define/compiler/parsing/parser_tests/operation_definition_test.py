@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -26,16 +27,16 @@ def test_operation_definition(parse: Parse):
     assert isinstance(definition, ast.ValueOperationDefinition)
     assert definition.typed_name.name_type == name_types.NameType.OPERATION
     assert definition.typed_name.name_content.path.name == "/add"
-    assert definition.typed_name.location == ast.SourceLocation(
+    assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=12, end_line=1, end_column=52
     )
     assert definition.views == ()
     [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert definition.operation_statements.location == ast.SourceLocation(
+    assert definition.operation_statements.location == rendering.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
 
@@ -65,18 +66,18 @@ def test_operation_definition_with_views(parse: Parse):
     [left, right] = definition.views
     assert left.typed_name.name_type == name_types.NameType.VIEW
     assert left.typed_name.name_content.name == "left"
-    assert left.typed_name.location == ast.SourceLocation(
+    assert left.typed_name.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=25
     )
-    assert left.location == ast.SourceLocation(
+    assert left.location == rendering.SourceLocation(
         line=2, column=5, end_line=7, end_column=5
     )
     assert right.typed_name.name_type == name_types.NameType.VIEW
     assert right.typed_name.name_content.name == "right"
-    assert right.typed_name.location == ast.SourceLocation(
+    assert right.typed_name.location == rendering.SourceLocation(
         line=8, column=16, end_line=8, end_column=26
     )
-    assert right.location == ast.SourceLocation(
+    assert right.location == rendering.SourceLocation(
         line=8, column=5, end_line=13, end_column=5
     )
 
@@ -110,15 +111,15 @@ def test_comments_and_blank_lines(parse: Parse):
     assert isinstance(definition, ast.ValueOperationDefinition)
     [view] = definition.views
     assert view.typed_name.name_content.name == "left"
-    assert view.location == ast.SourceLocation(
+    assert view.location == rendering.SourceLocation(
         line=4, column=5, end_line=14, end_column=5
     )
     [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=18, column=9, end_line=18, end_column=39
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=22, end_column=1
     )
 
@@ -141,7 +142,7 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(value, ast.ValueDefinition)
     assert isinstance(operation, ast.ValueOperationDefinition)
     assert operation.typed_name.name_content.path.name == "/add"
-    assert operation.location == ast.SourceLocation(
+    assert operation.location == rendering.SourceLocation(
         line=6, column=1, end_line=10, end_column=1
     )
     assert isinstance(encoding, ast.EncodingDefinition)

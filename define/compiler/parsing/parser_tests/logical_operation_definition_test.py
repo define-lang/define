@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -41,29 +42,33 @@ def test_logical_operation_definition(parse: Parse):
     )
     assert definition.typed_name.name_type == name_types.NameType.LOGICAL_OPERATION
     assert definition.typed_name.name_content.path.name == "/add"
-    assert definition.typed_name.location == ast.SourceLocation(
+    assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=12, end_line=1, end_column=60
     )
     [a, b, result] = definition.views
     assert a.typed_name.name_type == name_types.NameType.VIEW
     assert a.typed_name.name_content.name == "a"
-    assert a.typed_name.location == ast.SourceLocation(
+    assert a.typed_name.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=22
     )
     assert a.is_input
     assert not a.is_output
-    assert a.location == ast.SourceLocation(line=2, column=5, end_line=4, end_column=5)
+    assert a.location == rendering.SourceLocation(
+        line=2, column=5, end_line=4, end_column=5
+    )
     assert b.typed_name.name_content.name == "b"
     assert b.is_input
     assert not b.is_output
-    assert b.location == ast.SourceLocation(line=5, column=5, end_line=7, end_column=5)
+    assert b.location == rendering.SourceLocation(
+        line=5, column=5, end_line=7, end_column=5
+    )
     assert result.typed_name.name_content.name == "result"
     assert not result.is_input
     assert result.is_output
-    assert result.location == ast.SourceLocation(
+    assert result.location == rendering.SourceLocation(
         line=8, column=5, end_line=10, end_column=5
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=11, end_column=1
     )
 
@@ -128,13 +133,15 @@ def test_comments_and_blank_lines(parse: Parse):
     [a, result] = definition.views
     assert a.is_input
     assert not a.is_output
-    assert a.location == ast.SourceLocation(line=4, column=5, end_line=8, end_column=5)
+    assert a.location == rendering.SourceLocation(
+        line=4, column=5, end_line=8, end_column=5
+    )
     assert not result.is_input
     assert result.is_output
-    assert result.location == ast.SourceLocation(
+    assert result.location == rendering.SourceLocation(
         line=10, column=5, end_line=12, end_column=5
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=14, end_column=1
     )
 
@@ -157,7 +164,7 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(encoding, ast.EncodingDefinition)
     assert isinstance(logical_operation, ast.LogicalOperationDefinition)
     assert logical_operation.typed_name.name_content.path.name == "/negate"
-    assert logical_operation.location == ast.SourceLocation(
+    assert logical_operation.location == rendering.SourceLocation(
         line=2, column=1, end_line=6, end_column=1
     )
     assert isinstance(operation, ast.ValueOperationDefinition)
@@ -176,7 +183,9 @@ def test_read_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=19, end_line=3, end_column=19)
+            location=rendering.SourceLocation(
+                line=3, column=19, end_line=3, end_column=19
+            )
         )
     ]
     assert result.program is not None

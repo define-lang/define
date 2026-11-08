@@ -5,6 +5,7 @@ import typing
 import pytest
 
 from defcl.python import error_types, errors, locations, validator
+from source_rendering.python import rendering
 from tools import runfiles
 
 if typing.TYPE_CHECKING:
@@ -56,7 +57,9 @@ def test_semantic_errors_are_diagnostics():
     )
 
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
-    assert integer_enum.location == locations.SourceLocation(2, 13, 2, 13)
+    assert integer_enum.location == rendering.SourceLocation(
+        line=2, column=13, end_line=2, end_column=13
+    )
     assert integer_enum.field_name == "status"
     assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
@@ -69,7 +72,9 @@ def test_semantic_errors_are_diagnostics():
         scalar_for_message_field.kind
         == error_types.DiagnosticKind.SCALAR_FOR_MESSAGE_FIELD
     )
-    assert scalar_for_message_field.location == locations.SourceLocation(3, 15, 3, 25)
+    assert scalar_for_message_field.location == rendering.SourceLocation(
+        line=3, column=15, end_line=3, end_column=25
+    )
     assert scalar_for_message_field.field_name == "database"
     assert type(scalar_for_message_field) is errors.DclDiagnostic
     assert scalar_for_message_field.rendered == (
@@ -82,8 +87,8 @@ def test_semantic_errors_are_diagnostics():
         message_value_for_scalar_field.kind
         == error_types.DiagnosticKind.MESSAGE_VALUE_FOR_SCALAR_FIELD
     )
-    assert message_value_for_scalar_field.location == locations.SourceLocation(
-        5, 8, 5, 9
+    assert message_value_for_scalar_field.location == rendering.SourceLocation(
+        line=5, column=8, end_line=5, end_column=9
     )
     assert message_value_for_scalar_field.field_name == "count"
     assert type(message_value_for_scalar_field) is errors.DclDiagnostic
@@ -104,7 +109,9 @@ def test_unknown_field_name_diagnostic_has_message_type():
 
     assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
     assert unknown_field_name.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
-    assert unknown_field_name.location == locations.SourceLocation(2, 5, 2, 8)
+    assert unknown_field_name.location == rendering.SourceLocation(
+        line=2, column=5, end_line=2, end_column=8
+    )
     assert unknown_field_name.field_name == "size"
     assert (
         unknown_field_name.message_type
@@ -127,7 +134,9 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
 
     assert isinstance(unknown_enum_value, errors.UnknownEnumValueDiagnostic)
     assert unknown_enum_value.kind == error_types.DiagnosticKind.UNKNOWN_ENUM_VALUE
-    assert unknown_enum_value.location == locations.SourceLocation(2, 13, 2, 18)
+    assert unknown_enum_value.location == rendering.SourceLocation(
+        line=2, column=13, end_line=2, end_column=18
+    )
     assert unknown_enum_value.field_name == "status"
     assert (
         unknown_enum_value.enum_type
@@ -150,7 +159,9 @@ def test_integer_out_of_range_diagnostic_has_field_type():
 
     assert isinstance(integer_out_of_range, errors.IntegerOutOfRangeDiagnostic)
     assert integer_out_of_range.kind == error_types.DiagnosticKind.INTEGER_OUT_OF_RANGE
-    assert integer_out_of_range.location == locations.SourceLocation(2, 19, 2, 20)
+    assert integer_out_of_range.location == rendering.SourceLocation(
+        line=2, column=19, end_line=2, end_column=20
+    )
     assert integer_out_of_range.field_name == "uint32_value"
     assert integer_out_of_range.field_type == "uint32"
     assert integer_out_of_range.rendered == (
@@ -170,7 +181,9 @@ def test_float_out_of_range_diagnostic_has_field_type():
 
     assert isinstance(float_out_of_range, errors.FloatOutOfRangeDiagnostic)
     assert float_out_of_range.kind == error_types.DiagnosticKind.FLOAT_OUT_OF_RANGE
-    assert float_out_of_range.location == locations.SourceLocation(2, 18, 2, 58)
+    assert float_out_of_range.location == rendering.SourceLocation(
+        line=2, column=18, end_line=2, end_column=58
+    )
     assert float_out_of_range.field_name == "float_value"
     assert float_out_of_range.field_type == "float"
     assert float_out_of_range.rendered == (
@@ -192,7 +205,9 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
     assert (
         second_field_of_oneof.kind == error_types.DiagnosticKind.SECOND_FIELD_OF_ONEOF
     )
-    assert second_field_of_oneof.location == locations.SourceLocation(3, 5, 3, 7)
+    assert second_field_of_oneof.location == rendering.SourceLocation(
+        line=3, column=5, end_line=3, end_column=7
+    )
     assert second_field_of_oneof.field_name == "url"
     assert (
         second_field_of_oneof.oneof
@@ -216,7 +231,9 @@ def test_syntax_error_raises_dcl_error():
 
     assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
-    assert exc_info.value.location == locations.SourceLocation(2, 8, 2, 8)
+    assert exc_info.value.location == rendering.SourceLocation(
+        line=2, column=8, end_line=2, end_column=8
+    )
     assert exc_info.value.character == "@"
     assert str(exc_info.value) == (
         "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
@@ -232,7 +249,9 @@ def test_syntax_error_without_a_character_is_a_plain_dcl_error():
         )
 
     assert exc_info.value.kind == error_types.DclErrorKind.MISSING_COLON
-    assert exc_info.value.location == locations.SourceLocation(2, 10, 2, 10)
+    assert exc_info.value.location == rendering.SourceLocation(
+        line=2, column=10, end_line=2, end_column=10
+    )
     assert type(exc_info.value) is errors.DclError
     assert str(exc_info.value) == (
         "line 2, column 10\n"
@@ -278,7 +297,9 @@ def test_validate_file_names_the_file_in_rendered_diagnostics():
     assert source == "config: {\n    status: 0\n}\n"
 
     assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
-    assert integer_enum.location == locations.SourceLocation(2, 13, 2, 13)
+    assert integer_enum.location == rendering.SourceLocation(
+        line=2, column=13, end_line=2, end_column=13
+    )
     assert integer_enum.field_name == "status"
     assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
@@ -303,8 +324,8 @@ def test_location_of_a_field_of_an_element_of_a_repeated_field():
     )
 
     assert location == locations.FieldPathLocation(
-        name=locations.SourceLocation(9, 13, 9, 20),
-        value=locations.SourceLocation(9, 23, 9, 25),
+        name=rendering.SourceLocation(line=9, column=13, end_line=9, end_column=20),
+        value=rendering.SourceLocation(line=9, column=23, end_line=9, end_column=25),
         is_whole_path=True,
     )
 
@@ -315,7 +336,9 @@ def test_location_of_an_element_of_a_repeated_field_has_no_name():
     )
 
     assert location == locations.FieldPathLocation(
-        name=None, value=locations.SourceLocation(12, 12, 12, 14), is_whole_path=True
+        name=None,
+        value=rendering.SourceLocation(line=12, column=12, end_line=12, end_column=14),
+        is_whole_path=True,
     )
 
 
@@ -325,8 +348,8 @@ def test_location_of_a_field_that_is_not_written_is_its_message():
     )
 
     assert location == locations.FieldPathLocation(
-        name=locations.SourceLocation(1, 1, 1, 7),
-        value=locations.SourceLocation(1, 10, 13, 1),
+        name=rendering.SourceLocation(line=1, column=1, end_line=1, end_column=7),
+        value=rendering.SourceLocation(line=1, column=10, end_line=13, end_column=1),
         is_whole_path=False,
     )
 
@@ -346,5 +369,7 @@ def test_location_of_in_text_with_a_syntax_error_raises_dcl_error():
 
     assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
     assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
-    assert exc_info.value.location == locations.SourceLocation(2, 8, 2, 8)
+    assert exc_info.value.location == rendering.SourceLocation(
+        line=2, column=8, end_line=2, end_column=8
+    )
     assert exc_info.value.character == "@"

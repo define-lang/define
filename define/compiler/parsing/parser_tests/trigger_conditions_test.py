@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -34,7 +35,7 @@ def test_trigger_condition_with_local_position(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=44
     )
     typed_name = condition.typed_name
@@ -58,7 +59,7 @@ def test_trigger_condition_with_comments(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=5, column=9, end_line=5, end_column=41
     )
     typed_name = condition.typed_name
@@ -82,7 +83,7 @@ def test_trigger_condition_with_blank_lines(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=5, column=9, end_line=5, end_column=41
     )
     typed_name = condition.typed_name
@@ -216,7 +217,9 @@ def test_trigger_condition_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=4, column=41, end_line=4, end_column=41)
+            location=rendering.SourceLocation(
+                line=4, column=41, end_line=4, end_column=41
+            )
         )
     ]
     assert result.program is not None
@@ -224,7 +227,7 @@ def test_trigger_condition_without_terminator_gets_a_diagnostic(
     assert isinstance(definition, ast.ActionDefinition)
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=40
     )
 
@@ -280,7 +283,7 @@ def test_comment_trailing_space_in_trigger_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=4,
                 column=18,
                 end_line=4,
@@ -307,7 +310,7 @@ def test_comment_trailing_space_after_trigger_condition(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=5,
                 column=18,
                 end_line=5,

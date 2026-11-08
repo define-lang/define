@@ -4,13 +4,13 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler import conftest
@@ -306,7 +306,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
     assert result.program_result.all_exceptions == []
     assert result.program_result.all_diagnostics == [
         diagnostics.UntriggeredImpliedActionDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=25,
                 end_line=2,
@@ -316,7 +316,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             implied_action_name="action</b>",
         ),
         diagnostics.UntriggeredActionInterfaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=8,
                 column=30,
                 end_line=8,
@@ -327,7 +327,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             position_name="action</b>::position<kept>",
         ),
         diagnostics.UnusedQualityImplicationDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=25,
                 end_line=2,
@@ -337,7 +337,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             implication_name="action</a>",
         ),
         diagnostics.CircularGlobalReferenceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=25,
                 end_line=2,
@@ -351,7 +351,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             ],
         ),
         diagnostics.UntriggeredImpliedActionDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=25,
                 end_line=2,
@@ -361,7 +361,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             implied_action_name="action</a>",
         ),
         diagnostics.UnreferencedPositionDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=16,
                 end_line=3,

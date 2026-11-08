@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, name_types
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -35,14 +36,14 @@ def test_action_statements_block_with_move_particle_local_positions(
     assert isinstance(source, ast.LocalTypedNameReference)
     assert source.name_type == name_types.NameType.POSITION
     assert source.name_content.name == "source"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=45
     )
     [dest] = statement.target_position.typed_names
     assert isinstance(dest, ast.LocalTypedNameReference)
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.name == "dest"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=50, end_line=6, end_column=63
     )
 
@@ -69,7 +70,7 @@ def test_action_statements_block_with_move_particle_short_global_positions(
     assert source.name_type == name_types.NameType.POSITION
     assert source.name_content.fqun is None
     assert source.name_content.path.name == "/source"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=46
     )
     [dest] = statement.target_position.typed_names
@@ -77,7 +78,7 @@ def test_action_statements_block_with_move_particle_short_global_positions(
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.fqun is None
     assert dest.name_content.path.name == "/dest"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=51, end_line=6, end_column=65
     )
 
@@ -110,7 +111,7 @@ def test_action_statements_block_with_move_particle_full_global_positions(
     assert source_fqun.authority.name == "define-lang.org"
     assert source_fqun.universe.name == "parser"
     assert source.name_content.path.name == "/source"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=72
     )
     [dest] = statement.target_position.typed_names
@@ -124,7 +125,7 @@ def test_action_statements_block_with_move_particle_full_global_positions(
     assert dest_fqun.authority.name == "define-lang.org"
     assert dest_fqun.universe.name == "parser"
     assert dest.name_content.path.name == "/dest"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=77, end_line=6, end_column=117
     )
 
@@ -157,14 +158,14 @@ def test_action_statements_block_with_move_particle_chained_source(
     assert isinstance(inner, ast.LocalTypedNameReference)
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=77
     )
     [dest] = statement.target_position.typed_names
     assert isinstance(dest, ast.LocalTypedNameReference)
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.name == "dest"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=82, end_line=6, end_column=95
     )
 
@@ -190,7 +191,7 @@ def test_action_statements_block_with_move_particle_chained_destination(
     assert isinstance(src, ast.LocalTypedNameReference)
     assert src.name_type == name_types.NameType.POSITION
     assert src.name_content.name == "src"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=42
     )
     [dest, deposit, inner] = statement.target_position.typed_names
@@ -204,7 +205,7 @@ def test_action_statements_block_with_move_particle_chained_destination(
     assert isinstance(inner, ast.LocalTypedNameReference)
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=47, end_line=6, end_column=95
     )
 
@@ -234,7 +235,7 @@ def test_action_statements_block_with_move_particle_both_chained(
     assert a1.name_type == name_types.NameType.ACTION
     assert a1.name_content.fqun is None
     assert a1.name_content.path.name == "/a1"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=55
     )
     [dest, a2] = statement.target_position.typed_names
@@ -245,7 +246,7 @@ def test_action_statements_block_with_move_particle_both_chained(
     assert a2.name_type == name_types.NameType.ACTION
     assert a2.name_content.fqun is None
     assert a2.name_content.path.name == "/a2"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=60, end_line=6, end_column=86
     )
 
@@ -268,11 +269,11 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
     assert isinstance(definition, ast.ActionDefinition)
     [create_statement, move_statement] = definition.action_statements.statements
     assert isinstance(create_statement, ast.CreateParticleStatement)
-    assert create_statement.location == ast.SourceLocation(
+    assert create_statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=43
     )
     assert isinstance(move_statement, ast.MoveParticleStatement)
-    assert move_statement.location == ast.SourceLocation(
+    assert move_statement.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=61
     )
 
@@ -298,7 +299,7 @@ def test_action_statements_block_with_move_particle_mixed_local_and_global(
     assert isinstance(local_src, ast.LocalTypedNameReference)
     assert local_src.name_type == name_types.NameType.POSITION
     assert local_src.name_content.name == "local_src"
-    assert statement.source_position.location == ast.SourceLocation(
+    assert statement.source_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=48
     )
     [global_dest] = statement.target_position.typed_names
@@ -306,6 +307,6 @@ def test_action_statements_block_with_move_particle_mixed_local_and_global(
     assert global_dest.name_type == name_types.NameType.POSITION
     assert global_dest.name_content.fqun is None
     assert global_dest.name_content.path.name == "/global_dest"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=53, end_line=6, end_column=74
     )

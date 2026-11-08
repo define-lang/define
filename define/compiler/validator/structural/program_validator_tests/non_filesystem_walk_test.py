@@ -16,6 +16,7 @@ from define.compiler.validator.test_helpers import (
     assert_no_errors,
     standard_library_file,
 )
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
@@ -123,7 +124,9 @@ def test_source_universe_definition_no_project_config(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-            location=ast.SourceLocation(line=7, column=20, end_line=7, end_column=61),
+            location=rendering.SourceLocation(
+                line=7, column=20, end_line=7, end_column=61
+            ),
             definition_name="position<my.domain.com:other_lib:/missing>",
             config_path=".define/project/config.defcl",
         )
@@ -308,7 +311,7 @@ def test_unknown_universe_reported_with_sub_root_config_error(
             sub_root_path="lib",
         ),
         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=4, column=29, end_line=4, end_column=49, file_path=None
             ),
             universe="unknown.com:other_lib",

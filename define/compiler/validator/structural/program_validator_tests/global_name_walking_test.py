@@ -10,13 +10,13 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from unittest import mock
 
-from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import (
     file_validator,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -385,7 +385,7 @@ def test_unreferenced_duplicate_in_loaded_file_is_reported(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateDefinitionDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=7,
                 column=1,
                 end_line=11,

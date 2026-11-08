@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.data_structures import interned_set
+    from source_rendering.python import rendering
 
 
 class OccupancyInfo(msgspec.Struct, frozen=True):
@@ -49,7 +50,7 @@ class PositionState(msgspec.Struct):
     # The Move or trigger in this action that put the particle here, or put
     # a particle above it in place since. None where the particle's
     # last_position already says so.
-    placed_here_by: ast.SourceLocation | None = None
+    placed_here_by: rendering.SourceLocation | None = None
     # What a callee left in the child positions of the new particle here,
     # which this action has not expanded. A node with this has no child
     # nodes.
@@ -109,7 +110,8 @@ def _action_parent_position_key(
 
 
 def _new_particle(
-    guarantee: action_contract.OccupiedByNewGuarantee, written_at: ast.SourceLocation
+    guarantee: action_contract.OccupiedByNewGuarantee,
+    written_at: rendering.SourceLocation,
 ) -> particle_info.ParticleInfo:
     particle = particle_info.ParticleInfo(
         last_position=guarantee.caused_by,
@@ -150,7 +152,7 @@ class ParticleStateStore:
         # particle) and its name. A Move of the parent particle needs no
         # renaming here.
         self._triggered: dict[
-            tuple[particle_info.ParticleInfo | None, str], ast.SourceLocation
+            tuple[particle_info.ParticleInfo | None, str], rendering.SourceLocation
         ] = {}
 
     def _node(self, key: chained_name.ChainedNameTuple) -> PositionState | None:
@@ -179,7 +181,7 @@ class ParticleStateStore:
         node.unexpanded = None
         # A node gets something unexpanded only from a Move or trigger, which
         # also sets where it was placed.
-        placed_here_by = typing.cast("ast.SourceLocation", node.placed_here_by)
+        placed_here_by = typing.cast("rendering.SourceLocation", node.placed_here_by)
         for name, left in particles.particles.items():
             guarantee = left.guarantee
             child = PositionState(
@@ -244,7 +246,9 @@ class ParticleStateStore:
         if key in self._state:
             self._state.delete_subtree(key)
 
-    def _placed(self, key: chained_name.PositionReferenceTuple, by: ast.SourceLocation):
+    def _placed(
+        self, key: chained_name.PositionReferenceTuple, by: rendering.SourceLocation
+    ):
         """Record that a Move or trigger put the particle in ``key`` and what is below it in place."""
         node = self._state[key]
         node.placed_here_by = by
@@ -260,7 +264,7 @@ class ParticleStateStore:
         self,
         action: ast.ActionReference,
         implied_quality_names: interned_set.InternedSet,
-    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, rendering.SourceLocation]]:
         """Return each occupied position that has an action in its chained name below a callee's interface positions or below what the callee implies, with where in this action its particle got there.
 
         ``action`` is the callee's reference and ``implied_quality_names`` are
@@ -297,7 +301,7 @@ class ParticleStateStore:
                 if child_key[-1] in implied_quality_names:
                     pending.append((child_key, False))
         occupied: list[
-            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
+            tuple[chained_name.PositionReferenceTuple, rendering.SourceLocation]
         ] = []
         while pending:
             key, is_past_action = pending.pop()
@@ -331,7 +335,7 @@ class ParticleStateStore:
 
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[tuple[ast.SourceLocation, chained_name.PositionReferenceTuple]]:
+    ) -> Iterator[tuple[rendering.SourceLocation, chained_name.PositionReferenceTuple]]:
         """Yield each occupied interface position of a callee directly triggered by this action, with where the callee was last triggered."""
         for key, node in self._state.items():
             if not key or not chained_name.is_action_key(key[-1]):
@@ -703,7 +707,7 @@ class ParticleStateStore:
         self,
         key: chained_name.PositionReferenceTuple,
         guarantee: action_contract.PositionGuarantee,
-        triggered_at: ast.SourceLocation,
+        triggered_at: rendering.SourceLocation,
         moving: dict[
             chained_name.PositionReferenceTuple,
             tuple[PositionState, trie.DetachedSubtree[PositionState]] | None,

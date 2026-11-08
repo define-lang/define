@@ -1,8 +1,8 @@
-use crate::ast::{AstClasses, SourceLocation};
-use crate::node_construction::FilePath;
+use crate::ast::AstClasses;
+use crate::node_construction::{FilePath, SourceLocation};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyInt, PyString};
+use pyo3::types::PyString;
 use rustc_hash::FxHashMap;
 use source_rendering::Position;
 
@@ -14,8 +14,6 @@ pub struct AstBuilder<'py> {
     /// The interned Python string for each distinct text that this parse
     /// interns.
     interned_texts: FxHashMap<Box<[u8]>, Bound<'py, PyString>>,
-    /// The Python int for each line number, indexed by line number minus one.
-    line_numbers: Vec<Bound<'py, PyInt>>,
 }
 
 impl<'py> AstBuilder<'py> {
@@ -25,7 +23,6 @@ impl<'py> AstBuilder<'py> {
             classes: AstClasses::get(py)?,
             file_path,
             interned_texts: FxHashMap::default(),
-            line_numbers: Vec::new(),
         })
     }
 
@@ -56,26 +53,13 @@ impl<'py> AstBuilder<'py> {
         Ok(PyString::new(self.py, utf8(text)?))
     }
 
-    pub fn location(&mut self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
-        let line = self.line_number(start);
-        let end_line = self.line_number(end);
-        self.source_location(
-            line,
-            PyInt::new(self.py, start.column),
-            end_line,
-            // `end` is the position after the last character.
-            PyInt::new(self.py, end.column - 1),
-            self.file_path.clone(),
-        )
-    }
-
-    fn line_number(&mut self, position: Position) -> Bound<'py, PyInt> {
-        let index = position.line_index();
-        while self.line_numbers.len() <= index {
-            let next_line = self.line_numbers.len() + 1;
-            self.line_numbers.push(PyInt::new(self.py, next_line));
-        }
-        self.line_numbers[index].clone()
+    pub fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
+        // `end` is the position after the last character.
+        let location = source_rendering::SourceLocation {
+            start,
+            end: end.previous_column(),
+        };
+        SourceLocation::new(self.py, location, self.file_path.as_ref())
     }
 }
 

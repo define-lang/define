@@ -189,7 +189,7 @@ def test_case(validate_testdata_structural):
     assert diag.looked_at_name == "position<box>"
     assert diag.view_name == "view"
     assert diag.operation_name == "operation<o>"
-    assert isinstance(diag.first_write, ast.SourceLocation)
+    assert isinstance(diag.first_write, rendering.SourceLocation)
 """)
         == []
     )

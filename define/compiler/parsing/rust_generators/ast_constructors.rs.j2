@@ -9,9 +9,9 @@
 
 use crate::ast::*;
 use crate::ast_builder::AstBuilder;
-use crate::node_construction::{FieldValue as _, FilePath, NodeTuple};
+use crate::node_construction::{FieldValue as _, NodeTuple, SourceLocation};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyFrozenSet, PyInt, PyNone, PyString, PyTuple};
+use pyo3::types::{PyDict, PyFrozenSet, PyNone, PyString, PyTuple};
 
 impl<'py> AstBuilder<'py> {
 {%- for class in description.classes %}

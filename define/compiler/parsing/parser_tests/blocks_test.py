@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -51,11 +52,11 @@ def test_block_with_blank_lines(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.typed_name.full_typed_name == "position<standard:/path>"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=7, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=3, column=5, end_line=5, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -63,7 +64,7 @@ def test_block_with_blank_lines(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=36
     )
 
@@ -83,11 +84,11 @@ def test_blank_line_between_quality_assignment_and_close(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=2, column=5, end_line=5, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -95,7 +96,7 @@ def test_blank_line_between_quality_assignment_and_close(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "position<mv:define-lang.org:parser:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
 
@@ -117,11 +118,11 @@ def test_comment_line_between_quality_assignment_and_close(
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=2, column=5, end_line=5, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -129,7 +130,7 @@ def test_comment_line_between_quality_assignment_and_close(
         quality_assignment.typed_global_name.full_typed_name
         == "position<mv:define-lang.org:parser:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
 
@@ -146,11 +147,11 @@ def test_block_with_comment_inside(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.typed_name.full_typed_name == "position<standard:/path>"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=3, column=5, end_line=5, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -158,7 +159,7 @@ def test_block_with_comment_inside(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=36
     )
 
@@ -174,11 +175,11 @@ def test_block_with_comment_after_open(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.typed_name.full_typed_name == "position<standard:/path>"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -186,7 +187,7 @@ def test_block_with_comment_after_open(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
 
@@ -202,11 +203,11 @@ def test_block_with_comment_after_close(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.typed_name.full_typed_name == "position<standard:/path>"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
     assert definition.quality_assignment_block is not None
-    assert definition.quality_assignment_block.location == ast.SourceLocation(
+    assert definition.quality_assignment_block.location == rendering.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
     )
     [quality_assignment] = definition.quality_assignment_block.statements
@@ -214,7 +215,7 @@ def test_block_with_comment_after_close(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/child>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
 
@@ -238,7 +239,7 @@ def test_block_with_full_fqun(parse: Parse):
     typed_name = quality_assignment.typed_global_name
     assert typed_name.enclosing_fqun is definition.typed_name.name_content.fqun
     assert typed_name.full_typed_name == "action<my_mv:example.com:my_lib:/some/action>"
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=39
     )
 
@@ -259,7 +260,7 @@ def test_multiple_definitions_with_blocks(parse: Parse):
     [first, second] = program.definitions
     assert isinstance(first, ast.PositionDefinition)
     assert first.typed_name.full_typed_name == "position<standard:/first>"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
     assert first.quality_assignment_block is not None
@@ -268,12 +269,12 @@ def test_multiple_definitions_with_blocks(parse: Parse):
         first_quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/first_child>"
     )
-    assert first_quality_assignment.location == ast.SourceLocation(
+    assert first_quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=42
     )
     assert isinstance(second, ast.PositionDefinition)
     assert second.typed_name.full_typed_name == "position<standard:/second>"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=6, column=1, end_line=10, end_column=1
     )
     assert second.quality_assignment_block is not None
@@ -282,10 +283,10 @@ def test_multiple_definitions_with_blocks(parse: Parse):
         second_quality_assignment.typed_global_name.full_typed_name
         == "position<standard:/second_child>"
     )
-    assert second_quality_assignment.location == ast.SourceLocation(
+    assert second_quality_assignment.location == rendering.SourceLocation(
         line=8, column=9, end_line=8, end_column=43
     )
-    assert program.location == ast.SourceLocation(
+    assert program.location == rendering.SourceLocation(
         line=1, column=1, end_line=10, end_column=1
     )
 
@@ -303,12 +304,12 @@ def test_mixed_block_and_terminator(parse: Parse):
     assert isinstance(first, ast.PositionDefinition)
     assert first.typed_name.full_typed_name == "position<standard:/first>"
     assert first.quality_assignment_block is None
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=47
     )
     assert isinstance(second, ast.PositionDefinition)
     assert second.typed_name.full_typed_name == "position<standard:/second>"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=2, column=1, end_line=6, end_column=1
     )
     assert second.quality_assignment_block is not None
@@ -317,10 +318,10 @@ def test_mixed_block_and_terminator(parse: Parse):
         quality_assignment.typed_global_name.full_typed_name
         == "action<standard:/do_work>"
     )
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=36
     )
-    assert program.location == ast.SourceLocation(
+    assert program.location == rendering.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
 
@@ -357,7 +358,9 @@ def test_comment_directly_after_block_open(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
-            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=65)
+            location=rendering.SourceLocation(
+                line=1, column=64, end_line=1, end_column=65
+            )
         ),
     ]
 
@@ -376,7 +379,9 @@ def test_comment_directly_after_block_close(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
-            location=ast.SourceLocation(line=4, column=5, end_line=4, end_column=6)
+            location=rendering.SourceLocation(
+                line=4, column=5, end_line=4, end_column=6
+            )
         ),
     ]
 
@@ -461,7 +466,7 @@ def test_whitespace_line_at_start_of_potential_position_definition_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=1,
                 end_line=2,
@@ -486,7 +491,7 @@ def test_whitespace_line_after_quality_assignment_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=5,
                 column=1,
                 end_line=5,
@@ -511,7 +516,7 @@ def test_whitespace_line_at_start_of_quality_assignment_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=1,
                 end_line=3,
@@ -536,7 +541,7 @@ def test_whitespace_line_after_quality_assignment_statement(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=4,
                 column=1,
                 end_line=4,

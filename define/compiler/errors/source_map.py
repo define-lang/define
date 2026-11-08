@@ -8,13 +8,11 @@ import typing
 import unicodedata
 from pathlib import Path
 
-from source_rendering.python import rendering
-
 if typing.TYPE_CHECKING:
     from pathlib import PurePosixPath
 
-    from define.compiler import ast
     from define.compiler.data_structures import define_path
+    from source_rendering.python import rendering
 
 
 def source_digest(source: bytes) -> bytes:
@@ -27,24 +25,6 @@ def describe_invisible_character(character: str) -> str:
     code_point = f"U+{ord(character):04X}"
     name = unicodedata.name(character, "")
     return f"{code_point} {name}" if name else code_point
-
-
-def _format_location_with_source_line(
-    location: ast.SourceLocation,
-    source_line: str | None,
-) -> str:
-    """Format a location with its source line, underlined with carets.
-
-    A location with no source line is formatted without one.
-    """
-    return rendering.render_location(
-        line=location.line,
-        column=location.column,
-        end_line=location.end_line,
-        end_column=location.end_column,
-        source_line=source_line,
-        file_path=None if location.file_path is None else str(location.file_path),
-    )
 
 
 @typing.final
@@ -65,14 +45,14 @@ class SourceMap:
         self._in_memory_source = in_memory_source
         self._file_lines: dict[PurePosixPath, list[str] | None] = {}
 
-    def format_location(self, location: ast.SourceLocation) -> str:
+    def format_location(self, location: rendering.SourceLocation) -> str:
         """Format a location with its source code, underlined with carets."""
         lines = self._source_lines(location.file_path)
         if lines is None:
-            return _format_location_with_source_line(location, None)
+            return location.render(None)
         line_index = location.line - 1
         source_line = lines[line_index] if 0 <= line_index < len(lines) else ""
-        return _format_location_with_source_line(location, source_line)
+        return location.render(source_line)
 
     @functools.cached_property
     def _in_memory_lines(self) -> list[str] | None:

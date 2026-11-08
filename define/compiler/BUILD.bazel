@@ -15,6 +15,7 @@ py_library(
         ":constants",
         ":name_types",
         "//define/compiler/data_structures:define_path",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -66,6 +67,7 @@ py_library(
         "//define/compiler/errors:diagnostics",
         "//define/config/deps:local_proto_py",
         "//define/config/project:config_proto_py",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
         "@pypi//protobuf",
         "@pypi//protovalidate",
@@ -84,6 +86,7 @@ py_test(
         "//defcl/python:errors",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )
@@ -192,6 +195,7 @@ py_library(
         ":ast",
         ":constants",
         ":name_types",
+        "//source_rendering/python:rendering",
     ],
 )
 

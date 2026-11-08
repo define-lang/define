@@ -34,7 +34,7 @@ py_library(
     ],
     deps = [
         ":error_types",
-        ":locations",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -83,12 +83,12 @@ py_test(
         ":error_types",
         ":errors",
         ":loader",
-        ":locations",
         "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
         "//defcl/testdata/valid/schemas:imports_proto_py",
         "//defcl/testdata/valid/schemas:shared_proto_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
         "//defcl/testdata/valid/schemas:wrapper_proto_py",
+        "//source_rendering/python:rendering",
         "//tools:runfiles",
         "@pypi//pytest",
     ],
@@ -98,7 +98,10 @@ py_library(
     name = "locations",
     srcs = ["locations.py"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
-    deps = ["@pypi//msgspec"],
+    deps = [
+        "//source_rendering/python:rendering",
+        "@pypi//msgspec",
+    ],
 )
 
 py_library(
@@ -129,6 +132,7 @@ pyo3_extension(
         "//defcl/rust:validator",
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
+        "//source_rendering/python:capsule",
         "//source_rendering/rust:source_rendering",
         "@crates//:prost",
     ],
@@ -152,6 +156,7 @@ py_test(
         ":errors",
         ":locations",
         ":validator",
+        "//source_rendering/python:rendering",
         "//tools:runfiles",
         "@pypi//pytest",
     ],

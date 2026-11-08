@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import source_map
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -23,8 +23,8 @@ _SOURCE = (
 
 def _location(
     line: int, column: int, end_column: int, file_path: str | None
-) -> ast.SourceLocation:
-    return ast.SourceLocation(
+) -> rendering.SourceLocation:
+    return rendering.SourceLocation(
         line=line,
         column=column,
         end_line=line,
@@ -71,7 +71,7 @@ def test_format_location_underlines_multi_line_span_to_end_of_first_line(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     sources = _map_for_file(tmp_path, monkeypatch, _SOURCE)
-    location = ast.SourceLocation(
+    location = rendering.SourceLocation(
         line=2,
         column=5,
         end_line=4,

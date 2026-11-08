@@ -8,6 +8,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -26,17 +27,17 @@ def test_potential_literal_definition(parse: Parse):
     assert isinstance(definition, ast.PotentialLiteralDefinition)
     assert definition.typed_name.name_type == name_types.NameType.LITERAL
     assert definition.typed_name.name_content.path.name == "/decimal"
-    assert definition.typed_name.location == ast.SourceLocation(
+    assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=22, end_line=1, end_column=64
     )
     encoding = definition.encoding
     assert encoding.name_type == name_types.NameType.ENCODING
     assert encoding.name_content.fqun is None
     assert encoding.name_content.path.name == "/decimal_text"
-    assert encoding.location == ast.SourceLocation(
+    assert encoding.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=38
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=3, end_column=1
     )
 
@@ -53,10 +54,10 @@ def test_comments_and_blank_lines(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.PotentialLiteralDefinition)
     assert definition.encoding.name_content.path.name == "/decimal_text"
-    assert definition.encoding.location == ast.SourceLocation(
+    assert definition.encoding.location == rendering.SourceLocation(
         line=4, column=16, end_line=4, end_column=47
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=6, end_column=1
     )
 
@@ -132,14 +133,16 @@ def test_encoding_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=2, column=34, end_line=2, end_column=34)
+            location=rendering.SourceLocation(
+                line=2, column=34, end_line=2, end_column=34
+            )
         )
     ]
     assert result.program is not None
     [definition] = result.program.definitions
     assert isinstance(definition, ast.PotentialLiteralDefinition)
     assert definition.encoding.name_content.path.name == "/decimal"
-    assert definition.encoding.location == ast.SourceLocation(
+    assert definition.encoding.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=33
     )
 

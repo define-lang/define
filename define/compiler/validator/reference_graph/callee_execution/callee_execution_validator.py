@@ -36,6 +36,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
+    from source_rendering.python import rendering
 
 
 class CalleeExecutionValidationResult(msgspec.Struct):
@@ -254,7 +255,7 @@ class CalleeExecutionValidator:
         self,
         execution: callee_execution.CalleeExecution,
         occupied_interface_child_position_violations: Sequence[
-            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
+            tuple[chained_name.PositionReferenceTuple, rendering.SourceLocation]
         ],
     ) -> list[diagnostics.Diagnostic]:
         """Mark occupied interface child positions found when one callee triggers as in error, and return a diagnostic for each."""

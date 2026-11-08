@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
         destruction_walk,
     )
     from define.compiler.validator.reference_graph.particles import particle_info
+    from source_rendering.python import rendering
 
 
 class KnownAtDestruction(msgspec.Struct, frozen=True):
@@ -48,7 +49,7 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         return None
 
     @property
-    def diagnostic_location(self) -> ast.SourceLocation:
+    def diagnostic_location(self) -> rendering.SourceLocation:
         """Where diagnostics about this execution point."""
         return self.acting_on_position.location
 
@@ -161,7 +162,7 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
 
     @property
     @typing.override
-    def diagnostic_location(self) -> ast.SourceLocation:
+    def diagnostic_location(self) -> rendering.SourceLocation:
         if self.auto_destruction_target is None:
             return self.acting_on_position.location
         return self.auto_destruction_target.location
@@ -228,7 +229,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
 
     @property
     @typing.override
-    def diagnostic_location(self) -> ast.SourceLocation:
+    def diagnostic_location(self) -> rendering.SourceLocation:
         return self.state_at_destruction.trigger.callee.location
 
     def position_in_child_state(
@@ -388,7 +389,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
 
 
 def _fill_steps(
-    position_name: str, fill_at: ast.SourceLocation | None
+    position_name: str, fill_at: rendering.SourceLocation | None
 ) -> list[propagation_step.PropagationStep]:
     if fill_at is None:
         return []
@@ -405,7 +406,7 @@ def _fill_steps(
 def _auto_destruction_step(
     local_position_name: str,
     containing_definition_name: str,
-    location: ast.SourceLocation,
+    location: rendering.SourceLocation,
 ) -> propagation_step.PropagationStep:
     return propagation_step.PropagationStep(
         location=location,
@@ -424,7 +425,7 @@ def _requires_empty(requirement: action_contract.ActionRequirement) -> bool:
 
 def _diagnostic(
     *,
-    location: ast.SourceLocation,
+    location: rendering.SourceLocation,
     position_name: str,
     requirement: action_contract.ActionRequirement,
     action_name: str,

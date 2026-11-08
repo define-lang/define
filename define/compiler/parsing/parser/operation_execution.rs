@@ -2,7 +2,7 @@
 //! and their operation arguments blocks.
 
 use crate::ast;
-use crate::node_construction::{Node, NodeTuple};
+use crate::node_construction::{Node, NodeTuple, SourceLocation};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
@@ -125,7 +125,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         indentation: usize,
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
-        ast::SourceLocation<'py>,
+        SourceLocation<'py>,
         ast::GlobalTypedNameReference<'py>,
         NodeTuple<'py, Argument>,
     )> {

@@ -7,7 +7,8 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from defcl.python import error_types, locations
+    from defcl.python import error_types
+    from source_rendering.python import rendering
 
 
 class DclError(Exception):
@@ -19,13 +20,13 @@ class DclError(Exception):
 
     kind: error_types.DclErrorKind
     message: str
-    location: locations.SourceLocation
+    location: rendering.SourceLocation
 
     def __init__(
         self,
         kind: error_types.DclErrorKind,
         message: str,
-        location: locations.SourceLocation,
+        location: rendering.SourceLocation,
         rendered: str,
     ):
         """Initialize the error with its message, which does not include its location, and its rendered text."""
@@ -44,7 +45,7 @@ class UnexpectedCharacterError(DclError):
         self,
         kind: error_types.DclErrorKind,
         message: str,
-        location: locations.SourceLocation,
+        location: rendering.SourceLocation,
         rendered: str,
         character: str,
     ):
@@ -63,7 +64,7 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     kind: error_types.DiagnosticKind
     # The diagnostic's message, without its location.
     message: str
-    location: locations.SourceLocation
+    location: rendering.SourceLocation
     field_name: str
     # The diagnostic's location, as its source line underlined with carets, then
     # its message.

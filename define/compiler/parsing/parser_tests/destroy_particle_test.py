@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, name_types
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -35,7 +36,7 @@ def test_action_statements_block_with_destroy_particle_local_position(
     assert isinstance(run, ast.LocalTypedNameReference)
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.name == "run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=45
     )
 
@@ -62,7 +63,7 @@ def test_action_statements_block_with_destroy_particle_short_global_position(
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.fqun is None
     assert run.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=46
     )
 
@@ -95,7 +96,7 @@ def test_action_statements_block_with_destroy_particle_full_global_position(
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
     assert run.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=72
     )
 
@@ -128,7 +129,7 @@ def test_action_statements_block_with_destroy_particle_chained_position(
     assert isinstance(run, ast.LocalTypedNameReference)
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.name == "run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=77
     )
 
@@ -163,7 +164,7 @@ def test_action_statements_block_with_destroy_particle_short_global_chain(
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.fqun is None
     assert run.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=79
     )
 
@@ -197,7 +198,7 @@ def test_action_statements_block_with_destroy_particle_any_typed_chain(
     assert end.name_type == name_types.NameType.ACTION
     assert end.name_content.fqun is None
     assert end.name_content.path.name == "/end"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=75
     )
 
@@ -223,15 +224,15 @@ def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
         definition.action_statements.statements
     )
     assert isinstance(create_statement, ast.CreateParticleStatement)
-    assert create_statement.location == ast.SourceLocation(
+    assert create_statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=43
     )
     assert isinstance(move_statement, ast.MoveParticleStatement)
-    assert move_statement.location == ast.SourceLocation(
+    assert move_statement.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=61
     )
     assert isinstance(destroy_statement, ast.DestroyParticleStatement)
-    assert destroy_statement.location == ast.SourceLocation(
+    assert destroy_statement.location == rendering.SourceLocation(
         line=8, column=9, end_line=8, end_column=47
     )
 
@@ -257,15 +258,15 @@ def test_action_statements_block_with_mixed_statements_and_multiple_destroy_part
         definition.action_statements.statements
     )
     assert isinstance(position_definition, ast.LocalPositionDefinition)
-    assert position_definition.location == ast.SourceLocation(
+    assert position_definition.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
     assert isinstance(local_destroy, ast.DestroyParticleStatement)
-    assert local_destroy.location == ast.SourceLocation(
+    assert local_destroy.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=52
     )
     assert isinstance(chained_destroy, ast.DestroyParticleStatement)
-    assert chained_destroy.location == ast.SourceLocation(
+    assert chained_destroy.location == rendering.SourceLocation(
         line=8, column=9, end_line=8, end_column=93
     )
 
@@ -298,6 +299,6 @@ def test_action_statements_block_with_destroy_particle_mixed_local_and_global(
     assert isinstance(inner, ast.LocalTypedNameReference)
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=33, end_line=6, end_column=89
     )

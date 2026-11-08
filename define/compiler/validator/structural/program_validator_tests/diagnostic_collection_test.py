@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
@@ -61,6 +61,8 @@ def test_non_filesystem_source_reports_trailing_space_but_not_indentation(
     [file_result] = result.file_results
     assert file_result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(line=9, column=60, end_line=9, end_column=61)
+            location=rendering.SourceLocation(
+                line=9, column=60, end_line=9, end_column=61
+            )
         )
     ]

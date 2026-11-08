@@ -28,8 +28,8 @@ enum FieldType {
     Enum {
         name: String,
     },
-    /// A `pathlib.PurePosixPath`.
-    FilePath {},
+    /// A `source_rendering.python.rendering.SourceLocation`.
+    Location {},
 }
 
 /// Writes the Rust type of a parameter of this type.
@@ -47,7 +47,7 @@ impl fmt::Display for FieldType {
             Self::Integer {} => write!(formatter, "Bound<'py, PyInt>"),
             Self::Boolean {} => write!(formatter, "bool"),
             Self::Enum { name } => write!(formatter, "{name}"),
-            Self::FilePath {} => write!(formatter, "FilePath<'py>"),
+            Self::Location {} => write!(formatter, "SourceLocation<'py>"),
         }
     }
 }
@@ -132,8 +132,6 @@ struct NodeClass {
     /// `None` for abstract and generic classes, and for classes with subclasses,
     /// which the parser never constructs.
     constructor: Option<Constructor>,
-    /// Whether the class also gets a constructor that needs no `AstBuilder`.
-    has_standalone_constructor: bool,
 }
 
 #[pymethods]
@@ -145,7 +143,6 @@ impl NodeClass {
         snake_case_name: String,
         ancestors: Vec<String>,
         constructor: Option<Constructor>,
-        has_standalone_constructor: bool,
     ) -> Self {
         Self {
             name,
@@ -153,7 +150,6 @@ impl NodeClass {
             snake_case_name,
             ancestors,
             constructor,
-            has_standalone_constructor,
         }
     }
 }

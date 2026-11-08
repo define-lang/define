@@ -50,7 +50,32 @@ impl<'py> FilePath<'py> {
     }
 }
 
-impl<'py> FieldValue<'py> for FilePath<'py> {
+/// A `source_rendering.python.rendering.SourceLocation`.
+#[derive(Clone)]
+pub struct SourceLocation<'py>(Bound<'py, PyAny>);
+
+impl<'py> SourceLocation<'py> {
+    pub fn new(
+        py: Python<'py>,
+        location: source_rendering::SourceLocation,
+        file_path: Option<&FilePath<'py>>,
+    ) -> PyResult<Self> {
+        source_rendering_capsule::new_source_location(
+            py,
+            location,
+            file_path.map(|file_path| &file_path.0),
+        )
+        .map(Self)
+    }
+}
+
+impl<'py> Node<'py> for SourceLocation<'py> {
+    fn into_object(self) -> Bound<'py, PyAny> {
+        self.0
+    }
+}
+
+impl<'py> FieldValue<'py> for SourceLocation<'py> {
     fn into_field_object(self, _: Python<'py>, _: &AstClasses) -> Bound<'py, PyAny> {
         self.0
     }

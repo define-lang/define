@@ -7,6 +7,7 @@ from defcl.python import error_types, errors
 from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
+from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -168,7 +169,7 @@ class TestProjectConfig:
         assert result.root_config is None
         first, second = result.diagnostics
         assert isinstance(first, diagnostics.ConfigDclDiagnostic)
-        assert first.location == ast.SourceLocation(
+        assert first.location == rendering.SourceLocation(
             line=3, column=3, end_line=3, end_column=14, file_path=_PROJECT_CONFIG_PATH
         )
         assert isinstance(first.dcl_error, errors.UnknownFieldNameDiagnostic)
@@ -176,7 +177,7 @@ class TestProjectConfig:
         assert first.dcl_error.field_name == "universe_nam"
         assert first.dcl_error.message_type == "define.config.project.Project"
         assert isinstance(second, diagnostics.ConfigDclDiagnostic)
-        assert second.location == ast.SourceLocation(
+        assert second.location == rendering.SourceLocation(
             line=4, column=3, end_line=4, end_column=7, file_path=_PROJECT_CONFIG_PATH
         )
         assert isinstance(second.dcl_error, errors.UnknownFieldNameDiagnostic)
@@ -194,7 +195,7 @@ class TestProjectConfig:
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
         assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
-        assert diagnostic.location == ast.SourceLocation(
+        assert diagnostic.location == rendering.SourceLocation(
             line=2,
             column=18,
             end_line=2,
@@ -250,7 +251,7 @@ class TestProjectConfig:
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
         assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
-        assert diagnostic.location == ast.SourceLocation(
+        assert diagnostic.location == rendering.SourceLocation(
             line=2,
             column=16,
             end_line=2,
@@ -407,7 +408,7 @@ class TestLocalDepsConfig:
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
         assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
-        assert diagnostic.location == ast.SourceLocation(
+        assert diagnostic.location == rendering.SourceLocation(
             line=1,
             column=34,
             end_line=1,

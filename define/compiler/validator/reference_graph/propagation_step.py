@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import enum
-import typing
+from typing import TYPE_CHECKING
 
 import msgspec
 
-if typing.TYPE_CHECKING:
-    from define.compiler import ast
+if TYPE_CHECKING:
+    from source_rendering.python import rendering
 
 
 class PropagationKind(enum.Enum):
@@ -41,7 +41,7 @@ class PropagationKind(enum.Enum):
 class PropagationStep(msgspec.Struct, frozen=True):
     """One step in a requirement's propagation chain, with its source location."""
 
-    location: ast.SourceLocation
+    location: rendering.SourceLocation
     kind: PropagationKind
     # The definition, quality, or position that performs or receives the event
     # described by this step (where ``location`` points).

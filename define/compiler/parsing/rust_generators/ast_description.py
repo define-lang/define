@@ -28,8 +28,8 @@ Each parameter's annotation becomes a `FieldType`:
   `StringTuple`.
 - `frozenset[str]` becomes `StringSet`, and `dict[str, X]`, where `X` is an
   AST class, becomes `Dict`.
-- `str`, `int`, `bool`, and `pathlib.PurePosixPath` become `String`, `Integer`,
-  `Boolean`, and `FilePath`.
+- `str`, `int`, `bool`, and `rendering.SourceLocation` become `String`,
+  `Integer`, `Boolean`, and `Location`.
 - An `enum.Enum` becomes `Enum`.
 
 An annotation of the form `X | None` makes the parameter optional.
@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import enum
 import inspect
-import pathlib
 import types
 import typing
 
@@ -47,6 +46,7 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.parsing.rust_generators import rust_names, rust_renderer
+from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Collection
@@ -55,7 +55,7 @@ _SIMPLE_FIELD_TYPES: dict[object, rust_renderer.FieldType] = {
     str: rust_renderer.FieldType.String(),
     int: rust_renderer.FieldType.Integer(),
     bool: rust_renderer.FieldType.Boolean(),
-    pathlib.PurePosixPath: rust_renderer.FieldType.FilePath(),
+    rendering.SourceLocation: rust_renderer.FieldType.Location(),
 }
 
 
@@ -349,8 +349,6 @@ def _describe_class(
         snake_case_name=rust_names.snake_case_name(name),
         ancestors=ancestors,
         constructor=constructor,
-        # Syntax errors build a SourceLocation without an AstBuilder.
-        has_standalone_constructor=cls is ast.SourceLocation,
     )
 
 

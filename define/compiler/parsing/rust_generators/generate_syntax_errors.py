@@ -36,7 +36,7 @@ def _describe_exception(cls: type) -> rust_renderer.ParserException:
     # The annotations are strings because parser_exceptions postpones their
     # evaluation.
     location_annotation = typing.cast("object", location.annotation)
-    if location.name != "location" or location_annotation != "ast.SourceLocation":
+    if location.name != "location" or location_annotation != "rendering.SourceLocation":
         raise ValueError(f"{cls.__name__} must take a location first")
     for parameter in text_parameters:
         annotation = typing.cast("object", parameter.annotation)

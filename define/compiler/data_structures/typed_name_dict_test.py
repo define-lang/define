@@ -6,12 +6,13 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.data_structures import typed_name_dict
+from source_rendering.python import rendering
 
 _LOC = ast.start_of_file_location()
 
 
-def _at(line: int) -> ast.SourceLocation:
-    return ast.SourceLocation(line=line, column=1, end_line=line, end_column=1)
+def _at(line: int) -> rendering.SourceLocation:
+    return rendering.SourceLocation(line=line, column=1, end_line=line, end_column=1)
 
 
 def _base(
@@ -27,7 +28,7 @@ def _base(
 def _local(
     name: str,
     name_type: name_types.NameType = name_types.NameType.POSITION,
-    location: ast.SourceLocation = _LOC,
+    location: rendering.SourceLocation = _LOC,
 ) -> ast.LocalTypedNameReference:
     return ast.LocalTypedNameReference(
         location=location,
@@ -77,7 +78,7 @@ def _global(
 
 def _chain(
     *typed_names: ast.TypedNameReference,
-    location: ast.SourceLocation = _LOC,
+    location: rendering.SourceLocation = _LOC,
 ) -> ast.PositionReference:
     return ast.PositionReference(location=location, typed_names=typed_names)
 

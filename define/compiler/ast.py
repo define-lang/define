@@ -23,6 +23,7 @@ import msgspec
 
 from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
+from source_rendering.python import rendering
 
 # Marks a field whose value is computed from the other fields. Python code that
 # constructs a node does not pass it, and `__post_init__` or a property computes
@@ -40,28 +41,11 @@ type ComputedOnFirstUse[T] = T
 type ParsedOrComputedOnFirstUse[T] = T
 
 
-# A program has millions of these, and they never form reference cycles, so the
-# garbage collector does not track them.
-class SourceLocation(msgspec.Struct, frozen=True, gc=False):
-    """Represents a location in source code.
-
-    Lines and columns are 1-based, and columns count characters.
-    ``end_line`` and ``end_column`` are the position of the last character
-    that the location covers.
-    """
-
-    line: int
-    column: int
-    end_line: int
-    end_column: int
-    file_path: PurePosixPath | None = None
-
-
 def start_of_file_location(
     file_path: PurePosixPath | None = None,
-) -> SourceLocation:
-    """Return a SourceLocation pointing to the very start of a file."""
-    return SourceLocation(
+) -> rendering.SourceLocation:
+    """Return a location pointing to the very start of a file."""
+    return rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1, file_path=file_path
     )
 
@@ -76,7 +60,7 @@ class ASTNode(msgspec.Struct, eq=False, gc=False):
     Treat nodes as immutable after construction so cached values remain valid.
     """
 
-    location: SourceLocation
+    location: rendering.SourceLocation
 
 
 class Program(ASTNode):
@@ -690,14 +674,14 @@ class Literal(ASTNode):
     potential_literal: GlobalTypedNameReference
     content: str
 
-    def content_character_location(self, index: int) -> SourceLocation:
+    def content_character_location(self, index: int) -> rendering.SourceLocation:
         """Return the source location of the content character at ``index``."""
         # ", \, and newlines can only appear in content through two-character
         # escapes, so each one before ``index`` adds one source column.
         escaped_count = sum(1 for char in self.content[:index] if char in '"\\\n')
         # The Potential Literal reference ends just before the opening quote.
         column = self.potential_literal.location.end_column + 2 + index + escaped_count
-        return SourceLocation(
+        return rendering.SourceLocation(
             line=self.location.line,
             column=column,
             end_line=self.location.line,

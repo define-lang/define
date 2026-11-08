@@ -9,6 +9,7 @@ from pathlib import Path
 
 from define.compiler import ast, constants
 from define.compiler.errors import diagnostics
+from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -154,8 +155,8 @@ def _distinct_characters(name: str, indexes: Iterable[int]) -> tuple[str, ...]:
 
 def _character_location(
     line: int, column: int, file_path: PurePosixPath | None
-) -> ast.SourceLocation:
-    return ast.SourceLocation(
+) -> rendering.SourceLocation:
+    return rendering.SourceLocation(
         line=line,
         column=column,
         end_line=line,
@@ -277,7 +278,7 @@ def _validate_authority_path_segment(
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
         return diagnostics.AuthorityPathEmptySegmentDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=line,
                 column=column - 1,
                 end_line=line,
@@ -473,7 +474,7 @@ def _validate_global_name_path(
     if path_name.endswith("/"):
         result.append(
             diagnostics.GlobalNamePathTrailingSlashDiagnostic(
-                location=ast.SourceLocation(
+                location=rendering.SourceLocation(
                     line=path.location.line,
                     column=path.location.column + len(path_name) - 1,
                     end_line=path.location.end_line,
@@ -492,7 +493,7 @@ def _validate_global_name_path(
         if segment == "":
             result.append(
                 diagnostics.GlobalNamePathEmptySegmentDiagnostic(
-                    location=ast.SourceLocation(
+                    location=rendering.SourceLocation(
                         line=path.location.line,
                         column=path.location.column + segment_start - 1,
                         end_line=path.location.end_line,

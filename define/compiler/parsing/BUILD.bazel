@@ -44,6 +44,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:parser_exceptions",
+        "//source_rendering/python:rendering",  # keep: the parser imports it to construct locations
     ],
 )
 
@@ -97,6 +98,7 @@ pyo3_extension(
     deps = [
         ":terminals",
         ":vector_scan",
+        "//source_rendering/python:capsule",
         "//source_rendering/rust:source_rendering",
         "@crates//:rustc-hash",
     ],

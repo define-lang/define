@@ -17,6 +17,7 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
+from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
@@ -198,7 +199,7 @@ def _dcl_diagnostic(
 ) -> diagnostics.ConfigDclDiagnostic:
     location = dcl_error.location
     return diagnostics.ConfigDclDiagnostic(
-        location=ast.SourceLocation(
+        location=rendering.SourceLocation(
             line=location.line,
             column=location.column,
             end_line=location.end_line,

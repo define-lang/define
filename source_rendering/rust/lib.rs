@@ -10,7 +10,8 @@ const CODE_INDENTATION: &str = "    ";
 
 /// A point in a source file, as a 1-based line and a 1-based column counted in
 /// characters.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Position {
     pub line: u32,
     pub column: u32,
@@ -61,7 +62,9 @@ impl Position {
 
 /// The part of a source file that something, such as an error, covers: from
 /// `start` through `end`, the position of the last character that it covers.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+// `repr(C)` lets the Python extension's capsule pass it to other extensions.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct SourceLocation {
     pub start: Position,
     pub end: Position,

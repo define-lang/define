@@ -15,11 +15,11 @@ py_library(
     deps = [
         ":source_map",
         "//defcl/python:errors",
-        "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/structural/resolver:local_dependency_entry",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -45,8 +45,8 @@ py_library(
     deps = [
         ":exceptions",
         ":source_map",
-        "//define/compiler:ast",
         "//define/compiler:constants",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -55,7 +55,6 @@ py_library(
     srcs = ["source_map.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
         "//source_rendering/python:rendering",
     ],
@@ -67,8 +66,8 @@ py_test(
     srcs = ["source_map_test.py"],
     deps = [
         ":source_map",
-        "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
+        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

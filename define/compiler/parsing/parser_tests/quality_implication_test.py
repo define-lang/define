@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -38,7 +39,7 @@ def test_implication_with_action_name_type(parse: Parse):
     typed_name = implication.typed_global_name
     assert typed_name.name_type == name_types.NameType.ACTION
     assert typed_name.name_content.path.name == "/required"
-    assert implication.location == ast.SourceLocation(
+    assert implication.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=42
     )
 
@@ -64,19 +65,19 @@ def test_implication_with_various_fqun_forms(parse: Parse):
     assert full_fqun is not None
     assert full_fqun.multiverse is not None
     assert full_fqun.multiverse.name == "mv"
-    assert full_fqun.multiverse.location == ast.SourceLocation(
+    assert full_fqun.multiverse.location == rendering.SourceLocation(
         line=2, column=34, end_line=2, end_column=35
     )
     assert full_fqun.authority is not None
     assert full_fqun.authority.name == "example.com"
-    assert full_fqun.authority.location == ast.SourceLocation(
+    assert full_fqun.authority.location == rendering.SourceLocation(
         line=2, column=37, end_line=2, end_column=47
     )
     assert full_fqun.universe.name == "my_lib"
-    assert full_fqun.universe.location == ast.SourceLocation(
+    assert full_fqun.universe.location == rendering.SourceLocation(
         line=2, column=49, end_line=2, end_column=54
     )
-    assert full_fqun.location == ast.SourceLocation(
+    assert full_fqun.location == rendering.SourceLocation(
         line=2, column=34, end_line=2, end_column=54
     )
     assert full_name.name_content.path.name == "/full"
@@ -86,14 +87,14 @@ def test_implication_with_various_fqun_forms(parse: Parse):
     assert short_multiverse_fqun.multiverse is None
     assert short_multiverse_fqun.authority is not None
     assert short_multiverse_fqun.authority.name == "example.com"
-    assert short_multiverse_fqun.authority.location == ast.SourceLocation(
+    assert short_multiverse_fqun.authority.location == rendering.SourceLocation(
         line=3, column=34, end_line=3, end_column=44
     )
     assert short_multiverse_fqun.universe.name == "my_lib"
-    assert short_multiverse_fqun.universe.location == ast.SourceLocation(
+    assert short_multiverse_fqun.universe.location == rendering.SourceLocation(
         line=3, column=46, end_line=3, end_column=51
     )
-    assert short_multiverse_fqun.location == ast.SourceLocation(
+    assert short_multiverse_fqun.location == rendering.SourceLocation(
         line=3, column=34, end_line=3, end_column=51
     )
     assert short_multiverse_name.name_content.path.name == "/short_mv"
@@ -103,10 +104,10 @@ def test_implication_with_various_fqun_forms(parse: Parse):
     assert universe_only_fqun.multiverse is None
     assert universe_only_fqun.authority is None
     assert universe_only_fqun.universe.name == "standard"
-    assert universe_only_fqun.universe.location == ast.SourceLocation(
+    assert universe_only_fqun.universe.location == rendering.SourceLocation(
         line=4, column=34, end_line=4, end_column=41
     )
-    assert universe_only_fqun.location == ast.SourceLocation(
+    assert universe_only_fqun.location == rendering.SourceLocation(
         line=4, column=34, end_line=4, end_column=41
     )
     assert universe_only_name.name_content.path.name == "/std"
@@ -132,7 +133,7 @@ def test_implication_in_action_before_local_position(parse: Parse):
     [implication] = definition.quality_implications
     typed_name = implication.typed_global_name
     assert typed_name.name_content.path.name == "/required"
-    assert implication.location == ast.SourceLocation(
+    assert implication.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=44
     )
     [position] = definition.interface_positions
@@ -154,7 +155,7 @@ def test_implication_in_action_with_no_local_positions(parse: Parse):
     [implication] = definition.quality_implications
     typed_name = implication.typed_global_name
     assert typed_name.name_content.path.name == "/required"
-    assert implication.location == ast.SourceLocation(
+    assert implication.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=44
     )
     assert definition.interface_positions == ()
@@ -180,12 +181,12 @@ def test_multiple_implications_in_action_before_multiple_local_positions(
     [first, second] = definition.quality_implications
     first_name = first.typed_global_name
     assert first_name.name_content.path.name == "/first"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=41
     )
     second_name = second.typed_global_name
     assert second_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=40
     )
     [run_position, other_position] = definition.interface_positions
@@ -213,12 +214,12 @@ def test_implication_with_comments_and_blank_lines(parse: Parse):
     [first, second] = definition.quality_implications
     first_name = first.typed_global_name
     assert first_name.name_content.path.name == "/first"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=41
     )
     second_name = second.typed_global_name
     assert second_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=6, column=5, end_line=6, end_column=40
     )
 
@@ -344,7 +345,9 @@ def test_implication_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=2, column=44, end_line=2, end_column=44)
+            location=rendering.SourceLocation(
+                line=2, column=44, end_line=2, end_column=44
+            )
         )
     ]
     assert result.program is not None
@@ -352,7 +355,7 @@ def test_implication_without_terminator_gets_a_diagnostic(
     assert isinstance(definition, ast.ActionDefinition)
     [implication] = definition.quality_implications
     assert implication.typed_global_name.name_content.path.name == "/required"
-    assert implication.location == ast.SourceLocation(
+    assert implication.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=43
     )
 

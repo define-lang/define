@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -41,7 +42,7 @@ def test_encoding_operation_execution(parse: Parse):
         )
     )
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=39
     )
 
@@ -58,11 +59,11 @@ def test_operation_execution_without_arguments(parse: Parse):
     assert statement.operation.name_type == name_types.NameType.OPERATION
     assert statement.operation.name_content.fqun is None
     assert statement.operation.name_content.path.name == "/other"
-    assert statement.operation.location == ast.SourceLocation(
+    assert statement.operation.location == rendering.SourceLocation(
         line=3, column=21, end_line=3, end_column=37
     )
     assert statement.arguments == ()
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=38
     )
 
@@ -83,30 +84,30 @@ def test_operation_execution_with_arguments(parse: Parse):
     [view_argument, literal_argument] = statement.arguments
     assert view_argument.view.name_type == name_types.NameType.VIEW
     assert view_argument.view.name_content.name == "a"
-    assert view_argument.view.location == ast.SourceLocation(
+    assert view_argument.view.location == rendering.SourceLocation(
         line=4, column=18, end_line=4, end_column=24
     )
     looking_at_view = view_argument.looking_at
     assert isinstance(looking_at_view, ast.LocalTypedNameReference)
     assert looking_at_view.name_type == name_types.NameType.VIEW
     assert looking_at_view.name_content.name == "left"
-    assert looking_at_view.location == ast.SourceLocation(
+    assert looking_at_view.location == rendering.SourceLocation(
         line=4, column=37, end_line=4, end_column=46
     )
-    assert view_argument.location == ast.SourceLocation(
+    assert view_argument.location == rendering.SourceLocation(
         line=4, column=13, end_line=4, end_column=47
     )
     assert literal_argument.view.name_content.name == "b"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
-    assert looking_at_literal.location == ast.SourceLocation(
+    assert looking_at_literal.location == rendering.SourceLocation(
         line=5, column=37, end_line=5, end_column=56
     )
-    assert literal_argument.location == ast.SourceLocation(
+    assert literal_argument.location == rendering.SourceLocation(
         line=5, column=13, end_line=5, end_column=57
     )
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=6, end_column=9
     )
 
@@ -137,7 +138,7 @@ def test_action_operation_execution_with_arguments(parse: Parse):
     [position] = looking_at_position.typed_names
     assert isinstance(position, ast.LocalTypedNameReference)
     assert position.name_content.name == "p"
-    assert position_argument.location == ast.SourceLocation(
+    assert position_argument.location == rendering.SourceLocation(
         line=6, column=13, end_line=6, end_column=48
     )
     assert chain_argument.view.name_content.name == "b"
@@ -148,20 +149,20 @@ def test_action_operation_execution_with_arguments(parse: Parse):
     assert parent.name_content.path.name == "/global"
     assert isinstance(child, ast.LocalTypedNameReference)
     assert child.name_content.name == "child"
-    assert looking_at_chain.location == ast.SourceLocation(
+    assert looking_at_chain.location == rendering.SourceLocation(
         line=7, column=37, end_line=7, end_column=70
     )
-    assert chain_argument.location == ast.SourceLocation(
+    assert chain_argument.location == rendering.SourceLocation(
         line=7, column=13, end_line=7, end_column=71
     )
     assert literal_argument.view.name_content.name == "c"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
-    assert literal_argument.location == ast.SourceLocation(
+    assert literal_argument.location == rendering.SourceLocation(
         line=8, column=13, end_line=8, end_column=57
     )
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=5, column=9, end_line=9, end_column=9
     )
 
@@ -341,20 +342,20 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     )
     assert isinstance(first, ast.OperationExecutionStatement)
     assert first.operation.name_content.path.name == "/first"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=38
     )
     assert isinstance(second, ast.OperationExecutionStatement)
     assert second.operation.name_content.path.name == "/second"
     [argument] = second.arguments
-    assert argument.location == ast.SourceLocation(
+    assert argument.location == rendering.SourceLocation(
         line=8, column=13, end_line=8, end_column=44
     )
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=6, column=9, end_line=10, end_column=9
     )
     assert isinstance(third, ast.EncodingOperationExecutionStatement)
-    assert third.location == ast.SourceLocation(
+    assert third.location == rendering.SourceLocation(
         line=12, column=9, end_line=12, end_column=39
     )
 
@@ -406,13 +407,15 @@ def test_encoding_operation_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=39, end_line=3, end_column=39)
+            location=rendering.SourceLocation(
+                line=3, column=39, end_line=3, end_column=39
+            )
         )
     ]
     assert result.program is not None
     [statement] = _operation_statements(result.program)
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=38
     )
 
@@ -509,14 +512,16 @@ def test_argument_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=4, column=44, end_line=4, end_column=44)
+            location=rendering.SourceLocation(
+                line=4, column=44, end_line=4, end_column=44
+            )
         )
     ]
     assert result.program is not None
     [statement] = _operation_statements(result.program)
     assert isinstance(statement, ast.OperationExecutionStatement)
     [argument] = statement.arguments
-    assert argument.location == ast.SourceLocation(
+    assert argument.location == rendering.SourceLocation(
         line=4, column=13, end_line=4, end_column=43
     )
 

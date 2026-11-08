@@ -10,6 +10,7 @@ import msgspec
 if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
+    from source_rendering.python import rendering
 
 
 class ParticleValueState(enum.Enum):
@@ -50,7 +51,7 @@ class ParticleInfo(msgspec.Struct, eq=False):
     value_state: ParticleValueState | None = None
     # Where this action last wrote the particle's value, or None when it has
     # not written it. Assuming a value requirement does not write it.
-    value_written_at: ast.SourceLocation | None = None
+    value_written_at: rendering.SourceLocation | None = None
 
     def value_effect(self) -> ParticleValueState | None:
         """Value change for a guarantee, or None when the value is unchanged."""
@@ -63,7 +64,7 @@ class ParticleInfo(msgspec.Struct, eq=False):
         return self.value_state
 
     def set_value_state(
-        self, state: ParticleValueState | None, written_at: ast.SourceLocation
+        self, state: ParticleValueState | None, written_at: rendering.SourceLocation
     ):
         """Set the particle's value state as written at ``written_at``; None leaves it unchanged."""
         if state is None:

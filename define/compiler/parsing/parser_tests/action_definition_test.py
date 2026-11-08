@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -45,7 +46,7 @@ def test_action_definition_with_body_parses(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.typed_name.name_type == name_types.NameType.ACTION
     assert definition.typed_name.name_content.path.name == "/path"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=9, end_column=1
     )
 
@@ -81,7 +82,7 @@ def test_action_with_empty_inner_blocks(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.action_statements.statements == ()
-    assert definition.action_statements.location == ast.SourceLocation(
+    assert definition.action_statements.location == rendering.SourceLocation(
         line=5, column=7, end_line=6, end_column=5
     )
 
@@ -102,7 +103,7 @@ def test_action_with_local_position_definition(parse: Parse):
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "my_pos"
     assert position.quality_assignment_block is None
-    assert position.location == ast.SourceLocation(
+    assert position.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=32
     )
 
@@ -131,7 +132,7 @@ def test_action_with_local_position_definition_with_qualities(parse: Parse):
     assert quality_assignment.typed_global_name.name_type == name_types.NameType.ACTION
     assert quality_assignment.typed_global_name.name_content.fqun is None
     assert quality_assignment.typed_global_name.name_content.path.name == "/do_work"
-    assert position.location == ast.SourceLocation(
+    assert position.location == rendering.SourceLocation(
         line=2, column=5, end_line=6, end_column=5
     )
 
@@ -153,13 +154,13 @@ def test_action_with_multiple_local_position_definitions(parse: Parse):
     assert first_position.typed_name.name_type == name_types.NameType.POSITION
     assert first_position.typed_name.name_content.name == "first_pos"
     assert first_position.quality_assignment_block is None
-    assert first_position.location == ast.SourceLocation(
+    assert first_position.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     assert second_position.typed_name.name_type == name_types.NameType.POSITION
     assert second_position.typed_name.name_content.name == "second_pos"
     assert second_position.quality_assignment_block is None
-    assert second_position.location == ast.SourceLocation(
+    assert second_position.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=36
     )
 
@@ -183,11 +184,11 @@ def test_blank_line_and_comment_between_interface_positions(
     assert isinstance(definition, ast.ActionDefinition)
     [first_position, second_position] = definition.interface_positions
     assert first_position.typed_name.name_content.name == "first_pos"
-    assert first_position.location == ast.SourceLocation(
+    assert first_position.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     assert second_position.typed_name.name_content.name == "second_pos"
-    assert second_position.location == ast.SourceLocation(
+    assert second_position.location == rendering.SourceLocation(
         line=5, column=5, end_line=5, end_column=36
     )
 
@@ -213,7 +214,7 @@ def test_action_with_mixed_local_position_definition_forms(parse: Parse):
     assert first_position.typed_name.name_type == name_types.NameType.POSITION
     assert first_position.typed_name.name_content.name == "first_pos"
     assert first_position.quality_assignment_block is None
-    assert first_position.location == ast.SourceLocation(
+    assert first_position.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     assert second_position.typed_name.name_type == name_types.NameType.POSITION
@@ -225,7 +226,7 @@ def test_action_with_mixed_local_position_definition_forms(parse: Parse):
     )
     assert quality_assignment.typed_global_name.name_content.fqun is None
     assert quality_assignment.typed_global_name.name_content.path.name == "/child"
-    assert second_position.location == ast.SourceLocation(
+    assert second_position.location == rendering.SourceLocation(
         line=3, column=5, end_line=7, end_column=5
     )
 
@@ -247,7 +248,7 @@ def test_action_block_with_comments_and_blank_lines(parse: Parse):
     [position] = definition.interface_positions
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "my_pos"
-    assert definition.trigger_conditions.location == ast.SourceLocation(
+    assert definition.trigger_conditions.location == rendering.SourceLocation(
         line=5, column=5, end_line=7, end_column=5
     )
 
@@ -273,7 +274,7 @@ def test_action_block_with_full_fqun(parse: Parse):
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
     assert typed_name.name_content.path.name == "/some/path"
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=1, column=22, end_line=1, end_column=65
     )
 
@@ -294,7 +295,7 @@ def test_action_block_comment_after_trigger_open(parse: Parse):
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_type == name_types.NameType.POSITION
     assert condition.typed_name.name_content.name == "run"
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=41
     )
 
@@ -312,7 +313,7 @@ def test_action_block_comment_after_action_close(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.action_statements.statements == ()
-    assert definition.action_statements.location == ast.SourceLocation(
+    assert definition.action_statements.location == rendering.SourceLocation(
         line=5, column=7, end_line=6, end_column=5
     )
 
@@ -332,27 +333,37 @@ def test_action_block_no_indentation(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=2, column=1, end_line=2, end_column=1),
+            location=rendering.SourceLocation(
+                line=2, column=1, end_line=2, end_column=1
+            ),
             expected_indent=4,
             actual_indent=0,
         ),
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=3, column=1, end_line=3, end_column=1),
+            location=rendering.SourceLocation(
+                line=3, column=1, end_line=3, end_column=1
+            ),
             expected_indent=4,
             actual_indent=0,
         ),
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=4, column=1, end_line=4, end_column=1),
+            location=rendering.SourceLocation(
+                line=4, column=1, end_line=4, end_column=1
+            ),
             expected_indent=8,
             actual_indent=0,
         ),
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=5, column=1, end_line=5, end_column=1),
+            location=rendering.SourceLocation(
+                line=5, column=1, end_line=5, end_column=1
+            ),
             expected_indent=4,
             actual_indent=0,
         ),
         diagnostics.IncorrectIndentationDiagnostic(
-            location=ast.SourceLocation(line=6, column=1, end_line=6, end_column=1),
+            location=rendering.SourceLocation(
+                line=6, column=1, end_line=6, end_column=1
+            ),
             expected_indent=4,
             actual_indent=0,
         ),
@@ -388,7 +399,7 @@ def test_action_block_blank_lines_in_trigger_block(parse: Parse):
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_type == name_types.NameType.POSITION
     assert condition.typed_name.name_content.name == "run"
-    assert condition.location == ast.SourceLocation(
+    assert condition.location == rendering.SourceLocation(
         line=5, column=9, end_line=5, end_column=41
     )
 
@@ -408,7 +419,7 @@ def test_action_block_blank_lines_in_action_block(parse: Parse):
     [definition] = program.definitions
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.action_statements.statements == ()
-    assert definition.action_statements.location == ast.SourceLocation(
+    assert definition.action_statements.location == rendering.SourceLocation(
         line=5, column=7, end_line=8, end_column=5
     )
 
@@ -433,7 +444,7 @@ def test_action_block_with_local_position_definition_in_action_statements(
     assert statement.typed_name.name_type == name_types.NameType.POSITION
     assert statement.typed_name.name_content.name == "inner_pos"
     assert statement.quality_assignment_block is None
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
 
@@ -459,14 +470,14 @@ def test_action_block_with_multiple_local_position_definitions_in_action_stateme
     assert first_statement.typed_name.name_type == name_types.NameType.POSITION
     assert first_statement.typed_name.name_content.name == "first_inner"
     assert first_statement.quality_assignment_block is None
-    assert first_statement.location == ast.SourceLocation(
+    assert first_statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=41
     )
     assert isinstance(second_statement, ast.LocalPositionDefinition)
     assert second_statement.typed_name.name_type == name_types.NameType.POSITION
     assert second_statement.typed_name.name_content.name == "second_inner"
     assert second_statement.quality_assignment_block is None
-    assert second_statement.location == ast.SourceLocation(
+    assert second_statement.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=42
     )
 
@@ -490,7 +501,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     assert position.typed_name.name_type == name_types.NameType.POSITION
     assert position.typed_name.name_content.name == "outer_pos"
     assert position.quality_assignment_block is None
-    assert position.location == ast.SourceLocation(
+    assert position.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=35
     )
     [statement] = definition.action_statements.statements
@@ -498,7 +509,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     assert statement.typed_name.name_type == name_types.NameType.POSITION
     assert statement.typed_name.name_content.name == "inner_pos"
     assert statement.quality_assignment_block is None
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
 
@@ -524,13 +535,13 @@ def test_two_action_definitions_in_same_file(parse: Parse):
     assert isinstance(first_definition, ast.ActionDefinition)
     assert first_definition.typed_name.name_type == name_types.NameType.ACTION
     assert first_definition.typed_name.name_content.path.name == "/first"
-    assert first_definition.location == ast.SourceLocation(
+    assert first_definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=7, end_column=1
     )
     assert isinstance(second_definition, ast.ActionDefinition)
     assert second_definition.typed_name.name_type == name_types.NameType.ACTION
     assert second_definition.typed_name.name_content.path.name == "/second"
-    assert second_definition.location == ast.SourceLocation(
+    assert second_definition.location == rendering.SourceLocation(
         line=8, column=1, end_line=14, end_column=1
     )
 
@@ -752,7 +763,7 @@ def test_missing_close_brace_followed_by_global_definition(
         + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == []
@@ -769,7 +780,7 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_global_definit
         + "define the potential position<mv:define-lang.org:parser:/other>.\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
@@ -814,7 +825,7 @@ def test_action_statements_block_with_create_particle_local_position(
     assert isinstance(typed_name, ast.LocalTypedNameReference)
     assert typed_name.name_type == name_types.NameType.POSITION
     assert typed_name.name_content.name == "run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=42
     )
 
@@ -841,7 +852,7 @@ def test_action_statements_block_with_create_particle_short_global_position(
     assert typed_name.name_type == name_types.NameType.POSITION
     assert typed_name.name_content.fqun is None
     assert typed_name.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=43
     )
 
@@ -874,7 +885,7 @@ def test_action_statements_block_with_create_particle_full_global_position(
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
     assert typed_name.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=69
     )
 
@@ -907,7 +918,7 @@ def test_action_statements_block_with_create_particle_chain(
     assert isinstance(run, ast.LocalTypedNameReference)
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.name == "run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=74
     )
 
@@ -942,7 +953,7 @@ def test_action_statements_block_with_create_particle_short_global_chain(
     assert run.name_type == name_types.NameType.POSITION
     assert run.name_content.fqun is None
     assert run.name_content.path.name == "/run"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=76
     )
 
@@ -976,7 +987,7 @@ def test_action_statements_block_with_create_particle_any_typed_chain(
     assert end.name_type == name_types.NameType.ACTION
     assert end.name_content.fqun is None
     assert end.name_content.path.name == "/end"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=30, end_line=6, end_column=72
     )
 
@@ -1005,7 +1016,7 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     assert position_definition.typed_name.name_type == name_types.NameType.POSITION
     assert position_definition.typed_name.name_content.name == "inner_pos"
     assert position_definition.quality_assignment_block is None
-    assert position_definition.location == ast.SourceLocation(
+    assert position_definition.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=39
     )
     assert isinstance(first_create, ast.CreateParticleStatement)
@@ -1013,7 +1024,7 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     assert isinstance(first_inner_pos, ast.LocalTypedNameReference)
     assert first_inner_pos.name_type == name_types.NameType.POSITION
     assert first_inner_pos.name_content.name == "inner_pos"
-    assert first_create.location == ast.SourceLocation(
+    assert first_create.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=49
     )
     assert isinstance(second_create, ast.CreateParticleStatement)
@@ -1029,7 +1040,7 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     assert isinstance(second_inner_pos, ast.LocalTypedNameReference)
     assert second_inner_pos.name_type == name_types.NameType.POSITION
     assert second_inner_pos.name_content.name == "inner_pos"
-    assert second_create.location == ast.SourceLocation(
+    assert second_create.location == rendering.SourceLocation(
         line=8, column=9, end_line=8, end_column=90
     )
 
@@ -1068,7 +1079,7 @@ def test_comment_trailing_space_first_in_action_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=14,
                 end_line=2,
@@ -1096,7 +1107,7 @@ def test_comment_trailing_space_after_quality_implication(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=14,
                 end_line=3,
@@ -1123,7 +1134,7 @@ def test_comment_trailing_space_after_interface_position(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=14,
                 end_line=3,
@@ -1150,7 +1161,7 @@ def test_comment_trailing_space_before_action_close(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=7,
                 column=14,
                 end_line=7,
@@ -1224,7 +1235,7 @@ def test_comment_trailing_space_in_action_statements_block(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=6,
                 column=18,
                 end_line=6,
@@ -1308,7 +1319,7 @@ def test_quality_assignment_block_missing_close_brace_followed_by_action_stateme
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=7, column=13, end_line=7, end_column=49
     )
     assert result.diagnostics == []
@@ -1326,7 +1337,7 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_local_position
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
@@ -1346,7 +1357,7 @@ def test_action_statements_block_missing_close_brace_followed_by_implication(
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=5, column=7, end_line=5, end_column=19
     )
     assert result.diagnostics == []

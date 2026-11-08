@@ -7,12 +7,12 @@ use prost::Message as _;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::PyType;
-use source_rendering::{SourceLines, SourceLocation};
+use source_rendering::SourceLines;
+use source_rendering_capsule::new_source_location;
 use std::path::PathBuf;
 
 /// The Python classes that the module returns and raises.
 struct PythonClasses {
-    source_location: Py<PyType>,
     field_path_location: Py<PyType>,
     dcl_error: Py<PyType>,
     unexpected_character_error: Py<PyType>,
@@ -39,7 +39,6 @@ impl PythonClasses {
         let error_types = py.import("defcl.python.error_types")?;
         let locations = py.import("defcl.python.locations")?;
         Ok(Self {
-            source_location: class(&locations, "SourceLocation")?,
             field_path_location: class(&locations, "FieldPathLocation")?,
             dcl_error: class(&errors, "DclError")?,
             unexpected_character_error: class(&errors, "UnexpectedCharacterError")?,
@@ -55,19 +54,6 @@ impl PythonClasses {
         })
     }
 
-    fn source_location<'py>(
-        &self,
-        py: Python<'py>,
-        location: SourceLocation,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        self.source_location.bind(py).call1((
-            location.start.line,
-            location.start.column,
-            location.end.line,
-            location.end.column,
-        ))
-    }
-
     fn field_path_location<'py>(
         &self,
         py: Python<'py>,
@@ -75,11 +61,11 @@ impl PythonClasses {
     ) -> PyResult<Bound<'py, PyAny>> {
         let name = location
             .name
-            .map(|name| self.source_location(py, name))
+            .map(|name| new_source_location(py, name, None))
             .transpose()?;
         self.field_path_location.bind(py).call1((
             name,
-            self.source_location(py, location.value)?,
+            new_source_location(py, location.value, None)?,
             location.is_whole_path,
         ))
     }
@@ -101,7 +87,7 @@ impl PythonClasses {
         let kind: &'static str = error.kind.into();
         let kind = self.dcl_error_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
-        let location = self.source_location(py, error.location)?;
+        let location = new_source_location(py, error.location, None)?;
         let rendered = &rendered_error.rendered;
         if let SyntaxErrorKind::UnexpectedCharacter { character } = error.kind {
             return self
@@ -123,7 +109,7 @@ impl PythonClasses {
         let kind: &'static str = (&error.kind).into();
         let kind = self.diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
-        let location = self.source_location(py, error.location)?;
+        let location = new_source_location(py, error.location, None)?;
         let field_name = &error.field_name;
         let rendered = &rendered_error.rendered;
         match &error.kind {

@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, constants
+from define.compiler import constants
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import standard_library_file
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     import pytest
@@ -32,7 +33,7 @@ def test_encoding_operation_with_fewer_views(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewCountDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=1,
                 column=12,
                 end_line=1,
@@ -62,7 +63,7 @@ def test_encoding_operation_with_different_view_name(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=16,
                 end_line=2,
@@ -93,7 +94,7 @@ def test_encoding_operation_with_different_view_direction(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=16,
                 end_line=2,
@@ -124,7 +125,7 @@ def test_encoding_operation_with_views_in_different_order(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=16,
                 end_line=2,
@@ -140,7 +141,7 @@ def test_encoding_operation_with_views_in_different_order(
             logical_operation_view_name="view<result>",
         ),
         diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=8,
                 column=16,
                 end_line=8,
@@ -171,7 +172,7 @@ def test_encoding_operations_with_same_encodings(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=1,
                 column=12,
                 end_line=1,

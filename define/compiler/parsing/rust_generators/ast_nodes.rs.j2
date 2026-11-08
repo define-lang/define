@@ -1,10 +1,9 @@
 // Generated from `{{ module_name }}` by
 // //define/compiler/parsing/rust_generators:generate_ast_nodes.
 
-use crate::node_construction::{ClassLayout, FieldValue, FilePath, Node};
+use crate::node_construction::{ClassLayout, FieldValue, Node};
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::PyInt;
 {% for enum_type in enums %}
 /// `{{ enum_type.module_name }}.{{ enum_type.name }}`.
 #[derive(Clone, Copy)]
@@ -90,37 +89,6 @@ impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
 }
 {%- endfor %}
 {% endfor %}
-{%- for class in classes %}
-{%- if class.has_standalone_constructor %}
-{%- if let Some(constructor) = class.constructor %}
-impl<'py> {{ class.name }}<'py> {
-    /// Constructs a `{{ module_name }}.{{ class.python_name }}` without an `AstBuilder`.
-    pub fn new(
-        py: Python<'py>,
-{%- for parameter in constructor.parameters %}
-        {{ parameter.rust_name() }}: {{ parameter.rust_type() }},
-{%- endfor %}
-    ) -> PyResult<Self> {
-        let classes = AstClasses::get(py)?;
-        classes
-            .{{ class.snake_case_name }}
-            .construct(
-                py,
-                [
-{%- for parameter in constructor.parameters %}
-                    {{ parameter.rust_name() }}.into_field_object(py, classes),
-{%- endfor %}
-{%- for name in constructor.computed_on_first_use %}
-                    PyNone::get(py).to_owned().into_any(),
-{%- endfor %}
-                ],
-            )
-            .map(Self)
-    }
-}
-{% endif %}
-{%- endif %}
-{%- endfor %}
 /// The classes in `{{ module_name }}` that have constructors, and the members of
 /// the enums that they take.
 pub struct AstClasses {

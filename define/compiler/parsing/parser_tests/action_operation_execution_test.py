@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -41,7 +42,7 @@ def test_operation_execution_without_arguments(parse: Parse):
     assert statement.operation.name_type == name_types.NameType.OPERATION
     assert statement.operation.name_content.path.name == "/add"
     assert statement.arguments == ()
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=36
     )
 
@@ -67,7 +68,7 @@ def test_operation_execution_with_arguments(parse: Parse):
     [position] = looking_at_position.typed_names
     assert isinstance(position, ast.LocalTypedNameReference)
     assert position.name_content.name == "p"
-    assert position_argument.location == ast.SourceLocation(
+    assert position_argument.location == rendering.SourceLocation(
         line=7, column=13, end_line=7, end_column=48
     )
     assert chain_argument.view.name_content.name == "b"
@@ -78,17 +79,17 @@ def test_operation_execution_with_arguments(parse: Parse):
     assert parent.name_content.path.name == "/global"
     assert isinstance(child, ast.LocalTypedNameReference)
     assert child.name_content.name == "child"
-    assert chain_argument.location == ast.SourceLocation(
+    assert chain_argument.location == rendering.SourceLocation(
         line=8, column=13, end_line=8, end_column=71
     )
     assert literal_argument.view.name_content.name == "c"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
-    assert literal_argument.location == ast.SourceLocation(
+    assert literal_argument.location == rendering.SourceLocation(
         line=9, column=13, end_line=9, end_column=57
     )
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=10, end_column=9
     )
 
@@ -116,15 +117,15 @@ def test_operation_execution_among_action_statements(parse: Parse):
     assert isinstance(add, ast.OperationExecutionStatement)
     assert add.operation.name_content.path.name == "/add"
     [argument] = add.arguments
-    assert argument.location == ast.SourceLocation(
+    assert argument.location == rendering.SourceLocation(
         line=11, column=13, end_line=11, end_column=48
     )
-    assert add.location == ast.SourceLocation(
+    assert add.location == rendering.SourceLocation(
         line=9, column=9, end_line=13, end_column=9
     )
     assert isinstance(clear, ast.OperationExecutionStatement)
     assert clear.operation.name_content.path.name == "/clear"
-    assert clear.location == ast.SourceLocation(
+    assert clear.location == rendering.SourceLocation(
         line=15, column=9, end_line=15, end_column=38
     )
     assert isinstance(destroy, ast.DestroyParticleStatement)

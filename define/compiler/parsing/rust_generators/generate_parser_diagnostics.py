@@ -50,7 +50,10 @@ def _describe_diagnostic(
     location, *field_names = cls.__struct_fields__
     # The annotations are strings because diagnostics postpones their
     # evaluation.
-    if location != "location" or _annotation(cls, location) != "ast.SourceLocation":
+    if (
+        location != "location"
+        or _annotation(cls, location) != "rendering.SourceLocation"
+    ):
         raise ValueError(f"{cls.__name__} must have a location first")
     fields: list[rust_renderer.DiagnosticField] = []
     for field_name in field_names:

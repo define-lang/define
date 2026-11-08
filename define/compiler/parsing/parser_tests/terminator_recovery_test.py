@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -30,7 +31,9 @@ def test_missing_terminator_does_not_stop_the_next_statement(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         )
     ]
     assert result.program is not None
@@ -39,7 +42,7 @@ def test_missing_terminator_does_not_stop_the_next_statement(
     assert definition.quality_assignment_block is not None
     [_, second] = definition.quality_assignment_block.statements
     assert second.typed_global_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=37
     )
 
@@ -58,10 +61,14 @@ def test_each_missing_terminator_gets_its_own_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         ),
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=4, column=37, end_line=4, end_column=37)
+            location=rendering.SourceLocation(
+                line=4, column=37, end_line=4, end_column=37
+            )
         ),
     ]
     assert result.program is not None
@@ -70,7 +77,7 @@ def test_each_missing_terminator_gets_its_own_diagnostic(
     assert definition.quality_assignment_block is not None
     [_, second] = definition.quality_assignment_block.statements
     assert second.typed_global_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=36
     )
 
@@ -88,10 +95,14 @@ def test_missing_terminator_before_trailing_spaces_gets_both_diagnostics(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=37)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=37
+            )
         ),
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         ),
     ]
     assert result.program is not None
@@ -99,7 +110,7 @@ def test_missing_terminator_before_trailing_spaces_gets_both_diagnostics(
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
 
@@ -117,7 +128,9 @@ def test_missing_terminator_before_comment(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         )
     ]
     assert result.program is not None
@@ -125,7 +138,7 @@ def test_missing_terminator_before_comment(
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
 
@@ -143,7 +156,9 @@ def test_missing_terminator_before_comment_without_space(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         )
     ]
     assert result.program is not None
@@ -151,7 +166,7 @@ def test_missing_terminator_before_comment_without_space(
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
 
@@ -169,7 +184,9 @@ def test_missing_terminator_before_comment_that_is_not_ascii(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=36, end_line=3, end_column=36)
+            location=rendering.SourceLocation(
+                line=3, column=36, end_line=3, end_column=36
+            )
         )
     ]
     assert result.program is not None
@@ -177,7 +194,7 @@ def test_missing_terminator_before_comment_that_is_not_ascii(
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
 
@@ -189,15 +206,19 @@ def test_missing_terminator_at_end_of_file(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=1, column=46, end_line=1, end_column=46)
+            location=rendering.SourceLocation(
+                line=1, column=46, end_line=1, end_column=46
+            )
         ),
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=1, column=46, end_line=1, end_column=46)
+            location=rendering.SourceLocation(
+                line=1, column=46, end_line=1, end_column=46
+            )
         ),
     ]
     assert result.program is not None
     [definition] = result.program.definitions
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=45
     )
 
@@ -214,7 +235,7 @@ def test_text_after_statement_where_terminator_belongs_stops_the_parse(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingTerminator)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=3, column=36, end_line=3, end_column=36
     )
     assert result.program is None
@@ -233,7 +254,7 @@ def test_carriage_return_in_comment_after_missing_terminator_stops_the_parse(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert result.exception.escaped_char == "\\r"
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=3, column=43, end_line=3, end_column=43
     )
     assert result.program is None

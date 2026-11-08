@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -24,7 +25,7 @@ def test_valid_terminator(parse: Parse):
     program = parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
     [definition] = program.definitions
     assert isinstance(definition, ast.PositionDefinition)
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=63
     )
     assert definition.quality_assignment_block is None
@@ -45,7 +46,9 @@ def test_missing_newline_after_terminator(parse_with_diagnostics: ParseWithDiagn
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=1, column=47, end_line=1, end_column=47)
+            location=rendering.SourceLocation(
+                line=1, column=47, end_line=1, end_column=47
+            )
         ),
     ]
 
@@ -61,7 +64,9 @@ def test_missing_newline_after_last_definition(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=2, column=66, end_line=2, end_column=66)
+            location=rendering.SourceLocation(
+                line=2, column=66, end_line=2, end_column=66
+            )
         ),
     ]
 
@@ -96,7 +101,9 @@ def test_comment_directly_after_terminator(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
-            location=ast.SourceLocation(line=1, column=63, end_line=1, end_column=64)
+            location=rendering.SourceLocation(
+                line=1, column=63, end_line=1, end_column=64
+            )
         ),
     ]
 
@@ -144,7 +151,7 @@ def test_trailing_space_before_newline(parse_with_diagnostics: ParseWithDiagnost
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=1,
                 column=47,
                 end_line=1,
@@ -164,7 +171,7 @@ def test_several_trailing_spaces_before_newline(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=1,
                 column=64,
                 end_line=1,
@@ -182,10 +189,14 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
-            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=64)
+            location=rendering.SourceLocation(
+                line=1, column=64, end_line=1, end_column=64
+            )
         ),
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=1, column=65, end_line=1, end_column=65)
+            location=rendering.SourceLocation(
+                line=1, column=65, end_line=1, end_column=65
+            )
         ),
     ]
 
@@ -204,7 +215,9 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=4, column=41, end_line=4, end_column=41)
+            location=rendering.SourceLocation(
+                line=4, column=41, end_line=4, end_column=41
+            )
         )
     ]
     assert result.program is not None
@@ -213,7 +226,7 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
     assert quality_assignment.typed_global_name.name_content.path.name == "/path/sub"
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=4, column=9, end_line=4, end_column=40
     )
 

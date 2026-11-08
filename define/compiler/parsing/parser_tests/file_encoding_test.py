@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -138,7 +138,7 @@ def test_comment_with_zero_width_joiner_in_grapheme_cluster(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=63
     )
 
@@ -155,7 +155,7 @@ def test_comment_with_variation_selector_after_visible_character(
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=63
     )
 
@@ -171,7 +171,9 @@ def test_variation_selector_after_space_in_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=3, end_line=1, end_column=3),
+            location=rendering.SourceLocation(
+                line=1, column=3, end_line=1, end_column=3
+            ),
             character="\ufe0f",
         ),
     ]
@@ -266,11 +268,15 @@ def test_comment_with_bidi_isolates_gets_a_diagnostic_for_each(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=29, end_line=1, end_column=29),
+            location=rendering.SourceLocation(
+                line=1, column=29, end_line=1, end_column=29
+            ),
             character="\u2067",
         ),
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=34, end_line=1, end_column=34),
+            location=rendering.SourceLocation(
+                line=1, column=34, end_line=1, end_column=34
+            ),
             character="\u2069",
         ),
     ]
@@ -287,7 +293,9 @@ def test_zero_width_space_in_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            location=rendering.SourceLocation(
+                line=1, column=4, end_line=1, end_column=4
+            ),
             character="\u200b",
         ),
     ]
@@ -323,7 +331,9 @@ def test_byte_order_mark_inside_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ByteOrderMarkInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4)
+            location=rendering.SourceLocation(
+                line=1, column=4, end_line=1, end_column=4
+            )
         ),
     ]
 
@@ -339,7 +349,9 @@ def test_c1_control_character_in_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            location=rendering.SourceLocation(
+                line=1, column=4, end_line=1, end_column=4
+            ),
             escaped_character="\\u{85}",
         ),
     ]
@@ -356,7 +368,9 @@ def test_zero_width_joiner_before_space_in_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            location=rendering.SourceLocation(
+                line=1, column=4, end_line=1, end_column=4
+            ),
             character="\u200d",
         ),
     ]
@@ -373,7 +387,9 @@ def test_tag_character_after_letter_in_comment_gets_a_diagnostic(
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
-            location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
+            location=rendering.SourceLocation(
+                line=1, column=4, end_line=1, end_column=4
+            ),
             character="\U000e0041",
         ),
     ]
@@ -389,7 +405,7 @@ def test_comment_with_emoji_zwj_sequence(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=63
     )
 
@@ -404,7 +420,7 @@ def test_comment_with_direction_marks(parse: Parse):
         definition.typed_name.full_typed_name
         == "position<mv:define-lang.org:parser:/path>"
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=63
     )
 

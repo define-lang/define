@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -104,7 +105,9 @@ def test_duplicate_logical_operation_support(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateLogicalOperationSupportDiagnostic(
-            location=ast.SourceLocation(line=6, column=21, end_line=6, end_column=59),
+            location=rendering.SourceLocation(
+                line=6, column=21, end_line=6, end_column=59
+            ),
             logical_operation_name="logical_operation<standard:/number/add>",
             first_support_line=3,
         )
@@ -118,14 +121,18 @@ def test_logical_operation_support_out_of_order(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationSupportOrderDiagnostic(
-            location=ast.SourceLocation(line=6, column=21, end_line=6, end_column=60),
+            location=rendering.SourceLocation(
+                line=6, column=21, end_line=6, end_column=60
+            ),
             logical_operation_name="logical_operation<standard:/boolean/and>",
             logical_operation_name_it_must_precede=(
                 "logical_operation<standard:/text/less_than>"
             ),
         ),
         diagnostics.LogicalOperationSupportOrderDiagnostic(
-            location=ast.SourceLocation(line=9, column=21, end_line=9, end_column=59),
+            location=rendering.SourceLocation(
+                line=9, column=21, end_line=9, end_column=59
+            ),
             logical_operation_name="logical_operation<standard:/number/add>",
             logical_operation_name_it_must_precede=(
                 "logical_operation<standard:/text/less_than>"
@@ -148,7 +155,9 @@ def test_logical_operation_support_requires_short_form(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-            location=ast.SourceLocation(line=8, column=39, end_line=8, end_column=58),
+            location=rendering.SourceLocation(
+                line=8, column=39, end_line=8, end_column=58
+            ),
             fqun="my.domain.com:my_lib",
         )
     ]
@@ -161,7 +170,9 @@ def test_wrong_logical_operation_definition_type(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=3, column=21, end_line=3, end_column=68),
+            location=rendering.SourceLocation(
+                line=3, column=21, end_line=3, end_column=68
+            ),
             definition_name="logical_operation<standard:/text/unicode/scalar>",
         )
     ]
@@ -174,7 +185,7 @@ def test_missing_logical_operation_file(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=39,
                 end_line=3,

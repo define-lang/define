@@ -11,6 +11,7 @@ from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from define.compiler import name_types
+    from source_rendering.python import rendering
 
 
 class _ViewUse(msgspec.Struct):
@@ -19,7 +20,7 @@ class _ViewUse(msgspec.Struct):
     definition: ast.InterfaceViewDefinition | ast.LocalViewDefinition
     is_read: bool = False
     # Where the view is first written, if a statement has written it.
-    first_write: ast.SourceLocation | None = None
+    first_write: rendering.SourceLocation | None = None
     # A statement has already been reported for reading or writing the view
     # in a way Single Assignment does not allow. Fixing that statement also
     # fixes whether the view ends up unread or unwritten, so the mistake is
@@ -214,7 +215,9 @@ class _ViewUse(msgspec.Struct):
         ]
 
     def fulfill_interface_view_direction(
-        self, location: ast.SourceLocation, operation_name_type: name_types.NameType
+        self,
+        location: rendering.SourceLocation,
+        operation_name_type: name_types.NameType,
     ) -> list[diagnostics.Diagnostic]:
         """Record a statement at `location` that reads the view if it is an input interface view and writes it if it is an output interface view, and return a diagnostic if an earlier statement already wrote it."""
         view = self.definition
@@ -276,7 +279,9 @@ class _ViewUse(msgspec.Struct):
             )
         return end_diagnostics
 
-    def _record_write(self, location: ast.SourceLocation) -> ast.SourceLocation | None:
+    def _record_write(
+        self, location: rendering.SourceLocation
+    ) -> rendering.SourceLocation | None:
         """Record a write of the view at `location`, and return where an earlier statement first wrote it, if one did."""
         first_write = self.first_write
         if first_write is None:
@@ -426,7 +431,7 @@ class ViewUseTracker:
         return setting_diagnostics
 
     def fulfill_every_interface_view_direction(
-        self, location: ast.SourceLocation
+        self, location: rendering.SourceLocation
     ) -> list[diagnostics.Diagnostic]:
         """Record a statement at `location` that reads every input view and writes every output view of the operation, and return a diagnostic for each output view that an earlier statement already wrote."""
         write_diagnostics: list[diagnostics.Diagnostic] = []

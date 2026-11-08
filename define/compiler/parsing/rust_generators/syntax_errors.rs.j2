@@ -2,12 +2,10 @@
 // //define/compiler/parsing/rust_generators:generate_syntax_errors.
 
 
-use crate::ast::SourceLocation;
-use crate::node_construction::{FilePath, Node as _};
+use crate::node_construction::{FilePath, Node as _, SourceLocation};
 use crate::parse_error::ParseError;
 use source_rendering::Position;
 use pyo3::prelude::*;
-use pyo3::types::PyInt;
 use pyo3::{PyTypeInfo as _, import_exception};
 {% for exception in exceptions %}
 import_exception!({{ module_name }}, {{ exception.name }});
@@ -30,11 +28,8 @@ impl<'py> SyntaxErrors<'py> {
     fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
         SourceLocation::new(
             self.py,
-            PyInt::new(self.py, start.line),
-            PyInt::new(self.py, start.column),
-            PyInt::new(self.py, end.line),
-            PyInt::new(self.py, end.column),
-            self.file_path.clone(),
+            source_rendering::SourceLocation { start, end },
+            self.file_path.as_ref(),
         )
     }
 

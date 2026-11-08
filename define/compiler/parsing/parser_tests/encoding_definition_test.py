@@ -8,6 +8,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -22,10 +23,10 @@ def test_encoding_definition(parse: Parse):
     assert isinstance(definition, ast.EncodingDefinition)
     assert definition.typed_name.name_type == name_types.NameType.ENCODING
     assert definition.typed_name.name_content.path.name == "/number/natural"
-    assert definition.typed_name.location == ast.SourceLocation(
+    assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=12, end_line=1, end_column=62
     )
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=63
     )
 
@@ -46,14 +47,16 @@ def test_encoding_definition_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=1, column=46, end_line=1, end_column=46)
+            location=rendering.SourceLocation(
+                line=1, column=46, end_line=1, end_column=46
+            )
         )
     ]
     assert result.program is not None
     [definition] = result.program.definitions
     assert isinstance(definition, ast.EncodingDefinition)
     assert definition.typed_name.name_content.path.name == "/number/natural"
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=45
     )
 
@@ -109,16 +112,16 @@ def test_encoding_in_quality_assignments(parse: Parse):
     )
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=35
     )
     typed_name = quality_assignment.typed_global_name
     assert typed_name.name_type == name_types.NameType.ENCODING
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=34
     )
     assert typed_name.name_content.fqun is None
     assert typed_name.name_content.path.name == "/utf8"
-    assert typed_name.name_content.path.location == ast.SourceLocation(
+    assert typed_name.name_content.path.location == rendering.SourceLocation(
         line=3, column=29, end_line=3, end_column=33
     )

@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -47,7 +48,7 @@ def test_value_quality(parse: Parse):
     [quality_assignment] = view.quality_assignment_block.statements
     assert quality_assignment.typed_global_name.name_type == name_types.NameType.VALUE
     assert quality_assignment.typed_global_name.name_content.path.name == "/number"
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=5, column=13, end_line=5, end_column=38
     )
 
@@ -69,12 +70,12 @@ def test_value_and_encoding_quality_assignments(parse: Parse):
     [value, encoding] = view.quality_assignment_block.statements
     assert value.typed_global_name.name_type == name_types.NameType.VALUE
     assert value.typed_global_name.name_content.path.name == "/number"
-    assert value.location == ast.SourceLocation(
+    assert value.location == rendering.SourceLocation(
         line=5, column=13, end_line=5, end_column=64
     )
     assert encoding.typed_global_name.name_type == name_types.NameType.ENCODING
     assert encoding.typed_global_name.name_content.path.name == "/decimal"
-    assert encoding.location == ast.SourceLocation(
+    assert encoding.location == rendering.SourceLocation(
         line=6, column=13, end_line=6, end_column=42
     )
 
@@ -159,7 +160,7 @@ def test_blank_lines_between_direction_statements(parse: Parse):
     )
     assert view.is_input
     assert view.is_output
-    assert view.quality_assignment_block.location == ast.SourceLocation(
+    assert view.quality_assignment_block.location == rendering.SourceLocation(
         line=7, column=9, end_line=9, end_column=9
     )
 
@@ -523,7 +524,9 @@ def test_read_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=19, end_line=3, end_column=19)
+            location=rendering.SourceLocation(
+                line=3, column=19, end_line=3, end_column=19
+            )
         )
     ]
     assert result.program is not None
@@ -551,7 +554,9 @@ def test_written_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=3, column=22, end_line=3, end_column=22)
+            location=rendering.SourceLocation(
+                line=3, column=22, end_line=3, end_column=22
+            )
         )
     ]
     assert result.program is not None

@@ -14,6 +14,7 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import local_dependency_entry
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructural
@@ -218,7 +219,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
             ),
         ),
         diagnostics.CircularGlobalReferenceDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=20,
                 end_line=3,
@@ -327,7 +328,7 @@ def test_sub_root_is_current_universe(
             ),
         ),
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=20,
                 end_line=3,
@@ -338,7 +339,7 @@ def test_sub_root_is_current_universe(
             definition_name="position<mv:define-lang.org:test_parent:/lib/target>",
         ),
         diagnostics.ReferencedFileNotFoundDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=4,
                 column=29,
                 end_line=4,
@@ -348,7 +349,7 @@ def test_sub_root_is_current_universe(
             file_path="target.dfn",
         ),
         diagnostics.PathMismatchDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=1,
                 column=62,
                 end_line=1,
@@ -627,7 +628,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
             sub_root_path="lib",
         ),
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=4,
                 column=20,
                 end_line=4,
@@ -751,7 +752,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.FqunMismatchDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=31,
                 end_line=2,
@@ -762,7 +763,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             actual=foreign_universe,
         ),
         diagnostics.PathMismatchDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=2,
                 column=60,
                 end_line=2,
@@ -773,7 +774,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             actual_path="/a",
         ),
         diagnostics.FqunMismatchDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=31,
                 end_line=3,
@@ -784,7 +785,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             actual=foreign_universe,
         ),
         diagnostics.PathMismatchDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=3,
                 column=60,
                 end_line=3,
@@ -795,7 +796,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             actual_path="/b",
         ),
         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-            location=ast.SourceLocation(
+            location=rendering.SourceLocation(
                 line=6,
                 column=29,
                 end_line=6,

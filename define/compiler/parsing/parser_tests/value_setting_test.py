@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -46,7 +47,7 @@ def test_action_statements_block_with_value_setting_local_positions(
     assert isinstance(dest, ast.LocalTypedNameReference)
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.name == "dest"
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=62
     )
 
@@ -79,7 +80,7 @@ def test_action_statements_block_with_value_setting_short_global_positions(
     assert dest.name_type == name_types.NameType.POSITION
     assert dest.name_content.fqun is None
     assert dest.name_content.path.name == "/dest"
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=64
     )
 
@@ -124,7 +125,7 @@ def test_action_statements_block_with_value_setting_full_global_positions(
     assert dest_fqun.authority.name == "define-lang.org"
     assert dest_fqun.universe.name == "parser"
     assert dest.name_content.path.name == "/dest"
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=116
     )
 
@@ -157,7 +158,7 @@ def test_action_statements_block_with_value_setting_chained_target(
     assert isinstance(inner, ast.LocalTypedNameReference)
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=26, end_line=6, end_column=73
     )
     assert isinstance(statement.source, ast.PositionReference)
@@ -201,7 +202,7 @@ def test_action_statements_block_with_value_setting_chained_source(
     assert isinstance(inner, ast.LocalTypedNameReference)
     assert inner.name_type == name_types.NameType.POSITION
     assert inner.name_content.name == "inner"
-    assert source.location == ast.SourceLocation(
+    assert source.location == rendering.SourceLocation(
         line=6, column=45, end_line=6, end_column=93
     )
 
@@ -231,7 +232,7 @@ def test_action_statements_block_with_value_setting_both_chained(
     assert a1.name_type == name_types.NameType.ACTION
     assert a1.name_content.fqun is None
     assert a1.name_content.path.name == "/a1"
-    assert statement.target_position.location == ast.SourceLocation(
+    assert statement.target_position.location == rendering.SourceLocation(
         line=6, column=26, end_line=6, end_column=51
     )
     source = statement.source
@@ -244,7 +245,7 @@ def test_action_statements_block_with_value_setting_both_chained(
     assert a2.name_type == name_types.NameType.ACTION
     assert a2.name_content.fqun is None
     assert a2.name_content.path.name == "/a2"
-    assert source.location == ast.SourceLocation(
+    assert source.location == rendering.SourceLocation(
         line=6, column=58, end_line=6, end_column=84
     )
 
@@ -273,7 +274,7 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
     assert isinstance(create_run, ast.LocalTypedNameReference)
     assert create_run.name_type == name_types.NameType.POSITION
     assert create_run.name_content.name == "run"
-    assert create_statement.location == ast.SourceLocation(
+    assert create_statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=43
     )
     assert isinstance(value_setting_statement, ast.ValueSettingStatement)
@@ -286,7 +287,7 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
     assert isinstance(done, ast.LocalTypedNameReference)
     assert done.name_type == name_types.NameType.POSITION
     assert done.name_content.name == "done"
-    assert value_setting_statement.location == ast.SourceLocation(
+    assert value_setting_statement.location == rendering.SourceLocation(
         line=7, column=9, end_line=7, end_column=59
     )
 
@@ -318,7 +319,7 @@ def test_action_statements_block_with_value_setting_mixed_local_and_global(
     assert global_dest.name_type == name_types.NameType.POSITION
     assert global_dest.name_content.fqun is None
     assert global_dest.name_content.path.name == "/global_dest"
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=73
     )
 
@@ -420,7 +421,7 @@ def test_missing_from_during_transformation(
     assert isinstance(
         result.exception, parser_exceptions.InvalidValueSettingStatementSyntax
     )
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=6, column=40, end_line=6, end_column=40
     )
 
@@ -436,7 +437,7 @@ def test_missing_move_to_after_value_setting(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=6, column=43, end_line=6, end_column=43
     )
 

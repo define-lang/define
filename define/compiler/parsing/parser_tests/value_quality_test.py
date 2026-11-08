@@ -8,6 +8,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -31,16 +32,16 @@ def test_value_quality_short_name(parse: Parse):
     assert definition.quality_assignment_block.value_quality is not None
     typed_name = definition.quality_assignment_block.value_quality
     assert typed_name.name_type == name_types.NameType.VALUE
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=41
     )
     name_content = typed_name.name_content
-    assert name_content.location == ast.SourceLocation(
+    assert name_content.location == rendering.SourceLocation(
         line=3, column=26, end_line=3, end_column=40
     )
     assert name_content.fqun is None
     assert name_content.path.name == "/number/natural"
-    assert name_content.path.location == ast.SourceLocation(
+    assert name_content.path.location == rendering.SourceLocation(
         line=3, column=26, end_line=3, end_column=40
     )
 
@@ -63,20 +64,20 @@ def test_value_quality_full_name(parse: Parse):
     assert definition.quality_assignment_block.value_quality is not None
     typed_name = definition.quality_assignment_block.value_quality
     assert typed_name.name_type == name_types.NameType.VALUE
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=50
     )
     name_content = typed_name.name_content
-    assert name_content.location == ast.SourceLocation(
+    assert name_content.location == rendering.SourceLocation(
         line=3, column=26, end_line=3, end_column=49
     )
     assert name_content.fqun is not None
     assert name_content.fqun.canonical == "standard"
-    assert name_content.fqun.location == ast.SourceLocation(
+    assert name_content.fqun.location == rendering.SourceLocation(
         line=3, column=26, end_line=3, end_column=33
     )
     assert name_content.path.name == "/number/natural"
-    assert name_content.path.location == ast.SourceLocation(
+    assert name_content.path.location == rendering.SourceLocation(
         line=3, column=35, end_line=3, end_column=49
     )
 

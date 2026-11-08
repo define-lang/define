@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
@@ -196,10 +197,14 @@ def test_without_execution(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.OperationWithoutExecutionDiagnostic(
-            location=ast.SourceLocation(line=4, column=5, end_line=10, end_column=5)
+            location=rendering.SourceLocation(
+                line=4, column=5, end_line=10, end_column=5
+            )
         ),
         diagnostics.UnreferencedLocalViewDiagnostic(
-            location=ast.SourceLocation(line=5, column=20, end_line=5, end_column=31),
+            location=rendering.SourceLocation(
+                line=5, column=20, end_line=5, end_column=31
+            ),
             view_name="view<unused>",
         ),
     ]

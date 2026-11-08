@@ -18,6 +18,7 @@ py_library(
         "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/reference_graph/destruction:destruction_walk",
         "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -45,6 +46,7 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

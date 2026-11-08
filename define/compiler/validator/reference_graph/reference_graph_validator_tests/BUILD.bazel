@@ -198,6 +198,7 @@ py_test(
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph:test_helpers",
         "//define/compiler/validator/reference_graph/destruction:child_state",
+        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

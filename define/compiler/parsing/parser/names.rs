@@ -2,6 +2,7 @@
 
 use crate::ast;
 use crate::characters::{self, TextKind};
+use crate::node_construction::SourceLocation;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::scanner::SourceText;
@@ -27,7 +28,7 @@ pub(crate) struct FqunWithCanonicalText<'py, 'source> {
 
 /// The parts of a global name's content.
 pub(crate) struct GlobalNameParts<'py, 'source> {
-    pub(crate) location: ast::SourceLocation<'py>,
+    pub(crate) location: SourceLocation<'py>,
     pub(crate) fqun: Option<FqunWithCanonicalText<'py, 'source>>,
     pub(crate) path: ast::GlobalPathName<'py>,
     /// The name content's text in the source, which is its source name.
@@ -132,7 +133,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> ParseResult<(
         ast::LocalTypedNameReference<'py>,
         Bound<'py, PyString>,
-        ast::SourceLocation<'py>,
+        SourceLocation<'py>,
     )> {
         let start = self.scanner.position;
         // The name type is not `position` or `action`.
@@ -171,7 +172,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// name `name`, and returns it with its source typed name.
     pub(crate) fn local_typed_name_reference(
         &mut self,
-        location: ast::SourceLocation<'py>,
+        location: SourceLocation<'py>,
         name_type: ast::NameType,
         name: LocalNameParts<'py, 'source>,
     ) -> PyResult<(ast::LocalTypedNameReference<'py>, Bound<'py, PyString>)> {
@@ -190,7 +191,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// typed name.
     pub(crate) fn global_typed_name_reference(
         &mut self,
-        location: ast::SourceLocation<'py>,
+        location: SourceLocation<'py>,
         fqun: &FqunWithCanonicalText<'py, 'source>,
         name_type: ast::NameType,
         name: GlobalNameParts<'py, 'source>,
@@ -515,7 +516,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
         name: SourceText<'source>,
         start: Position,
-    ) -> PyResult<(ast::SourceLocation<'py>, Bound<'py, PyString>, Position)> {
+    ) -> PyResult<(SourceLocation<'py>, Bound<'py, PyString>, Position)> {
         let end = start.columns_later(name.character_count());
         let location = self.ast.location(start, end)?;
         Ok((location, self.ast.interned(name.bytes)?, end))

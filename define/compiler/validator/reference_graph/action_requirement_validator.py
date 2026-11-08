@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
         callee_execution,
     )
     from define.compiler.validator.reference_graph.particles import particle_tracker
+    from source_rendering.python import rendering
 
 
 class ActionRequirementValidator:
@@ -117,7 +118,7 @@ class ActionRequirementValidator:
 
     def propagate_action_requirements(
         self,
-        inferred_at: ast.SourceLocation,
+        inferred_at: rendering.SourceLocation,
         requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
         scope: scope_tracker.PositionScopeTracker,
     ):
@@ -222,7 +223,7 @@ class ActionRequirementValidator:
         self,
         position: ast.PositionReference,
         *,
-        inferred_at: ast.SourceLocation,
+        inferred_at: rendering.SourceLocation,
         propagated_from: action_contract.ValueRequirement | None = None,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
@@ -249,7 +250,7 @@ class ActionRequirementValidator:
 
     def propagate_value_requirements(
         self,
-        inferred_at: ast.SourceLocation,
+        inferred_at: rendering.SourceLocation,
         requirements: Iterable[action_contract.ValueRequirementInCaller],
     ):
         """Propagate the value requirements of a callee triggered at ``inferred_at``, after occupancy requirements are resolved."""

@@ -17,6 +17,7 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:child_state",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -77,6 +78,7 @@ py_library(
         "//define/compiler/validator/reference_graph/callee_execution",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -194,7 +196,7 @@ py_library(
     srcs = ["propagation_step.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        "//define/compiler:ast",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -316,6 +318,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

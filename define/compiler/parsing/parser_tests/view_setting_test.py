@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -40,15 +41,15 @@ def test_view_setting(parse: Parse):
     assert isinstance(statement, ast.ViewSettingStatement)
     assert statement.target.name_type == name_types.NameType.VIEW
     assert statement.target.name_content.name == "target"
-    assert statement.target.location == ast.SourceLocation(
+    assert statement.target.location == rendering.SourceLocation(
         line=3, column=26, end_line=3, end_column=37
     )
     assert statement.source.name_type == name_types.NameType.VIEW
     assert statement.source.name_content.name == "source"
-    assert statement.source.location == ast.SourceLocation(
+    assert statement.source.location == rendering.SourceLocation(
         line=3, column=44, end_line=3, end_column=55
     )
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=56
     )
 
@@ -68,7 +69,7 @@ def test_among_other_operation_statements(parse: Parse):
     )
     assert isinstance(first, ast.LogicalOperationExecutionStatement)
     assert isinstance(second, ast.ViewSettingStatement)
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=6, column=9, end_line=6, end_column=46
     )
     assert isinstance(third, ast.OperationExecutionStatement)
@@ -291,7 +292,7 @@ def test_encoding_operation_view_setting(parse: Parse):
     assert isinstance(statement, ast.ViewSettingStatement)
     assert statement.target.name_content.name == "target"
     assert statement.source.name_content.name == "source"
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=56
     )
 

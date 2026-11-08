@@ -29,6 +29,7 @@ if typing.TYPE_CHECKING:
         position_occupancy,
         quality_assignment,
     )
+    from source_rendering.python import rendering
 
 
 @typing.final
@@ -107,7 +108,7 @@ class ParticleTracker:
 
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[tuple[ast.SourceLocation, chained_name.PositionReferenceTuple]]:
+    ) -> Iterator[tuple[rendering.SourceLocation, chained_name.PositionReferenceTuple]]:
         """Yield each occupied interface position of a callee directly triggered by this action, with where the callee was last triggered."""
         return self._store.unconsumed_action_interfaces()
 
@@ -196,7 +197,7 @@ class ParticleTracker:
 
     def value_written_at(
         self, key: chained_name.PositionReferenceTuple
-    ) -> ast.SourceLocation:
+    ) -> rendering.SourceLocation:
         """Return where this action last wrote the value of the particle at this position."""
         written_at = self._store.occupant(key).value_written_at
         if written_at is None:
@@ -379,7 +380,7 @@ class ParticleTracker:
         contract: action_contract.ActionContract,
         *,
         parent_particle: particle_info.ParticleInfo | None,
-    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, rendering.SourceLocation]]:
         """Record that this action triggered ``action_chain``, and return each interface child position of it that was occupied when it triggered, with where its particle arrived."""
         occupied_interface_child_position_violations = (
             self._occupied_interface_child_positions(
@@ -402,7 +403,7 @@ class ParticleTracker:
         self,
         action: ast.ActionReference,
         implied_quality_names: interned_set.InternedSet,
-    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, rendering.SourceLocation]]:
         """Return the occupied positions that may not hold a particle when this callee triggers, with where each particle arrived."""
         occupied_positions = self._store.occupied_positions_past_an_action(
             action, implied_quality_names

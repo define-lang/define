@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -67,7 +68,9 @@ def test_executes_read_write_operation_with_input_only_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=53),
+            location=rendering.SourceLocation(
+                line=30, column=21, end_line=30, end_column=53
+            ),
             operation_name="encoding_operation</increment_by>",
             view_name="view<total>",
         ),
@@ -81,7 +84,9 @@ def test_executes_read_write_operation_with_output_only_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=53),
+            location=rendering.SourceLocation(
+                line=30, column=21, end_line=30, end_column=53
+            ),
             operation_name="encoding_operation</increment_by>",
             view_name="view<total>",
         ),
@@ -255,7 +260,9 @@ def test_local_view_read_before_write(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
-            location=ast.SourceLocation(line=35, column=37, end_line=35, end_column=49),
+            location=rendering.SourceLocation(
+                line=35, column=37, end_line=35, end_column=49
+            ),
             looked_at_name="view<smaller>",
             view_name="view<a>",
             operation_name="encoding_operation<standard:/number/natural/ascii/minimum>",
@@ -284,7 +291,9 @@ def test_executes_read_write_operation(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=12, column=21, end_line=12, end_column=80),
+            location=rendering.SourceLocation(
+                line=12, column=21, end_line=12, end_column=80
+            ),
             operation_name="encoding_operation<standard:/number/integer/ascii/increment>",
             view_name="view<value>",
         ),

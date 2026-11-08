@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -65,7 +66,9 @@ def test_executes_read_write_operation_with_input_only_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=44),
+            location=rendering.SourceLocation(
+                line=30, column=21, end_line=30, end_column=44
+            ),
             operation_name="operation</increment_by>",
             view_name="view<total>",
         ),
@@ -79,7 +82,9 @@ def test_executes_read_write_operation_with_output_only_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=30, column=21, end_line=30, end_column=44),
+            location=rendering.SourceLocation(
+                line=30, column=21, end_line=30, end_column=44
+            ),
             operation_name="operation</increment_by>",
             view_name="view<total>",
         ),
@@ -288,7 +293,9 @@ def test_missing_operation_before_output_view_read(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=42, column=21, end_line=42, end_column=63),
+            location=rendering.SourceLocation(
+                line=42, column=21, end_line=42, end_column=63
+            ),
             definition_name="operation<standard:/number/natural/missing>",
         )
     ]
@@ -301,11 +308,13 @@ def test_output_view_written_twice(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
-            location=ast.SourceLocation(line=66, column=42, end_line=66, end_column=53),
+            location=rendering.SourceLocation(
+                line=66, column=42, end_line=66, end_column=53
+            ),
             looked_at_name="view<result>",
             view_name="view<target>",
             operation_name="operation</copy>",
-            first_write=ast.SourceLocation(
+            first_write=rendering.SourceLocation(
                 line=62, column=42, end_line=62, end_column=53
             ),
         )
@@ -319,11 +328,13 @@ def test_read_write_view_written_twice(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
-            location=ast.SourceLocation(line=58, column=42, end_line=58, end_column=52),
+            location=rendering.SourceLocation(
+                line=58, column=42, end_line=58, end_column=52
+            ),
             looked_at_name="view<count>",
             view_name="view<target>",
             operation_name="operation</copy>",
-            first_write=ast.SourceLocation(
+            first_write=rendering.SourceLocation(
                 line=54, column=42, end_line=54, end_column=52
             ),
         )
@@ -337,11 +348,15 @@ def test_read_from_written_read_write_view(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=69, column=41, end_line=69, end_column=51),
+            location=rendering.SourceLocation(
+                line=69, column=41, end_line=69, end_column=51
+            ),
             looked_at_name="view<count>",
             view_name="view<value>",
             operation_name="operation</inspect>",
-            write=ast.SourceLocation(line=66, column=42, end_line=66, end_column=52),
+            write=rendering.SourceLocation(
+                line=66, column=42, end_line=66, end_column=52
+            ),
         )
     ]
 
@@ -353,7 +368,9 @@ def test_executes_read_write_operation(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=58, column=21, end_line=58, end_column=41),
+            location=rendering.SourceLocation(
+                line=58, column=21, end_line=58, end_column=41
+            ),
             operation_name="operation</increment>",
             view_name="view<value>",
         ),
@@ -367,16 +384,20 @@ def test_written_twice_after_unknown_use(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-            location=ast.SourceLocation(line=64, column=21, end_line=64, end_column=39),
+            location=rendering.SourceLocation(
+                line=64, column=21, end_line=64, end_column=39
+            ),
             definition_name="operation</missing>",
             config_path=".define/project/config.defcl",
         ),
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
-            location=ast.SourceLocation(line=69, column=42, end_line=69, end_column=53),
+            location=rendering.SourceLocation(
+                line=69, column=42, end_line=69, end_column=53
+            ),
             looked_at_name="view<result>",
             view_name="view<target>",
             operation_name="operation</copy>",
-            first_write=ast.SourceLocation(
+            first_write=rendering.SourceLocation(
                 line=62, column=42, end_line=62, end_column=53
             ),
         ),
@@ -390,16 +411,22 @@ def test_read_from_written_read_write_view_after_unknown_use(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-            location=ast.SourceLocation(line=65, column=21, end_line=65, end_column=39),
+            location=rendering.SourceLocation(
+                line=65, column=21, end_line=65, end_column=39
+            ),
             definition_name="operation</missing>",
             config_path=".define/project/config.defcl",
         ),
         diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
-            location=ast.SourceLocation(line=69, column=41, end_line=69, end_column=51),
+            location=rendering.SourceLocation(
+                line=69, column=41, end_line=69, end_column=51
+            ),
             looked_at_name="view<count>",
             view_name="view<value>",
             operation_name="operation</inspect>",
-            write=ast.SourceLocation(line=63, column=42, end_line=63, end_column=52),
+            write=rendering.SourceLocation(
+                line=63, column=42, end_line=63, end_column=52
+            ),
         ),
     ]
 
@@ -411,11 +438,13 @@ def test_written_after_encoding_operation(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
-            location=ast.SourceLocation(line=63, column=42, end_line=63, end_column=53),
+            location=rendering.SourceLocation(
+                line=63, column=42, end_line=63, end_column=53
+            ),
             looked_at_name="view<result>",
             view_name="view<target>",
             operation_name="operation</copy>",
-            first_write=ast.SourceLocation(
+            first_write=rendering.SourceLocation(
                 line=60, column=9, end_line=60, end_column=39
             ),
         )

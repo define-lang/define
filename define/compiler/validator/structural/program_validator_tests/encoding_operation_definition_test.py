@@ -8,9 +8,10 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -255,7 +256,9 @@ def test_local_view_with_value_quality(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewNonEncodingDiagnostic(
-            location=ast.SourceLocation(line=32, column=28, end_line=32, end_column=58),
+            location=rendering.SourceLocation(
+                line=32, column=28, end_line=32, end_column=58
+            ),
             quality_name="value<standard:/number/natural>",
         ),
     ]
@@ -268,11 +271,15 @@ def test_local_view_without_encoding(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMissingEncodingDiagnostic(
-            location=ast.SourceLocation(line=29, column=20, end_line=29, end_column=32),
+            location=rendering.SourceLocation(
+                line=29, column=20, end_line=29, end_column=32
+            ),
             view_name="view<smaller>",
         ),
         diagnostics.LocalViewNonEncodingDiagnostic(
-            location=ast.SourceLocation(line=31, column=28, end_line=31, end_column=58),
+            location=rendering.SourceLocation(
+                line=31, column=28, end_line=31, end_column=58
+            ),
             quality_name="value<standard:/number/natural>",
         ),
     ]
@@ -285,7 +292,9 @@ def test_local_view_with_two_encodings(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMultipleEncodingsDiagnostic(
-            location=ast.SourceLocation(line=32, column=28, end_line=32, end_column=67),
+            location=rendering.SourceLocation(
+                line=32, column=28, end_line=32, end_column=67
+            ),
             first_encoding_name="encoding<standard:/number/natural/ascii>",
             first_assignment_line=31,
         ),
@@ -299,7 +308,9 @@ def test_local_view_with_repeated_encoding(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateQualityAssignmentDiagnostic(
-            location=ast.SourceLocation(line=32, column=28, end_line=32, end_column=67),
+            location=rendering.SourceLocation(
+                line=32, column=28, end_line=32, end_column=67
+            ),
             quality_name="encoding<standard:/number/natural/ascii>",
             first_assignment_line=31,
         ),
@@ -320,7 +331,9 @@ def test_view_setting_encoding_mismatch(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ViewSettingEncodingMismatchDiagnostic(
-            location=ast.SourceLocation(line=22, column=9, end_line=22, end_column=54),
+            location=rendering.SourceLocation(
+                line=22, column=9, end_line=22, end_column=54
+            ),
             target_view="view<copy>",
             source_view="view<number>",
             target_encoding="encoding<standard:/number/integer/ascii>",

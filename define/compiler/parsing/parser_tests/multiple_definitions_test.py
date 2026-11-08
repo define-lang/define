@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, name_types
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -22,12 +23,12 @@ def test_multiple_position_definitions(parse: Parse):
     [first, second] = program.definitions
     assert isinstance(first, ast.PositionDefinition)
     assert first.typed_name.full_typed_name == "position<example.com:my_lib:/first>"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=57
     )
     assert isinstance(second, ast.PositionDefinition)
     assert second.typed_name.full_typed_name == "position<example.com:my_lib:/second>"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=58
     )
 
@@ -57,13 +58,13 @@ def test_multiple_action_definitions(parse: Parse):
     assert isinstance(first, ast.ActionDefinition)
     assert first.typed_name.name_type == name_types.NameType.ACTION
     assert first.typed_name.name_content.path.name == "/first"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=9, end_column=1
     )
     assert isinstance(second, ast.ActionDefinition)
     assert second.typed_name.name_type == name_types.NameType.ACTION
     assert second.typed_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=10, column=1, end_line=18, end_column=1
     )
 
@@ -85,13 +86,13 @@ def test_mixed_position_and_action_definitions(parse: Parse):
     assert isinstance(position_definition, ast.PositionDefinition)
     assert position_definition.typed_name.name_type == name_types.NameType.POSITION
     assert position_definition.typed_name.name_content.path.name == "/pos"
-    assert position_definition.location == ast.SourceLocation(
+    assert position_definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=55
     )
     assert isinstance(action_definition, ast.ActionDefinition)
     assert action_definition.typed_name.name_type == name_types.NameType.ACTION
     assert action_definition.typed_name.name_content.path.name == "/act"
-    assert action_definition.location == ast.SourceLocation(
+    assert action_definition.location == rendering.SourceLocation(
         line=2, column=1, end_line=10, end_column=1
     )
 
@@ -105,12 +106,12 @@ def test_definitions_separated_by_blank_lines(parse: Parse):
     [first, second] = program.definitions
     assert isinstance(first, ast.PositionDefinition)
     assert first.typed_name.full_typed_name == "position<standard:/first>"
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=47
     )
     assert isinstance(second, ast.PositionDefinition)
     assert second.typed_name.full_typed_name == "position<example.com:my_lib:/second>"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=3, column=1, end_line=3, end_column=58
     )
 
@@ -126,7 +127,7 @@ def test_definitions_separated_by_comments(parse: Parse):
     assert (
         first.typed_name.full_typed_name == "position<my_mv:example.com:my_lib:/first>"
     )
-    assert first.location == ast.SourceLocation(
+    assert first.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=63
     )
     assert isinstance(second, ast.PositionDefinition)
@@ -134,6 +135,6 @@ def test_definitions_separated_by_comments(parse: Parse):
         second.typed_name.full_typed_name
         == "position<my_mv:example.com:my_lib:/second>"
     )
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=3, column=1, end_line=3, end_column=64
     )

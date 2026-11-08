@@ -11,16 +11,16 @@ from define.compiler import constants
 from define.compiler.errors import exceptions, source_map
 
 if TYPE_CHECKING:
-    from define.compiler import ast
+    from source_rendering.python import rendering
 
 
 class DefineSyntaxError(exceptions.DefineError):
     """Base class for Define syntax errors."""
 
     message_format: ClassVar[str] = "Syntax error."
-    location: ast.SourceLocation
+    location: rendering.SourceLocation
 
-    def __init__(self, location: ast.SourceLocation):
+    def __init__(self, location: rendering.SourceLocation):
         """Initialize the syntax error with the location of the invalid source."""
         super().__init__(location)
         self.location = location
@@ -48,7 +48,7 @@ class DefineCharError(DefineSyntaxError):
 
     char: str
 
-    def __init__(self, location: ast.SourceLocation, char: str):
+    def __init__(self, location: rendering.SourceLocation, char: str):
         """Initialize with the unexpected character."""
         super().__init__(location)
         self.char = char
@@ -59,7 +59,7 @@ class DefineEscapedCharError(DefineSyntaxError):
 
     escaped_char: str
 
-    def __init__(self, location: ast.SourceLocation, escaped_char: str):
+    def __init__(self, location: rendering.SourceLocation, escaped_char: str):
         """Initialize with the unexpected character, with its characters that are not printable escaped."""
         super().__init__(location)
         self.escaped_char = escaped_char
@@ -359,7 +359,7 @@ class InvalidName(DefineTokenError):
         "'{token}' is not valid inside of a local or global name."
     )
 
-    def __init__(self, location: ast.SourceLocation, token: str):
+    def __init__(self, location: rendering.SourceLocation, token: str):
         """Initialize with the text that is not valid in a name."""
         super().__init__(location)
         self.token = token
@@ -532,7 +532,7 @@ class MissingCloseAngleBracket(DefineTokenError):
     name: str
     message_format: ClassVar[str] = "Missing '>' on this name: {name}"
 
-    def __init__(self, location: ast.SourceLocation, name: str):
+    def __init__(self, location: rendering.SourceLocation, name: str):
         """Initialize with the parsed name token that missed '>'."""
         super().__init__(location)
         self.name = name

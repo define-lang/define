@@ -6,8 +6,9 @@ from __future__ import annotations
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import name_validators
+from source_rendering.python import rendering
 
-_LOC = ast.SourceLocation(line=1, column=10, end_line=1, end_column=19)
+_LOC = rendering.SourceLocation(line=1, column=10, end_line=1, end_column=19)
 
 
 def _multiverse(name: str) -> ast.Multiverse:
@@ -491,26 +492,26 @@ class TestGlobalNamePath:
         result = _validate_global_name_path(_global_path_name("/Bad//2bad/"))
         assert result == [
             diagnostics.GlobalNamePathTrailingSlashDiagnostic(
-                location=ast.SourceLocation(
+                location=rendering.SourceLocation(
                     line=1, column=20, end_line=1, end_column=19
                 ),
                 path="/Bad//2bad/",
             ),
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
-                location=ast.SourceLocation(
+                location=rendering.SourceLocation(
                     line=1, column=11, end_line=1, end_column=11
                 ),
                 segment="Bad",
                 chars=("B",),
             ),
             diagnostics.GlobalNamePathEmptySegmentDiagnostic(
-                location=ast.SourceLocation(
+                location=rendering.SourceLocation(
                     line=1, column=14, end_line=1, end_column=19
                 ),
                 path="/Bad//2bad/",
             ),
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
-                location=ast.SourceLocation(
+                location=rendering.SourceLocation(
                     line=1, column=16, end_line=1, end_column=16
                 ),
                 segment="2bad",

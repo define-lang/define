@@ -5,13 +5,13 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -41,7 +41,9 @@ def test_missing_operation_after_value_write(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=22, column=21, end_line=22, end_column=55),
+            location=rendering.SourceLocation(
+                line=22, column=21, end_line=22, end_column=55
+            ),
             definition_name="operation<standard:/number/missing>",
         )
     ]
@@ -54,7 +56,9 @@ def test_missing_operation_before_value_read(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=26, column=21, end_line=26, end_column=55),
+            location=rendering.SourceLocation(
+                line=26, column=21, end_line=26, end_column=55
+            ),
             definition_name="operation<standard:/number/missing>",
         )
     ]
@@ -67,7 +71,9 @@ def test_undefined_interface_view_after_value_write(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UndefinedOperationViewDiagnostic(
-            location=ast.SourceLocation(line=35, column=18, end_line=35, end_column=28),
+            location=rendering.SourceLocation(
+                line=35, column=18, end_line=35, end_column=28
+            ),
             view_name="view<extra>",
             operation_name="operation</show>",
             interface_view_names=["view<value>"],

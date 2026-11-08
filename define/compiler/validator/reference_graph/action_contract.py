@@ -25,6 +25,7 @@ if typing.TYPE_CHECKING:
         child_state,
         destruction_contract,
     )
+    from source_rendering.python import rendering
 
 
 class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
@@ -83,7 +84,7 @@ class ActionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     position: ast.PositionReference
     # The statement this action inferred the requirement at: the body statement
     # that imposed it directly, or the trigger statement it propagated through.
-    inferred_at: ast.SourceLocation
+    inferred_at: rendering.SourceLocation
     enclosing_action: ast.ActionDefinition
     propagated_from: ActionRequirement | None = None
     # The constructor or destructor assignment that caused this requirement to
@@ -94,7 +95,7 @@ class ActionRequirement(msgspec.Struct, frozen=True, kw_only=True):
         self,
         enclosing_action: ast.ActionDefinition,
         *,
-        inferred_at: ast.SourceLocation,
+        inferred_at: rendering.SourceLocation,
         position: ast.PositionReference,
         action_assignment: ActionAssignment | None,
     ) -> typing.Self:

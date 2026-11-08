@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -26,13 +27,15 @@ def test_comment_without_space_after_terminator_does_not_stop_the_next_definitio
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
-            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=65)
+            location=rendering.SourceLocation(
+                line=1, column=64, end_line=1, end_column=65
+            )
         )
     ]
     assert result.program is not None
     [_, second] = result.program.definitions
     assert second.typed_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=65
     )
 
@@ -50,7 +53,9 @@ def test_comment_without_space_after_block_open_does_not_stop_the_block(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
-            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=65)
+            location=rendering.SourceLocation(
+                line=1, column=64, end_line=1, end_column=65
+            )
         )
     ]
     assert result.program is not None
@@ -59,7 +64,7 @@ def test_comment_without_space_after_block_open_does_not_stop_the_block(
     assert definition.quality_assignment_block is not None
     [quality_assignment] = definition.quality_assignment_block.statements
     assert quality_assignment.typed_global_name.name_content.path.name == "/child"
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=3, column=9, end_line=3, end_column=36
     )
 
@@ -78,13 +83,15 @@ def test_comment_without_space_after_block_close_does_not_stop_the_next_definiti
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
-            location=ast.SourceLocation(line=5, column=1, end_line=5, end_column=2)
+            location=rendering.SourceLocation(
+                line=5, column=1, end_line=5, end_column=2
+            )
         )
     ]
     assert result.program is not None
     [_, second] = result.program.definitions
     assert second.typed_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=6, column=1, end_line=6, end_column=65
     )
 
@@ -102,7 +109,9 @@ def test_spaces_before_angle_bracket_in_reference_keep_the_reference(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
-            location=ast.SourceLocation(line=3, column=28, end_line=3, end_column=29)
+            location=rendering.SourceLocation(
+                line=3, column=28, end_line=3, end_column=29
+            )
         )
     ]
     assert result.program is not None
@@ -112,7 +121,7 @@ def test_spaces_before_angle_bracket_in_reference_keep_the_reference(
     [quality_assignment] = definition.quality_assignment_block.statements
     typed_name = quality_assignment.typed_global_name
     assert typed_name.name_content.path.name == "/child"
-    assert typed_name.location == ast.SourceLocation(
+    assert typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=37
     )
 
@@ -126,13 +135,15 @@ def test_space_before_angle_bracket_in_global_definition_keeps_the_definition(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
-            location=ast.SourceLocation(line=1, column=30, end_line=1, end_column=30)
+            location=rendering.SourceLocation(
+                line=1, column=30, end_line=1, end_column=30
+            )
         )
     ]
     assert result.program is not None
     [definition] = result.program.definitions
     assert definition.typed_name.name_content.path.name == "/path"
-    assert definition.typed_name.location == ast.SourceLocation(
+    assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=22, end_line=1, end_column=63
     )
 
@@ -152,7 +163,9 @@ def test_space_before_angle_bracket_in_local_definition_keeps_the_definition(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
-            location=ast.SourceLocation(line=2, column=24, end_line=2, end_column=24)
+            location=rendering.SourceLocation(
+                line=2, column=24, end_line=2, end_column=24
+            )
         )
     ]
     assert result.program is not None
@@ -160,7 +173,7 @@ def test_space_before_angle_bracket_in_local_definition_keeps_the_definition(
     assert isinstance(definition, ast.ActionDefinition)
     [interface_position] = definition.interface_positions
     assert interface_position.typed_name.name_content.name == "run"
-    assert interface_position.typed_name.location == ast.SourceLocation(
+    assert interface_position.typed_name.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=29
     )
 
@@ -178,12 +191,14 @@ def test_missing_newline_at_end_of_file_after_block_keeps_the_definition(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=5, column=2, end_line=5, end_column=2)
+            location=rendering.SourceLocation(
+                line=5, column=2, end_line=5, end_column=2
+            )
         )
     ]
     assert result.program is not None
     [definition] = result.program.definitions
-    assert definition.location == ast.SourceLocation(
+    assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=5, end_column=1
     )
 
@@ -198,19 +213,25 @@ def test_each_whitespace_mistake_gets_its_own_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
-            location=ast.SourceLocation(line=1, column=30, end_line=1, end_column=30)
+            location=rendering.SourceLocation(
+                line=1, column=30, end_line=1, end_column=30
+            )
         ),
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
-            location=ast.SourceLocation(line=1, column=65, end_line=1, end_column=66)
+            location=rendering.SourceLocation(
+                line=1, column=65, end_line=1, end_column=66
+            )
         ),
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
-            location=ast.SourceLocation(line=2, column=66, end_line=2, end_column=66)
+            location=rendering.SourceLocation(
+                line=2, column=66, end_line=2, end_column=66
+            )
         ),
     ]
     assert result.program is not None
     [_, second] = result.program.definitions
     assert second.typed_name.name_content.path.name == "/second"
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=65
     )
 
@@ -224,11 +245,13 @@ def test_whitespace_mistake_before_a_syntax_error_is_reported_with_it(
     )
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
-            location=ast.SourceLocation(line=1, column=64, end_line=1, end_column=65)
+            location=rendering.SourceLocation(
+                line=1, column=64, end_line=1, end_column=65
+            )
         )
     ]
     assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
-    assert result.exception.location == ast.SourceLocation(
+    assert result.exception.location == rendering.SourceLocation(
         line=2, column=65, end_line=2, end_column=65
     )
     assert result.program is None

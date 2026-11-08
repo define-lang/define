@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -191,7 +191,9 @@ def test_missing_standard_operation_with_literal_argument(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
-            location=ast.SourceLocation(line=13, column=21, end_line=13, end_column=55),
+            location=rendering.SourceLocation(
+                line=13, column=21, end_line=13, end_column=55
+            ),
             definition_name="operation<standard:/number/missing>",
         )
     ]

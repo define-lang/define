@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -47,19 +48,19 @@ def test_local_view_definition(parse: Parse):
     assert isinstance(view, ast.LocalViewDefinition)
     assert view.typed_name.name_type == name_types.NameType.VIEW
     assert view.typed_name.name_content.name == "sum"
-    assert view.typed_name.location == ast.SourceLocation(
+    assert view.typed_name.location == rendering.SourceLocation(
         line=3, column=20, end_line=3, end_column=28
     )
     [quality_assignment] = view.quality_assignment_block.statements
     assert quality_assignment.typed_global_name.name_type == name_types.NameType.VALUE
     assert quality_assignment.typed_global_name.name_content.path.name == "/number"
-    assert quality_assignment.location == ast.SourceLocation(
+    assert quality_assignment.location == rendering.SourceLocation(
         line=5, column=17, end_line=5, end_column=42
     )
-    assert view.quality_assignment_block.location == ast.SourceLocation(
+    assert view.quality_assignment_block.location == rendering.SourceLocation(
         line=4, column=13, end_line=6, end_column=13
     )
-    assert view.location == ast.SourceLocation(
+    assert view.location == rendering.SourceLocation(
         line=3, column=9, end_line=7, end_column=9
     )
     assert isinstance(execution, ast.OperationExecutionStatement)
@@ -87,7 +88,7 @@ def test_local_view_after_execution(parse: Parse):
     [value, encoding] = view.quality_assignment_block.statements
     assert value.typed_global_name.name_type == name_types.NameType.VALUE
     assert encoding.typed_global_name.name_type == name_types.NameType.ENCODING
-    assert view.location == ast.SourceLocation(
+    assert view.location == rendering.SourceLocation(
         line=6, column=9, end_line=11, end_column=9
     )
 
@@ -341,7 +342,7 @@ def test_encoding_operation_local_view(parse: Parse):
     assert view.typed_name.name_content.name == "sum"
     [quality] = view.quality_assignment_block.statements
     assert quality.typed_global_name.name_type == name_types.NameType.ENCODING
-    assert view.location == ast.SourceLocation(
+    assert view.location == rendering.SourceLocation(
         line=3, column=9, end_line=7, end_column=9
     )
     assert isinstance(execution, ast.OperationExecutionStatement)

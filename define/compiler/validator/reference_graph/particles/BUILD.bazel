@@ -33,6 +33,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler/validator/reference_graph:quality_assignment",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -48,6 +49,7 @@ py_library(
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -68,6 +70,7 @@ py_library(
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",
+        "//source_rendering/python:rendering",
     ],
 )
 

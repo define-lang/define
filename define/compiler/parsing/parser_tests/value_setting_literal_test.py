@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -47,10 +48,10 @@ def test_literal_source(parse: Parse):
     assert potential_literal.name_type == name_types.NameType.LITERAL
     assert potential_literal.name_content.fqun is None
     assert potential_literal.name_content.path.name == "/decimal"
-    assert potential_literal.location == ast.SourceLocation(
+    assert potential_literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=62
     )
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=67
     )
 
@@ -72,7 +73,7 @@ def test_literal_full_global_name(parse: Parse):
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
     assert literal.potential_literal.name_content.path.name == "/text"
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=63, end_line=5, end_column=109
     )
 
@@ -86,7 +87,7 @@ def test_literal_empty_content(parse: Parse):
         )
     )
     assert literal.content == ""
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=61
     )
 
@@ -100,7 +101,7 @@ def test_literal_spaces_comments_unicode_and_escapes(parse: Parse):
         )
     )
     assert literal.content == ' # Hello 世界 < {} . > : " \\ \n '
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=93
     )
 
@@ -114,7 +115,7 @@ def test_literal_starts_with_comment_character(parse: Parse):
         )
     )
     assert literal.content == "#content"
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=69
     )
 
@@ -355,7 +356,9 @@ def test_literal_without_terminator_gets_a_diagnostic(
     assert result.exception is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=ast.SourceLocation(line=5, column=63, end_line=5, end_column=63)
+            location=rendering.SourceLocation(
+                line=5, column=63, end_line=5, end_column=63
+            )
         )
     ]
     assert result.program is not None
@@ -363,7 +366,7 @@ def test_literal_without_terminator_gets_a_diagnostic(
     assert isinstance(definition, ast.ActionDefinition)
     [statement] = definition.action_statements.statements
     assert isinstance(statement, ast.ValueSettingStatement)
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=5, column=9, end_line=5, end_column=62
     )
 
@@ -415,7 +418,7 @@ def test_literal_with_escape_and_non_ascii_character(parse: Parse):
         )
     )
     assert literal.content == 'é"x'
-    assert literal.location == ast.SourceLocation(
+    assert literal.location == rendering.SourceLocation(
         line=5, column=46, end_line=5, end_column=65
     )
 

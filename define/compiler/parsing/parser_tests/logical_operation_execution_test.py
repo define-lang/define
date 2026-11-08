@@ -9,6 +9,7 @@ import pytest
 
 from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -45,7 +46,7 @@ def test_logical_operation_execution(parse: Parse):
     assert logical_operation.name_type == name_types.NameType.LOGICAL_OPERATION
     assert logical_operation.name_content.fqun is None
     assert logical_operation.name_content.path.name == "/and"
-    assert logical_operation.location == ast.SourceLocation(
+    assert logical_operation.location == rendering.SourceLocation(
         line=3, column=21, end_line=3, end_column=43
     )
     [first_argument, second_argument] = statement.arguments
@@ -53,15 +54,15 @@ def test_logical_operation_execution(parse: Parse):
     assert first_argument.view.name_content.name == "a"
     assert first_argument.looking_at.name_type == name_types.NameType.VIEW
     assert first_argument.looking_at.name_content.name == "left"
-    assert first_argument.location == ast.SourceLocation(
+    assert first_argument.location == rendering.SourceLocation(
         line=4, column=13, end_line=4, end_column=47
     )
     assert second_argument.view.name_content.name == "b"
     assert second_argument.looking_at.name_content.name == "right"
-    assert second_argument.location == ast.SourceLocation(
+    assert second_argument.location == rendering.SourceLocation(
         line=5, column=13, end_line=5, end_column=48
     )
-    assert statement.location == ast.SourceLocation(
+    assert statement.location == rendering.SourceLocation(
         line=3, column=9, end_line=6, end_column=9
     )
 
@@ -100,10 +101,10 @@ def test_among_other_operation_statements(parse: Parse):
     assert isinstance(second, ast.LogicalOperationExecutionStatement)
     assert second.logical_operation.name_content.path.name == "/and"
     [argument] = second.arguments
-    assert argument.location == ast.SourceLocation(
+    assert argument.location == rendering.SourceLocation(
         line=6, column=13, end_line=6, end_column=44
     )
-    assert second.location == ast.SourceLocation(
+    assert second.location == rendering.SourceLocation(
         line=4, column=9, end_line=7, end_column=9
     )
     assert isinstance(third, ast.EncodingOperationExecutionStatement)

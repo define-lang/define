@@ -17,8 +17,8 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from defcl.python import errors as dcl_errors
-    from define.compiler import ast
     from define.compiler.validator.structural.resolver import local_dependency_entry
+    from source_rendering.python import rendering
 
 
 # The statement that reads every input view and writes every output view of
@@ -32,7 +32,7 @@ _ALL_VIEWS_STATEMENTS: Final = {
 class Diagnostic(msgspec.Struct):
     """Base class for all validation diagnostics."""
 
-    location: ast.SourceLocation
+    location: rendering.SourceLocation
     message_format: ClassVar[str] = ""
 
     def render_message(self, _sources: source_map.SourceMap, /) -> str:
@@ -578,7 +578,7 @@ class LocalViewWrittenTwiceDiagnostic(Diagnostic):
     looked_at_name: str
     view_name: str
     operation_name: str
-    first_write: ast.SourceLocation
+    first_write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -597,7 +597,7 @@ class InterfaceViewWrittenTwiceDiagnostic(Diagnostic):
     looked_at_name: str
     view_name: str
     operation_name: str
-    first_write: ast.SourceLocation
+    first_write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -616,7 +616,7 @@ class InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(Diagnostic):
 
     view_name: str
     operation_name_type: name_types.NameType
-    first_write: ast.SourceLocation
+    first_write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -637,7 +637,7 @@ class ReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
     looked_at_name: str
     view_name: str
     operation_name: str
-    write: ast.SourceLocation
+    write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -677,7 +677,7 @@ class ViewSettingReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
     """Diagnostic for a View Setting Statement reading a read/write interface view after a statement wrote to it."""
 
     view_name: str
-    write: ast.SourceLocation
+    write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -694,7 +694,7 @@ class ViewSettingLocalViewWrittenTwiceDiagnostic(Diagnostic):
     """Diagnostic for a View Setting Statement writing to a local view that an earlier statement already wrote to."""
 
     view_name: str
-    first_write: ast.SourceLocation
+    first_write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -711,7 +711,7 @@ class ViewSettingInterfaceViewWrittenTwiceDiagnostic(Diagnostic):
     """Diagnostic for a View Setting Statement writing to an interface view that an earlier statement already wrote to."""
 
     view_name: str
-    first_write: ast.SourceLocation
+    first_write: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -983,7 +983,7 @@ class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
     position_name: str
     # Where the particle arrived in the position, so the developer can find
     # the particle that has to move or be destroyed before the trigger.
-    arrived_at: ast.SourceLocation
+    arrived_at: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -1454,7 +1454,7 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a particle is created in a position that already has one."""
 
     position_name: str
-    populated_at: ast.SourceLocation
+    populated_at: rendering.SourceLocation
     message_format: ClassVar[str] = (
         "a particle already exists in '{self.position_name}';"
         " it was put there at:\n{populated_at}"
@@ -1484,7 +1484,7 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a particle."""
 
     position_name: str
-    occupied_at: ast.SourceLocation
+    occupied_at: rendering.SourceLocation
     message_format: ClassVar[str] = (
         "cannot move a particle to '{self.position_name}' because it already"
         " contains one; it was put there at:\n{occupied_at}"
@@ -1502,7 +1502,7 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
 
     position_name: str
     is_action_interface_position: bool = False
-    inferred_at: ast.SourceLocation | None = None
+    inferred_at: rendering.SourceLocation | None = None
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:
@@ -2133,7 +2133,7 @@ class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for destroying from an empty action interface position."""
 
     position_name: str
-    inferred_at: ast.SourceLocation | None
+    inferred_at: rendering.SourceLocation | None
 
     @typing.override
     def render_message(self, sources: source_map.SourceMap, /) -> str:

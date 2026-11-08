@@ -12,6 +12,7 @@ import pytest
 
 from define.compiler import ast
 from define.compiler.errors import parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
@@ -31,13 +32,13 @@ def test_local_name_simple(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "my_pos"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=30
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "my_pos"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=27
     )
 
@@ -56,13 +57,13 @@ def test_local_name_underscore_start(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "_private"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=32
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "_private"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=29
     )
 
@@ -81,13 +82,13 @@ def test_local_name_with_digits(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "pos_1"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=29
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "pos_1"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=26
     )
 
@@ -106,13 +107,13 @@ def test_local_name_single_char(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "x"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=25
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "x"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=22
     )
 
@@ -131,13 +132,13 @@ def test_local_name_single_underscore(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "_"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=25
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "_"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=22
     )
 
@@ -156,13 +157,13 @@ def test_local_name_starting_with_digit(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "2bad"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=28
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "2bad"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=25
     )
 
@@ -181,13 +182,13 @@ def test_local_name_uppercase(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "MyPos"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=29
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "MyPos"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=26
     )
 
@@ -338,7 +339,7 @@ def test_local_name_with_angle_bracket(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [_, position] = definition.interface_positions
     assert position.typed_name.name_content.name == "<"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=3, column=25, end_line=3, end_column=25
     )
 
@@ -358,7 +359,7 @@ def test_local_name_dot_then_angle_bracket(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [_, position] = definition.interface_positions
     assert position.typed_name.name_content.name == ".<"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=3, column=25, end_line=3, end_column=26
     )
 
@@ -526,12 +527,12 @@ def test_local_name_with_hyphen(parse: Parse):
     assert isinstance(definition, ast.ActionDefinition)
     [position] = definition.interface_positions
     assert position.typed_name.name_content.name == "my-pos"
-    assert position.typed_name.name_content.location == ast.SourceLocation(
+    assert position.typed_name.name_content.location == rendering.SourceLocation(
         line=2, column=25, end_line=2, end_column=30
     )
     condition = definition.trigger_conditions.condition
     assert isinstance(condition, ast.PositionPresenceStatement)
     assert condition.typed_name.name_content.name == "my-pos"
-    assert condition.typed_name.name_content.location == ast.SourceLocation(
+    assert condition.typed_name.name_content.location == rendering.SourceLocation(
         line=4, column=22, end_line=4, end_column=27
     )

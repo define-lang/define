@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from define.compiler import ast, constants, name_types
+
+if TYPE_CHECKING:
+    from source_rendering.python import rendering
 
 
 def _standard_encoding_operation_reference(
-    path: str, location: ast.SourceLocation, enclosing_fqun: ast.Fqun
+    path: str, location: rendering.SourceLocation, enclosing_fqun: ast.Fqun
 ) -> ast.GlobalTypedNameReference:
     """Return a reference, located at ``location``, to the Encoding Operation at ``path`` in the standard universe."""
     # TODO: Stop synthesizing references that have no source once DLP 48
@@ -34,7 +39,7 @@ def _standard_encoding_operation_reference(
 
 def logical_operation_encoding_operation_references(
     logical_operation_name: str,
-    location: ast.SourceLocation,
+    location: rendering.SourceLocation,
     enclosing_fqun: ast.Fqun,
 ) -> list[ast.GlobalTypedNameReference]:
     """Return references to the Encoding Operations that perform the logical operation with the full typed name ``logical_operation_name``.
