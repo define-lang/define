@@ -8,6 +8,7 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from define.compiler import chained_name
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph.particles import particle_tracker
@@ -21,6 +22,11 @@ class ChainedNameValidator:
         validation_result.DefinitionValidationResult,
     ]
     _tracker: particle_tracker.ParticleTracker
+    # Each valid canonical chain, with the definition its first name had in
+    # scope when it was valid.
+    _valid_chains: dict[
+        chained_name.ChainedNameTuple, ast.LocalPositionDefinition | None
+    ]
 
     def __init__(
         self,
@@ -33,6 +39,7 @@ class ChainedNameValidator:
         """Initialize with known definitions and the action's particle state."""
         self._definition_results = definition_results
         self._tracker = tracker
+        self._valid_chains = {}
 
     def validate(
         self,
@@ -46,18 +53,41 @@ class ChainedNameValidator:
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         if len(chain.typed_names) < 2:
             return validation_diagnostics
-        elements = chain.typed_names
-        first = elements[0]
         # An interface position at index 0 is in scope and provides its own
-        # quality assignments; every other parent name in the chain must be a global
-        # definition that we have to look up.
+        # quality assignments; every other parent name in the chain must be a
+        # global definition that we have to look up.
+        first_definition = scope.get_definition_or_none(chain.typed_names[0])
+        canonical_chain = chain.canonical_chained_name_tuple
+        # An action names the same few chains many times. A chain's validity
+        # depends only on its canonical typed names and on the definition of
+        # its first name, and a valid chain changes nothing in the tracker.
+        if (
+            canonical_chain in self._valid_chains
+            and self._valid_chains[canonical_chain] is first_definition
+        ):
+            return validation_diagnostics
+        if self._validate_elements(chain, first_definition, validation_diagnostics):
+            self._valid_chains[canonical_chain] = first_definition
+        return validation_diagnostics
+
+    def _validate_elements(
+        self,
+        chain: ast.PositionReference,
+        first_definition: ast.LocalPositionDefinition | None,
+        validation_diagnostics: list[diagnostics.Diagnostic],
+    ) -> bool:
+        """Validate a chain's elements, and return whether the chain is valid.
+
+        validation_diagnostics must be empty.
+        """
+        elements = chain.typed_names
         index = 0
-        if scope.is_defined(first):
+        if first_definition is not None:
             self._check_chain_element_is_assigned(
                 chain,
                 elements[1],
-                scope.get_definition(first).quality_assignment_block,
-                first.full_typed_name,
+                first_definition.quality_assignment_block,
+                elements[0].full_typed_name,
                 validation_diagnostics,
             )
             index = 1
@@ -75,7 +105,7 @@ class ChainedNameValidator:
             child = elements[index + 1]
             parent_def = self._get_chain_element_definition(parent, chain)
             if parent_def is None:
-                return validation_diagnostics
+                return False
             match parent_def:
                 case ast.PositionDefinition() as position_def:
                     self._check_chain_element_is_assigned(
@@ -97,11 +127,12 @@ class ChainedNameValidator:
                         validation_diagnostics,
                     )
                     if consumed == 0:
-                        return validation_diagnostics
+                        return False
                     index += consumed
                 case _:
                     raise TypeError(f"Unexpected definition type: {type(parent_def)}")
-        return validation_diagnostics
+        # Every other way a chain can be invalid reports a diagnostic.
+        return not validation_diagnostics
 
     def _get_chain_element_definition(
         self,

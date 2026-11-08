@@ -83,6 +83,7 @@ py_library(
     srcs = ["chained_name_validator.py"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
