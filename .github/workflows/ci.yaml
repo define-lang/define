@@ -79,10 +79,12 @@ jobs:
       # Tachyon needs elevated permissions to inspect process memory on macOS.
       # Run its test binary directly so Bazel does not collect root-owned test
       # reports, and only this test runs with sudo outside the sandbox.
+      # Keep root-owned temporary files outside the tree Bazel cleans up.
       - name: Test macOS process inspection
         if: ${{ matrix.os == 'macos-26' }}
         run: >-
           bazelisk run --noshow_progress
+          --test_tmpdir="$RUNNER_TEMP/tachyon-tests"
           --run_under='sudo -n -E' //tools/profiler:tachyon_profiler_test
 
       - name: Test
