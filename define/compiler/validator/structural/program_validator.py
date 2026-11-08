@@ -17,6 +17,8 @@ import typing
 if typing.TYPE_CHECKING:
     import pathlib
 
+    from define.compiler.data_structures import define_path
+
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics, source_map
@@ -169,12 +171,10 @@ class _ProgramValidationRun:
         for file_result in file_results:
             for definition_result in file_result.definition_results:
                 definition_result.reference_edges.clear()
-        file_digests: dict[pathlib.PurePosixPath, bytes] = {}
+        file_digests: dict[define_path.DefinePath, bytes] = {}
         for file_result in file_results:
             if file_result.source_digest is not None:
-                file_digests[file_result.file_path.as_posix_path()] = (
-                    file_result.source_digest
-                )
+                file_digests[file_result.file_path] = file_result.source_digest
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             entry_action=entry_action,

@@ -14,6 +14,7 @@ if typing.TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     from define.compiler import ast
+    from define.compiler.data_structures import define_path
 
 
 def source_digest(source: bytes) -> bytes:
@@ -56,11 +57,11 @@ class SourceMap:
 
     def __init__(
         self,
-        file_digests: dict[PurePosixPath, bytes],
+        file_digests: dict[define_path.DefinePath, bytes],
         in_memory_source: str | None,
     ):
         """Initialize with each validated file's digest and any source validated without a file."""
-        self._file_digests = file_digests
+        self._file_digests_by_define_path = file_digests
         self._in_memory_source = in_memory_source
         self._file_lines: dict[PurePosixPath, list[str] | None] = {}
 
@@ -80,6 +81,18 @@ class SourceMap:
         # The parser numbers lines by newlines only, unlike str.splitlines, which
         # also splits at characters such as form feeds and line separators.
         return self._in_memory_source.split("\n")
+
+    @functools.cached_property
+    def _file_digests(self) -> dict[PurePosixPath, bytes]:
+        # Diagnostic locations name their files by PurePosixPath, so finding a
+        # file's digest needs a table keyed that way. Converting every file's
+        # path takes noticeable time in a program with many files, and most
+        # compiles report no diagnostics, so the table is built only when the
+        # first location is formatted.
+        file_digests: dict[PurePosixPath, bytes] = {}
+        for file_path, digest in self._file_digests_by_define_path.items():
+            file_digests[file_path.as_posix_path()] = digest
+        return file_digests
 
     def _source_lines(self, file_path: PurePosixPath | None) -> list[str] | None:
         # Locations in the in-memory source are the only ones without a file.

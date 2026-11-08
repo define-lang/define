@@ -961,7 +961,8 @@ def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
     assert result.source_digest is not None
     sources = source_map.SourceMap(
-        {PurePosixPath("test.dfn"): result.source_digest}, in_memory_source=None
+        {define_path.DefinePath("test.dfn"): result.source_digest},
+        in_memory_source=None,
     )
     assert result.exception.format(sources) == textwrap.dedent("""\
         File "test.dfn", line 2, column 6

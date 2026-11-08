@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
+from define.compiler.data_structures import define_path
 from define.compiler.errors import source_map
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ def _map_for_file(
     monkeypatch.chdir(tmp_path)
     _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     return source_map.SourceMap(
-        {PurePosixPath("test.dfn"): source_map.source_digest(source.encode())},
+        {define_path.DefinePath("test.dfn"): source_map.source_digest(source.encode())},
         in_memory_source=None,
     )
 

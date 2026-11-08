@@ -58,6 +58,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
         "//source_rendering/python:rendering",
     ],
 )
@@ -69,6 +70,7 @@ py_test(
     deps = [
         ":source_map",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
     ],
 )

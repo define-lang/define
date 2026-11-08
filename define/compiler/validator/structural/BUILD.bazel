@@ -122,6 +122,7 @@ py_library(
         ":file_validator",
         ":work_pool",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:source_map",
