@@ -61,6 +61,8 @@ local_path_override(
 # that does not exist. The empty library imports patch leaves that root out.
 # TODO: Remove the empty library imports patch once rules_py merges
 # https://github.com/aspect-build/rules_py/pull/1673.
+# The win32 wheel tag means 32-bit x86, so it must not match x86_64 targets.
+# Otherwise Hypothesis can load a 32-bit extension in a 64-bit interpreter.
 git_override(
     module_name = "rules_py",
     commit = "0f6bd3be5095a2c2b7fcc4d532a07d5c498ca5dd",
@@ -69,6 +71,7 @@ git_override(
         "//tools/patches:rules_py_windows_free_threaded_headers.patch",
         "//tools/patches:rules_py_precompiled_stdlib.patch",
         "//tools/patches:rules_py_empty_library_imports.patch",
+        "//tools/patches:rules_py_windows_wheel_arch.patch",
     ],
     remote = "https://github.com/aspect-build/rules_py.git",
 )
