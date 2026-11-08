@@ -199,9 +199,32 @@ def _configure_git_blame():
 
 
 def _install_git_hooks():
+    # All worktrees of a repository share one hooks directory, and prek writes
+    # the absolute path of this checkout's prek into it. Installing from a
+    # linked worktree would make commits in every checkout run that worktree's
+    # prek, which disappears when the worktree is removed.
+    if _is_linked_worktree():
+        return
     _ = subprocess.run(
         [str(_venv_executable("prek")), "install"], cwd=REPO_ROOT, check=True
     )
+
+
+def _is_linked_worktree() -> bool:
+    git_dir, common_dir = subprocess.run(
+        [
+            _git(),
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-dir",
+            "--git-common-dir",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    return git_dir != common_dir
 
 
 def _record_successful_run():
