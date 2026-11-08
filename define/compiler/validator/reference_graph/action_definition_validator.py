@@ -44,7 +44,7 @@ from define.compiler.validator.reference_graph.particles import (
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
 
-    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.data_structures import interned_set, typed_name_dict
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
@@ -191,6 +191,12 @@ class ActionDefinitionValidator:
     def _implied_quality_list(self) -> tuple[ast.GlobalTypedNameReference, ...]:
         return tuple(
             impl.typed_global_name for impl in self._definition.quality_implications
+        )
+
+    @cached_property
+    def _implied_quality_names(self) -> interned_set.InternedSet:
+        return self._position_quality_resolver.get_transitive_implied_quality_names(
+            self._implied_quality_list
         )
 
     def _action_definition(
@@ -757,6 +763,7 @@ class ActionDefinitionValidator:
         list[codegen_input.GuaranteedParticleDestructors],
     ]:
         scope = scope_tracker.PositionScopeTracker()
+        self._validation_state.publish_implied_qualities(self._implied_quality_list)
         self._dead_quality_assignment_validator.register_implied_actions(
             self._definition.quality_implications
         )
@@ -794,9 +801,7 @@ class ActionDefinitionValidator:
         guaranteed_destruction = (
             guaranteed_particle_destruction.guaranteed_particle_destruction(
                 self._definition,
-                self._position_quality_resolver.get_transitive_implied_qualities(
-                    self._implied_quality_list
-                ),
+                self._implied_quality_names,
                 self._definition_results,
                 self._validation_state,
                 self._tracker,
@@ -882,10 +887,6 @@ class ActionDefinitionValidator:
             ),
             destruction_contracts=destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
-            implied_quality_names=(
-                self._position_quality_resolver.get_transitive_implied_quality_names(
-                    self._implied_quality_list
-                )
-            ),
+            implied_quality_names=self._implied_quality_names,
         )
         return contract, guarantees

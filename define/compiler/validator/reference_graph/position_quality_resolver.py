@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, chained_name, name_types
+from define.compiler.data_structures import interned_set
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
@@ -136,31 +137,26 @@ class PositionQualityResolver:
             direct, self._implications_for
         )
 
-    def get_transitive_implied_qualities(
-        self, implied_qualities: tuple[ast.GlobalTypedNameReference, ...]
-    ) -> quality_assignment.QualityAssignments:
-        """Return the implied qualities and everything they transitively imply, in assignment order."""
-        return self._build_quality_assignments(implied_qualities)
-
     def get_transitive_implied_quality_names(
         self, implied_qualities: Iterable[ast.GlobalTypedNameReference]
-    ) -> frozenset[str]:
+    ) -> interned_set.InternedSet:
         """Return the names of the implied qualities and everything they transitively imply."""
-        names: set[str] = set()
+        sets = self._validation_state.implied_quality_name_sets
+        own_name = self._definition.typed_name.full_typed_name
+        names = interned_set.EMPTY
         for quality in implied_qualities:
-            names.add(quality.full_typed_name)
+            names = sets.with_name(names, quality.full_typed_name)
             if quality.name_type != name_types.NameType.ACTION:
                 continue
             # Implied actions are validated first, so their contracts
             # already hold their transitive implications. A rejected
-            # circular reference leaves no contract; it is reported elsewhere.
+            # circular reference leaves no contract, or one whose implied
+            # qualities lead back to this action, which must not count as
+            # implying itself; it is reported elsewhere.
             contract = self._validation_state.get_contract_or_none(quality)
-            if contract is not None:
-                names.update(contract.implied_quality_names)
-        # A rejected circular implication can lead back to this action, which
-        # must not count as implying itself.
-        names.discard(self._definition.typed_name.full_typed_name)
-        return frozenset(names)
+            if contract is not None and own_name not in contract.implied_quality_names:
+                names = sets.union(names, contract.implied_quality_names)
+        return names
 
     def _implications_for(
         self, quality: ast.GlobalTypedNameReference

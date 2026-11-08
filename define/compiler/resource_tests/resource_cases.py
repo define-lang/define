@@ -28,6 +28,9 @@ def _single_file_memory_case(name: str, *, rss_mib: int = 192) -> RetainedMemory
     )
 
 
+# Every case in this module must finish quickly when it passes, ideally in
+# under one second, because these tests run with every test run, including on
+# slower GitHub Actions runners.
 RETAINED_MEMORY_CASES = [
     _single_file_memory_case("large_operation_volume"),
     _single_file_memory_case("destruction_contracts"),
@@ -97,6 +100,18 @@ CPU_GROWTH_CASES = [
         control="quality_implications_control",
         source="quality_implications",
         maximum_ratio=4,
+    ),
+    _non_filesystem_case(
+        "deep_quality_implications",
+        control="deep_quality_implications_control",
+        source="deep_quality_implications",
+        maximum_ratio=5,
+    ),
+    _non_filesystem_case(
+        "deep_shared_quality_implications",
+        control="deep_shared_quality_implications_control",
+        source="deep_shared_quality_implications",
+        maximum_ratio=5,
     ),
     _non_filesystem_case(
         "triggered_children_destruction",

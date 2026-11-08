@@ -15,10 +15,11 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Iterator, Sequence
     from collections.abc import Set as AbstractSet
 
     from define.compiler import ast
+    from define.compiler.data_structures import interned_set
 
 
 class OccupancyInfo(msgspec.Struct, frozen=True):
@@ -33,9 +34,9 @@ class OccupancyInfo(msgspec.Struct, frozen=True):
 class PositionState(msgspec.Struct):
     """Everything the store knows about one position.
 
-    A parent name with no state of its own, such as an action name or a
-    position the caller never filled, has a state with nothing set. Only the
-    store changes it.
+    A parent name the store knows nothing about itself, such as an action
+    name or a position the caller never filled, gets a state with nothing
+    set. Only the store changes it.
     """
 
     particle: particle_info.ParticleInfo | None = None
@@ -258,7 +259,7 @@ class ParticleStateStore:
     def occupied_positions_past_an_action(
         self,
         action: ast.ActionReference,
-        implied_quality_names: Collection[str],
+        implied_quality_names: interned_set.InternedSet,
     ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
         """Return each occupied position that has an action in its chained name below a callee's interface positions or below what the callee implies, with where in this action its particle got there.
 
@@ -278,11 +279,23 @@ class ParticleStateStore:
         # particle.
         for interface_position in self._state.child_keys(action_chain):
             pending.append((interface_position, False))
-        for quality_name in implied_quality_names:
-            implied_chained_name = chained_name.ChainedNameTuple(
-                (*action_parent_position, quality_name)
-            )
-            pending.append((implied_chained_name, False))
+        # This loops over whichever is smaller, implied_quality_names or the
+        # positions recorded below action_parent_position, because either
+        # can be huge: the names in a deep chain of Quality Implications, or
+        # the positions when a particle has many children. Looping over the
+        # huge one on every trigger would make validation quadratic.
+        if len(implied_quality_names) <= self._state.child_count_including_deleted(
+            action_parent_position
+        ):
+            for quality_name in implied_quality_names:
+                implied_chained_name = chained_name.ChainedNameTuple(
+                    (*action_parent_position, quality_name)
+                )
+                pending.append((implied_chained_name, False))
+        else:
+            for child_key in self._state.child_keys(action_parent_position):
+                if child_key[-1] in implied_quality_names:
+                    pending.append((child_key, False))
         occupied: list[
             tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
         ] = []
@@ -310,6 +323,11 @@ class ParticleStateStore:
             for child_key in self._state.child_keys(key):
                 pending.append((child_key, False))
         return occupied
+
+    def first_names(self) -> Iterator[str]:
+        """Yield the first name of each chained name the store has recorded, in no fixed order."""
+        for key in self._state.child_keys(chained_name.ACTION_PARENT_PARTICLE):
+            yield key[0]
 
     def unconsumed_action_interfaces(
         self,
@@ -342,13 +360,13 @@ class ParticleStateStore:
         return None if prefix is None else chained_name.position(prefix)
 
     def state_at(self, key: chained_name.PositionReferenceTuple) -> PositionState:
-        """Return the state of ``key``, which must have state, expanding what callees left above it. Only the store may change it."""
+        """Return the state of ``key``, which the store must have recorded, expanding what callees left above it. Only the store may change it."""
         return typing.cast("PositionState", self._node(key))
 
     def transitive_child_states(
         self, key: chained_name.PositionReferenceTuple
     ) -> Iterator[tuple[chained_name.ChainedNameTuple, PositionState]]:
-        """Yield a ``(names after key, state)`` pair for every transitive child position of ``key`` that has state, where ``key`` has state already. Only the store may change the yielded states."""
+        """Yield a ``(names after key, state)`` pair for every transitive child position of ``key`` that the store has recorded, where the store has recorded ``key`` too. Only the store may change the yielded states."""
         return self._state.descendant_items(key)
 
     def transitive_child_states_except(
@@ -358,7 +376,7 @@ class ParticleStateStore:
         prefix_for_returned_keys: chained_name.ChainedNameTuple,
         excluded_keys: AbstractSet[chained_name.ChainedNameTuple],
     ) -> Iterator[tuple[chained_name.ChainedNameTuple, PositionState]]:
-        """Yield a ``(returned key, state)`` pair for every transitive child position of ``key`` that has state, where ``key`` has state already.
+        """Yield a ``(returned key, state)`` pair for every transitive child position of ``key`` that the store has recorded, where the store has recorded ``key`` too.
 
         Each returned key is ``prefix_for_returned_keys`` followed by the
         child position's names after ``key``. A child position whose returned

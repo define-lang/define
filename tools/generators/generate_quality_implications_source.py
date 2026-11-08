@@ -9,17 +9,20 @@ import click
 from tools.generators import generator_cli, generator_io
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
     from pathlib import Path
 
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:quality_implications"
 
 
-def generate_source_lines(
+def generate_source_lines(  # noqa: PLR0913 - Each size scales independently.
     layers: int = 500,
     width: int = 2,
     fan_out: int = 2,
     assignments: int = 50,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    *,
+    shared_quality: bool = False,
 ) -> list[str]:
     """Generate independently scalable implication depth, sharing, and assignments."""
     if layers < 1 or width < 1 or assignments < 1:
@@ -27,40 +30,53 @@ def generate_source_lines(
     if not 1 <= fan_out <= width:
         raise ValueError("fan_out must be between 1 and width")
     lines: list[str] = []
+    if shared_quality:
+        lines.extend(_quality_action_lines(f"{fqun_prefix}:/shared", []))
     for layer in reversed(range(layers)):
         for index in range(width):
-            name = f"{fqun_prefix}:/quality_{layer}_{index}"
-            lines.append(f"define the potential action<{name}> {{")
+            implied = ["shared"] if shared_quality else []
             if layer < layers - 1:
                 for offset in range(fan_out):
-                    target = (index + offset) % width
-                    lines.append(
-                        f"    it also assigns the action</quality_{layer + 1}_{target}>."
-                    )
+                    implied.append(f"quality_{layer + 1}_{(index + offset) % width}")
             lines.extend(
-                [
-                    "    define the position<run>.",
-                    "    it happens when {",
-                    "        the position<run> has a particle.",
-                    "    } and it does {",
-                    "        destroy the particle in position<run>.",
-                ]
+                _quality_action_lines(
+                    f"{fqun_prefix}:/quality_{layer}_{index}", implied
+                )
             )
-            if layer < layers - 1:
-                for offset in range(fan_out):
-                    target = (index + offset) % width
-                    lines.append(
-                        f"        create a particle in action</quality_{layer + 1}_{target}>::position<run>."
-                    )
-            lines.extend(["    }", "}"])
+    lines.extend(_test_action_lines(width, assignments, fqun_prefix))
+    return lines
+
+
+def _quality_action_lines(name: str, implied: Collection[str]) -> list[str]:
+    """Generate an action that implies and triggers each of ``implied``."""
+    lines = [f"define the potential action<{name}> {{"]
+    for implied_name in implied:
+        lines.append(f"    it also assigns the action</{implied_name}>.")
     lines.extend(
         [
-            f"define the potential action<{fqun_prefix}:/test> {{",
+            "    define the position<run>.",
             "    it happens when {",
-            "        this particle is created.",
+            "        the position<run> has a particle.",
             "    } and it does {",
+            "        destroy the particle in position<run>.",
         ]
     )
+    for implied_name in implied:
+        lines.append(
+            f"        create a particle in action</{implied_name}>::position<run>."
+        )
+    lines.extend(["    }", "}"])
+    return lines
+
+
+def _test_action_lines(width: int, assignments: int, fqun_prefix: str) -> list[str]:
+    """Generate the entry point, which assigns and triggers every first-layer action once per assignment."""
+    lines = [
+        f"define the potential action<{fqun_prefix}:/test> {{",
+        "    it happens when {",
+        "        this particle is created.",
+        "    } and it does {",
+    ]
     for assignment in range(assignments):
         lines.extend(
             [
@@ -138,6 +154,15 @@ def generate_source_lines(
     show_default=True,
     help="Universe prefix for every definition.",
 )
+@click.option(
+    "--shared-quality",
+    is_flag=True,
+    help=(
+        "Make every quality action also imply and trigger one shared action,"
+        " which every action then implies both directly and through every"
+        " layer after it."
+    ),
+)
 def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     layers: int,
@@ -145,12 +170,21 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     fan_out: int,
     assignments: int,
     fqun_prefix: str,
+    *,
+    shared_quality: bool,
 ):
     """Generate implication chains (width=1) or shared layered implications."""
     written = generator_cli.invoke(
         lambda: generator_io.write_lines(
             output,
-            generate_source_lines(layers, width, fan_out, assignments, fqun_prefix),
+            generate_source_lines(
+                layers,
+                width,
+                fan_out,
+                assignments,
+                fqun_prefix,
+                shared_quality=shared_quality,
+            ),
         )
     )
     generator_cli.report_written("lines", written, output)

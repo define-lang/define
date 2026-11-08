@@ -1,0 +1,18 @@
+# action</a> and action</b> imply each other, which is rejected. action</a>
+# also leaves a particle in a position that action</b> defines, so working
+# out what destroying a particle of action</a> must do walks Quality
+# Implications whose contracts are incomplete.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</a>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</a>::position<run>.
+        destroy the particle in position<holder>.
+    }
+}

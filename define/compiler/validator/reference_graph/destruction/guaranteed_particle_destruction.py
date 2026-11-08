@@ -18,10 +18,9 @@ from define.compiler.validator.reference_graph.particles import particle_info
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.data_structures import interned_set, typed_name_dict
     from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
-        quality_assignment,
         reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.particles import (
@@ -43,7 +42,7 @@ class GuaranteedParticleDestruction(msgspec.Struct):
 
 def guaranteed_particle_destruction(
     definition: ast.ActionDefinition,
-    transitive_implied_qualities: quality_assignment.QualityAssignments,
+    implied_quality_names: interned_set.InternedSet,
     definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -53,14 +52,15 @@ def guaranteed_particle_destruction(
 ) -> GuaranteedParticleDestruction:
     """Return, for each particle the action leaves in a child position of a particle it created, what a destroyer that never expands it has to do: nothing, run the action's method for it, or expand it.
 
-    Judged from the action's final state.
+    Judged from the action's final state. ``implied_quality_names`` are the
+    names of the qualities the action transitively implies.
     """
     return _GuaranteedParticleDestructionBuilder(
         definition,
         destroyed_particles.DestroyedParticles(tracker, definition_results),
         validation_state,
         tracker,
-    ).build(transitive_implied_qualities)
+    ).build(implied_quality_names)
 
 
 @typing.final
@@ -78,13 +78,27 @@ class _GuaranteedParticleDestructionBuilder:
         self._tracker = tracker
 
     def build(
-        self, transitive_implied_qualities: quality_assignment.QualityAssignments
+        self, implied_quality_names: interned_set.InternedSet
     ) -> GuaranteedParticleDestruction:
         positions: list[ast.PositionReference] = []
         for interface_position in self._definition.interface_positions:
             positions.append(interface_position.typed_name.as_position_reference())
+        # Only positions the tracker recorded can hold a particle, so we check
+        # those instead of everything the action implies. We sort them by
+        # name because the tracker's trie keeps a position's children in a
+        # set, so it returns them in a different order on each run, and the
+        # order we visit them in is the order their methods appear in the
+        # generated code.
+        # TODO: Make the trie keep its children in the order it recorded
+        # them, so this can follow that order instead of sorting.
+        recorded_implied_qualities: list[ast.GlobalTypedNameReference] = []
+        for name in sorted(self._tracker.first_names()):
+            if name in implied_quality_names:
+                recorded_implied_qualities.append(
+                    self._validation_state.get_implied_quality(name)
+                )
         implied_child_names, _ = self._destroyed_particles.child_names_and_destructors(
-            transitive_implied_qualities.assignments
+            recorded_implied_qualities
         )
         for names in implied_child_names:
             positions.append(

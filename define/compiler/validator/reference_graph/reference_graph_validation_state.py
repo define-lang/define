@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler.data_structures import interned_set
+
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from define.compiler import ast, chained_name
     from define.compiler.validator.reference_graph import (
@@ -32,6 +34,12 @@ class ReferenceGraphValidationState:
     def __init__(self):
         """Create empty shared validation state."""
         self._contract_by_name: dict[str, action_contract.ActionContract] = {}
+        # Shared so that actions implying the same qualities share the sets
+        # of what they transitively imply.
+        self.implied_quality_name_sets: interned_set.InternedSets = (
+            interned_set.InternedSets()
+        )
+        self._implied_quality_by_name: dict[str, ast.GlobalTypedNameReference] = {}
         self._quality_assignments_by_key: dict[
             chained_name.PositionReferenceTuple, quality_assignment.QualityAssignments
         ] = {}
@@ -58,6 +66,25 @@ class ReferenceGraphValidationState:
     ) -> action_contract.ActionContract | None:
         """Return a published action contract, if one exists."""
         return self._contract_by_name.get(action_name.full_typed_name)
+
+    def publish_implied_qualities(
+        self, qualities: Iterable[ast.GlobalTypedNameReference]
+    ):
+        """Record a reference to each quality that an action's Quality Implication Statements name."""
+        for quality in qualities:
+            # Many actions imply the same qualities, and setdefault takes the
+            # dict's lock even when the key is already there. Checking first
+            # lets every action after the first just read, which takes no
+            # lock on free-threaded Python. setdefault still settles two
+            # threads publishing a new quality at once.
+            if quality.full_typed_name not in self._implied_quality_by_name:
+                _ = self._implied_quality_by_name.setdefault(
+                    quality.full_typed_name, quality
+                )
+
+    def get_implied_quality(self, name: str) -> ast.GlobalTypedNameReference:
+        """Return a published reference to the implied quality whose full typed name is ``name``."""
+        return self._implied_quality_by_name[name]
 
     def publish_encoding_operations(
         self,

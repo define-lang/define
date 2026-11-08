@@ -4,7 +4,11 @@ filegroup(
     name = "compiler_resources",
     testonly = True,
     srcs = [
+        ":deep_quality_implications",
+        ":deep_quality_implications_control",
         ":deep_requirements",
+        ":deep_shared_quality_implications",
+        ":deep_shared_quality_implications_control",
         ":destruction_contracts",
         ":guarantee_expansion",
         ":large_operation_volume",
@@ -55,6 +59,8 @@ filegroup(
     name = "cpu_growth_controls",
     testonly = True,
     srcs = [
+        "deep_quality_implications_control.dfn",
+        "deep_shared_quality_implications_control.dfn",
         "pending_guarantees_growth_control.dfn",
         "quality_implications_control.dfn",
         "triggered_children_destruction_contracted_control.dfn",
@@ -74,9 +80,37 @@ filegroup(
 )
 
 filegroup(
+    name = "deep_quality_implications",
+    testonly = True,
+    srcs = ["deep_quality_implications.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "deep_quality_implications_control",
+    testonly = True,
+    srcs = ["deep_quality_implications_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
     name = "deep_requirements",
     testonly = True,
     srcs = ["deep_requirements.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "deep_shared_quality_implications",
+    testonly = True,
+    srcs = ["deep_shared_quality_implications.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "deep_shared_quality_implications_control",
+    testonly = True,
+    srcs = ["deep_shared_quality_implications_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 

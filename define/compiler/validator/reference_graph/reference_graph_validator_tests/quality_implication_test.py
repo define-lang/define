@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -296,3 +297,77 @@ def test_unresolved_implication_target_is_skipped(
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 34
+
+
+def test_circular_implication_with_particle_left_in_implied_position(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    assert result.program_result.all_exceptions == []
+    assert result.program_result.all_diagnostics == [
+        diagnostics.UntriggeredImpliedActionDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=25,
+                end_line=2,
+                end_column=34,
+                file_path=PurePosixPath("a.dfn"),
+            ),
+            implied_action_name="action</b>",
+        ),
+        diagnostics.UntriggeredActionInterfaceDiagnostic(
+            location=ast.SourceLocation(
+                line=8,
+                column=30,
+                end_line=8,
+                end_column=39,
+                file_path=PurePosixPath("a.dfn"),
+            ),
+            action_name="action</b>",
+            position_name="action</b>::position<kept>",
+        ),
+        diagnostics.UnusedQualityImplicationDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=25,
+                end_line=2,
+                end_column=34,
+                file_path=PurePosixPath("b.dfn"),
+            ),
+            implication_name="action</a>",
+        ),
+        diagnostics.CircularGlobalReferenceDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=25,
+                end_line=2,
+                end_column=34,
+                file_path=PurePosixPath("b.dfn"),
+            ),
+            cycle=[
+                "action<my.domain.com:my_lib:/a>",
+                "action<my.domain.com:my_lib:/b>",
+                "action<my.domain.com:my_lib:/a>",
+            ],
+        ),
+        diagnostics.UntriggeredImpliedActionDiagnostic(
+            location=ast.SourceLocation(
+                line=2,
+                column=25,
+                end_line=2,
+                end_column=34,
+                file_path=PurePosixPath("b.dfn"),
+            ),
+            implied_action_name="action</a>",
+        ),
+        diagnostics.UnreferencedPositionDiagnostic(
+            location=ast.SourceLocation(
+                line=3,
+                column=16,
+                end_line=3,
+                end_column=29,
+                file_path=PurePosixPath("b.dfn"),
+            ),
+            position_name="position<kept>",
+        ),
+    ]

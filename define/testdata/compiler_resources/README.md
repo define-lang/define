@@ -187,6 +187,41 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
 	--layers 12 --width 2 --fan-out 2 --assignments 1
 ```
 
+## Deep Quality Implications
+
+Checks CPU growth with a long chain of Quality Implications, where each action
+transitively implies every quality in the layers after it.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/deep_quality_implications.dfn \
+	--layers 700 --assignments 1
+
+bazelisk run --noshow_progress --ui_event_filters=-info \
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/deep_quality_implications_control.dfn \
+	--layers 50 --assignments 1
+```
+
+## Deep Shared Quality Implications
+
+Checks CPU growth with a long chain of Quality Implications where every action
+also implies one shared action, which it therefore implies both directly and
+through every layer after it.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/deep_shared_quality_implications.dfn \
+	--layers 700 --assignments 1 --shared-quality
+
+bazelisk run --noshow_progress --ui_event_filters=-info \
+	//tools/generators:generate_quality_implications_source -- \
+	--output define/testdata/compiler_resources/deep_shared_quality_implications_control.dfn \
+	--layers 50 --assignments 1 --shared-quality
+```
+
 ## Pending Action Guarantee CPU growth
 
 ```sh

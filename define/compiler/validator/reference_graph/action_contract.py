@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
     from define.compiler import ast
+    from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import quality_assignment
     from define.compiler.validator.reference_graph.destruction import (
         child_state,
@@ -462,7 +463,7 @@ class ActionContract(msgspec.Struct, frozen=True):
     # TODO: Support triggering on chained names?
     trigger_position_name: str
     # The action's transitively implied qualities.
-    implied_quality_names: frozenset[str]
+    implied_quality_names: interned_set.InternedSet
 
     def occupancy_requirements_in_caller(
         self,

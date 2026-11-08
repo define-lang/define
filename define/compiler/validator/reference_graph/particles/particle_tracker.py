@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
 
     from define.compiler import ast
+    from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import (
         action_contract,
         position_occupancy,
@@ -99,6 +100,10 @@ class ParticleTracker:
         None when this action has expanded what is at ``position``.
         """
         return self._store.unexpanded_entry(position.canonical_chained_name_tuple)
+
+    def first_names(self) -> Iterator[str]:
+        """Yield the first name of each chained name the tracker has recorded, in no fixed order."""
+        return self._store.first_names()
 
     def unconsumed_action_interfaces(
         self,
@@ -207,7 +212,7 @@ class ParticleTracker:
     def state_at(
         self, position: ast.PositionReference
     ) -> particle_state_store.PositionState:
-        """Return the state of ``position``, which must have state, expanding what callees left above it. The state must not be changed."""
+        """Return the state of ``position``, which the tracker must have recorded, expanding what callees left above it. The state must not be changed."""
         return self._store.state_at(position.canonical_chained_name_tuple)
 
     def transitive_child_states(
@@ -215,7 +220,7 @@ class ParticleTracker:
     ) -> Iterator[
         tuple[chained_name.ChainedNameTuple, particle_state_store.PositionState]
     ]:
-        """Yield a ``(names after position, state)`` pair for every transitive child position of ``position`` that has state, where ``position`` has state already. The yielded states must not be changed."""
+        """Yield a ``(names after position, state)`` pair for every transitive child position of ``position`` that the tracker has recorded, where the tracker has recorded ``position`` too. The yielded states must not be changed."""
         return self._store.transitive_child_states(
             position.canonical_chained_name_tuple
         )
@@ -229,7 +234,7 @@ class ParticleTracker:
     ) -> Iterator[
         tuple[chained_name.ChainedNameTuple, particle_state_store.PositionState]
     ]:
-        """Yield a ``(returned key, state)`` pair for every transitive child position of ``position`` that has state, where ``position`` has state already.
+        """Yield a ``(returned key, state)`` pair for every transitive child position of ``position`` that the tracker has recorded, where the tracker has recorded ``position`` too.
 
         Each returned key is ``prefix_for_returned_keys`` followed by the
         child position's names after ``position``. A child position whose
@@ -396,7 +401,7 @@ class ParticleTracker:
     def _occupied_interface_child_positions(
         self,
         action: ast.ActionReference,
-        implied_quality_names: frozenset[str],
+        implied_quality_names: interned_set.InternedSet,
     ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
         """Return the occupied positions that may not hold a particle when this callee triggers, with where each particle arrived."""
         occupied_positions = self._store.occupied_positions_past_an_action(

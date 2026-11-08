@@ -189,6 +189,10 @@ class ReparentingTrie[V]:
         for child in self._child_keys_with_values(key):
             yield chained_name.ChainedNameTuple(child)
 
+    def child_count_including_deleted(self, key: TrieKey) -> int:
+        """Return the number of direct children ``key`` has had, including those deleted since."""
+        return len(self._children.get(key, ()))
+
     def descendant_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
         """Yield a ``(path from key, value)`` pair for each descendant of ``key``, in unspecified order. ``key`` itself is never yielded."""
         name_count = len(key)

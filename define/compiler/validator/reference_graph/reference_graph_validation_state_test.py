@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
 from define.compiler import ast, chained_name, name_types
+from define.compiler.data_structures import interned_set
 from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
@@ -41,13 +42,21 @@ def test_contract_access():
         guarantees=[],
         destruction_contracts=[],
         trigger_position_name="position<trigger>",
-        implied_quality_names=frozenset(),
+        implied_quality_names=interned_set.EMPTY,
     )
 
     assert state.get_contract_or_none(action_name) is None
     state.publish_contract(action_name, contract)
     assert state.get_contract(action_name) is contract
     assert state.get_contract_or_none(action_name) is contract
+
+
+def test_implied_quality_access():
+    state = reference_graph_validation_state.ReferenceGraphValidationState()
+    first = _action("implied")
+    second = _action("implied")
+    state.publish_implied_qualities((first, second))
+    assert state.get_implied_quality(first.full_typed_name) is first
 
 
 def test_concurrent_quality_assignment_builds_publish_one_value():
