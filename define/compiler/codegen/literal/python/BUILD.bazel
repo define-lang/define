@@ -152,6 +152,7 @@ py_library(
         ":naming",
         ":renderer",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler:name_types",
     ],
 )

@@ -10,6 +10,7 @@ from define.compiler.codegen.literal.python import renderer
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
 
+    from define.compiler import chained_name
     from define.compiler.codegen.literal.python import naming
 
 
@@ -27,6 +28,13 @@ class PositionExpressionBuilder:
         self._converter = converter
         self._local_position_names = local_position_names
         self._interface_position_names = interface_position_names
+        # An action names the same few positions many times, and an expression
+        # depends only on the reference's canonical typed names and on how the
+        # expression is used.
+        self._expressions: dict[
+            tuple[chained_name.ChainedNameTuple, bool, str | None],
+            renderer.PositionExpression,
+        ] = {}
 
     def build(
         self,
@@ -40,6 +48,28 @@ class PositionExpressionBuilder:
         ``value_type`` is the Python type of the referenced position's value,
         when the expression uses that value.
         """
+        key = (
+            position_reference.canonical_chained_name_tuple,
+            from_contract_particle,
+            value_type,
+        )
+        expression = self._expressions.get(key)
+        if expression is None:
+            expression = self._build(
+                position_reference,
+                from_contract_particle=from_contract_particle,
+                value_type=value_type,
+            )
+            self._expressions[key] = expression
+        return expression
+
+    def _build(
+        self,
+        position_reference: ast.ChainedName,
+        *,
+        from_contract_particle: bool,
+        value_type: str | None,
+    ) -> renderer.PositionExpression:
         typed_names = position_reference.typed_names
         last_index = len(typed_names) - 1
         first = typed_names[0]
