@@ -9,7 +9,8 @@ import pytest
 from define.compiler.validator.structural import work_pool
 
 
-class _WorkFailedError(Exception):
+# Not an Exception, so the test also covers what an `except Exception` misses.
+class _WorkFailedError(BaseException):
     pass
 
 

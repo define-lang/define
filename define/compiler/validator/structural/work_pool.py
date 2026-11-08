@@ -3,21 +3,17 @@
 from __future__ import annotations
 
 import functools
+import os
 import queue
+import threading
 import typing
-from concurrent.futures import ThreadPoolExecutor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
-    from concurrent.futures import Future
 
 
-def _handle_result[ResultT](
-    handle_result: Callable[[ResultT, WorkPool], None],
-    pool: WorkPool,
-    done: Future[ResultT],
-):
-    handle_result(done.result(), pool)
+def _raise(exception: BaseException, _pool: WorkPool):
+    raise exception
 
 
 @typing.final
@@ -29,9 +25,28 @@ class WorkPool:
 
     def __init__(self, max_workers: int | None = None):
         """Initialize with pool configuration only — no side effects."""
+        if max_workers is None:
+            # TODO: This is ThreadPoolExecutor's default, which suits threads
+            # that mostly wait on I/O. This work mostly uses the CPU, so the
+            # CPU count may suit it better. Change it together with the same
+            # default in graphs/reference_graph_executor.py.
+            max_workers = min(32, (os.process_cpu_count() or 1) + 4)
+        self._max_workers = max_workers
         self._pending = 0
-        self._completed: queue.SimpleQueue[Callable[[], None]] = queue.SimpleQueue()
-        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        # Each item is work, its arguments, and its result handler. None tells
+        # a worker thread to exit.
+        self._work: queue.SimpleQueue[
+            tuple[
+                Callable[..., typing.Any],
+                tuple[object, ...],
+                Callable[[typing.Any, WorkPool], None],
+            ]
+            | None
+        ] = queue.SimpleQueue()
+        self._completed: queue.SimpleQueue[Callable[[WorkPool], None]] = (
+            queue.SimpleQueue()
+        )
+        self._threads: list[threading.Thread] = []
 
     def __enter__(self) -> typing.Self:
         """Return the pool for use in a with statement."""
@@ -39,7 +54,10 @@ class WorkPool:
 
     def __exit__(self, *args: object):
         """Wait for the worker threads to finish."""
-        self._executor.shutdown(wait=True)
+        for _ in self._threads:
+            self._work.put(None)
+        for thread in self._threads:
+            thread.join()
 
     def submit[*ArgsT, ResultT](
         self,
@@ -52,17 +70,29 @@ class WorkPool:
         handle_result receives the result and this pool, so that it can submit
         more work.
         """
-        future = self._executor.submit(work, *args)
         self._pending += 1
-        # add_done_callback pushes from the worker thread the moment work
-        # finishes, so no completion waits on another one and collecting a
-        # completion costs O(1). Scanning every still-pending future instead
-        # made the coordinator quadratic in the number of files in the program.
-        future.add_done_callback(
-            lambda done: self._completed.put(
-                functools.partial(_handle_result, handle_result, self, done)
-            )
-        )
+        # Starting threads only as pending work outnumbers them keeps a small
+        # program from paying for a full pool.
+        if len(self._threads) < min(self._pending, self._max_workers):
+            thread = threading.Thread(target=self._run_worker)
+            thread.start()
+            self._threads.append(thread)
+        # We don't use concurrent.futures.ThreadPoolExecutor because it creates
+        # a Future for every task, and that overhead made this pool's caller
+        # the bottleneck in large programs.
+        self._work.put((work, args, handle_result))
+
+    def _run_worker(self):
+        while (item := self._work.get()) is not None:
+            work, args, handle_result = item
+            try:
+                handle = functools.partial(handle_result, work(*args))
+            # The coordinator thread raises it when it would handle the result.
+            # Anything this thread doesn't relay would leave the coordinator
+            # waiting for a result forever, so this catches BaseException too.
+            except BaseException as exception:  # noqa: BLE001
+                handle = functools.partial(_raise, exception)
+            self._completed.put(handle)
 
     def run_until_idle(self):
         """Handle results as work completes, until no submitted work remains.
@@ -73,4 +103,4 @@ class WorkPool:
         while self._pending:
             handle = self._completed.get()
             self._pending -= 1
-            handle()
+            handle(self)
