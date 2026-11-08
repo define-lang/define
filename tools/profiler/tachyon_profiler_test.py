@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import click.testing
 import pytest
@@ -52,11 +53,9 @@ def _analyze(profile_path: Path, *arguments: str) -> subprocess.CompletedProcess
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
-def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
-    profile_path = tmp_path / "profile.bin"
-    status_path = tmp_path / "status"
-    control_path = tmp_path / "control"
+def _capture_threaded_target(profile_path: Path) -> int:
+    status_path = profile_path.parent / "status"
+    control_path = profile_path.parent / "control"
     os.mkfifo(status_path)
     os.mkfifo(control_path)
     # A process can be stopped if capture fails before the target opens its FIFOs.
@@ -79,6 +78,13 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
             releaser.terminate()
         releaser.join()
         releaser.close()
+    return exit_status
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
+def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
+    profile_path = tmp_path / "profile.bin"
+    exit_status = _capture_threaded_target(profile_path)
 
     assert exit_status == 0
     analysis = _analyze(profile_path)
@@ -90,6 +96,20 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
     # launch it.
     assert "_sync_coordinator" not in analysis.stdout
     assert "tachyon_target" not in analysis.stdout
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
+def test_capture_failure_stops_the_phase_releaser(tmp_path: Path):
+    capture_error = tachyon_profiler.CaptureError("capture failed")
+    with (
+        mock.patch.object(
+            tachyon_profiler, "capture", autospec=True, side_effect=capture_error
+        ),
+        pytest.raises(tachyon_profiler.CaptureError) as failure,
+    ):
+        _ = _capture_threaded_target(tmp_path / "profile.bin")
+
+    assert failure.value is capture_error
 
 
 def test_capture_returns_the_targets_exit_status(
