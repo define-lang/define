@@ -29,6 +29,9 @@ DEFAULT_FAN_OUT = 3
 DEFAULT_UTILITY_FRACTION = 0.3
 DEFAULT_SEED = 7
 _PACKAGE_COUNT = 512
+# Each config-chain dependency is a directory below its dependent, and Linux
+# rejects paths longer than 4096 bytes.
+MAXIMUM_CONFIG_CHAIN_MODULES = 300
 
 
 class Shape(enum.StrEnum):
@@ -229,6 +232,11 @@ def _validate_options(options: ProjectOptions):
         raise ValueError("modules must be at least 1")
     if path_depth < 0:
         raise ValueError("path_depth must be at least 0")
+    if shape == Shape.CONFIG_CHAIN and modules > MAXIMUM_CONFIG_CHAIN_MODULES:
+        raise ValueError(
+            f"config-chain modules must be at most {MAXIMUM_CONFIG_CHAIN_MODULES}, "
+            + f"got {modules}"
+        )
     if shape == Shape.LAYERED and layers < 2:
         raise ValueError(f"layers must be at least 2, got {layers}")
     if shape == Shape.LAYERED and modules < layers:
@@ -368,7 +376,10 @@ def write_project(output: Path, files: dict[str, str]):
     type=generator_cli.POSITIVE_INTEGER,
     default=DEFAULT_MODULES,
     show_default=True,
-    help="Definitions to emit, one per file.",
+    help=(
+        "Definitions to emit, one per file; at most "
+        + f"{MAXIMUM_CONFIG_CHAIN_MODULES} for config-chain."
+    ),
 )
 @click.option(
     "--layers",

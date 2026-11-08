@@ -24,6 +24,15 @@ class TestGenerateProjectFiles:
         with pytest.raises(ValueError, match="fan_out must be at least"):
             gen.generate_project_files(gen.ProjectOptions(fan_out=0))
 
+    def test_too_long_config_chain_raises(self):
+        with pytest.raises(ValueError, match="config-chain modules must be at most"):
+            gen.generate_project_files(
+                gen.ProjectOptions(
+                    modules=gen.MAXIMUM_CONFIG_CHAIN_MODULES + 1,
+                    shape=gen.Shape.CONFIG_CHAIN,
+                )
+            )
+
     def test_utility_fraction_out_of_range_raises(self):
         with pytest.raises(ValueError, match="utility_fraction must be in"):
             gen.generate_project_files(gen.ProjectOptions(utility_fraction=1.5))
