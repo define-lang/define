@@ -41,6 +41,7 @@ py_test(
     srcs = ["call_counter_test.py"],
     deps = [
         ":call_counter",
+        ":call_tree",
     ],
 )
 

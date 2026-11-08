@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import concurrent.futures
+import multiprocessing
 import os
 import subprocess
 import sys
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import click.testing
 import pytest
@@ -52,15 +53,23 @@ def _analyze(profile_path: Path, *arguments: str) -> subprocess.CompletedProcess
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
-def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
-    profile_path = tmp_path / "profile.bin"
-    status_path = tmp_path / "status"
-    control_path = tmp_path / "control"
+# Tachyon needs administrator rights to read another process's memory on macOS.
+_CAPTURES = pytest.mark.skipif(
+    sys.platform == "darwin", reason="capture needs administrator rights on macOS"
+)
+
+
+def _capture_threaded_target(profile_path: Path) -> int:
+    status_path = profile_path.parent / "status"
+    control_path = profile_path.parent / "control"
     os.mkfifo(status_path)
     os.mkfifo(control_path)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        releaser = executor.submit(_release_phases, status_path, control_path, b"1234")
+    # A process can be stopped if capture fails before the target opens its FIFOs.
+    releaser = multiprocessing.get_context("spawn").Process(
+        target=_release_phases, args=(status_path, control_path, b"1234")
+    )
+    releaser.start()
+    try:
         exit_status = _capture(
             profile_path,
             sys.executable,
@@ -68,7 +77,21 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
             str(status_path),
             str(control_path),
         )
-        releaser.result()
+        releaser.join(timeout=10)
+        assert releaser.exitcode == 0
+    finally:
+        if releaser.is_alive():
+            releaser.terminate()
+        releaser.join()
+        releaser.close()
+    return exit_status
+
+
+@_CAPTURES
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
+def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
+    profile_path = tmp_path / "profile.bin"
+    exit_status = _capture_threaded_target(profile_path)
 
     assert exit_status == 0
     analysis = _analyze(profile_path)
@@ -82,6 +105,21 @@ def test_captures_and_analyzes_a_threaded_target(tmp_path: Path):
     assert "tachyon_target" not in analysis.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no FIFOs")
+def test_capture_failure_stops_the_phase_releaser(tmp_path: Path):
+    capture_error = tachyon_profiler.CaptureError("capture failed")
+    with (
+        mock.patch.object(
+            tachyon_profiler, "capture", autospec=True, side_effect=capture_error
+        ),
+        pytest.raises(tachyon_profiler.CaptureError) as failure,
+    ):
+        _ = _capture_threaded_target(tmp_path / "profile.bin")
+
+    assert failure.value is capture_error
+
+
+@_CAPTURES
 def test_capture_returns_the_targets_exit_status(
     tmp_path: Path, capfd: pytest.CaptureFixture[str]
 ):
@@ -99,6 +137,7 @@ def test_capture_returns_the_targets_exit_status(
     assert capfd.readouterr().err.splitlines() == ["target diagnostic"]
 
 
+@_CAPTURES
 def test_capture_runs_the_script_behind_a_bazel_python_binary(tmp_path: Path):
     exit_gate = tmp_path / "exit-gate"
     _ = exit_gate.write_bytes(b"1")
