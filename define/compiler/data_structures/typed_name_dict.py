@@ -61,6 +61,21 @@ class _AstNodeDict[K: ast.ASTNode, V](collections.abc.MutableMapping[K, V], abc.
     def __getitem__(self, key: K) -> V:
         return self._data[self._canonical_name(key)][1]
 
+    @typing.overload
+    def get(self, key: K, /) -> V | None: ...
+
+    @typing.overload
+    def get[T](self, key: K, default: V | T, /) -> V | T: ...
+
+    @typing.override
+    def get[T](self, key: K, default: V | T | None = None, /) -> V | T | None:
+        # Mapping.get looks the key up through __getitem__ and catches the
+        # KeyError of a missing key, which costs several times a dict lookup.
+        entry = self._data.get(self._canonical_name(key))
+        if entry is None:
+            return default
+        return entry[1]
+
     @typing.override
     def __setitem__(self, key: K, value: V):
         self._data[self._canonical_name(key)] = (key, value)

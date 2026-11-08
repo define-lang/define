@@ -96,7 +96,10 @@ class ReferenceResolver:
         target_loaded_file = self._path_tracker.try_get_result(target_file)
         if target_loaded_file is not None:
             return self._validate_reference_against_target(
-                edge, target_loaded_file, source_definition
+                edge,
+                target_loaded_file,
+                source_definition,
+                in_source_file=target_loaded_file is loaded_file,
             )
         self._deferred_edges.setdefault(target_file, []).append(
             _DeferredReferenceEdge(edge, source_definition)
@@ -166,6 +169,9 @@ class ReferenceResolver:
                 deferred_edge.edge,
                 loaded_file,
                 deferred_edge.source_definition,
+                # A file is recorded as loaded before any of its definitions
+                # are validated, so no edge ever waits for its own file.
+                in_source_file=False,
             )
             if reached_definition is not None:
                 reached_definitions.append(reached_definition)
@@ -237,8 +243,13 @@ class ReferenceResolver:
         edge: reference_graph.ReferenceEdge,
         target_loaded_file: file_validator.LoadedFile,
         source_definition: validation_result.DefinitionValidationResult,
+        *,
+        in_source_file: bool,
     ) -> ReachedDefinition | None:
-        """Validate a reference edge against a loaded target file, and return the definition it names."""
+        """Validate a reference edge against a loaded target file, and return the definition it names.
+
+        in_source_file is whether the target file holds the edge.
+        """
         target_file = target_loaded_file.context.full_path
         target_exception = target_loaded_file.exception
         target_definition = target_loaded_file.definitions.get(
@@ -246,11 +257,7 @@ class ReferenceResolver:
         )
         # A definition can reference only definitions that come before it in
         # its own file.
-        if (
-            target_definition is not None
-            and target_definition.location.file_path
-            == source_definition.definition.location.file_path
-        ):
+        if target_definition is not None and in_source_file:
             target_definition = target_loaded_file.earlier_definition(
                 edge.global_name_reference, source_definition.definition
             )
