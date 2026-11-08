@@ -238,29 +238,28 @@ class Driver:
     @staticmethod
     def _resolve_path(path: Path) -> PurePosixPath:
         """Resolve a file path to be a POSIX path relative to the project root."""
-        resolved = path
-        if resolved.is_absolute():
-            cwd = Path.cwd()
-            try:
-                resolved = resolved.relative_to(cwd)
-            except ValueError:
-                raise exceptions.AbsolutePathError(
-                    input_path=path,
-                    resolved_path=resolved,
-                    project_root=cwd,
-                ) from None
-        if ".." in resolved.parts:
+        if ".." in path.parts:
+            # A ".." can leave the project root and come back (or the
+            # reverse), which a lexical prefix comparison cannot see.
             project_root = Path.cwd().resolve()
-            resolved = (project_root / resolved).resolve()
-            try:
-                resolved = resolved.relative_to(project_root)
-            except ValueError:
-                raise exceptions.RelativePathError(
-                    input_path=path,
-                    resolved_path=resolved,
-                    project_root=project_root,
-                ) from None
-        return PurePosixPath(resolved.as_posix())
+            resolved = (project_root / path).resolve()
+        else:
+            project_root = Path.cwd()
+            resolved = project_root / path
+        try:
+            relative = resolved.relative_to(project_root)
+        except ValueError:
+            error_class = (
+                exceptions.AbsolutePathError
+                if path.is_absolute()
+                else exceptions.RelativePathError
+            )
+            raise error_class(
+                input_path=path,
+                resolved_path=resolved,
+                project_root=project_root,
+            ) from None
+        return PurePosixPath(relative.as_posix())
 
     def run(
         self,

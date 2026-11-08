@@ -71,6 +71,68 @@ def test_absolute_path_outside_project_root_returns_error(
     )
 
 
+def test_absolute_path_through_dotdot_into_project_returns_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    (tmp_path / "sibling").mkdir()
+    _write_valid_position_project(
+        project_root, "mv:define-lang.org:driver_absolute_dotdot_path"
+    )
+    monkeypatch.chdir(project_root)
+    error_stream = io.StringIO()
+
+    result = driver.Driver().run(
+        tmp_path / "sibling" / ".." / "project" / "test.dfn",
+        error_stream=error_stream,
+    )
+
+    assert result == driver.ExitCode.SUCCESS
+    assert error_stream.getvalue() == ""
+
+
+def test_absolute_path_through_dotdot_outside_project_returns_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    (tmp_path / "sibling").mkdir()
+    input_path = tmp_path / "sibling" / ".." / "outside.dfn"
+    monkeypatch.chdir(project_root)
+
+    error_stream = io.StringIO()
+    result = driver.Driver().run(input_path, error_stream=error_stream)
+
+    assert result == driver.ExitCode.ERROR
+    assert error_stream.getvalue() == (
+        f"Absolute path is outside the project root: {input_path.as_posix()}\n"
+        f"  Resolved to: {(tmp_path / 'outside.dfn').as_posix()}\n"
+        f"  Project root: {project_root.as_posix()}\n"
+        f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
+    )
+
+
+def test_absolute_path_leaving_project_through_dotdot_returns_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    input_path = project_root / ".." / "outside.dfn"
+    monkeypatch.chdir(project_root)
+
+    error_stream = io.StringIO()
+    result = driver.Driver().run(input_path, error_stream=error_stream)
+
+    assert result == driver.ExitCode.ERROR
+    assert error_stream.getvalue() == (
+        f"Absolute path is outside the project root: {input_path.as_posix()}\n"
+        f"  Resolved to: {(tmp_path / 'outside.dfn').as_posix()}\n"
+        f"  Project root: {project_root.as_posix()}\n"
+        f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
+    )
+
+
 def test_invalid_config_returns_error_and_prints_to_stream(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
