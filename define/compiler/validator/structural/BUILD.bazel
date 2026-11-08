@@ -120,8 +120,8 @@ py_library(
     deps = [
         ":file_validation_context",
         ":file_validator",
-        ":work_pool",
         "//define/compiler:ast",
+        "//define/compiler:work_pool",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
@@ -149,21 +149,6 @@ py_library(
     ],
 )
 
-py_library(
-    name = "work_pool",
-    srcs = ["work_pool.py"],
-)
-
-py_test(
-    name = "work_pool_test",
-    size = "small",
-    srcs = ["work_pool_test.py"],
-    deps = [
-        ":work_pool",
-        "@pypi//pytest",
-    ],
-)
-
 # --- Type-checking ---
 
 pyright_test(
@@ -179,8 +164,6 @@ pyright_test(
         ":program_validator",
         ":structural",
         ":view_setting_order_tracker",
-        ":work_pool",
-        ":work_pool_test",
     ],
 )
 

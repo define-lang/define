@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import define_path
 
-from define.compiler import ast
+from define.compiler import ast, work_pool
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
@@ -27,7 +27,6 @@ from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
     file_validation_context,
     file_validator,
-    work_pool,
 )
 from define.compiler.validator.structural.resolver import (
     filesystem_reference_resolver,

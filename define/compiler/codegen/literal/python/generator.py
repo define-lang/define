@@ -65,22 +65,20 @@ class _SharedModule:
 
 
 # A tuple, because isinstance checks a tuple of types faster than a union.
-_DEFINITIONS_WITHOUT_MODULE_PARTS = (
-    ast.ValueDefinition,
-    ast.EncodingDefinition,
-    ast.PotentialLiteralDefinition,
-    ast.ValueOperationDefinition,
-    ast.LogicalOperationDefinition,
-)
-
-
-def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
+def _generates_module_part(
+    definition: ast.GlobalDefinition,
+) -> typing.TypeIs[
+    ast.ActionDefinition | ast.EncodingOperationDefinition | ast.PositionDefinition
+]:
     # Literals are already in their values' encodings in generated code, so
     # values, encodings, and Potential Literals need no code of their own.
     # Executing a Value Operation runs the Encoding Operation that performs it,
     # so Value Operations need no code either. Logical operations are part of
     # the compiler, not of the generated program.
-    return not isinstance(definition, _DEFINITIONS_WITHOUT_MODULE_PARTS)
+    return isinstance(
+        definition,
+        (ast.ActionDefinition, ast.EncodingOperationDefinition, ast.PositionDefinition),
+    )
 
 
 def _typing_names(*, classvar: bool, never: bool, override: bool) -> list[str]:
@@ -199,6 +197,7 @@ class _DefinitionGenerator:
         # file definitions that the entry point never references.
         for package in reference_graph_executor.process_definitions(
             self._codegen_input.definition_order,
+            _generates_module_part,
             self._generate_definition,
             max_workers=max_workers,
         ):
@@ -206,9 +205,12 @@ class _DefinitionGenerator:
                 packages.add(package)
         return self._entry_definition, packages
 
-    def _generate_definition(self, definition: ast.GlobalDefinition) -> str | None:
-        if not _generates_module_part(definition):
-            return None
+    def _generate_definition(
+        self,
+        definition: ast.ActionDefinition
+        | ast.EncodingOperationDefinition
+        | ast.PositionDefinition,
+    ) -> str | None:
         definition_index = self._module_plan.definition_indexes[
             definition.typed_name.full_typed_name
         ]
@@ -245,7 +247,7 @@ class _DefinitionGenerator:
             )
         else:
             position = position_definition.PositionDefinitionGenerator(
-                typing.cast("ast.PositionDefinition", definition),
+                definition,
                 self._converter,
             ).generate()
             module_name = position.module_name

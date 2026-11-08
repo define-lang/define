@@ -55,6 +55,12 @@ def _order() -> reference_graph_order.ReferenceGraphOrder:
     return result.definition_order
 
 
+def _is_any_definition(
+    _definition: ast.GlobalDefinition,
+) -> typing.TypeIs[ast.GlobalDefinition]:
+    return True
+
+
 def _is_position(
     definition: ast.GlobalDefinition,
 ) -> typing.TypeIs[ast.PositionDefinition]:
@@ -84,13 +90,18 @@ def test_failed_shared_dependency_prevents_both_paths(max_workers: int):
 
     with pytest.raises(RuntimeError, match="base processing failed") as raised:
         _ = reference_graph_executor.process_definitions(
-            order, process, max_workers=max_workers
+            order, _is_any_definition, process, max_workers=max_workers
         )
     assert raised.value is failure
-    assert processed == {
-        "position<my.domain.com:lib:/base>",
-        "position<my.domain.com:lib:/independent>",
-    }
+    if max_workers == 1:
+        # One worker processes /base first, and its failure stops the rest.
+        assert processed == {"position<my.domain.com:lib:/base>"}
+    else:
+        # /independent doesn't depend on /base, so whether it runs before the
+        # failure stops processing depends on thread timing.
+        assert processed - {"position<my.domain.com:lib:/independent>"} == {
+            "position<my.domain.com:lib:/base>"
+        }
 
 
 @pytest.mark.parametrize("max_workers", [1, 4])
@@ -120,7 +131,7 @@ def test_order_can_be_reused_for_multiple_passes(max_workers: int):
             return pass_number, name
 
         results = reference_graph_executor.process_definitions(
-            order, process, max_workers=max_workers
+            order, _is_any_definition, process, max_workers=max_workers
         )
         expected: list[tuple[int, str]] = []
         for definition in order.definitions:
@@ -150,14 +161,19 @@ def test_failed_dependency_prevents_dependents_of_unprocessed_definitions(
         return name
 
     with pytest.raises(RuntimeError, match="base processing failed") as raised:
-        _ = reference_graph_executor.process_selected_definitions(
+        _ = reference_graph_executor.process_definitions(
             order, _is_position, process, max_workers=max_workers
         )
     assert raised.value is failure
-    assert processed == {
-        "position<my.domain.com:lib:/base>",
-        "position<my.domain.com:lib:/independent>",
-    }
+    if max_workers == 1:
+        # One worker processes /base first, and its failure stops the rest.
+        assert processed == {"position<my.domain.com:lib:/base>"}
+    else:
+        # /independent doesn't depend on /base, so whether it runs before the
+        # failure stops processing depends on thread timing.
+        assert processed - {"position<my.domain.com:lib:/independent>"} == {
+            "position<my.domain.com:lib:/base>"
+        }
 
 
 @pytest.mark.parametrize("max_workers", [1, 4])
@@ -175,7 +191,7 @@ def test_unprocessed_definitions_preserve_reference_order(max_workers: int):
             processed.add(name)
         return name
 
-    results = reference_graph_executor.process_selected_definitions(
+    results = reference_graph_executor.process_definitions(
         order, _is_position, process, max_workers=max_workers
     )
     assert results == [
@@ -191,7 +207,7 @@ def test_no_definitions_require_processing():
     def process(definition: ast.OperationDefinition) -> str:
         raise AssertionError(definition.typed_name.full_typed_name)
 
-    results = reference_graph_executor.process_selected_definitions(
+    results = reference_graph_executor.process_definitions(
         order, _is_operation, process, max_workers=1
     )
     assert results == []
@@ -205,7 +221,7 @@ def test_none_is_a_processed_result():
         processed.append(definition.typed_name.full_typed_name)
 
     results = reference_graph_executor.process_definitions(
-        order, process, max_workers=1
+        order, _is_any_definition, process, max_workers=1
     )
     assert results == [None, None, None, None, None]
     assert sorted(processed) == [

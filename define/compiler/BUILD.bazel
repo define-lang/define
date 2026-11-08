@@ -254,6 +254,22 @@ py_library(
     visibility = [":__subpackages__"],
 )
 
+py_library(
+    name = "work_pool",
+    srcs = ["work_pool.py"],
+    visibility = [":__subpackages__"],
+)
+
+py_test(
+    name = "work_pool_test",
+    size = "small",
+    srcs = ["work_pool_test.py"],
+    deps = [
+        ":work_pool",
+        "@pypi//pytest",
+    ],
+)
+
 # --- Type-checking ---
 
 pyright_test(
@@ -279,6 +295,8 @@ pyright_test(
         ":main_integration_test",
         ":main_test",
         ":name_types",
+        ":work_pool",
+        ":work_pool_test",
     ],
 )
 

@@ -28,8 +28,7 @@ class WorkPool:
         if max_workers is None:
             # TODO: This is ThreadPoolExecutor's default, which suits threads
             # that mostly wait on I/O. This work mostly uses the CPU, so the
-            # CPU count may suit it better. Change it together with the same
-            # default in graphs/reference_graph_executor.py.
+            # CPU count may suit it better.
             max_workers = min(32, (os.process_cpu_count() or 1) + 4)
         self._max_workers = max_workers
         self._pending = 0
@@ -47,13 +46,18 @@ class WorkPool:
             queue.SimpleQueue()
         )
         self._threads: list[threading.Thread] = []
+        # Set once work or the coordinator has failed. The compile is about to
+        # stop, so workers skip the work still queued rather than run it.
+        self._failed = threading.Event()
 
     def __enter__(self) -> typing.Self:
         """Return the pool for use in a with statement."""
         return self
 
-    def __exit__(self, *args: object):
-        """Wait for the worker threads to finish."""
+    def __exit__(self, exception_type: type[BaseException] | None, *args: object):
+        """Wait for the worker threads to finish, skipping queued work after a failure."""
+        if exception_type is not None:
+            self._failed.set()
         for _ in self._threads:
             self._work.put(None)
         for thread in self._threads:
@@ -85,12 +89,15 @@ class WorkPool:
     def _run_worker(self):
         while (item := self._work.get()) is not None:
             work, args, handle_result = item
+            if self._failed.is_set():
+                continue
             try:
                 handle = functools.partial(handle_result, work(*args))
             # The coordinator thread raises it when it would handle the result.
             # Anything this thread doesn't relay would leave the coordinator
             # waiting for a result forever, so this catches BaseException too.
             except BaseException as exception:  # noqa: BLE001
+                self._failed.set()
                 handle = functools.partial(_raise, exception)
             self._completed.put(handle)
 

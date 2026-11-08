@@ -2,27 +2,20 @@
 
 from __future__ import annotations
 
-import os
-import queue
+import functools
 import typing
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor
+
+from define.compiler import work_pool
 
 if typing.TYPE_CHECKING:
-    from array import array
     from collections.abc import Callable
-    from concurrent.futures import Future
 
     from define.compiler import ast
     from define.compiler.graphs import reference_graph_order
 
 
-class _ReferencedDefinitionError(Exception):
-    """A definition could not be processed because a reference failed."""
-
-
 @typing.final
-class _WorkPool[DefinitionT: ast.GlobalDefinition, ResultT]:
+class _ReferenceOrderProcessor[DefinitionT: ast.GlobalDefinition, ResultT]:
     """Runs definitions after their referenced definitions complete."""
 
     def __init__(
@@ -32,118 +25,68 @@ class _WorkPool[DefinitionT: ast.GlobalDefinition, ResultT]:
             [ast.GlobalDefinition], typing.TypeIs[DefinitionT]
         ],
         process_definition: Callable[[DefinitionT], ResultT],
-        max_workers: int | None,
+        pool: work_pool.WorkPool,
     ):
-        if max_workers is None:
-            max_workers = min(32, (os.process_cpu_count() or 1) + 4)
-        self._executor = ThreadPoolExecutor(max_workers=max_workers)
-        self._max_in_flight = max_workers
         self._order = order
         self._requires_processing = requires_processing
         self._process_definition = process_definition
-        self._completed: queue.SimpleQueue[Future[ResultT]] = queue.SimpleQueue()
-
-    def __enter__(self) -> typing.Self:
-        return self
-
-    def __exit__(self, *args: object):
-        self._executor.shutdown(wait=True, cancel_futures=True)
+        self._pool = pool
+        self._remaining_references = order.new_reference_counts()
+        # One slot per definition, in definition order. Definitions finish in
+        # whatever order the threads get to them, and each result goes straight
+        # into its own slot, so nothing waits on another definition. This only
+        # lets process() return the results in the same order every run, so
+        # that the compiler's output doesn't depend on thread timing.
+        self._results: list[ResultT | None] = [None] * len(order.definitions)
+        # Kept apart from results because None is a valid result.
+        self._processed = bytearray(len(order.definitions))
 
     def process(self) -> list[ResultT]:
-        """Return the results of processed definitions in definition order."""
-        remaining_references = self._order.new_reference_counts()
-        ready_definitions: deque[int] = deque()
+        """Return the results of processed definitions in definition order.
+
+        An exception from processing a definition is a compiler bug, so it is
+        raised as soon as the coordinator thread sees it rather than after the
+        remaining definitions are processed.
+        """
         unprocessed_definitions: list[int] = []
         for definition_index in self._order.leaf_definition_indexes():
-            self._release_definition(
-                definition_index, ready_definitions, unprocessed_definitions
-            )
-        self._complete_definitions(
-            unprocessed_definitions, remaining_references, ready_definitions
-        )
-        in_flight: dict[Future[ResultT], int] = {}
-        results: list[ResultT | None] = [None] * len(self._order.definitions)
-        # Kept apart from results because None is a valid result.
-        processed = bytearray(len(self._order.definitions))
-        exceptions: list[BaseException | None] = [None] * len(self._order.definitions)
+            self._release_definition(definition_index, unprocessed_definitions)
+        self._complete_definitions(unprocessed_definitions)
+        self._pool.run_until_idle()
 
-        while ready_definitions or in_flight:
-            self._submit_ready_definitions(ready_definitions, in_flight)
-
-            future = self._completed.get()
-            definition_index = in_flight.pop(future)
-            exception = future.exception()
-            if exception is None:
-                results[definition_index] = future.result()
-                processed[definition_index] = True
-            else:
-                exceptions[definition_index] = exception
-            self._complete_dependents(
-                definition_index,
-                exception,
-                remaining_references,
-                ready_definitions,
-                exceptions,
-            )
-
-        return self._ordered_results(results, processed, exceptions)
-
-    def _submit_ready_definitions(
-        self,
-        ready_definitions: deque[int],
-        in_flight: dict[Future[ResultT], int],
-    ):
-        """Submit ready definitions up to the worker limit."""
-        while ready_definitions and len(in_flight) < self._max_in_flight:
-            definition_index = ready_definitions.popleft()
-            future = self._executor.submit(
-                self._process_definition,
-                # _release_definition only queues definitions that
-                # requires_processing narrowed to DefinitionT.
-                typing.cast("DefinitionT", self._order.definitions[definition_index]),
-            )
-            in_flight[future] = definition_index
-            future.add_done_callback(self._completed.put)
-
-    @staticmethod
-    def _ordered_results(
-        results: list[ResultT | None],
-        processed: bytearray,
-        exceptions: list[BaseException | None],
-    ) -> list[ResultT]:
-        """Return processed results or raise the first error in definition order."""
         ordered_results: list[ResultT] = []
-        for result, was_processed, exception in zip(
-            results, processed, exceptions, strict=True
-        ):
-            if exception is not None:
-                raise exception
+        for result, was_processed in zip(self._results, self._processed, strict=True):
             if was_processed:
                 ordered_results.append(typing.cast("ResultT", result))
         return ordered_results
 
-    def _release_definition(
-        self,
-        definition_index: int,
-        ready_definitions: deque[int],
-        unprocessed_definitions: list[int],
+    def _handle_result(
+        self, definition_index: int, result: ResultT, _pool: work_pool.WorkPool
     ):
-        """Queue a definition whose references have all completed."""
-        if self._requires_processing(self._order.definitions[definition_index]):
-            ready_definitions.append(definition_index)
+        self._results[definition_index] = result
+        self._processed[definition_index] = True
+        self._complete_definitions([definition_index])
+
+    def _release_definition(
+        self, definition_index: int, unprocessed_definitions: list[int]
+    ):
+        """Submit a definition whose references have all completed."""
+        definition = self._order.definitions[definition_index]
+        if self._requires_processing(definition):
+            self._pool.submit(
+                self._process_definition,
+                definition,
+                handle_result=functools.partial(self._handle_result, definition_index),
+            )
         else:
             unprocessed_definitions.append(definition_index)
 
-    def _complete_definitions(
-        self,
-        completed_definitions: list[int],
-        remaining_references: array[int],
-        ready_definitions: deque[int],
-    ):
+    def _complete_definitions(self, completed_definitions: list[int]):
         """Release dependents of completed definitions.
 
         Dependents that do not require processing complete immediately.
         """
+        remaining_references = self._remaining_references
         while completed_definitions:
             completed_index = completed_definitions.pop()
             for dependent_index in self._order.dependent_definition_indexes(
@@ -151,59 +94,10 @@ class _WorkPool[DefinitionT: ast.GlobalDefinition, ResultT]:
             ):
                 remaining_references[dependent_index] -= 1
                 if remaining_references[dependent_index] == 0:
-                    self._release_definition(
-                        dependent_index, ready_definitions, completed_definitions
-                    )
-
-    def _complete_dependents(
-        self,
-        definition_index: int,
-        exception: BaseException | None,
-        remaining_references: array[int],
-        ready_definitions: deque[int],
-        exceptions: list[BaseException | None],
-    ):
-        if exception is None:
-            self._complete_definitions(
-                [definition_index], remaining_references, ready_definitions
-            )
-            return
-
-        failed_definitions = deque(
-            self._order.dependent_definition_indexes(definition_index)
-        )
-        while failed_definitions:
-            failed_definition_index = failed_definitions.popleft()
-            if exceptions[failed_definition_index] is not None:
-                continue
-            exceptions[failed_definition_index] = _ReferencedDefinitionError()
-            failed_definitions.extend(
-                self._order.dependent_definition_indexes(failed_definition_index)
-            )
+                    self._release_definition(dependent_index, completed_definitions)
 
 
-def _requires_every_definition(
-    _definition: ast.GlobalDefinition,
-) -> typing.TypeIs[ast.GlobalDefinition]:
-    return True
-
-
-def process_definitions[ResultT](
-    order: reference_graph_order.ReferenceGraphOrder,
-    process_definition: Callable[[ast.GlobalDefinition], ResultT],
-    *,
-    max_workers: int | None = None,
-) -> list[ResultT]:
-    """Process definitions concurrently after their references complete."""
-    return process_selected_definitions(
-        order,
-        _requires_every_definition,
-        process_definition,
-        max_workers=max_workers,
-    )
-
-
-def process_selected_definitions[DefinitionT: ast.GlobalDefinition, ResultT](
+def process_definitions[DefinitionT: ast.GlobalDefinition, ResultT](
     order: reference_graph_order.ReferenceGraphOrder,
     requires_processing: Callable[[ast.GlobalDefinition], typing.TypeIs[DefinitionT]],
     process_definition: Callable[[DefinitionT], ResultT],
@@ -215,5 +109,7 @@ def process_selected_definitions[DefinitionT: ast.GlobalDefinition, ResultT](
     Definitions that do not require processing still complete in reference
     order, but produce no results.
     """
-    with _WorkPool(order, requires_processing, process_definition, max_workers) as pool:
-        return pool.process()
+    with work_pool.WorkPool(max_workers) as pool:
+        return _ReferenceOrderProcessor(
+            order, requires_processing, process_definition, pool
+        ).process()

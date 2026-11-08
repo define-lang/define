@@ -101,7 +101,7 @@ class ReferenceGraphValidator:
     ) -> ReferenceGraphValidationResult:
         """Validate every definition in direct-reference-first order."""
         definition_order = self._definition_order
-        results = reference_graph_executor.process_selected_definitions(
+        results = reference_graph_executor.process_definitions(
             definition_order,
             _requires_validation,
             self._validate_definition,

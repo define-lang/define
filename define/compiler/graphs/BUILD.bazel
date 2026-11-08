@@ -25,6 +25,7 @@ py_library(
     deps = [
         ":reference_graph_order",
         "//define/compiler:ast",
+        "//define/compiler:work_pool",
     ],
 )
 

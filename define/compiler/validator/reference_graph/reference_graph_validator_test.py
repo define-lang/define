@@ -35,7 +35,6 @@ _ACTION_TEMPLATE = (
 )
 
 _CALLEE_NAME = "action<my.domain.com:my_lib:/callee>"
-_SECOND_CALLEE_NAME = "action<my.domain.com:my_lib:/second_callee>"
 _CALLER_NAME = "action<my.domain.com:my_lib:/caller>"
 _OTHER_CALLER_NAME = "action<my.domain.com:my_lib:/other_caller>"
 _CALLEE_AND_POSITION_SOURCE = (
@@ -301,6 +300,7 @@ def test_reference_failure_prevents_referencing_action_validation():
             structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
-        ).validate(max_workers=2)
+        ).validate(max_workers=1)
 
-    assert analyzed_actions == {_CALLEE_NAME, _SECOND_CALLEE_NAME}
+    # One worker validates /callee first, and its failure stops the rest.
+    assert analyzed_actions == {_CALLEE_NAME}
