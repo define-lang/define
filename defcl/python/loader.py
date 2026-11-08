@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import typing
 
 import msgspec
@@ -67,6 +68,12 @@ def load_file[M: message.Message](
 # TODO: Move the walk over the imports into defcl/rust when the Rust crate
 # writes the binary encoding: Rust follows each file's imports and asks the
 # extension for each file by name from Python's descriptor pool.
+#
+# A message type's descriptors never change once its module is imported, so
+# its descriptor set is built once. Building and serializing it took most of
+# the time of loading a small file, and a program loads a config for every
+# universe it uses.
+@functools.cache
 def _descriptor_set(message_type: type[message.Message]) -> bytes:
     """Return the binary `FileDescriptorSet` of the file that defines `message_type` and every file it imports."""
     descriptor_set = descriptor_pb2.FileDescriptorSet()

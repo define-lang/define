@@ -47,6 +47,14 @@ def test_message_types_from_imported_files_load():
     assert result.diagnostics == []
 
 
+def test_loading_a_message_type_again_loads_the_same_message():
+    source = _testdata("valid/single_toplevel.defcl")
+    first = loader.load(source, single_toplevel_pb2.SingleToplevelFile)
+    second = loader.load(source, single_toplevel_pb2.SingleToplevelFile)
+
+    assert second == first
+
+
 def test_semantic_errors_are_diagnostics_without_a_message():
     result = loader.load(
         _testdata("invalid/semantics/enums/integer_enum.defcl"),
