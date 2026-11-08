@@ -88,7 +88,7 @@ def _install_fake_bazelisk(
             # The real setup_local_dev makes the venv from Bazel's Python and
             # records its successful runs this way.
             "  *setup_local_dev) mkdir -p .venv python-home",
-            '    echo "home = $PWD/python-home" > .venv/pyvenv.cfg',
+            f'    echo "home = {fake_tools.WORKING_DIRECTORY}/python-home" > .venv/pyvenv.cfg',
             '    touch "$(git rev-parse --git-path setup-local-dev-stamp)" ;;',
             "esac",
             f"exit {exit_code}",
