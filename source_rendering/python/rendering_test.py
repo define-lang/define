@@ -31,7 +31,3 @@ def test_render_location_without_a_source_line_is_only_the_header():
         )
         == "line 3, column 5"
     )
-
-
-def test_escape_invisible():
-    assert rendering.escape_invisible("a\u200b\t") == "a\\u{200b}\\t"

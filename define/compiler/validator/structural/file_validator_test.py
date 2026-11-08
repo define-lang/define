@@ -124,7 +124,7 @@ class TestFileStructuralValidatorErrors:
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
         assert result.exception.location.line == 1
         assert result.exception.location.column == 1
-        assert result.exception.char == "\\x80"
+        assert result.exception.escaped_char == "\\x80"
 
     def test_encoding_error_multiline(self, tmp_path: Path):
         (tmp_path / "test.dfn").write_bytes(
@@ -138,7 +138,7 @@ class TestFileStructuralValidatorErrors:
         assert result.exception.location.column == 8
         assert result.exception.location.end_line == 3
         assert result.exception.location.end_column == 8
-        assert result.exception.char == "\\x80"
+        assert result.exception.escaped_char == "\\x80"
 
 
 class TestFileStructuralValidatorDiagnostics:

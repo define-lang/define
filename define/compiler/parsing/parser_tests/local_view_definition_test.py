@@ -296,7 +296,7 @@ def test_carriage_return_in_comment_before_quality_assignment_block(parse: Parse
             + "        }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.char == "\r"
+    assert error.value.escaped_char == "\\r"
     assert error.value.location.line == 4
     assert error.value.location.column == 19
     assert error.value.location.end_line == 4

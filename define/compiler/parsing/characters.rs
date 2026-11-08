@@ -13,7 +13,7 @@ use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::Scanner;
 use crate::syntax_errors::SyntaxErrors;
 use invisible_ranges::INVISIBLE_RANGES;
-use source_rendering::Position;
+use source_rendering::{Position, escape_invisible};
 use std::fmt::Write as _;
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
@@ -134,13 +134,13 @@ fn character_error(
 ) -> ParseError {
     match disallowed {
         DisallowedCharacter::ByteOrderMark => {
-            errors.byte_order_mark_error(position, position, character)
+            errors.byte_order_mark_error(position, position, &escape_invisible(character))
         }
         DisallowedCharacter::CarriageReturn => {
-            errors.carriage_return_error(position, position, character)
+            errors.carriage_return_error(position, position, &escape_invisible(character))
         }
         DisallowedCharacter::Control => {
-            errors.control_character_error(position, position, character)
+            errors.control_character_error(position, position, &escape_invisible(character))
         }
         DisallowedCharacter::Invisible => {
             errors.invisible_character_error(position, position, character)
@@ -162,9 +162,11 @@ fn add_comment_character_diagnostic(
         DisallowedCharacter::ByteOrderMark => {
             diagnostics.byte_order_mark_in_comment_diagnostic(position, position)
         }
-        DisallowedCharacter::Control => {
-            diagnostics.control_character_in_comment_diagnostic(position, position, character)
-        }
+        DisallowedCharacter::Control => diagnostics.control_character_in_comment_diagnostic(
+            position,
+            position,
+            &escape_invisible(character),
+        ),
         DisallowedCharacter::Invisible => {
             diagnostics.invisible_character_in_comment_diagnostic(position, position, character)
         }

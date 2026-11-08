@@ -557,7 +557,7 @@ def test_control_character_after_potential_position_definition_block_close(
             + "    }\n"
             + "}\x01\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 2
     assert exc_info.value.location.end_line == 5
@@ -671,7 +671,7 @@ def test_carriage_return_in_comment_after_block_open(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 72
     assert exc_info.value.location.end_line == 1
@@ -687,7 +687,7 @@ def test_carriage_return_in_comment_after_block_close(parse: Parse):
             + "    } # note\r\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 13
     assert exc_info.value.location.end_line == 4

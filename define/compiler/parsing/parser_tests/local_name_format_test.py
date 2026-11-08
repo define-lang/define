@@ -204,7 +204,7 @@ def test_local_name_with_space(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == " "
+    assert exc_info.value.escaped_char == " "
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
     assert exc_info.value.location.end_line == 3
@@ -261,7 +261,7 @@ def test_local_name_first_char_colon(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == ":"
+    assert exc_info.value.escaped_char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
     assert exc_info.value.location.end_line == 3
@@ -280,7 +280,7 @@ def test_local_name_first_char_slash(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "/"
+    assert exc_info.value.escaped_char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 25
     assert exc_info.value.location.end_line == 3
@@ -375,7 +375,7 @@ def test_local_name_dot_then_slash(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "/"
+    assert exc_info.value.escaped_char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 3
@@ -394,7 +394,7 @@ def test_local_name_brace_then_slash(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "/"
+    assert exc_info.value.escaped_char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 3
@@ -413,7 +413,7 @@ def test_local_name_angle_bracket_then_slash(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "/"
+    assert exc_info.value.escaped_char == "/"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 3
@@ -432,7 +432,7 @@ def test_local_name_angle_bracket_then_colon(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == ":"
+    assert exc_info.value.escaped_char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 3
@@ -469,7 +469,7 @@ def test_local_name_with_colon(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == ":"
+    assert exc_info.value.escaped_char == ":"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 27
     assert exc_info.value.location.end_line == 3

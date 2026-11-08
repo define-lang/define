@@ -130,7 +130,7 @@ def test_control_character_in_comment(parse_with_diagnostics: ParseWithDiagnosti
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=15, end_line=1, end_column=15),
-            character="\x01",
+            escaped_character="\\u{1}",
         ),
     ]
 
@@ -146,7 +146,7 @@ def test_control_character_in_inline_comment(
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=57, end_line=1, end_column=57),
-            character="\x00",
+            escaped_character="\\0",
         ),
     ]
 
@@ -400,7 +400,7 @@ def test_comment_with_carriage_return_after_encoding_quality_assignment(parse: P
             + "    # note\r\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 11
     assert exc_info.value.location.end_line == 3
@@ -701,7 +701,7 @@ def test_disallowed_character_in_comment_does_not_stop_the_block(
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=2, column=8, end_line=2, end_column=8),
-            character="\x01",
+            escaped_character="\\u{1}",
         )
     ]
     assert result.program is not None
@@ -727,7 +727,7 @@ def test_each_disallowed_character_in_a_comment_gets_its_own_diagnostic(
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
-            character="\x01",
+            escaped_character="\\u{1}",
         ),
         diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=6, end_line=1, end_column=6),
@@ -749,7 +749,7 @@ def test_carriage_return_after_disallowed_character_in_comment_is_reported_with_
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
-            character="\x01",
+            escaped_character="\\u{1}",
         )
     ]
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
@@ -764,7 +764,7 @@ def test_carriage_return_in_comment_after_statement(parse: Parse):
         parse(
             "define the potential position<mv:define-lang.org:parser:/path>. # note\r\n"
         )
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 71
     assert exc_info.value.location.end_line == 1

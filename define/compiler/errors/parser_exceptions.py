@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, ClassVar, override
 
 from define.compiler import constants
 from define.compiler.errors import exceptions, source_map
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler import ast
@@ -45,7 +44,7 @@ class DefineTokenError(DefineSyntaxError):
 
 
 class DefineCharError(DefineSyntaxError):
-    """Base class for Define syntax errors caused by unexpected characters."""
+    """Base class for Define syntax errors caused by an unexpected character."""
 
     char: str
 
@@ -54,16 +53,16 @@ class DefineCharError(DefineSyntaxError):
         super().__init__(location)
         self.char = char
 
-    @property
-    def escaped_char(self) -> str:
-        """The character in a readable escaped form."""
-        return rendering.escape_invisible(self.char)
 
-    @override
-    def _message_fields(self) -> dict[str, object]:
-        fields = super()._message_fields()
-        fields["escaped_char"] = self.escaped_char
-        return fields
+class DefineEscapedCharError(DefineSyntaxError):
+    """Base class for Define syntax errors whose messages show an unexpected character escaped."""
+
+    escaped_char: str
+
+    def __init__(self, location: ast.SourceLocation, escaped_char: str):
+        """Initialize with the unexpected character, with its characters that are not printable escaped."""
+        super().__init__(location)
+        self.escaped_char = escaped_char
 
 
 class DefineNameSyntaxError(DefineSyntaxError):
@@ -73,7 +72,7 @@ class DefineNameSyntaxError(DefineSyntaxError):
 # --- Character error subclasses ---
 
 
-class ByteOrderMarkError(DefineCharError):
+class ByteOrderMarkError(DefineEscapedCharError):
     """Raised when a byte order mark is present."""
 
     message_format: ClassVar[str] = (
@@ -81,7 +80,7 @@ class ByteOrderMarkError(DefineCharError):
     )
 
 
-class CarriageReturnError(DefineCharError):
+class CarriageReturnError(DefineEscapedCharError):
     """Raised when carriage return characters are used."""
 
     message_format: ClassVar[str] = (
@@ -89,19 +88,19 @@ class CarriageReturnError(DefineCharError):
     )
 
 
-class ControlCharacterError(DefineCharError):
+class ControlCharacterError(DefineEscapedCharError):
     """Raised when control characters are used."""
 
     message_format: ClassVar[str] = "Control character ({escaped_char}) is not allowed."
 
 
-class InvalidLocalNameCharacter(DefineCharError):
+class InvalidLocalNameCharacter(DefineEscapedCharError):
     """Wrote something invalid where only a local name is accepted."""
 
     message_format: ClassVar[str] = "'{escaped_char}' is not allowed in local names."
 
 
-class InvalidEncodingError(DefineCharError):
+class InvalidEncodingError(DefineEscapedCharError):
     """Raised when a file contains bytes that are not valid UTF-8."""
 
     message_format: ClassVar[str] = "Invalid UTF-8 byte sequence: ({escaped_char})."

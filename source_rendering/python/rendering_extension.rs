@@ -28,15 +28,8 @@ fn render_location(
     .render(source_line, file_path)
 }
 
-/// `text` with each character that is not printable written as its escape,
-/// such as `\t`, `\0` and `\u{200b}`.
-#[pyfunction]
-fn escape_invisible(text: &str) -> String {
-    source_rendering::escape_invisible(text)
-}
-
 #[pymodule(gil_used = false)]
 mod rendering {
     #[pymodule_export]
-    use super::{escape_invisible, render_location};
+    use super::render_location;
 }

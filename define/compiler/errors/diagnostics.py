@@ -12,7 +12,6 @@ import msgspec
 from define.compiler import constants, name_types
 from define.compiler.errors import source_map
 from define.compiler.validator.reference_graph import propagation_step
-from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1971,15 +1970,10 @@ class ByteOrderMarkInCommentDiagnostic(Diagnostic):
 class ControlCharacterInCommentDiagnostic(Diagnostic):
     """Diagnostic for a control character in a comment."""
 
-    character: str
+    escaped_character: str
     message_format: ClassVar[str] = (
         "comments may not have the control character {self.escaped_character}"
     )
-
-    @property
-    def escaped_character(self) -> str:
-        """The character as an escape sequence."""
-        return rendering.escape_invisible(self.character)
 
 
 class InvisibleCharacterInCommentDiagnostic(Diagnostic):

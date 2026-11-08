@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 def test_bom_at_start(parse: Parse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
         parse("\ufeffdefine the potential position<standard:/path>.\n")
-    assert exc_info.value.char == "\ufeff"
+    assert exc_info.value.escaped_char == "\\u{feff}"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 1
@@ -33,7 +33,7 @@ def test_bom_at_start(parse: Parse):
 def test_crlf_line_endings(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("define the potential position<standard:/path>.\r\n")
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 47
     assert exc_info.value.location.end_line == 1
@@ -43,7 +43,7 @@ def test_crlf_line_endings(parse: Parse):
 def test_crlf_line_endings_in_comments(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("# a comment\r\n")
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 12
     assert exc_info.value.location.end_line == 1
@@ -53,7 +53,7 @@ def test_crlf_line_endings_in_comments(parse: Parse):
 def test_carriage_return_in_comment(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("# comment with\rcarriage return\n")
-    assert exc_info.value.char == "\r"
+    assert exc_info.value.escaped_char == "\\r"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 15
     assert exc_info.value.location.end_line == 1
@@ -63,7 +63,7 @@ def test_carriage_return_in_comment(parse: Parse):
 def test_surrogate_character(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\udcff\n")
-    assert exc_info.value.char == "\\xed"
+    assert exc_info.value.escaped_char == "\\xed"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
@@ -73,7 +73,7 @@ def test_surrogate_character(parse: Parse):
 def test_surrogate_range_start_boundary(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\ud800\n")
-    assert exc_info.value.char == "\\xed"
+    assert exc_info.value.escaped_char == "\\xed"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
@@ -83,7 +83,7 @@ def test_surrogate_range_start_boundary(parse: Parse):
 def test_surrogate_range_end_boundary(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\udfff\n")
-    assert exc_info.value.char == "\\xed"
+    assert exc_info.value.escaped_char == "\\xed"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
@@ -93,7 +93,7 @@ def test_surrogate_range_end_boundary(parse: Parse):
 def test_del_character(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position<standard:/path>.\n\x7f\n")
-    assert exc_info.value.char == "\x7f"
+    assert exc_info.value.escaped_char == "\\u{7f}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
@@ -121,7 +121,7 @@ def test_control_character_after_syntax_error(parse: Parse):
 def test_first_non_ascii_byte(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position<standard:/path>.\n\x80\n")
-    assert exc_info.value.char == "\x80"
+    assert exc_info.value.escaped_char == "\\u{80}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 1
     assert exc_info.value.location.end_line == 2
@@ -180,7 +180,7 @@ def test_variation_selector_after_space_in_comment_gets_a_diagnostic(
 def test_invalid_utf8_in_comment(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("# a\udcffb\n" + "define the potential position<standard:/path>.\n")
-    assert exc_info.value.char == "\\xed"
+    assert exc_info.value.escaped_char == "\\xed"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 4
     assert exc_info.value.location.end_line == 1
@@ -190,7 +190,7 @@ def test_invalid_utf8_in_comment(parse: Parse):
 def test_invalid_utf8_in_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/a\udcffb>.\n")
-    assert exc_info.value.char == "\\xed"
+    assert exc_info.value.escaped_char == "\\xed"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 42
     assert exc_info.value.location.end_line == 1
@@ -340,7 +340,7 @@ def test_c1_control_character_in_comment_gets_a_diagnostic(
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=ast.SourceLocation(line=1, column=4, end_line=1, end_column=4),
-            character="\u0085",
+            escaped_character="\\u{85}",
         ),
     ]
 
@@ -465,7 +465,7 @@ def test_direction_mark_before_comment_is_rejected(parse: Parse):
 def test_control_character_where_open_angle_bracket_belongs(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position\x01<standard:/path>.\n")
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 30
     assert exc_info.value.location.end_line == 1
@@ -475,7 +475,7 @@ def test_control_character_where_open_angle_bracket_belongs(parse: Parse):
 def test_control_character_where_terminator_or_brace_belongs(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position<standard:/path>\x01\n")
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 46
     assert exc_info.value.location.end_line == 1
@@ -485,7 +485,7 @@ def test_control_character_where_terminator_or_brace_belongs(parse: Parse):
 def test_control_character_after_block_open(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position<standard:/path> {\x01\n" + "}\n")
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 1
     assert exc_info.value.location.column == 48
     assert exc_info.value.location.end_line == 1
@@ -501,7 +501,7 @@ def test_control_character_in_potential_position_definition_block_statement(
             + "    it may\x01\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 11
     assert exc_info.value.location.end_line == 2
@@ -517,7 +517,7 @@ def test_control_character_where_quality_assignment_block_open_belongs(
             + "    it may only contain particles where\x01\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 40
     assert exc_info.value.location.end_line == 2
@@ -535,7 +535,7 @@ def test_control_character_in_quality_assignment_block_statement(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 15
     assert exc_info.value.location.end_line == 3
@@ -553,7 +553,7 @@ def test_control_character_where_quality_assignment_name_type_belongs(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 20
     assert exc_info.value.location.end_line == 3
@@ -569,7 +569,7 @@ def test_control_character_where_terminator_belongs(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 36
     assert exc_info.value.location.end_line == 3
@@ -585,7 +585,7 @@ def test_control_character_after_block_close(parse: Parse):
             + "    }\x01\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 6
     assert exc_info.value.location.end_line == 4
@@ -602,7 +602,7 @@ def test_control_character_where_block_close_belongs(parse: Parse):
             + "    \x01\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 5
     assert exc_info.value.location.end_line == 5
@@ -620,7 +620,7 @@ def test_control_character_in_trigger_condition(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 13
     assert exc_info.value.location.end_line == 4
@@ -640,7 +640,7 @@ def test_control_character_after_position_presence_typed_name(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 26
     assert exc_info.value.location.end_line == 4
@@ -658,7 +658,7 @@ def test_control_character_after_trigger_close_brace(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 5
     assert exc_info.value.location.column == 6
     assert exc_info.value.location.end_line == 5
@@ -677,7 +677,7 @@ def test_control_character_after_move_source(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
     assert exc_info.value.location.end_line == 6
@@ -696,7 +696,7 @@ def test_control_character_in_action_statement(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 17
     assert exc_info.value.location.end_line == 6
@@ -709,7 +709,7 @@ def test_control_character_in_action_definition_block(parse: Parse):
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    it\x01 happens when {\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 2
     assert exc_info.value.location.column == 7
     assert exc_info.value.location.end_line == 2
@@ -747,7 +747,7 @@ def test_control_character_in_reference_name_type(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 34
     assert exc_info.value.location.end_line == 6
@@ -785,7 +785,7 @@ def test_control_character_after_create_particle_reference(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.char == "\x01"
+    assert exc_info.value.escaped_char == "\\u{1}"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
     assert exc_info.value.location.end_line == 6

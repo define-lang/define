@@ -235,7 +235,7 @@ def test_control_character_in_logical_operation_support_statement(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.char == "\x00"
+    assert error.value.escaped_char == "\\0"
     assert error.value.location.line == 2
     assert error.value.location.column == 17
     assert error.value.location.end_line == 2
@@ -417,7 +417,7 @@ def test_control_character_in_logical_operation_support_block(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.char == "\x00"
+    assert error.value.escaped_char == "\\0"
     assert error.value.location.line == 4
     assert error.value.location.column == 19
     assert error.value.location.end_line == 4

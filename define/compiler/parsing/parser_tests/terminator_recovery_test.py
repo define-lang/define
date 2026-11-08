@@ -232,7 +232,7 @@ def test_carriage_return_in_comment_after_missing_terminator_stops_the_parse(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
-    assert result.exception.char == "\r"
+    assert result.exception.escaped_char == "\\r"
     assert result.exception.location == ast.SourceLocation(
         line=3, column=43, end_line=3, end_column=43
     )

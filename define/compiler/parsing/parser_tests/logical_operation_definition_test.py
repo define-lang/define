@@ -275,7 +275,7 @@ def test_control_character_in_view_definition(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.char == "\x00"
+    assert error.value.escaped_char == "\\0"
     assert error.value.location.line == 2
     assert error.value.location.column == 16
     assert error.value.location.end_line == 2
@@ -423,7 +423,7 @@ def test_view_control_character_in_statement_after_direction_statement(
             + "    }\n"
             + "}\n"
         )
-    assert error.value.char == "\x00"
+    assert error.value.escaped_char == "\\0"
     assert error.value.location.line == 4
     assert error.value.location.column == 15
     assert error.value.location.end_line == 4
