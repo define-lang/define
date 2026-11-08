@@ -288,17 +288,24 @@ class _DefinitionGenerator:
         for part in parts:
             imports.update(part.imports)
             typing_names.update(part.typing_names)
-        content = renderer.render_module_header(
+        header = renderer.render_module_header(
             sorted(imports),
             sorted(typing_names),
             any(part.needs_runtime_import for part in parts),
         )
-        for part in parts:
-            content += "\n\n" + part.body
         relative_file_path = naming.file_path_for_module(module_name)
         file_path = self._output_dir / relative_file_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        _ = file_path.write_text(content, encoding="utf-8", newline="\n")
+        # Write the parts one at a time rather than joining them into one
+        # string first. A generated module can be very large (for example, an
+        # action with long binary literals), and joining would hold the module
+        # in memory three times: the parts, the joined string, and its UTF-8
+        # encoding. That was the compiler's peak memory use.
+        with file_path.open("w", encoding="utf-8", newline="\n") as module_file:
+            _ = module_file.write(header)
+            for part in parts:
+                _ = module_file.write("\n\n")
+                _ = module_file.write(part.body)
         return module_name.rpartition(".")[0]
 
 
