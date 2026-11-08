@@ -62,7 +62,7 @@
      return cc_common.get_tool_for_action(
          feature_configuration = linker_config.feature_configuration,
          action_name = linker_config.action_name,
-@@ -499,7 +523,29 @@ def _get_linker_args(linker_config):
+@@ -499,7 +523,33 @@ def _get_linker_args(linker_config):
              variables = linker_config.variables,
          ))
  
@@ -88,12 +88,16 @@
 +                    after_xlinker = True
 +                elif arg.startswith("-Wl,"):
 +                    direct_args.extend(arg[len("-Wl,"):].split(","))
++                elif arg in ("/Brepro", "-Brepro"):
++                    # clang-cl passes /Brepro to the linker as well as the
++                    # compiler, and it makes the image's timestamp a hash.
++                    direct_args.append("/Brepro")
 +        link_args = direct_args
 +    elif linker_config.rust_linker:
          # Make sure we include RPATHs for Rust ABI dylibs even when no cc_toolchain.
          if linker_config.variables == None and linker_config.rpaths:
              for rpath in linker_config.rpaths.to_list():
-@@ -816,17 +862,7 @@ def collect_inputs(
+@@ -874,17 +924,7 @@ def collect_inputs(
      """
      linker_script = getattr(file, "linker_script", None)
  
@@ -112,7 +116,7 @@
      compilation_mode = ctx.var["COMPILATION_MODE"]
  
      use_pic = should_use_pic(
-@@ -1505,6 +1541,7 @@ def construct_arguments(
+@@ -1545,6 +1585,7 @@ def construct_arguments(
                  feature_configuration,
                  rpaths,
                  add_flags_for_binary = add_flags_for_binary,
