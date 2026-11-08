@@ -3,9 +3,10 @@ language: python
 severity: error
 message: >-
   This function only reads this `tuple[...]` or `list[...]` parameter.
-  Annotate it as the narrowest of `collections.abc.Iterable[...]` (only
-  iterated), `collections.abc.Collection[...]` (also used with `len()` or
-  `in`), or `collections.abc.Sequence[...]` (also indexed or sliced).
+  Annotate it as the narrowest of `collections.abc.Iterable[...]` (iterated
+  only once), `collections.abc.Collection[...]` (iterated more than once, or
+  also used with `len()` or `in`), or `collections.abc.Sequence[...]` (also
+  indexed or sliced).
 files:
   - "**/*.py"
 ignores:
