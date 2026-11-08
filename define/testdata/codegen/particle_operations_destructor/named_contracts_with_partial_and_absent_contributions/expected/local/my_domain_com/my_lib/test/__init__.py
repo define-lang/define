@@ -64,7 +64,7 @@ class TestAction(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
-        ).run(WorkerDestructionContracts_())
+        ).run(WorkerDestructionContracts_2())
         position_source.create_particle()
         position_source.particle.get_position(
             local.my_domain_com.my_lib.third_child.ThirdChildPosition
@@ -103,7 +103,7 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
         ).destroy_particle()
 
 
-class WorkerDestructionContracts_(local.my_domain_com.my_lib.worker.WorkerDestructionContracts):
+class WorkerDestructionContracts_2(local.my_domain_com.my_lib.worker.WorkerDestructionContracts):
 
     @override
     def destroy_position_input(self, particle: literal.Particle):

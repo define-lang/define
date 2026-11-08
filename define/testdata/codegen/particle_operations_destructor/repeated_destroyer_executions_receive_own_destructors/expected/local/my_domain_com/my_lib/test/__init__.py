@@ -59,7 +59,7 @@ class TestAction(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
-        ).run(DestroyerDestructionContracts_())
+        ).run(DestroyerDestructionContracts_2())
         position_b_only.create_particle()
         position_b_only.move_particle_to(
             self.on_particle.get_action(
@@ -70,7 +70,7 @@ class TestAction(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
-        ).run(DestroyerDestructionContracts__())
+        ).run(DestroyerDestructionContracts_3())
         position_none.create_particle()
         position_none.move_particle_to(
             self.on_particle.get_action(
@@ -93,7 +93,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         ).run()
 
 
-class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+class DestroyerDestructionContracts_2(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
@@ -105,7 +105,7 @@ class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.Destro
         ).run()
 
 
-class DestroyerDestructionContracts__(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+class DestroyerDestructionContracts_3(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):

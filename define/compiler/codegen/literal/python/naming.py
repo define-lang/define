@@ -180,12 +180,22 @@ class LocalNameAllocator:
     def __init__(self):
         """Start with no names allocated."""
         self._used: set[str] = set()
+        # The next numeric suffix to try for each candidate that was already
+        # used. Numbering, rather than lengthening a name until it is free,
+        # keeps the K-th use of a candidate from taking O(K) probes and a name
+        # O(K) characters long.
+        self._next_suffix: dict[str, int] = {}
 
     def allocate(self, candidate: str) -> str:
-        """Return the first available name based on ``candidate``."""
+        """Return ``candidate``, or the first free numbered form of it if it is used."""
         name = candidate
-        while name in self._used:
-            name += "_"
+        if name in self._used:
+            suffix = self._next_suffix.get(candidate, 2)
+            name = f"{candidate}_{suffix}"
+            while name in self._used:
+                suffix += 1
+                name = f"{candidate}_{suffix}"
+            self._next_suffix[candidate] = suffix + 1
         self._used.add(name)
         return name
 

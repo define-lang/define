@@ -63,7 +63,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.move(second_source, /destroyer::target)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.DestroyerAction
-        ).run(DestroyerDestructionContracts_())
+        ).run(DestroyerDestructionContracts_2())
 
 
 class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
@@ -82,7 +82,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         literal.record_operation("destroyer.destroy(target::/marker)")
 
 
-class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+class DestroyerDestructionContracts_2(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):

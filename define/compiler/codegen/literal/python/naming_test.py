@@ -235,35 +235,35 @@ def test_name_allocator_preserves_first_candidate():
     assert allocator.allocate("name") == "name"
 
 
-def test_name_allocator_underscores_repeated_candidates():
+def test_name_allocator_numbers_repeated_candidates():
     allocator = naming.LocalNameAllocator()
     assert [allocator.allocate("name") for _ in range(3)] == [
         "name",
-        "name_",
-        "name__",
+        "name_2",
+        "name_3",
     ]
 
 
-def test_name_allocator_underscores_imported_module_names():
+def test_name_allocator_numbers_imported_module_names():
     allocator = naming.LocalNameAllocator()
     allocator.reserve_module_first_names(["package.module"])
-    assert allocator.allocate("package") == "package_"
-    assert allocator.allocate("package") == "package__"
+    assert allocator.allocate("package") == "package_2"
+    assert allocator.allocate("package") == "package_3"
 
 
 def test_name_allocator_skips_conflicting_source_suffixes():
     allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
-    assert allocator.allocate("name_") == "name_"
-    assert allocator.allocate("name__") == "name__"
-    assert allocator.allocate("name") == "name___"
+    assert allocator.allocate("name_2") == "name_2"
+    assert allocator.allocate("name_3") == "name_3"
+    assert allocator.allocate("name") == "name_4"
 
 
 def test_name_allocator_skips_conflicting_generated_suffixes():
     allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
-    assert allocator.allocate("name") == "name_"
-    assert allocator.allocate("name_") == "name__"
+    assert allocator.allocate("name") == "name_2"
+    assert allocator.allocate("name_2") == "name_2_2"
 
 
 def test_name_allocators_are_independent_namespaces():

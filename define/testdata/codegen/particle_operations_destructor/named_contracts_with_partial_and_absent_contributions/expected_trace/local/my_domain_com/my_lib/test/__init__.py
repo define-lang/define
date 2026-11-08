@@ -72,7 +72,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.move(source, /worker::input)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.worker.WorkerAction
-        ).run(WorkerDestructionContracts_())
+        ).run(WorkerDestructionContracts_2())
         position_source.create_particle()
         literal.record_operation("test.create(source)")
         position_source.particle.get_position(
@@ -117,7 +117,7 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
         literal.record_operation("worker.destroy(input::/first_child)")
 
 
-class WorkerDestructionContracts_(local.my_domain_com.my_lib.worker.WorkerDestructionContracts):
+class WorkerDestructionContracts_2(local.my_domain_com.my_lib.worker.WorkerDestructionContracts):
 
     @override
     def destroy_position_input(self, particle: literal.Particle):
