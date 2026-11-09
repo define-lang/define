@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import types
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config
@@ -27,7 +27,7 @@ def _make_context(
     tmp_path: Path,
     file_name: str = "test.dfn",
     fqun: str = "my.domain.com:my_lib",
-    sub_root_mappings: dict[str, define_path.DefinePath] | None = None,
+    sub_root_mappings: dict[str, config.LocalDependencyEntry] | None = None,
 ) -> file_validation_context.FileValidationContext:
     return file_validation_context.FileValidationContext(
         file_path=define_path.DefinePath(file_name),
@@ -249,7 +249,12 @@ class TestFileStructuralValidatorReferenceDiscovery:
         ctx = _make_context(
             tmp_path,
             sub_root_mappings={
-                "other.domain.com:other_lib": define_path.DefinePath("deps/other")
+                "other.domain.com:other_lib": config.LocalDependencyEntry(
+                    deps_path=".define/deps/local.defcl",
+                    index=0,
+                    universe="other.domain.com:other_lib",
+                    path=define_path.DefinePathFromPosix(PurePosixPath("deps/other")),
+                )
             },
         )
         result = _load_and_validate_every_definition(ctx)

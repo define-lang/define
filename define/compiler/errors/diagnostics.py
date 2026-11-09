@@ -17,7 +17,6 @@ from define.compiler.validator.reference_graph import propagation_step
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler.validator.structural.resolver import local_dependency_entry
     from source_rendering.python import rendering
 
 
@@ -1274,8 +1273,19 @@ class ConfigFieldDiagnostic(ConfigDiagnostic):
         return sources.render_location(location)
 
 
-class MissingProjectConfigDiagnostic(ConfigDiagnostic):
-    """Base class for diagnostics about a directory that should be a project root but has no project config, the one at config_path."""
+def _project_root_help(config_path: str) -> str:
+    return (
+        f"A project root is any directory containing {config_path}.\n"
+        + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
+    )
+
+
+class NotRunFromProjectRootDiagnostic(ConfigDiagnostic):
+    """Diagnostic for a compiler run from a directory that is not a project root, so has no project config at config_path."""
+
+    message_format: ClassVar[str] = (
+        "The Define compiler must be run from a project root directory."
+    )
 
     @typing.override
     def format(self, sources: rendering.SourceMap, /) -> str:
@@ -1285,29 +1295,28 @@ class MissingProjectConfigDiagnostic(ConfigDiagnostic):
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
-        return (
-            f"{super().render_message(sources)}\n"
-            + f"A project root is any directory containing {self.config_path}.\n"
-            + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
+        return f"{super().render_message(sources)}\n" + _project_root_help(
+            self.config_path
         )
 
 
-class NotRunFromProjectRootDiagnostic(MissingProjectConfigDiagnostic):
-    """Diagnostic for a compiler run from a directory that is not a project root."""
+class SubRootNotProjectRootDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for a sub-root that a local dependency names but that is not a project root.
 
-    message_format: ClassVar[str] = (
-        "The Define compiler must be run from a project root directory."
-    )
-
-
-class SubRootNotProjectRootDiagnostic(MissingProjectConfigDiagnostic):
-    """Diagnostic for a sub-root that a local dependency names but that is not a project root."""
+    Its field is the local dependency's path.
+    """
 
     sub_root_path: str
-    message_format: ClassVar[str] = (
-        "The referenced subroot ({self.sub_root_path}) is not a valid project root:"
-        + " {self.config_path} not found."
-    )
+    # The project config that the sub-root does not have.
+    sub_root_config_path: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            f"The referenced subroot ({self.sub_root_path}) is not a valid project"
+            + f" root: {self.sub_root_config_path} not found.\n"
+            + _project_root_help(self.sub_root_config_path)
+        )
 
 
 class ConfigViolationDiagnostic(ConfigFieldDiagnostic):
@@ -1338,18 +1347,25 @@ class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
         )
 
 
-class DuplicateFqunDiagnostic(ConfigDiagnostic):
+class DuplicateFqunDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for two project roots that declare the same fully-qualified universe name.
 
-    Its config file is the later project's.
+    Its field is the universe_name of the later project's config.
     """
 
     fqun: str
+    # The earlier project's config, which declares the universe first.
     existing_config: str
-    message_format: ClassVar[str] = (
-        "Universe '{self.fqun}' is already defined in '{self.existing_config}'"
-        + " and cannot be redefined in '{self.config_path}'"
-    )
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        existing_universe_name = self._render_field(
+            sources, self.existing_config, ("project", "universe_name")
+        )
+        return (
+            f"Universe '{self.fqun}' cannot be defined again here, since it is"
+            f" already defined here:\n{existing_universe_name}"
+        )
 
 
 class SubRootFqunMismatchDiagnostic(ConfigFieldDiagnostic):
@@ -1368,48 +1384,43 @@ class SubRootFqunMismatchDiagnostic(ConfigFieldDiagnostic):
     )
 
 
-class SubRootPathAlreadyDeclaredDiagnostic(ConfigDiagnostic):
+class SubRootPathAlreadyDeclaredDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for a local dependency that declares a sub-root at a path that another local dependency already declared.
 
     The first declaration of a path wins, and the later one is not used. Its
-    config file is the later entry's local dependencies config.
+    field is the later local dependency's path.
     """
 
-    # TODO: Point at both entries with caret-style diagnostics once the defcl
-    # parser records the source positions of the nodes it builds.
-
     sub_root_path: str
-    entry: local_dependency_entry.LocalDependencyEntry
-    existing_entry: local_dependency_entry.LocalDependencyEntry
+    # The local dependencies config and field of the first local dependency
+    # that declares the path.
+    first_config_path: str
+    first_field_path: FieldPath
 
     @typing.override
-    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        first_entry = self._render_field(
+            sources, self.first_config_path, self.first_field_path
+        )
         return (
-            f"Two local dependencies declare the sub-root '{self.sub_root_path}':\n"
-            + f"  {self.existing_entry.describe()}\n"
-            + f"  {self.entry.describe()}\n"
-            + "Only the first one is used."
+            f"This local dependency declares the sub-root '{self.sub_root_path}',"
+            " but an earlier one already declares it, so only that one is used."
+            f" It is here:\n{first_entry}"
         )
 
 
-class LocalDependencyOnOwnUniverseDiagnostic(ConfigDiagnostic):
+class LocalDependencyOnOwnUniverseDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for a local dependency that names the universe of the project that declares it.
 
     That universe is already at the project root, so the entry is not used.
-    Its config file is the local dependencies config.
+    Its field is the local dependency's universe_name.
     """
 
-    # TODO: Point at the entry with a caret-style diagnostic once the defcl
-    # parser records the source positions of the nodes it builds.
-
-    entry: local_dependency_entry.LocalDependencyEntry
-
-    @typing.override
-    def render_message(self, _sources: rendering.SourceMap, /) -> str:
-        return (
-            f"{self.entry.describe()}, but that is the project's own universe, so it"
-            + " cannot be a dependency of that project."
-        )
+    universe: str
+    message_format: ClassVar[str] = (
+        "Universe '{self.universe}' is the project's own universe, so it cannot"
+        + " be a dependency of that project."
+    )
 
 
 class PathInsideOtherUniverseDiagnostic(Diagnostic):

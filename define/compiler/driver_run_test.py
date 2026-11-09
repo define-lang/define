@@ -234,6 +234,9 @@ def test_referenced_project_config_error_returns_error_and_prints_to_stream(
     result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
+        'File ".define/deps/local.defcl", line 1, column 54\n'
+        '    deps: { local: [{ universe_name: "x.com:child" path: "lib" }] }\n'
+        "                                                         ^^^^^\n"
         "The referenced subroot (lib) is not a valid project root:"
         " lib/.define/project/config.defcl not found.\n"
         "A project root is any directory containing lib/.define/project/config.defcl.\n"

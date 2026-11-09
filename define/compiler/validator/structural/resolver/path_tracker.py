@@ -11,7 +11,6 @@ from define.compiler import constants
 if TYPE_CHECKING:
     from define.compiler import config
     from define.compiler.data_structures import define_path
-    from define.compiler.validator.structural.resolver import local_dependency_entry
 
 
 @final
@@ -22,8 +21,7 @@ class _ProjectRootNode(msgspec.Struct, eq=False):
     # The sub-root that a loaded project's local dependency declares at this
     # path, which may not be loaded yet.
     declared_sub_root: (
-        tuple[define_path.DefinePath, local_dependency_entry.LocalDependencyEntry]
-        | None
+        tuple[define_path.DefinePath, config.LocalDependencyEntry] | None
     ) = None
 
     def get_child(self, part: str) -> _ProjectRootNode | None:
@@ -193,8 +191,8 @@ class PathTracker[T]:
     def declare_sub_root(
         self,
         sub_root_path: define_path.DefinePath,
-        entry: local_dependency_entry.LocalDependencyEntry,
-    ) -> local_dependency_entry.LocalDependencyEntry | None:
+        entry: config.LocalDependencyEntry,
+    ) -> config.LocalDependencyEntry | None:
         """Record that a local dependency declares a sub-root at a path, unless one already does.
 
         The first declaration of a path wins. Returns the entry that already
@@ -208,10 +206,7 @@ class PathTracker[T]:
 
     def declared_sub_root_containing(
         self, root: define_path.DefinePath, path: define_path.DefinePath
-    ) -> (
-        tuple[define_path.DefinePath, local_dependency_entry.LocalDependencyEntry]
-        | None
-    ):
+    ) -> tuple[define_path.DefinePath, config.LocalDependencyEntry] | None:
         """Return the sub-root declared between a loaded project root and a path in it, if there is one.
 
         A path in a more deeply declared sub-root is also in this one.
@@ -260,7 +255,7 @@ class PathTracker[T]:
             return constants.STANDARD_LIBRARY_ROOT
         if not self.has_sub_root(fqun, referencing_root):
             return None
-        return referencing_root / self.sub_root_location(fqun, referencing_root)
+        return referencing_root / self.sub_root_entry(fqun, referencing_root).path
 
     def has_sub_root(self, fqun: str, parent_root: define_path.DefinePath) -> bool:
         """Return True if fqun is a configured sub_root of parent_root."""
@@ -269,10 +264,10 @@ class PathTracker[T]:
             raise KeyError(parent_root)
         return fqun in root_config.sub_roots
 
-    def sub_root_location(
+    def sub_root_entry(
         self, fqun: str, parent_root: define_path.DefinePath
-    ) -> define_path.DefinePath:
-        """Return the configured path for fqun relative to parent_root.
+    ) -> config.LocalDependencyEntry:
+        """Return the local dependency entry that configures fqun as a sub-root of parent_root.
 
         Raises:
             KeyError: If parent_root is not registered or fqun is not a

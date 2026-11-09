@@ -26,7 +26,8 @@ message LocalDep {
   ];
 
   // The relative filesystem path to the local dependency, in POSIX format
-  // (forward slashes only).
+  // (forward slashes only). Only one spelling of each path is allowed, so the
+  // path must already be normalized.
   string path = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
@@ -36,14 +37,29 @@ message LocalDep {
       expression: "!this.startsWith('/')"
     },
     (buf.validate.field).cel = {
-      id: "local_dep.path.no_dotdot"
-      message: "path must not contain '..'"
-      expression: "!this.contains('..')"
-    },
-    (buf.validate.field).cel = {
       id: "local_dep.path.no_trailing_slash"
       message: "path must not end with '/'"
       expression: "!this.endsWith('/')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_empty_part"
+      message: "path must not contain '//'"
+      expression: "!this.contains('//')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_dot_part"
+      message: "path must not have a '.' part"
+      expression: "!this.matches(r'(^|/)\\.(/|$)')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_dotdot_part"
+      message: "path must not have a '..' part"
+      expression: "!this.matches(r'(^|/)\\.\\.(/|$)')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_backslash"
+      message: "path must not contain a backslash"
+      expression: "!this.contains('\\\\')"
     }
   ];
 }

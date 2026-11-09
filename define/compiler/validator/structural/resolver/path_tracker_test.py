@@ -7,10 +7,16 @@ import pytest
 
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
-from define.compiler.validator.structural.resolver import (
-    local_dependency_entry,
-    path_tracker,
-)
+from define.compiler.validator.structural.resolver import path_tracker
+
+
+def _entry(universe: str, path: str) -> config.LocalDependencyEntry:
+    return config.LocalDependencyEntry(
+        deps_path=".define/deps/local.defcl",
+        index=0,
+        universe=universe,
+        path=define_path.DefinePathFromPosix(PurePosixPath(path)),
+    )
 
 
 class TestPathTracker:
@@ -69,7 +75,7 @@ class TestSubRootTracking:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="my.universe",
-                sub_roots={"dep": define_path.DefinePath("ext/dep")},
+                sub_roots={"dep": _entry("dep", "ext/dep")},
             ),
         )
         assert tracker.root_for_fqun("my.universe") == define_path.EMPTY
@@ -92,13 +98,13 @@ class TestSubRootTracking:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="my.universe",
-                sub_roots={"dep": define_path.DefinePath("ext/dep")},
+                sub_roots={"dep": _entry("dep", "ext/dep")},
             ),
         )
         root_config = tracker.config_for_root(define_path.EMPTY)
         assert root_config is not None
         assert root_config.fqun == "my.universe"
-        assert root_config.sub_roots == {"dep": define_path.DefinePath("ext/dep")}
+        assert root_config.sub_roots == {"dep": _entry("dep", "ext/dep")}
 
     def test_config_for_root_none_when_not_registered(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
@@ -116,32 +122,32 @@ class TestSubRootTracking:
                 config.ProjectRootConfig(fqun="other.universe", sub_roots={}),
             )
 
-    def test_sub_root_location(self):
+    def test_sub_root_entry(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="my.universe",
-                sub_roots={"dep": define_path.DefinePath("ext/dep")},
+                sub_roots={"dep": _entry("dep", "ext/dep")},
             ),
         )
-        assert tracker.sub_root_location(
-            "dep", define_path.EMPTY
-        ) == define_path.DefinePath("ext/dep")
+        assert tracker.sub_root_entry("dep", define_path.EMPTY) == _entry(
+            "dep", "ext/dep"
+        )
 
-    def test_sub_root_location_unregistered_parent_raises(self):
+    def test_sub_root_entry_unregistered_parent_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         with pytest.raises(KeyError):
-            tracker.sub_root_location("dep", define_path.DefinePath("not/registered"))
+            tracker.sub_root_entry("dep", define_path.DefinePath("not/registered"))
 
-    def test_sub_root_location_unknown_fqun_raises(self):
+    def test_sub_root_entry_unknown_fqun_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
             config.ProjectRootConfig(fqun="my.universe", sub_roots={}),
         )
         with pytest.raises(KeyError):
-            tracker.sub_root_location("unknown", define_path.EMPTY)
+            tracker.sub_root_entry("unknown", define_path.EMPTY)
 
 
 class TestConflictDetection:
@@ -207,12 +213,8 @@ class TestConflictDetection:
 class TestSubRootDeclarations:
     def test_first_declaration_of_a_path_wins(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        first = local_dependency_entry.LocalDependencyEntry(
-            PurePosixPath(".define/deps/local.defcl"), "first.universe", "lib"
-        )
-        second = local_dependency_entry.LocalDependencyEntry(
-            PurePosixPath(".define/deps/local.defcl"), "second.universe", "lib"
-        )
+        first = _entry("first.universe", "lib")
+        second = _entry("second.universe", "lib")
         sub_root = define_path.DefinePath("lib")
         assert tracker.declare_sub_root(sub_root, first) is None
         assert tracker.declare_sub_root(sub_root, second) == first
@@ -222,9 +224,7 @@ class TestSubRootDeclarations:
 
     def test_path_in_a_directory_under_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        entry = local_dependency_entry.LocalDependencyEntry(
-            PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
-        )
+        entry = _entry("dep.universe", "a/b")
         sub_root = define_path.DefinePath("a/b")
         tracker.declare_sub_root(sub_root, entry)
         assert tracker.declared_sub_root_containing(
@@ -233,9 +233,7 @@ class TestSubRootDeclarations:
 
     def test_path_beside_a_declared_sub_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        entry = local_dependency_entry.LocalDependencyEntry(
-            PurePosixPath(".define/deps/local.defcl"), "dep.universe", "a/b"
-        )
+        entry = _entry("dep.universe", "a/b")
         tracker.declare_sub_root(define_path.DefinePath("a/b"), entry)
         assert (
             tracker.declared_sub_root_containing(
@@ -257,7 +255,7 @@ class TestUniverseRoot:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="a.com:main",
-                sub_roots={"b.com:lib": define_path.DefinePath("deps/lib")},
+                sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
             ),
         )
         assert tracker.universe_root(

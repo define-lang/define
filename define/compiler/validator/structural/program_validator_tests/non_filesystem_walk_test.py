@@ -159,8 +159,10 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="vendor/other/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="vendor/other",
+            sub_root_config_path="vendor/other/.define/project/config.defcl",
         )
     ]
 
@@ -301,8 +303,10 @@ def test_unknown_universe_reported_with_sub_root_config_error(
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="lib",
+            sub_root_config_path="lib/.define/project/config.defcl",
         ),
         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(

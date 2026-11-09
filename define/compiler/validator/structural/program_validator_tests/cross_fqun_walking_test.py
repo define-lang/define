@@ -6,12 +6,10 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.structural.resolver import local_dependency_entry
 from define.compiler.validator.test_helpers import assert_no_errors
 from source_rendering.python import rendering
 
@@ -46,6 +44,7 @@ def test_sub_root_redeclares_parent_fqun(
     assert result.all_diagnostics == [
         diagnostics.DuplicateFqunDiagnostic(
             config_path="lib/nested/.define/project/config.defcl",
+            field_path=("project", "universe_name"),
             fqun="mv:define-lang.org:parent",
             existing_config=".define/project/config.defcl",
         ),
@@ -118,8 +117,10 @@ def test_cross_fqun_sub_root_missing_config(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="lib",
+            sub_root_config_path="lib/.define/project/config.defcl",
         ),
     ]
 
@@ -135,8 +136,10 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="lib",
+            sub_root_config_path="lib/.define/project/config.defcl",
         ),
     ]
 
@@ -163,7 +166,6 @@ def test_cross_fqun_sub_root_fqun_mismatch(
 def test_second_universe_declared_at_same_sub_root_path(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    deps_path = PurePosixPath(".define/deps/local.defcl")
     result = validate_testdata_structural()
     assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
@@ -172,14 +174,11 @@ def test_second_universe_declared_at_same_sub_root_path(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            config_path=str(deps_path),
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 1, "path"),
             sub_root_path="lib",
-            entry=local_dependency_entry.LocalDependencyEntry(
-                deps_path, "mv:define-lang.org:second_child", "lib"
-            ),
-            existing_entry=local_dependency_entry.LocalDependencyEntry(
-                deps_path, _CHILD_UNIVERSE, "lib"
-            ),
+            first_config_path=".define/deps/local.defcl",
+            first_field_path=("deps", "local", 0, "path"),
         ),
     ]
 
@@ -187,7 +186,6 @@ def test_second_universe_declared_at_same_sub_root_path(
 def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    deps_path = PurePosixPath(".define/deps/local.defcl")
     result = validate_testdata_structural(max_workers=1)
     assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
@@ -198,14 +196,11 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            config_path=str(deps_path),
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 1, "path"),
             sub_root_path="lib",
-            entry=local_dependency_entry.LocalDependencyEntry(
-                deps_path, "mv:define-lang.org:second_child", "lib"
-            ),
-            existing_entry=local_dependency_entry.LocalDependencyEntry(
-                deps_path, _CHILD_UNIVERSE, "lib"
-            ),
+            first_config_path=".define/deps/local.defcl",
+            first_field_path=("deps", "local", 0, "path"),
         ),
         diagnostics.CircularGlobalReferenceDiagnostic(
             location=rendering.SourceLocation(
@@ -258,17 +253,10 @@ def test_sub_root_path_declared_by_outer_project_wins(
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             config_path="p/.define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="p/lib",
-            entry=local_dependency_entry.LocalDependencyEntry(
-                PurePosixPath("p/.define/deps/local.defcl"),
-                "mv:define-lang.org:inner_lib",
-                "lib",
-            ),
-            existing_entry=local_dependency_entry.LocalDependencyEntry(
-                PurePosixPath(".define/deps/local.defcl"),
-                "mv:define-lang.org:outer_lib",
-                "p/lib",
-            ),
+            first_config_path=".define/deps/local.defcl",
+            first_field_path=("deps", "local", 1, "path"),
         ),
     ]
 
@@ -306,11 +294,8 @@ def test_sub_root_is_current_universe(
     assert result.all_diagnostics == [
         diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
             config_path=".define/deps/local.defcl",
-            entry=local_dependency_entry.LocalDependencyEntry(
-                PurePosixPath(".define/deps/local.defcl"),
-                "mv:define-lang.org:test_parent",
-                "lib",
-            ),
+            field_path=("deps", "local", 0, "universe_name"),
+            universe="mv:define-lang.org:test_parent",
         ),
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -534,8 +519,10 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib_b/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 1, "path"),
             sub_root_path="lib_b",
+            sub_root_config_path="lib_b/.define/project/config.defcl",
         ),
     ]
 
@@ -575,8 +562,10 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="lib",
+            sub_root_config_path="lib/.define/project/config.defcl",
         ),
     ]
 
@@ -592,8 +581,10 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            config_path="lib/.define/project/config.defcl",
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
             sub_root_path="lib",
+            sub_root_config_path="lib/.define/project/config.defcl",
         ),
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(

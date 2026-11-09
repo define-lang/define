@@ -111,7 +111,6 @@ py_test(
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
-        "//define/compiler/validator/structural/resolver:local_dependency_entry",
         "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],

@@ -19,16 +19,6 @@ py_library(
 )
 
 py_library(
-    name = "local_dependency_entry",
-    srcs = ["local_dependency_entry.py"],
-    visibility = [
-        "//define/compiler/errors:__pkg__",
-        "//define/compiler/validator/structural/program_validator_tests:__pkg__",
-    ],
-    deps = ["@pypi//msgspec"],
-)
-
-py_library(
     name = "non_filesystem_reference_resolver",
     srcs = ["non_filesystem_reference_resolver.py"],
     visibility = ["//define/compiler/validator/structural:__pkg__"],
@@ -50,7 +40,6 @@ py_library(
     name = "path_tracker",
     srcs = ["path_tracker.py"],
     deps = [
-        ":local_dependency_entry",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
@@ -63,7 +52,6 @@ py_test(
     size = "small",
     srcs = ["path_tracker_test.py"],
     deps = [
-        ":local_dependency_entry",
         ":path_tracker",
         "//define/compiler:config",
         "//define/compiler:constants",
@@ -77,7 +65,6 @@ py_library(
     srcs = ["reference_resolver.py"],
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
-        ":local_dependency_entry",
         ":path_tracker",
         "//define/compiler:ast",
         "//define/compiler:config",
@@ -100,7 +87,6 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":filesystem_reference_resolver",
-        ":local_dependency_entry",
         ":non_filesystem_reference_resolver",
         ":path_tracker",
         ":path_tracker_test",

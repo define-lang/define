@@ -42,6 +42,15 @@ def _load(root: define_path.DefinePath = constants.PROJECT_ROOT):
     return config.ConfigLoader(root, rendering.SourceMap()).load_project_root_config()
 
 
+def _declaring_entry(universe: str, path: str) -> config.LocalDependencyEntry:
+    return config.LocalDependencyEntry(
+        deps_path=str(_LOCAL_DEPS_PATH),
+        index=0,
+        universe=universe,
+        path=define_path.DefinePathFromPosix(PurePosixPath(path)),
+    )
+
+
 def _invalid_local_dep_field(
     field_name: str, violation_message: str
 ) -> config.RootConfigResult:
@@ -85,11 +94,21 @@ class TestLoadProjectRootConfig:
             root_config=config.ProjectRootConfig(
                 fqun="test.example.com:my_lib",
                 sub_roots={
-                    "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
-                        PurePosixPath("vendor/lib")
+                    "mv:define-lang.org:lib": config.LocalDependencyEntry(
+                        deps_path=str(_LOCAL_DEPS_PATH),
+                        index=0,
+                        universe="mv:define-lang.org:lib",
+                        path=define_path.DefinePathFromPosix(
+                            PurePosixPath("vendor/lib")
+                        ),
                     ),
-                    "mv:define-lang.org:core": define_path.DefinePathFromPosix(
-                        PurePosixPath("vendor/core")
+                    "mv:define-lang.org:core": config.LocalDependencyEntry(
+                        deps_path=str(_LOCAL_DEPS_PATH),
+                        index=1,
+                        universe="mv:define-lang.org:core",
+                        path=define_path.DefinePathFromPosix(
+                            PurePosixPath("vendor/core")
+                        ),
                     ),
                 },
             ),
@@ -121,7 +140,7 @@ class TestLoadProjectRootConfig:
             ],
         )
 
-    def test_expected_fqun_match_succeeds(
+    def test_declaring_entry_universe_match_succeeds(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         _write_valid_project_config(tmp_path)
@@ -130,7 +149,7 @@ class TestLoadProjectRootConfig:
         assert config.ConfigLoader(
             constants.PROJECT_ROOT, rendering.SourceMap()
         ).load_project_root_config(
-            "test.example.com:my_lib"
+            _declaring_entry("test.example.com:my_lib", ".")
         ) == config.RootConfigResult(
             root_config=config.ProjectRootConfig(
                 fqun="test.example.com:my_lib", sub_roots={}
@@ -138,7 +157,7 @@ class TestLoadProjectRootConfig:
             diagnostics=[],
         )
 
-    def test_expected_fqun_mismatch(
+    def test_declaring_entry_universe_mismatch(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         _write_valid_project_config(tmp_path)
@@ -147,7 +166,7 @@ class TestLoadProjectRootConfig:
         assert config.ConfigLoader(
             constants.PROJECT_ROOT, rendering.SourceMap()
         ).load_project_root_config(
-            "other.example.com:other_lib"
+            _declaring_entry("other.example.com:other_lib", ".")
         ) == config.RootConfigResult(
             root_config=None,
             diagnostics=[
@@ -343,7 +362,7 @@ class TestLocalDepsConfig:
 
         assert _load() == _invalid_local_dep_field("path", "path must not be absolute")
 
-    def test_dotdot_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    def test_dotdot_part_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
         _write_local_deps(
             tmp_path,
@@ -356,7 +375,126 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_dep_field("path", "path must not contain '..'")
+        assert _load() == _invalid_local_dep_field(
+            "path", "path must not have a '..' part"
+        )
+
+    def test_leading_dotdot_part_in_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "../lib"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == _invalid_local_dep_field(
+            "path", "path must not have a '..' part"
+        )
+
+    def test_dot_part_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "./vendor/lib"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == _invalid_local_dep_field(
+            "path", "path must not have a '.' part"
+        )
+
+    def test_dot_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "."'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == _invalid_local_dep_field(
+            "path", "path must not have a '.' part"
+        )
+
+    def test_empty_part_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "vendor//lib"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == _invalid_local_dep_field("path", "path must not contain '//'")
+
+    def test_backslash_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "vendor\\\\lib"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == _invalid_local_dep_field(
+            "path", "path must not contain a backslash"
+        )
+
+    def test_dots_within_a_part_of_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_valid_project_config(tmp_path)
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "vendor/lib..v2/.hidden"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == config.RootConfigResult(
+            root_config=config.ProjectRootConfig(
+                fqun="test.example.com:my_lib",
+                sub_roots={
+                    "mv:define-lang.org:lib": config.LocalDependencyEntry(
+                        deps_path=str(_LOCAL_DEPS_PATH),
+                        index=0,
+                        universe="mv:define-lang.org:lib",
+                        path=define_path.DefinePathFromPosix(
+                            PurePosixPath("vendor/lib..v2/.hidden")
+                        ),
+                    ),
+                },
+            ),
+            diagnostics=[],
+        )
 
     def test_trailing_slash_in_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -437,12 +575,18 @@ class TestSubRoot:
         (tmp_path / "subroot").mkdir()
         monkeypatch.chdir(tmp_path)
 
-        assert _load(define_path.DefinePath("subroot")) == config.RootConfigResult(
+        assert config.ConfigLoader(
+            define_path.DefinePath("subroot"), rendering.SourceMap()
+        ).load_project_root_config(
+            _declaring_entry("sub.example.com:lib", "subroot")
+        ) == config.RootConfigResult(
             root_config=None,
             diagnostics=[
                 diagnostics.SubRootNotProjectRootDiagnostic(
-                    config_path="subroot/.define/project/config.defcl",
+                    config_path=str(_LOCAL_DEPS_PATH),
+                    field_path=("deps", "local", 0, "path"),
                     sub_root_path="subroot",
+                    sub_root_config_path="subroot/.define/project/config.defcl",
                 )
             ],
         )
@@ -473,8 +617,13 @@ class TestSubRoot:
             root_config=config.ProjectRootConfig(
                 fqun="sub.example.com:lib",
                 sub_roots={
-                    "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
-                        PurePosixPath("vendor/lib")
+                    "mv:define-lang.org:lib": config.LocalDependencyEntry(
+                        deps_path="subroot/.define/deps/local.defcl",
+                        index=0,
+                        universe="mv:define-lang.org:lib",
+                        path=define_path.DefinePathFromPosix(
+                            PurePosixPath("vendor/lib")
+                        ),
                     )
                 },
             ),

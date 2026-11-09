@@ -30,8 +30,8 @@ LOCAL_DEPS_PATH = define_path.DefinePathFromPosix(
     PurePosixPath(".define/deps/local.defcl")
 )
 
-_EMPTY_DEPS: types.MappingProxyType[str, define_path.DefinePathFromPosix] = (
-    types.MappingProxyType({})
+_EMPTY_DEPS: types.MappingProxyType[str, LocalDependencyEntry] = types.MappingProxyType(
+    {}
 )
 
 
@@ -41,11 +41,25 @@ def universe_needs_configuration(fqun: str) -> bool:
     return fqun != constants.STANDARD_UNIVERSE
 
 
+class LocalDependencyEntry(msgspec.Struct, frozen=True):
+    """One entry in a project's local dependencies config."""
+
+    # The path of the local dependencies config that holds the entry.
+    deps_path: str
+    # The entry's position in the config's list of local dependencies.
+    index: int
+    universe: str
+    # The sub-root's path, relative to the project that declares it.
+    path: define_path.DefinePathFromPosix
+
+
 class ProjectRootConfig(msgspec.Struct):
     """Resolved project configuration for a project root."""
 
     fqun: str
-    sub_roots: Mapping[str, define_path.DefinePath]
+    # The local dependency entry for each universe that the project configures
+    # as a sub-root.
+    sub_roots: Mapping[str, LocalDependencyEntry]
 
 
 class RootConfigResult(msgspec.Struct, frozen=True):
@@ -76,24 +90,25 @@ class ConfigLoader:
         return Path(self.config_path()).exists()
 
     def load_project_root_config(
-        self, expected_fqun: str | None = None
+        self, declaring_entry: LocalDependencyEntry | None = None
     ) -> RootConfigResult:
         """Load and resolve this root's own configuration.
 
-        If expected_fqun is given, the universe name that this root's own
-        config declares must match it.
+        declaring_entry is the local dependency entry that declares this root
+        as a sub-root, or None for the project root. The universe name that a
+        sub-root's own config declares must be the entry's.
         """
-        loaded = self._load_project_root_config(expected_fqun)
+        loaded = self._load_project_root_config(declaring_entry)
         if isinstance(loaded, list):
             return RootConfigResult(root_config=None, diagnostics=loaded)
         return RootConfigResult(root_config=loaded, diagnostics=[])
 
     def _load_project_root_config(
-        self, expected_fqun: str | None
+        self, declaring_entry: LocalDependencyEntry | None
     ) -> ProjectRootConfig | list[diagnostics.FormattableDiagnostic]:
         config_path = self.config_path()
         if not self.is_project_root():
-            if self._root == constants.PROJECT_ROOT:
+            if declaring_entry is None:
                 return [
                     diagnostics.NotRunFromProjectRootDiagnostic(
                         config_path=str(config_path)
@@ -101,20 +116,22 @@ class ConfigLoader:
                 ]
             return [
                 diagnostics.SubRootNotProjectRootDiagnostic(
-                    config_path=str(config_path),
+                    config_path=declaring_entry.deps_path,
+                    field_path=("deps", "local", declaring_entry.index, "path"),
                     sub_root_path=str(self._root),
+                    sub_root_config_path=str(config_path),
                 )
             ]
         project_config = self._load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
         if isinstance(project_config, list):
             return project_config
         fqun = project_config.project.universe_name or ""
-        if expected_fqun and fqun != expected_fqun:
+        if declaring_entry is not None and fqun != declaring_entry.universe:
             return [
                 diagnostics.SubRootFqunMismatchDiagnostic(
                     config_path=str(config_path),
                     field_path=("project", "universe_name"),
-                    expected_fqun=expected_fqun,
+                    expected_fqun=declaring_entry.universe,
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
                 )
@@ -165,40 +182,42 @@ class ConfigLoader:
     def _local_deps_config(
         self,
     ) -> (
-        types.MappingProxyType[str, define_path.DefinePathFromPosix]
+        types.MappingProxyType[str, LocalDependencyEntry]
         | list[diagnostics.FormattableDiagnostic]
     ):
         """Load and validate the local dependency overrides, or return the diagnostics for why they are not valid.
 
-        Returns an immutable mapping from universe name to relative path.
+        Returns an immutable mapping from universe name to its entry.
         """
-        deps_path = (self._root / LOCAL_DEPS_PATH).as_posix_path()
+        deps_path = str((self._root / LOCAL_DEPS_PATH).as_posix_path())
         if not Path(deps_path).exists():
             return _EMPTY_DEPS
         result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
         if isinstance(result, list):
             return result
-        deps: dict[str, define_path.DefinePathFromPosix] = {}
-        # The index of the local dependency that first declares each universe.
-        first_indices: dict[str, int] = {}
+        deps: dict[str, LocalDependencyEntry] = {}
         for index, dep in enumerate(result.deps.local):
-            first_index = first_indices.get(dep.universe_name)
-            if first_index is not None:
+            first_entry = deps.get(dep.universe_name)
+            if first_entry is not None:
                 return [
                     diagnostics.DuplicateLocalDependencyDiagnostic(
-                        config_path=str(deps_path),
+                        config_path=deps_path,
                         field_path=("deps", "local", index, "universe_name"),
                         universe_name=dep.universe_name,
                         first_field_path=(
                             "deps",
                             "local",
-                            first_index,
+                            first_entry.index,
                             "universe_name",
                         ),
                     )
                 ]
-            first_indices[dep.universe_name] = index
-            deps[dep.universe_name] = define_path.DefinePathFromPosix(
-                PurePosixPath(dep.path)
+            deps[dep.universe_name] = LocalDependencyEntry(
+                deps_path=deps_path,
+                index=index,
+                universe=dep.universe_name,
+                # Parses the config's path string once, and keeps the parsed
+                # path for joining onto the project later.
+                path=define_path.DefinePathFromPosix(PurePosixPath(dep.path)),
             )
         return types.MappingProxyType(deps)

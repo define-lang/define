@@ -771,6 +771,9 @@ def test_not_project_root_error_message_for_subroot(
     assert (
         diagnostic.format(program_result.source_map)
         == textwrap.dedent("""\
+        File ".define/deps/local.defcl", line 5, column 13
+            path: "lib"
+                  ^^^^^
         The referenced subroot (lib) is not a valid project root: lib/.define/project/config.defcl not found.
         A project root is any directory containing lib/.define/project/config.defcl.
         For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
@@ -794,11 +797,13 @@ def test_sub_root_path_already_declared_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/deps/local.defcl"
-        Two local dependencies declare the sub-root 'lib':
-          ".define/deps/local.defcl" declares universe 'mv:define-lang.org:first_child' at 'lib'
-          ".define/deps/local.defcl" declares universe 'mv:define-lang.org:second_child' at 'lib'
-        Only the first one is used.""")
+        File ".define/deps/local.defcl", line 9, column 13
+            path: "lib"
+                  ^^^^^
+        This local dependency declares the sub-root 'lib', but an earlier one already declares it, so only that one is used. It is here:
+        File ".define/deps/local.defcl", line 5, column 13
+            path: "lib"
+                  ^^^^^""")
 
 
 def test_local_dependency_on_own_universe_error_message(
@@ -815,8 +820,10 @@ def test_local_dependency_on_own_universe_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
     assert diagnostic.format(program_result.source_map) == (
-        'File ".define/deps/local.defcl"\n'
-        + "\".define/deps/local.defcl\" declares universe 'mv:define-lang.org:parent' at 'lib', but that is the project's own universe, so it cannot be a dependency of that project."
+        'File ".define/deps/local.defcl", line 4, column 22\n'
+        + '    universe_name: "mv:define-lang.org:parent"\n'
+        + "                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+        + "Universe 'mv:define-lang.org:parent' is the project's own universe, so it cannot be a dependency of that project."
     )
 
 
@@ -860,12 +867,14 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.DuplicateFqunDiagnostic)
-    assert (
-        diagnostic.format(program_result.source_map)
-        == textwrap.dedent("""\
-        File "lib/nested/.define/project/config.defcl"
-        Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
-    )
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File "lib/nested/.define/project/config.defcl", line 2, column 18
+            universe_name: "mv:define-lang.org:parent"
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Universe 'mv:define-lang.org:parent' cannot be defined again here, since it is already defined here:
+        File ".define/project/config.defcl", line 2, column 18
+            universe_name: "mv:define-lang.org:parent"
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
 
 
 def test_source_file_not_found_error_message(
