@@ -176,10 +176,13 @@ class TestProjectConfig:
             end_column=14,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(first.dcl_error, errors.UnknownFieldNameDiagnostic)
-        assert first.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
-        assert first.dcl_error.field_name == "universe_nam"
-        assert first.dcl_error.message_type == "define.config.project.Project"
+        assert isinstance(first.dcl_diagnostic, errors.UnknownFieldNameDiagnostic)
+        assert (
+            first.dcl_diagnostic.kind
+            == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+        )
+        assert first.dcl_diagnostic.field_name == "universe_nam"
+        assert first.dcl_diagnostic.message_type == "define.config.project.Project"
         assert isinstance(second, diagnostics.ConfigDclDiagnostic)
         assert second.location == rendering.SourceLocation(
             line=4,
@@ -188,10 +191,13 @@ class TestProjectConfig:
             end_column=7,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(second.dcl_error, errors.UnknownFieldNameDiagnostic)
-        assert second.dcl_error.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
-        assert second.dcl_error.field_name == "owner"
-        assert second.dcl_error.message_type == "define.config.project.Project"
+        assert isinstance(second.dcl_diagnostic, errors.UnknownFieldNameDiagnostic)
+        assert (
+            second.dcl_diagnostic.kind
+            == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+        )
+        assert second.dcl_diagnostic.field_name == "owner"
+        assert second.dcl_diagnostic.message_type == "define.config.project.Project"
 
     def test_value_of_the_wrong_kind_is_a_diagnostic(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -210,12 +216,12 @@ class TestProjectConfig:
             end_column=18,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert type(diagnostic.dcl_error) is errors.DclDiagnostic
+        assert type(diagnostic.dcl_diagnostic) is errors.SemanticDiagnostic
         assert (
-            diagnostic.dcl_error.kind
-            == error_types.DiagnosticKind.NON_STRING_FOR_STRING_FIELD
+            diagnostic.dcl_diagnostic.kind
+            == error_types.SemanticDiagnosticKind.NON_STRING_FOR_STRING_FIELD
         )
-        assert diagnostic.dcl_error.field_name == "universe_name"
+        assert diagnostic.dcl_diagnostic.field_name == "universe_name"
 
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_project_config(tmp_path, 'project: {\n  universe_name: ""\n}\n')
@@ -266,8 +272,11 @@ class TestProjectConfig:
             end_column=16,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(diagnostic.dcl_error, errors.DclError)
-        assert diagnostic.dcl_error.kind == error_types.DclErrorKind.MISSING_COLON
+        assert isinstance(diagnostic.dcl_diagnostic, errors.SyntaxDiagnostic)
+        assert (
+            diagnostic.dcl_diagnostic.kind
+            == error_types.SyntaxDiagnosticKind.MISSING_COLON
+        )
 
 
 class TestLocalDepsConfig:
@@ -423,10 +432,10 @@ class TestLocalDepsConfig:
             end_column=38,
             file_path=str(_LOCAL_DEPS_PATH),
         )
-        assert isinstance(diagnostic.dcl_error, errors.DclError)
+        assert isinstance(diagnostic.dcl_diagnostic, errors.SyntaxDiagnostic)
         assert (
-            diagnostic.dcl_error.kind
-            == error_types.DclErrorKind.SINGLE_QUOTES_NOT_ALLOWED
+            diagnostic.dcl_diagnostic.kind
+            == error_types.SyntaxDiagnosticKind.SINGLE_QUOTES_NOT_ALLOWED
         )
 
 

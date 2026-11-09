@@ -1230,12 +1230,12 @@ class ConfigDclDiagnostic(ConfigDiagnostic):
     Its location is the part of the config file that the error covers.
     """
 
-    dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
+    dcl_diagnostic: dcl_errors.DclDiagnostic
 
     @typing.override
     def format(self, sources: rendering.SourceMap) -> str:
-        # The error shows its own location, with its source line.
-        return str(self.dcl_error)
+        # The defcl diagnostic shows its own location, with its source line.
+        return str(self.dcl_diagnostic)
 
 
 class MissingProjectConfigDiagnostic(ConfigDiagnostic):

@@ -170,11 +170,11 @@ def _message_values(depth: int) -> st.SearchStrategy[str]:
 @example("{ uint64_value: 18446744073709551615 sint64_value: -9223372036854775808 }")
 @example("{ delimited_value: { enum_values: [MODE_ACTIVE] } second_choice: 1 }")
 def test_text_format_parses_every_file_the_checks_accept(values: str):
-    try:
-        result = loader.load(
-            f"values: {values}\n", every_field_type_pb2.EveryFieldTypeFile
-        )
-    except errors.DclError:
+    result = loader.load(f"values: {values}\n", every_field_type_pb2.EveryFieldTypeFile)
+    if any(
+        isinstance(diagnostic, errors.SyntaxDiagnostic)
+        for diagnostic in result.diagnostics
+    ):
         event("syntax error")
         return
     if result.diagnostics:

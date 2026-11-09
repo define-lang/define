@@ -4,6 +4,7 @@ use defcl_parser::{FieldPathElement, FieldPathLocation, SyntaxError, SyntaxError
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::{RenderedError, ValidationError};
 use prost::Message as _;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::PyType;
@@ -14,17 +15,17 @@ use std::path::PathBuf;
 /// The Python classes that the module returns and raises.
 struct PythonClasses {
     field_path_location: Py<PyType>,
-    dcl_error: Py<PyType>,
-    unexpected_character_error: Py<PyType>,
-    dcl_error_kind: Py<PyType>,
+    syntax_diagnostic: Py<PyType>,
+    unexpected_character_diagnostic: Py<PyType>,
+    syntax_diagnostic_kind: Py<PyType>,
     invalid_schema_error: Py<PyType>,
-    dcl_diagnostic: Py<PyType>,
+    semantic_diagnostic: Py<PyType>,
     unknown_field_name_diagnostic: Py<PyType>,
     unknown_enum_value_diagnostic: Py<PyType>,
     integer_out_of_range_diagnostic: Py<PyType>,
     float_out_of_range_diagnostic: Py<PyType>,
     second_field_of_oneof_diagnostic: Py<PyType>,
-    diagnostic_kind: Py<PyType>,
+    semantic_diagnostic_kind: Py<PyType>,
 }
 
 static PYTHON_CLASSES: PyOnceLock<PythonClasses> = PyOnceLock::new();
@@ -40,17 +41,17 @@ impl PythonClasses {
         let locations = py.import("defcl.python.locations")?;
         Ok(Self {
             field_path_location: class(&locations, "FieldPathLocation")?,
-            dcl_error: class(&errors, "DclError")?,
-            unexpected_character_error: class(&errors, "UnexpectedCharacterError")?,
-            dcl_error_kind: class(&error_types, "DclErrorKind")?,
+            syntax_diagnostic: class(&errors, "SyntaxDiagnostic")?,
+            unexpected_character_diagnostic: class(&errors, "UnexpectedCharacterDiagnostic")?,
+            syntax_diagnostic_kind: class(&error_types, "SyntaxDiagnosticKind")?,
             invalid_schema_error: class(&errors, "InvalidSchemaError")?,
-            dcl_diagnostic: class(&errors, "DclDiagnostic")?,
+            semantic_diagnostic: class(&errors, "SemanticDiagnostic")?,
             unknown_field_name_diagnostic: class(&errors, "UnknownFieldNameDiagnostic")?,
             unknown_enum_value_diagnostic: class(&errors, "UnknownEnumValueDiagnostic")?,
             integer_out_of_range_diagnostic: class(&errors, "IntegerOutOfRangeDiagnostic")?,
             float_out_of_range_diagnostic: class(&errors, "FloatOutOfRangeDiagnostic")?,
             second_field_of_oneof_diagnostic: class(&errors, "SecondFieldOfOneofDiagnostic")?,
-            diagnostic_kind: class(&error_types, "DiagnosticKind")?,
+            semantic_diagnostic_kind: class(&error_types, "SemanticDiagnosticKind")?,
         })
     }
 
@@ -78,36 +79,36 @@ impl PythonClasses {
         )
     }
 
-    fn dcl_error<'py>(
+    fn syntax_diagnostic<'py>(
         &self,
         py: Python<'py>,
         rendered_error: &RenderedError<SyntaxError>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let error = &rendered_error.error;
         let kind: &'static str = error.kind.into();
-        let kind = self.dcl_error_kind.bind(py).getattr(kind)?;
+        let kind = self.syntax_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
         let location = new_source_location(py, error.location, None)?;
         let rendered = &rendered_error.rendered;
         if let SyntaxErrorKind::UnexpectedCharacter { character } = error.kind {
             return self
-                .unexpected_character_error
+                .unexpected_character_diagnostic
                 .bind(py)
-                .call1((kind, message, location, rendered, character));
+                .call1((message, location, rendered, kind, character));
         }
-        self.dcl_error
+        self.syntax_diagnostic
             .bind(py)
-            .call1((kind, message, location, rendered))
+            .call1((message, location, rendered, kind))
     }
 
-    fn dcl_diagnostic<'py>(
+    fn semantic_diagnostic<'py>(
         &self,
         py: Python<'py>,
         rendered_error: &RenderedError<SemanticError>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let error = &rendered_error.error;
         let kind: &'static str = (&error.kind).into();
-        let kind = self.diagnostic_kind.bind(py).getattr(kind)?;
+        let kind = self.semantic_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
         let location = new_source_location(py, error.location, None)?;
         let field_name = &error.field_name;
@@ -116,39 +117,39 @@ impl PythonClasses {
             SemanticErrorKind::UnknownFieldName { message_type } => self
                 .unknown_field_name_diagnostic
                 .bind(py)
-                .call1((kind, message, location, field_name, rendered, message_type)),
+                .call1((message, location, rendered, kind, field_name, message_type)),
             SemanticErrorKind::UnknownEnumValue { enum_type } => self
                 .unknown_enum_value_diagnostic
                 .bind(py)
-                .call1((kind, message, location, field_name, rendered, enum_type)),
+                .call1((message, location, rendered, kind, field_name, enum_type)),
             SemanticErrorKind::IntegerOutOfRange { field_type } => {
                 self.integer_out_of_range_diagnostic.bind(py).call1((
-                    kind,
                     message,
                     location,
-                    field_name,
                     rendered,
+                    kind,
+                    field_name,
                     field_type.to_string(),
                 ))
             }
             SemanticErrorKind::FloatOutOfRange { field_type } => {
                 self.float_out_of_range_diagnostic.bind(py).call1((
-                    kind,
                     message,
                     location,
-                    field_name,
                     rendered,
+                    kind,
+                    field_name,
                     field_type.to_string(),
                 ))
             }
             SemanticErrorKind::SecondFieldOfOneof { oneof } => self
                 .second_field_of_oneof_diagnostic
                 .bind(py)
-                .call1((kind, message, location, field_name, rendered, oneof)),
+                .call1((message, location, rendered, kind, field_name, oneof)),
             _ => self
-                .dcl_diagnostic
+                .semantic_diagnostic
                 .bind(py)
-                .call1((kind, message, location, field_name, rendered)),
+                .call1((message, location, rendered, kind, field_name)),
         }
     }
 }
@@ -171,10 +172,10 @@ fn raise(exception: PyResult<Bound<'_, PyAny>>) -> PyErr {
 
 /// Validates the DCL text `source` against the schema whose top-level message
 /// type has the full name `top_level_message_type` in the binary
-/// `FileDescriptorSet` `descriptor_set`, and returns a `DclDiagnostic` for each
-/// semantic error, in source order. Raises `InvalidSchemaError` if the
-/// descriptor set cannot be decoded or has no such message type, and
-/// `DclError` for the first syntax error.
+/// `FileDescriptorSet` `descriptor_set`, and returns a `SyntaxDiagnostic` for
+/// its first syntax error, or else a `SemanticDiagnostic` for each semantic
+/// error, in source order. Raises `InvalidSchemaError` if the descriptor set
+/// cannot be decoded or has no such message type.
 #[pyfunction]
 fn validate<'py>(
     py: Python<'py>,
@@ -224,7 +225,8 @@ enum PythonFieldPathElement {
 /// field names and indices of repeated values' elements whose first element is
 /// a top-level message, or the nearest field on the path that it writes, as a
 /// `FieldPathLocation`, or `None` if it does not write the path's top-level
-/// message. Raises `DclError` for the first syntax error.
+/// message. Raises `ValueError` if the text has a syntax error, since only text
+/// that validated has fields to find.
 #[pyfunction]
 #[expect(
     clippy::needless_pass_by_value,
@@ -243,15 +245,8 @@ fn location_of<'py>(
             PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
         });
     }
-    let file = parse(source).map_err(|error| {
-        raise(classes.dcl_error(
-            py,
-            &RenderedError {
-                rendered: error.render(&SourceLines::new(source), None),
-                error,
-            },
-        ))
-    })?;
+    let file = parse(source)
+        .map_err(|error| PyValueError::new_err(error.render(&SourceLines::new(source), None)))?;
     file.location_of(&path)
         .map(|location| classes.field_path_location(py, location))
         .transpose()
@@ -266,8 +261,8 @@ fn decode_descriptor_set(
         .map_err(|error| classes.invalid_schema_error(py, &error))
 }
 
-/// The `DclDiagnostic`s of `result`'s semantic errors, or the exception that
-/// its other errors raise.
+/// The `DclDiagnostic`s of `result`'s syntax or semantic errors, or the
+/// exception that its schema error raises.
 fn diagnostics<'py>(
     py: Python<'py>,
     classes: &PythonClasses,
@@ -276,10 +271,10 @@ fn diagnostics<'py>(
     match result {
         Ok(()) => Ok(Vec::new()),
         Err(ValidationError::Schema(error)) => Err(classes.invalid_schema_error(py, &error)),
-        Err(ValidationError::Syntax(error)) => Err(raise(classes.dcl_error(py, &error))),
+        Err(ValidationError::Syntax(error)) => Ok(vec![classes.syntax_diagnostic(py, &error)?]),
         Err(ValidationError::Semantic(errors)) => errors
             .iter()
-            .map(|error| classes.dcl_diagnostic(py, error))
+            .map(|error| classes.semantic_diagnostic(py, error))
             .collect(),
     }
 }

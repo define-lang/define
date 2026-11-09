@@ -28,7 +28,6 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
     """Load the DCL text `source` into a message of `message_type`.
 
     Raises:
-        DclError: If `source` has a syntax error.
         text_format.ParseError: If `source` fails a check that only protobuf's
             text format parser makes.
     """
@@ -49,7 +48,6 @@ def load_file[M: message.Message](
 
     Raises:
         OSError: If the file cannot be read.
-        DclError: If the file has a syntax error.
         text_format.ParseError: If the file fails a check that only protobuf's
             text format parser makes.
     """

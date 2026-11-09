@@ -10,7 +10,6 @@ import msgspec
 import protovalidate
 from google.protobuf import message
 
-from defcl.python import errors as dcl_errors
 from defcl.python import loader as dcl_loader
 from define.compiler import ast, constants
 from define.compiler.data_structures import define_path
@@ -21,6 +20,8 @@ from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from defcl.python import errors as dcl_errors
 
 
 CONFIG_PATH = define_path.DefinePathFromPosix(
@@ -130,10 +131,7 @@ class ConfigLoader:
     ) -> M | list[diagnostics.ConfigDiagnostic]:
         """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
-        try:
-            loaded = dcl_loader.load_file(path, message_type)
-        except dcl_errors.DclError as e:
-            return [_dcl_diagnostic(str(path), e)]
+        loaded = dcl_loader.load_file(path, message_type)
         if loaded.message is None:
             found_diagnostics: list[diagnostics.ConfigDiagnostic] = []
             for dcl_diagnostic in loaded.diagnostics:
@@ -195,9 +193,9 @@ class ConfigLoader:
 
 
 def _dcl_diagnostic(
-    path: str, dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
+    path: str, dcl_diagnostic: dcl_errors.DclDiagnostic
 ) -> diagnostics.ConfigDclDiagnostic:
-    location = dcl_error.location
+    location = dcl_diagnostic.location
     return diagnostics.ConfigDclDiagnostic(
         location=rendering.SourceLocation(
             line=location.line,
@@ -206,5 +204,5 @@ def _dcl_diagnostic(
             end_column=location.end_column,
             file_path=path,
         ),
-        dcl_error=dcl_error,
+        dcl_diagnostic=dcl_diagnostic,
     )

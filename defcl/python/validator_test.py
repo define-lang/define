@@ -56,42 +56,42 @@ def test_semantic_errors_are_diagnostics():
         )
     )
 
-    assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
+    assert type(integer_enum) is errors.SemanticDiagnostic
+    assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=13, end_line=2, end_column=13
     )
     assert integer_enum.field_name == "status"
-    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         "line 2, column 13\n"
         "    status: 1\n"
         "            ^\n"
         "status: Integer enum values are not allowed"
     )
+    assert type(scalar_for_message_field) is errors.SemanticDiagnostic
     assert (
         scalar_for_message_field.kind
-        == error_types.DiagnosticKind.SCALAR_FOR_MESSAGE_FIELD
+        == error_types.SemanticDiagnosticKind.SCALAR_FOR_MESSAGE_FIELD
     )
     assert scalar_for_message_field.location == rendering.SourceLocation(
         line=3, column=15, end_line=3, end_column=25
     )
     assert scalar_for_message_field.field_name == "database"
-    assert type(scalar_for_message_field) is errors.DclDiagnostic
     assert scalar_for_message_field.rendered == (
         "line 3, column 15\n"
         '    database: "localhost"\n'
         "              ^^^^^^^^^^^\n"
         "database: The field is a message field, so its value must be a message value"
     )
+    assert type(message_value_for_scalar_field) is errors.SemanticDiagnostic
     assert (
         message_value_for_scalar_field.kind
-        == error_types.DiagnosticKind.MESSAGE_VALUE_FOR_SCALAR_FIELD
+        == error_types.SemanticDiagnosticKind.MESSAGE_VALUE_FOR_SCALAR_FIELD
     )
     assert message_value_for_scalar_field.location == rendering.SourceLocation(
         line=5, column=8, end_line=5, end_column=9
     )
     assert message_value_for_scalar_field.field_name == "count"
-    assert type(message_value_for_scalar_field) is errors.DclDiagnostic
     assert message_value_for_scalar_field.rendered == (
         "line 5, column 8\n"
         "    count: {}\n"
@@ -108,7 +108,9 @@ def test_unknown_field_name_diagnostic_has_message_type():
     )
 
     assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
-    assert unknown_field_name.kind == error_types.DiagnosticKind.UNKNOWN_FIELD_NAME
+    assert (
+        unknown_field_name.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+    )
     assert unknown_field_name.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=8
     )
@@ -133,7 +135,9 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
     )
 
     assert isinstance(unknown_enum_value, errors.UnknownEnumValueDiagnostic)
-    assert unknown_enum_value.kind == error_types.DiagnosticKind.UNKNOWN_ENUM_VALUE
+    assert (
+        unknown_enum_value.kind == error_types.SemanticDiagnosticKind.UNKNOWN_ENUM_VALUE
+    )
     assert unknown_enum_value.location == rendering.SourceLocation(
         line=2, column=13, end_line=2, end_column=18
     )
@@ -158,7 +162,10 @@ def test_integer_out_of_range_diagnostic_has_field_type():
     )
 
     assert isinstance(integer_out_of_range, errors.IntegerOutOfRangeDiagnostic)
-    assert integer_out_of_range.kind == error_types.DiagnosticKind.INTEGER_OUT_OF_RANGE
+    assert (
+        integer_out_of_range.kind
+        == error_types.SemanticDiagnosticKind.INTEGER_OUT_OF_RANGE
+    )
     assert integer_out_of_range.location == rendering.SourceLocation(
         line=2, column=19, end_line=2, end_column=20
     )
@@ -180,7 +187,9 @@ def test_float_out_of_range_diagnostic_has_field_type():
     )
 
     assert isinstance(float_out_of_range, errors.FloatOutOfRangeDiagnostic)
-    assert float_out_of_range.kind == error_types.DiagnosticKind.FLOAT_OUT_OF_RANGE
+    assert (
+        float_out_of_range.kind == error_types.SemanticDiagnosticKind.FLOAT_OUT_OF_RANGE
+    )
     assert float_out_of_range.location == rendering.SourceLocation(
         line=2, column=18, end_line=2, end_column=58
     )
@@ -203,7 +212,8 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
 
     assert isinstance(second_field_of_oneof, errors.SecondFieldOfOneofDiagnostic)
     assert (
-        second_field_of_oneof.kind == error_types.DiagnosticKind.SECOND_FIELD_OF_ONEOF
+        second_field_of_oneof.kind
+        == error_types.SemanticDiagnosticKind.SECOND_FIELD_OF_ONEOF
     )
     assert second_field_of_oneof.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=7
@@ -221,44 +231,49 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
     )
 
 
-def test_syntax_error_raises_dcl_error():
-    with pytest.raises(errors.DclError) as exc_info:
-        _ = validator.validate(
-            _testdata("invalid/syntax/characters/at_sign.defcl"),
-            _valid_schemas(),
-            _SINGLE_TOPLEVEL_FILE,
+def test_syntax_error_is_a_diagnostic():
+    assert validator.validate(
+        _testdata("invalid/syntax/characters/at_sign.defcl"),
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    ) == [
+        errors.UnexpectedCharacterDiagnostic(
+            message="Unexpected character '@' (U+0040)",
+            location=rendering.SourceLocation(
+                line=2, column=8, end_line=2, end_column=8
+            ),
+            rendered=(
+                "line 2, column 8\n"
+                "    b: @\n"
+                "       ^\n"
+                "Unexpected character '@' (U+0040)"
+            ),
+            kind=error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER,
+            character="@",
         )
-
-    assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
-    assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
-    assert exc_info.value.location == rendering.SourceLocation(
-        line=2, column=8, end_line=2, end_column=8
-    )
-    assert exc_info.value.character == "@"
-    assert str(exc_info.value) == (
-        "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
-    )
+    ]
 
 
-def test_syntax_error_without_a_character_is_a_plain_dcl_error():
-    with pytest.raises(errors.DclError) as exc_info:
-        _ = validator.validate(
-            _testdata("invalid/syntax/separators/missing_colon.defcl"),
-            _valid_schemas(),
-            _SINGLE_TOPLEVEL_FILE,
+def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
+    assert validator.validate(
+        _testdata("invalid/syntax/separators/missing_colon.defcl"),
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    ) == [
+        errors.SyntaxDiagnostic(
+            message="Missing colon after field name",
+            location=rendering.SourceLocation(
+                line=2, column=10, end_line=2, end_column=10
+            ),
+            rendered=(
+                "line 2, column 10\n"
+                '    value "test"\n'
+                "         ^\n"
+                "Missing colon after field name"
+            ),
+            kind=error_types.SyntaxDiagnosticKind.MISSING_COLON,
         )
-
-    assert exc_info.value.kind == error_types.DclErrorKind.MISSING_COLON
-    assert exc_info.value.location == rendering.SourceLocation(
-        line=2, column=10, end_line=2, end_column=10
-    )
-    assert type(exc_info.value) is errors.DclError
-    assert str(exc_info.value) == (
-        "line 2, column 10\n"
-        '    value "test"\n'
-        "         ^\n"
-        "Missing colon after field name"
-    )
+    ]
 
 
 def test_undecodable_descriptor_set_raises_invalid_schema_error():
@@ -296,12 +311,12 @@ def test_validate_file_names_the_file_in_rendered_diagnostics():
 
     assert source == "config: {\n    status: 0\n}\n"
 
-    assert integer_enum.kind == error_types.DiagnosticKind.INTEGER_ENUM
+    assert type(integer_enum) is errors.SemanticDiagnostic
+    assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=13, end_line=2, end_column=13
     )
     assert integer_enum.field_name == "status"
-    assert type(integer_enum) is errors.DclDiagnostic
     assert integer_enum.rendered == (
         f'File "{path}", line 2, column 13\n'
         "    status: 0\n"
@@ -359,17 +374,3 @@ def test_location_of_a_top_level_message_that_is_not_written_is_none():
         validator.location_of(_testdata("valid/field_paths.defcl"), ["metadata"])
         is None
     )
-
-
-def test_location_of_in_text_with_a_syntax_error_raises_dcl_error():
-    with pytest.raises(errors.DclError) as exc_info:
-        _ = validator.location_of(
-            _testdata("invalid/syntax/characters/at_sign.defcl"), ["a"]
-        )
-
-    assert isinstance(exc_info.value, errors.UnexpectedCharacterError)
-    assert exc_info.value.kind == error_types.DclErrorKind.UNEXPECTED_CHARACTER
-    assert exc_info.value.location == rendering.SourceLocation(
-        line=2, column=8, end_line=2, end_column=8
-    )
-    assert exc_info.value.character == "@"
