@@ -171,11 +171,33 @@ jobs:
           name: rbe
           path: ${{ runner.temp }}
 
+      # Without the previous run's store, Bazel uploads every test input to this
+      # runner again. Each run saves a new cache entry, since entries cannot
+      # change, and restores the newest one.
+      - name: Restore rbe's store
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}\rbe\cas
+          key: rbe-store-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: rbe-store-
+
+      # The store's limit keeps its cache small, since the repository's
+      # Actions caches share one size limit.
       - name: Serve tests until the Windows tests job finishes
         run: >-
           .github/scripts/serve_windows_tests.ps1 -Rbe "$env:RUNNER_TEMP\rbe.exe"
-          -Root "$env:RUNNER_TEMP\rbe" -Port 8980 -StatusPort 8981
+          -Root "$env:RUNNER_TEMP\rbe" -MaxCasBytes 1GB -Port 8980 -StatusPort 8981
           -ReadyHostname $env:WINDOWS_HOSTNAME
+
+      # Only main saves the store, so that pull requests do not fill the
+      # repository's Actions caches with their own entries.
+      - name: Save rbe's store
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+        timeout-minutes: 10
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}\rbe\cas
+          key: rbe-store-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Tell the Windows tests job that this job failed
         if: ${{ failure() && steps.tailnet.outcome == 'success' }}
