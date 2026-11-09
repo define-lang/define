@@ -30,6 +30,7 @@ py_test(
         ":name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/parsing:test_helpers",
+        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )
@@ -59,7 +60,6 @@ py_library(
     srcs = ["config.py"],
     visibility = [":__subpackages__"],
     deps = [
-        ":ast",
         ":constants",
         "//defcl/python:loader",
         "//define/compiler/data_structures:define_path",
@@ -78,7 +78,6 @@ py_test(
     size = "small",
     srcs = ["config_test.py"],
     deps = [
-        ":ast",
         ":config",
         ":constants",
         "//defcl/python:error_types",

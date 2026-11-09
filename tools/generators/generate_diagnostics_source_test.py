@@ -20,12 +20,11 @@ def test_exact_diagnostics_and_formatting(count: int, name_length: int, padding:
     result = driver.Driver().validate_source(source)
     assert result.program_validation.all_exceptions == []
     all_diagnostics = result.program_validation.all_diagnostics
-    assert [type(diagnostic) for diagnostic in all_diagnostics] == [
-        diagnostics.CreateInOccupiedPositionDiagnostic
-    ] * count
-    assert [diagnostic.location.line for diagnostic in all_diagnostics] == list(
-        range(padding + 7, padding + 7 + 3 * count, 3)
-    )
+    lines: list[int] = []
+    for diagnostic in all_diagnostics:
+        assert type(diagnostic) is diagnostics.CreateInOccupiedPositionDiagnostic
+        lines.append(diagnostic.location.line)
+    assert lines == list(range(padding + 7, padding + 7 + 3 * count, 3))
     formatted = result.error_strings()
     assert len(formatted) == count
     for index, message in enumerate(formatted):

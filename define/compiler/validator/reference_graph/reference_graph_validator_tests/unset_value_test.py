@@ -22,10 +22,10 @@ def test_new_particle_is_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 48
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
 
 
@@ -57,10 +57,10 @@ def test_move_preserves_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 49
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<moved>"
 
 
@@ -71,10 +71,10 @@ def test_replacement_is_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 24
     assert diagnostic.location.column == 48
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
 
 
@@ -92,10 +92,10 @@ def test_trigger_requires_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</consume>::position<input>"
@@ -146,10 +146,10 @@ def test_transitive_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</relay>::position<input>"
     )
@@ -207,10 +207,10 @@ def test_transitive_implied_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
     assert diagnostic.position_name == "position<worker>::position</value>"
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/relay>"
@@ -266,10 +266,10 @@ def test_implied_requirement_after_move(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
     assert diagnostic.position_name == "position<worker>::position</value>"
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/read>"
@@ -317,10 +317,10 @@ def test_guarantee_new_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
@@ -340,10 +340,10 @@ def test_guarantee_existing_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
@@ -369,10 +369,10 @@ def test_guarantee_unchanged_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
@@ -392,10 +392,10 @@ def test_guarantee_moved_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
@@ -415,10 +415,10 @@ def test_destructor_direct_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 33
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.position_name == "position<box>::position</value>"
     assert diagnostic.required_value is True
     assert diagnostic.required_empty is False
@@ -482,10 +482,10 @@ def test_destructor_contract_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</close>::position<input>::position</value>"
@@ -573,10 +573,10 @@ def test_destructor_contract_replace_set(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</close>::position<input>::position</value>"
@@ -642,10 +642,10 @@ def test_destructor_contract_replace_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</close>::position<input>::position</value>"
@@ -718,10 +718,10 @@ def test_destructor_contract_untouched_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</close>::position<input>::position</value>"
@@ -788,10 +788,10 @@ def test_transitive_implied_guarantee_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
 
@@ -809,10 +809,10 @@ def test_constructor_guarantee_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
 
@@ -830,10 +830,10 @@ def test_requirement_after_move_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 50
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</consume>::position<input>"
@@ -884,10 +884,10 @@ def test_destructor_transitive_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</relay>::position<input>::position</value>"
@@ -962,10 +962,10 @@ def test_destructor_untouched_requirement_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</relay>::position<input>::position</value>"
@@ -1040,10 +1040,10 @@ def test_destructor_replaced_child_identity_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
         diagnostic.position_name
         == "position<worker>::action</close>::position<input>::position</value>"
@@ -1117,10 +1117,10 @@ def test_destructor_cannot_set_contracted_value(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 26
-    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.position_name == "position</value>"
 
 
@@ -1131,14 +1131,14 @@ def test_multiple_value_requirements(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.location.file_path == "test.dfn"
     assert first.location.line == 19
     assert first.location.column == 50
     assert second.location.file_path == "test.dfn"
     assert second.location.line == 19
     assert second.location.column == 50
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
-    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.required_value is True
     assert second.required_value is True
     assert first.position_name == "position<worker>::action</consume>::position<input>"
@@ -1219,10 +1219,10 @@ def test_interfaces_stop_value_inference(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
     assert (
         diagnostic.position_name == "position<input>::action</consume>::position<input>"
@@ -1272,10 +1272,10 @@ def test_destructor_transitive_replaced_identity_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
     assert (
         diagnostic.position_name
@@ -1350,14 +1350,14 @@ def test_multiple_destructor_requirements_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
+    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert second.location.file_path == "test.dfn"
     assert second.location.line == 23
     assert second.location.column == 47
     assert first.location.file_path == "test.dfn"
     assert first.location.line == 23
     assert first.location.column == 47
-    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert second.required_value is True
     assert first.required_value is True
     assert (
@@ -1483,14 +1483,14 @@ def test_destructor_multiple_value_requirements(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.location.file_path == "test.dfn"
     assert first.location.line == 22
     assert first.location.column == 47
     assert second.location.file_path == "test.dfn"
     assert second.location.line == 22
     assert second.location.column == 47
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
-    assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.required_value is True
     assert second.required_value is True
     assert (
@@ -1623,10 +1623,10 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 47
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
     assert (
         diagnostic.position_name
@@ -1709,11 +1709,11 @@ def test_value_error_preserves_occupancy(
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.UnsetValueDiagnostic)
+    assert isinstance(second, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert first.location.file_path == "test.dfn"
     assert first.location.line == 18
     assert first.location.column == 48
     assert first.position_name == "position<source>"
-    assert isinstance(second, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert second.location.file_path == "test.dfn"
     assert second.location.line == 20
     assert second.location.column == 48

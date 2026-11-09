@@ -105,13 +105,13 @@ class ProgramValidationResult(msgspec.Struct):
     ]
     # The diagnostics of every project config that was loaded, each reported
     # once however many files depend on its config.
-    config_diagnostics: list[diagnostics.ConfigDiagnostic]
+    config_diagnostics: list[diagnostics.FormattableDiagnostic]
     source_map: rendering.SourceMap
 
     @property
-    def all_diagnostics(self) -> list[diagnostics.Diagnostic]:
+    def all_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
         """The config diagnostics, then all diagnostics from all file results."""
-        all_diagnostics: list[diagnostics.Diagnostic] = list(self.config_diagnostics)
+        all_diagnostics = list(self.config_diagnostics)
         for result in self.file_results:
             all_diagnostics.extend(result.diagnostics)
         return all_diagnostics

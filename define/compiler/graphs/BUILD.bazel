@@ -62,6 +62,7 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/parsing:test_helpers",
+        "//source_rendering/python:rendering",
     ],
 )
 

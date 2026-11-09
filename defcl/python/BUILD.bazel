@@ -32,6 +32,7 @@ py_library(
         "//define/compiler:__pkg__",
         "//define/compiler/errors:__pkg__",
         "//define/compiler/resource_tests:__pkg__",
+        "//define/compiler/validator/structural/program_validator_tests:__pkg__",
     ],
     deps = [
         ":error_types",

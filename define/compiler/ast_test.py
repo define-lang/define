@@ -10,8 +10,11 @@ import pytest
 from define.compiler import ast, chained_name, name_types
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
+from source_rendering.python import rendering
 
-_LOC = ast.start_of_file_location("test.dfn")
+_LOC = rendering.SourceLocation(
+    line=1, column=1, end_line=1, end_column=1, file_path="test.dfn"
+)
 _FQUN = "my.domain.com:my_lib"
 
 

@@ -219,6 +219,7 @@ py_test(
         ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler:name_types",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -256,6 +257,7 @@ py_test(
         "//define/compiler:chained_name",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:interned_set",
+        "//source_rendering/python:rendering",
     ],
 )
 

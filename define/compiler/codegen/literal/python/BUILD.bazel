@@ -120,6 +120,7 @@ py_test(
         ":naming",
         "//define/compiler:ast",
         "//define/compiler:name_types",
+        "//source_rendering/python:rendering",
     ],
 )
 

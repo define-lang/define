@@ -22,7 +22,10 @@ import msgspec
 
 from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
-from source_rendering.python import rendering
+
+# The parser's AST node generator resolves the location fields' annotations at
+# runtime, so this import cannot be only for type checking.
+from source_rendering.python import rendering  # noqa: TC001
 
 # Marks a field whose value is computed from the other fields. Python code that
 # constructs a node does not pass it, and `__post_init__` or a property computes
@@ -38,13 +41,6 @@ type ComputedOnFirstUse[T] = T
 # passes, and which Python code that constructs a node leaves as `None` for a
 # property to compute the first time it is used.
 type ParsedOrComputedOnFirstUse[T] = T
-
-
-def start_of_file_location(file_path: str) -> rendering.SourceLocation:
-    """Return a location pointing to the very start of a file."""
-    return rendering.SourceLocation(
-        line=1, column=1, end_line=1, end_column=1, file_path=file_path
-    )
 
 
 # A program has millions of nodes, and they never form reference cycles, so the

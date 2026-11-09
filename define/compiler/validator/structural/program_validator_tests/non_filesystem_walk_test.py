@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import (
@@ -105,7 +104,7 @@ def test_external_universe_invalid_local_deps(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InvalidConfigDiagnostic(
-            location=ast.start_of_file_location(".define/deps/local.defcl"),
+            config_path=".define/deps/local.defcl",
             violation_messages=[
                 "deps.local.universe_name: value is required",
                 "deps.local.path: value is required",
@@ -137,7 +136,7 @@ def test_source_universe_definition_invalid_local_deps(
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InvalidConfigDiagnostic(
-            location=ast.start_of_file_location(".define/deps/local.defcl"),
+            config_path=".define/deps/local.defcl",
             violation_messages=[
                 "deps.local.universe_name: value is required",
                 "deps.local.path: value is required",
@@ -154,9 +153,6 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location(
-                "vendor/other/.define/project/config.defcl"
-            ),
             config_path="vendor/other/.define/project/config.defcl",
             sub_root_path="vendor/other",
         )
@@ -299,7 +295,6 @@ def test_unknown_universe_reported_with_sub_root_config_error(
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),

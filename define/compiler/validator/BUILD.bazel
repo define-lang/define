@@ -31,6 +31,7 @@ py_test(
         ":scope_tracker",
         "//define/compiler:ast",
         "//define/compiler:name_types",
+        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

@@ -4,7 +4,7 @@ import typing
 from pathlib import PurePosixPath
 
 from defcl.python import error_types, errors
-from define.compiler import ast, config, constants
+from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from source_rendering.python import rendering
@@ -47,7 +47,7 @@ def _invalid_local_deps(violation_message: str) -> config.RootConfigResult:
         root_config=None,
         diagnostics=[
             diagnostics.InvalidConfigDiagnostic(
-                location=ast.start_of_file_location(str(_LOCAL_DEPS_PATH)),
+                config_path=str(_LOCAL_DEPS_PATH),
                 violation_messages=[violation_message],
             )
         ],
@@ -113,7 +113,6 @@ class TestLoadProjectRootConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.NotRunFromProjectRootDiagnostic(
-                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
                     config_path=str(_PROJECT_CONFIG_PATH),
                 )
             ],
@@ -150,7 +149,7 @@ class TestLoadProjectRootConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
+                    config_path=str(_PROJECT_CONFIG_PATH),
                     expected_fqun="other.example.com:other_lib",
                     actual_fqun="test.example.com:my_lib",
                     sub_root_path=str(constants.PROJECT_ROOT),
@@ -172,7 +171,7 @@ class TestProjectConfig:
         result = _load()
         assert result.root_config is None
         first, second = result.diagnostics
-        assert isinstance(first, diagnostics.ConfigDclDiagnostic)
+        assert isinstance(first, errors.UnknownFieldNameDiagnostic)
         assert first.location == rendering.SourceLocation(
             line=3,
             column=3,
@@ -180,14 +179,10 @@ class TestProjectConfig:
             end_column=14,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(first.dcl_diagnostic, errors.UnknownFieldNameDiagnostic)
-        assert (
-            first.dcl_diagnostic.kind
-            == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
-        )
-        assert first.dcl_diagnostic.field_name == "universe_nam"
-        assert first.dcl_diagnostic.message_type == "define.config.project.Project"
-        assert isinstance(second, diagnostics.ConfigDclDiagnostic)
+        assert first.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+        assert first.field_name == "universe_nam"
+        assert first.message_type == "define.config.project.Project"
+        assert isinstance(second, errors.UnknownFieldNameDiagnostic)
         assert second.location == rendering.SourceLocation(
             line=4,
             column=3,
@@ -195,13 +190,9 @@ class TestProjectConfig:
             end_column=7,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(second.dcl_diagnostic, errors.UnknownFieldNameDiagnostic)
-        assert (
-            second.dcl_diagnostic.kind
-            == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
-        )
-        assert second.dcl_diagnostic.field_name == "owner"
-        assert second.dcl_diagnostic.message_type == "define.config.project.Project"
+        assert second.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+        assert second.field_name == "owner"
+        assert second.message_type == "define.config.project.Project"
 
     def test_value_of_the_wrong_kind_is_a_diagnostic(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -212,7 +203,7 @@ class TestProjectConfig:
         result = _load()
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
-        assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+        assert type(diagnostic) is errors.SemanticDiagnostic
         assert diagnostic.location == rendering.SourceLocation(
             line=2,
             column=18,
@@ -220,12 +211,11 @@ class TestProjectConfig:
             end_column=18,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert type(diagnostic.dcl_diagnostic) is errors.SemanticDiagnostic
         assert (
-            diagnostic.dcl_diagnostic.kind
+            diagnostic.kind
             == error_types.SemanticDiagnosticKind.NON_STRING_FOR_STRING_FIELD
         )
-        assert diagnostic.dcl_diagnostic.field_name == "universe_name"
+        assert diagnostic.field_name == "universe_name"
 
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_project_config(tmp_path, 'project: {\n  universe_name: ""\n}\n')
@@ -235,7 +225,7 @@ class TestProjectConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
+                    config_path=str(_PROJECT_CONFIG_PATH),
                     violation_messages=[
                         "project.universe_name: must be at least 1 characters"
                     ],
@@ -253,7 +243,7 @@ class TestProjectConfig:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(str(_PROJECT_CONFIG_PATH)),
+                    config_path=str(_PROJECT_CONFIG_PATH),
                     violation_messages=["project.universe_name: value is required"],
                 )
             ],
@@ -268,7 +258,7 @@ class TestProjectConfig:
         result = _load()
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
-        assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+        assert isinstance(diagnostic, errors.SyntaxDiagnostic)
         assert diagnostic.location == rendering.SourceLocation(
             line=2,
             column=16,
@@ -276,11 +266,7 @@ class TestProjectConfig:
             end_column=16,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
-        assert isinstance(diagnostic.dcl_diagnostic, errors.SyntaxDiagnostic)
-        assert (
-            diagnostic.dcl_diagnostic.kind
-            == error_types.SyntaxDiagnosticKind.MISSING_COLON
-        )
+        assert diagnostic.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
 
 
 class TestLocalDepsConfig:
@@ -428,7 +414,7 @@ class TestLocalDepsConfig:
         result = _load()
         assert result.root_config is None
         (diagnostic,) = result.diagnostics
-        assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+        assert isinstance(diagnostic, errors.SyntaxDiagnostic)
         assert diagnostic.location == rendering.SourceLocation(
             line=1,
             column=34,
@@ -436,9 +422,8 @@ class TestLocalDepsConfig:
             end_column=38,
             file_path=str(_LOCAL_DEPS_PATH),
         )
-        assert isinstance(diagnostic.dcl_diagnostic, errors.SyntaxDiagnostic)
         assert (
-            diagnostic.dcl_diagnostic.kind
+            diagnostic.kind
             == error_types.SyntaxDiagnosticKind.SINGLE_QUOTES_NOT_ALLOWED
         )
 
@@ -452,9 +437,6 @@ class TestSubRoot:
             root_config=None,
             diagnostics=[
                 diagnostics.SubRootNotProjectRootDiagnostic(
-                    location=ast.start_of_file_location(
-                        "subroot/.define/project/config.defcl"
-                    ),
                     config_path="subroot/.define/project/config.defcl",
                     sub_root_path="subroot",
                 )
@@ -506,7 +488,7 @@ class TestSubRoot:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(str(config_path)),
+                    config_path=str(config_path),
                     violation_messages=["project.universe_name: value is required"],
                 )
             ],
@@ -530,7 +512,7 @@ class TestSubRoot:
             root_config=None,
             diagnostics=[
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(str(deps_path)),
+                    config_path=str(deps_path),
                     violation_messages=["deps.local.path: value is required"],
                 )
             ],

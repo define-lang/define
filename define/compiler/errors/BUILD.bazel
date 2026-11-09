@@ -13,7 +13,6 @@ py_library(
     ],
     deps = [
         ":invisible_characters",
-        "//defcl/python:errors",
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:propagation_step",

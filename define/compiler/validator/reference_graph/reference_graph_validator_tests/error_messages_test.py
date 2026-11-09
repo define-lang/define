@@ -743,9 +743,6 @@ def test_value_setting_type_mismatch_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.location.line == 18
-    assert diagnostic.location.column == 43
     formatted = diagnostic.format(result.program_result.source_map)
     assert (
         formatted

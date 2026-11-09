@@ -11,7 +11,7 @@ import protovalidate
 from google.protobuf import message
 
 from defcl.python import loader as dcl_loader
-from define.compiler import ast, constants
+from define.compiler import constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.deps import local_pb2
@@ -53,7 +53,7 @@ class RootConfigResult(msgspec.Struct, frozen=True):
 
     # None when there are diagnostics.
     root_config: ProjectRootConfig | None
-    diagnostics: list[diagnostics.ConfigDiagnostic]
+    diagnostics: list[diagnostics.FormattableDiagnostic]
 
 
 class ConfigLoader:
@@ -90,19 +90,17 @@ class ConfigLoader:
 
     def _load_project_root_config(
         self, expected_fqun: str | None
-    ) -> ProjectRootConfig | list[diagnostics.ConfigDiagnostic]:
+    ) -> ProjectRootConfig | list[diagnostics.FormattableDiagnostic]:
         config_path = self.config_path()
         if not self.is_project_root():
-            location = ast.start_of_file_location(str(config_path))
             if self._root == constants.PROJECT_ROOT:
                 return [
                     diagnostics.NotRunFromProjectRootDiagnostic(
-                        location=location, config_path=str(config_path)
+                        config_path=str(config_path)
                     )
                 ]
             return [
                 diagnostics.SubRootNotProjectRootDiagnostic(
-                    location=location,
                     config_path=str(config_path),
                     sub_root_path=str(self._root),
                 )
@@ -114,7 +112,7 @@ class ConfigLoader:
         if expected_fqun and fqun != expected_fqun:
             return [
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    location=ast.start_of_file_location(str(config_path)),
+                    config_path=str(config_path),
                     expected_fqun=expected_fqun,
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
@@ -129,19 +127,12 @@ class ConfigLoader:
         self,
         subpath: define_path.DefinePath,
         message_type: type[M],
-    ) -> M | list[diagnostics.ConfigDiagnostic]:
+    ) -> M | list[diagnostics.FormattableDiagnostic]:
         """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
         loaded = dcl_loader.load_file(str(path), message_type, self._source_map)
         if loaded.message is None:
-            found_diagnostics: list[diagnostics.ConfigDiagnostic] = []
-            for dcl_diagnostic in loaded.diagnostics:
-                found_diagnostics.append(
-                    diagnostics.ConfigDclDiagnostic(
-                        location=dcl_diagnostic.location, dcl_diagnostic=dcl_diagnostic
-                    )
-                )
-            return found_diagnostics
+            return list(loaded.diagnostics)
         result = loaded.message
         try:
             protovalidate.validate(result)
@@ -158,7 +149,7 @@ class ConfigLoader:
                     messages.append(violation.proto.message)
             return [
                 diagnostics.InvalidConfigDiagnostic(
-                    location=ast.start_of_file_location(str(path)),
+                    config_path=str(path),
                     violation_messages=messages,
                 )
             ]
@@ -168,7 +159,7 @@ class ConfigLoader:
         self,
     ) -> (
         types.MappingProxyType[str, define_path.DefinePathFromPosix]
-        | list[diagnostics.ConfigDiagnostic]
+        | list[diagnostics.FormattableDiagnostic]
     ):
         """Load and validate the local dependency overrides, or return the diagnostics for why they are not valid.
 
@@ -185,7 +176,7 @@ class ConfigLoader:
             if dep.universe_name in deps:
                 return [
                     diagnostics.InvalidConfigDiagnostic(
-                        location=ast.start_of_file_location(str(deps_path)),
+                        config_path=str(deps_path),
                         violation_messages=[
                             f'deps.local: duplicate universe_name "{dep.universe_name}"'
                         ],

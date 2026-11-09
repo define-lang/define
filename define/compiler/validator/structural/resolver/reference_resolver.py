@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, config, constants
+from define.compiler import config, constants
 from define.compiler.errors import diagnostics, exceptions
 from define.compiler.validator.structural import (
     file_validation_context,
@@ -17,6 +17,7 @@ from define.compiler.validator.structural.resolver import (
 )
 
 if typing.TYPE_CHECKING:
+    from define.compiler import ast
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -54,7 +55,7 @@ class ReferenceResolver:
     # sub-root path that another one already declared, so the project cannot
     # use that universe.
     _disabled_universes: set[tuple[define_path.DefinePath, str]]
-    _config_diagnostics: list[diagnostics.ConfigDiagnostic]
+    _config_diagnostics: list[diagnostics.FormattableDiagnostic]
     _source_map: rendering.SourceMap
 
     def __init__(self, source_map: rendering.SourceMap):
@@ -69,7 +70,7 @@ class ReferenceResolver:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
-    def config_diagnostics(self) -> list[diagnostics.ConfigDiagnostic]:
+    def config_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
         """Return the diagnostics of every project config that was loaded."""
         return self._config_diagnostics
 
@@ -338,13 +339,11 @@ class ReferenceResolver:
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             self._path_tracker.mark_root_failed(root_prefix)
-            new_config = str(root_prefix / config.CONFIG_PATH)
             self._config_diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
-                    location=ast.start_of_file_location(new_config),
+                    config_path=str(root_prefix / config.CONFIG_PATH),
                     fqun=root_config.fqun,
                     existing_config=str(existing_root / config.CONFIG_PATH),
-                    new_config=new_config,
                 )
             )
             return None
@@ -366,7 +365,7 @@ class ReferenceResolver:
                 self._disabled_universes.add((root_prefix, universe))
                 self._config_diagnostics.append(
                     diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-                        location=ast.start_of_file_location(str(deps_path)), entry=entry
+                        config_path=str(deps_path), entry=entry
                     )
                 )
                 continue
@@ -376,7 +375,7 @@ class ReferenceResolver:
             self._disabled_universes.add((root_prefix, universe))
             self._config_diagnostics.append(
                 diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-                    location=ast.start_of_file_location(str(deps_path)),
+                    config_path=str(deps_path),
                     sub_root_path=str(sub_root_path),
                     entry=entry,
                     existing_entry=existing_entry,

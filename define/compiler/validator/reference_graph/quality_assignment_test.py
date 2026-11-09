@@ -4,8 +4,11 @@ import sys
 
 from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
+from source_rendering.python import rendering
 
-_LOCATION = ast.start_of_file_location("test.dfn")
+_LOCATION = rendering.SourceLocation(
+    line=1, column=1, end_line=1, end_column=1, file_path="test.dfn"
+)
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="example.com", location=_LOCATION),

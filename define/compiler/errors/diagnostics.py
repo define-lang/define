@@ -16,7 +16,6 @@ from define.compiler.validator.reference_graph import propagation_step
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from defcl.python import errors as dcl_errors
     from define.compiler.validator.structural.resolver import local_dependency_entry
     from source_rendering.python import rendering
 
@@ -29,17 +28,30 @@ _ALL_VIEWS_STATEMENTS: Final = {
 }
 
 
-class Diagnostic(msgspec.Struct):
-    """Base class for all validation diagnostics."""
+class FormattableDiagnostic(typing.Protocol):
+    """A diagnostic as the compiler reports it: anything that can show itself."""
 
-    location: rendering.SourceLocation
+    def format(self, sources: rendering.SourceMap, /) -> str:
+        """Format the diagnostic with the source lines of every location it mentions."""
+        ...
+
+
+class BaseDiagnostic(msgspec.Struct):
+    """Base class for the compiler's own diagnostics."""
+
     message_format: ClassVar[str] = ""
 
     def render_message(self, _sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message, with source lines for other locations it mentions."""
         return self.message_format.format(self=self)
 
-    def format(self, sources: rendering.SourceMap) -> str:
+
+class Diagnostic(BaseDiagnostic):
+    """Base class for diagnostics about a place in a Define file."""
+
+    location: rendering.SourceLocation
+
+    def format(self, sources: rendering.SourceMap, /) -> str:
         """Format the diagnostic with the source lines of every location it mentions."""
         return (
             f"{sources.render_location(self.location)}\n{self.render_message(sources)}"
@@ -1211,36 +1223,21 @@ class NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(Diagnostic):
     )
 
 
-class ConfigDiagnostic(Diagnostic):
-    """Base class for diagnostics about a project's config files.
-
-    Unless a subclass says otherwise, its location is the start of that file.
-    """
-
-
-class ConfigDclDiagnostic(ConfigDiagnostic):
-    """Diagnostic for an error that defcl found in a config file.
-
-    Its location is the part of the config file that the error covers.
-    """
-
-    dcl_diagnostic: dcl_errors.DclDiagnostic
-
-    @typing.override
-    def render_message(self, _sources: rendering.SourceMap, /) -> str:
-        return self.dcl_diagnostic.message
-
-
-class MissingProjectConfigDiagnostic(ConfigDiagnostic):
-    """Base class for diagnostics about a directory that should be a project root but has no project config.
-
-    Its location is the start of the missing config file.
-    """
+class ConfigDiagnostic(BaseDiagnostic):
+    """Base class for diagnostics about a project's config file, the one at config_path."""
 
     config_path: str
 
+    def format(self, sources: rendering.SourceMap, /) -> str:
+        """Format the diagnostic with the config file that it is about."""
+        return f'File "{self.config_path}"\n{self.render_message(sources)}'
+
+
+class MissingProjectConfigDiagnostic(ConfigDiagnostic):
+    """Base class for diagnostics about a directory that should be a project root but has no project config, the one at config_path."""
+
     @typing.override
-    def format(self, sources: rendering.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap, /) -> str:
         # The config file does not exist, so showing it as the file that the
         # diagnostic is about would mislead.
         return self.render_message(sources)
@@ -1288,22 +1285,21 @@ class InvalidConfigDiagnostic(ConfigDiagnostic):
 class DuplicateFqunDiagnostic(ConfigDiagnostic):
     """Diagnostic for two project roots that declare the same fully-qualified universe name.
 
-    Its location is the start of the later project's config file.
+    Its config file is the later project's.
     """
 
     fqun: str
     existing_config: str
-    new_config: str
     message_format: ClassVar[str] = (
         "Universe '{self.fqun}' is already defined in '{self.existing_config}'"
-        + " and cannot be redefined in '{self.new_config}'"
+        + " and cannot be redefined in '{self.config_path}'"
     )
 
 
 class SubRootFqunMismatchDiagnostic(ConfigDiagnostic):
     """Diagnostic for a sub-root whose project config declares a different universe than the local dependency that names it.
 
-    Its location is the start of the sub-root's project config file.
+    Its config file is the sub-root's project config.
     """
 
     expected_fqun: str
@@ -1320,7 +1316,7 @@ class SubRootPathAlreadyDeclaredDiagnostic(ConfigDiagnostic):
     """Diagnostic for a local dependency that declares a sub-root at a path that another local dependency already declared.
 
     The first declaration of a path wins, and the later one is not used. Its
-    location is the start of the later entry's local dependencies config.
+    config file is the later entry's local dependencies config.
     """
 
     # TODO: Point at both entries with caret-style diagnostics once the defcl
@@ -1344,7 +1340,7 @@ class LocalDependencyOnOwnUniverseDiagnostic(ConfigDiagnostic):
     """Diagnostic for a local dependency that names the universe of the project that declares it.
 
     That universe is already at the project root, so the entry is not used.
-    Its location is the start of the local dependencies config.
+    Its config file is the local dependencies config.
     """
 
     # TODO: Point at the entry with a caret-style diagnostic once the defcl

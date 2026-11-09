@@ -5,8 +5,11 @@ from __future__ import annotations
 from define.compiler import ast, name_types
 from define.compiler.graphs import reference_graph
 from define.compiler.parsing import test_helpers
+from source_rendering.python import rendering
 
-_LOC = ast.start_of_file_location("test.dfn")
+_LOC = rendering.SourceLocation(
+    line=1, column=1, end_line=1, end_column=1, file_path="test.dfn"
+)
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="a.com", location=_LOC),

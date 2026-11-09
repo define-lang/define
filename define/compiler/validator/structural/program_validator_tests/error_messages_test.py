@@ -12,6 +12,7 @@ import textwrap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from defcl.python import errors as dcl_errors
 from define.compiler.data_structures import define_path
 from define.compiler.errors import (
     diagnostics,
@@ -602,9 +603,7 @@ def test_sub_root_fqun_mismatch_error_message(
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
-        == 'File "lib/.define/project/config.defcl", line 1, column 1\n'
-        + "    project: {\n"
-        + "    ^\n"
+        == 'File "lib/.define/project/config.defcl"\n'
         + "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
 
@@ -633,9 +632,7 @@ def test_invalid_config_format_for_supplied_source(
 
     formatted = diagnostic.format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File ".define/deps/local.defcl", line 1, column 1
-            deps: {
-            ^
+        File ".define/deps/local.defcl"
         Invalid configuration:
           - deps.local.universe_name: value is required
           - deps.local.path: value is required""")
@@ -791,9 +788,7 @@ def test_sub_root_path_already_declared_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/deps/local.defcl", line 1, column 1
-            deps: {
-            ^
+        File ".define/deps/local.defcl"
         Two local dependencies declare the sub-root 'lib':
           ".define/deps/local.defcl" declares universe 'mv:define-lang.org:first_child' at 'lib'
           ".define/deps/local.defcl" declares universe 'mv:define-lang.org:second_child' at 'lib'
@@ -814,9 +809,7 @@ def test_local_dependency_on_own_universe_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
     assert diagnostic.format(program_result.source_map) == (
-        'File ".define/deps/local.defcl", line 1, column 1\n'
-        + "    deps: {\n"
-        + "    ^\n"
+        'File ".define/deps/local.defcl"\n'
         + "\".define/deps/local.defcl\" declares universe 'mv:define-lang.org:parent' at 'lib', but that is the project's own universe, so it cannot be a dependency of that project."
     )
 
@@ -864,9 +857,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     assert (
         diagnostic.format(program_result.source_map)
         == textwrap.dedent("""\
-        File "lib/nested/.define/project/config.defcl", line 1, column 1
-            project: {
-            ^
+        File "lib/nested/.define/project/config.defcl"
         Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
     )
 
@@ -898,7 +889,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+    assert isinstance(diagnostic, dcl_errors.SyntaxDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 2, column 16
             universe_name "bad"
@@ -924,7 +915,7 @@ def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, diagnostics.ConfigDclDiagnostic)
+    assert isinstance(diagnostic, dcl_errors.UnknownFieldNameDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 3, column 3
             owner: "y"
@@ -952,9 +943,7 @@ def test_config_validation_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InvalidConfigDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/project/config.defcl", line 1, column 1
-            project: {}
-            ^
+        File ".define/project/config.defcl"
         Invalid configuration:
           - project.universe_name: value is required""")
 

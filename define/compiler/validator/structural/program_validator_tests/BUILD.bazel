@@ -99,6 +99,7 @@ py_test(
     shard_count = 2,
     deps = [
         ":test_helpers",
+        "//defcl/python:errors",
         "//define/compiler:ast",
         "//define/compiler:conftest",
         "//define/compiler:name_types",

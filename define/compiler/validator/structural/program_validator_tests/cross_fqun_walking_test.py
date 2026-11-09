@@ -9,7 +9,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import local_dependency_entry
@@ -46,12 +45,9 @@ def test_sub_root_redeclares_parent_fqun(
     ]
     assert result.all_diagnostics == [
         diagnostics.DuplicateFqunDiagnostic(
-            location=ast.start_of_file_location(
-                "lib/nested/.define/project/config.defcl"
-            ),
+            config_path="lib/nested/.define/project/config.defcl",
             fqun="mv:define-lang.org:parent",
             existing_config=".define/project/config.defcl",
-            new_config="lib/nested/.define/project/config.defcl",
         ),
     ]
 
@@ -122,7 +118,6 @@ def test_cross_fqun_sub_root_missing_config(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -140,7 +135,6 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -157,7 +151,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootFqunMismatchDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
+            config_path="lib/.define/project/config.defcl",
             expected_fqun=_CHILD_UNIVERSE,
             actual_fqun="mv:define-lang.org:actual_child",
             sub_root_path="lib",
@@ -177,7 +171,7 @@ def test_second_universe_declared_at_same_sub_root_path(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location(str(deps_path)),
+            config_path=str(deps_path),
             sub_root_path="lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 deps_path, "mv:define-lang.org:second_child", "lib"
@@ -203,7 +197,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location(str(deps_path)),
+            config_path=str(deps_path),
             sub_root_path="lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 deps_path, "mv:define-lang.org:second_child", "lib"
@@ -262,7 +256,7 @@ def test_sub_root_path_declared_by_outer_project_wins(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-            location=ast.start_of_file_location("p/.define/deps/local.defcl"),
+            config_path="p/.define/deps/local.defcl",
             sub_root_path="p/lib",
             entry=local_dependency_entry.LocalDependencyEntry(
                 PurePosixPath("p/.define/deps/local.defcl"),
@@ -310,7 +304,7 @@ def test_sub_root_is_current_universe(
     assert result.file_results[1].exception is None
     assert result.all_diagnostics == [
         diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-            location=ast.start_of_file_location(".define/deps/local.defcl"),
+            config_path=".define/deps/local.defcl",
             entry=local_dependency_entry.LocalDependencyEntry(
                 PurePosixPath(".define/deps/local.defcl"),
                 "mv:define-lang.org:test_parent",
@@ -539,7 +533,6 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib_b/.define/project/config.defcl"),
             config_path="lib_b/.define/project/config.defcl",
             sub_root_path="lib_b",
         ),
@@ -581,7 +574,6 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
@@ -599,7 +591,6 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
-            location=ast.start_of_file_location("lib/.define/project/config.defcl"),
             config_path="lib/.define/project/config.defcl",
             sub_root_path="lib",
         ),
