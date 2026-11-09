@@ -33,7 +33,6 @@ def test_unread_input_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnreadInputViewDiagnostic)
@@ -48,7 +47,6 @@ def test_unwritten_output_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnwrittenOutputViewDiagnostic)
@@ -63,7 +61,6 @@ def test_executes_read_write_operation_with_input_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
@@ -79,7 +76,6 @@ def test_executes_read_write_operation_with_output_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
@@ -95,7 +91,6 @@ def test_write_to_input_only_view_is_not_also_unread(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.WriteToInputOnlyViewDiagnostic)
@@ -111,7 +106,6 @@ def test_read_from_unwritten_output_view_is_not_also_unwritten(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReadFromUnwrittenOutputViewDiagnostic)
@@ -127,7 +121,6 @@ def test_output_view_looks_at_literal(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OutputViewLooksAtLiteralDiagnostic)
@@ -142,7 +135,6 @@ def test_output_view_looks_at_literal_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OutputViewLooksAtLiteralDiagnostic)
@@ -157,7 +149,6 @@ def test_unknown_view_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     missing, undefined = result.all_diagnostics
     assert isinstance(missing, diagnostics.MissingOperationArgumentDiagnostic)
@@ -186,7 +177,6 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
@@ -205,7 +195,6 @@ def test_read_and_written_view_requires_set_value_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -226,7 +215,6 @@ def test_unreferenced_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnreferencedViewDiagnostic)
@@ -255,7 +243,6 @@ def test_output_view_in_destructor_changes_contracted_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -276,7 +263,6 @@ def test_callee_without_output_view_leaves_implied_value_unset(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -290,7 +276,6 @@ def test_missing_operation_before_output_view_read(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -305,7 +290,6 @@ def test_output_view_written_twice(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
@@ -325,7 +309,6 @@ def test_read_write_view_written_twice(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
@@ -345,7 +328,6 @@ def test_read_from_written_read_write_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
@@ -365,7 +347,6 @@ def test_executes_read_write_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
@@ -381,7 +362,6 @@ def test_written_twice_after_unknown_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
             location=rendering.SourceLocation(
@@ -408,7 +388,6 @@ def test_read_from_written_read_write_view_after_unknown_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
             location=rendering.SourceLocation(
@@ -435,7 +414,6 @@ def test_written_after_encoding_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(

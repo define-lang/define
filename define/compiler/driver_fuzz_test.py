@@ -1802,7 +1802,7 @@ def _assert_results_are_clean(
     results: list[validation_result.FileValidationResult], source_hint: str
 ):
     for result in results:
-        if result.diagnostics or result.load_failure is not None:
+        if result.diagnostics:
             pytest.fail(
                 f"Expected clean validation results, got:\n{results!r}\n\nProject:\n{source_hint}",
                 pytrace=False,
@@ -2198,12 +2198,14 @@ def test_valid_projects_validate_cleanly(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(source=mutated_sources())
-def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
+def test_mutated_syntax_reports_problems_as_diagnostics(
+    fuzz_project: Path, source: str
+):
     (fuzz_project / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path("test.dfn"))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path("test.dfn")).error_strings()
 
 
 @settings(
@@ -2213,15 +2215,15 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(project_case=mutated_project_cases())
-def test_mutated_projects_no_unclassified_errors(
+def test_mutated_projects_reports_problems_as_diagnostics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_case: ProjectCase
 ):
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path(project_case.entrypoint))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path(project_case.entrypoint)).error_strings()
 
 
 @settings(
@@ -2231,13 +2233,13 @@ def test_mutated_projects_no_unclassified_errors(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(data=st.binary(max_size=800))
-def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
+def test_random_bytes_reports_problems_as_diagnostics(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.dfn"
     file_path.write_bytes(data)
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path("test.dfn"))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path("test.dfn")).error_strings()
 
 
 @settings(
@@ -2250,7 +2252,7 @@ def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     name_bytes=_random_name_bytes(),
     context=st.sampled_from(_LOCAL_NAME_CONTEXTS),
 )
-def test_random_local_name_bytes_no_unclassified_errors(
+def test_random_local_name_bytes_reports_problems_as_diagnostics(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     event(f"Name context: {context}")
@@ -2258,8 +2260,8 @@ def test_random_local_name_bytes_no_unclassified_errors(
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path("test.dfn"))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path("test.dfn")).error_strings()
 
 
 @settings(
@@ -2272,7 +2274,7 @@ def test_random_local_name_bytes_no_unclassified_errors(
     name_bytes=_random_name_bytes(),
     context=st.sampled_from(_GLOBAL_NAME_CONTEXTS),
 )
-def test_random_global_name_raw_bytes_no_unclassified_errors(
+def test_random_global_name_raw_bytes_reports_problems_as_diagnostics(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     event(f"Name context: {context}")
@@ -2280,8 +2282,8 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path("test.dfn"))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path("test.dfn")).error_strings()
 
 
 @settings(
@@ -2294,7 +2296,7 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
     name_bytes=_structured_random_global_name_bytes(),
     context=st.sampled_from(_GLOBAL_NAME_CONTEXTS),
 )
-def test_random_global_name_structured_bytes_no_unclassified_errors(
+def test_random_global_name_structured_bytes_reports_problems_as_diagnostics(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     event(f"Name context: {context}")
@@ -2302,5 +2304,5 @@ def test_random_global_name_structured_bytes_no_unclassified_errors(
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
     # The compiler must report any problem in the input as a diagnostic
-    # rather than fail.
-    _ = d.validate_program(Path("test.dfn"))
+    # rather than fail, and the CLI must be able to format each one.
+    _ = d.validate_program(Path("test.dfn")).error_strings()

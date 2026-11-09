@@ -33,7 +33,6 @@ def test_duplicate_value(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateQualityAssignmentDiagnostic)
@@ -48,7 +47,6 @@ def test_multiple_values(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.PositionMultipleValueQualitiesDiagnostic)
@@ -69,7 +67,6 @@ def test_multiple_values_in_local_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.PositionMultipleValueQualitiesDiagnostic)
@@ -84,7 +81,6 @@ def test_invalid_name_does_not_count_as_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -99,7 +95,6 @@ def test_same_fqun_requires_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
@@ -124,7 +119,6 @@ def test_reference_to_wrong_type(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)

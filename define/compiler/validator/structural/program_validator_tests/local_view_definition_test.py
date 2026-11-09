@@ -26,7 +26,6 @@ def test_missing_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
@@ -47,7 +46,6 @@ def test_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewNonValueQualityDiagnostic(
             location=rendering.SourceLocation(
@@ -62,7 +60,6 @@ def test_multiple_value_qualities(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ViewMultipleValueQualitiesDiagnostic(
             location=rendering.SourceLocation(
@@ -78,7 +75,6 @@ def test_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
@@ -100,7 +96,6 @@ def test_conflicts_with_interface_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
@@ -116,7 +111,6 @@ def test_duplicate_local_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
@@ -132,7 +126,6 @@ def test_unreferenced_local_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
@@ -147,7 +140,6 @@ def test_referenced_before_definition(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(

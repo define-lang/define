@@ -23,7 +23,6 @@ def test_same_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
@@ -37,7 +36,6 @@ def test_same_chained_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
@@ -72,7 +70,6 @@ def test_undefined_positions(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     target, source = result.all_diagnostics
     assert isinstance(target, diagnostics.UndefinedLocalNameDiagnostic)
@@ -91,7 +88,6 @@ def test_invalid_local_chains(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     target, source = result.all_diagnostics
     assert isinstance(target, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
@@ -112,7 +108,6 @@ def test_unknown_global_positions(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     target, source = result.all_diagnostics
     assert isinstance(target, diagnostics.UnknownGlobalNameDiagnostic)

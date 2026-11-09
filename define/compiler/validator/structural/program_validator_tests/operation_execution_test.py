@@ -21,7 +21,6 @@ def test_looks_at_undefined_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
@@ -35,7 +34,6 @@ def test_looks_at_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -50,7 +48,6 @@ def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
@@ -79,7 +76,6 @@ def test_invalid_argument_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -94,7 +90,6 @@ def test_invalid_literal_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -109,7 +104,6 @@ def test_invalid_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -124,7 +118,6 @@ def test_requires_short_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
@@ -138,7 +131,6 @@ def test_executes_itself(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
@@ -162,7 +154,6 @@ def test_missing_operation_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -176,7 +167,6 @@ def test_wrong_operation_definition_type(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
@@ -191,7 +181,6 @@ def test_duplicate_argument(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)

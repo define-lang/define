@@ -69,7 +69,6 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -104,7 +103,6 @@ def test_destroy_empty_position_does_not_fire_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -119,7 +117,6 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -141,7 +138,6 @@ def test_missing_destructor_file_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -175,7 +171,6 @@ def test_destroy_triggers_destructor_with_occupied_interface_below_implied_posit
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
@@ -204,7 +199,6 @@ def test_automatic_destruction_triggers_destructor_with_occupied_interface_below
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]

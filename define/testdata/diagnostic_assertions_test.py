@@ -248,7 +248,7 @@ def test_message_of_other_value_allowed():
     function = ast.parse("""
 def test_case(validate_testdata_structural):
     result = validate_testdata_structural()
-    assert result.all_exceptions[0].message == "text"
+    assert result.file_results[0].message == "text"
 """).body[0]
     assert isinstance(function, ast.FunctionDef)
     assert diagnostic_assertions.diagnostic_message_assertions(function) == []

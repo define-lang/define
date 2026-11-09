@@ -35,7 +35,6 @@ def test_circular_destructor_contract_is_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -50,7 +49,6 @@ def test_circular_caller_attached_destructor_contract_is_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -65,7 +63,6 @@ def test_missing_caller_attached_destructor_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -91,7 +88,6 @@ def test_caller_known_child_state_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -158,7 +154,6 @@ def test_caller_unknown_child_state_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -253,7 +248,6 @@ def test_caller_attached_destructor_requiring_empty_position_is_reported_only_on
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
@@ -269,7 +263,6 @@ def test_two_caller_attached_destructors_validated_independently(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -349,7 +342,6 @@ def test_three_destructors_with_two_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
@@ -472,7 +464,6 @@ def test_declared_quality_destructor_validated_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -553,7 +544,6 @@ def test_constructor_consumer_caller_known_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -620,7 +610,6 @@ def test_visible_and_caller_attached_destructors_coexist(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -734,7 +723,6 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
 

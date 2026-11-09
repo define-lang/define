@@ -28,7 +28,6 @@ def test_invalid_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -43,7 +42,6 @@ def test_duplicate_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
@@ -65,7 +63,6 @@ def test_same_name_different_quality(
 
 def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
@@ -78,7 +75,6 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
 
 def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
@@ -93,9 +89,11 @@ def test_requires_fqun(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == []
-    assert len(result.all_exceptions) == 1
-    exception = result.all_exceptions[0]
-    assert isinstance(exception, syntax_errors.DefinitionGlobalNameContentRequiresFqun)
-    assert exception.location.line == 2
-    assert exception.location.column == 21
+    assert len(result.all_diagnostics) == 1
+    syntax_error = result.all_diagnostics[0]
+    assert isinstance(
+        syntax_error, syntax_errors.DefinitionGlobalNameContentRequiresFqun
+    )
+    assert syntax_error.location.line == 2
+    assert syntax_error.location.column == 21
+    assert syntax_error.location.file_path is None

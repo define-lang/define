@@ -37,7 +37,6 @@ def test_unreferenced_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first = result.all_diagnostics[0]
     assert isinstance(first, diagnostics.UnreferencedViewDiagnostic)
@@ -59,7 +58,6 @@ def test_view_missing_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     missing = result.all_diagnostics[0]
     assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
@@ -79,7 +77,6 @@ def test_view_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     missing = result.all_diagnostics[0]
     assert isinstance(missing, diagnostics.ViewMissingEncodingDiagnostic)
@@ -99,7 +96,6 @@ def test_view_value_and_encoding_quality_assignments(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
@@ -115,7 +111,6 @@ def test_view_position_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
@@ -129,7 +124,6 @@ def test_duplicate_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
@@ -144,7 +138,6 @@ def test_duplicate_encoding_operation(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
@@ -160,7 +153,6 @@ def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
@@ -175,7 +167,6 @@ def test_looks_at_undefined_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
@@ -189,7 +180,6 @@ def test_executes_itself(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
@@ -213,7 +203,6 @@ def test_executes_value_operation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
@@ -230,7 +219,6 @@ def test_value_operation_executes_encoding_operation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
@@ -252,7 +240,6 @@ def test_local_view_with_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewNonEncodingDiagnostic(
             location=rendering.SourceLocation(
@@ -267,7 +254,6 @@ def test_local_view_without_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMissingEncodingDiagnostic(
             location=rendering.SourceLocation(
@@ -288,7 +274,6 @@ def test_local_view_with_two_encodings(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LocalViewMultipleEncodingsDiagnostic(
             location=rendering.SourceLocation(
@@ -304,7 +289,6 @@ def test_local_view_with_repeated_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateQualityAssignmentDiagnostic(
             location=rendering.SourceLocation(
@@ -327,7 +311,6 @@ def test_view_setting_encoding_mismatch(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ViewSettingEncodingMismatchDiagnostic(
             location=rendering.SourceLocation(

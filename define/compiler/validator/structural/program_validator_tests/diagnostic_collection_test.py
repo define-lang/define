@@ -18,7 +18,6 @@ def test_multiple_diagnostics_collected(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -38,7 +37,6 @@ def test_diagnostics_in_source_order(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -57,7 +55,6 @@ def test_non_filesystem_source_reports_trailing_space_but_not_indentation(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     [file_result] = result.file_results
     assert file_result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(

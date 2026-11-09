@@ -22,7 +22,6 @@ def test_short_form_global_reference(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -37,7 +36,6 @@ def test_create_in_interface_of_missing_action_reports_reference_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -51,7 +49,6 @@ def test_create_in_missing_global_position_reports_reference_errors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -71,7 +68,6 @@ def test_same_fqun_reference_must_use_short_form(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -98,7 +94,6 @@ def test_cross_universe_not_configured(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -119,7 +114,6 @@ def test_undefined_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -133,7 +127,6 @@ def test_local_position_defined_after_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -161,7 +154,6 @@ def test_single_action_in_position_reference(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -191,7 +183,6 @@ def test_create_twice_in_local_chained_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -215,7 +206,6 @@ def test_create_twice_in_chained_position_in_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)

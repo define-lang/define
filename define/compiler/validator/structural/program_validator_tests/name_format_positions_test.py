@@ -18,7 +18,6 @@ def test_authority_domain_leading_dot_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -35,7 +34,6 @@ def test_authority_domain_trailing_dot_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -52,7 +50,6 @@ def test_authority_domain_trailing_hyphen_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -69,7 +66,6 @@ def test_authority_domain_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
@@ -86,7 +82,6 @@ def test_global_name_path_hyphen_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -103,7 +98,6 @@ def test_global_name_path_special_character_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -120,7 +114,6 @@ def test_global_name_path_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -137,7 +130,6 @@ def test_later_path_segment_leading_digit_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -154,7 +146,6 @@ def test_local_name_leading_digit_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
@@ -178,7 +169,6 @@ def test_local_name_special_character_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
@@ -202,7 +192,6 @@ def test_local_name_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
@@ -226,7 +215,6 @@ def test_multiverse_trailing_underscore_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
@@ -243,7 +231,6 @@ def test_multiverse_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
@@ -260,7 +247,6 @@ def test_path_segment_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -284,7 +270,6 @@ def test_path_trailing_slash_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
@@ -300,7 +285,6 @@ def test_universe_trailing_underscore_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
@@ -317,7 +301,6 @@ def test_universe_uppercase_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
@@ -334,7 +317,6 @@ def test_multiverse_name_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -352,7 +334,6 @@ def test_multiverse_name_too_short(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -372,7 +353,6 @@ def test_authority_domain_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -390,7 +370,6 @@ def test_authority_domain_too_short(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -411,7 +390,6 @@ def test_authority_path_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -429,7 +407,6 @@ def test_authority_path_empty_segment(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -444,7 +421,6 @@ def test_universe_name_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -462,7 +438,6 @@ def test_universe_name_too_short(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -477,7 +452,6 @@ def test_path_segment_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -495,7 +469,6 @@ def test_global_name_path_empty_segment(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -510,7 +483,6 @@ def test_local_name_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2

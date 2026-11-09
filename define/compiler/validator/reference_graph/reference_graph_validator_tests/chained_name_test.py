@@ -57,7 +57,6 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph().program_result
-        assert result.all_exceptions == []
         diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -77,7 +76,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
@@ -101,7 +99,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 6
@@ -146,7 +143,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -173,7 +169,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -201,7 +196,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -229,7 +223,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -269,7 +262,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -292,7 +284,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -330,7 +321,6 @@ class TestMoveParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -362,7 +352,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -377,7 +366,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -392,7 +380,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -413,7 +400,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -443,7 +429,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -467,7 +452,6 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
@@ -484,7 +468,6 @@ class TestDestroyParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4

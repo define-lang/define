@@ -31,7 +31,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
@@ -48,7 +47,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
@@ -74,7 +72,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -95,7 +92,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -114,7 +110,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -151,7 +146,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -170,7 +164,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
@@ -189,7 +182,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -206,7 +198,6 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.LocalActionNameDiagnostic)
@@ -226,7 +217,6 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
@@ -252,7 +242,6 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)

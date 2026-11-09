@@ -16,7 +16,6 @@ def test_move_from_a_position_to_itself(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -30,7 +29,6 @@ def test_move_from_a_chained_position_to_itself(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -44,8 +42,10 @@ def test_move_to_chained_prefix_position(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
+    assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("target_pos.dfn")
+    assert result.file_results[1].diagnostics == []
     test_result = result.file_results[0]
     diags = test_result.diagnostics
     assert len(diags) == 1

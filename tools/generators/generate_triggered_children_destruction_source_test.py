@@ -37,7 +37,6 @@ def test_valid_program(  # noqa: PLR0913, PLR0917 - Pytest supplies the parametr
 ):
     source = "\n".join(gen.generate_source_lines(depth, fan_out, shape)) + "\n"
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("define the potential action<") == depth + additional_actions
     assert (
@@ -54,7 +53,6 @@ def test_valid_same_particle_program(depth: int, fan_out: int, tmp_path: Path):
         + "\n"
     )
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("define the potential action<") == depth + 1
     assert source.count("define the potential position<") == depth
@@ -64,7 +62,6 @@ def test_valid_same_particle_program(depth: int, fan_out: int, tmp_path: Path):
 def test_error_program_reports_its_one_error(tmp_path: Path):
     source = "\n".join(gen.generate_source_lines(4, 2, gen.Shape.ERROR)) + "\n"
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
@@ -84,7 +81,6 @@ def test_in_destructor_contracted_program_reports_each_child_required_empty_and_
         + "\n"
     )
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 4
     first, second, third, fourth = result.all_diagnostics
     assert isinstance(first, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)

@@ -439,6 +439,7 @@ def test_non_filesystem_diagnostics_have_no_file_name():
     program_result = program_validator.validate_program_non_filesystem(source)
     diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
@@ -594,7 +595,6 @@ def test_sub_root_fqun_mismatch_error_message(
         sub_roots={"lib": wrong_child_universe},
     )
     program_result = result.program_result
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
@@ -624,7 +624,6 @@ def test_invalid_config_format_for_supplied_source(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    assert program_result.all_exceptions == []
     missing_universe_name, missing_path = program_result.all_diagnostics
     assert isinstance(missing_universe_name, diagnostics.ConfigViolationDiagnostic)
     assert isinstance(missing_path, diagnostics.ConfigViolationDiagnostic)
@@ -730,7 +729,6 @@ def test_not_project_root_error_message_for_project_root(
 ):
     monkeypatch.chdir(tmp_path)
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.NotRunFromProjectRootDiagnostic)
     assert (
@@ -761,7 +759,6 @@ def test_not_project_root_error_message_for_subroot(
         max_workers=1,
     )
     program_result = result.program_result
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootNotProjectRootDiagnostic)
     assert (
@@ -789,7 +786,6 @@ def test_sub_root_path_already_declared_error_message(
         },
     )
     program_result = result.program_result
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -812,7 +808,6 @@ def test_local_dependency_on_own_universe_error_message(
         local_deps={parent_universe: "lib"},
     )
     program_result = result.program_result
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
     assert diagnostic.format(program_result.source_map) == (
@@ -860,7 +855,6 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn"), max_workers=1
     )
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.DuplicateFqunDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -902,7 +896,6 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, dcl_errors.SyntaxDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -928,7 +921,6 @@ def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, dcl_errors.UnknownFieldNameDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -954,7 +946,6 @@ def test_config_validation_error_message(
     monkeypatch.chdir(tmp_path)
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -996,7 +987,6 @@ def test_duplicate_local_dependency_error_message(
     monkeypatch.chdir(tmp_path)
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.DuplicateLocalDependencyDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -1026,7 +1016,6 @@ def test_config_field_error_message_for_a_changed_config_file(
     _ = config_path.write_text(
         'project: {\n  universe_name: "x.com:lib"\n}\n', encoding="utf-8", newline="\n"
     )
-    assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\

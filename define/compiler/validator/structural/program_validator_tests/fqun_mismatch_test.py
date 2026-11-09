@@ -25,7 +25,6 @@ def test_mismatched_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
@@ -42,7 +41,6 @@ def test_mismatched_authority(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
@@ -57,7 +55,6 @@ def test_mismatched_multiverse(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
@@ -81,7 +78,6 @@ def test_standard_universe_matching(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -104,7 +100,6 @@ def test_authority_with_path_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)

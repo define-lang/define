@@ -25,7 +25,10 @@ py_library(
     name = "diagnostic_assertions",
     testonly = True,
     srcs = ["diagnostic_assertions.py"],
-    deps = ["//define/compiler/errors:diagnostics"],
+    deps = [
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
+    ],
 )
 
 py_test(

@@ -83,7 +83,6 @@ def test_generated_source_triggers_actions_before_unrelated_destruction(
         )
 
     result = driver.Driver().validate_source("\n".join(lines) + "\n", max_threads=1)
-    assert result.program_validation.all_exceptions == []
     assert result.program_validation.all_diagnostics == []
 
 

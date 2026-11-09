@@ -29,7 +29,6 @@ def test_encoding_operation_with_fewer_views(
         ("/number/integer/ascii/add",),
     )
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
@@ -57,7 +56,6 @@ def test_encoding_operation_with_different_view_name(
         ("/number/integer/ascii/negate",),
     )
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
@@ -86,7 +84,6 @@ def test_encoding_operation_with_different_view_direction(
         ("/number/integer/ascii/negate",),
     )
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
             location=rendering.SourceLocation(
@@ -115,7 +112,6 @@ def test_encoding_operation_with_views_in_different_order(
         ("/number/integer/ascii/negate",),
     )
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
@@ -158,7 +154,6 @@ def test_encoding_operations_with_same_encodings(
         ("/number/integer/ascii/add", "/number/integer/ascii/multiply"),
     )
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
             location=rendering.SourceLocation(

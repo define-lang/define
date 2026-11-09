@@ -25,7 +25,6 @@ def test_self_constructor_reference_reports_circular_reference(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
-    assert result.all_exceptions == []
     all_diagnostics = result.all_diagnostics
     assert len(all_diagnostics) == 1
     assert isinstance(all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -39,7 +38,6 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
-    assert result.all_exceptions == []
     all_diagnostics = result.all_diagnostics
     assert len(all_diagnostics) == 1
     assert isinstance(
@@ -125,7 +123,6 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -185,7 +182,6 @@ def test_self_trigger(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -206,7 +202,6 @@ def test_duplicate_action_does_not_add_trigger_edges(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -233,7 +228,6 @@ def test_no_body_effect_when_create_target_has_error_state(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -253,7 +247,6 @@ def test_no_body_effect_when_move_target_has_error_state(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     assert len(result.program_result.all_diagnostics) == 1
     assert isinstance(
         result.program_result.all_diagnostics[0],
@@ -273,7 +266,6 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -317,7 +309,6 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -366,7 +357,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diagnostics = result.program_result.all_diagnostics
-    assert len(all_diagnostics) == 2
+    assert len(all_diagnostics) == 3
     assert isinstance(
         all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
@@ -383,6 +374,7 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     assert all_diagnostics[1].location.file_path == "cleanup.dfn"
     assert all_diagnostics[1].file_path == "child.dfn"
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
-    all_exceptions = result.program_result.all_exceptions
-    assert len(all_exceptions) == 1
-    assert isinstance(all_exceptions[0], syntax_errors.ExpectedGlobalDefinition)
+    assert isinstance(all_diagnostics[2], syntax_errors.ExpectedGlobalDefinition)
+    assert all_diagnostics[2].location.line == 1
+    assert all_diagnostics[2].location.column == 1
+    assert all_diagnostics[2].location.file_path == "child.dfn"

@@ -29,7 +29,6 @@ def test_invalid_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -44,7 +43,6 @@ def test_duplicate_value(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
@@ -66,7 +64,6 @@ def test_same_name_different_quality(
 
 def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
@@ -79,7 +76,6 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
 
 def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
@@ -101,7 +97,6 @@ def test_duplicate_logical_operation_support(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateLogicalOperationSupportDiagnostic(
             location=rendering.SourceLocation(
@@ -117,7 +112,6 @@ def test_logical_operation_support_out_of_order(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationSupportOrderDiagnostic(
             location=rendering.SourceLocation(
@@ -151,7 +145,6 @@ def test_logical_operation_support_requires_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
@@ -166,7 +159,6 @@ def test_wrong_logical_operation_definition_type(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -181,7 +173,6 @@ def test_missing_logical_operation_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(

@@ -739,7 +739,6 @@ def test_value_setting_type_mismatch_format(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -776,7 +775,6 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
             "test.dfn": source,
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
@@ -814,7 +812,6 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
             "text_encoding.dfn": "define the encoding<my.domain.com:my_lib:/text_encoding>.\n",
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
@@ -861,7 +858,6 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
@@ -908,7 +904,6 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
@@ -1433,7 +1428,6 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
         ),
     }
     result = validate_project(files)
-    assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
     formatted = all_diagnostics[0].format(result.program_result.source_map)
@@ -1503,7 +1497,6 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
         ),
     }
     result = validate_project(files)
-    assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
     formatted = all_diagnostics[0].format(result.program_result.source_map)
@@ -1562,7 +1555,6 @@ def test_undefined_operation_view_format(
             ),
         }
     )
-    assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(result.program_result.source_map)
@@ -1615,7 +1607,6 @@ def test_operation_argument_missing_qualities_format(
             ),
         }
     )
-    assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(result.program_result.source_map)
@@ -1662,7 +1653,6 @@ def test_operation_argument_position_missing_qualities_format(
             ),
         }
     )
-    assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(result.program_result.source_map)
@@ -1844,7 +1834,6 @@ def test_local_view_error_messages(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     formatted = [
         diagnostic.format(result.program_result.source_map)
         for diagnostic in result.program_result.all_diagnostics
@@ -1954,7 +1943,6 @@ def test_interface_view_single_assignment_error_messages(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     formatted = [
         diagnostic.format(result.program_result.source_map)
         for diagnostic in result.program_result.all_diagnostics
@@ -2076,7 +2064,6 @@ def test_view_setting_written_twice_error_messages(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     formatted = [
         diagnostic.format(result.program_result.source_map)
         for diagnostic in result.program_result.all_diagnostics
@@ -2155,7 +2142,6 @@ def test_view_setting_read_from_written_read_write_view_error_messages(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     formatted = [
         diagnostic.format(result.program_result.source_map)
         for diagnostic in result.program_result.all_diagnostics
@@ -2219,7 +2205,6 @@ def test_executed_operation_has_read_write_view_error_messages(
             ),
         },
     )
-    assert result.program_result.all_exceptions == []
     formatted = [
         diagnostic.format(result.program_result.source_map)
         for diagnostic in result.program_result.all_diagnostics
@@ -2249,7 +2234,6 @@ def test_logical_operation_read_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
@@ -2279,7 +2263,6 @@ def test_logical_operation_write_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)

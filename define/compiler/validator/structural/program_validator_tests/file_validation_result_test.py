@@ -43,7 +43,7 @@ def test_parse_error_populates_exception(
         monkeypatch,
     )
 
-    assert result.diagnostics == []
+    assert result.diagnostics == [result.load_failure]
     assert isinstance(result.load_failure, syntax_errors.DefineSyntaxError)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
@@ -56,7 +56,7 @@ def test_non_filesystem_parse_error_returns_single_result():
     assert len(results) == 1
     result = results[0]
     assert isinstance(result.load_failure, syntax_errors.DefineSyntaxError)
-    assert result.diagnostics == []
+    assert result.diagnostics == [result.load_failure]
 
 
 def test_invalid_utf8_populates_exception(
@@ -65,7 +65,7 @@ def test_invalid_utf8_populates_exception(
     source = b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff"
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
-    assert result.diagnostics == []
+    assert result.diagnostics == [result.load_failure]
     assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
@@ -80,7 +80,7 @@ def test_name_parser_error_at_definition_populates_exception(
     )
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
-    assert result.diagnostics == []
+    assert result.diagnostics == [result.load_failure]
     assert isinstance(result.load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
@@ -97,7 +97,7 @@ def test_name_parser_error_at_reference_populates_exception(
     )
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
-    assert result.diagnostics == []
+    assert result.diagnostics == [result.load_failure]
     assert isinstance(result.load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert result.load_failure.location.line == 3
     assert result.load_failure.location.column == 29

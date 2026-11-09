@@ -26,7 +26,6 @@ def test_duplicate_quality_assignment_in_global_position_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -42,7 +41,6 @@ def test_duplicate_quality_assignment_in_local_position_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
@@ -57,7 +55,6 @@ def test_three_duplicates_two_errors(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
@@ -78,7 +75,6 @@ def test_duplicate_via_full_form_and_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
@@ -92,7 +88,6 @@ def test_duplicate_full_fqun_cross_universe_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(

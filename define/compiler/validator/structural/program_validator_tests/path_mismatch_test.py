@@ -25,7 +25,6 @@ def test_path_mismatch_error(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(entry_file="foo/bar.dfn")
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)

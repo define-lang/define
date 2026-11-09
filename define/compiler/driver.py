@@ -45,22 +45,6 @@ class ExitCode(enum.IntEnum):
     ERROR = 1
 
 
-def _error_strings(
-    program_result: validation_result.ProgramValidationResult,
-) -> list[str]:
-    """Format every load failure and diagnostic for the command-line caller."""
-    error_strings = [
-        diagnostic.format(program_result.source_map)
-        for diagnostic in program_result.program_diagnostics
-    ]
-    for result in program_result.file_results:
-        if result.load_failure is not None:
-            error_strings.append(result.load_failure.format(program_result.source_map))
-        for diagnostic in result.diagnostics:
-            error_strings.append(diagnostic.format(program_result.source_map))
-    return error_strings
-
-
 class CompilerResult(abc.ABC):
     """A compiler result that can report errors."""
 
@@ -79,7 +63,7 @@ class CompilerValidationResult(CompilerResult):
     @typing.override
     def error_strings(self) -> list[str]:
         """Format errors from the detailed program validation data."""
-        return _error_strings(self.program_validation)
+        return self.program_validation.error_strings()
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +71,6 @@ class CompilationResult(CompilerResult):
     """Caller-facing result retained after compilation."""
 
     all_diagnostics: list[diagnostics.FormattableDiagnostic]
-    all_exceptions: list[diagnostics.FileLoadFailureDiagnostic]
     entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
 
@@ -99,14 +82,13 @@ class CompilationResult(CompilerResult):
         program_validation = validation.program_validation
         return cls(
             all_diagnostics=program_validation.all_diagnostics,
-            all_exceptions=program_validation.all_exceptions,
             entry_action=program_validation.entry_action,
-            _error_strings=_error_strings(program_validation),
+            _error_strings=program_validation.error_strings(),
         )
 
     def has_errors(self) -> bool:
-        """Whether validation produced exceptions or diagnostics."""
-        return bool(self.all_exceptions or self.all_diagnostics)
+        """Whether validation produced any diagnostics."""
+        return bool(self.all_diagnostics)
 
     @typing.override
     def error_strings(self) -> list[str]:

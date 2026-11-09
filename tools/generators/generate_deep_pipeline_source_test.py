@@ -99,7 +99,6 @@ class TestFullDriver:
 
         result = driver.Driver().validate_source(source)
 
-        assert result.program_validation.all_exceptions == []
         assert result.program_validation.all_diagnostics == []
 
 
@@ -124,7 +123,6 @@ class TestValuesAndDestructorReads:
 
         result = driver.Driver().validate_source(source)
 
-        assert result.program_validation.all_exceptions == []
         assert result.program_validation.all_diagnostics == []
 
     def test_values_pass_through_every_stage_to_the_final_action(self):
@@ -221,7 +219,6 @@ def test_violations_have_scalable_propagation_histories(stages: int):
         + "\n"
     )
     result = driver.Driver().validate_source(source)
-    assert result.program_validation.all_exceptions == []
     all_diagnostics = result.program_validation.all_diagnostics
     assert len(all_diagnostics) == 2
     for diagnostic in all_diagnostics:

@@ -20,7 +20,6 @@ def test_case_insensitive_reserved_universe_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
@@ -44,7 +43,6 @@ def test_common_word_reserved_universe_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -60,7 +58,6 @@ def test_define_reserved_universe_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
@@ -76,7 +73,6 @@ def test_dotless_authority_with_multiverse_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
@@ -93,7 +89,6 @@ def test_reserved_package_repository_multiverse_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
@@ -109,7 +104,6 @@ def test_reserved_universe_name_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -124,7 +118,6 @@ def test_reserved_universe_name_reference(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
@@ -138,7 +131,6 @@ def test_reserved_universe_name_with_authority_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -158,7 +150,6 @@ def test_reserved_authority_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
@@ -172,7 +163,6 @@ def test_reserved_authority_with_multiverse_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -187,7 +177,6 @@ def test_dotless_authority_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -203,7 +192,6 @@ def test_reserved_multiverse_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1

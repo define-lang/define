@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 def test_exact_diagnostics_and_formatting(count: int, name_length: int, padding: int):
     source = "\n".join(gen.generate_source_lines(count, name_length, padding)) + "\n"
     result = driver.Driver().validate_source(source)
-    assert result.program_validation.all_exceptions == []
     all_diagnostics = result.program_validation.all_diagnostics
     lines: list[int] = []
     for diagnostic in all_diagnostics:

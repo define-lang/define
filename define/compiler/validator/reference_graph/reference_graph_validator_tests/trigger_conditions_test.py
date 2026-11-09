@@ -25,7 +25,6 @@ class TestTriggerConditionValidation:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         diags = result.file_results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -39,7 +38,6 @@ class TestTriggerConditionValidation:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         diags = result.file_results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)

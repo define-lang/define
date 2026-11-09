@@ -21,18 +21,16 @@ def test_entrypoint_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(entry_file="nonexistent.dfn")
-    assert result.all_exceptions == [
+    assert result.all_diagnostics == [
         diagnostics.SourceFileNotFoundDiagnostic(file_path="nonexistent.dfn")
     ]
     assert len(result.file_results) == 1
-    assert result.file_results[0].diagnostics == []
 
 
 def test_referenced_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results[0].diagnostics) == 1
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -46,7 +44,6 @@ def test_referenced_file_not_found_via_already_completed_target(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -76,7 +73,6 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     program_result = validate_testdata_structural()
-    assert program_result.all_exceptions == []
     result = program_result.file_results[0]
     assert result.load_failure is None
     diags = result.diagnostics
@@ -97,7 +93,6 @@ def test_same_missing_file_referenced_as_two_types_in_one_definition(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     program_result = validate_testdata_structural()
-    assert program_result.all_exceptions == []
     result = program_result.file_results[0]
     assert result.load_failure is None
     diags = result.diagnostics

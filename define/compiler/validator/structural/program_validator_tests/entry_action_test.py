@@ -16,7 +16,6 @@ def test_interface_position_is_rejected(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     assert isinstance(
         result.all_diagnostics[0], diagnostics.EntryPointInterfacePositionDiagnostic
@@ -31,7 +30,6 @@ def test_each_interface_position_is_rejected(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     assert isinstance(
         result.all_diagnostics[0], diagnostics.EntryPointInterfacePositionDiagnostic
@@ -67,7 +65,6 @@ def test_non_filesystem_only_last_constructor_interfaces_are_rejected(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.EntryPointInterfacePositionDiagnostic)

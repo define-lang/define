@@ -25,7 +25,6 @@ def test_read_not_supported(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -42,7 +41,6 @@ def test_write_not_supported(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -59,7 +57,6 @@ def test_logical_operation_not_supported(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -84,7 +81,6 @@ def test_write_to_input_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
@@ -101,7 +97,6 @@ def test_read_from_unwritten_output_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
@@ -118,7 +113,6 @@ def test_undefined_logical_operation_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
@@ -142,7 +136,6 @@ def test_argument_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
@@ -159,7 +152,6 @@ def test_missing_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
@@ -175,7 +167,6 @@ def test_looks_at_undefined_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
@@ -190,7 +181,6 @@ def test_missing_logical_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -205,7 +195,6 @@ def test_missing_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -220,7 +209,6 @@ def test_view_without_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(

@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 def test_valid_implication_graph(layers: int, width: int, fan_out: int, tmp_path: Path):
     source = "\n".join(gen.generate_source_lines(layers, width, fan_out, 2)) + "\n"
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("it also assigns the") == (layers - 1) * width * fan_out
     assert source.count("define the potential action<") == layers * width + 1
@@ -32,7 +31,6 @@ def test_valid_shared_quality(tmp_path: Path):
         "\n".join(gen.generate_source_lines(4, 2, 2, 2, shared_quality=True)) + "\n"
     )
     result = driver.Driver().compile_source(source, tmp_path / "generated")
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("it also assigns the action</shared>.") == 4 * 2
     assert source.count("define the potential action<") == 4 * 2 + 2

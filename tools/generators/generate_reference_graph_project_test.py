@@ -137,7 +137,6 @@ class TestGeneratedProjectCompiles:
         output_dir = tmp_path / "generated"
         result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
 
-        assert result.all_exceptions == []
         assert result.all_diagnostics == []
         assert (output_dir / "__main__.py").is_file()
 
@@ -180,7 +179,6 @@ def test_structured_projects_load_every_definition(
     )
     monkeypatch.chdir(output)
     validation = driver.Driver().validate_program(Path("test.dfn"), max_threads=1)
-    assert validation.program_validation.all_exceptions == []
     assert validation.program_validation.all_diagnostics == []
     assert len(validation.program_validation.definition_results) == modules + 1
 
@@ -303,7 +301,6 @@ def test_depth_update_shape_references_all_positions_then_predecessors(
         .validate_program(Path("test.dfn"), max_threads=1)
         .program_validation
     )
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert len(result.definition_results) == modules + 1
 
@@ -323,12 +320,10 @@ def test_invalid_project_shapes(
         .program_validation
     )
     if shape == gen.Shape.CYCLES:
-        assert result.all_exceptions == []
         assert [type(diagnostic) for diagnostic in result.all_diagnostics] == [
             diagnostics.CircularGlobalReferenceDiagnostic
         ] * 3
     else:
-        assert result.all_exceptions == []
         assert [type(diagnostic) for diagnostic in result.all_diagnostics] == [
             diagnostics.ReferencedFileNotFoundDiagnostic
         ] * 4

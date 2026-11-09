@@ -285,7 +285,6 @@ class TestSourceValidation:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         driver_result = driver.Driver().validate_source(source)
-        assert driver_result.program_validation.all_exceptions == []
         all_diagnostics = driver_result.program_validation.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
@@ -318,7 +317,6 @@ class TestSourceCompilation:
     def test_position_entry_point_reports_diagnostic(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver().compile_source(source, tmp_path)
-        assert driver_result.all_exceptions == []
         all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
@@ -341,7 +339,6 @@ class TestSourceCompilation:
             "}\n"
         )
         driver_result = driver.Driver().compile_source(source, tmp_path)
-        assert driver_result.all_exceptions == []
         all_diagnostics = driver_result.all_diagnostics
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]

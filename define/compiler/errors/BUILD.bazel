@@ -36,7 +36,10 @@ py_library(
 py_library(
     name = "syntax_errors",
     srcs = ["syntax_errors.py"],
-    visibility = ["//define/compiler:__subpackages__"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+    ],
     deps = [
         ":diagnostics",
         ":invisible_characters",

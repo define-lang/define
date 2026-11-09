@@ -8,12 +8,17 @@ import functools
 import inspect
 from typing import TYPE_CHECKING, cast, override
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-_DIAGNOSTICS_MODULE = "diagnostics"
+# The names that tests import the modules of diagnostic classes as. Importing
+# syntax_errors here also registers its classes as subclasses of
+# diagnostics.Diagnostic.
+_DIAGNOSTIC_MODULE_NAMES = frozenset(
+    module.__name__.rpartition(".")[2] for module in (diagnostics, syntax_errors)
+)
 _DIAGNOSTIC_LISTS = frozenset({"all_diagnostics", "diagnostics"})
 _MESSAGE_PROPERTY = "message"
 _LOCATION_TYPE = "SourceLocation"
@@ -131,7 +136,8 @@ class _TestFunctionAssertions:
                     ast.Attribute(value=ast.Name(id=module_name), attr=class_name),
                 ],
             ) if (
-                module_name == _DIAGNOSTICS_MODULE and class_name in diagnostic_fields()
+                module_name in _DIAGNOSTIC_MODULE_NAMES
+                and class_name in diagnostic_fields()
             ):
                 self._checked_classes[self._key(checked)] = (class_name, line)
             case ast.Call(func=ast.Name(id="isinstance"), args=[checked, _]):

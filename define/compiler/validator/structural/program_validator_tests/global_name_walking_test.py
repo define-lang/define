@@ -50,7 +50,6 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
@@ -72,7 +71,6 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -88,7 +86,6 @@ def test_cross_file_duplicate_definition_reports_path_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].diagnostics == []
@@ -109,7 +106,6 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -126,7 +122,6 @@ def test_same_file_position_must_precede_referencing_action(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
@@ -157,7 +152,6 @@ def test_same_target_file_referenced_as_two_types_loads_once(
         side_effect=recording_load_file,
     ):
         result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert loaded_paths == ["test.dfn", "target.dfn"]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
@@ -177,7 +171,6 @@ def test_self_cycle_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -194,7 +187,6 @@ def test_two_file_cycle_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -225,7 +217,6 @@ def test_cycle_path_search_skips_a_shared_definition_already_seen(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
     diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -245,7 +236,6 @@ def test_unknown_universe_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -260,7 +250,6 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -275,7 +264,6 @@ def test_unknown_universe_across_files_reported_per_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -310,7 +298,6 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -352,7 +339,6 @@ def test_reference_to_earlier_definition_with_mismatched_path_reaches_it(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("x.dfn"),
@@ -379,7 +365,6 @@ def test_unreferenced_duplicate_in_loaded_file_is_reported(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateDefinitionDiagnostic(
             location=rendering.SourceLocation(

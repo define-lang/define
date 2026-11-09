@@ -35,7 +35,6 @@ def test_undefined_local_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -50,7 +49,6 @@ def test_action_type_in_trigger_condition_is_rejected(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     results = result.file_results
     diags = results[0].diagnostics
     assert len(diags) == 3
@@ -74,7 +72,6 @@ def test_invalid_local_name_format(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)

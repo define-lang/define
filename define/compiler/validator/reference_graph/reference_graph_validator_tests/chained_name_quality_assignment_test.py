@@ -21,7 +21,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -63,7 +62,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
@@ -78,7 +76,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -120,7 +117,6 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
@@ -135,7 +131,6 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        assert result.program_result.all_exceptions == []
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
@@ -151,7 +146,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -191,7 +185,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -227,7 +220,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -268,7 +260,6 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        assert result.all_exceptions == []
         results = result.file_results
         diags = results[0].diagnostics
         assert len(diags) == 4

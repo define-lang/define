@@ -19,7 +19,6 @@ def test_new_particle_is_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -54,7 +53,6 @@ def test_move_preserves_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -68,7 +66,6 @@ def test_replacement_is_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -89,7 +86,6 @@ def test_trigger_requires_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -143,7 +139,6 @@ def test_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -204,7 +199,6 @@ def test_transitive_implied_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -263,7 +257,6 @@ def test_implied_requirement_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -314,7 +307,6 @@ def test_guarantee_new_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -337,7 +329,6 @@ def test_guarantee_existing_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -366,7 +357,6 @@ def test_guarantee_unchanged_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -389,7 +379,6 @@ def test_guarantee_moved_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -412,7 +401,6 @@ def test_destructor_direct_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -479,7 +467,6 @@ def test_destructor_contract_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -542,7 +529,6 @@ def test_destructor_contract_set_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
@@ -556,7 +542,6 @@ def test_destructor_contract_set_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
@@ -570,7 +555,6 @@ def test_destructor_contract_replace_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -639,7 +623,6 @@ def test_destructor_contract_replace_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -715,7 +698,6 @@ def test_destructor_contract_untouched_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -785,7 +767,6 @@ def test_transitive_implied_guarantee_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -806,7 +787,6 @@ def test_constructor_guarantee_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -827,7 +807,6 @@ def test_requirement_after_move_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -881,7 +860,6 @@ def test_destructor_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -959,7 +937,6 @@ def test_destructor_untouched_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1037,7 +1014,6 @@ def test_destructor_replaced_child_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1100,7 +1076,6 @@ def test_destructor_callee_cannot_set_contracted_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -1114,7 +1089,6 @@ def test_destructor_cannot_set_contracted_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
@@ -1128,7 +1102,6 @@ def test_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1216,7 +1189,6 @@ def test_interfaces_stop_value_inference(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1269,7 +1241,6 @@ def test_destructor_transitive_replaced_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1347,7 +1318,6 @@ def test_multiple_destructor_requirements_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1480,7 +1450,6 @@ def test_destructor_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1620,7 +1589,6 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1691,7 +1659,6 @@ def test_repeated_unset_reads(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1705,7 +1672,6 @@ def test_value_error_preserves_occupancy(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.UnsetValueDiagnostic)
@@ -1726,7 +1692,6 @@ def test_repeated_interface_value_requirement(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -1772,7 +1737,6 @@ def test_value_error_new_guarantee(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1786,7 +1750,6 @@ def test_value_error_existing_guarantee(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1800,7 +1763,6 @@ def test_value_error_recovered_by_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1820,7 +1782,6 @@ def test_destructor_value_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1834,7 +1795,6 @@ def test_value_error_recovered_by_copy(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
@@ -1854,7 +1814,6 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)

@@ -36,7 +36,6 @@ def test_sub_root_redeclares_parent_fqun(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("lib/target.dfn"),
@@ -95,7 +94,6 @@ def test_cross_fqun_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].load_failure is None
     diags = result.file_results[0].diagnostics
@@ -111,7 +109,6 @@ def test_cross_fqun_sub_root_missing_config(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
     ]
@@ -129,7 +126,6 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("other.dfn"),
@@ -148,7 +144,6 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
     ]
@@ -167,7 +162,6 @@ def test_second_universe_declared_at_same_sub_root_path(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("lib/target.dfn"),
@@ -187,7 +181,6 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(max_workers=1)
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("second_child_reference.dfn"),
@@ -223,7 +216,6 @@ def test_path_inside_other_universe_before_its_sub_root_loads(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("lib/sub_root_target.dfn"),
@@ -245,7 +237,6 @@ def test_sub_root_path_declared_by_outer_project_wins(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("p/target.dfn"),
@@ -265,7 +256,6 @@ def test_reference_naming_universe_into_its_declared_sub_root(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
     ]
@@ -285,7 +275,6 @@ def test_sub_root_is_current_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -336,7 +325,6 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
     ]
@@ -362,7 +350,6 @@ def test_path_inside_other_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -389,7 +376,6 @@ def test_path_inside_other_universe_skips_further_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -427,7 +413,6 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
 ):
     wrong_fqun = "mv:define-lang.org:totally_wrong"
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -461,7 +446,6 @@ def test_cross_fqun_wrong_type_in_sub_root(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -498,7 +482,6 @@ def test_cross_fqun_nested_sub_roots(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 3
     assert_no_errors(result)
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
@@ -512,7 +495,6 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("lib_a/target_a.dfn"),
@@ -532,7 +514,6 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
 ):
     child_b = "mv:define-lang.org:child_b"
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].load_failure is None
@@ -555,7 +536,6 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("local.dfn"),
@@ -574,7 +554,6 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert [file_result.file_path for file_result in result.file_results] == [
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("wrong_type.dfn"),
@@ -605,7 +584,6 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
 ):
     foreign_universe = "mv:define-lang.org:other_lib"
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -628,7 +606,6 @@ def test_same_path_in_known_and_unknown_universes_still_walks_into_known(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
@@ -648,7 +625,6 @@ def test_same_path_in_two_unknown_universes_diagnoses_each(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -708,7 +684,6 @@ def test_unknown_universe_reported_once_for_same_file_references(
 ):
     foreign_universe = "mv:define-lang.org:other_lib"
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.FqunMismatchDiagnostic(
             location=rendering.SourceLocation(

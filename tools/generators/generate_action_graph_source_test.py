@@ -129,7 +129,6 @@ class TestFullDriver:
 
         result = driver.Driver().validate_source(source).program_validation
 
-        assert result.all_exceptions == []
         assert result.all_diagnostics == []
 
 
@@ -150,7 +149,6 @@ def test_bottleneck_layers(interval: int, expected: int):
         + "\n"
     )
     result = driver.Driver().validate_source(source).program_validation
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert len(result.definition_results) == expected + 1
 
@@ -213,7 +211,6 @@ def test_destructor_cascades():
         + "\n"
     )
     result = driver.Driver().validate_source(source).program_validation
-    assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("this particle is being destroyed.") == 4
     assert len(result.definition_results) == 7

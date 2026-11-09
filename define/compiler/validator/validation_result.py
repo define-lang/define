@@ -85,13 +85,15 @@ class FileValidationResult:
     definition_results: list[DefinitionValidationResult]
 
     @property
-    def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
-        """File-level and per-definition diagnostics, sorted by source location (line, then column)."""
-        all_diagnostics = list(self.file_diagnostics)
+    def diagnostics(self) -> Sequence[diagnostics.BaseDiagnostic]:
+        """The load failure, if any, then the file-level and per-definition diagnostics sorted by source location (line, then column)."""
+        located_diagnostics = list(self.file_diagnostics)
         for result in self.definition_results:
-            all_diagnostics.extend(result.diagnostics)
-        all_diagnostics.sort(key=lambda d: (d.location.line, d.location.column))
-        return all_diagnostics
+            located_diagnostics.extend(result.diagnostics)
+        located_diagnostics.sort(key=lambda d: (d.location.line, d.location.column))
+        if self.load_failure is None:
+            return located_diagnostics
+        return [self.load_failure, *located_diagnostics]
 
 
 class ProgramValidationResult(msgspec.Struct):
@@ -118,14 +120,15 @@ class ProgramValidationResult(msgspec.Struct):
             all_diagnostics.extend(result.diagnostics)
         return all_diagnostics
 
-    @property
-    def all_exceptions(self) -> list[diagnostics.FileLoadFailureDiagnostic]:
-        """The diagnostic of each file that did not load or parse."""
-        return [r.load_failure for r in self.file_results if r.load_failure is not None]
+    def error_strings(self) -> list[str]:
+        """Format every diagnostic for the command-line caller."""
+        return [
+            diagnostic.format(self.source_map) for diagnostic in self.all_diagnostics
+        ]
 
     def has_errors(self) -> bool:
-        """Whether any file had exceptions or diagnostics."""
+        """Whether the program has any diagnostics."""
         # Every diagnostic is an error, which keeps code generation from ever
         # running on a file whose comments have characters the spec does not
         # allow, such as the bidi controls of a Trojan Source attack.
-        return bool(self.all_exceptions or self.all_diagnostics)
+        return bool(self.all_diagnostics)

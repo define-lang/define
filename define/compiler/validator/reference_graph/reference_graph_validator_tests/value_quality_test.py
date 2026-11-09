@@ -37,7 +37,6 @@ def test_move_mismatched_value(
         constants.DECIMAL_ASCII_ENCODING,
     )
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
@@ -53,7 +52,6 @@ def test_move_without_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
@@ -81,7 +79,6 @@ def test_action_mismatched_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     untriggered = result.all_diagnostics[0]
     assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
@@ -119,7 +116,6 @@ def test_value_use_keeps_only_origin_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -134,7 +130,6 @@ def test_value_setting_target_keeps_only_origin_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -175,7 +170,6 @@ def test_guaranteed_value_through_local(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -199,7 +193,6 @@ def test_callee_contract_keeps_only_origin_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -221,7 +214,6 @@ def test_unused_local_value_is_dead(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -236,7 +228,6 @@ def test_moving_values_does_not_keep_quality_assignments_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -258,7 +249,6 @@ def test_callee_without_qualities_does_not_keep_value_alive(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -275,7 +265,6 @@ def test_value_read_keeps_only_interface_origin_alive(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
@@ -292,7 +281,6 @@ def test_unused_interface_value_is_dead(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_result
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)

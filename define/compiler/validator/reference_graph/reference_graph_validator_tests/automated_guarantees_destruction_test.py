@@ -83,7 +83,6 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -149,7 +148,6 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     diagnostic = all_diags[0]
@@ -222,7 +220,6 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -288,7 +285,6 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -354,7 +350,6 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -420,7 +415,6 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -486,7 +480,6 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -560,7 +553,6 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -581,7 +573,6 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -647,7 +638,6 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
@@ -713,7 +703,6 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     untriggered = all_diags[0]
@@ -821,7 +810,6 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
@@ -916,7 +904,6 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
@@ -1003,7 +990,6 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     inner, value = result.program_result.all_diagnostics
     assert isinstance(inner, diagnostics.InferredRequirementViolationDiagnostic)
     assert inner.location.line == 12
@@ -1144,7 +1130,6 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
@@ -1178,7 +1163,6 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 12
@@ -1265,7 +1249,6 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12

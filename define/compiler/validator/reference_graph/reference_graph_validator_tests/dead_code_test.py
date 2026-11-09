@@ -27,7 +27,6 @@ def test_unreferenced_child_position_on_local_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -42,7 +41,6 @@ def test_callee_interface_position_named_like_local_does_not_keep_local_quality_
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -59,7 +57,6 @@ def test_unreferenced_child_position_on_interface_is_dead(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -74,7 +71,6 @@ def test_unresolved_quality_assignment_is_not_reported_as_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -88,7 +84,6 @@ def test_guarantee_on_unresolved_implied_position_is_ignored(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -163,7 +158,6 @@ def test_redundant_destination_quality_assignment_on_move_filled_position_is_dea
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -178,7 +172,6 @@ def test_back_and_forth_moves_do_not_make_child_position_assignments_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -229,7 +222,6 @@ def test_quality_assignment_on_interface_position_filled_then_destroyed_is_dead(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -264,7 +256,6 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -281,7 +272,6 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -298,7 +288,6 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -315,7 +304,6 @@ def test_unused_quality_assignment_on_interface_position_whose_particle_only_has
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -330,7 +318,6 @@ def test_dead_child_position_inside_constructor(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -345,7 +332,6 @@ def test_one_child_position_dead_while_a_sibling_is_referenced(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -360,7 +346,6 @@ def test_quality_assignment_that_only_provides_a_moved_quality_by_implication_is
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -385,7 +370,6 @@ def test_untriggered_action_on_local_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -402,7 +386,6 @@ def test_untriggered_action_on_interface_is_dead(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -431,7 +414,6 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -456,7 +438,6 @@ def test_action_interface_occupation_requires_trigger_when_quality_assignment_is
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -476,7 +457,6 @@ def test_action_interface_occupation_survives_particle_move_out_without_trigger(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -496,7 +476,6 @@ def test_action_interface_occupation_survives_parent_and_particle_moves_without_
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -514,7 +493,6 @@ def test_action_trigger_after_interface_particle_replacement_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
@@ -543,7 +521,6 @@ def test_action_interface_particle_arriving_after_trigger_cannot_depart_before_n
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
@@ -567,7 +544,6 @@ def test_action_interface_particle_arriving_after_last_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -587,7 +563,6 @@ def test_guaranteed_interface_particle_departure_leaves_pending_arrival(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -607,7 +582,6 @@ def test_action_trigger_only_satisfies_arrivals_for_its_parent_particle(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -625,7 +599,6 @@ def test_action_interface_child_destroyed_before_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -643,7 +616,6 @@ def test_action_interface_child_destroyed_with_parent_before_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -669,7 +641,6 @@ def test_action_interface_child_moved_before_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -695,7 +666,6 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -721,7 +691,6 @@ def test_move_from_empty_action_interface_does_not_mark_action_alive(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -746,7 +715,6 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -784,7 +752,6 @@ def test_transitive_action_interface_particle_destroyed_before_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
@@ -831,7 +798,6 @@ def test_implied_action_must_trigger_in_callee_even_after_caller_triggered_it(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -855,7 +821,6 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -876,7 +841,6 @@ def test_implied_action_interface_child_without_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -913,7 +877,6 @@ def test_multiple_implied_actions_referenced_but_never_triggered_are_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 4
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -945,7 +908,6 @@ def test_destructor_cannot_be_implied(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -966,7 +928,6 @@ def test_nested_trigger_marks_only_final_implied_action_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -990,7 +951,6 @@ def test_nested_non_trigger_marks_no_implied_action_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -1019,7 +979,6 @@ def test_implied_action_triggered_on_another_particle_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -1040,7 +999,6 @@ def test_implied_constructor_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -1061,7 +1019,6 @@ def test_implied_constructor_fired_on_another_particle_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
@@ -1089,7 +1046,6 @@ def test_child_position_assignment_moved_to_untriggered_action_contract_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -1140,7 +1096,6 @@ def test_back_and_forth_moves_do_not_make_child_action_assignments_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -1169,7 +1124,6 @@ def test_destructor_quality_assignment_is_never_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -1190,7 +1144,6 @@ def test_constructor_quality_assignment_reached_only_by_move_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -1223,7 +1176,6 @@ def test_constructor_on_interface_position_dead_when_never_created(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
@@ -1241,7 +1193,6 @@ def test_dead_child_position_and_untriggered_action_on_same_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -1262,7 +1213,6 @@ def test_interface_quality_assignment_referenced_only_in_another_definition_is_d
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -1293,7 +1243,6 @@ def test_two_child_positions_on_one_position_are_both_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
@@ -1324,7 +1273,6 @@ def test_operation_execution_does_not_keep_child_quality_assignments_alive(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     dead_child, untriggered_action = result.all_diagnostics
     assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
@@ -1352,7 +1300,6 @@ def test_callee_requirement_on_unresolved_position_keeps_no_quality_assignment_a
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)

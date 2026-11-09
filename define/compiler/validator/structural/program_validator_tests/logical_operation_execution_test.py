@@ -29,7 +29,6 @@ def test_looks_at_undefined_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
@@ -44,7 +43,6 @@ def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.AliasedViewDiagnostic(
             location=rendering.SourceLocation(
@@ -60,7 +58,6 @@ def test_duplicate_argument(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.DuplicateOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
@@ -76,7 +73,6 @@ def test_invalid_argument_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
@@ -92,7 +88,6 @@ def test_invalid_logical_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
@@ -108,7 +103,6 @@ def test_requires_short_logical_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
@@ -130,7 +124,6 @@ def test_missing_logical_operation_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -149,7 +142,6 @@ def test_wrong_logical_operation_definition_type(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert result.all_exceptions == []
     assert result.all_diagnostics == [
         diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
