@@ -12,10 +12,11 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.errors import diagnostics, exceptions, source_map
+    from define.compiler.errors import diagnostics, exceptions
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
+    from source_rendering.python import rendering
 
 
 class ParticleStatementValidity(msgspec.Struct, frozen=True):
@@ -76,9 +77,6 @@ class FileValidationResult:
     """Validation output for one source file."""
 
     exception: exceptions.DefineError | None
-    # The digest of a file that was read from the filesystem, which lets a
-    # source map read it again for diagnostics without keeping its text.
-    source_digest: bytes | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     file_diagnostics: list[diagnostics.Diagnostic]
@@ -108,7 +106,7 @@ class ProgramValidationResult(msgspec.Struct):
     # The diagnostics of every project config that was loaded, each reported
     # once however many files depend on its config.
     config_diagnostics: list[diagnostics.ConfigDiagnostic]
-    source_map: source_map.SourceMap
+    source_map: rendering.SourceMap
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:

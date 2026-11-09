@@ -60,7 +60,9 @@ py_test(
     name = "rendering_test",
     size = "small",
     srcs = ["rendering_test.py"],
-    deps = [":rendering"],
+    deps = [
+        ":rendering",
+    ],
 )
 
 # --- Linting ---

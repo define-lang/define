@@ -1,8 +1,8 @@
 """Pure per-file and per-definition validation for the Define language.
 
-FileStructuralValidator is a stateless worker that loads one file at a time,
-and a LoadedFile validates one of its definitions at a time. Neither has access
-to shared mutable state.
+FileStructuralValidator loads one file at a time, and a LoadedFile validates
+one of its definitions at a time. Neither has access to shared mutable state
+other than the source map that loaded files are registered with.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.errors import diagnostics, exceptions, source_map
+from define.compiler.errors import diagnostics, exceptions
 from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
@@ -24,6 +24,7 @@ from define.compiler.validator.structural import (
 
 if TYPE_CHECKING:
     from define.compiler.data_structures import define_path
+    from source_rendering.python import rendering
 
 
 type FileDefinitions = typed_name_dict.TypedNameDict[
@@ -36,9 +37,6 @@ class LoadedFile(msgspec.Struct):
 
     context: file_validation_context.FileValidationContext
     exception: exceptions.DefineError | None
-    # The digest of a file that was read from the filesystem, which lets a
-    # source map read it again for diagnostics without keeping its text.
-    source_digest: bytes | None
     file_diagnostics: list[diagnostics.Diagnostic]
     # The first definition of each typed name in the file. It does not change
     # after loading, so definitions can be validated concurrently.
@@ -68,7 +66,6 @@ class LoadedFile(msgspec.Struct):
         """Return the file's result, given the results of its validated definitions in source order."""
         return validation_result.FileValidationResult(
             exception=self.exception,
-            source_digest=self.source_digest,
             file_path=self.context.full_path,
             root_prefix=self.context.root_prefix,
             file_diagnostics=self.file_diagnostics,
@@ -86,31 +83,33 @@ class LoadedFile(msgspec.Struct):
 
 
 class FileStructuralValidator:
-    """Stateless per-file loader.
+    """Per-file loader.
 
-    Processes one file: reads from disk, parses, and checks the rules that
-    concern the file as a whole. Its definitions are validated separately,
-    only when something requests them.
+    Processes one file: reads from disk, registers it with a source map, parses
+    it, and checks the rules that concern the file as a whole. Its definitions
+    are validated separately, only when something requests them.
     """
+
+    _source_map: rendering.SourceMap
+
+    def __init__(self, source_map: rendering.SourceMap):
+        """Initialize with the source map to register loaded files with."""
+        self._source_map = source_map
 
     def load_file(
         self, context: file_validation_context.FileValidationContext
     ) -> LoadedFile:
         """Load and parse a single file."""
-        source, digest, load_error = self._load_file(context.full_path)
+        source, load_error = self._load_file(context.full_path)
         if load_error is not None:
             return LoadedFile(
                 context=context,
                 exception=load_error,
-                source_digest=digest,
                 file_diagnostics=[],
                 definitions=typed_name_dict.TypedNameDict(),
             )
-        return self._load_source(
-            context=context,
-            source=source,
-            source_digest=digest,
-        )
+        self._source_map.register_file(str(context.full_path), source)
+        return self._load_source(context=context, source=source)
 
     def load_source(self, source: str) -> LoadedFile:
         """Parse source text without loading from the filesystem."""
@@ -120,14 +119,12 @@ class FileStructuralValidator:
             # A lone surrogate becomes invalid UTF-8, as it would be in a file,
             # instead of failing to encode.
             source=source.encode(errors="surrogatepass"),
-            source_digest=None,
         )
 
     @staticmethod
     def _load_source(
         context: file_validation_context.FileValidationContext,
         source: bytes,
-        source_digest: bytes | None,
     ) -> LoadedFile:
         """Parse UTF-8 source text and check the rules that concern the whole file."""
         parser_file_path = (
@@ -145,7 +142,6 @@ class FileStructuralValidator:
             return LoadedFile(
                 context=context,
                 exception=parse_result.exception,
-                source_digest=source_digest,
                 file_diagnostics=parse_result.diagnostics,
                 definitions=typed_name_dict.TypedNameDict(),
             )
@@ -175,7 +171,6 @@ class FileStructuralValidator:
         return LoadedFile(
             context=context,
             exception=None,
-            source_digest=source_digest,
             file_diagnostics=file_diagnostics,
             definitions=definitions,
         )
@@ -183,20 +178,19 @@ class FileStructuralValidator:
     @staticmethod
     def _load_file(
         path: define_path.DefinePath,
-    ) -> tuple[bytes, bytes | None, exceptions.DefineError | None]:
-        """Load a Define source file and return its source, digest, and loading error."""
+    ) -> tuple[bytes, exceptions.DefineError | None]:
+        """Load a Define source file and return its source and loading error."""
         posix_path = path.as_posix_path()
         try:
             source = pathlib.Path(posix_path).read_bytes()
         except FileNotFoundError:
             return (
                 b"",
-                None,
                 exceptions.SourceFileNotFoundError(
                     filesystem_path=pathlib.Path(posix_path)
                 ),
             )
-        return source, source_map.source_digest(source), None
+        return source, None
 
 
 def _path_mismatch_diagnostics(

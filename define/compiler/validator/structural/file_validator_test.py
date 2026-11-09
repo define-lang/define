@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import types
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -17,6 +16,7 @@ from define.compiler.validator.structural import (
     file_validation_context,
     file_validator,
 )
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.graphs import reference_graph
@@ -42,7 +42,9 @@ def _make_context(
 def _load_and_validate_every_definition(
     context: file_validation_context.FileValidationContext,
 ) -> validation_result.FileValidationResult:
-    loaded_file = file_validator.FileStructuralValidator().load_file(context)
+    loaded_file = file_validator.FileStructuralValidator(
+        rendering.SourceMap(in_memory_source=None)
+    ).load_file(context)
     definition_results: list[validation_result.DefinitionValidationResult] = []
     for definition in loaded_file.definitions.values():
         definition_results.append(loaded_file.validate_definition(definition))
@@ -68,7 +70,6 @@ class TestFileStructuralValidatorSuccess:
 
         assert result.exception is None
         assert result.diagnostics == []
-        assert result.source_digest == hashlib.sha256(source.encode()).digest()
         assert len(result.definition_results) == 1
         assert (
             result.definition_results[0].definition.typed_name.name_type == "position"
@@ -187,9 +188,9 @@ class TestLoadedFile:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        loaded_file = file_validator.FileStructuralValidator().load_file(
-            _make_context(tmp_path)
-        )
+        loaded_file = file_validator.FileStructuralValidator(
+            rendering.SourceMap(in_memory_source=None)
+        ).load_file(_make_context(tmp_path))
 
         assert [
             definition.location.line for definition in loaded_file.definitions.values()
@@ -204,9 +205,9 @@ class TestLoadedFile:
             "}\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        loaded_file = file_validator.FileStructuralValidator().load_file(
-            _make_context(tmp_path)
-        )
+        loaded_file = file_validator.FileStructuralValidator(
+            rendering.SourceMap(in_memory_source=None)
+        ).load_file(_make_context(tmp_path))
 
         assert loaded_file.file_diagnostics == []
 

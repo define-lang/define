@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import textwrap
+from typing import TYPE_CHECKING
 
 from source_rendering.python import rendering
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_render_underlines_the_location_after_the_file_header():
@@ -109,3 +113,26 @@ def test_at_is_another_position_in_the_same_file():
 def test_at_without_a_file_is_in_no_file():
     location = rendering.SourceLocation(line=1, column=2, end_line=3, end_column=4)
     assert location.at(line=5, column=6, end_line=7, end_column=8).file_path is None
+
+
+def test_source_map_shows_a_registered_file_s_source_line(tmp_path: Path):
+    path = tmp_path / "test.dfn"
+    _ = path.write_bytes(b"first\n  second\n")
+    sources = rendering.SourceMap(in_memory_source=None)
+    sources.register_file(str(path), b"first\n  second\n")
+    location = rendering.SourceLocation(
+        line=2, column=3, end_line=2, end_column=8, file_path=str(path)
+    )
+    assert sources.render_location(location) == textwrap.dedent(f"""\
+        File "{path}", line 2, column 3
+            second
+            ^^^^^^""")
+
+
+def test_source_map_shows_the_in_memory_source_for_a_location_without_a_file():
+    sources = rendering.SourceMap(in_memory_source="a b\n")
+    location = rendering.SourceLocation(line=1, column=3, end_line=1, end_column=3)
+    assert sources.render_location(location) == textwrap.dedent("""\
+        line 1, column 3
+            a b
+              ^""")

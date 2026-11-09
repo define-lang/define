@@ -6,7 +6,7 @@ from pathlib import Path
 from define.compiler import ast, name_types
 from define.compiler.codegen.literal.python import naming
 
-_LOCATION = ast.start_of_file_location()
+_LOCATION = ast.start_of_file_location("test.dfn")
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="my.domain.com", location=_LOCATION),

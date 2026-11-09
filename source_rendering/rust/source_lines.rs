@@ -1,18 +1,22 @@
 //! The lines of a source file.
 
 use crate::SourceLocation;
+use std::borrow::Cow;
 
 /// The text of a source file, with where each of its lines starts, so that
 /// showing many locations in it reads it only once.
 pub struct SourceLines<'source> {
-    source: &'source str,
+    // Borrowed when the caller keeps the text, and owned when these lines are
+    // all that keeps it, as in a `SourceMap`.
+    source: Cow<'source, str>,
     // The byte offset of each line's first character.
     line_starts: Vec<usize>,
 }
 
 impl<'source> SourceLines<'source> {
     #[must_use]
-    pub fn new(source: &'source str) -> Self {
+    pub fn new(source: impl Into<Cow<'source, str>>) -> Self {
+        let source = source.into();
         let mut line_starts = vec![0];
         line_starts.extend(source.match_indices('\n').map(|(offset, _)| offset + 1));
         Self {
@@ -22,20 +26,22 @@ impl<'source> SourceLines<'source> {
     }
 
     /// `location` as `SourceLocation::render` shows it, with the line of the
-    /// file that it starts on, in the file at `file_path`.
+    /// file that it starts on, in the file at `file_path`. A location past the
+    /// last line shows an empty line.
     #[must_use]
     pub fn render(&self, location: SourceLocation, file_path: Option<&str>) -> String {
-        location.render(Some(self.line(location.start.line_index())), file_path)
+        let source_line = self.line(location.start.line_index()).unwrap_or_default();
+        location.render(Some(source_line), file_path)
     }
 
     /// The text of the line at the 0-based `index`, without its line feed.
-    fn line(&self, index: usize) -> &'source str {
-        let start = self.line_starts[index];
+    fn line(&self, index: usize) -> Option<&str> {
+        let start = *self.line_starts.get(index)?;
         let end = self
             .line_starts
             .get(index + 1)
             .map_or(self.source.len(), |&next_start| next_start - 1);
-        &self.source[start..end]
+        Some(&self.source[start..end])
     }
 }
 
@@ -44,6 +50,7 @@ mod tests {
     use super::SourceLines;
     use crate::{Position, SourceLocation};
     use googletest::prelude::*;
+    use indoc::indoc;
 
     #[gtest]
     fn renders_a_location_with_the_line_that_it_starts_on() -> Result<()> {
@@ -90,6 +97,23 @@ mod tests {
                 None
             ),
             eq("line 1, column 4\n    a: {}\n       ^^")
+        )
+    }
+
+    #[gtest]
+    fn location_past_the_last_line_shows_an_empty_line() -> Result<()> {
+        verify_that!(
+            SourceLines::new("a: {}\n").render(
+                SourceLocation {
+                    start: Position { line: 3, column: 1 },
+                    end: Position { line: 3, column: 1 }
+                },
+                None
+            ),
+            eq(indoc! {"
+                line 3, column 1
+
+                    ^"})
         )
     }
 }

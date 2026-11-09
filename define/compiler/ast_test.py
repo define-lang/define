@@ -11,7 +11,7 @@ from define.compiler import ast, chained_name, name_types
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
 
-_LOC = ast.start_of_file_location()
+_LOC = ast.start_of_file_location("test.dfn")
 _FQUN = "my.domain.com:my_lib"
 
 

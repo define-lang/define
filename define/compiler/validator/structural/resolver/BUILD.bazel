@@ -14,6 +14,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
+        "//source_rendering/python:rendering",
     ],
 )
 

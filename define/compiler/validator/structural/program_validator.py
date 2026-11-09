@@ -14,14 +14,15 @@ from __future__ import annotations
 import functools
 import typing
 
+from source_rendering.python import rendering
+
 if typing.TYPE_CHECKING:
     import pathlib
 
-    from define.compiler.data_structures import define_path
 
 from define.compiler import ast, work_pool
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.errors import diagnostics, source_map
+from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
@@ -47,9 +48,11 @@ def validate_program(
     that specifically require an entry action with interface positions. It
     must remain false when validating a program for code generation.
     """
-    resolver = filesystem_reference_resolver.FilesystemReferenceResolver()
+    source_map = rendering.SourceMap(in_memory_source=None)
+    resolver = filesystem_reference_resolver.FilesystemReferenceResolver(source_map)
     program_validation = _ProgramValidationRun(
         resolver,
+        source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
     entry_file = resolver.load_entry_file(path)
@@ -59,7 +62,7 @@ def validate_program(
                 program_validation.request_definition(entry_file, definition, pool)
             pool.run_until_idle()
 
-    return program_validation.build_program_result(in_memory_source=None)
+    return program_validation.build_program_result()
 
 
 def validate_program_non_filesystem(
@@ -74,24 +77,24 @@ def validate_program_non_filesystem(
     that specifically require an entry action with interface positions. It
     must remain false when validating a program for code generation.
     """
-    source_file = file_validator.FileStructuralValidator().load_source(source)
+    source_map = rendering.SourceMap(in_memory_source=source)
+    source_file = file_validator.FileStructuralValidator(source_map).load_source(source)
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
         source_file
     )
     program_validation = _ProgramValidationRun(
         resolver,
+        source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
     if source_file.exception is not None:
-        return program_validation.build_program_result(in_memory_source=source)
+        return program_validation.build_program_result()
 
     with work_pool.WorkPool(max_workers=max_workers) as pool:
         for definition in source_file.definitions.values():
             program_validation.request_definition(source_file, definition, pool)
         pool.run_until_idle()
-    return program_validation.build_program_result(
-        in_memory_source=source, select_last_constructor=True
-    )
+    return program_validation.build_program_result(select_last_constructor=True)
 
 
 class _ProgramValidationRun:
@@ -103,6 +106,7 @@ class _ProgramValidationRun:
     """
 
     _resolver: reference_resolver.ReferenceResolver
+    _source_map: rendering.SourceMap
     _file_validator: file_validator.FileStructuralValidator
     _reference_graph: reference_graph.ReferenceGraph
     _definition_results: typed_name_dict.TypedNameDict[
@@ -116,12 +120,14 @@ class _ProgramValidationRun:
     def __init__(
         self,
         resolver: reference_resolver.ReferenceResolver,
+        source_map: rendering.SourceMap,
         *,
         allow_entry_action_interface_positions: bool,
     ):
-        """Initialize with the resolver for the program's references, and nothing validated."""
+        """Initialize with the resolver for the program's references, the source map that its files are registered with, and nothing validated."""
         self._resolver = resolver
-        self._file_validator = file_validator.FileStructuralValidator()
+        self._source_map = source_map
+        self._file_validator = file_validator.FileStructuralValidator(source_map)
         self._reference_graph = reference_graph.ReferenceGraph()
         self._definition_results = typed_name_dict.TypedNameDict()
         self._requested_definition_names = set()
@@ -132,7 +138,6 @@ class _ProgramValidationRun:
     def build_program_result(
         self,
         *,
-        in_memory_source: str | None,
         select_last_constructor: bool = False,
     ) -> validation_result.ProgramValidationResult:
         """Validate the entry action and assemble the program result."""
@@ -170,17 +175,13 @@ class _ProgramValidationRun:
         for file_result in file_results:
             for definition_result in file_result.definition_results:
                 definition_result.reference_edges.clear()
-        file_digests: dict[define_path.DefinePath, bytes] = {}
-        for file_result in file_results:
-            if file_result.source_digest is not None:
-                file_digests[file_result.file_path] = file_result.source_digest
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             entry_action=entry_action,
             definition_order=definition_order,
             definition_results=self._definition_results,
             config_diagnostics=self._resolver.config_diagnostics(),
-            source_map=source_map.SourceMap(file_digests, in_memory_source),
+            source_map=self._source_map,
         )
 
     def _validated_definition_results(

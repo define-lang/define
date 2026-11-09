@@ -6,7 +6,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
@@ -32,7 +31,6 @@ def test_successful_validation_returns_result_fields(
 
     assert result.diagnostics == []
     assert result.exception is None
-    assert result.source_digest == hashlib.sha256(source.encode()).digest()
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -47,7 +45,6 @@ def test_parse_error_populates_exception(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
-    assert result.source_digest is not None
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -62,7 +59,7 @@ def test_non_filesystem_parse_error_returns_single_result():
     assert result.diagnostics == []
 
 
-def test_invalid_utf8_populates_exception_and_source_digest(
+def test_invalid_utf8_populates_exception(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     source = b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff"
@@ -70,7 +67,6 @@ def test_invalid_utf8_populates_exception_and_source_digest(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-    assert result.source_digest == hashlib.sha256(source).digest()
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -86,7 +82,6 @@ def test_name_parser_error_at_definition_populates_exception(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
-    assert result.source_digest == hashlib.sha256(source.encode()).digest()
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 

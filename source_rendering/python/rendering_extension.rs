@@ -2,6 +2,7 @@
 //! `source_rendering.python.rendering`.
 
 use pyo3::basic::CompareOp;
+use pyo3::exceptions::PyValueError;
 use pyo3::ffi;
 use pyo3::prelude::*;
 use pyo3::types::{PyCapsule, PyString};
@@ -157,6 +158,50 @@ impl PySourceLocation {
     }
 }
 
+/// Shows locations with their source lines, reading each registered file again
+/// only when a location in it is first shown, and showing no source lines for a
+/// file that changed after it was registered.
+#[pyclass(
+    frozen,
+    name = "SourceMap",
+    module = "source_rendering.python.rendering"
+)]
+struct PySourceMap {
+    source_map: source_rendering::SourceMap,
+}
+
+#[pymethods]
+impl PySourceMap {
+    #[new]
+    fn new(in_memory_source: Option<String>) -> Self {
+        Self {
+            source_map: source_rendering::SourceMap::new(in_memory_source),
+        }
+    }
+
+    /// Records that the file at `path` was validated with the text `source`,
+    /// without keeping the text.
+    fn register_file(&self, path: &str, source: &[u8]) {
+        self.source_map.register_file(path, source);
+    }
+
+    /// `location` as diagnostics show it, with its source line when its file
+    /// is unchanged.
+    fn render_location(&self, location: &Bound<'_, PySourceLocation>) -> PyResult<String> {
+        let py = location.py();
+        let location = location.get();
+        let Some(file_path) = &location.file_path else {
+            return self
+                .source_map
+                .render_in_memory(location.location)
+                .map_err(|error| PyValueError::new_err(error.to_string()));
+        };
+        Ok(self
+            .source_map
+            .render_in_file(location.location, file_path.bind(py).to_str()?))
+    }
+}
+
 /// The constructor that the module's capsule holds, as
 /// `source_rendering_capsule::NewSourceLocation` describes it.
 #[expect(
@@ -199,7 +244,7 @@ mod rendering {
     use source_rendering_capsule::CAPSULE_NAME;
 
     #[pymodule_export]
-    use super::PySourceLocation;
+    use super::{PySourceLocation, PySourceMap};
 
     #[pymodule_init]
     #[expect(

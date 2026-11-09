@@ -10,7 +10,7 @@ from typing import ClassVar, Final
 import msgspec
 
 from define.compiler import constants, name_types
-from define.compiler.errors import source_map
+from define.compiler.errors import invisible_characters
 from define.compiler.validator.reference_graph import propagation_step
 
 if typing.TYPE_CHECKING:
@@ -35,14 +35,14 @@ class Diagnostic(msgspec.Struct):
     location: rendering.SourceLocation
     message_format: ClassVar[str] = ""
 
-    def render_message(self, _sources: source_map.SourceMap, /) -> str:
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message, with source lines for other locations it mentions."""
         return self.message_format.format(self=self)
 
-    def format(self, sources: source_map.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap) -> str:
         """Format the diagnostic with the source lines of every location it mentions."""
         return (
-            f"{sources.format_location(self.location)}\n{self.render_message(sources)}"
+            f"{sources.render_location(self.location)}\n{self.render_message(sources)}"
         )
 
 
@@ -581,13 +581,13 @@ class LocalViewWrittenTwiceDiagnostic(Diagnostic):
     first_write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that first writes the local view."""
         return (
             f"'{self.looked_at_name}' is a local view, so only one statement may"
             f" write to it. However, '{self.view_name}' of '{self.operation_name}'"
             " writes to it again on this line. It was already written here:\n"
-            f"{sources.format_location(self.first_write)}"
+            f"{sources.render_location(self.first_write)}"
         )
 
 
@@ -600,14 +600,14 @@ class InterfaceViewWrittenTwiceDiagnostic(Diagnostic):
     first_write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that first writes the interface view."""
         return (
             f"'{self.looked_at_name}' is an output interface view, so only one"
             f" statement may write to it. However, '{self.view_name}' of"
             f" '{self.operation_name}' writes to it again on this line. It was"
             " already written here:\n"
-            f"{sources.format_location(self.first_write)}"
+            f"{sources.render_location(self.first_write)}"
         )
 
 
@@ -619,7 +619,7 @@ class InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(Diagnostic):
     first_write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that first writes the interface view."""
         all_views_statement = _ALL_VIEWS_STATEMENTS[self.operation_name_type]
         return (
@@ -627,7 +627,7 @@ class InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(Diagnostic):
             f" may write to it. However, '{all_views_statement}.' writes to every"
             f" output view on this line, and '{self.view_name}' was already"
             " written here:\n"
-            f"{sources.format_location(self.first_write)}"
+            f"{sources.render_location(self.first_write)}"
         )
 
 
@@ -640,14 +640,14 @@ class ReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
     write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that writes the interface view."""
         return (
             f"'{self.looked_at_name}' is a read/write interface view, so it may only be"
             " read before the statement that writes to it. However,"
             f" '{self.view_name}' of '{self.operation_name}' reads it on this"
             " line, after it was written here:\n"
-            f"{sources.format_location(self.write)}"
+            f"{sources.render_location(self.write)}"
         )
 
 
@@ -680,13 +680,13 @@ class ViewSettingReadFromWrittenReadWriteViewDiagnostic(Diagnostic):
     write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that writes the interface view."""
         return (
             f"'{self.view_name}' is a read/write interface view, so it may only be"
             " read before the statement that writes to it. However, this view"
             " setting statement reads it after it was written here:\n"
-            f"{sources.format_location(self.write)}"
+            f"{sources.render_location(self.write)}"
         )
 
 
@@ -697,13 +697,13 @@ class ViewSettingLocalViewWrittenTwiceDiagnostic(Diagnostic):
     first_write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that first writes the local view."""
         return (
             f"'{self.view_name}' is a local view, so only one statement may"
             " write to it. However, this view setting statement writes to it"
             " again. It was already written here:\n"
-            f"{sources.format_location(self.first_write)}"
+            f"{sources.render_location(self.first_write)}"
         )
 
 
@@ -714,13 +714,13 @@ class ViewSettingInterfaceViewWrittenTwiceDiagnostic(Diagnostic):
     first_write: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with the statement that first writes the interface view."""
         return (
             f"'{self.view_name}' is an output interface view, so only one"
             " statement may write to it. However, this view setting statement"
             " writes to it again. It was already written here:\n"
-            f"{sources.format_location(self.first_write)}"
+            f"{sources.render_location(self.first_write)}"
         )
 
 
@@ -986,12 +986,12 @@ class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
     arrived_at: rendering.SourceLocation
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message with where the particle arrived."""
         return (
             f"'{self.position_name}' contains a particle when '{self.action_name}' "
             "triggers here; move or destroy the particle before triggering that "
-            f"action. The particle arrived at:\n{sources.format_location(self.arrived_at)}"
+            f"action. The particle arrived at:\n{sources.render_location(self.arrived_at)}"
         )
 
 
@@ -1220,7 +1220,7 @@ class ConfigDiagnostic(Diagnostic):
     """
 
     @typing.override
-    def format(self, sources: source_map.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap) -> str:
         return f'File "{self.location.file_path}"\n{self.render_message(sources)}'
 
 
@@ -1233,7 +1233,7 @@ class ConfigDclDiagnostic(ConfigDiagnostic):
     dcl_error: dcl_errors.DclError | dcl_errors.DclDiagnostic
 
     @typing.override
-    def format(self, sources: source_map.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap) -> str:
         # The error shows its own location, with its source line.
         return str(self.dcl_error)
 
@@ -1247,13 +1247,13 @@ class MissingProjectConfigDiagnostic(ConfigDiagnostic):
     config_path: str
 
     @typing.override
-    def format(self, sources: source_map.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap) -> str:
         # The config file does not exist, so showing it as the file that the
         # diagnostic is about would mislead.
         return self.render_message(sources)
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
             f"{super().render_message(sources)}\n"
             + f"A project root is any directory containing {self.config_path}.\n"
@@ -1285,7 +1285,7 @@ class InvalidConfigDiagnostic(ConfigDiagnostic):
     violation_messages: list[str]
 
     @typing.override
-    def render_message(self, _sources: source_map.SourceMap, /) -> str:
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
         violations_text = "\n".join(
             f"  - {message}" for message in self.violation_messages
         )
@@ -1338,7 +1338,7 @@ class SubRootPathAlreadyDeclaredDiagnostic(ConfigDiagnostic):
     existing_entry: local_dependency_entry.LocalDependencyEntry
 
     @typing.override
-    def render_message(self, _sources: source_map.SourceMap, /) -> str:
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
         return (
             f"Two local dependencies declare the sub-root '{self.sub_root_path}':\n"
             + f"  {self.existing_entry.describe()}\n"
@@ -1360,7 +1360,7 @@ class LocalDependencyOnOwnUniverseDiagnostic(ConfigDiagnostic):
     entry: local_dependency_entry.LocalDependencyEntry
 
     @typing.override
-    def render_message(self, _sources: source_map.SourceMap, /) -> str:
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
         return (
             f"{self.entry.describe()}, but that is the project's own universe, so it"
             + " cannot be a dependency of that project."
@@ -1386,7 +1386,7 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
     cycle: list[str]
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render a multi-line cycle listing with one edge per line."""
         if not self.cycle:
             raise ValueError("cycle must contain at least one typed global name")
@@ -1461,9 +1461,9 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
     )
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         return self.message_format.format(
-            self=self, populated_at=sources.format_location(self.populated_at)
+            self=self, populated_at=sources.render_location(self.populated_at)
         )
 
 
@@ -1491,9 +1491,9 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     )
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         return self.message_format.format(
-            self=self, occupied_at=sources.format_location(self.occupied_at)
+            self=self, occupied_at=sources.render_location(self.occupied_at)
         )
 
 
@@ -1505,14 +1505,14 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
     inferred_at: rendering.SourceLocation | None = None
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message, optionally including the inferred-at location."""
         base = (
             f"cannot move a particle from '{self.position_name}'"
             " because it does not contain one"
         )
         if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{sources.format_location(self.inferred_at)}"
+            return f"{base}; it was emptied at:\n{sources.render_location(self.inferred_at)}"
         if self.is_action_interface_position:
             return f"{base}; action interface positions are empty by default"
         return base
@@ -1987,7 +1987,7 @@ class InvisibleCharacterInCommentDiagnostic(Diagnostic):
     @property
     def description(self) -> str:
         """The character's code point and, when Unicode names it, its name."""
-        return source_map.describe_invisible_character(self.character)
+        return invisible_characters.describe_invisible_character(self.character)
 
 
 class InferredRequirementViolationDiagnostic(Diagnostic):
@@ -2019,13 +2019,13 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
         return "empty" if self.required_empty else "occupied"
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         lines = ["This error happens because:"]
         for step in self.propagation_chain:
             lines.extend(
                 (
                     f"  {self._format_propagation_step(step)}:",
-                    textwrap.indent(sources.format_location(step.location), "    "),
+                    textwrap.indent(sources.render_location(step.location), "    "),
                 )
             )
         return self.message_format.format(self=self, propagation_chain="\n".join(lines))
@@ -2136,14 +2136,14 @@ class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
     inferred_at: rendering.SourceLocation | None
 
     @typing.override
-    def render_message(self, sources: source_map.SourceMap, /) -> str:
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message."""
         base = (
             f"cannot destroy a particle in '{self.position_name}'"
             f" because it does not contain one"
         )
         if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{sources.format_location(self.inferred_at)}"
+            return f"{base}; it was emptied at:\n{sources.render_location(self.inferred_at)}"
         return f"{base}; action interface positions are empty by default"
 
 

@@ -17,13 +17,9 @@ from define.compiler.errors import (
     diagnostics,
     exceptions,
     parser_exceptions,
-    source_map,
 )
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import (
-    test_helpers as program_validator_test_helpers,
-)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -952,19 +948,16 @@ def test_config_validation_error_message(
 
 
 def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    result = program_validator_test_helpers.parse_and_validate_file(
-        b"define the potential position<my.domain.com:my_lib:/test>.\n# caf\xe9\n",
-        tmp_path,
-        monkeypatch,
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _ = (tmp_path / "test.dfn").write_bytes(
+        b"define the potential position<my.domain.com:my_lib:/test>.\n# caf\xe9\n"
     )
+    monkeypatch.chdir(tmp_path)
 
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    (result,) = program_result.file_results
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-    assert result.source_digest is not None
-    sources = source_map.SourceMap(
-        {define_path.DefinePath("test.dfn"): result.source_digest},
-        in_memory_source=None,
-    )
-    assert result.exception.format(sources) == textwrap.dedent("""\
+    assert result.exception.format(program_result.source_map) == textwrap.dedent("""\
         File "test.dfn", line 2, column 6
             # caf\ufffd
                  ^

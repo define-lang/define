@@ -3,10 +3,12 @@
 //! covers. The Define compiler and the Define Configuration Language share it.
 
 mod source_lines;
+mod source_map;
 
 pub use source_lines::SourceLines;
+pub use source_map::{NoInMemorySource, SourceMap};
 
-const CODE_INDENTATION: &str = "    ";
+pub(crate) const CODE_INDENTATION: &str = "    ";
 
 /// A point in a source file, as a 1-based line and a 1-based column counted in
 /// characters.

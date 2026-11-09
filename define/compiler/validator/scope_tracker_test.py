@@ -7,7 +7,7 @@ import pytest
 from define.compiler import ast, name_types
 from define.compiler.validator import scope_tracker
 
-_LOC = ast.start_of_file_location()
+_LOC = ast.start_of_file_location("test.dfn")
 
 _FQUN = ast.Fqun(
     multiverse=None,

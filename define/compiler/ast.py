@@ -40,9 +40,7 @@ type ComputedOnFirstUse[T] = T
 type ParsedOrComputedOnFirstUse[T] = T
 
 
-def start_of_file_location(
-    file_path: str | None = None,
-) -> rendering.SourceLocation:
+def start_of_file_location(file_path: str) -> rendering.SourceLocation:
     """Return a location pointing to the very start of a file."""
     return rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1, file_path=file_path

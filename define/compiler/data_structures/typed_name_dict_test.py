@@ -8,7 +8,7 @@ from define.compiler import ast, name_types
 from define.compiler.data_structures import typed_name_dict
 from source_rendering.python import rendering
 
-_LOC = ast.start_of_file_location()
+_LOC = ast.start_of_file_location("test.dfn")
 
 
 def _at(line: int) -> rendering.SourceLocation:

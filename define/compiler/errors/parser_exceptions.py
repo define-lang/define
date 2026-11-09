@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, override
 
 from define.compiler import constants
-from define.compiler.errors import exceptions, source_map
+from define.compiler.errors import exceptions, invisible_characters
 
 if TYPE_CHECKING:
     from source_rendering.python import rendering
@@ -34,9 +34,9 @@ class DefineSyntaxError(exceptions.DefineError):
         """Render the error message from the format template."""
         return self.message_format.format(**self._message_fields())
 
-    def format(self, sources: source_map.SourceMap) -> str:
+    def format(self, sources: rendering.SourceMap) -> str:
         """Format the error with the source code at its location."""
-        return f"{sources.format_location(self.location)}\n{self.message}"
+        return f"{sources.render_location(self.location)}\n{self.message}"
 
 
 class DefineTokenError(DefineSyntaxError):
@@ -124,7 +124,7 @@ class InvisibleCharacterError(DefineCharError):
     @property
     def description(self) -> str:
         """The character's code point and, when Unicode names it, its name."""
-        return source_map.describe_invisible_character(self.char)
+        return invisible_characters.describe_invisible_character(self.char)
 
     @override
     def _message_fields(self) -> dict[str, object]:

@@ -62,10 +62,10 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:exceptions",
-        "//define/compiler/errors:source_map",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

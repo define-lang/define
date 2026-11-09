@@ -6,7 +6,7 @@ from define.compiler import ast, name_types
 from define.compiler.graphs import reference_graph
 from define.compiler.parsing import test_helpers
 
-_LOC = ast.start_of_file_location()
+_LOC = ast.start_of_file_location("test.dfn")
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="a.com", location=_LOC),

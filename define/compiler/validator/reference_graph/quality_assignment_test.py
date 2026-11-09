@@ -5,7 +5,7 @@ import sys
 from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
-_LOCATION = ast.start_of_file_location()
+_LOCATION = ast.start_of_file_location("test.dfn")
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="example.com", location=_LOCATION),

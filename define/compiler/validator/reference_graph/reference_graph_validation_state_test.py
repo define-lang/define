@@ -11,7 +11,7 @@ from define.compiler.validator.reference_graph import (
     reference_graph_validation_state,
 )
 
-_LOCATION = ast.start_of_file_location()
+_LOCATION = ast.start_of_file_location("test.dfn")
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="example.com", location=_LOCATION),

@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.errors import diagnostics, parser_exceptions, source_map
+from define.compiler.errors import diagnostics, parser_exceptions
+from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 
 
 def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
-    return error.format(source_map.SourceMap({}, in_memory_source=source))
+    return error.format(rendering.SourceMap(in_memory_source=source))
 
 
 def test_empty_source_error_message(parse: Parse):
@@ -159,7 +160,7 @@ def test_control_character_in_comment_diagnostic_message(
     [diagnostic] = result.diagnostics
     assert isinstance(diagnostic, diagnostics.ControlCharacterInCommentDiagnostic)
     assert diagnostic.format(
-        source_map.SourceMap({}, in_memory_source=source)
+        rendering.SourceMap(in_memory_source=source)
     ) == textwrap.dedent("""\
         line 1, column 4
             # a\\u{1}b
@@ -178,7 +179,7 @@ def test_invisible_character_in_comment_diagnostic_message(
     [diagnostic] = result.diagnostics
     assert isinstance(diagnostic, diagnostics.InvisibleCharacterInCommentDiagnostic)
     assert diagnostic.format(
-        source_map.SourceMap({}, in_memory_source=source)
+        rendering.SourceMap(in_memory_source=source)
     ) == textwrap.dedent("""\
         line 1, column 4
             # a\\u{200b}b

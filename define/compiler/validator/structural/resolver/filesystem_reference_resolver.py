@@ -15,10 +15,19 @@ from define.compiler.validator.structural.resolver import reference_resolver
 if typing.TYPE_CHECKING:
     import pathlib
 
+    from source_rendering.python import rendering
+
 
 @typing.final
 class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     """Finds the files and definitions that the references of a program on the filesystem lead to."""
+
+    _file_validator: file_validator.FileStructuralValidator
+
+    def __init__(self, source_map: rendering.SourceMap):
+        """Initialize with the source map to register the entry file with, and no files loaded."""
+        super().__init__()
+        self._file_validator = file_validator.FileStructuralValidator(source_map)
 
     def load_entry_file(
         self, path: pathlib.PurePosixPath
@@ -38,7 +47,7 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
                 full_path, _make_unloaded_file(file_path, root_prefix)
             )
             return None
-        entry_file = file_validator.FileStructuralValidator().load_file(
+        entry_file = self._file_validator.load_file(
             file_validation_context.FileValidationContext(
                 file_path=file_path,
                 root_prefix=root_prefix,
@@ -60,7 +69,6 @@ def _make_unloaded_file(
             file_path=file_path, root_prefix=root_prefix
         ),
         exception=None,
-        source_digest=None,
         file_diagnostics=[],
         definitions=typed_name_dict.TypedNameDict(),
     )
