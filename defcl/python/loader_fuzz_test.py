@@ -164,6 +164,8 @@ def _message_values(depth: int) -> st.SearchStrategy[str]:
 
 @settings(max_examples=500, deadline=None)
 @given(_message_values(0))
+@example(r'{ string_value: "\u005c" }')
+@example(r'{ string_value: "\U0000005cn" }')
 @example(r'{ string_value: "caf\u00e9 \U0001F600 \xc3\xa9 \303\251 日" }')
 @example("{ float_value: 340282346638528859811704183484516925440.0 }")
 @example(f"{{ double_value: -{_LARGEST_FLOAT}.0 }}")

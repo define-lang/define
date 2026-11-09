@@ -4,6 +4,7 @@ exports_files([
     "bufplugin_checktest_windows_file_paths.patch",
     "llvm_module_map_generator_long_paths.patch",
     "protobuf_python_import_paths.patch",
+    "protobuf_python_unicode_escapes.patch",
     "pyyaml_without_libyaml.patch",
     "rules_multitool_target_toolchains.patch",
     "rules_py_empty_library_imports.patch",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from defcl.python import error_types, errors, loader
 from defcl.testdata.invalid.semantics.schemas import integer_enum_pb2
 from defcl.testdata.valid.schemas import (
@@ -52,6 +54,35 @@ def test_loading_a_message_type_again_loads_the_same_message():
     second = loader.load(source, single_toplevel_pb2.SingleToplevelFile)
 
     assert second == first
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (r"\u005c", "\\"),
+        (r"\U0000005c", "\\"),
+        (r"\u005cn", "\\n"),
+        (r"\U0000005cx41", "\\x41"),
+        (r"\u005c\n", "\\\n"),
+        (r"\\u005c", r"\u005c"),
+        (r"\\\u005c", "\\\\"),
+        (r"\u00e9\U0001f600", "é😀"),
+    ],
+)
+def test_unicode_escapes_preserve_the_decoded_value(text: str, expected: str):
+    result = loader.load(
+        f'project: {{ universe_name: "{text}" }}\n',
+        single_toplevel_pb2.SingleToplevelFile,
+    )
+
+    assert result == loader.LoadResult(
+        message=single_toplevel_pb2.SingleToplevelFile(
+            project=single_toplevel_pb2.SingleToplevelFile.Project(
+                universe_name=expected
+            )
+        ),
+        diagnostics=[],
+    )
 
 
 def test_semantic_errors_are_diagnostics_without_a_message():

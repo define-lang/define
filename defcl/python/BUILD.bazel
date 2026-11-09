@@ -93,6 +93,7 @@ py_test(
         "//defcl/testdata/valid/schemas:wrapper_proto_py",
         "//source_rendering/python:rendering",
         "//tools:runfiles",
+        "@pypi//pytest",
     ],
 )
 
