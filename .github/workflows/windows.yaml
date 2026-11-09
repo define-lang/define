@@ -88,9 +88,16 @@ jobs:
       # The tests run on the Windows runner's CPU, which can lack instructions
       # that this runner's CPU has, so they cannot use native Rust code. Every
       # CPU seen in GitHub's x64 runners has x86-64-v3's instructions.
+      #
+      # The Windows test runner starts with an empty store, so Bazel uploads
+      # every test input to it. By default Bazel writes outputs it gets from the
+      # disk cache to local disk only when something needs them, and uploads
+      # have failed because some of those files were not on disk yet.
+      # --remote_download_outputs=all writes them as soon as the cache hits.
       - name: Test
         run: >-
           bazelisk test --noshow_progress --config=windows_vm
+          --remote_download_outputs=all
           --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=x86-64-v3
           "--remote_executor=grpc://$WINDOWS_ADDRESS:8980" //...
 
