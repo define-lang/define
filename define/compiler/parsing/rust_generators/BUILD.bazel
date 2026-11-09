@@ -16,6 +16,16 @@ py_library(
     ],
 )
 
+py_library(
+    name = "diagnostic_description",
+    srcs = ["diagnostic_description.py"],
+    deps = [
+        ":renderer_extension",
+        ":rust_names",
+        "//define/compiler/errors:diagnostics",
+    ],
+)
+
 py_binary(
     name = "generate_ast_constructors",
     srcs = ["generate_ast_constructors.py"],
@@ -43,8 +53,8 @@ py_binary(
     srcs = ["generate_parser_diagnostics.py"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
+        ":diagnostic_description",
         ":renderer_extension",
-        ":rust_names",
         "//define/compiler/errors:diagnostics",
     ],
 )
@@ -54,9 +64,9 @@ py_binary(
     srcs = ["generate_syntax_errors.py"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
+        ":diagnostic_description",
         ":renderer_extension",
-        ":rust_names",
-        "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/errors:syntax_errors",
     ],
 )
 
@@ -104,6 +114,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":ast_description",
+        ":diagnostic_description",
         ":generate_ast_constructors",
         ":generate_ast_nodes",
         ":generate_parser_diagnostics",

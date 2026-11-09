@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 def test_value_quality_short_name(parse: Parse):
@@ -82,31 +83,33 @@ def test_value_quality_full_name(parse: Parse):
     )
 
 
-def test_value_quality_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = parse(
-            "define the potential position<mv:define-lang.org:parser:/item> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the value<rational>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 33
+def test_value_quality_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/item> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the value<rational>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 33
 
 
-def test_quality_assignment_name_type_error_includes_value(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as error:
-        _ = parse(
-            "define the potential position<mv:define-lang.org:parser:/item> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the thing</number>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 20
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 24
+def test_quality_assignment_name_type_error_includes_value(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/item> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the thing</number>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedQualityAssignmentNameType)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 24

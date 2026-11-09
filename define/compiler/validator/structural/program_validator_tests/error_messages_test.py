@@ -14,11 +14,7 @@ from typing import TYPE_CHECKING
 
 from defcl.python import errors as dcl_errors
 from define.compiler.data_structures import define_path
-from define.compiler.errors import (
-    diagnostics,
-    exceptions,
-    parser_exceptions,
-)
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -58,10 +54,10 @@ def test_invalid_fqun_format_format(validate_project: ValidateProject):
             )
         }
     )
-    exception = result.program_result.file_results[0].exception
-    assert isinstance(exception, parser_exceptions.GlobalNameInvalidFqunFormat)
+    load_failure = result.program_result.file_results[0].load_failure
+    assert isinstance(load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert (
-        exception.format(result.program_result.source_map)
+        load_failure.format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 3, column 29
             it has the position<mv:too:many:colons:bad:/y>.
@@ -883,9 +879,13 @@ def test_source_file_not_found_error_message(
     result = validate_project({}, entry_file="nonexistent.dfn")
     results = result.program_result.file_results
     assert len(results) == 1
-    error = results[0].exception
-    assert isinstance(error, exceptions.SourceFileNotFoundError)
-    assert str(error) == "Source file not found: nonexistent.dfn"
+    load_failure = results[0].load_failure
+    assert isinstance(load_failure, diagnostics.SourceFileNotFoundDiagnostic)
+    assert load_failure.file_path == "nonexistent.dfn"
+    assert (
+        load_failure.format(result.program_result.source_map)
+        == "Source file not found: nonexistent.dfn"
+    )
 
 
 def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -1044,8 +1044,8 @@ def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     (result,) = program_result.file_results
-    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-    assert result.exception.format(program_result.source_map) == textwrap.dedent("""\
+    assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
+    assert result.load_failure.format(program_result.source_map) == textwrap.dedent("""\
         File "test.dfn", line 2, column 6
             # caf\ufffd
                  ^

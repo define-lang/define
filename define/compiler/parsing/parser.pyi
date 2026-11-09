@@ -1,6 +1,6 @@
 from define.compiler import ast
 from define.compiler.errors import diagnostics as diagnostics_mod
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 
 class ParseResult:
     @property
@@ -8,7 +8,7 @@ class ParseResult:
     @property
     def diagnostics(self) -> list[diagnostics_mod.Diagnostic]: ...
     @property
-    def exception(self) -> parser_exceptions.DefineSyntaxError | None: ...
+    def syntax_error(self) -> syntax_errors.DefineSyntaxError | None: ...
 
 def parse(
     source: bytes,

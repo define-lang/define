@@ -6,12 +6,12 @@
 from __future__ import annotations
 
 import types
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, exceptions, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.structural import (
     file_validation_context,
     file_validator,
@@ -19,6 +19,8 @@ from define.compiler.validator.structural import (
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
 
@@ -68,7 +70,7 @@ class TestFileStructuralValidatorSuccess:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.exception is None
+        assert result.load_failure is None
         assert result.diagnostics == []
         assert len(result.definition_results) == 1
         assert (
@@ -91,7 +93,7 @@ class TestFileStructuralValidatorSuccess:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.exception is None
+        assert result.load_failure is None
         assert result.diagnostics == []
         assert len(result.definition_results) == 1
         assert result.definition_results[0].definition.typed_name.name_type == "action"
@@ -102,8 +104,9 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path, file_name="nonexistent.dfn")
         result = _load_and_validate_every_definition(ctx)
 
-        assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
-        assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.dfn")
+        assert result.load_failure == diagnostics.SourceFileNotFoundDiagnostic(
+            file_path=(tmp_path / "nonexistent.dfn").as_posix()
+        )
         assert result.definition_results == []
         assert _reference_edges(result) == []
 
@@ -114,7 +117,7 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.exception is not None
+        assert result.load_failure is not None
         assert result.definition_results == []
 
     def test_encoding_error(self, tmp_path: Path):
@@ -122,10 +125,10 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-        assert result.exception.location.line == 1
-        assert result.exception.location.column == 1
-        assert result.exception.escaped_char == "\\x80"
+        assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
+        assert result.load_failure.location.line == 1
+        assert result.load_failure.location.column == 1
+        assert result.load_failure.escaped_char == "\\x80"
 
     def test_encoding_error_multiline(self, tmp_path: Path):
         (tmp_path / "test.dfn").write_bytes(
@@ -134,12 +137,12 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-        assert result.exception.location.line == 3
-        assert result.exception.location.column == 8
-        assert result.exception.location.end_line == 3
-        assert result.exception.location.end_column == 8
-        assert result.exception.escaped_char == "\\x80"
+        assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
+        assert result.load_failure.location.line == 3
+        assert result.load_failure.location.column == 8
+        assert result.load_failure.location.end_line == 3
+        assert result.load_failure.location.end_column == 8
+        assert result.load_failure.escaped_char == "\\x80"
 
 
 class TestFileStructuralValidatorDiagnostics:

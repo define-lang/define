@@ -8,26 +8,25 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
 
-def test_action_definition_without_body_is_error(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
-        parse("define the potential action<standard:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 44
+def test_action_definition_without_body_is_error(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential action<standard:/path>.\n")
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 1
+    assert error.location.column == 44
+    assert error.location.end_line == 1
+    assert error.location.end_column == 44
 
 
 def test_action_definition_with_body_parses(parse: Parse):
@@ -51,22 +50,22 @@ def test_action_definition_with_body_parses(parse: Parse):
     )
 
 
-def test_action_definition_missing_open_angle(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential actionstandard:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 28
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 28
+def test_action_definition_missing_open_angle(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential actionstandard:/path>.\n")
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 1
+    assert error.location.column == 28
+    assert error.location.end_line == 1
+    assert error.location.end_column == 28
 
 
-def test_action_definition_empty_name_content(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse("define the potential action<>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 29
+def test_action_definition_empty_name_content(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential action<>.\n")
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 1
+    assert error.location.column == 29
+    assert error.location.end_line == 1
+    assert error.location.end_column == 29
 
 
 def test_action_with_empty_inner_blocks(parse: Parse):
@@ -330,7 +329,7 @@ def test_action_block_no_indentation(
         + "}\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
@@ -546,208 +545,212 @@ def test_two_action_definitions_in_same_file(parse: Parse):
     )
 
 
-def test_action_block_missing_trigger_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<my_pos>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 1
+def test_action_block_missing_trigger_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<my_pos>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingActionDefinitionSyntax)
+    assert error.location.line == 3
+    assert error.location.column == 1
+    assert error.location.end_line == 3
+    assert error.location.end_column == 1
 
 
 def test_global_position_definition_not_allowed_in_action_definition_block(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(
-        parser_exceptions.GlobalPositionDefinitionInLocalContext
-    ) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 33
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.GlobalPositionDefinitionInLocalContext)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 33
 
 
 def test_global_position_definition_not_allowed_in_action_statements_block(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(
-        parser_exceptions.GlobalPositionDefinitionInLocalContext
-    ) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 37
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.GlobalPositionDefinitionInLocalContext)
+    assert error.location.line == 6
+    assert error.location.column == 9
+    assert error.location.end_line == 6
+    assert error.location.end_column == 37
 
 
-def test_action_block_missing_action_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 6
+def test_action_block_missing_action_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingActionStatementsBlock)
+    assert error.location.line == 5
+    assert error.location.column == 6
+    assert error.location.end_line == 5
+    assert error.location.end_column == 6
 
 
-def test_action_block_missing_outer_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 67
+def test_action_block_missing_outer_close(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 67
 
 
-def test_action_block_extra_space_before_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path>  {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 61
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 62
+def test_action_block_extra_space_before_brace(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/path>  {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 1
+    assert error.location.column == 61
+    assert error.location.end_line == 1
+    assert error.location.end_column == 62
 
 
-def test_action_block_no_newline_after_open_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
-        parse("define the potential action<mv:define-lang.org:parser:/path> {}\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 63
+def test_action_block_no_newline_after_open_brace(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/path> {}\n"
+    )
+    assert isinstance(error, syntax_errors.EmptyBlock)
+    assert error.location.line == 1
+    assert error.location.column == 63
+    assert error.location.end_line == 1
+    assert error.location.end_column == 63
 
 
-def test_action_block_missing_newline_after_outer_open_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 63
+def test_action_block_missing_newline_after_outer_open_brace(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterOpenBrace)
+    assert error.location.line == 1
+    assert error.location.column == 63
+    assert error.location.end_line == 1
+    assert error.location.end_column == 63
 
 
-def test_action_block_missing_newline_after_inner_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 6
+def test_action_block_missing_newline_after_inner_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 6
+    assert error.location.column == 6
+    assert error.location.end_line == 6
+    assert error.location.end_column == 6
 
 
-def test_trigger_and_action_on_wrong_line(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    }\n"
-            + "    and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 6
+def test_trigger_and_action_on_wrong_line(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    }\n"
+        + "    and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingActionStatementsBlock)
+    assert error.location.line == 5
+    assert error.location.column == 6
+    assert error.location.end_line == 5
+    assert error.location.end_column == 6
 
 
-def test_local_position_after_trigger_and_action(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidPositionDefinitionLocationInAction
-    ) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "    define the position<late_pos>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 7
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 7
-    assert exc_info.value.location.end_column == 23
+def test_local_position_after_trigger_and_action(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "    define the position<late_pos>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidPositionDefinitionLocationInAction)
+    assert error.location.line == 7
+    assert error.location.column == 5
+    assert error.location.end_line == 7
+    assert error.location.end_column == 23
 
 
-def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 7
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 7
-    assert exc_info.value.location.end_column == 21
+def test_second_trigger_and_action_block_pair_not_allowed(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 7
+    assert error.location.column == 5
+    assert error.location.end_line == 7
+    assert error.location.end_column == 21
 
 
 def test_missing_close_brace_followed_by_global_definition(
@@ -762,8 +765,8 @@ def test_missing_close_brace_followed_by_global_definition(
         + "    }\n"
         + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
     )
-    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == []
@@ -779,29 +782,31 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_global_definit
         + "        the position<run> has a particle.\n"
         + "define the potential position<mv:define-lang.org:parser:/other>.\n"
     )
-    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
 
 
-def test_action_statements_block_invalid_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        nonsense\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 16
+def test_action_statements_block_invalid_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        nonsense\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 6
+    assert error.location.column == 9
+    assert error.location.end_line == 6
+    assert error.location.end_column == 16
 
 
 def test_action_statements_block_with_create_particle_local_position(
@@ -1045,21 +1050,21 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
     )
 
 
-def test_no_space_before_and_it_does(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    }and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 8
+def test_no_space_before_and_it_does(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    }and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 5
+    assert error.location.column == 6
+    assert error.location.end_line == 5
+    assert error.location.end_column == 8
 
 
 def test_comment_trailing_space_first_in_action_block(
@@ -1075,7 +1080,7 @@ def test_comment_trailing_space_first_in_action_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1103,7 +1108,7 @@ def test_comment_trailing_space_after_quality_implication(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1130,7 +1135,7 @@ def test_comment_trailing_space_after_interface_position(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1157,7 +1162,7 @@ def test_comment_trailing_space_before_action_close(
         + "    # comment \n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1171,51 +1176,51 @@ def test_comment_trailing_space_before_action_close(
     ]
 
 
-def test_text_after_action_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "} x\n"
-        )
-    assert exc_info.value.location.line == 7
-    assert exc_info.value.location.column == 2
-    assert exc_info.value.location.end_line == 7
-    assert exc_info.value.location.end_column == 2
+def test_text_after_action_close(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "} x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 7
+    assert error.location.column == 2
+    assert error.location.end_line == 7
+    assert error.location.end_column == 2
 
 
-def test_text_after_interface_position_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.x\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 30
+def test_text_after_interface_position_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.x\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 2
+    assert error.location.column == 30
+    assert error.location.end_line == 2
+    assert error.location.end_column == 30
 
 
-def test_no_space_before_trigger_conditions_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when{\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 20
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 20
+def test_no_space_before_trigger_conditions_brace(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when{\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespaceBeforeBrace)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 20
 
 
 def test_comment_trailing_space_in_action_statements_block(
@@ -1231,7 +1236,7 @@ def test_comment_trailing_space_in_action_statements_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1246,60 +1251,62 @@ def test_comment_trailing_space_in_action_statements_block(
 
 
 def test_missing_space_between_words_of_trigger_conditions_block(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happenswhen {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 15
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 18
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happenswhen {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 15
+    assert error.location.end_line == 3
+    assert error.location.end_column == 18
 
 
-def test_missing_space_between_words_of_action_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        createa particle in position<run>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 15
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 15
+def test_missing_space_between_words_of_action_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        createa particle in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 6
+    assert error.location.column == 15
+    assert error.location.end_line == 6
+    assert error.location.end_column == 15
 
 
 def test_word_that_starts_like_action_statement_word_is_not_missing_space(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        creates a particle in position<run>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 44
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        creates a particle in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 6
+    assert error.location.column == 9
+    assert error.location.end_line == 6
+    assert error.location.end_column == 44
 
 
 def test_quality_assignment_block_missing_close_brace_followed_by_action_statement(
@@ -1318,8 +1325,8 @@ def test_quality_assignment_block_missing_close_brace_followed_by_action_stateme
         + "    }\n"
         + "}\n"
     )
-    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=7, column=13, end_line=7, end_column=49
     )
     assert result.diagnostics == []
@@ -1336,8 +1343,8 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_local_position
         + "    define the position<other>.\n"
         + "}\n"
     )
-    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
@@ -1356,8 +1363,8 @@ def test_action_statements_block_missing_close_brace_followed_by_implication(
         + "    it also assigns the position</q>.\n"
         + "}\n"
     )
-    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=5, column=7, end_line=5, end_column=19
     )
     assert result.diagnostics == []

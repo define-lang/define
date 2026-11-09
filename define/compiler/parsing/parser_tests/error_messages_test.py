@@ -12,30 +12,28 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
-import pytest
-
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
-        Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
 
-def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
+def _format(error: syntax_errors.DefineSyntaxError, source: str) -> str:
     return error.format(rendering.SourceMap(in_memory_source=source))
 
 
-def test_empty_source_error_message(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse("")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 1
-    assert _format(exc_info.value, "") == textwrap.dedent("""\
+def test_empty_source_error_message(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("")
+    assert isinstance(error, syntax_errors.ExpectedGlobalDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 1
+    assert _format(error, "") == textwrap.dedent("""\
         line 1, column 1
 
             ^
@@ -52,17 +50,15 @@ def test_empty_source_error_message(parse: Parse):
             - define the logical_operation""")
 
 
-def test_error_message_without_path(parse: Parse):
-    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        parse("\ufeffdefine the potential position<standard:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 1
+def test_error_message_without_path(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("\ufeffdefine the potential position<standard:/path>.\n")
+    assert isinstance(error, syntax_errors.ByteOrderMarkError)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 1
     assert (
-        _format(
-            exc_info.value, "\ufeffdefine the potential position<standard:/path>.\n"
-        )
+        _format(error, "\ufeffdefine the potential position<standard:/path>.\n")
         == textwrap.dedent("""\
         line 1, column 1
             \\u{feff}define the potential position<standard:/path>.
@@ -71,15 +67,15 @@ def test_error_message_without_path(parse: Parse):
     )
 
 
-def test_char_error_message(parse: Parse):
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse("define the potential position<standard:/path>.\r\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 47
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 47
+def test_char_error_message(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path>.\r\n")
+    assert isinstance(error, syntax_errors.CarriageReturnError)
+    assert error.location.line == 1
+    assert error.location.column == 47
+    assert error.location.end_line == 1
+    assert error.location.end_column == 47
     assert _format(
-        exc_info.value, "define the potential position<standard:/path>.\r\n"
+        error, "define the potential position<standard:/path>.\r\n"
     ) == textwrap.dedent("""\
         line 1, column 47
             define the potential position<standard:/path>.\\r
@@ -87,15 +83,15 @@ def test_char_error_message(parse: Parse):
         Carriage return character (\\r) is not allowed.""")
 
 
-def test_token_error_message(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<standard:/path>\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 46
+def test_token_error_message(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path>\n")
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.column == 46
+    assert error.location.end_line == 1
+    assert error.location.end_column == 46
     assert _format(
-        exc_info.value, "define the potential position<standard:/path>\n"
+        error, "define the potential position<standard:/path>\n"
     ) == textwrap.dedent("""\
         line 1, column 46
             define the potential position<standard:/path>
@@ -103,24 +99,26 @@ def test_token_error_message(parse: Parse):
         This statement must end with a '.' or a single space followed by '{'""")
 
 
-def test_error_message_for_indented_code_in_action_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<local_name.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 36
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 36
+def test_error_message_for_indented_code_in_action_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<local_name.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseAngleBracket)
+    assert error.location.line == 3
+    assert error.location.column == 36
+    assert error.location.end_line == 3
+    assert error.location.end_column == 36
     assert _format(
-        exc_info.value,
+        error,
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<local_name.\n",
@@ -131,15 +129,17 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
         Missing '>' on this name: local_name.""")
 
 
-def test_invisible_character_error_message(parse: Parse):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>.\u200b\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_invisible_character_error_message(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>.\u200b\n"
+    )
+    assert isinstance(error, syntax_errors.InvisibleCharacterError)
+    assert error.location.line == 1
+    assert error.location.column == 64
+    assert error.location.end_line == 1
+    assert error.location.end_column == 64
     assert _format(
-        exc_info.value,
+        error,
         "define the potential position<mv:define-lang.org:parser:/path>.\u200b\n",
     ) == (
         "line 1, column 64\n"

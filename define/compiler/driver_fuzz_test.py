@@ -16,7 +16,6 @@ from hypothesis import HealthCheck, event, example, given, settings
 from hypothesis import strategies as st
 
 from define.compiler import driver
-from define.compiler.errors import exceptions, parser_exceptions
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -1803,26 +1802,9 @@ def _assert_results_are_clean(
     results: list[validation_result.FileValidationResult], source_hint: str
 ):
     for result in results:
-        if result.diagnostics or result.exception is not None:
+        if result.diagnostics or result.load_failure is not None:
             pytest.fail(
                 f"Expected clean validation results, got:\n{results!r}\n\nProject:\n{source_hint}",
-                pytrace=False,
-            )
-
-
-def _assert_only_parser_syntax_exceptions(
-    results: list[validation_result.FileValidationResult], source_hint: str
-):
-    allowed_exceptions = (
-        parser_exceptions.DefineSyntaxError,
-        exceptions.SourceFileNotFoundError,
-    )
-    for result in results:
-        if result.exception is not None and not isinstance(
-            result.exception, allowed_exceptions
-        ):
-            pytest.fail(
-                f"Unclassified error: {result.exception!r}\n{result.exception!s}\n\nResults:\n{results!r}\n\nSource:\n{source_hint}",
                 pytrace=False,
             )
 
@@ -2219,8 +2201,9 @@ def test_valid_projects_validate_cleanly(
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     (fuzz_project / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(results, _escape_content(source))
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path("test.dfn"))
 
 
 @settings(
@@ -2236,12 +2219,9 @@ def test_mutated_projects_no_unclassified_errors(
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
     d = driver.Driver()
-    results = d.validate_program(
-        Path(project_case.entrypoint)
-    ).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(
-        results, _project_case_debug_text(project_case)
-    )
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path(project_case.entrypoint))
 
 
 @settings(
@@ -2255,8 +2235,9 @@ def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.dfn"
     file_path.write_bytes(data)
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(results, repr(data))
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path("test.dfn"))
 
 
 @settings(
@@ -2276,8 +2257,9 @@ def test_random_local_name_bytes_no_unclassified_errors(
     template = _local_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path("test.dfn"))
 
 
 @settings(
@@ -2297,8 +2279,9 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path("test.dfn"))
 
 
 @settings(
@@ -2318,5 +2301,6 @@ def test_random_global_name_structured_bytes_no_unclassified_errors(
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
+    # The compiler must report any problem in the input as a diagnostic
+    # rather than fail.
+    _ = d.validate_program(Path("test.dfn"))

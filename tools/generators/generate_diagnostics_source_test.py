@@ -68,7 +68,7 @@ def test_cli(tmp_path: Path):
 def test_indentation_diagnostics(width: int):
     source = "\n".join(gen.generate_source_lines(errors=2, indent_width=width)) + "\n"
     result = parser.parse(source.encode(), "test.dfn")
-    assert result.exception is None
+    assert result.syntax_error is None
     assert [type(diagnostic) for diagnostic in result.diagnostics] == [
         diagnostics.IncorrectIndentationDiagnostic
     ] * 10

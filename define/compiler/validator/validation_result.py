@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.errors import diagnostics, exceptions
+    from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
@@ -76,7 +76,8 @@ class DefinitionValidationResult(msgspec.Struct):
 class FileValidationResult:
     """Validation output for one source file."""
 
-    exception: exceptions.DefineError | None
+    # The diagnostic that kept the file from loading or parsing, if any.
+    load_failure: diagnostics.FileLoadFailureDiagnostic | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     file_diagnostics: list[diagnostics.Diagnostic]
@@ -103,23 +104,24 @@ class ProgramValidationResult(msgspec.Struct):
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,
     ]
-    # The diagnostics of every project config that was loaded, each reported
-    # once however many files depend on its config.
-    config_diagnostics: list[diagnostics.FormattableDiagnostic]
+    # The diagnostics about the program rather than one of its files: the
+    # entry file path's, and those of every project config that was loaded,
+    # each reported once however many files depend on its config.
+    program_diagnostics: list[diagnostics.FormattableDiagnostic]
     source_map: rendering.SourceMap
 
     @property
     def all_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """The config diagnostics, then all diagnostics from all file results."""
-        all_diagnostics = list(self.config_diagnostics)
+        """The program diagnostics, then all diagnostics from all file results."""
+        all_diagnostics = list(self.program_diagnostics)
         for result in self.file_results:
             all_diagnostics.extend(result.diagnostics)
         return all_diagnostics
 
     @property
-    def all_exceptions(self) -> list[exceptions.DefineError]:
-        """All exceptions from all file results."""
-        return [r.exception for r in self.file_results if r.exception is not None]
+    def all_exceptions(self) -> list[diagnostics.FileLoadFailureDiagnostic]:
+        """The diagnostic of each file that did not load or parse."""
+        return [r.load_failure for r in self.file_results if r.load_failure is not None]
 
     def has_errors(self) -> bool:
         """Whether any file had exceptions or diagnostics."""

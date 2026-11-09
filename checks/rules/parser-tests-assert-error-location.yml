@@ -12,38 +12,28 @@ rule:
     # The test does not keep the error, so it cannot assert its location.
     - has:
         stopBy: end
-        kind: with_item
+        kind: expression_statement
         has:
-          field: value
           kind: call
-          pattern: pytest.raises($$$)
+          pattern: parse_syntax_error($$$)
     - all:
         - has:
             stopBy: end
-            kind: as_pattern
-            all:
-              - has:
-                  kind: call
-                  pattern: pytest.raises($$$)
-              - has:
-                  field: alias
-                  has:
-                    kind: identifier
-                    pattern: $ERROR
+            pattern: $ERROR = parse_syntax_error($$$)
         - any:
             - not:
                 has:
                   stopBy: end
-                  pattern: assert $ERROR.value.location.line == $LINE
+                  pattern: assert $ERROR.location.line == $LINE
             - not:
                 has:
                   stopBy: end
-                  pattern: assert $ERROR.value.location.column == $COLUMN
+                  pattern: assert $ERROR.location.column == $COLUMN
             - not:
                 has:
                   stopBy: end
-                  pattern: assert $ERROR.value.location.end_line == $END_LINE
+                  pattern: assert $ERROR.location.end_line == $END_LINE
             - not:
                 has:
                   stopBy: end
-                  pattern: assert $ERROR.value.location.end_column == $END_COLUMN
+                  pattern: assert $ERROR.location.end_column == $END_COLUMN

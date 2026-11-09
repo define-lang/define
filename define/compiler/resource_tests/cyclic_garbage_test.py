@@ -18,6 +18,7 @@ import pytest
 from defcl.python import error_types, errors
 from define.compiler import driver
 from define.compiler.codegen import test_helpers, testdata_cases
+from define.compiler.errors import syntax_errors
 from define.compiler.resource_tests import resource_cases
 
 if typing.TYPE_CHECKING:
@@ -27,6 +28,9 @@ if typing.TYPE_CHECKING:
 # file. Importing a module leaves a fixed amount of cyclic garbage, so they are
 # imported here instead of during the first measured compile.
 _MODULES_IMPORTED_ON_FIRST_DCL_FILE = (error_types, errors)
+# The parser imports this module when it creates the first syntax error, so
+# it is imported here for the same reason.
+_MODULES_IMPORTED_ON_FIRST_SYNTAX_ERROR = (syntax_errors,)
 
 
 # Thread pools and futures are a common source of cycles, so compiles run both

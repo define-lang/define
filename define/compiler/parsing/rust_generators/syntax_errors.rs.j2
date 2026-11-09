@@ -7,12 +7,8 @@ use crate::parse_error::ParseError;
 use source_rendering::Position;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
-use pyo3::{PyTypeInfo as _, import_exception};
-{% for exception in exceptions %}
-import_exception!({{ module_name }}, {{ exception.name }});
-{%- endfor %}
 
-/// Creates the syntax errors of one parse, as exceptions from
+/// Creates the syntax errors of one parse, as instances of classes from
 /// `{{ module_name }}`.
 pub struct SyntaxErrors<'py> {
     py: Python<'py>,
@@ -34,33 +30,40 @@ impl<'py> SyntaxErrors<'py> {
         )
     }
 
+    /// Returns the class `name` in `{{ module_name }}`. A parse ends in at most
+    /// one syntax error, so its class is looked up only when it is created.
+    fn class(&self, name: &str) -> PyResult<Bound<'py, PyAny>> {
+        self.py.import("{{ module_name }}")?.getattr(name)
+    }
+
     /// Returns `error` as a syntax error, or the exception that Python raised
     /// while creating it.
     fn syntax_error(error: PyResult<Bound<'py, PyAny>>) -> ParseError {
         match error {
-            Ok(error) => ParseError::Syntax(PyErr::from_value(error)),
+            Ok(error) => ParseError::Syntax(error.unbind()),
             Err(error) => ParseError::Python(error),
         }
     }
-{% for exception in exceptions %}
-    /// Returns a `{{ module_name }}.{{ exception.name }}` from `start` through
+{% for syntax_error in syntax_errors %}
+    /// Returns a `{{ module_name }}.{{ syntax_error.name }}` from `start` through
     /// `end`, the position of its last character.
-    pub fn {{ exception.snake_case_name }}(
+    pub fn {{ syntax_error.snake_case_name }}(
         &self,
         start: Position,
         end: Position,
-{%- for parameter in exception.text_parameters %}
-        {{ parameter }}: &str,
+{%- for field in syntax_error.fields %}
+        {{ field.name }}: {{ field.rust_type() }},
 {%- endfor %}
     ) -> ParseError {
         Self::syntax_error(self.location(start, end).and_then(|location| {
-            {{ exception.name }}::type_object(self.py).call1((
+            self.class("{{ syntax_error.name }}")?.call1((
                 location.into_object(),
-{%- for parameter in exception.text_parameters %}
-                {{ parameter }},
+{%- for field in syntax_error.fields %}
+                {{ field.python_value() }},
 {%- endfor %}
             ))
         }))
     }
 {% endfor -%}
 }
+

@@ -174,7 +174,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -184,7 +184,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert result.file_results[1].file_path.name == "target_a.dfn"
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 
@@ -261,7 +261,7 @@ def test_non_filesystem_cross_universe_reference(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 1
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -271,7 +271,7 @@ def test_non_filesystem_cross_universe_reference(
     assert diag.location.column == 58
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 

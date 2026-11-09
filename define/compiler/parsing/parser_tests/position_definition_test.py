@@ -8,14 +8,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 def test_position_definition_parses(parse: Parse):
@@ -102,14 +103,16 @@ def test_position_definition_with_non_ascii_fqun_components(
 
 
 def test_position_definition_missing_terminator_after_non_ascii_name(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/caf\u00e9>\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 63
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/caf\u00e9>\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.column == 63
+    assert error.location.end_line == 1
+    assert error.location.end_column == 63
 
 
 def test_quality_assignment_with_non_ascii_name(parse: Parse):
@@ -133,133 +136,147 @@ def test_quality_assignment_with_non_ascii_name(parse: Parse):
 
 
 def test_position_definition_with_invisible_character_in_invalid_name(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
-        parse("define the potential position<a\u200bb>.\n")
-    assert exc_info.value.char == "\u200b"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 32
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 32
+    error = parse_syntax_error("define the potential position<a\u200bb>.\n")
+    assert isinstance(error, syntax_errors.InvisibleCharacterError)
+    assert error.char == "\u200b"
+    assert error.location.line == 1
+    assert error.location.column == 32
+    assert error.location.end_line == 1
+    assert error.location.end_column == 32
 
 
-def test_position_definition_with_empty_fqun(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 36
+def test_position_definition_with_empty_fqun(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<:/path>.\n")
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 36
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<foo>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 33
+    error = parse_syntax_error("define the potential position<foo>.\n")
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 33
 
 
-def test_position_definition_missing_open_angle(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential positionstandard:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 30
+def test_position_definition_missing_open_angle(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential positionstandard:/path>.\n")
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 1
+    assert error.location.column == 30
+    assert error.location.end_line == 1
+    assert error.location.end_column == 30
 
 
-def test_position_definition_space_instead_of_open_angle(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse("define the potential position mv:define-lang.org:parser:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 30
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 30
+def test_position_definition_space_instead_of_open_angle(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position mv:define-lang.org:parser:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 1
+    assert error.location.column == 30
+    assert error.location.end_line == 1
+    assert error.location.end_column == 30
 
 
-def test_position_definition_with_control_character(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
-    assert exc_info.value.escaped_char == "\\0"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 22
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 22
+def test_position_definition_with_control_character(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential \x00position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\0"
+    assert error.location.line == 1
+    assert error.location.column == 22
+    assert error.location.end_line == 1
+    assert error.location.end_column == 22
 
 
 def test_position_definition_with_control_character_in_name(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse("define the potential position<standard:/a\x01b>.\n")
-    assert exc_info.value.escaped_char == "\\u{1}"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 42
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 42
+    error = parse_syntax_error("define the potential position<standard:/a\x01b>.\n")
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\u{1}"
+    assert error.location.line == 1
+    assert error.location.column == 42
+    assert error.location.end_line == 1
+    assert error.location.end_column == 42
 
 
-def test_position_definition_with_empty_global_path(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 56
+def test_position_definition_with_empty_global_path(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:>.\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 56
 
 
-def test_position_definition_without_fqun(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.DefinitionGlobalNameContentRequiresFqun
-    ) as exc_info:
-        parse("define the potential position</path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 35
+def test_position_definition_without_fqun(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position</path>.\n")
+    assert isinstance(error, syntax_errors.DefinitionGlobalNameContentRequiresFqun)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 35
 
 
-def test_position_definition_with_too_many_fqun_components(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as exc_info:
-        parse("define the potential position<a:b:c:d:/path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 37
+def test_position_definition_with_too_many_fqun_components(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error("define the potential position<a:b:c:d:/path>.\n")
+    assert isinstance(error, syntax_errors.GlobalNameInvalidFqunFormat)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 37
 
 
 def test_position_definition_with_global_path_missing_leading_slash(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:path>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 60
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:path>.\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 60
 
 
-def test_position_definition_empty_name_content(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse("define the potential position<>.\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 31
+def test_position_definition_empty_name_content(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<>.\n")
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 31
 
 
-def test_position_definition_empty_name_at_eof(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse("define the potential position<")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 31
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 31
+def test_position_definition_empty_name_at_eof(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<")
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 31
 
 
 def test_position_definition_with_quality_assignment_block(parse: Parse):
@@ -328,101 +345,109 @@ def test_position_definition_with_multiple_quality_assignments(parse: Parse):
     assert second.typed_global_name.name_content.path.name == "/second"
 
 
-def test_position_definition_block_requires_content(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 1
+def test_position_definition_block_requires_content(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingPositionDefinitionContent)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
-def test_quality_assignment_block_requires_statements(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingQualityAssignmentBlockContent
-    ) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 5
+def test_quality_assignment_block_requires_statements(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingQualityAssignmentBlockContent)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 5
 
 
 def test_quality_assignment_block_with_invalid_statement_then_more_definitions(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
-        parse(
-            "define the potential position<my_lib:/path>.\n"
-            + "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        t has the position<my_lib:/path>.\n"
-            + "    }\n"
-            + "}\n"
-            + "define the potential position<my_lib:/path>.\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 41
+    error = parse_syntax_error(
+        "define the potential position<my_lib:/path>.\n"
+        + "define the potential position<my_lib:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        t has the position<my_lib:/path>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the potential position<my_lib:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidQualityAssignmentBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 41
 
 
 def test_position_definition_rejects_multiple_quality_assignment_blocks(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</first>.\n"
-            + "    }\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 41
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</first>.\n"
+        + "    }\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 5
+    assert error.location.end_line == 5
+    assert error.location.end_column == 41
 
 
-def test_second_quality_assignment_block_after_close_on_same_line(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</first>.\n"
-            + "    }    it may only contain particles where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 6
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 6
+def test_second_quality_assignment_block_after_close_on_same_line(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</first>.\n"
+        + "    }    it may only contain particles where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 4
+    assert error.location.column == 6
+    assert error.location.end_line == 4
+    assert error.location.end_column == 6
 
 
-def test_second_quality_assignment_block_on_quality_assignment_line(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</first>.    it may only contain particles where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 37
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 37
+def test_second_quality_assignment_block_on_quality_assignment_line(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</first>.    it may only contain particles where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 3
+    assert error.location.column == 37
+    assert error.location.end_line == 3
+    assert error.location.end_column == 37
 
 
 def test_action_definition_block_with_mixed_local_position_forms(
@@ -641,88 +666,96 @@ def test_action_statements_block_with_multiple_local_block_positions(
     )
 
 
-def test_empty_potential_position_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse("define the potential position<standard:/path> {\n}\n")
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 1
+def test_empty_potential_position_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path> {\n}\n")
+    assert isinstance(error, syntax_errors.MissingPositionDefinitionContent)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
-def test_invalid_content_in_potential_position_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    nonsense here\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 17
+def test_invalid_content_in_potential_position_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<standard:/path> {\n"
+        + "    nonsense here\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidPositionDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 17
 
 
-def test_quality_implication_in_potential_position_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it also assigns the position</required>.\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 44
+def test_quality_implication_in_potential_position_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<standard:/path> {\n"
+        + "    it also assigns the position</required>.\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidPositionDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 44
 
 
-def test_empty_local_position_definition_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse(
-            "define the potential action<standard:/act> {\n"
-            + "    define the position<bad> {\n"
-            + "    }\n"
-            + "    it happens when {\n"
-            + "        the position<bad> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 5
+def test_empty_local_position_definition_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<standard:/act> {\n"
+        + "    define the position<bad> {\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "        the position<bad> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingPositionDefinitionContent)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 5
 
 
-def test_invalid_content_in_local_position_definition_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
-        parse(
-            "define the potential action<standard:/act> {\n"
-            + "    define the position<bad> {\n"
-            + "        nonsense here\n"
-            + "    }\n"
-            + "    it happens when {\n"
-            + "        the position<bad> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 21
+def test_invalid_content_in_local_position_definition_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<standard:/act> {\n"
+        + "    define the position<bad> {\n"
+        + "        nonsense here\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "        the position<bad> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidPositionDefinitionBlock)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 21
 
 
-def test_text_where_local_position_terminator_belongs(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run> x\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 29
+def test_text_where_local_position_terminator_belongs(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run> x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 2
+    assert error.location.column == 29
+    assert error.location.end_line == 2
+    assert error.location.end_column == 29

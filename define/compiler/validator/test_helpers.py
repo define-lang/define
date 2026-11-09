@@ -12,7 +12,7 @@ from define.compiler.data_structures import define_path
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from define.compiler.errors import diagnostics, exceptions
+    from define.compiler.errors import diagnostics
 
 
 def standard_library_file(relative_path: str) -> str:
@@ -22,19 +22,19 @@ def standard_library_file(relative_path: str) -> str:
 
 class _ValidationErrors(Protocol):
     @property
-    def all_exceptions(self) -> list[exceptions.DefineError]: ...
+    def all_exceptions(self) -> list[diagnostics.FileLoadFailureDiagnostic]: ...
 
     @property
     def all_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]: ...
 
 
 def assert_no_errors(result: _ValidationErrors):
-    """Assert that a validation result has no exceptions or diagnostics."""
+    """Assert that a validation result has no load failures or diagnostics."""
     __tracebackhide__ = True
-    exceptions = result.all_exceptions
-    assert not exceptions, (
-        f"Expected no exceptions, but got {len(exceptions)}:\n"
-        + "\n".join(f"  {type(e).__name__}: {e}" for e in exceptions)
+    load_failures = result.all_exceptions
+    assert not load_failures, (
+        f"Expected no load failures, but got {len(load_failures)}:\n"
+        + "\n".join(f"  {pformat(f)}" for f in load_failures)
     )
     all_diagnostics = result.all_diagnostics
     assert not all_diagnostics, (

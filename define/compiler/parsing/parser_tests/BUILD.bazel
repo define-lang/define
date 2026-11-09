@@ -9,6 +9,7 @@ py_library(
     srcs = ["conftest.py"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/errors:syntax_errors",
         "//define/compiler/parsing:parser",
         "//define/compiler/parsing:test_helpers",
         "@pypi//pytest",
@@ -72,9 +73,8 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/errors:syntax_errors",
         "//source_rendering/python:rendering",
-        "@pypi//pytest",
     ],
 )
 

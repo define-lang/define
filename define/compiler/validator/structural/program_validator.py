@@ -37,7 +37,7 @@ from define.compiler.validator.structural.resolver import (
 
 
 def validate_program(
-    path: pathlib.PurePosixPath,
+    path: pathlib.PurePath,
     *,
     max_workers: int | None = None,
     allow_entry_action_interface_positions: bool = False,
@@ -87,7 +87,7 @@ def validate_program_non_filesystem(
         source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
-    if source_file.exception is not None:
+    if source_file.load_failure is not None:
         return program_validation.build_program_result()
 
     with work_pool.WorkPool(max_workers=max_workers) as pool:
@@ -148,22 +148,25 @@ class _ProgramValidationRun:
                     self._validated_definition_results(loaded_file)
                 )
             )
-        entry_action_result = _select_entry_action(
-            file_results[0], select_last_constructor=select_last_constructor
-        )
         entry_action = None
-        if entry_action_result is not None:
-            if not self._allow_entry_action_interface_positions:
-                _validate_entry_action_interface_positions(entry_action_result)
-            candidate = typing.cast(
-                "ast.ActionDefinition", entry_action_result.definition
+        entry_file_definitions: list[ast.GlobalDefinition] = []
+        # The entry file is the first file to load. There is none if it could
+        # not be loaded, such as when its path is outside the project root.
+        if file_results:
+            entry_file_result = file_results[0]
+            entry_action_result = _select_entry_action(
+                entry_file_result, select_last_constructor=select_last_constructor
             )
-            if candidate.is_constructor:
-                entry_action = candidate
-        entry_file_definitions = [
-            definition_result.definition
-            for definition_result in file_results[0].definition_results
-        ]
+            if entry_action_result is not None:
+                if not self._allow_entry_action_interface_positions:
+                    _validate_entry_action_interface_positions(entry_action_result)
+                candidate = typing.cast(
+                    "ast.ActionDefinition", entry_action_result.definition
+                )
+                if candidate.is_constructor:
+                    entry_action = candidate
+            for definition_result in entry_file_result.definition_results:
+                entry_file_definitions.append(definition_result.definition)
         definition_order = reference_graph_order.ReferenceGraphOrder(
             self._reference_graph, entry_file_definitions
         )
@@ -180,7 +183,7 @@ class _ProgramValidationRun:
             entry_action=entry_action,
             definition_order=definition_order,
             definition_results=self._definition_results,
-            config_diagnostics=self._resolver.config_diagnostics(),
+            program_diagnostics=self._resolver.program_diagnostics(),
             source_map=self._source_map,
         )
 

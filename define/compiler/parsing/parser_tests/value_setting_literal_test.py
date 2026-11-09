@@ -5,15 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -162,150 +161,152 @@ def test_comment_after_literal_containing_angle_brackets(parse: Parse):
     assert literal.content == "< # >"
 
 
-def test_literal_unknown_escape_is_invalid(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"bad\\t".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.char == "t"
-    assert error.value.location.line == 5
-    assert error.value.location.column == 65
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 65
+def test_literal_unknown_escape_is_invalid(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"bad\\t".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLiteralEscape)
+    assert error.char == "t"
+    assert error.location.line == 5
+    assert error.location.column == 65
+    assert error.location.end_line == 5
+    assert error.location.end_column == 65
 
 
-def test_literal_unknown_escape_of_non_ascii_character(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"aé\\é".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.char == "é"
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 64
+def test_literal_unknown_escape_of_non_ascii_character(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"aé\\é".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLiteralEscape)
+    assert error.char == "é"
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 64
 
 
-def test_literal_newline(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"a\nb".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 62
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 62
+def test_literal_newline(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"a\nb".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentEnd)
+    assert error.location.line == 5
+    assert error.location.column == 62
+    assert error.location.end_line == 5
+    assert error.location.end_column == 62
 
 
-def test_literal_target_is_invalid(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of literal</text>"a" from position<dest>.\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 32
+def test_literal_target_is_invalid(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of literal</text>"a" from position<dest>.\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrAction)
+    assert error.location.line == 5
+    assert error.location.column == 26
+    assert error.location.end_line == 5
+    assert error.location.end_column == 32
 
 
-def test_literal_missing_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal<text>"abc".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 54
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 57
+def test_literal_missing_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal<text>"abc".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 5
+    assert error.location.column == 54
+    assert error.location.end_line == 5
+    assert error.location.end_column == 57
 
 
-def test_literal_empty_name(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal<>"abc".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 54
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 54
+def test_literal_empty_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal<>"abc".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 5
+    assert error.location.column == 54
+    assert error.location.end_line == 5
+    assert error.location.end_column == 54
 
 
-def test_literal_missing_open_angle_bracket(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal/text>"abc".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 53
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 53
+def test_literal_missing_open_angle_bracket(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal/text>"abc".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 5
+    assert error.location.column == 53
+    assert error.location.end_line == 5
+    assert error.location.end_column == 53
 
 
-def test_literal_missing_close_angle_bracket(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text"abc".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 65
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 65
-    assert error.value.name == '/text"abc".'
+def test_literal_missing_close_angle_bracket(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text"abc".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseAngleBracket)
+    assert error.location.line == 5
+    assert error.location.column == 65
+    assert error.location.end_line == 5
+    assert error.location.end_column == 65
+    assert error.name == '/text"abc".'
 
 
-def test_literal_missing_open_quote(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest> from literal</text>.\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 60
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 60
+def test_literal_missing_open_quote(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest> from literal</text>.\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentStart)
+    assert error.location.line == 5
+    assert error.location.column == 60
+    assert error.location.end_line == 5
+    assert error.location.end_column == 60
 
 
-def test_literal_unquoted_content(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest> from literal</foo>5.\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 59
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 59
+def test_literal_unquoted_content(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest> from literal</foo>5.\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentStart)
+    assert error.location.line == 5
+    assert error.location.column == 59
+    assert error.location.end_line == 5
+    assert error.location.end_column == 59
 
 
-def test_literal_missing_close_quote(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"abc.\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 65
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 65
+def test_literal_missing_close_quote(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"abc.\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentEnd)
+    assert error.location.line == 5
+    assert error.location.column == 65
+    assert error.location.end_line == 5
+    assert error.location.end_column == 65
 
 
 def test_literal_content_starting_with_slash(parse: Parse):
@@ -319,30 +320,30 @@ def test_literal_content_starting_with_slash(parse: Parse):
     assert literal.content == "/0"
 
 
-def test_literal_cannot_be_child_of_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from position<parent>::literal</text>"abc".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 70
+def test_literal_cannot_be_child_of_position(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from position<parent>::literal</text>"abc".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrAction)
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 70
 
 
-def test_literal_cannot_start_position_reference(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"a"::position<child>.\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 63
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 63
+def test_literal_cannot_start_position_reference(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"a"::position<child>.\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 5
+    assert error.location.column == 63
+    assert error.location.end_line == 5
+    assert error.location.end_column == 63
 
 
 def test_literal_without_terminator_gets_a_diagnostic(
@@ -353,7 +354,7 @@ def test_literal_without_terminator_gets_a_diagnostic(
         + '        set the value of position<dest> from literal</text>"a"\n'
         + "    }\n}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -371,42 +372,42 @@ def test_literal_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_literal_old_syntax_is_invalid(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest> from literal</text:abc>.\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 64
+def test_literal_old_syntax_is_invalid(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest> from literal</text:abc>.\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentStart)
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 64
 
 
-def test_literal_escape_at_end_of_line(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"ab\\\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 64
+def test_literal_escape_at_end_of_line(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"ab\\\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentEnd)
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 64
 
 
-def test_literal_escape_at_end_of_source(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"ab\\'
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 64
+def test_literal_escape_at_end_of_source(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"ab\\'
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentEnd)
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 64
 
 
 def test_literal_with_escape_and_non_ascii_character(parse: Parse):
@@ -423,27 +424,27 @@ def test_literal_with_escape_and_non_ascii_character(parse: Parse):
     )
 
 
-def test_literal_missing_close_quote_after_escape(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentEnd) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> from literal</text>"a\\"b\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 65
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 65
+def test_literal_missing_close_quote_after_escape(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> from literal</text>"a\\"b\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentEnd)
+    assert error.location.line == 5
+    assert error.location.column == 65
+    assert error.location.end_line == 5
+    assert error.location.end_column == 65
 
 
-def test_no_space_between_from_and_literal(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _ACTION_PREFIX
-            + '        set the value of position<dest> fromliteral</text>"a".\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 45
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 51
+def test_no_space_between_from_and_literal(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + '        set the value of position<dest> fromliteral</text>"a".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 5
+    assert error.location.column == 45
+    assert error.location.end_line == 5
+    assert error.location.end_column == 51

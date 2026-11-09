@@ -15,16 +15,17 @@ import enum
 import sys
 import typing
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
 from typing import TextIO
 
 from define.compiler import constants
 from define.compiler.codegen import generator
-from define.compiler.errors import diagnostics, exceptions, parser_exceptions
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 if typing.TYPE_CHECKING:
+    from pathlib import Path
+
     from define.compiler import ast
     from define.compiler.validator import codegen_input as codegen_input_types
     from define.compiler.validator import validation_result
@@ -47,16 +48,14 @@ class ExitCode(enum.IntEnum):
 def _error_strings(
     program_result: validation_result.ProgramValidationResult,
 ) -> list[str]:
-    """Format every exception and diagnostic for the command-line caller."""
+    """Format every load failure and diagnostic for the command-line caller."""
     error_strings = [
         diagnostic.format(program_result.source_map)
-        for diagnostic in program_result.config_diagnostics
+        for diagnostic in program_result.program_diagnostics
     ]
     for result in program_result.file_results:
-        if isinstance(result.exception, parser_exceptions.DefineSyntaxError):
-            error_strings.append(result.exception.format(program_result.source_map))
-        elif result.exception is not None:
-            error_strings.append(str(result.exception))
+        if result.load_failure is not None:
+            error_strings.append(result.load_failure.format(program_result.source_map))
         for diagnostic in result.diagnostics:
             error_strings.append(diagnostic.format(program_result.source_map))
     return error_strings
@@ -88,7 +87,7 @@ class CompilationResult(CompilerResult):
     """Caller-facing result retained after compilation."""
 
     all_diagnostics: list[diagnostics.FormattableDiagnostic]
-    all_exceptions: list[exceptions.DefineError]
+    all_exceptions: list[diagnostics.FileLoadFailureDiagnostic]
     entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
 
@@ -122,9 +121,8 @@ class Driver:
         self, path: Path, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
         """Validate a source file and all the files it references."""
-        resolved_path = self._resolve_path(path)
         program_validation = program_validator.validate_program(
-            resolved_path, max_workers=max_threads
+            path, max_workers=max_threads
         )
         return self._complete_validation(
             program_validation,
@@ -235,32 +233,6 @@ class Driver:
         )
         return compilation_result
 
-    @staticmethod
-    def _resolve_path(path: Path) -> PurePosixPath:
-        """Resolve a file path to be a POSIX path relative to the project root."""
-        if ".." in path.parts:
-            # A ".." can leave the project root and come back (or the
-            # reverse), which a lexical prefix comparison cannot see.
-            project_root = Path.cwd().resolve()
-            resolved = (project_root / path).resolve()
-        else:
-            project_root = Path.cwd()
-            resolved = project_root / path
-        try:
-            relative = resolved.relative_to(project_root)
-        except ValueError:
-            error_class = (
-                exceptions.AbsolutePathError
-                if path.is_absolute()
-                else exceptions.RelativePathError
-            )
-            raise error_class(
-                input_path=path,
-                resolved_path=resolved,
-                project_root=project_root,
-            ) from None
-        return PurePosixPath(relative.as_posix())
-
     def run(
         self,
         path: Path | None = None,
@@ -285,29 +257,25 @@ class Driver:
         """
         if error_stream is None:
             error_stream = sys.stderr
-        try:
-            if mode == DriverMode.COMPILE:
-                if output_dir is None:
-                    raise ValueError("output_dir is required when mode is COMPILE")
-                if source is not None:
-                    driver_result = self.compile_source(
-                        source, output_dir, max_threads=max_threads
-                    )
-                else:
-                    if path is None:
-                        raise ValueError("path is required when source is not given")
-                    driver_result = self.compile_program(
-                        path, output_dir, max_threads=max_threads
-                    )
-            elif source is not None:
-                driver_result = self.validate_source(source, max_threads=max_threads)
+        if mode == DriverMode.COMPILE:
+            if output_dir is None:
+                raise ValueError("output_dir is required when mode is COMPILE")
+            if source is not None:
+                driver_result = self.compile_source(
+                    source, output_dir, max_threads=max_threads
+                )
             else:
                 if path is None:
                     raise ValueError("path is required when source is not given")
-                driver_result = self.validate_program(path, max_threads=max_threads)
-        except exceptions.DefineError as e:
-            print(str(e), file=error_stream)
-            return ExitCode.ERROR
+                driver_result = self.compile_program(
+                    path, output_dir, max_threads=max_threads
+                )
+        elif source is not None:
+            driver_result = self.validate_source(source, max_threads=max_threads)
+        else:
+            if path is None:
+                raise ValueError("path is required when source is not given")
+            driver_result = self.validate_program(path, max_threads=max_threads)
 
         all_error_strings = driver_result.error_strings()
 

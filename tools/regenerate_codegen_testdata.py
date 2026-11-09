@@ -30,8 +30,8 @@ def _compile_case(
         )
         if result.has_errors():
             print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
-            for exc in result.all_exceptions:
-                print(f"    {exc}")
+            for load_failure in result.all_exceptions:
+                print(f"    {load_failure}")
             for diag in result.all_diagnostics:
                 print(f"    {diag}")
             return False

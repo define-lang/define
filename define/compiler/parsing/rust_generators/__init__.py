@@ -1,1 +1,1 @@
-"""Generation of the parser's Rust sources from Python modules: the AST types from `define.compiler.ast`, and constructors for the exceptions in `define.compiler.errors.parser_exceptions`."""
+"""Generation of the parser's Rust sources from Python modules: the AST types from `define.compiler.ast`, and constructors for the diagnostics in `define.compiler.errors.diagnostics` and `define.compiler.errors.syntax_errors`."""

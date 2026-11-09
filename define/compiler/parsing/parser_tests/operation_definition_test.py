@@ -5,14 +5,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 def test_operation_definition(parse: Parse):
@@ -148,173 +149,185 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(encoding, ast.EncodingDefinition)
 
 
-def test_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            "define the operation<add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 1
-    assert error.value.location.column == 22
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 24
+def test_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 22
+    assert error.location.end_line == 1
+    assert error.location.end_column == 24
 
 
-def test_requires_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        parse("define the operation<mv:define-lang.org:parser:/add>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 53
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 53
+def test_requires_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add>.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 1
+    assert error.location.column == 53
+    assert error.location.end_line == 1
+    assert error.location.end_column == 53
 
 
-def test_requires_operation_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
-        parse("define the operation<mv:define-lang.org:parser:/add> {\n}\n")
-    assert error.value.location.line == 2
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 1
+def test_requires_operation_statements_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOperationStatementsBlock)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
-def test_requires_operation_statements_block_after_views(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the view<left> {\n"
-            + "        it is read.\n"
-            + "        it may only contain particles where {\n"
-            + "            it has the value</number>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 8
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 8
-    assert error.value.location.end_column == 1
+def test_requires_operation_statements_block_after_views(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<left> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOperationStatementsBlock)
+    assert error.location.line == 8
+    assert error.location.column == 1
+    assert error.location.end_line == 8
+    assert error.location.end_column == 1
 
 
-def test_disallows_local_position_definition(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the position<p>.\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 27
+def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the position<p>.\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 27
 
 
-def test_disallows_view_after_operation_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "    define the view<left> {\n"
-            + "        it is read.\n"
-            + "        it may only contain particles where {\n"
-            + "            it has the value</number>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 27
+def test_disallows_view_after_operation_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "    define the view<left> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 5
+    assert error.location.end_line == 5
+    assert error.location.end_column == 27
 
 
-def test_disallows_second_operation_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 13
+def test_disallows_second_operation_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 5
+    assert error.location.end_line == 5
+    assert error.location.end_column == 13
 
 
-def test_missing_close_brace_at_eof(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-        )
-    assert error.value.location.line == 1
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 54
+def test_missing_close_brace_at_eof(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 54
 
 
-def test_operation_statements_block_extra_whitespace(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does  {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 12
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 13
+def test_operation_statements_block_extra_whitespace(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does  {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 2
+    assert error.location.column == 12
+    assert error.location.end_line == 2
+    assert error.location.end_column == 13
 
 
-def test_disallows_local_context(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/test> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "            it does {\n"
-            + "                execute the encoding operation.\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 62
+def test_disallows_local_context(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/test> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "            it does {\n"
+        + "                execute the encoding operation.\n"
+        + "            }\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 5
+    assert error.location.column == 9
+    assert error.location.end_line == 5
+    assert error.location.end_column == 62
 
 
-def test_disallows_quality_implication(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it also assigns the position</a>.\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 37
+def test_disallows_quality_implication(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it also assigns the position</a>.\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 37

@@ -3,9 +3,9 @@
 use pyo3::prelude::*;
 
 pub enum ParseError {
-    /// A syntax error in the source, as an exception from
-    /// `define.compiler.errors.parser_exceptions`.
-    Syntax(PyErr),
+    /// A syntax error in the source, as an instance of a class from
+    /// `define.compiler.errors.syntax_errors`.
+    Syntax(Py<PyAny>),
     /// An exception that Python raised while the parser built the AST.
     Python(PyErr),
 }

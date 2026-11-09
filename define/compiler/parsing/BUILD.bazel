@@ -43,7 +43,7 @@ py_library(
         ":parser_extension",  # keep: supplies the native implementation of this stub
         "//define/compiler:ast",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/errors:syntax_errors",
         "//source_rendering/python:rendering",  # keep: the parser imports it to construct locations
     ],
 )
@@ -136,6 +136,7 @@ py_library(
     deps = [
         ":parser",
         "//define/compiler:ast",
+        "//define/compiler/errors:syntax_errors",
     ],
 )
 

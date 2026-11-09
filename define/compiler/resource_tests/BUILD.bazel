@@ -31,6 +31,7 @@ py_test(
         "//define/compiler:driver",
         "//define/compiler/codegen:test_helpers",
         "//define/compiler/codegen:testdata_cases",
+        "//define/compiler/errors:syntax_errors",
         "@pypi//pytest",
     ],
 )

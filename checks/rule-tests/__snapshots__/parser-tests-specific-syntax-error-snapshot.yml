@@ -1,14 +1,14 @@
 id: parser-tests-specific-syntax-error
 snapshots:
-  "with pytest.raises(DefineSyntaxError, match=\"terminator\"):\n    parse(\"define position</x>\\n\")\n":
+  "assert isinstance(error, syntax_errors.DefineSyntaxError)\n":
     labels:
-    - source: pytest.raises(DefineSyntaxError, match="terminator")
+    - source: isinstance(error, syntax_errors.DefineSyntaxError)
       style: primary
-      start: 5
+      start: 7
       end: 57
-  "with pytest.raises(parser_exceptions.DefineSyntaxError):\n    parse(\"define position</x>\\n\")\n":
+  "assert isinstance(result.syntax_error, DefineSyntaxError)\n":
     labels:
-    - source: pytest.raises(parser_exceptions.DefineSyntaxError)
+    - source: isinstance(result.syntax_error, DefineSyntaxError)
       style: primary
-      start: 5
-      end: 55
+      start: 7
+      end: 57

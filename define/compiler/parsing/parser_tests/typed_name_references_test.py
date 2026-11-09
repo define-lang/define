@@ -8,14 +8,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 def test_typed_global_name_reference_short_position_name(parse: Parse):
@@ -125,17 +126,17 @@ def test_typed_global_name_reference_full_name(parse: Parse):
 
 
 def test_typed_global_name_reference_local_style_name_is_global_terminal(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/root> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position<foo>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 31
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/root> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position<foo>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 3
+    assert error.location.column == 29
+    assert error.location.end_line == 3
+    assert error.location.end_column == 31

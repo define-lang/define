@@ -7,11 +7,9 @@ message:
 files:
   - define/compiler/parsing/parser_tests/*_test.py
 rule:
-  any:
-    - pattern: pytest.raises($ERROR)
-    - pattern: pytest.raises($ERROR, $$$)
+  pattern: isinstance($VALUE, $ERROR)
 constraints:
   ERROR:
     any:
-      - pattern: parser_exceptions.DefineSyntaxError
+      - pattern: syntax_errors.DefineSyntaxError
       - pattern: DefineSyntaxError

@@ -33,12 +33,12 @@ use pyo3::types::{PyList, PyString};
     module = "define.compiler.parsing.parser"
 )]
 struct PythonParseResult {
-    /// The `ast.Program`, unless the parse ended in `exception`.
+    /// The `ast.Program`, unless the parse ended in `syntax_error`.
     program: Option<Py<PyAny>>,
     /// The diagnostics that the parse found, in the order it found them.
     diagnostics: Py<PyList>,
-    /// The `parser_exceptions.DefineSyntaxError` that ended the parse, if any.
-    exception: Option<Py<PyAny>>,
+    /// The `syntax_errors.DefineSyntaxError` that ended the parse, if any.
+    syntax_error: Option<Py<PyAny>>,
 }
 
 /// Parses UTF-8 Define source code into an `ast.Program`. A line with the
@@ -52,15 +52,15 @@ fn parse<'py>(
     check_indentation: bool,
 ) -> PyResult<PythonParseResult> {
     let mut parser = Parser::new(py, source, file_path, check_indentation)?;
-    let (program, exception) = match parser.parse_program() {
+    let (program, syntax_error) = match parser.parse_program() {
         Ok(program) => (Some(program.into_object().unbind()), None),
-        Err(ParseError::Syntax(error)) => (None, Some(error.into_value(py).into_any())),
+        Err(ParseError::Syntax(error)) => (None, Some(error)),
         Err(ParseError::Python(error)) => return Err(error),
     };
     Ok(PythonParseResult {
         program,
         diagnostics: parser.into_diagnostics()?.unbind(),
-        exception,
+        syntax_error,
     })
 }
 

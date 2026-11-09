@@ -8,15 +8,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -31,18 +30,18 @@ def test_valid_terminator(parse: Parse):
     assert definition.quality_assignment_block is None
 
 
-def test_missing_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<standard:/path>\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 46
+def test_missing_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path>\n")
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.end_line == 1
+    assert error.location.column == 46
+    assert error.location.end_column == 46
 
 
 def test_missing_newline_after_terminator(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics("define the potential position<standard:/path>.")
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
@@ -60,7 +59,7 @@ def test_missing_newline_after_last_definition(
         "define the potential position<mv:define-lang.org:parser:/first>.\n"
         + "define the potential position<mv:define-lang.org:parser:/second>."
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
@@ -71,24 +70,28 @@ def test_missing_newline_after_last_definition(
     ]
 
 
-def test_missing_newline_between_global_definitions(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_missing_newline_between_global_definitions(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 1
+    assert error.location.column == 64
+    assert error.location.end_line == 1
+    assert error.location.end_column == 64
 
 
-def test_double_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_column == 64
+def test_double_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>..\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 1
+    assert error.location.end_line == 1
+    assert error.location.column == 64
+    assert error.location.end_column == 64
 
 
 def test_comment_directly_after_terminator(
@@ -97,7 +100,7 @@ def test_comment_directly_after_terminator(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
@@ -108,46 +111,54 @@ def test_comment_directly_after_terminator(
     ]
 
 
-def test_letter_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>.x\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_letter_after_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>.x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 1
+    assert error.location.column == 64
+    assert error.location.end_line == 1
+    assert error.location.end_column == 64
 
 
-def test_spaces_and_letter_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>.  x\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_spaces_and_letter_after_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>.  x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 1
+    assert error.location.column == 64
+    assert error.location.end_line == 1
+    assert error.location.end_column == 64
 
 
-def test_non_ascii_character_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path>.é\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 64
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 64
+def test_non_ascii_character_after_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path>.é\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 1
+    assert error.location.column == 64
+    assert error.location.end_line == 1
+    assert error.location.end_column == 64
 
 
-def test_space_before_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 67
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 67
-    assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
+def test_space_before_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<mv:my.domain.com:my_lib:/some_name .\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseAngleBracket)
+    assert error.location.line == 1
+    assert error.location.column == 67
+    assert error.location.end_line == 1
+    assert error.location.end_column == 67
+    assert error.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
 def test_trailing_space_before_newline(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics("define the potential position<standard:/path>. \n")
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -167,7 +178,7 @@ def test_several_trailing_spaces_before_newline(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>.   \n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -185,7 +196,7 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. "
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -212,7 +223,7 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -231,69 +242,81 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_text_where_position_definition_terminator_belongs(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<mv:define-lang.org:parser:/path> x\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 63
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 63
+def test_text_where_position_definition_terminator_belongs(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.column == 63
+    assert error.location.end_line == 1
+    assert error.location.end_column == 63
 
 
-def test_text_after_encoding_quality_assignment_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
-        _ = parse(
-            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
-            + "    it has the encoding</decimal>.x\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 35
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 35
+def test_text_after_encoding_quality_assignment_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        + "    it has the encoding</decimal>.x\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 2
+    assert error.location.column == 35
+    assert error.location.end_line == 2
+    assert error.location.end_column == 35
 
 
-def test_text_after_logical_operation_support_block_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
-        _ = parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation<standard:/number/add> {\n"
-            + "        it may be read.x\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 24
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 24
+def test_text_after_logical_operation_support_block_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation<standard:/number/add> {\n"
+        + "        it may be read.x\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 3
+    assert error.location.column == 24
+    assert error.location.end_line == 3
+    assert error.location.end_column == 24
 
 
-def test_text_after_value_setting_literal_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + '        set the value of position<dest> from literal</text>"a".x\n'
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 64
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 64
+def test_text_after_value_setting_literal_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> from literal</text>"a".x\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 5
+    assert error.location.column == 64
+    assert error.location.end_line == 5
+    assert error.location.end_column == 64
 
 
-def test_text_after_operation_execution_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the operation</other>.x\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 39
+def test_text_after_operation_execution_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other>.x\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 3
+    assert error.location.column == 39
+    assert error.location.end_line == 3
+    assert error.location.end_column == 39

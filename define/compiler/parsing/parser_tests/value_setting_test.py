@@ -8,15 +8,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -332,81 +331,85 @@ _ACTION_PREFIX = (
 )
 
 
-def test_missing_from(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        parse(
-            _ACTION_PREFIX + "        set the value of position<dest>.\n" + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 40
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 40
+def test_missing_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX + "        set the value of position<dest>.\n" + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueSettingStatementSyntax)
+    assert error.location.line == 5
+    assert error.location.column == 40
+    assert error.location.end_line == 5
+    assert error.location.end_column == 40
 
 
-def test_missing_source(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingValueSource) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest> from .\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 46
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 46
+def test_missing_source(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest> from .\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingValueSource)
+    assert error.location.line == 5
+    assert error.location.column == 46
+    assert error.location.end_line == 5
+    assert error.location.end_column == 46
 
 
-def test_missing_target(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionReference) as error:
-        parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
-    assert error.value.location.line == 5
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 26
+def test_missing_target(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingPositionReference)
+    assert error.location.line == 5
+    assert error.location.column == 26
+    assert error.location.end_line == 5
+    assert error.location.end_column == 26
 
 
-def test_missing_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedChainSeparatorOrTerminator) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest> from position<src>\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 59
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 59
+def test_missing_terminator(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest> from position<src>\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedChainSeparatorOrTerminator)
+    assert error.location.line == 5
+    assert error.location.column == 59
+    assert error.location.end_line == 5
+    assert error.location.end_column == 59
 
 
-def test_value_setting_outside_action(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        parse("set the value of position<dest> from position<src>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 51
+def test_value_setting_outside_action(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("set the value of position<dest> from position<src>.\n")
+    assert isinstance(error, syntax_errors.ExpectedGlobalDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 51
 
 
-def test_missing_from_at_eof(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        parse(_ACTION_PREFIX + "        set the value of position<dest>")
-    assert error.value.location.line == 5
-    assert error.value.location.column == 40
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 40
+def test_missing_from_at_eof(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX + "        set the value of position<dest>"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueSettingStatementSyntax)
+    assert error.location.line == 5
+    assert error.location.column == 40
+    assert error.location.end_line == 5
+    assert error.location.end_column == 40
 
 
-def test_missing_from_after_chained_target(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
-        parse(
-            _ACTION_PREFIX
-            + "        set the value of position<dest>::position<child>.\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 57
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 57
+def test_missing_from_after_chained_target(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ACTION_PREFIX
+        + "        set the value of position<dest>::position<child>.\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueSettingStatementSyntax)
+    assert error.location.line == 5
+    assert error.location.column == 57
+    assert error.location.end_line == 5
+    assert error.location.end_column == 57
 
 
 def test_missing_from_during_transformation(
@@ -419,9 +422,9 @@ def test_missing_from_during_transformation(
     )
     assert result.diagnostics == []
     assert isinstance(
-        result.exception, parser_exceptions.InvalidValueSettingStatementSyntax
+        result.syntax_error, syntax_errors.InvalidValueSettingStatementSyntax
     )
-    assert result.exception.location == rendering.SourceLocation(
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=6, column=40, end_line=6, end_column=40
     )
 
@@ -436,59 +439,59 @@ def test_missing_move_to_after_value_setting(
         + "    }\n}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.InvalidMoveStatementSyntax)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=6, column=43, end_line=6, end_column=43
     )
 
 
-def test_extra_space_after_from_in_value_setting(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        set the value of position<run> from  position<run>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 45
+def test_extra_space_after_from_in_value_setting(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<run> from  position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 6
+    assert error.location.column == 44
+    assert error.location.end_line == 6
+    assert error.location.end_column == 45
 
 
-def test_value_setting_ends_after_from(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingValueSource) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        set the value of position<run> from\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 44
+def test_value_setting_ends_after_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<run> from\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingValueSource)
+    assert error.location.line == 6
+    assert error.location.column == 44
+    assert error.location.end_line == 6
+    assert error.location.end_column == 44
 
 
-def test_value_source_with_other_name_type(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        set the value of position<dest> from value</x>.\n"
-            + "    }\n}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 46
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 50
+def test_value_source_with_other_name_type(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<dest> from value</x>.\n"
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrActionOrLiteral)
+    assert error.location.line == 5
+    assert error.location.column == 46
+    assert error.location.end_line == 5
+    assert error.location.end_column == 50

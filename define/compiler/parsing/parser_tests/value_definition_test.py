@@ -5,15 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -136,7 +135,7 @@ def test_read_without_terminator_gets_a_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -150,305 +149,325 @@ def test_read_without_terminator_gets_a_diagnostic(
     assert statement.may_be_written
 
 
-def test_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            "define the potential value<rational> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 1
-    assert error.value.location.column == 28
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 35
+def test_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<rational> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 28
+    assert error.location.end_line == 1
+    assert error.location.end_column == 35
 
 
-def test_requires_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        parse("define the potential value<standard:/number/natural>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 53
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 53
+def test_requires_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural>.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 1
+    assert error.location.column == 53
+    assert error.location.end_line == 1
+    assert error.location.end_column == 53
 
 
-def test_requires_logical_operation_support_statement(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingLogicalOperationSupportStatement
-    ) as error:
-        parse("define the potential value<standard:/number/natural> {\n}\n")
-    assert error.value.location.line == 2
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 1
+def test_requires_logical_operation_support_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLogicalOperationSupportStatement)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
 def test_requires_logical_operation_support_statement_before_end_of_source(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(
-        parser_exceptions.MissingLogicalOperationSupportStatement
-    ) as error:
-        parse("define the potential value<standard:/number/natural> {\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 55
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 55
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+    )
+    assert isinstance(error, syntax_errors.MissingLogicalOperationSupportStatement)
+    assert error.location.line == 1
+    assert error.location.column == 55
+    assert error.location.end_line == 1
+    assert error.location.end_column == 55
 
 
-def test_disallows_other_statements(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueDefinitionBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it has the encoding</decimal>.\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 34
+def test_disallows_other_statements(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it has the encoding</decimal>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 34
 
 
 def test_disallows_other_statement_after_logical_operation_support_statement(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidValueDefinitionBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "    it has the encoding</decimal>.\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 34
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "    it has the encoding</decimal>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueDefinitionBlock)
+    assert error.location.line == 5
+    assert error.location.column == 5
+    assert error.location.end_line == 5
+    assert error.location.end_column == 34
 
 
-def test_control_character_in_logical_operation_support_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports \x00the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.escaped_char == "\\0"
-    assert error.value.location.line == 2
-    assert error.value.location.column == 17
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 17
+def test_control_character_in_logical_operation_support_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports \x00the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\0"
+    assert error.location.line == 2
+    assert error.location.column == 17
+    assert error.location.end_line == 2
+    assert error.location.end_column == 17
 
 
-def test_extra_space_in_logical_operation_support_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it  supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 7
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 8
+def test_extra_space_in_logical_operation_support_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it  supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 2
+    assert error.location.column == 7
+    assert error.location.end_line == 2
+    assert error.location.end_column == 8
 
 
-def test_requires_logical_operation_name_type(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueDefinitionBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 29
+def test_requires_logical_operation_name_type(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 21
+    assert error.location.end_line == 2
+    assert error.location.end_column == 29
 
 
-def test_requires_logical_operation_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidValueDefinitionBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 20
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 20
+def test_requires_logical_operation_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidValueDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 20
+    assert error.location.end_line == 2
+    assert error.location.end_column == 20
 
 
-def test_logical_operation_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation<add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 41
+def test_logical_operation_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation<add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 2
+    assert error.location.column == 39
+    assert error.location.end_line == 2
+    assert error.location.end_column == 41
 
 
-def test_logical_operation_support_statement_requires_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add>.\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 44
+def test_logical_operation_support_statement_requires_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 2
+    assert error.location.column == 44
+    assert error.location.end_line == 2
+    assert error.location.end_column == 44
 
 
-def test_logical_operation_support_block_requires_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLogicalOperationSupportBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 5
+def test_logical_operation_support_block_requires_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLogicalOperationSupportBlock)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 5
 
 
 def test_logical_operation_support_block_requires_statement_before_end_of_source(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidLogicalOperationSupportBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 46
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 46
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLogicalOperationSupportBlock)
+    assert error.location.line == 2
+    assert error.location.column == 46
+    assert error.location.end_line == 2
+    assert error.location.end_column == 46
 
 
 def test_logical_operation_support_block_disallows_view_direction_statement(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidLogicalOperationSupportBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it is read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 19
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it is read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLogicalOperationSupportBlock)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 19
 
 
 def test_logical_operation_support_block_disallows_written_before_read(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidLogicalOperationSupportBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be written.\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 23
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be written.\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLogicalOperationSupportBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 23
 
 
-def test_logical_operation_support_block_disallows_repeated_read(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLogicalOperationSupportBlock) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "        it may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 23
+def test_logical_operation_support_block_disallows_repeated_read(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "        it may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLogicalOperationSupportBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 23
 
 
-def test_extra_space_in_logical_operation_support_block(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it  may be read.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 11
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 12
+def test_extra_space_in_logical_operation_support_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it  may be read.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 11
+    assert error.location.end_line == 3
+    assert error.location.end_column == 12
 
 
-def test_control_character_in_logical_operation_support_block(parse: Parse):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "        it may be \x00written.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.escaped_char == "\\0"
-    assert error.value.location.line == 4
-    assert error.value.location.column == 19
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 19
+def test_control_character_in_logical_operation_support_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "        it may be \x00written.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\0"
+    assert error.location.line == 4
+    assert error.location.column == 19
+    assert error.location.end_line == 4
+    assert error.location.end_column == 19
 
 
-def test_logical_operation_support_block_requires_close_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 45
+def test_logical_operation_support_block_requires_close_brace(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 45
 
 
-def test_requires_close_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as error:
-        parse(
-            "define the potential value<standard:/number/natural> {\n"
-            + "    it supports the logical_operation</add> {\n"
-            + "        it may be read.\n"
-            + "    }\n"
-        )
-    assert error.value.location.line == 1
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 54
+def test_requires_close_brace(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential value<standard:/number/natural> {\n"
+        + "    it supports the logical_operation</add> {\n"
+        + "        it may be read.\n"
+        + "    }\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 54

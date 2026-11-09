@@ -5,15 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -167,159 +166,169 @@ def test_action_operation_execution_with_arguments(parse: Parse):
     )
 
 
-def test_operation_argument_cannot_look_at_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_operation_argument_cannot_look_at_position(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_operation_argument_cannot_look_at_action(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at action</act>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 42
+def test_operation_argument_cannot_look_at_action(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at action</act>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 42
 
 
-def test_operation_argument_cannot_look_at_chained_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position</global>::position<child>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_operation_argument_cannot_look_at_chained_position(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position</global>::position<child>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
 def test_operation_argument_cannot_look_at_position_with_space_before_angle_bracket(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position <p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position <p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_action_argument_cannot_look_at_view(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<left>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 6
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 6
-    assert error.value.location.end_column == 40
+def test_action_argument_cannot_look_at_view(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrActionOrLiteral)
+    assert error.location.line == 6
+    assert error.location.column == 37
+    assert error.location.end_line == 6
+    assert error.location.end_column == 40
 
 
-def test_argument_looking_at_wrong_kind_stops_before_the_next_argument(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<left>.\n"
-            + "            with view<b> looking at position<p>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 6
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 6
-    assert error.value.location.end_column == 40
+def test_argument_looking_at_wrong_kind_stops_before_the_next_argument(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "            with view<b> looking at position<p>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrActionOrLiteral)
+    assert error.location.line == 6
+    assert error.location.column == 37
+    assert error.location.end_line == 6
+    assert error.location.end_column == 40
 
 
 def test_operation_argument_looking_at_position_stops_before_the_next_argument(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position<p>.\n"
-            + "            with view<b> looking at view<c>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "            with view<b> looking at view<c>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_action_arguments_looking_at_same_view_stop_at_the_first(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<number>.\n"
-            + "            with view<b> looking at view<number>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 6
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 6
-    assert error.value.location.end_column == 40
+def test_action_arguments_looking_at_same_view_stop_at_the_first(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<number>.\n"
+        + "            with view<b> looking at view<number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrActionOrLiteral)
+    assert error.location.line == 6
+    assert error.location.column == 37
+    assert error.location.end_line == 6
+    assert error.location.end_column == 40
 
 
-def test_operation_arguments_looking_at_same_position_stop_at_the_first(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position<p>.\n"
-            + "            with view<b> looking at position<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_operation_arguments_looking_at_same_position_stop_at_the_first(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "            with view<b> looking at position<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
 def test_multiple_statements_comments_and_blank_lines(parse: Parse):
@@ -360,40 +369,42 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     )
 
 
-def test_requires_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationStatementsContent) as error:
-        parse(_OPERATION_PREFIX + _OPERATION_SUFFIX)
-    assert error.value.location.line == 3
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 5
+def test_requires_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(_OPERATION_PREFIX + _OPERATION_SUFFIX)
+    assert isinstance(error, syntax_errors.MissingOperationStatementsContent)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 5
 
 
-def test_disallows_action_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        create a particle in position<p>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 41
+def test_disallows_action_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        create a particle in position<p>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 41
 
 
-def test_disallows_action_statement_after_first_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the encoding operation.\n"
-            + "        create a particle in position<p>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 41
+def test_disallows_action_statement_after_first_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the encoding operation.\n"
+        + "        create a particle in position<p>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 41
 
 
 def test_encoding_operation_without_terminator_gets_a_diagnostic(
@@ -404,7 +415,7 @@ def test_encoding_operation_without_terminator_gets_a_diagnostic(
         + "        execute the encoding operation\n"
         + _OPERATION_SUFFIX
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -420,83 +431,83 @@ def test_encoding_operation_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_operation_execution_requires_terminator_or_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other>\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 38
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 38
+def test_operation_execution_requires_terminator_or_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other>\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 3
+    assert error.location.column == 38
+    assert error.location.end_line == 3
+    assert error.location.end_column == 38
 
 
-def test_operation_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation<other>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 31
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 35
+def test_operation_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation<other>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 3
+    assert error.location.column == 31
+    assert error.location.end_line == 3
+    assert error.location.end_column == 35
 
 
-def test_operation_requires_open_angle_bracket(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation /other.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 30
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 30
+def test_operation_requires_open_angle_bracket(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation /other.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 3
+    assert error.location.column == 30
+    assert error.location.end_line == 3
+    assert error.location.end_column == 30
 
 
-def test_operation_name_type_cannot_be_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the position</other>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 28
+def test_operation_name_type_cannot_be_position(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the position</other>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
-def test_operation_name_type_cannot_be_action(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the action</other>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 26
+def test_operation_name_type_cannot_be_action(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX + "        execute the action</other>.\n" + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_arguments_block_requires_argument(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 9
+def test_arguments_block_requires_argument(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingOperationArgumentsContent)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 9
 
 
 def test_argument_without_terminator_gets_a_diagnostic(
@@ -509,7 +520,7 @@ def test_argument_without_terminator_gets_a_diagnostic(
         + "        }\n"
         + _OPERATION_SUFFIX
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -526,301 +537,313 @@ def test_argument_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_argument_requires_local_view_name(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view</a> looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 23
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 24
+def test_argument_requires_local_view_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view</a> looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 4
+    assert error.location.column == 23
+    assert error.location.end_line == 4
+    assert error.location.end_column == 24
 
 
-def test_argument_requires_view_name_type(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with position<a> looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 18
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 25
+def test_argument_requires_view_name_type(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with position<a> looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 4
+    assert error.location.column == 18
+    assert error.location.end_line == 4
+    assert error.location.end_column == 25
 
 
-def test_argument_requires_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationArgumentSyntax) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> position<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 33
+def test_argument_requires_looking_at(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> position<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationArgumentSyntax)
+    assert error.location.line == 4
+    assert error.location.column == 26
+    assert error.location.end_line == 4
+    assert error.location.end_column == 33
 
 
-def test_operation_missing_space_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute theoperation</other>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 20
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 28
+def test_operation_missing_space_after_execute_the(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute theoperation</other>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
-def test_operation_extra_space_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the  operation</other>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 20
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 21
+def test_operation_extra_space_after_execute_the(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the  operation</other>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 21
 
 
-def test_argument_missing_space_after_with(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            withview<a> looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 17
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 20
+def test_argument_missing_space_after_with(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            withview<a> looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 17
+    assert error.location.end_line == 4
+    assert error.location.end_column == 20
 
 
-def test_argument_extra_space_after_with(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with  view<a> looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 17
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 18
+def test_argument_extra_space_after_with(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with  view<a> looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 17
+    assert error.location.end_line == 4
+    assert error.location.end_column == 18
 
 
-def test_argument_missing_space_before_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a>looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 25
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 31
+def test_argument_missing_space_before_looking_at(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a>looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 25
+    assert error.location.end_line == 4
+    assert error.location.end_column == 31
 
 
-def test_argument_extra_space_before_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a>  looking at view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 25
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 26
+def test_argument_extra_space_before_looking_at(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a>  looking at view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 25
+    assert error.location.end_line == 4
+    assert error.location.end_column == 26
 
 
-def test_argument_missing_space_after_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking atview<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 36
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 39
+def test_argument_missing_space_after_looking_at(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking atview<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 36
+    assert error.location.end_line == 4
+    assert error.location.end_column == 39
 
 
-def test_argument_extra_space_after_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at  view<p>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 36
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 37
+def test_argument_extra_space_after_looking_at(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at  view<p>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 4
+    assert error.location.column == 36
+    assert error.location.end_line == 4
+    assert error.location.end_column == 37
 
 
-def test_argument_view_cannot_be_chained(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<p>::position<q>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_argument_view_cannot_be_chained(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<p>::position<q>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 4
+    assert error.location.column == 44
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_argument_cannot_look_at_value(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at value<b>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 41
+def test_argument_cannot_look_at_value(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at value<b>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 41
 
 
-def test_disallows_quality_implication(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationStatementsBlock) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        it also assigns the position</a>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 41
+def test_disallows_quality_implication(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        it also assigns the position</a>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 41
 
 
-def test_arguments_block_disallows_quality_implication(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            it also assigns the position</a>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 13
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 45
+def test_arguments_block_disallows_quality_implication(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            it also assigns the position</a>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationArgumentsBlock)
+    assert error.location.line == 4
+    assert error.location.column == 13
+    assert error.location.end_line == 4
+    assert error.location.end_column == 45
 
 
-def test_argument_source_requires_local_view_name(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view</p>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 42
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 43
+def test_argument_source_requires_local_view_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view</p>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 4
+    assert error.location.column == 42
+    assert error.location.end_line == 4
+    assert error.location.end_column == 43
 
 
-def test_operation_argument_cannot_look_at_position_with_empty_name(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position<>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_operation_argument_cannot_look_at_position_with_empty_name(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_operation_argument_cannot_look_at_position_without_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at position<p>\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_operation_argument_cannot_look_at_position_without_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
-def test_operation_argument_literal_missing_open_quote(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingLiteralContentStart) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at literal</number>.\n"
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 53
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 53
+def test_operation_argument_literal_missing_open_quote(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at literal</number>.\n"
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingLiteralContentStart)
+    assert error.location.line == 4
+    assert error.location.column == 53
+    assert error.location.end_line == 4
+    assert error.location.end_column == 53
 
 
-def test_operation_argument_literal_followed_by_text(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other> {\n"
-            + '            with view<a> looking at literal</number>"1" extra.\n'
-            + "        }\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 56
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 56
+def test_operation_argument_literal_followed_by_text(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other> {\n"
+        + '            with view<a> looking at literal</number>"1" extra.\n'
+        + "        }\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 4
+    assert error.location.column == 56
+    assert error.location.end_line == 4
+    assert error.location.end_column == 56

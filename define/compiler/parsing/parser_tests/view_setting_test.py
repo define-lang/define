@@ -5,14 +5,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 _OPERATION_PREFIX = (
@@ -75,208 +76,210 @@ def test_among_other_operation_statements(parse: Parse):
     assert isinstance(third, ast.OperationExecutionStatement)
 
 
-def test_source_disallows_literal(parse: Parse):
-    with pytest.raises(parser_exceptions.LiteralInViewSetting) as error:
-        parse(
-            _OPERATION_PREFIX
-            + '        set the value of view<target> from literal</number>"12".\n'
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 50
+def test_source_disallows_literal(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + '        set the value of view<target> from literal</number>"12".\n'
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.LiteralInViewSetting)
+    assert error.location.line == 3
+    assert error.location.column == 44
+    assert error.location.end_line == 3
+    assert error.location.end_column == 50
 
 
-def test_source_word_starting_with_literal(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from literally<p>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 52
+def test_source_word_starting_with_literal(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from literally<p>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 44
+    assert error.location.end_line == 3
+    assert error.location.end_column == 52
 
 
-def test_source_cannot_be_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from position<p>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 51
+def test_source_cannot_be_position(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from position<p>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 44
+    assert error.location.end_line == 3
+    assert error.location.end_column == 51
 
 
-def test_source_is_not_a_word(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + '        set the value of view<target> from "12".\n'
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 44
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 47
+def test_source_is_not_a_word(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + '        set the value of view<target> from "12".\n'
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 44
+    assert error.location.end_line == 3
+    assert error.location.end_column == 47
 
 
-def test_target_cannot_be_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of position<p> from view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 33
+def test_target_cannot_be_position(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of position<p> from view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 33
 
 
-def test_target_cannot_be_literal(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + '        set the value of literal</number>"12" from view<source>.\n'
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 32
+def test_target_cannot_be_literal(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + '        set the value of literal</number>"12" from view<source>.\n'
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 32
 
 
-def test_target_requires_local_view_name(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view</target> from view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 31
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 37
+def test_target_requires_local_view_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view</target> from view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 3
+    assert error.location.column == 31
+    assert error.location.end_line == 3
+    assert error.location.end_column == 37
 
 
-def test_source_requires_local_view_name(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from view</source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 49
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 55
+def test_source_requires_local_view_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from view</source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 3
+    assert error.location.column == 49
+    assert error.location.end_line == 3
+    assert error.location.end_column == 55
 
 
-def test_requires_from(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidViewSettingStatementSyntax) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 42
+def test_requires_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidViewSettingStatementSyntax)
+    assert error.location.line == 3
+    assert error.location.column == 39
+    assert error.location.end_line == 3
+    assert error.location.end_column == 42
 
 
-def test_ends_after_target(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidViewSettingStatementSyntax) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target>\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 38
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 38
+def test_ends_after_target(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target>\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidViewSettingStatementSyntax)
+    assert error.location.line == 3
+    assert error.location.column == 38
+    assert error.location.end_line == 3
+    assert error.location.end_column == 38
 
 
-def test_ends_after_set_the_value_of(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(_OPERATION_PREFIX + "        set the value of\n" + _OPERATION_SUFFIX)
-    assert error.value.location.line == 3
-    assert error.value.location.column == 25
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 25
+def test_ends_after_set_the_value_of(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX + "        set the value of\n" + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 25
 
 
-def test_ends_after_from(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 43
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 43
+def test_ends_after_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedView)
+    assert error.location.line == 3
+    assert error.location.column == 43
+    assert error.location.end_line == 3
+    assert error.location.end_column == 43
 
 
-def test_missing_space_after_from(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> fromview<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 43
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 46
+def test_missing_space_after_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> fromview<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 43
+    assert error.location.end_line == 3
+    assert error.location.end_column == 46
 
 
-def test_extra_space_after_from(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from  view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 43
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 44
+def test_extra_space_after_from(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from  view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 43
+    assert error.location.end_line == 3
+    assert error.location.end_column == 44
 
 
-def test_extra_space_in_set_the_value_of(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the  value of view<target> from view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 16
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 17
+def test_extra_space_in_set_the_value_of(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the  value of view<target> from view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 16
+    assert error.location.end_line == 3
+    assert error.location.end_column == 17
 
 
-def test_followed_by_text(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of view<target> from view<source> extra.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 56
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 56
+def test_followed_by_text(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of view<target> from view<source> extra.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 3
+    assert error.location.column == 56
+    assert error.location.end_line == 3
+    assert error.location.end_column == 56
 
 
 def test_encoding_operation_view_setting(parse: Parse):
@@ -297,44 +300,44 @@ def test_encoding_operation_view_setting(parse: Parse):
     )
 
 
-def test_action_disallows_view_setting(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        set the value of view<target> from view<source>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 26
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 29
+def test_action_disallows_view_setting(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of view<target> from view<source>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrAction)
+    assert error.location.line == 5
+    assert error.location.column == 26
+    assert error.location.end_line == 5
+    assert error.location.end_column == 29
 
 
-def test_extra_space_after_set_the_value_of(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _OPERATION_PREFIX
-            + "        set the value of  view<target> from view<source>.\n"
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 25
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 26
+def test_extra_space_after_set_the_value_of(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        set the value of  view<target> from view<source>.\n"
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_missing_space_before_literal_source(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidViewSettingStatementSyntax) as error:
-        parse(
-            _OPERATION_PREFIX
-            + '        set the value of view<target> fromliteral</number>"12".\n'
-            + _OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 49
+def test_missing_space_before_literal_source(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + '        set the value of view<target> fromliteral</number>"12".\n'
+        + _OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidViewSettingStatementSyntax)
+    assert error.location.line == 3
+    assert error.location.column == 39
+    assert error.location.end_line == 3
+    assert error.location.end_column == 49

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -120,9 +120,7 @@ def test_requires_fqun(
     assert result.all_diagnostics == []
     assert len(result.all_exceptions) == 1
     exception = result.all_exceptions[0]
-    assert isinstance(
-        exception, parser_exceptions.DefinitionGlobalNameContentRequiresFqun
-    )
+    assert isinstance(exception, syntax_errors.DefinitionGlobalNameContentRequiresFqun)
     assert exception.location.line == 2
     assert exception.location.column == 30
 

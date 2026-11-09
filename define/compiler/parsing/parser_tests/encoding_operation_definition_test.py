@@ -5,15 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -155,19 +154,21 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
     )
 
 
-def test_encoding_operation_argument_cannot_look_at_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedViewOrLiteral) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding_operation</other> {\n"
-            + "            with view<a> looking at position<p>.\n"
-            + "        }\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 37
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 44
+def test_encoding_operation_argument_cannot_look_at_position(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at position<p>.\n"
+        + "        }\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
+    assert error.location.line == 4
+    assert error.location.column == 37
+    assert error.location.end_line == 4
+    assert error.location.end_column == 44
 
 
 def test_multiple_statements_comments_and_blank_lines(parse: Parse):
@@ -251,147 +252,151 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(encoding, ast.EncodingDefinition)
 
 
-def test_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            "define the encoding_operation<add> {\n"
-            + "    it does {\n"
-            + "        execute the computer operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 1
-    assert error.value.location.column == 31
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 33
+def test_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<add> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 31
+    assert error.location.end_line == 1
+    assert error.location.end_column == 33
 
 
-def test_requires_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
-        parse("define the encoding_operation<mv:define-lang.org:parser:/add>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 62
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 62
+def test_requires_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add>.\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 1
+    assert error.location.column == 62
+    assert error.location.end_line == 1
+    assert error.location.end_column == 62
 
 
-def test_requires_operation_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationStatementsBlock) as error:
-        parse("define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n")
-    assert error.value.location.line == 2
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 1
+def test_requires_operation_statements_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOperationStatementsBlock)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
-def test_disallows_local_position_definition(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the position<p>.\n"
-            + "    it does {\n"
-            + "        execute the computer operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 2
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 2
-    assert error.value.location.end_column == 27
+def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the position<p>.\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationDefinitionBlock)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 27
 
 
-def test_requires_statement(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.MissingEncodingOperationStatementsContent
-    ) as error:
-        parse(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
-    assert error.value.location.line == 3
-    assert error.value.location.column == 5
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 5
+def test_requires_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
+    assert isinstance(error, syntax_errors.MissingEncodingOperationStatementsContent)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 5
 
 
-def test_disallows_action_statement(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
-    ) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        create a particle in position<p>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 41
+def test_disallows_action_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        create a particle in position<p>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidEncodingOperationStatementsBlock)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 41
 
 
-def test_disallows_action_statement_after_first_statement(parse: Parse):
-    with pytest.raises(
-        parser_exceptions.InvalidEncodingOperationStatementsBlock
-    ) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the computer operation.\n"
-            + "        create a particle in position<p>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 41
+def test_disallows_action_statement_after_first_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the computer operation.\n"
+        + "        create a particle in position<p>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidEncodingOperationStatementsBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 41
 
 
-def test_disallows_encoding_operation_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding operation.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 28
+def test_disallows_encoding_operation_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding operation.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
-def test_disallows_value_operation_execution(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the operation</other>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 29
+def test_disallows_value_operation_execution(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the operation</other>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 29
 
 
-def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the position</other>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 28
+def test_encoding_operation_name_type_cannot_be_position(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the position</other>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
-def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the  encoding_operation</other>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 20
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 21
+def test_encoding_operation_extra_space_after_execute_the(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the  encoding_operation</other>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 21
 
 
 def test_computer_operation_without_terminator_gets_a_diagnostic(
@@ -402,7 +407,7 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
         + "        execute the computer operation\n"
         + _ENCODING_OPERATION_SUFFIX
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -420,168 +425,180 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
 
 
 def test_encoding_operation_execution_requires_terminator_or_block(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding_operation</other>\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 47
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 47
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation</other>\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 3
+    assert error.location.column == 47
+    assert error.location.end_line == 3
+    assert error.location.end_column == 47
 
 
-def test_encoding_operation_execution_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding_operation<other>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 40
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 44
+def test_encoding_operation_execution_requires_global_name(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation<other>.\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 3
+    assert error.location.column == 40
+    assert error.location.end_line == 3
+    assert error.location.end_column == 44
 
 
-def test_arguments_block_requires_argument(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOperationArgumentsContent) as error:
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding_operation</other> {\n"
-            + "        }\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 9
+def test_arguments_block_requires_argument(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation</other> {\n"
+        + "        }\n"
+        + _ENCODING_OPERATION_SUFFIX
+    )
+    assert isinstance(error, syntax_errors.MissingOperationArgumentsContent)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 9
 
 
-def test_value_operation_disallows_computer_operation(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the computer operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 28
+def test_value_operation_disallows_computer_operation(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
 def test_value_operation_disallows_encoding_operation_execution(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.ExpectedOperationOrLogicalOperation) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding_operation</other>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 38
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding_operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 38
 
 
-def test_action_disallows_encoding_operation_execution(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/test> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        execute the encoding_operation</other>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 38
+def test_action_disallows_encoding_operation_execution(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/test> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        execute the encoding_operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedOperation)
+    assert error.location.line == 5
+    assert error.location.column == 21
+    assert error.location.end_line == 5
+    assert error.location.end_column == 38
 
 
-def test_disallows_local_context(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/test> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "            it does {\n"
-            + "                execute the computer operation.\n"
-            + "            }\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 71
+def test_disallows_local_context(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/test> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "            it does {\n"
+        + "                execute the computer operation.\n"
+        + "            }\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 5
+    assert error.location.column == 9
+    assert error.location.end_line == 5
+    assert error.location.end_column == 71
 
 
-def test_computer_operation_is_not_a_global_definition(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        parse("execute the computer operation.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 31
+def test_computer_operation_is_not_a_global_definition(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error("execute the computer operation.\n")
+    assert isinstance(error, syntax_errors.ExpectedGlobalDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 31
 
 
-def test_computer_operation_before_another_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.ComputerOperationWithOtherStatements) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the computer operation.\n"
-            + "        execute the encoding_operation</other>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 39
+def test_computer_operation_before_another_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "        execute the encoding_operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ComputerOperationWithOtherStatements)
+    assert error.location.line == 3
+    assert error.location.column == 9
+    assert error.location.end_line == 3
+    assert error.location.end_column == 39
 
 
-def test_computer_operation_after_another_statement(parse: Parse):
-    with pytest.raises(parser_exceptions.ComputerOperationWithOtherStatements) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding_operation</other>.\n"
-            + "        execute the computer operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 39
+def test_computer_operation_after_another_statement(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding_operation</other>.\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ComputerOperationWithOtherStatements)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 39
 
 
-def test_computer_operation_followed_by_text(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        parse(
-            "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the computer operation extra.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 39
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 39
+def test_computer_operation_followed_by_text(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation extra.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 3
+    assert error.location.column == 39
+    assert error.location.end_line == 3
+    assert error.location.end_column == 39

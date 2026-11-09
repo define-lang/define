@@ -12,7 +12,7 @@ import pytest
 
 from define.compiler import driver
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -87,12 +87,15 @@ class TestPathResolution:
         source_file = outside / "hello.dfn"
         monkeypatch.chdir(project)
 
-        d = driver.Driver()
-        with pytest.raises(exceptions.AbsolutePathError) as exc_info:
-            d.validate_program(source_file)
-        assert exc_info.value.input_path == source_file
-        assert exc_info.value.resolved_path == source_file
-        assert exc_info.value.project_root == project
+        driver_result = driver.Driver().validate_program(source_file)
+        assert driver_result.program_validation.all_diagnostics == [
+            diagnostics.AbsolutePathOutsideProjectRootDiagnostic(
+                input_path=source_file.as_posix(),
+                resolved_path=source_file.as_posix(),
+                project_root=project.as_posix(),
+            )
+        ]
+        assert driver_result.program_validation.file_results == []
 
     def test_relative_path_with_dotdot_is_resolved(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -150,11 +153,15 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        d = driver.Driver()
-        with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_program(Path("link/../hello.dfn"))
-        assert exc_info.value.input_path == Path("link/../hello.dfn")
-        assert exc_info.value.project_root == project.resolve()
+        driver_result = driver.Driver().validate_program(Path("link/../hello.dfn"))
+        assert driver_result.program_validation.all_diagnostics == [
+            diagnostics.RelativePathOutsideProjectRootDiagnostic(
+                input_path="link/../hello.dfn",
+                resolved_path=(tmp_path.resolve() / "hello.dfn").as_posix(),
+                project_root=project.resolve().as_posix(),
+            )
+        ]
+        assert driver_result.program_validation.file_results == []
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="Windows removes `link/..` before following it"
@@ -211,11 +218,15 @@ class TestPathResolution:
         _setup_project(tmp_path, "test.example.com:my_lib")
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
-        with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_program(Path("../hello.dfn"))
-        assert exc_info.value.input_path == Path("../hello.dfn")
-        assert exc_info.value.project_root == tmp_path.resolve()
+        driver_result = driver.Driver().validate_program(Path("../hello.dfn"))
+        assert driver_result.program_validation.all_diagnostics == [
+            diagnostics.RelativePathOutsideProjectRootDiagnostic(
+                input_path="../hello.dfn",
+                resolved_path=(tmp_path.resolve().parent / "hello.dfn").as_posix(),
+                project_root=tmp_path.resolve().as_posix(),
+            )
+        ]
+        assert driver_result.program_validation.file_results == []
 
 
 class TestSourceValidation:

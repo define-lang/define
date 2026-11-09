@@ -14,7 +14,7 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics
 from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
@@ -36,7 +36,8 @@ class LoadedFile(msgspec.Struct):
     """A parsed file, whose definitions are validated only when requested."""
 
     context: file_validation_context.FileValidationContext
-    exception: exceptions.DefineError | None
+    # The diagnostic that kept the file from loading or parsing, if any.
+    load_failure: diagnostics.FileLoadFailureDiagnostic | None
     file_diagnostics: list[diagnostics.Diagnostic]
     # The first definition of each typed name in the file. It does not change
     # after loading, so definitions can be validated concurrently.
@@ -65,7 +66,7 @@ class LoadedFile(msgspec.Struct):
     ) -> validation_result.FileValidationResult:
         """Return the file's result, given the results of its validated definitions in source order."""
         return validation_result.FileValidationResult(
-            exception=self.exception,
+            load_failure=self.load_failure,
             file_path=self.context.full_path,
             root_prefix=self.context.root_prefix,
             file_diagnostics=self.file_diagnostics,
@@ -100,11 +101,11 @@ class FileStructuralValidator:
         self, context: file_validation_context.FileValidationContext
     ) -> LoadedFile:
         """Load and parse a single file."""
-        source, load_error = self._load_file(context.full_path)
-        if load_error is not None:
+        source, load_failure = self._load_file(context.full_path)
+        if load_failure is not None:
             return LoadedFile(
                 context=context,
-                exception=load_error,
+                load_failure=load_failure,
                 file_diagnostics=[],
                 definitions=typed_name_dict.TypedNameDict(),
             )
@@ -138,16 +139,18 @@ class FileStructuralValidator:
             check_indentation=context.is_filesystem_context,
         )
 
-        if parse_result.exception is not None:
+        if parse_result.syntax_error is not None:
             return LoadedFile(
                 context=context,
-                exception=parse_result.exception,
+                load_failure=parse_result.syntax_error,
                 file_diagnostics=parse_result.diagnostics,
                 definitions=typed_name_dict.TypedNameDict(),
             )
 
         if parse_result.program is None:
-            raise ValueError("parse produced no program despite reporting no exception")
+            raise ValueError(
+                "parse produced no program despite reporting no syntax error"
+            )
         program = parse_result.program
 
         file_diagnostics = parse_result.diagnostics
@@ -170,7 +173,7 @@ class FileStructuralValidator:
 
         return LoadedFile(
             context=context,
-            exception=None,
+            load_failure=None,
             file_diagnostics=file_diagnostics,
             definitions=definitions,
         )
@@ -178,17 +181,15 @@ class FileStructuralValidator:
     @staticmethod
     def _load_file(
         path: define_path.DefinePath,
-    ) -> tuple[bytes, exceptions.DefineError | None]:
-        """Load a Define source file and return its source and loading error."""
+    ) -> tuple[bytes, diagnostics.SourceFileNotFoundDiagnostic | None]:
+        """Load a Define source file and return its source, or the diagnostic for why it could not be loaded."""
         posix_path = path.as_posix_path()
         try:
             source = pathlib.Path(posix_path).read_bytes()
         except FileNotFoundError:
             return (
                 b"",
-                exceptions.SourceFileNotFoundError(
-                    filesystem_path=pathlib.Path(posix_path)
-                ),
+                diagnostics.SourceFileNotFoundDiagnostic(file_path=str(posix_path)),
             )
         return source, None
 

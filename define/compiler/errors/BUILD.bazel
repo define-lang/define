@@ -28,29 +28,19 @@ py_library(
 )
 
 py_library(
-    name = "exceptions",
-    srcs = ["exceptions.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:constants",
-    ],
-)
-
-py_library(
     name = "invisible_characters",
     srcs = ["invisible_characters.py"],
     visibility = ["//define/compiler:__subpackages__"],
 )
 
 py_library(
-    name = "parser_exceptions",
-    srcs = ["parser_exceptions.py"],
+    name = "syntax_errors",
+    srcs = ["syntax_errors.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":exceptions",
+        ":diagnostics",
         ":invisible_characters",
         "//define/compiler:constants",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -61,9 +51,8 @@ pyright_test(
     deps = [
         ":diagnostics",
         ":errors",
-        ":exceptions",
         ":invisible_characters",
-        ":parser_exceptions",
+        ":syntax_errors",
     ],
 )
 

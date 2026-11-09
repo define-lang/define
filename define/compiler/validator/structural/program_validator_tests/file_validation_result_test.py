@@ -10,7 +10,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import exceptions, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (
@@ -30,7 +30,7 @@ def test_successful_validation_returns_result_fields(
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
-    assert result.exception is None
+    assert result.load_failure is None
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -44,7 +44,7 @@ def test_parse_error_populates_exception(
     )
 
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
+    assert isinstance(result.load_failure, syntax_errors.DefineSyntaxError)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -55,7 +55,7 @@ def test_non_filesystem_parse_error_returns_single_result():
 
     assert len(results) == 1
     result = results[0]
-    assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
+    assert isinstance(result.load_failure, syntax_errors.DefineSyntaxError)
     assert result.diagnostics == []
 
 
@@ -66,7 +66,7 @@ def test_invalid_utf8_populates_exception(
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+    assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -81,7 +81,7 @@ def test_name_parser_error_at_definition_populates_exception(
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
+    assert isinstance(result.load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert result.file_path == define_path.DefinePath("test.dfn")
 
 
@@ -98,34 +98,14 @@ def test_name_parser_error_at_reference_populates_exception(
     result = test_helpers.parse_and_validate_file(source, tmp_path, monkeypatch)
 
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
-    assert result.exception.location.line == 3
-    assert result.exception.location.column == 29
-    assert result.exception.location.end_column == 50
-    assert result.exception.location.file_path == "test.dfn"
+    assert isinstance(result.load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
+    assert result.load_failure.location.line == 3
+    assert result.load_failure.location.column == 29
+    assert result.load_failure.location.end_column == 50
+    assert result.load_failure.location.file_path == "test.dfn"
 
 
-def test_config_error_records_entry_file_with_root_prefix(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    relative_path = PurePosixPath("test.dfn")
-    source_path = tmp_path / relative_path
-    source_path.write_text(
-        "define the potential position<my.domain.com:my_lib:/test>.\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.validate_program(relative_path).file_results
-    assert len(results) == 1
-    result = results[0]
-
-    assert result.exception is None
-    assert result.file_path == define_path.DefinePath("test.dfn")
-    assert result.root_prefix == define_path.EMPTY
-
-
-def test_file_not_found_populates_exception(
+def test_file_not_found_populates_load_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     validator_test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -135,4 +115,6 @@ def test_file_not_found_populates_exception(
     assert len(results) == 1
     result = results[0]
 
-    assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
+    assert result.load_failure == diagnostics.SourceFileNotFoundDiagnostic(
+        file_path="nonexistent.dfn"
+    )

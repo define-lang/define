@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -385,4 +385,4 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
     all_exceptions = result.program_result.all_exceptions
     assert len(all_exceptions) == 1
-    assert isinstance(all_exceptions[0], parser_exceptions.ExpectedGlobalDefinition)
+    assert isinstance(all_exceptions[0], syntax_errors.ExpectedGlobalDefinition)

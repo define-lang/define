@@ -195,8 +195,10 @@ parenthesize-tuple-in-subscript = true
 "**/test_helpers.py" = [
   "S101", # Allow assert statements in test helpers.
 ]
-"define/compiler/errors/parser_exceptions.py" = [
-  "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
+"define/compiler/errors/syntax_errors.py" = [
+  # The syntax errors are diagnostics, not exceptions, but ruff takes any class
+  # whose base class's name ends in "Error" for an exception.
+  "N818",
 ]
 "define/compiler/ast.py" = [
   "A005", # Module intentionally named ast for AST definitions.

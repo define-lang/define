@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ def test_comment_without_space_after_terminator_does_not_stop_the_next_definitio
         "define the potential position<mv:define-lang.org:parser:/first>.# note\n"
         + "define the potential position<mv:define-lang.org:parser:/second>.\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
             location=rendering.SourceLocation(
@@ -50,7 +50,7 @@ def test_comment_without_space_after_block_open_does_not_stop_the_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
@@ -80,7 +80,7 @@ def test_comment_without_space_after_block_close_does_not_stop_the_next_definiti
         + "}# note\n"
         + "define the potential position<mv:define-lang.org:parser:/second>.\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
@@ -106,7 +106,7 @@ def test_spaces_before_angle_bracket_in_reference_keep_the_reference(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
@@ -132,7 +132,7 @@ def test_space_before_angle_bracket_in_global_definition_keeps_the_definition(
     result = parse_with_diagnostics(
         "define the potential position <mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
@@ -160,7 +160,7 @@ def test_space_before_angle_bracket_in_local_definition_keeps_the_definition(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
@@ -188,7 +188,7 @@ def test_missing_newline_at_end_of_file_after_block_keeps_the_definition(
         + "    }\n"
         + "}"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
@@ -210,7 +210,7 @@ def test_each_whitespace_mistake_gets_its_own_diagnostic(
         "define the potential position <mv:define-lang.org:parser:/first>.# note\n"
         + "define the potential position<mv:define-lang.org:parser:/second>."
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
@@ -250,8 +250,8 @@ def test_whitespace_mistake_before_a_syntax_error_is_reported_with_it(
             )
         )
     ]
-    assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingTerminatorOrBrace)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=2, column=65, end_line=2, end_column=65
     )
     assert result.program is None

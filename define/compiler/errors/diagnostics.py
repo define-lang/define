@@ -41,6 +41,10 @@ class BaseDiagnostic(msgspec.Struct):
 
     message_format: ClassVar[str] = ""
 
+    def format(self, sources: rendering.SourceMap, /) -> str:
+        """Format the diagnostic with the source lines of every location it mentions."""
+        return self.render_message(sources)
+
     def render_message(self, _sources: rendering.SourceMap, /) -> str:
         """Render the diagnostic message, with source lines for other locations it mentions."""
         return self.message_format.format(self=self)
@@ -51,11 +55,22 @@ class Diagnostic(BaseDiagnostic):
 
     location: rendering.SourceLocation
 
+    @typing.override
     def format(self, sources: rendering.SourceMap, /) -> str:
-        """Format the diagnostic with the source lines of every location it mentions."""
         return (
             f"{sources.render_location(self.location)}\n{self.render_message(sources)}"
         )
+
+
+class FileLoadFailureDiagnostic(BaseDiagnostic):
+    """Base class for diagnostics that keep a Define file from loading or parsing."""
+
+
+class SourceFileNotFoundDiagnostic(FileLoadFailureDiagnostic):
+    """Diagnostic for a Define source file that is not on disk at file_path."""
+
+    file_path: str
+    message_format: ClassVar[str] = "Source file not found: {self.file_path}"
 
 
 class ReservedNameDiagnostic(Diagnostic):
@@ -1228,6 +1243,7 @@ class ConfigDiagnostic(BaseDiagnostic):
 
     config_path: str
 
+    @typing.override
     def format(self, sources: rendering.SourceMap, /) -> str:
         """Format the diagnostic with the config file that it is about."""
         return f'File "{self.config_path}"\n{self.render_message(sources)}'
@@ -1298,6 +1314,33 @@ class NotRunFromProjectRootDiagnostic(ConfigDiagnostic):
         return f"{super().render_message(sources)}\n" + _project_root_help(
             self.config_path
         )
+
+
+class PathOutsideProjectRootDiagnostic(BaseDiagnostic):
+    """Base class for diagnostics about an entry file path, input_path, that is not under the project root."""
+
+    input_path: str
+    resolved_path: str
+    project_root: str
+    label: ClassVar[str] = ""
+    message_format: ClassVar[str] = (
+        "{self.label}: {self.input_path}\n"
+        + "  Resolved to: {self.resolved_path}\n"
+        + "  Project root: {self.project_root}\n"
+        + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
+    )
+
+
+class AbsolutePathOutsideProjectRootDiagnostic(PathOutsideProjectRootDiagnostic):
+    """Diagnostic for an absolute entry file path that is not under the project root."""
+
+    label: ClassVar[str] = "Absolute path is outside the project root"
+
+
+class RelativePathOutsideProjectRootDiagnostic(PathOutsideProjectRootDiagnostic):
+    """Diagnostic for a relative entry file path that resolves to outside the project root."""
+
+    label: ClassVar[str] = "Relative path resolves to outside the project root"
 
 
 class SubRootNotProjectRootDiagnostic(ConfigFieldDiagnostic):

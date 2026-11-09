@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -31,20 +30,20 @@ def test_encoding_definition(parse: Parse):
     )
 
 
-def test_encoding_definition_requires_global_name(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
-        _ = parse("define the encoding<rational>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 21
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 28
+def test_encoding_definition_requires_global_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the encoding<rational>.\n")
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 1
+    assert error.location.column == 21
+    assert error.location.end_line == 1
+    assert error.location.end_column == 28
 
 
 def test_encoding_definition_without_terminator_gets_a_diagnostic(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics("define the encoding<standard:/number/natural>\n")
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -61,39 +60,43 @@ def test_encoding_definition_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_encoding_definition_disallows_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as error:
-        _ = parse("define the encoding<standard:/number/natural> {\n}\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 46
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 46
+def test_encoding_definition_disallows_block(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the encoding<standard:/number/natural> {\n}\n")
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 1
+    assert error.location.column == 46
+    assert error.location.end_line == 1
+    assert error.location.end_column == 46
 
 
-def test_encoding_definition_disallows_potential(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
-        _ = parse("define the potential encoding<mv:define-lang.org:parser:/utf8>.\n")
-    assert error.value.location.line == 1
-    assert error.value.location.column == 1
-    assert error.value.location.end_line == 1
-    assert error.value.location.end_column == 63
+def test_encoding_definition_disallows_potential(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential encoding<mv:define-lang.org:parser:/utf8>.\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedGlobalDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 63
 
 
-def test_encoding_definition_disallows_local_context(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as error:
-        _ = parse(
-            "define the potential action<mv:define-lang.org:parser:/test> {\n"
-            + "    it happens when {\n"
-            + "        this particle is created.\n"
-            + "    } and it does {\n"
-            + "        define the encoding<mv:define-lang.org:parser:/utf8>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 9
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 61
+def test_encoding_definition_disallows_local_context(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/test> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        define the encoding<mv:define-lang.org:parser:/utf8>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 5
+    assert error.location.column == 9
+    assert error.location.end_line == 5
+    assert error.location.end_column == 61
 
 
 def test_encoding_in_quality_assignments(parse: Parse):

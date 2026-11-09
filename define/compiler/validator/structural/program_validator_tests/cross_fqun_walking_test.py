@@ -97,7 +97,7 @@ def test_cross_fqun_file_not_found(
     result = validate_testdata_structural()
     assert result.all_exceptions == []
     assert len(result.file_results) == 1
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -288,9 +288,9 @@ def test_sub_root_is_current_universe(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.all_diagnostics == [
         diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
             config_path=".define/deps/local.defcl",
@@ -365,7 +365,7 @@ def test_path_inside_other_universe(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
@@ -381,7 +381,7 @@ def test_path_inside_other_universe(
     assert result.file_results[1].file_path == define_path.DefinePath(
         "lib/sub_root_target.dfn"
     )
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 
@@ -392,7 +392,7 @@ def test_path_inside_other_universe_skips_further_validation(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 2
     wrong_type_diag = result.file_results[0].diagnostics[0]
     assert isinstance(
@@ -418,7 +418,7 @@ def test_path_inside_other_universe_skips_further_validation(
     assert result.file_results[1].file_path == define_path.DefinePath(
         "lib/child_action.dfn"
     )
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 
@@ -430,7 +430,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
@@ -445,7 +445,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         == "position<mv:define-lang.org:child_universe:/target>"
     )
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
         result.file_results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic
@@ -464,7 +464,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
@@ -479,7 +479,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
         == "position<mv:define-lang.org:child_universe:/target>"
     )
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 
@@ -535,7 +535,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -547,7 +547,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     assert result.file_results[1].file_path == define_path.DefinePath(
         "lib_a/target_a.dfn"
     )
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert result.file_results[1].diagnostics == []
 
 

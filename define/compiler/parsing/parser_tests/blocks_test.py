@@ -8,35 +8,34 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
 
-def test_empty_block_on_position(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse("define the potential position<standard:/path> {\n}\n")
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 1
+def test_empty_block_on_position(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path> {\n}\n")
+    assert isinstance(error, syntax_errors.MissingPositionDefinitionContent)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
-def test_empty_block_on_action(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse("define the potential action<standard:/path> {\n}\n")
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 1
+def test_empty_block_on_action(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential action<standard:/path> {\n}\n")
+    assert isinstance(error, syntax_errors.MissingActionDefinitionSyntax)
+    assert error.location.line == 2
+    assert error.location.column == 1
+    assert error.location.end_line == 2
+    assert error.location.end_column == 1
 
 
 def test_block_with_blank_lines(parse: Parse):
@@ -326,22 +325,22 @@ def test_mixed_block_and_terminator(parse: Parse):
     )
 
 
-def test_file_ending_after_block_open(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        parse("define the potential position<standard:/path> {\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 48
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 48
+def test_file_ending_after_block_open(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path> {\n")
+    assert isinstance(error, syntax_errors.MissingPositionDefinitionContent)
+    assert error.location.line == 1
+    assert error.location.column == 48
+    assert error.location.end_line == 1
+    assert error.location.end_column == 48
 
 
-def test_missing_newline_after_block_open(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
-        parse("define the potential position<standard:/path> {}\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 48
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 48
+def test_missing_newline_after_block_open(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path> {}\n")
+    assert isinstance(error, syntax_errors.EmptyBlock)
+    assert error.location.line == 1
+    assert error.location.column == 48
+    assert error.location.end_line == 1
+    assert error.location.end_column == 48
 
 
 def test_comment_directly_after_block_open(
@@ -354,7 +353,7 @@ def test_comment_directly_after_block_open(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
@@ -375,7 +374,7 @@ def test_comment_directly_after_block_close(
         + "    }# note\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
@@ -386,69 +385,71 @@ def test_comment_directly_after_block_close(
     ]
 
 
-def test_no_space_before_brace(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
-        parse("define the potential position<standard:/path>{\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 46
+def test_no_space_before_brace(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path>{\n")
+    assert isinstance(error, syntax_errors.MissingWhitespaceBeforeBrace)
+    assert error.location.line == 1
+    assert error.location.column == 46
+    assert error.location.end_line == 1
+    assert error.location.end_column == 46
 
 
-def test_missing_terminator_still_works(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        parse("define the potential position<standard:/path>\n")
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.column == 46
-    assert exc_info.value.location.end_column == 46
+def test_missing_terminator_still_works(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error("define the potential position<standard:/path>\n")
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.end_line == 1
+    assert error.location.column == 46
+    assert error.location.end_column == 46
 
 
-def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential action<standard:/path> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 45
+def test_missing_outer_block_close_with_inner_block_message(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 45
 
 
-def test_quality_assignment_invalid_type_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as exc_info:
-        parse(
-            "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the osition<my_lib:/path>.\n"
-            + "    }\n"
-            + "}\n"
-            + "define the potential position<my_lib:/path>.\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 20
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 26
+def test_quality_assignment_invalid_type_keyword(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<my_lib:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the osition<my_lib:/path>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the potential position<my_lib:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedQualityAssignmentNameType)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_quality_assignment_missing_type_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedQualityAssignmentNameType) as exc_info:
-        parse(
-            "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the <my_lib:/path>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 20
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 20
+def test_quality_assignment_missing_type_keyword(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential position<my_lib:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the <my_lib:/path>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedQualityAssignmentNameType)
+    assert error.location.line == 3
+    assert error.location.column == 20
+    assert error.location.end_line == 3
+    assert error.location.end_column == 20
 
 
 def test_whitespace_line_at_start_of_potential_position_definition_block(
@@ -462,7 +463,7 @@ def test_whitespace_line_at_start_of_potential_position_definition_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -487,7 +488,7 @@ def test_whitespace_line_after_quality_assignment_block(
         + "    \n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -512,7 +513,7 @@ def test_whitespace_line_at_start_of_quality_assignment_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -537,7 +538,7 @@ def test_whitespace_line_after_quality_assignment_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -552,148 +553,162 @@ def test_whitespace_line_after_quality_assignment_statement(
 
 
 def test_control_character_after_potential_position_definition_block_close(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
-        parse(
-            "define the potential position<standard:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\x01\n"
-        )
-    assert exc_info.value.escaped_char == "\\u{1}"
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 2
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 2
+    error = parse_syntax_error(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\x01\n"
+    )
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\u{1}"
+    assert error.location.line == 5
+    assert error.location.column == 2
+    assert error.location.end_line == 5
+    assert error.location.end_column == 2
 
 
-def test_text_after_potential_literal_definition_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
-        _ = parse(
-            "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
-            + "    it has the encoding</decimal>.\n"
-            + "}x\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 2
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 2
+def test_text_after_potential_literal_definition_block_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
+        + "    it has the encoding</decimal>.\n"
+        + "}x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 3
+    assert error.location.column == 2
+    assert error.location.end_line == 3
+    assert error.location.end_column == 2
 
 
-def test_text_after_operation_definition_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}x\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 2
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 2
+def test_text_after_operation_definition_block_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}x\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 2
+    assert error.location.end_line == 5
+    assert error.location.end_column == 2
 
 
-def test_text_after_view_definition_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    define the view<left> {\n"
-            + "        it is read.\n"
-            + "        it may only contain particles where {\n"
-            + "            it has the value</number>.\n"
-            + "        }\n"
-            + "    }x\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 7
-    assert error.value.location.column == 6
-    assert error.value.location.end_line == 7
-    assert error.value.location.end_column == 6
+def test_text_after_view_definition_block_close(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<left> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }x\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 7
+    assert error.location.column == 6
+    assert error.location.end_line == 7
+    assert error.location.end_column == 6
 
 
-def test_text_after_operation_statements_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the encoding operation.\n"
-            + "    }x\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 4
-    assert error.value.location.column == 6
-    assert error.value.location.end_line == 4
-    assert error.value.location.end_column == 6
+def test_text_after_operation_statements_block_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }x\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 4
+    assert error.location.column == 6
+    assert error.location.end_line == 4
+    assert error.location.end_column == 6
 
 
-def test_text_after_operation_arguments_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the operation</other> {\n"
-            + "            with view<a> looking at view<left>.\n"
-            + "        }x\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 5
-    assert error.value.location.column == 10
-    assert error.value.location.end_line == 5
-    assert error.value.location.end_column == 10
+def test_text_after_operation_arguments_block_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "        }x\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 10
+    assert error.location.end_line == 5
+    assert error.location.end_column == 10
 
 
-def test_text_after_operation_arguments_block_open(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as error:
-        parse(
-            "define the operation<mv:define-lang.org:parser:/add> {\n"
-            + "    it does {\n"
-            + "        execute the operation</other> {x\n"
-            + "            with view<a> looking at view<left>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.location.line == 3
-    assert error.value.location.column == 40
-    assert error.value.location.end_line == 3
-    assert error.value.location.end_column == 40
+def test_text_after_operation_arguments_block_open(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {x\n"
+        + "            with view<a> looking at view<left>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterOpenBrace)
+    assert error.location.line == 3
+    assert error.location.column == 40
+    assert error.location.end_line == 3
+    assert error.location.end_column == 40
 
 
-def test_carriage_return_in_comment_after_block_open(parse: Parse):
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> { # note\r\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "\\r"
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 72
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 72
+def test_carriage_return_in_comment_after_block_open(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> { # note\r\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.CarriageReturnError)
+    assert error.escaped_char == "\\r"
+    assert error.location.line == 1
+    assert error.location.column == 72
+    assert error.location.end_line == 1
+    assert error.location.end_column == 72
 
 
-def test_carriage_return_in_comment_after_block_close(parse: Parse):
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</child>.\n"
-            + "    } # note\r\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "\\r"
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 13
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 13
+def test_carriage_return_in_comment_after_block_close(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</child>.\n"
+        + "    } # note\r\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.CarriageReturnError)
+    assert error.escaped_char == "\\r"
+    assert error.location.line == 4
+    assert error.location.column == 13
+    assert error.location.end_line == 4
+    assert error.location.end_column == 13

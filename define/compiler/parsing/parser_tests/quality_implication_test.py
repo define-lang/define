@@ -8,15 +8,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
         Parse,
+        ParseSyntaxError,
         ParseWithDiagnostics,
     )
 
@@ -227,107 +226,111 @@ def test_implication_with_comments_and_blank_lines(parse: Parse):
 # --- Statement-level syntax errors ---
 
 
-def test_implication_missing_open_angle_at_eol(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 33
+def test_implication_missing_open_angle_at_eol(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 2
+    assert error.location.column == 33
+    assert error.location.end_line == 2
+    assert error.location.end_column == 33
 
 
-def test_implication_missing_open_angle_with_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 33
+def test_implication_missing_open_angle_with_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 2
+    assert error.location.column == 33
+    assert error.location.end_line == 2
+    assert error.location.end_column == 33
 
 
-def test_implication_missing_open_angle_with_trailing_space(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position .\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 33
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 33
+def test_implication_missing_open_angle_with_trailing_space(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position .\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 2
+    assert error.location.column == 33
+    assert error.location.end_line == 2
+    assert error.location.end_column == 33
 
 
-def test_implication_empty_name(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position<>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 34
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 34
+def test_implication_empty_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position<>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 2
+    assert error.location.column == 34
+    assert error.location.end_line == 2
+    assert error.location.end_column == 34
 
 
-def test_implication_newline_inside_name(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position<\n"
-            + "        /required>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 34
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 34
+def test_implication_newline_inside_name(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position<\n"
+        + "        /required>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 2
+    assert error.location.column == 34
+    assert error.location.end_line == 2
+    assert error.location.end_column == 34
 
 
-def test_implication_missing_close_angle(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</required.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 44
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 44
+def test_implication_missing_close_angle(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</required.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseAngleBracket)
+    assert error.location.line == 2
+    assert error.location.column == 44
+    assert error.location.end_line == 2
+    assert error.location.end_column == 44
 
 
 def test_implication_without_terminator_gets_a_diagnostic(
@@ -342,7 +345,7 @@ def test_implication_without_terminator_gets_a_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -360,265 +363,279 @@ def test_implication_without_terminator_gets_a_diagnostic(
     )
 
 
-def test_implication_missing_newline_after_terminator(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</required>.    it also assigns the position</other>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 45
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 45
+def test_implication_missing_newline_after_terminator(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</required>.    it also assigns the position</other>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
+    assert error.location.line == 2
+    assert error.location.column == 45
+    assert error.location.end_line == 2
+    assert error.location.end_column == 45
 
 
-def test_implication_missing_space_after_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns theposition</required>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 31
+def test_implication_missing_space_after_keyword(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns theposition</required>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingWhitespace)
+    assert error.location.line == 2
+    assert error.location.column == 24
+    assert error.location.end_line == 2
+    assert error.location.end_column == 31
 
 
-def test_implication_extra_space_after_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the  position</required>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 25
+def test_implication_extra_space_after_keyword(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the  position</required>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExtraWhitespace)
+    assert error.location.line == 2
+    assert error.location.column == 24
+    assert error.location.end_line == 2
+    assert error.location.end_column == 25
 
 
-def test_implication_local_name_where_global_required(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position<foo>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 34
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 36
+def test_implication_local_name_where_global_required(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position<foo>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidGlobalName)
+    assert error.location.line == 2
+    assert error.location.column == 34
+    assert error.location.end_line == 2
+    assert error.location.end_column == 36
 
 
-def test_implication_chained_name_not_allowed(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</a>::position</b>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 37
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 37
+def test_implication_chained_name_not_allowed(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</a>::position</b>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingTerminator)
+    assert error.location.line == 2
+    assert error.location.column == 37
+    assert error.location.end_line == 2
+    assert error.location.end_column == 37
 
 
 # --- Block-level placement errors ---
 
 
 def test_implication_after_quality_assignment_block_in_potential_position(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
-            + "    }\n"
-            + "    it also assigns the position</required>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 5
-    assert exc_info.value.location.end_column == 44
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</implied>.\n"
+        + "    }\n"
+        + "    it also assigns the position</required>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseBrace)
+    assert error.location.line == 5
+    assert error.location.column == 5
+    assert error.location.end_line == 5
+    assert error.location.end_column == 44
 
 
-def test_implication_after_local_position_in_action_block(parse: Parse):
-    with pytest.raises(parser_exceptions.QualityImplicationInWrongOrder) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it also assigns the position</required>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 5
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 23
+def test_implication_after_local_position_in_action_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it also assigns the position</required>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.QualityImplicationInWrongOrder)
+    assert error.location.line == 3
+    assert error.location.column == 5
+    assert error.location.end_line == 3
+    assert error.location.end_column == 23
 
 
 def test_implication_after_trigger_conditions_block_in_action(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        it also assigns the position</required>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 48
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        it also assigns the position</required>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 6
+    assert error.location.column == 9
+    assert error.location.end_line == 6
+    assert error.location.end_column == 48
 
 
-def test_implication_inside_quality_assignment_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
-        parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the position</implied>.\n"
-            + "        it also assigns the position</required>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 48
+def test_implication_inside_quality_assignment_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the position</implied>.\n"
+        + "        it also assigns the position</required>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidQualityAssignmentBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 48
 
 
-def test_implication_inside_action_statements_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        it also assigns the position</required>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 48
+def test_implication_inside_action_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        it also assigns the position</required>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidActionStatementsBlock)
+    assert error.location.line == 6
+    assert error.location.column == 9
+    assert error.location.end_line == 6
+    assert error.location.end_column == 48
 
 
-def test_implication_inside_trigger_conditions_block(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        it also assigns the position</required>.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 9
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 48
+def test_implication_inside_trigger_conditions_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        it also assigns the position</required>.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidTriggerConditionsBlock)
+    assert error.location.line == 4
+    assert error.location.column == 9
+    assert error.location.end_line == 4
+    assert error.location.end_column == 48
 
 
 def test_implication_inside_local_position_definition_quality_assignment_block(
-    parse: Parse,
+    parse_syntax_error: ParseSyntaxError,
 ):
-    with pytest.raises(parser_exceptions.InvalidQualityAssignmentBlock) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<inner> {\n"
-            + "        it may only contain particles where {\n"
-            + "            it also assigns the position</required>.\n"
-            + "        }\n"
-            + "    }\n"
-            + "    it happens when {\n"
-            + "        the position<inner> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 4
-    assert exc_info.value.location.column == 13
-    assert exc_info.value.location.end_line == 4
-    assert exc_info.value.location.end_column == 52
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<inner> {\n"
+        + "        it may only contain particles where {\n"
+        + "            it also assigns the position</required>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "        the position<inner> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidQualityAssignmentBlock)
+    assert error.location.line == 4
+    assert error.location.column == 13
+    assert error.location.end_line == 4
+    assert error.location.end_column == 52
 
 
-def test_implication_at_global_scope(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
-        parse(
-            "it also assigns the position</required>.\n"
-            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
-        )
-    assert exc_info.value.location.line == 1
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 1
-    assert exc_info.value.location.end_column == 40
+def test_implication_at_global_scope(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "it also assigns the position</required>.\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedGlobalDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 1
+    assert error.location.end_line == 1
+    assert error.location.end_column == 40
 
 
 # --- Block content errors ---
 
 
-def test_implication_only_in_action_definition_block(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the position</required>.\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 1
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 1
+def test_implication_only_in_action_definition_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the position</required>.\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingActionDefinitionSyntax)
+    assert error.location.line == 3
+    assert error.location.column == 1
+    assert error.location.end_line == 3
+    assert error.location.end_column == 1
 
 
-def test_quality_implication_ends_after_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    it also assigns the\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 2
-    assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_line == 2
-    assert exc_info.value.location.end_column == 24
+def test_quality_implication_ends_after_keyword(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    it also assigns the\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.ExpectedPositionOrAction)
+    assert error.location.line == 2
+    assert error.location.column == 24
+    assert error.location.end_line == 2
+    assert error.location.end_column == 24

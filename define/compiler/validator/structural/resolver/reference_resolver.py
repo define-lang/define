@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import config, constants
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import (
     file_validation_context,
 )
@@ -52,7 +52,7 @@ class ReferenceResolver:
     # sub-root path that another one already declared, so the project cannot
     # use that universe.
     _disabled_universes: set[tuple[define_path.DefinePath, str]]
-    _config_diagnostics: list[diagnostics.FormattableDiagnostic]
+    _program_diagnostics: list[diagnostics.FormattableDiagnostic]
     _source_map: rendering.SourceMap
 
     def __init__(self, source_map: rendering.SourceMap):
@@ -61,15 +61,15 @@ class ReferenceResolver:
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
         self._disabled_universes = set()
-        self._config_diagnostics = []
+        self._program_diagnostics = []
 
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
-    def config_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """Return the diagnostics of every project config that was loaded."""
-        return self._config_diagnostics
+    def program_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
+        """Return the diagnostics about the program rather than one of its files."""
+        return self._program_diagnostics
 
     def validate_reference(
         self,
@@ -263,7 +263,7 @@ class ReferenceResolver:
         in_source_file is whether the target file holds the edge.
         """
         target_file = target_loaded_file.context.full_path
-        target_exception = target_loaded_file.exception
+        target_load_failure = target_loaded_file.load_failure
         target_definition = target_loaded_file.definitions.get(
             edge.global_name_reference
         )
@@ -282,7 +282,9 @@ class ReferenceResolver:
             self._path_tracker.find_enclosing_root(target_file)
             == constants.STANDARD_LIBRARY_ROOT
         ):
-            if isinstance(target_exception, exceptions.SourceFileNotFoundError):
+            if isinstance(
+                target_load_failure, diagnostics.SourceFileNotFoundDiagnostic
+            ):
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
                 return ReachedDefinition(target_loaded_file, target_definition)
@@ -294,7 +296,7 @@ class ReferenceResolver:
             )
             return None
 
-        if isinstance(target_exception, exceptions.SourceFileNotFoundError):
+        if isinstance(target_load_failure, diagnostics.SourceFileNotFoundDiagnostic):
             source_definition.diagnostics.append(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     location=edge.global_name_reference.name_content.path.location,
@@ -341,13 +343,13 @@ class ReferenceResolver:
             ).load_project_root_config(declaring_entry)
             if result.root_config is None:
                 self._path_tracker.mark_root_failed(root_prefix)
-                self._config_diagnostics.extend(result.diagnostics)
+                self._program_diagnostics.extend(result.diagnostics)
                 return None
             root_config = result.root_config
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             self._path_tracker.mark_root_failed(root_prefix)
-            self._config_diagnostics.append(
+            self._program_diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
                     config_path=str(root_prefix / config.CONFIG_PATH),
                     field_path=("project", "universe_name"),
@@ -368,7 +370,7 @@ class ReferenceResolver:
             sub_root_path = root_prefix / entry.path
             if entry.universe == root_config.fqun:
                 self._disabled_universes.add((root_prefix, entry.universe))
-                self._config_diagnostics.append(
+                self._program_diagnostics.append(
                     diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
                         config_path=entry.deps_path,
                         field_path=("deps", "local", entry.index, "universe_name"),
@@ -380,7 +382,7 @@ class ReferenceResolver:
             if existing_entry is None:
                 continue
             self._disabled_universes.add((root_prefix, entry.universe))
-            self._config_diagnostics.append(
+            self._program_diagnostics.append(
                 diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
                     config_path=entry.deps_path,
                     field_path=("deps", "local", entry.index, "path"),

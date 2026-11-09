@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics, parser_exceptions
+from define.compiler.errors import diagnostics, syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ def test_missing_terminator_does_not_stop_the_next_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -58,7 +58,7 @@ def test_each_missing_terminator_gets_its_own_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -92,7 +92,7 @@ def test_missing_terminator_before_trailing_spaces_gets_both_diagnostics(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -125,7 +125,7 @@ def test_missing_terminator_before_comment(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -153,7 +153,7 @@ def test_missing_terminator_before_comment_without_space(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -181,7 +181,7 @@ def test_missing_terminator_before_comment_that_is_not_ascii(
         + "    }\n"
         + "}\n"
     )
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -203,7 +203,7 @@ def test_missing_terminator_at_end_of_file(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics("define the encoding<standard:/number/natural>")
-    assert result.exception is None
+    assert result.syntax_error is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -234,8 +234,8 @@ def test_text_after_statement_where_terminator_belongs_stops_the_parse(
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.MissingTerminator)
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.MissingTerminator)
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=3, column=36, end_line=3, end_column=36
     )
     assert result.program is None
@@ -252,9 +252,9 @@ def test_carriage_return_in_comment_after_missing_terminator_stops_the_parse(
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
-    assert result.exception.escaped_char == "\\r"
-    assert result.exception.location == rendering.SourceLocation(
+    assert isinstance(result.syntax_error, syntax_errors.CarriageReturnError)
+    assert result.syntax_error.escaped_char == "\\r"
+    assert result.syntax_error.location == rendering.SourceLocation(
         line=3, column=43, end_line=3, end_column=43
     )
     assert result.program is None

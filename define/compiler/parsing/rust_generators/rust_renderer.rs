@@ -263,45 +263,22 @@ struct AstConstructors<'a> {
     description: &'a AstDescription,
 }
 
-/// An exception class that the parser can raise.
-#[pyclass(frozen, from_py_object)]
-#[derive(Clone)]
-struct ParserException {
-    name: String,
-    snake_case_name: String,
-    /// The names of the constructor's parameters after `location`, which are
-    /// all strings.
-    text_parameters: Vec<String>,
-}
-
-#[pymethods]
-impl ParserException {
-    #[new]
-    const fn new(name: String, snake_case_name: String, text_parameters: Vec<String>) -> Self {
-        Self {
-            name,
-            snake_case_name,
-            text_parameters,
-        }
-    }
-}
-
 /// Everything that the syntax errors template renders.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone, Template)]
 #[template(path = "syntax_errors.rs.j2", escape = "none")]
 struct SyntaxErrorsDescription {
     module_name: String,
-    exceptions: Vec<ParserException>,
+    syntax_errors: Vec<ParserDiagnostic>,
 }
 
 #[pymethods]
 impl SyntaxErrorsDescription {
     #[new]
-    const fn new(module_name: String, exceptions: Vec<ParserException>) -> Self {
+    const fn new(module_name: String, syntax_errors: Vec<ParserDiagnostic>) -> Self {
         Self {
             module_name,
-            exceptions,
+            syntax_errors,
         }
     }
 }
@@ -443,7 +420,7 @@ mod rust_renderer {
     use super::{
         AstDescription, Constructor, DiagnosticField, DiagnosticFieldType, EnumMember, FieldEnum,
         FieldType, NodeClass, NodeUnion, Parameter, ParserDiagnostic, ParserDiagnosticsDescription,
-        ParserException, SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
+        SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
         render_parser_diagnostics, render_syntax_errors,
     };
 }

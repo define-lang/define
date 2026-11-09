@@ -15,7 +15,7 @@ _FQUN = "my.domain.com:my_lib"
 def _parse(source: str) -> validation_result.FileValidationResult:
     program = test_helpers.parse(source)
     return validation_result.FileValidationResult(
-        exception=None,
+        load_failure=None,
         file_path=define_path.DefinePath("test.dfn"),
         root_prefix=define_path.EMPTY,
         file_diagnostics=[],

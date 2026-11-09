@@ -8,14 +8,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import ast
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import syntax_errors
 from source_rendering.python import rendering
 
 if TYPE_CHECKING:
-    from define.compiler.parsing.parser_tests.conftest import Parse
+    from define.compiler.parsing.parser_tests.conftest import (
+        Parse,
+        ParseSyntaxError,
+    )
 
 
 def test_local_name_simple(parse: Parse):
@@ -193,135 +194,137 @@ def test_local_name_uppercase(parse: Parse):
     )
 
 
-def test_local_name_with_space(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position< >.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == " "
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 25
+def test_local_name_with_space(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position< >.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == " "
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 25
 
 
-def test_local_name_with_space_after_valid_characters(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<test path>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.name == "test"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 29
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 29
+def test_local_name_with_space_after_valid_characters(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<test path>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingCloseAngleBracket)
+    assert error.name == "test"
+    assert error.location.line == 3
+    assert error.location.column == 29
+    assert error.location.end_line == 3
+    assert error.location.end_column == 29
 
 
-def test_create_position_ref_starting_with_space(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidName) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "        create a particle in position< :/x>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token == " "
-    assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 39
-    assert exc_info.value.location.end_line == 6
-    assert exc_info.value.location.end_column == 39
+def test_create_position_ref_starting_with_space(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        create a particle in position< :/x>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidName)
+    assert error.token == " "
+    assert error.location.line == 6
+    assert error.location.column == 39
+    assert error.location.end_line == 6
+    assert error.location.end_column == 39
 
 
-def test_local_name_first_char_colon(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<:>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == ":"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 25
+def test_local_name_first_char_colon(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<:>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == ":"
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 25
 
 
-def test_local_name_first_char_slash(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position</>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "/"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 25
+def test_local_name_first_char_slash(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position</>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == "/"
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 25
 
 
-def test_local_name_missing_open_angle(parse: Parse):
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the positionmy_pos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 24
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 24
+def test_local_name_missing_open_angle(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the positionmy_pos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
+    assert error.location.line == 3
+    assert error.location.column == 24
+    assert error.location.end_line == 3
+    assert error.location.end_column == 24
 
 
-def test_local_name_empty(parse: Parse):
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 25
+def test_local_name_empty(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.EmptyName)
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 25
 
 
 def test_local_name_with_angle_bracket(parse: Parse):
@@ -364,153 +367,153 @@ def test_local_name_dot_then_angle_bracket(parse: Parse):
     )
 
 
-def test_local_name_dot_then_slash(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<./>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "/"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 26
+def test_local_name_dot_then_slash(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<./>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == "/"
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_local_name_brace_then_slash(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<}/>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "/"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 26
+def test_local_name_brace_then_slash(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<}/>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == "/"
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_local_name_angle_bracket_then_slash(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<</>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == "/"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 26
+def test_local_name_angle_bracket_then_slash(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<</>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == "/"
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_local_name_angle_bracket_then_colon(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<<:>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == ":"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 26
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 26
+def test_local_name_angle_bracket_then_colon(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<<:>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == ":"
+    assert error.location.line == 3
+    assert error.location.column == 26
+    assert error.location.end_line == 3
+    assert error.location.end_column == 26
 
 
-def test_local_name_with_slash(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<my/pos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 27
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 27
+def test_local_name_with_slash(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<my/pos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.location.line == 3
+    assert error.location.column == 27
+    assert error.location.end_line == 3
+    assert error.location.end_column == 27
 
 
-def test_local_name_with_colon(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<my:pos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.escaped_char == ":"
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 27
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 27
+def test_local_name_with_colon(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<my:pos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidLocalNameCharacter)
+    assert error.escaped_char == ":"
+    assert error.location.line == 3
+    assert error.location.column == 27
+    assert error.location.end_line == 3
+    assert error.location.end_column == 27
 
 
-def test_local_name_with_global_short_form(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position</mypos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 30
+def test_local_name_with_global_short_form(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position</mypos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 30
 
 
-def test_local_name_with_global_long_form(parse: Parse):
-    with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<run>.\n"
-            + "    define the position<mv:define-lang.org:other_universe:/mypos>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a particle.\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.location.line == 3
-    assert exc_info.value.location.column == 25
-    assert exc_info.value.location.end_line == 3
-    assert exc_info.value.location.end_column == 64
+def test_local_name_with_global_long_form(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<mv:define-lang.org:other_universe:/mypos>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
+    assert error.location.line == 3
+    assert error.location.column == 25
+    assert error.location.end_line == 3
+    assert error.location.end_column == 64
 
 
 def test_local_name_with_hyphen(parse: Parse):

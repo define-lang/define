@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -21,8 +21,9 @@ def test_entrypoint_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural(entry_file="nonexistent.dfn")
-    assert len(result.all_exceptions) == 1
-    assert isinstance(result.all_exceptions[0], exceptions.SourceFileNotFoundError)
+    assert result.all_exceptions == [
+        diagnostics.SourceFileNotFoundDiagnostic(file_path="nonexistent.dfn")
+    ]
     assert len(result.file_results) == 1
     assert result.file_results[0].diagnostics == []
 
@@ -48,7 +49,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
@@ -59,7 +60,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
     assert result.file_results[0].diagnostics[0].file_path == "missing.dfn"
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
         result.file_results[1].diagnostics[0],
@@ -77,7 +78,7 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     program_result = validate_testdata_structural()
     assert program_result.all_exceptions == []
     result = program_result.file_results[0]
-    assert result.exception is None
+    assert result.load_failure is None
     diags = result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -98,7 +99,7 @@ def test_same_missing_file_referenced_as_two_types_in_one_definition(
     program_result = validate_testdata_structural()
     assert program_result.all_exceptions == []
     result = program_result.file_results[0]
-    assert result.exception is None
+    assert result.load_failure is None
     diags = result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)

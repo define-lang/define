@@ -21,8 +21,7 @@ if TYPE_CHECKING:
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
     result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 1
+    assert result.file_results == []
     assert result.all_diagnostics == [
         diagnostics.NotRunFromProjectRootDiagnostic(
             config_path=".define/project/config.defcl",
@@ -44,8 +43,7 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     monkeypatch.chdir(tmp_path)
 
     result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    assert result.all_exceptions == []
-    assert len(result.file_results) == 1
+    assert result.file_results == []
     assert result.all_diagnostics == [
         diagnostics.ConfigViolationDiagnostic(
             config_path=".define/project/config.defcl",

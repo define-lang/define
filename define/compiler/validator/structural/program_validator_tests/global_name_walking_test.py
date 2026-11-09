@@ -197,10 +197,10 @@ def test_two_file_cycle_emits_diagnostic(
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].exception is None
+    assert result.file_results[0].load_failure is None
     assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == define_path.DefinePath("loop.dfn")
-    assert result.file_results[1].exception is None
+    assert result.file_results[1].load_failure is None
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
