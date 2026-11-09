@@ -177,6 +177,16 @@ jobs:
           -Root "$env:RUNNER_TEMP\rbe" -Port 8980 -StatusPort 8981
           -ReadyHostname $env:WINDOWS_HOSTNAME
 
+      # Shows how large a cache of the store would be.
+      - name: Report the size of rbe's store
+        if: ${{ always() }}
+        run: |
+          foreach ($name in 'blobs', 'ac') {
+            $files = Get-ChildItem -Recurse -File "$env:RUNNER_TEMP\rbe\cas\$name" -ErrorAction SilentlyContinue |
+              Measure-Object -Sum Length
+            Write-Host "$name`: $($files.Count) files, $([math]::Round($files.Sum / 1MB)) MiB"
+          }
+
       - name: Tell the Windows tests job that this job failed
         if: ${{ failure() && steps.tailnet.outcome == 'success' }}
         run: tailscale set "--hostname=$env:WINDOWS_HOSTNAME-failed"
