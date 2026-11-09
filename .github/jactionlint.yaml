@@ -11,6 +11,8 @@ rules:
     any-trigger: true
   forbidden-uses:
     allow:
+      - actions/cache/restore
+      - actions/cache/save
       - actions/checkout
       - actions/create-github-app-token
       - actions/download-artifact
