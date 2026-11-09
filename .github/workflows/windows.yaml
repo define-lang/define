@@ -85,6 +85,13 @@ jobs:
           address=$(.github/scripts/wait_for_windows_test_runner.sh "$WINDOWS_HOSTNAME")
           echo "WINDOWS_ADDRESS=$address" >> "$GITHUB_ENV"
 
+      # Shows whether the tailnet connects the runners directly or through a
+      # relay, which limits how fast test inputs upload. tailscale ping fails
+      # when it gets no direct connection, which is a result, not a failure.
+      - name: Show how the tailnet reaches the Windows test runner
+        continue-on-error: true
+        run: sudo -n tailscale ping -c 5 "$WINDOWS_ADDRESS"
+
       # The tests run on the Windows runner's CPU, which can lack instructions
       # that this runner's CPU has, so they cannot use native Rust code. Every
       # CPU seen in GitHub's x64 runners has x86-64-v3's instructions.
@@ -100,6 +107,13 @@ jobs:
           --remote_download_outputs=all
           --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=x86-64-v3
           "--remote_executor=grpc://$WINDOWS_ADDRESS:8980" //...
+
+      # Shows whether the connection changed to direct or back to a relay
+      # while the tests ran.
+      - name: Show how the tailnet reached the Windows test runner at the end
+        if: ${{ always() && env.WINDOWS_ADDRESS }}
+        continue-on-error: true
+        run: sudo -n tailscale ping -c 5 "$WINDOWS_ADDRESS"
 
       - name: Tell the Windows test runner that this job finished
         if: ${{ always() && env.WINDOWS_ADDRESS }}
