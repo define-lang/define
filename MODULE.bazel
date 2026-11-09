@@ -187,6 +187,17 @@ rules_rust.patch(
     strip = 1,
 )
 
+# MSVC linkers record the path of every input object in the PDB, and the image
+# embeds a hash of the PDB. rustc writes some link inputs into a randomly named
+# temporary directory, so this patch makes the process wrapper run MSVC links
+# with those inputs moved next to the output.
+# TODO: Remove this patch once a Rust release includes a fix for
+# https://github.com/rust-lang/rust/issues/112587.
+rules_rust.patch(
+    patches = ["//tools/patches:rules_rust_msvc_link_inputs.patch"],
+    strip = 1,
+)
+
 # rules_rust's coverage collector for Rust tests reports only lines, since
 # stable Rust has no branch coverage, and Rust tests cannot use another one.
 # This patch adds a flag that chooses it, which .bazelrc sets to the one that

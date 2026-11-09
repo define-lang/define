@@ -11,6 +11,7 @@ exports_files([
     "rules_py_windows_free_threaded_headers.patch",
     "rules_py_windows_wheel_arch.patch",
     "rules_rust_coverage_collector_flag.patch",
+    "rules_rust_msvc_link_inputs.patch",
     "rules_rust_msvc_lld_link.patch",
 ])
 

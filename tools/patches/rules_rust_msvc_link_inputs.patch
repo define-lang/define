@@ -1,0 +1,439 @@
+diff --git a/rust/private/rustc.bzl b/rust/private/rustc.bzl
+index 3b877b3..fa2e6c6 100644
+--- a/rust/private/rustc.bzl
++++ b/rust/private/rustc.bzl
+@@ -1617,11 +1617,30 @@ def construct_arguments(
+                 if sdkroot != None:
+                     env["SDKROOT"] = sdkroot
+ 
+-            rustc_flags.add_all(
+-                [linker_config],
+-                map_each = _get_linker_path,
+-                format_each = "--codegen=linker=%s",
+-            )
++            if toolchain.target_abi == "msvc" and not toolchain._bootstrapping:
++                # MSVC linkers record every input object's path in the PDB,
++                # and rustc writes some inputs into a randomly named temporary
++                # directory. The process wrapper runs the linker with those
++                # inputs moved next to the linker's output so that PDBs are
++                # deterministic: https://github.com/rust-lang/rust/issues/112587
++                process_wrapper_flags.add_all(
++                    [linker_config],
++                    map_each = _get_linker_path,
++                    before_each = "--msvc-linker",
++                )
++                rustc_flags.add(toolchain.process_wrapper, format = "--codegen=linker=%s")
++
++                # rustc infers the linker flavor from the linker's name, which
++                # is now the process wrapper's.
++                linker_name = paths.basename(_get_linker_path(linker_config)).lower()
++                linker_flavor = "lld-link" if linker_name in ("lld-link", "lld-link.exe") else "msvc"
++                rustc_flags.add(linker_flavor, format = "--codegen=linker-flavor=%s")
++            else:
++                rustc_flags.add_all(
++                    [linker_config],
++                    map_each = _get_linker_path,
++                    format_each = "--codegen=linker=%s",
++                )
+ 
+             # Split link args into individual "--codegen=link-arg=" flags to handle nested spaces.
+             # Additional context: https://github.com/rust-lang/rust/pull/36574
+diff --git a/util/process_wrapper/main.rs b/util/process_wrapper/main.rs
+index 4da5f99..1f5ef95 100644
+--- a/util/process_wrapper/main.rs
++++ b/util/process_wrapper/main.rs
+@@ -13,6 +13,7 @@
+ // limitations under the License.
+ 
+ mod flags;
++mod msvc_link;
+ mod options;
+ mod output;
+ mod rustc;
+@@ -381,6 +382,10 @@ fn check_output_for_working_dir(
+ }
+ 
+ fn main() -> Result<(), ProcessWrapperError> {
++    if let Some(code) = msvc_link::run_if_linker()? {
++        exit(code);
++    }
++
+     let opts = options().map_err(|e| ProcessWrapperError(e.to_string()))?;
+ 
+     let (child_arguments, dep_dir_cleanup) =
+diff --git a/util/process_wrapper/msvc_link.rs b/util/process_wrapper/msvc_link.rs
+new file mode 100644
+index 0000000..2350855
+--- /dev/null
++++ b/util/process_wrapper/msvc_link.rs
+@@ -0,0 +1,325 @@
++// Copyright 2026 The Bazel Authors. All rights reserved.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//    http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++//! Runs an MSVC-style linker for rustc with rustc's temporary link inputs
++//! moved to a fixed directory.
++//!
++//! rustc writes some link inputs, such as `symbols.o`, `lib.def` and response
++//! files, into a randomly named `rustcXXXXXX` directory. MSVC linkers record
++//! the path of every input object in the PDB, and the image embeds a hash of
++//! the PDB, so the random name makes the PDB and the image nondeterministic.
++//! See https://github.com/rust-lang/rust/issues/112587.
++//!
++//! The fixed directory is named after the linker's output. Only the action
++//! that writes that output can use the directory, so concurrent actions never
++//! share it, even without a sandbox.
++
++use std::env;
++use std::fs;
++use std::path::Path;
++use std::process::Command;
++
++use crate::ProcessWrapperError;
++
++/// Names the real linker. rustc passes its environment to the linker, so the
++/// outer process wrapper sets this for rustc to make its linker invocation of
++/// the process wrapper run in this mode.
++pub(crate) const LINKER_ENV: &str = "RULES_RUST_MSVC_LINKER";
++
++const UTF16LE_BOM: [u8; 2] = [0xFF, 0xFE];
++
++/// The name rustc gives the response file in its temporary directory.
++const RESPONSE_FILE_NAME: &str = "linker-arguments";
++
++/// Runs the linker if rustc invoked the process wrapper as its linker, and
++/// returns the linker's exit code.
++pub(crate) fn run_if_linker() -> Result<Option<i32>, ProcessWrapperError> {
++    let Some(linker) = env::var_os(LINKER_ENV) else {
++        return Ok(None);
++    };
++    let mut command_args = Vec::new();
++    for arg in env::args_os().skip(1) {
++        command_args.push(arg.into_string().map_err(|arg| {
++            ProcessWrapperError(format!("linker argument is not UTF-8: {arg:?}"))
++        })?);
++    }
++
++    // When the arguments are too long for a command line, rustc passes them
++    // all in one response file instead.
++    let response_file = match command_args.as_slice() {
++        [arg] => arg.strip_prefix('@').map(str::to_owned),
++        _ => None,
++    };
++    let args = match &response_file {
++        Some(path) => read_response_file(path)?,
++        None => command_args.clone(),
++    };
++
++    let all_args: Vec<String> = command_args.iter().chain(&args).cloned().collect();
++    let (linker_args, inputs_dir) = match rustc_temp_dir(&all_args) {
++        None => (command_args, None),
++        Some(temp_dir) => {
++            let dir = format!("{}.link_inputs", output_path(&args)?);
++            copy_link_inputs(&temp_dir, &dir)?;
++            let rewritten: Vec<String> = args
++                .iter()
++                .map(|arg| arg.replace(temp_dir.as_str(), &dir))
++                .collect();
++            if response_file.is_some() {
++                let path = Path::new(&dir).join(RESPONSE_FILE_NAME);
++                write_response_file(&path, &rewritten)?;
++                (vec![format!("@{}", path.display())], Some(dir))
++            } else {
++                (rewritten, Some(dir))
++            }
++        }
++    };
++
++    let status = Command::new(&linker)
++        .args(&linker_args)
++        .env_remove(LINKER_ENV)
++        .status()
++        .map_err(|e| ProcessWrapperError(format!("failed to run linker {linker:?}: {e}")))?;
++
++    if let Some(dir) = inputs_dir {
++        fs::remove_dir_all(&dir)
++            .map_err(|e| ProcessWrapperError(format!("failed to remove {dir}: {e}")))?;
++    }
++    Ok(Some(status.code().unwrap_or(1)))
++}
++
++/// Finds rustc's temporary directory from an argument that names a file in
++/// it, directly, as a response file, or as an option's value.
++fn rustc_temp_dir(args: &[String]) -> Option<String> {
++    args.iter().find_map(|arg| {
++        let path = Path::new(path_operand(arg));
++        let dir = path.parent()?;
++        if is_rustc_temp_dir_name(dir.file_name()?.to_str()?) {
++            Some(dir.to_str()?.to_owned())
++        } else {
++            None
++        }
++    })
++}
++
++/// Returns the path in a response file argument such as `@path` or in an
++/// option such as `/DEF:path`, or else the argument itself.
++fn path_operand(arg: &str) -> &str {
++    if let Some(response_file) = arg.strip_prefix('@') {
++        return response_file;
++    }
++    match option_value(arg) {
++        Some((_, value)) => value,
++        None => arg,
++    }
++}
++
++/// Splits an option such as `/DEF:path` into its name and value.
++fn option_value(arg: &str) -> Option<(&str, &str)> {
++    let option = arg.strip_prefix('/').or_else(|| arg.strip_prefix('-'))?;
++    let (name, value) = option.split_once(':')?;
++    if !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphabetic()) {
++        Some((name, value))
++    } else {
++        None
++    }
++}
++
++/// rustc names its temporary directory `rustc` followed by six random
++/// alphanumeric characters.
++fn is_rustc_temp_dir_name(name: &str) -> bool {
++    match name.strip_prefix("rustc") {
++        Some(suffix) => suffix.len() == 6 && suffix.bytes().all(|b| b.is_ascii_alphanumeric()),
++        None => false,
++    }
++}
++
++/// Returns the path that the linker writes, from its `/OUT:` option.
++fn output_path(args: &[String]) -> Result<&str, ProcessWrapperError> {
++    args.iter()
++        .find_map(|arg| match option_value(arg) {
++            Some((name, value)) if name.eq_ignore_ascii_case("out") => Some(value),
++            _ => None,
++        })
++        .ok_or_else(|| ProcessWrapperError("linker arguments have no /OUT: option".to_owned()))
++}
++
++fn copy_link_inputs(temp_dir: &str, inputs_dir: &str) -> Result<(), ProcessWrapperError> {
++    // A link interrupted before cleanup can leave the directory behind when
++    // actions run outside a sandbox.
++    if Path::new(inputs_dir).exists() {
++        fs::remove_dir_all(inputs_dir)
++            .map_err(|e| ProcessWrapperError(format!("failed to remove {inputs_dir}: {e}")))?;
++    }
++    fs::create_dir_all(inputs_dir)
++        .map_err(|e| ProcessWrapperError(format!("failed to create {inputs_dir}: {e}")))?;
++    let entries = fs::read_dir(temp_dir)
++        .map_err(|e| ProcessWrapperError(format!("failed to read {temp_dir}: {e}")))?;
++    for entry in entries {
++        let entry =
++            entry.map_err(|e| ProcessWrapperError(format!("failed to read {temp_dir}: {e}")))?;
++        if entry.file_name() == RESPONSE_FILE_NAME {
++            continue;
++        }
++        let source = entry.path();
++        let destination = Path::new(inputs_dir).join(entry.file_name());
++        fs::copy(&source, &destination).map_err(|e| {
++            ProcessWrapperError(format!(
++                "failed to copy {} to {}: {e}",
++                source.display(),
++                destination.display()
++            ))
++        })?;
++    }
++    Ok(())
++}
++
++fn read_response_file(path: &str) -> Result<Vec<String>, ProcessWrapperError> {
++    let contents =
++        fs::read(path).map_err(|e| ProcessWrapperError(format!("failed to read {path}: {e}")))?;
++    parse_response_file(&contents)
++        .map_err(|e| ProcessWrapperError(format!("failed to parse {path}: {e}")))
++}
++
++fn write_response_file(path: &Path, args: &[String]) -> Result<(), ProcessWrapperError> {
++    fs::write(path, format_response_file(args))
++        .map_err(|e| ProcessWrapperError(format!("failed to write {}: {e}", path.display())))
++}
++
++/// Parses a response file in the form rustc writes for MSVC targets: UTF-16LE
++/// with a byte order mark, one argument per line, each in double quotes with
++/// its own double quotes escaped by a backslash.
++fn parse_response_file(contents: &[u8]) -> Result<Vec<String>, String> {
++    let utf16 = contents
++        .strip_prefix(&UTF16LE_BOM)
++        .ok_or_else(|| "no UTF-16LE byte order mark".to_owned())?;
++    if utf16.len() % 2 != 0 {
++        return Err("odd number of bytes in UTF-16 text".to_owned());
++    }
++    let units: Vec<u16> = utf16
++        .chunks_exact(2)
++        .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
++        .collect();
++    let text = String::from_utf16(&units).map_err(|e| e.to_string())?;
++    let mut args = Vec::new();
++    for line in text.lines() {
++        let quoted = line
++            .strip_prefix('"')
++            .and_then(|line| line.strip_suffix('"'))
++            .ok_or_else(|| format!("argument is not in double quotes: {line}"))?;
++        args.push(quoted.replace("\\\"", "\""));
++    }
++    Ok(args)
++}
++
++/// Formats arguments as `parse_response_file` reads them.
++fn format_response_file(args: &[String]) -> Vec<u8> {
++    let mut text = String::new();
++    for arg in args {
++        text.push('"');
++        text.push_str(&arg.replace('"', "\\\""));
++        text.push_str("\"\n");
++    }
++    let mut contents = UTF16LE_BOM.to_vec();
++    for unit in text.encode_utf16() {
++        contents.extend_from_slice(&unit.to_le_bytes());
++    }
++    contents
++}
++
++#[cfg(test)]
++mod test {
++    use super::*;
++
++    fn strings(args: &[&str]) -> Vec<String> {
++        args.iter().map(|arg| (*arg).to_owned()).collect()
++    }
++
++    #[test]
++    fn finds_temp_dir_from_object_argument() {
++        let args = strings(&["/NOLOGO", "out/a.rcgu.o", "/out/rustcAb12Cd/symbols.o"]);
++        assert_eq!(rustc_temp_dir(&args), Some("/out/rustcAb12Cd".to_owned()));
++    }
++
++    #[test]
++    fn finds_temp_dir_from_option_value() {
++        let args = strings(&["/DEF:/out/rustcAb12Cd/lib.def"]);
++        assert_eq!(rustc_temp_dir(&args), Some("/out/rustcAb12Cd".to_owned()));
++    }
++
++    #[test]
++    fn finds_temp_dir_from_response_file_argument() {
++        let args = strings(&["@/out/rustcAb12Cd/linker-arguments"]);
++        assert_eq!(rustc_temp_dir(&args), Some("/out/rustcAb12Cd".to_owned()));
++    }
++
++    #[test]
++    fn ignores_directories_that_only_resemble_temp_dirs() {
++        let args = strings(&[
++            "/out/rustc/symbols.o",
++            "/out/rustcAb12Cd9/symbols.o",
++            "/out/rustcAb-2Cd/symbols.o",
++        ]);
++        assert_eq!(rustc_temp_dir(&args), None);
++    }
++
++    #[test]
++    fn finds_output_path() {
++        let args = strings(&["/DLL", "/OUT:out/x.dll", "/DEF:out/lib.def"]);
++        assert_eq!(output_path(&args).ok(), Some("out/x.dll"));
++    }
++
++    #[test]
++    fn requires_output_path() {
++        assert!(output_path(&strings(&["/DLL"])).is_err());
++    }
++
++    #[test]
++    fn round_trips_response_file() {
++        let args = strings(&["/OUT:out/x.dll", "/tmp/a \"b\".o", ""]);
++        assert_eq!(parse_response_file(&format_response_file(&args)), Ok(args));
++    }
++
++    #[test]
++    fn parses_response_file_as_rustc_writes_it() {
++        let mut contents = UTF16LE_BOM.to_vec();
++        for unit in "\"/NOLOGO\"\n\"/OUT:x.dll\"\n".encode_utf16() {
++            contents.extend_from_slice(&unit.to_le_bytes());
++        }
++        assert_eq!(
++            parse_response_file(&contents),
++            Ok(strings(&["/NOLOGO", "/OUT:x.dll"]))
++        );
++    }
++
++    #[test]
++    fn rejects_response_file_without_byte_order_mark() {
++        assert_eq!(
++            parse_response_file(b"\"/NOLOGO\"\n"),
++            Err("no UTF-16LE byte order mark".to_owned())
++        );
++    }
++
++    #[test]
++    fn rejects_unquoted_response_file_argument() {
++        let mut contents = UTF16LE_BOM.to_vec();
++        for unit in "/NOLOGO\n".encode_utf16() {
++            contents.extend_from_slice(&unit.to_le_bytes());
++        }
++        assert_eq!(
++            parse_response_file(&contents),
++            Err("argument is not in double quotes: /NOLOGO".to_owned())
++        );
++    }
++}
+diff --git a/util/process_wrapper/options.rs b/util/process_wrapper/options.rs
+index 677a190..9630a1f 100644
+--- a/util/process_wrapper/options.rs
++++ b/util/process_wrapper/options.rs
+@@ -6,6 +6,7 @@ use std::io::{self, Write};
+ use std::process::exit;
+ 
+ use crate::flags::{FlagParseError, Flags, ParseOutcome};
++use crate::msvc_link;
+ use crate::rustc;
+ use crate::util::*;
+ 
+@@ -79,6 +80,7 @@ pub(crate) fn options() -> Result<Options, OptionError> {
+     let mut rustc_output_format_raw = None;
+     let mut flags = Flags::new();
+     let mut require_explicit_unstable_features = None;
++    let mut msvc_linker = None;
+     flags.define_repeated_flag("--subst", "", &mut subst_mapping_raw);
+     flags.define_flag("--stable-status-file", "", &mut stable_status_file_raw);
+     flags.define_flag("--volatile-status-file", "", &mut volatile_status_file_raw);
+@@ -160,6 +162,14 @@ pub(crate) fn options() -> Result<Options, OptionError> {
+         &mut require_explicit_unstable_features,
+     );
+ 
++    flags.define_flag(
++        "--msvc-linker",
++        "The MSVC-style linker that rustc runs through the process wrapper, \
++         which moves rustc's randomly named temporary link inputs next to \
++         the linker's output so that PDBs are deterministic.",
++        &mut msvc_linker,
++    );
++
+     let mut child_args = match flags
+         .parse(env::args().collect())
+         .map_err(OptionError::FlagError)?
+@@ -257,6 +267,9 @@ pub(crate) fn options() -> Result<Options, OptionError> {
+         // handle the working-directory prefix.
+         environment_file_block.insert("OUT_DIR".to_owned(), format!("${{pwd}}/{out_dir}"));
+     }
++    if let Some(linker) = msvc_linker {
++        environment_file_block.insert(msvc_link::LINKER_ENV.to_owned(), linker);
++    }
+     let mut file_arguments = args_from_file(arg_file_raw.unwrap_or_default())?;
+     if let Some(paths) = bin_arg_file_raw {
+         let name = cargo_bin_name
