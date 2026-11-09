@@ -36,10 +36,11 @@ rule:
                 field: value
                 regex: ^self(\.[A-Za-z_][A-Za-z0-9_]*)*$
     # A static method does not read `self`, so it has to receive what it
-    # uses.
+    # uses. It may be defined in a base class of the caller's class, so any
+    # class in the same file that defines it as a static method exempts it.
     - not:
         inside:
-          kind: class_definition
+          kind: module
           stopBy: end
           has:
             kind: decorated_definition

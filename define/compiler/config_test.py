@@ -42,13 +42,16 @@ def _load(root: define_path.DefinePath = constants.PROJECT_ROOT):
     return config.ConfigLoader(root, rendering.SourceMap()).load_project_root_config()
 
 
-def _invalid_local_deps(violation_message: str) -> config.RootConfigResult:
+def _invalid_local_dep_field(
+    field_name: str, violation_message: str
+) -> config.RootConfigResult:
     return config.RootConfigResult(
         root_config=None,
         diagnostics=[
-            diagnostics.InvalidConfigDiagnostic(
+            diagnostics.ConfigViolationDiagnostic(
                 config_path=str(_LOCAL_DEPS_PATH),
-                violation_messages=[violation_message],
+                field_path=("deps", "local", 0, field_name),
+                violation_message=violation_message,
             )
         ],
     )
@@ -150,6 +153,7 @@ class TestLoadProjectRootConfig:
             diagnostics=[
                 diagnostics.SubRootFqunMismatchDiagnostic(
                     config_path=str(_PROJECT_CONFIG_PATH),
+                    field_path=("project", "universe_name"),
                     expected_fqun="other.example.com:other_lib",
                     actual_fqun="test.example.com:my_lib",
                     sub_root_path=str(constants.PROJECT_ROOT),
@@ -224,11 +228,10 @@ class TestProjectConfig:
         assert _load() == config.RootConfigResult(
             root_config=None,
             diagnostics=[
-                diagnostics.InvalidConfigDiagnostic(
+                diagnostics.ConfigViolationDiagnostic(
                     config_path=str(_PROJECT_CONFIG_PATH),
-                    violation_messages=[
-                        "project.universe_name: must be at least 1 characters"
-                    ],
+                    field_path=("project", "universe_name"),
+                    violation_message="must be at least 1 characters",
                 )
             ],
         )
@@ -242,9 +245,10 @@ class TestProjectConfig:
         assert _load() == config.RootConfigResult(
             root_config=None,
             diagnostics=[
-                diagnostics.InvalidConfigDiagnostic(
+                diagnostics.ConfigViolationDiagnostic(
                     config_path=str(_PROJECT_CONFIG_PATH),
-                    violation_messages=["project.universe_name: value is required"],
+                    field_path=("project", "universe_name"),
+                    violation_message="value is required",
                 )
             ],
         )
@@ -301,9 +305,7 @@ class TestLocalDepsConfig:
         _write_local_deps(tmp_path, 'deps: { local: [{ path: "vendor/lib" }] }\n')
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            "deps.local.universe_name: value is required"
-        )
+        assert _load() == _invalid_local_dep_field("universe_name", "value is required")
 
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
@@ -312,8 +314,8 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            "deps.local.universe_name: must be at least 1 characters"
+        assert _load() == _invalid_local_dep_field(
+            "universe_name", "must be at least 1 characters"
         )
 
     def test_missing_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -324,7 +326,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps("deps.local.path: value is required")
+        assert _load() == _invalid_local_dep_field("path", "value is required")
 
     def test_absolute_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
@@ -339,9 +341,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            "deps.local.path: path must not be absolute"
-        )
+        assert _load() == _invalid_local_dep_field("path", "path must not be absolute")
 
     def test_dotdot_in_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
@@ -356,9 +356,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            "deps.local.path: path must not contain '..'"
-        )
+        assert _load() == _invalid_local_dep_field("path", "path must not contain '..'")
 
     def test_trailing_slash_in_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -375,9 +373,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            "deps.local.path: path must not end with '/'"
-        )
+        assert _load() == _invalid_local_dep_field("path", "path must not end with '/'")
 
     def test_duplicate_universe_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -402,8 +398,16 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        assert _load() == _invalid_local_deps(
-            'deps.local: duplicate universe_name "mv:define-lang.org:lib"'
+        assert _load() == config.RootConfigResult(
+            root_config=None,
+            diagnostics=[
+                diagnostics.DuplicateLocalDependencyDiagnostic(
+                    config_path=str(_LOCAL_DEPS_PATH),
+                    field_path=("deps", "local", 1, "universe_name"),
+                    universe_name="mv:define-lang.org:lib",
+                    first_field_path=("deps", "local", 0, "universe_name"),
+                )
+            ],
         )
 
     def test_syntax_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -487,9 +491,10 @@ class TestSubRoot:
         assert _load(define_path.DefinePath("subroot")) == config.RootConfigResult(
             root_config=None,
             diagnostics=[
-                diagnostics.InvalidConfigDiagnostic(
+                diagnostics.ConfigViolationDiagnostic(
                     config_path=str(config_path),
-                    violation_messages=["project.universe_name: value is required"],
+                    field_path=("project", "universe_name"),
+                    violation_message="value is required",
                 )
             ],
         )
@@ -511,9 +516,10 @@ class TestSubRoot:
         assert _load(define_path.DefinePath("subroot")) == config.RootConfigResult(
             root_config=None,
             diagnostics=[
-                diagnostics.InvalidConfigDiagnostic(
+                diagnostics.ConfigViolationDiagnostic(
                     config_path=str(deps_path),
-                    violation_messages=["deps.local.path: value is required"],
+                    field_path=("deps", "local", 0, "path"),
+                    violation_message="value is required",
                 )
             ],
         )

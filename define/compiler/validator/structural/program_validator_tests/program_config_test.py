@@ -47,8 +47,9 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert result.all_exceptions == []
     assert len(result.file_results) == 1
     assert result.all_diagnostics == [
-        diagnostics.InvalidConfigDiagnostic(
+        diagnostics.ConfigViolationDiagnostic(
             config_path=".define/project/config.defcl",
-            violation_messages=["project.universe_name: value is required"],
+            field_path=("project", "universe_name"),
+            violation_message="value is required",
         )
     ]

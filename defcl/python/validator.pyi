@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from defcl.python import errors
 from source_rendering.python import rendering
 
@@ -10,3 +12,6 @@ def validate_file(
     descriptor_set: bytes,
     top_level_message_type: str,
 ) -> tuple[str, list[errors.DclDiagnostic]]: ...
+def locate_field(
+    source_map: rendering.SourceMap, path: str, field_path: Sequence[str | int]
+) -> rendering.SourceLocation | None: ...

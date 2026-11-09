@@ -105,6 +105,7 @@ py_library(
 py_library(
     name = "validator",
     srcs = ["validator.pyi"],
+    visibility = ["//define/compiler/errors:__pkg__"],
     deps = [
         ":error_types",  # keep: the native implementation looks up its kinds
         ":errors",

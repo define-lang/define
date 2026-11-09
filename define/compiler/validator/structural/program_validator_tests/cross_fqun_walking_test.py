@@ -152,6 +152,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert result.all_diagnostics == [
         diagnostics.SubRootFqunMismatchDiagnostic(
             config_path="lib/.define/project/config.defcl",
+            field_path=("project", "universe_name"),
             expected_fqun=_CHILD_UNIVERSE,
             actual_fqun="mv:define-lang.org:actual_child",
             sub_root_path="lib",

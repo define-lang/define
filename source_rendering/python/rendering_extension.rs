@@ -186,6 +186,20 @@ impl PySourceMap {
         self.source_map.register_file(path, source);
     }
 
+    /// The header that names the file at `path`, then, if the file was
+    /// registered but no longer has the text it was registered with, why its
+    /// source lines cannot be shown.
+    fn render_header_without_position(&self, path: &str) -> String {
+        self.source_map.render_header_without_position(path)
+    }
+
+    /// The text of the file at `path`, if the file was registered and still
+    /// has the text it was registered with.
+    fn file_text<'py>(&self, py: Python<'py>, path: &str) -> Option<Bound<'py, PyString>> {
+        self.source_map
+            .with_file_text(path, |text| PyString::new(py, text))
+    }
+
     /// `location` as diagnostics show it, with its source line when its file
     /// is unchanged.
     fn render_location(&self, location: &Bound<'_, PySourceLocation>) -> PyResult<String> {

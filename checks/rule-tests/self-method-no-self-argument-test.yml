@@ -22,6 +22,16 @@ valid:
         @staticmethod
         def _requirements_in_caller(requirements, chain):
             return requirements
+  - |
+    class Contract:
+        @staticmethod
+        def _requirements_in_caller(requirements, chain):
+            return requirements
+
+
+    class CallerContract(Contract):
+        def occupancy_requirements_in_caller(self, chain):
+            return self._requirements_in_caller(self.occupancy_requirements, chain)
 invalid:
   - |
     self._validate(self._definition)

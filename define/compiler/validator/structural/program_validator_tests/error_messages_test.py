@@ -603,7 +603,9 @@ def test_sub_root_fqun_mismatch_error_message(
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
-        == 'File "lib/.define/project/config.defcl"\n'
+        == 'File "lib/.define/project/config.defcl", line 2, column 18\n'
+        + '    universe_name: "mv:define-lang.org:wrong_universe"\n'
+        + "                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         + "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
 
@@ -627,15 +629,19 @@ def test_invalid_config_format_for_supplied_source(
     )
     program_result = program_validator.validate_program_non_filesystem(source)
     assert program_result.all_exceptions == []
-    (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, diagnostics.InvalidConfigDiagnostic)
-
-    formatted = diagnostic.format(program_result.source_map)
-    assert formatted == textwrap.dedent("""\
-        File ".define/deps/local.defcl"
-        Invalid configuration:
-          - deps.local.universe_name: value is required
-          - deps.local.path: value is required""")
+    missing_universe_name, missing_path = program_result.all_diagnostics
+    assert isinstance(missing_universe_name, diagnostics.ConfigViolationDiagnostic)
+    assert isinstance(missing_path, diagnostics.ConfigViolationDiagnostic)
+    assert missing_universe_name.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/deps/local.defcl", line 3, column 5
+            {}
+            ^^
+        deps.local[0].universe_name: value is required""")
+    assert missing_path.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/deps/local.defcl", line 3, column 5
+            {}
+            ^^
+        deps.local[0].path: value is required""")
 
 
 def test_external_universe_not_configured_format_for_supplied_source_project(
@@ -941,11 +947,83 @@ def test_config_validation_error_message(
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     assert program_result.all_exceptions == []
     (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, diagnostics.InvalidConfigDiagnostic)
+    assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/project/config.defcl", line 1, column 1
+            project: {}
+            ^^^^^^^
+        project.universe_name: value is required""")
+
+
+def test_duplicate_local_dependency_error_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    deps_path = tmp_path / ".define" / "deps" / "local.defcl"
+    deps_path.parent.mkdir(parents=True)
+    _ = deps_path.write_text(
+        (
+            "deps: {\n"
+            "  local: [\n"
+            "    {\n"
+            '      universe_name: "mv:define-lang.org:lib"\n'
+            '      path: "vendor/lib"\n'
+            "    },\n"
+            "    {\n"
+            '      universe_name: "mv:define-lang.org:lib"\n'
+            '      path: "other/lib"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    _ = (tmp_path / "test.dfn").write_text(
+        "define the potential position<my.domain.com:my_lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.DuplicateLocalDependencyDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/deps/local.defcl", line 8, column 22
+            universe_name: "mv:define-lang.org:lib"
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+        Universe 'mv:define-lang.org:lib' is already declared by an earlier local dependency here:
+        File ".define/deps/local.defcl", line 4, column 22
+            universe_name: "mv:define-lang.org:lib"
+                           ^^^^^^^^^^^^^^^^^^^^^^^^""")
+
+
+def test_config_field_error_message_for_a_changed_config_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    config_path = tmp_path / ".define" / "project" / "config.defcl"
+    config_path.parent.mkdir(parents=True)
+    _ = config_path.write_text("project: {}\n", encoding="utf-8", newline="\n")
+    _ = (tmp_path / "test.dfn").write_text(
+        "define the potential position<x.com:lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    _ = config_path.write_text(
+        'project: {\n  universe_name: "x.com:lib"\n}\n', encoding="utf-8", newline="\n"
+    )
+    assert program_result.all_exceptions == []
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl"
-        Invalid configuration:
-          - project.universe_name: value is required""")
+            (source not shown: the file changed after it was validated)
+        project.universe_name: value is required""")
 
 
 def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

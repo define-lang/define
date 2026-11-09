@@ -113,6 +113,7 @@ class ConfigLoader:
             return [
                 diagnostics.SubRootFqunMismatchDiagnostic(
                     config_path=str(config_path),
+                    field_path=("project", "universe_name"),
                     expected_fqun=expected_fqun,
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
@@ -137,22 +138,28 @@ class ConfigLoader:
         try:
             protovalidate.validate(result)
         except protovalidate.ValidationError as e:
-            messages: list[str] = []
+            violation_diagnostics: list[diagnostics.FormattableDiagnostic] = []
             for violation in e.violations:
                 field = violation.proto.field
-                if field:
-                    field_path = ".".join(elem.field_name for elem in field.elements)
-                    messages.append(f"{field_path}: {violation.proto.message}")
-                else:
-                    # TODO: Add a real test for this once the config schema
-                    # can produce a root-level/message-level protovalidate violation.
-                    messages.append(violation.proto.message)
-            return [
-                diagnostics.InvalidConfigDiagnostic(
-                    config_path=str(path),
-                    violation_messages=messages,
+                # The config schemas have rules only on fields.
+                if field is None:
+                    raise ValueError(
+                        f"config rule violation without a field: {violation.proto.message}"
+                    ) from e
+                field_path: list[str | int] = []
+                for element in field.elements:
+                    field_path.append(element.field_name)
+                    subscript = element.subscript
+                    if subscript is not None and subscript.field == "index":
+                        field_path.append(subscript.value)
+                violation_diagnostics.append(
+                    diagnostics.ConfigViolationDiagnostic(
+                        config_path=str(path),
+                        field_path=tuple(field_path),
+                        violation_message=violation.proto.message,
+                    )
                 )
-            ]
+            return violation_diagnostics
         return result
 
     def _local_deps_config(
@@ -172,16 +179,25 @@ class ConfigLoader:
         if isinstance(result, list):
             return result
         deps: dict[str, define_path.DefinePathFromPosix] = {}
-        for dep in result.deps.local:
-            if dep.universe_name in deps:
+        # The index of the local dependency that first declares each universe.
+        first_indices: dict[str, int] = {}
+        for index, dep in enumerate(result.deps.local):
+            first_index = first_indices.get(dep.universe_name)
+            if first_index is not None:
                 return [
-                    diagnostics.InvalidConfigDiagnostic(
+                    diagnostics.DuplicateLocalDependencyDiagnostic(
                         config_path=str(deps_path),
-                        violation_messages=[
-                            f'deps.local: duplicate universe_name "{dep.universe_name}"'
-                        ],
+                        field_path=("deps", "local", index, "universe_name"),
+                        universe_name=dep.universe_name,
+                        first_field_path=(
+                            "deps",
+                            "local",
+                            first_index,
+                            "universe_name",
+                        ),
                     )
                 ]
+            first_indices[dep.universe_name] = index
             deps[dep.universe_name] = define_path.DefinePathFromPosix(
                 PurePosixPath(dep.path)
             )

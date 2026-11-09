@@ -1,9 +1,10 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
-use defcl_parser::{SyntaxError, SyntaxErrorKind};
+use defcl_parser::{FieldPathElement, SyntaxError, SyntaxErrorKind, parse};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::ValidationError;
 use prost::Message as _;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::{PyBytes, PyString, PyType};
@@ -182,6 +183,56 @@ fn validate_file<'py>(
     Ok((source, diagnostics(py, classes, result, Some(path))?))
 }
 
+/// An element of a field path from Python: a field name, or the index of an
+/// element of the repeated value before it.
+#[derive(FromPyObject)]
+enum PythonFieldPathElement {
+    Field(String),
+    Index(usize),
+}
+
+/// Where the DCL file at `path`, registered with the `SourceMap` `source_map`,
+/// writes the field that `field_path` names: a sequence of field names and
+/// indices of repeated values' elements whose first element is a top-level
+/// message. A field that the file writes is located at its value, and one that
+/// it does not write at the name of the nearest field on its path that it
+/// writes. `None` if the file is no longer as it was registered. Raises `ValueError` if the file has a syntax error or does
+/// not write the path's top-level message, since only a file that validated has
+/// fields to find, and it writes its top-level message.
+#[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 can only extract a sequence argument as an owned Vec"
+)]
+fn locate_field<'py>(
+    source_map: &Bound<'py, PyAny>,
+    path: &Bound<'py, PyString>,
+    field_path: Vec<PythonFieldPathElement>,
+) -> PyResult<Option<Bound<'py, PyAny>>> {
+    let py = path.py();
+    let text: Option<String> = source_map.call_method1("file_text", (path,))?.extract()?;
+    let Some(text) = text else {
+        return Ok(None);
+    };
+    // TODO: If rendering many diagnostics in one config file ever makes
+    // parsing it again for each one too slow, keep each parsed file by its path
+    // and digest so that later lookups in it reuse the tree.
+    let file = parse(&text).map_err(|error| {
+        PyValueError::new_err(format!("{}\n{error}", error.location.render(None, None)))
+    })?;
+    let mut elements = Vec::with_capacity(field_path.len());
+    for element in &field_path {
+        elements.push(match element {
+            PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
+            PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
+        });
+    }
+    let location = file.location_of(&elements).ok_or_else(|| {
+        PyValueError::new_err("the file does not write the field path's top-level message")
+    })?;
+    new_source_location(py, location, Some(path)).map(Some)
+}
+
 fn decode_descriptor_set(
     py: Python<'_>,
     classes: &PythonClasses,
@@ -216,5 +267,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{validate, validate_file};
+    use super::{locate_field, validate, validate_file};
 }

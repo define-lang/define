@@ -9,7 +9,7 @@ mod scanner;
 mod syntax_error;
 mod syntax_tree;
 
-pub use field_path::{FieldPathElement, FieldPathLocation};
+pub use field_path::FieldPathElement;
 pub use parser::parse;
 pub use syntax_error::{SyntaxError, SyntaxErrorKind};
 pub use syntax_tree::{

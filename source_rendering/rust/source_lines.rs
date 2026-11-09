@@ -22,6 +22,11 @@ impl SourceLines {
         }
     }
 
+    #[must_use]
+    pub fn text(&self) -> &str {
+        &self.source
+    }
+
     /// `location` as `SourceLocation::render` shows it, with the line of the
     /// file that it starts on, in the file at `file_path`. A location past the
     /// last line shows an empty line.

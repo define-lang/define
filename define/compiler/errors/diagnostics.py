@@ -9,6 +9,7 @@ from typing import ClassVar, Final
 
 import msgspec
 
+from defcl.python import validator as dcl_validator
 from define.compiler import constants, name_types
 from define.compiler.errors import invisible_characters
 from define.compiler.validator.reference_graph import propagation_step
@@ -1233,6 +1234,46 @@ class ConfigDiagnostic(BaseDiagnostic):
         return f'File "{self.config_path}"\n{self.render_message(sources)}'
 
 
+# A path to a field of a config file: field names, and the indices of repeated
+# fields' elements.
+type FieldPath = tuple[str | int, ...]
+
+
+class ConfigFieldDiagnostic(ConfigDiagnostic):
+    """Base class for diagnostics about the field of a config file at field_path."""
+
+    field_path: FieldPath
+
+    @property
+    def _field_path_text(self) -> str:
+        """The field path as it is written in messages, such as `deps.local[0].path`."""
+        text = ""
+        for element in self.field_path:
+            if isinstance(element, int):
+                text += f"[{element}]"
+            elif text:
+                text += f".{element}"
+            else:
+                text = element
+        return text
+
+    @typing.override
+    def format(self, sources: rendering.SourceMap, /) -> str:
+        """Format the diagnostic with the field that it is about, with its source line."""
+        field = self._render_field(sources, self.config_path, self.field_path)
+        return f"{field}\n{self.render_message(sources)}"
+
+    @staticmethod
+    def _render_field(
+        sources: rendering.SourceMap, config_path: str, field_path: FieldPath
+    ) -> str:
+        """Render where the config file at config_path writes the field at field_path, with its source line."""
+        location = dcl_validator.locate_field(sources, config_path, field_path)
+        if location is None:
+            return sources.render_header_without_position(config_path)
+        return sources.render_location(location)
+
+
 class MissingProjectConfigDiagnostic(ConfigDiagnostic):
     """Base class for diagnostics about a directory that should be a project root but has no project config, the one at config_path."""
 
@@ -1269,17 +1310,32 @@ class SubRootNotProjectRootDiagnostic(MissingProjectConfigDiagnostic):
     )
 
 
-class InvalidConfigDiagnostic(ConfigDiagnostic):
-    """Diagnostic for a config file whose values break the rules of its schema."""
+class ConfigViolationDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for a field of a config file whose value breaks a rule of its schema."""
 
-    violation_messages: list[str]
+    violation_message: str
 
     @typing.override
     def render_message(self, _sources: rendering.SourceMap, /) -> str:
-        violations_text = "\n".join(
-            f"  - {message}" for message in self.violation_messages
+        return f"{self._field_path_text}: {self.violation_message}"
+
+
+class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for a local dependency whose universe name an earlier local dependency already declares.
+
+    Its field is the later local dependency's universe_name.
+    """
+
+    universe_name: str
+    first_field_path: FieldPath
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"Universe '{self.universe_name}' is already declared by an earlier"
+            " local dependency here:\n"
+            f"{self._render_field(sources, self.config_path, self.first_field_path)}"
         )
-        return f"Invalid configuration:\n{violations_text}"
 
 
 class DuplicateFqunDiagnostic(ConfigDiagnostic):
@@ -1296,10 +1352,10 @@ class DuplicateFqunDiagnostic(ConfigDiagnostic):
     )
 
 
-class SubRootFqunMismatchDiagnostic(ConfigDiagnostic):
+class SubRootFqunMismatchDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for a sub-root whose project config declares a different universe than the local dependency that names it.
 
-    Its config file is the sub-root's project config.
+    Its field is the universe_name of the sub-root's project config.
     """
 
     expected_fqun: str

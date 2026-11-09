@@ -103,13 +103,16 @@ def test_external_universe_invalid_local_deps(
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
-        diagnostics.InvalidConfigDiagnostic(
+        diagnostics.ConfigViolationDiagnostic(
             config_path=".define/deps/local.defcl",
-            violation_messages=[
-                "deps.local.universe_name: value is required",
-                "deps.local.path: value is required",
-            ],
-        )
+            field_path=("deps", "local", 0, "universe_name"),
+            violation_message="value is required",
+        ),
+        diagnostics.ConfigViolationDiagnostic(
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
+            violation_message="value is required",
+        ),
     ]
 
 
@@ -135,13 +138,16 @@ def test_source_universe_definition_invalid_local_deps(
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
     assert result.all_diagnostics == [
-        diagnostics.InvalidConfigDiagnostic(
+        diagnostics.ConfigViolationDiagnostic(
             config_path=".define/deps/local.defcl",
-            violation_messages=[
-                "deps.local.universe_name: value is required",
-                "deps.local.path: value is required",
-            ],
-        )
+            field_path=("deps", "local", 0, "universe_name"),
+            violation_message="value is required",
+        ),
+        diagnostics.ConfigViolationDiagnostic(
+            config_path=".define/deps/local.defcl",
+            field_path=("deps", "local", 0, "path"),
+            violation_message="value is required",
+        ),
     ]
 
 

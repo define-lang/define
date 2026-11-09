@@ -103,6 +103,28 @@ impl SourceMap {
         }
     }
 
+    /// The header that names the file at `path`, then, if the file was
+    /// registered but no longer has the text it was registered with, why its
+    /// source lines cannot be shown.
+    #[must_use]
+    pub fn render_header_without_position(&self, path: &str) -> String {
+        match self.file_lines(path) {
+            Some(Err(reason)) => {
+                format!("File \"{path}\"\n{CODE_INDENTATION}(source not shown: {reason})")
+            }
+            Some(Ok(_)) | None => format!("File \"{path}\""),
+        }
+    }
+
+    /// `use_text` applied to the text of the file at `path`, if the file was
+    /// registered and still has the text it was registered with.
+    pub fn with_file_text<T>(&self, path: &str, use_text: impl FnOnce(&str) -> T) -> Option<T> {
+        match self.file_lines(path) {
+            Some(Ok(lines)) => Some(use_text(lines.text())),
+            Some(Err(_)) | None => None,
+        }
+    }
+
     #[expect(
         clippy::significant_drop_tightening,
         reason = "The file's entry borrows from the lock until the end."
@@ -264,6 +286,56 @@ mod tests {
                     before
                     ^^^^^^"#})
         )
+    }
+
+    #[gtest]
+    fn a_changed_file_s_header_shows_that_it_changed() -> Result<()> {
+        let path = write_file("changed_header.dfn", "changed\n")?;
+        let source_map = SourceMap::new(None);
+        source_map.register_file(&path, b"original\n");
+        verify_that!(
+            source_map.render_header_without_position(&path),
+            eq(&formatdoc! {r#"
+                File "{path}"
+                    (source not shown: the file changed after it was validated)"#})
+        )
+    }
+
+    #[gtest]
+    fn an_unchanged_file_s_header_names_only_the_file() -> Result<()> {
+        let path = write_file("unchanged_header.dfn", "text\n")?;
+        let source_map = SourceMap::new(None);
+        source_map.register_file(&path, b"text\n");
+        verify_that!(
+            source_map.render_header_without_position(&path),
+            eq(&format!("File \"{path}\""))
+        )
+    }
+
+    #[gtest]
+    fn a_registered_file_gives_its_text() -> Result<()> {
+        let path = write_file("text.dfn", "some text\n")?;
+        let source_map = SourceMap::new(None);
+        source_map.register_file(&path, b"some text\n");
+        verify_that!(
+            source_map.with_file_text(&path, str::to_owned),
+            some(eq("some text\n"))
+        )
+    }
+
+    #[gtest]
+    fn a_changed_file_gives_no_text() -> Result<()> {
+        let path = write_file("changed_text.dfn", "changed\n")?;
+        let source_map = SourceMap::new(None);
+        source_map.register_file(&path, b"original\n");
+        verify_that!(source_map.with_file_text(&path, str::to_owned), none())
+    }
+
+    #[gtest]
+    fn an_unregistered_file_gives_no_text() -> Result<()> {
+        let path = write_file("unregistered_text.dfn", "text\n")?;
+        let source_map = SourceMap::new(None);
+        verify_that!(source_map.with_file_text(&path, str::to_owned), none())
     }
 
     #[gtest]
