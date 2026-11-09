@@ -4,7 +4,7 @@ import typing
 
 import pytest
 
-from defcl.python import error_types, errors, locations, validator
+from defcl.python import error_types, errors, validator
 from source_rendering.python import rendering
 from tools import runfiles
 
@@ -62,12 +62,6 @@ def test_semantic_errors_are_diagnostics():
         line=2, column=13, end_line=2, end_column=13
     )
     assert integer_enum.field_name == "status"
-    assert integer_enum.rendered == (
-        "line 2, column 13\n"
-        "    status: 1\n"
-        "            ^\n"
-        "status: Integer enum values are not allowed"
-    )
     assert type(scalar_for_message_field) is errors.SemanticDiagnostic
     assert (
         scalar_for_message_field.kind
@@ -77,12 +71,6 @@ def test_semantic_errors_are_diagnostics():
         line=3, column=15, end_line=3, end_column=25
     )
     assert scalar_for_message_field.field_name == "database"
-    assert scalar_for_message_field.rendered == (
-        "line 3, column 15\n"
-        '    database: "localhost"\n'
-        "              ^^^^^^^^^^^\n"
-        "database: The field is a message field, so its value must be a message value"
-    )
     assert type(message_value_for_scalar_field) is errors.SemanticDiagnostic
     assert (
         message_value_for_scalar_field.kind
@@ -92,12 +80,6 @@ def test_semantic_errors_are_diagnostics():
         line=5, column=8, end_line=5, end_column=9
     )
     assert message_value_for_scalar_field.field_name == "count"
-    assert message_value_for_scalar_field.rendered == (
-        "line 5, column 8\n"
-        "    count: {}\n"
-        "           ^^\n"
-        "count: The field is not a message field, so its value cannot be a message value"
-    )
 
 
 def test_unknown_field_name_diagnostic_has_message_type():
@@ -118,12 +100,6 @@ def test_unknown_field_name_diagnostic_has_message_type():
     assert (
         unknown_field_name.message_type
         == "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
-    )
-    assert unknown_field_name.rendered == (
-        "line 2, column 5\n"
-        "    size: {\n"
-        "    ^^^^\n"
-        "size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
     )
 
 
@@ -146,12 +122,6 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
         unknown_enum_value.enum_type
         == "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status"
     )
-    assert unknown_enum_value.rendered == (
-        "line 2, column 13\n"
-        "    status: ACTIVE\n"
-        "            ^^^^^^\n"
-        "status: defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile.Status has no value with this name"
-    )
 
 
 def test_integer_out_of_range_diagnostic_has_field_type():
@@ -171,12 +141,6 @@ def test_integer_out_of_range_diagnostic_has_field_type():
     )
     assert integer_out_of_range.field_name == "uint32_value"
     assert integer_out_of_range.field_type == "uint32"
-    assert integer_out_of_range.rendered == (
-        "line 2, column 19\n"
-        "    uint32_value: -1\n"
-        "                  ^^\n"
-        "uint32_value: uint32 fields take integers from 0 to 4294967295"
-    )
 
 
 def test_float_out_of_range_diagnostic_has_field_type():
@@ -195,12 +159,6 @@ def test_float_out_of_range_diagnostic_has_field_type():
     )
     assert float_out_of_range.field_name == "float_value"
     assert float_out_of_range.field_type == "float"
-    assert float_out_of_range.rendered == (
-        "line 2, column 18\n"
-        "    float_value: 340282356779733661637539395458142568448.0\n"
-        "                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
-        "float_value: The value is too large in magnitude for a float field"
-    )
 
 
 def test_second_field_of_oneof_diagnostic_has_oneof():
@@ -223,57 +181,38 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
         second_field_of_oneof.oneof
         == "defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source"
     )
-    assert second_field_of_oneof.rendered == (
-        "line 3, column 5\n"
-        '    url: "b"\n'
-        "    ^^^\n"
-        "url: Only one field of the oneof defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source can be written in a message value"
-    )
 
 
 def test_syntax_error_is_a_diagnostic():
-    assert validator.validate(
+    (unexpected_character,) = validator.validate(
         _testdata("invalid/syntax/characters/at_sign.defcl"),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
-    ) == [
-        errors.UnexpectedCharacterDiagnostic(
-            message="Unexpected character '@' (U+0040)",
-            location=rendering.SourceLocation(
-                line=2, column=8, end_line=2, end_column=8
-            ),
-            rendered=(
-                "line 2, column 8\n"
-                "    b: @\n"
-                "       ^\n"
-                "Unexpected character '@' (U+0040)"
-            ),
-            kind=error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER,
-            character="@",
-        )
-    ]
+    )
+
+    assert type(unexpected_character) is errors.UnexpectedCharacterDiagnostic
+    assert (
+        unexpected_character.kind
+        == error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER
+    )
+    assert unexpected_character.location == rendering.SourceLocation(
+        line=2, column=8, end_line=2, end_column=8
+    )
+    assert unexpected_character.character == "@"
 
 
 def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
-    assert validator.validate(
+    (missing_colon,) = validator.validate(
         _testdata("invalid/syntax/separators/missing_colon.defcl"),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
-    ) == [
-        errors.SyntaxDiagnostic(
-            message="Missing colon after field name",
-            location=rendering.SourceLocation(
-                line=2, column=10, end_line=2, end_column=10
-            ),
-            rendered=(
-                "line 2, column 10\n"
-                '    value "test"\n'
-                "         ^\n"
-                "Missing colon after field name"
-            ),
-            kind=error_types.SyntaxDiagnosticKind.MISSING_COLON,
-        )
-    ]
+    )
+
+    assert type(missing_colon) is errors.SyntaxDiagnostic
+    assert missing_colon.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
+    assert missing_colon.location == rendering.SourceLocation(
+        line=2, column=10, end_line=2, end_column=10
+    )
 
 
 def test_undecodable_descriptor_set_raises_invalid_schema_error():
@@ -294,30 +233,32 @@ def test_missing_message_type_raises_invalid_schema_error():
 
 def test_validate_file_of_a_valid_file_returns_its_text_and_no_diagnostics():
     assert validator.validate_file(
-        _testdata_path("valid/single_toplevel.defcl"),
+        str(_testdata_path("valid/single_toplevel.defcl")),
+        rendering.SourceMap(),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     ) == ('project: {\n    universe_name: "example"\n}\n', [])
 
 
-def test_validate_file_names_the_file_in_rendered_diagnostics():
-    path = _testdata_path("invalid/semantics/enums/integer_enum.defcl")
+def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
+    path = str(_testdata_path("invalid/semantics/enums/integer_enum.defcl"))
+    source_map = rendering.SourceMap()
 
     source, (integer_enum,) = validator.validate_file(
         path,
+        source_map,
         _invalid_semantics_schemas(),
         "defcl.testdata.invalid.semantics.schemas.IntegerEnumFile",
     )
 
     assert source == "config: {\n    status: 0\n}\n"
-
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13
+        line=2, column=13, end_line=2, end_column=13, file_path=path
     )
     assert integer_enum.field_name == "status"
-    assert integer_enum.rendered == (
+    assert integer_enum.format(source_map) == (
         f'File "{path}", line 2, column 13\n'
         "    status: 0\n"
         "            ^\n"
@@ -328,49 +269,8 @@ def test_validate_file_names_the_file_in_rendered_diagnostics():
 def test_validate_file_of_a_missing_file_raises_file_not_found_error():
     with pytest.raises(FileNotFoundError):
         _ = validator.validate_file(
-            "no_such_file.defcl", _valid_schemas(), _SINGLE_TOPLEVEL_FILE
+            "no_such_file.defcl",
+            rendering.SourceMap(),
+            _valid_schemas(),
+            _SINGLE_TOPLEVEL_FILE,
         )
-
-
-def test_location_of_a_field_of_an_element_of_a_repeated_field():
-    location = validator.location_of(
-        _testdata("valid/field_paths.defcl"),
-        ["project", "dependencies", 1, "universe"],
-    )
-
-    assert location == locations.FieldPathLocation(
-        name=rendering.SourceLocation(line=9, column=13, end_line=9, end_column=20),
-        value=rendering.SourceLocation(line=9, column=23, end_line=9, end_column=25),
-        is_whole_path=True,
-    )
-
-
-def test_location_of_an_element_of_a_repeated_field_has_no_name():
-    location = validator.location_of(
-        _testdata("valid/field_paths.defcl"), ["project", "tags", 0]
-    )
-
-    assert location == locations.FieldPathLocation(
-        name=None,
-        value=rendering.SourceLocation(line=12, column=12, end_line=12, end_column=14),
-        is_whole_path=True,
-    )
-
-
-def test_location_of_a_field_that_is_not_written_is_its_message():
-    location = validator.location_of(
-        _testdata("valid/field_paths.defcl"), ["project", "owner"]
-    )
-
-    assert location == locations.FieldPathLocation(
-        name=rendering.SourceLocation(line=1, column=1, end_line=1, end_column=7),
-        value=rendering.SourceLocation(line=1, column=10, end_line=13, end_column=1),
-        is_whole_path=False,
-    )
-
-
-def test_location_of_a_top_level_message_that_is_not_written_is_none():
-    assert (
-        validator.location_of(_testdata("valid/field_paths.defcl"), ["metadata"])
-        is None
-    )

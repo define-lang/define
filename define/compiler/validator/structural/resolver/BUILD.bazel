@@ -42,6 +42,7 @@ py_library(
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -88,6 +89,7 @@ py_library(
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

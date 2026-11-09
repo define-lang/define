@@ -61,7 +61,6 @@ py_library(
     deps = [
         ":ast",
         ":constants",
-        "//defcl/python:errors",
         "//defcl/python:loader",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",

@@ -11,9 +11,8 @@ from google.protobuf import descriptor_pb2, message, text_format
 from defcl.python import validator
 
 if typing.TYPE_CHECKING:
-    import os
-
     from defcl.python import errors
+    from source_rendering.python import rendering
 
 
 class LoadResult[M: message.Message](msgspec.Struct, frozen=True):
@@ -42,9 +41,9 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
 
 
 def load_file[M: message.Message](
-    path: str | os.PathLike[str], message_type: type[M]
+    path: str, message_type: type[M], source_map: rendering.SourceMap
 ) -> LoadResult[M]:
-    """Load the DCL file at `path` into a message of `message_type`.
+    """Load the DCL file at `path` into a message of `message_type`, registering it with `source_map`.
 
     Raises:
         OSError: If the file cannot be read.
@@ -53,6 +52,7 @@ def load_file[M: message.Message](
     """
     source, diagnostics = validator.validate_file(
         path,
+        source_map,
         _descriptor_set(message_type),
         message_type.DESCRIPTOR.full_name,
     )

@@ -39,7 +39,7 @@ def _write_valid_project_config(root: Path):
 
 
 def _load(root: define_path.DefinePath = constants.PROJECT_ROOT):
-    return config.ConfigLoader(root).load_project_root_config()
+    return config.ConfigLoader(root, rendering.SourceMap()).load_project_root_config()
 
 
 def _invalid_local_deps(violation_message: str) -> config.RootConfigResult:
@@ -125,7 +125,9 @@ class TestLoadProjectRootConfig:
         _write_valid_project_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
-        assert config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config(
+        assert config.ConfigLoader(
+            constants.PROJECT_ROOT, rendering.SourceMap()
+        ).load_project_root_config(
             "test.example.com:my_lib"
         ) == config.RootConfigResult(
             root_config=config.ProjectRootConfig(
@@ -140,7 +142,9 @@ class TestLoadProjectRootConfig:
         _write_valid_project_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
-        assert config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config(
+        assert config.ConfigLoader(
+            constants.PROJECT_ROOT, rendering.SourceMap()
+        ).load_project_root_config(
             "other.example.com:other_lib"
         ) == config.RootConfigResult(
             root_config=None,

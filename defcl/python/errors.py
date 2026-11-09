@@ -21,13 +21,10 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
     # The diagnostic's message, without its location.
     message: str
     location: rendering.SourceLocation
-    # The diagnostic's location, as its source line underlined with carets, then
-    # its message.
-    rendered: str
 
-    @typing.override
-    def __str__(self) -> str:
-        return self.rendered
+    def format(self, sources: rendering.SourceMap) -> str:
+        """Format the diagnostic: its location, with its source line underlined with carets, then its message."""
+        return f"{sources.render_location(self.location)}\n{self.message}"
 
 
 class SyntaxDiagnostic(DclDiagnostic, frozen=True):

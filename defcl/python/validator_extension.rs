@@ -1,20 +1,17 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
-use defcl_parser::{FieldPathElement, FieldPathLocation, SyntaxError, SyntaxErrorKind, parse};
+use defcl_parser::{SyntaxError, SyntaxErrorKind};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
-use defcl_validator::{RenderedError, ValidationError};
+use defcl_validator::ValidationError;
 use prost::Message as _;
-use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::PyType;
-use source_rendering::SourceLines;
+use pyo3::types::{PyBytes, PyString, PyType};
 use source_rendering_capsule::new_source_location;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// The Python classes that the module returns and raises.
 struct PythonClasses {
-    field_path_location: Py<PyType>,
     syntax_diagnostic: Py<PyType>,
     unexpected_character_diagnostic: Py<PyType>,
     syntax_diagnostic_kind: Py<PyType>,
@@ -38,9 +35,7 @@ impl PythonClasses {
     fn import(py: Python<'_>) -> PyResult<Self> {
         let errors = py.import("defcl.python.errors")?;
         let error_types = py.import("defcl.python.error_types")?;
-        let locations = py.import("defcl.python.locations")?;
         Ok(Self {
-            field_path_location: class(&locations, "FieldPathLocation")?,
             syntax_diagnostic: class(&errors, "SyntaxDiagnostic")?,
             unexpected_character_diagnostic: class(&errors, "UnexpectedCharacterDiagnostic")?,
             syntax_diagnostic_kind: class(&error_types, "SyntaxDiagnosticKind")?,
@@ -55,22 +50,6 @@ impl PythonClasses {
         })
     }
 
-    fn field_path_location<'py>(
-        &self,
-        py: Python<'py>,
-        location: FieldPathLocation,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let name = location
-            .name
-            .map(|name| new_source_location(py, name, None))
-            .transpose()?;
-        self.field_path_location.bind(py).call1((
-            name,
-            new_source_location(py, location.value, None)?,
-            location.is_whole_path,
-        ))
-    }
-
     fn invalid_schema_error(&self, py: Python<'_>, error: &impl ToString) -> PyErr {
         raise(
             self.invalid_schema_error
@@ -82,74 +61,60 @@ impl PythonClasses {
     fn syntax_diagnostic<'py>(
         &self,
         py: Python<'py>,
-        rendered_error: &RenderedError<SyntaxError>,
+        error: &SyntaxError,
+        file_path: Option<&Bound<'py, PyString>>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        let error = &rendered_error.error;
         let kind: &'static str = error.kind.into();
         let kind = self.syntax_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
-        let location = new_source_location(py, error.location, None)?;
-        let rendered = &rendered_error.rendered;
+        let location = new_source_location(py, error.location, file_path)?;
         if let SyntaxErrorKind::UnexpectedCharacter { character } = error.kind {
             return self
                 .unexpected_character_diagnostic
                 .bind(py)
-                .call1((message, location, rendered, kind, character));
+                .call1((message, location, kind, character));
         }
         self.syntax_diagnostic
             .bind(py)
-            .call1((message, location, rendered, kind))
+            .call1((message, location, kind))
     }
 
     fn semantic_diagnostic<'py>(
         &self,
         py: Python<'py>,
-        rendered_error: &RenderedError<SemanticError>,
+        error: &SemanticError,
+        file_path: Option<&Bound<'py, PyString>>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        let error = &rendered_error.error;
         let kind: &'static str = (&error.kind).into();
         let kind = self.semantic_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
-        let location = new_source_location(py, error.location, None)?;
+        let location = new_source_location(py, error.location, file_path)?;
         let field_name = &error.field_name;
-        let rendered = &rendered_error.rendered;
         match &error.kind {
             SemanticErrorKind::UnknownFieldName { message_type } => self
                 .unknown_field_name_diagnostic
                 .bind(py)
-                .call1((message, location, rendered, kind, field_name, message_type)),
+                .call1((message, location, kind, field_name, message_type)),
             SemanticErrorKind::UnknownEnumValue { enum_type } => self
                 .unknown_enum_value_diagnostic
                 .bind(py)
-                .call1((message, location, rendered, kind, field_name, enum_type)),
-            SemanticErrorKind::IntegerOutOfRange { field_type } => {
-                self.integer_out_of_range_diagnostic.bind(py).call1((
-                    message,
-                    location,
-                    rendered,
-                    kind,
-                    field_name,
-                    field_type.to_string(),
-                ))
-            }
-            SemanticErrorKind::FloatOutOfRange { field_type } => {
-                self.float_out_of_range_diagnostic.bind(py).call1((
-                    message,
-                    location,
-                    rendered,
-                    kind,
-                    field_name,
-                    field_type.to_string(),
-                ))
-            }
+                .call1((message, location, kind, field_name, enum_type)),
+            SemanticErrorKind::IntegerOutOfRange { field_type } => self
+                .integer_out_of_range_diagnostic
+                .bind(py)
+                .call1((message, location, kind, field_name, field_type.to_string())),
+            SemanticErrorKind::FloatOutOfRange { field_type } => self
+                .float_out_of_range_diagnostic
+                .bind(py)
+                .call1((message, location, kind, field_name, field_type.to_string())),
             SemanticErrorKind::SecondFieldOfOneof { oneof } => self
                 .second_field_of_oneof_diagnostic
                 .bind(py)
-                .call1((message, location, rendered, kind, field_name, oneof)),
+                .call1((message, location, kind, field_name, oneof)),
             _ => self
                 .semantic_diagnostic
                 .bind(py)
-                .call1((message, location, rendered, kind, field_name)),
+                .call1((message, location, kind, field_name)),
         }
     }
 }
@@ -189,67 +154,32 @@ fn validate<'py>(
         py,
         classes,
         defcl_validator::validate(source, descriptor_set, top_level_message_type),
+        None,
     )
 }
 
-/// Validates the DCL file at `path` as `validate` validates its text, with
-/// errors that name the file, and returns the file's text with the
-/// diagnostics. Raises `OSError` if the file cannot be read.
+/// Validates the DCL file at `path` as `validate` validates its text, registers
+/// it with the `SourceMap` `source_map`, and returns the file's text with the
+/// diagnostics, whose locations are in the file at `path`. Raises `OSError` if
+/// the file cannot be read.
 #[pyfunction]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "pyo3 can only extract a path argument as an owned PathBuf"
-)]
 fn validate_file<'py>(
-    py: Python<'py>,
-    path: PathBuf,
+    path: &Bound<'py, PyString>,
+    source_map: &Bound<'py, PyAny>,
     descriptor_set: &[u8],
     top_level_message_type: &str,
 ) -> PyResult<(String, Vec<Bound<'py, PyAny>>)> {
+    let py = path.py();
     let classes = PythonClasses::get(py)?;
     let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
-    let (source, result) =
-        defcl_validator::validate_file(&path, descriptor_set, top_level_message_type)?;
-    Ok((source, diagnostics(py, classes, result)?))
-}
-
-/// An element of a field path from Python: a field name, or the index of an
-/// element of the repeated value before it.
-#[derive(FromPyObject)]
-enum PythonFieldPathElement {
-    Field(String),
-    Index(usize),
-}
-
-/// Where the DCL text `source` writes the field at `field_path`, a sequence of
-/// field names and indices of repeated values' elements whose first element is
-/// a top-level message, or the nearest field on the path that it writes, as a
-/// `FieldPathLocation`, or `None` if it does not write the path's top-level
-/// message. Raises `ValueError` if the text has a syntax error, since only text
-/// that validated has fields to find.
-#[pyfunction]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "pyo3 can only extract a sequence argument as an owned Vec"
-)]
-fn location_of<'py>(
-    py: Python<'py>,
-    source: &str,
-    field_path: Vec<PythonFieldPathElement>,
-) -> PyResult<Option<Bound<'py, PyAny>>> {
-    let classes = PythonClasses::get(py)?;
-    let mut path = Vec::with_capacity(field_path.len());
-    for element in &field_path {
-        path.push(match element {
-            PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
-            PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
-        });
-    }
-    let file = parse(source)
-        .map_err(|error| PyValueError::new_err(error.render(&SourceLines::new(source), None)))?;
-    file.location_of(&path)
-        .map(|location| classes.field_path_location(py, location))
-        .transpose()
+    let (source, result) = defcl_validator::validate_file(
+        Path::new(path.to_str()?),
+        descriptor_set,
+        top_level_message_type,
+    )?;
+    let _: Bound<'_, PyAny> =
+        source_map.call_method1("register_file", (path, PyBytes::new(py, source.as_bytes())))?;
+    Ok((source, diagnostics(py, classes, result, Some(path))?))
 }
 
 fn decode_descriptor_set(
@@ -261,20 +191,24 @@ fn decode_descriptor_set(
         .map_err(|error| classes.invalid_schema_error(py, &error))
 }
 
-/// The `DclDiagnostic`s of `result`'s syntax or semantic errors, or the
-/// exception that its schema error raises.
+/// The `DclDiagnostic`s of `result`'s syntax or semantic errors, in the file at
+/// `file_path` if the text is from a file, or the exception that its schema
+/// error raises.
 fn diagnostics<'py>(
     py: Python<'py>,
     classes: &PythonClasses,
     result: Result<(), ValidationError>,
+    file_path: Option<&Bound<'py, PyString>>,
 ) -> PyResult<Vec<Bound<'py, PyAny>>> {
     match result {
         Ok(()) => Ok(Vec::new()),
         Err(ValidationError::Schema(error)) => Err(classes.invalid_schema_error(py, &error)),
-        Err(ValidationError::Syntax(error)) => Ok(vec![classes.syntax_diagnostic(py, &error)?]),
+        Err(ValidationError::Syntax(error)) => {
+            Ok(vec![classes.syntax_diagnostic(py, &error, file_path)?])
+        }
         Err(ValidationError::Semantic(errors)) => errors
             .iter()
-            .map(|error| classes.semantic_diagnostic(py, error))
+            .map(|error| classes.semantic_diagnostic(py, error, file_path))
             .collect(),
     }
 }
@@ -282,5 +216,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{location_of, validate, validate_file};
+    use super::{validate, validate_file};
 }

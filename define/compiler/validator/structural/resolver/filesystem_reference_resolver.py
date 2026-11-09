@@ -25,8 +25,8 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     _file_validator: file_validator.FileStructuralValidator
 
     def __init__(self, source_map: rendering.SourceMap):
-        """Initialize with the source map to register the entry file with, and no files loaded."""
-        super().__init__()
+        """Initialize with the source map to register the program's files with, and no files loaded."""
+        super().__init__(source_map)
         self._file_validator = file_validator.FileStructuralValidator(source_map)
 
     def load_entry_file(

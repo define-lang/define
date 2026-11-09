@@ -48,7 +48,7 @@ def validate_program(
     that specifically require an entry action with interface positions. It
     must remain false when validating a program for code generation.
     """
-    source_map = rendering.SourceMap(in_memory_source=None)
+    source_map = rendering.SourceMap()
     resolver = filesystem_reference_resolver.FilesystemReferenceResolver(source_map)
     program_validation = _ProgramValidationRun(
         resolver,
@@ -80,7 +80,7 @@ def validate_program_non_filesystem(
     source_map = rendering.SourceMap(in_memory_source=source)
     source_file = file_validator.FileStructuralValidator(source_map).load_source(source)
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
-        source_file
+        source_file, source_map
     )
     program_validation = _ProgramValidationRun(
         resolver,

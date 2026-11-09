@@ -27,7 +27,6 @@ py_test(
         ":resource_cases",
         "//defcl/python:error_types",
         "//defcl/python:errors",
-        "//defcl/python:locations",
         "//define/compiler:conftest",
         "//define/compiler:driver",
         "//define/compiler/codegen:test_helpers",

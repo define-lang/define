@@ -2,7 +2,7 @@
 
 use crate::schema::{FloatFieldType, IntegerFieldType};
 use derive_more::{Display, Error};
-use source_rendering::{SourceLines, SourceLocation};
+use source_rendering::SourceLocation;
 use strum::{IntoStaticStr, VariantNames};
 
 #[derive(Debug, PartialEq, Eq, Display, Error)]
@@ -12,16 +12,6 @@ pub struct SemanticError {
     pub location: SourceLocation,
     /// The name of the field that the error is in.
     pub field_name: String,
-}
-
-impl SemanticError {
-    /// The error as the Define compiler shows errors: the location as
-    /// `SourceLines::render` shows it in `source_lines`, the text of the
-    /// file at `file_path`, then the message.
-    #[must_use]
-    pub fn render(&self, source_lines: &SourceLines, file_path: Option<&str>) -> String {
-        format!("{}\n{self}", source_lines.render(self.location, file_path))
-    }
 }
 
 /// Which semantic error a `SemanticError` is. Its message does not include the
@@ -104,38 +94,4 @@ pub enum SemanticErrorKind {
         /// The full name of the enum type.
         enum_type: String,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{SemanticError, SemanticErrorKind};
-    use googletest::prelude::*;
-    use indoc::indoc;
-    use source_rendering::{Position, SourceLines, SourceLocation};
-
-    #[gtest]
-    fn shows_its_location_then_its_message() -> Result<()> {
-        verify_that!(
-            SemanticError {
-                kind: SemanticErrorKind::IntegerEnum,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 13
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 13
-                    }
-                },
-                field_name: "status".to_owned(),
-            }
-            .render(&SourceLines::new("config: {\n    status: 1\n}\n"), None),
-            eq(indoc! {"
-                line 2, column 13
-                    status: 1
-                            ^
-                status: Integer enum values are not allowed"})
-        )
-    }
 }

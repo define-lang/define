@@ -1214,14 +1214,8 @@ class NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(Diagnostic):
 class ConfigDiagnostic(Diagnostic):
     """Base class for diagnostics about a project's config files.
 
-    The source map does not hold config files, so a config diagnostic shows
-    the config file that it is about, with no line, column or source line.
     Unless a subclass says otherwise, its location is the start of that file.
     """
-
-    @typing.override
-    def format(self, sources: rendering.SourceMap) -> str:
-        return f'File "{self.location.file_path}"\n{self.render_message(sources)}'
 
 
 class ConfigDclDiagnostic(ConfigDiagnostic):
@@ -1233,9 +1227,8 @@ class ConfigDclDiagnostic(ConfigDiagnostic):
     dcl_diagnostic: dcl_errors.DclDiagnostic
 
     @typing.override
-    def format(self, sources: rendering.SourceMap) -> str:
-        # The defcl diagnostic shows its own location, with its source line.
-        return str(self.dcl_diagnostic)
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return self.dcl_diagnostic.message
 
 
 class MissingProjectConfigDiagnostic(ConfigDiagnostic):

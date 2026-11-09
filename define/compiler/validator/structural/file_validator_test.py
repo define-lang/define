@@ -43,7 +43,7 @@ def _load_and_validate_every_definition(
     context: file_validation_context.FileValidationContext,
 ) -> validation_result.FileValidationResult:
     loaded_file = file_validator.FileStructuralValidator(
-        rendering.SourceMap(in_memory_source=None)
+        rendering.SourceMap()
     ).load_file(context)
     definition_results: list[validation_result.DefinitionValidationResult] = []
     for definition in loaded_file.definitions.values():
@@ -189,7 +189,7 @@ class TestLoadedFile:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         loaded_file = file_validator.FileStructuralValidator(
-            rendering.SourceMap(in_memory_source=None)
+            rendering.SourceMap()
         ).load_file(_make_context(tmp_path))
 
         assert [
@@ -206,7 +206,7 @@ class TestLoadedFile:
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         loaded_file = file_validator.FileStructuralValidator(
-            rendering.SourceMap(in_memory_source=None)
+            rendering.SourceMap()
         ).load_file(_make_context(tmp_path))
 
         assert loaded_file.file_diagnostics == []

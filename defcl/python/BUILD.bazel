@@ -58,6 +58,7 @@ py_library(
     deps = [
         ":errors",
         ":validator",
+        "//source_rendering/python:rendering",
         "@pypi//msgspec",
         "@pypi//protobuf",
     ],
@@ -95,16 +96,6 @@ py_test(
 )
 
 py_library(
-    name = "locations",
-    srcs = ["locations.py"],
-    visibility = ["//define/compiler/resource_tests:__pkg__"],
-    deps = [
-        "//source_rendering/python:rendering",
-        "@pypi//msgspec",
-    ],
-)
-
-py_library(
     name = "python",
     srcs = ["__init__.py"],
     deps = ["//defcl"],
@@ -116,8 +107,8 @@ py_library(
     deps = [
         ":error_types",  # keep: the native implementation looks up its kinds
         ":errors",
-        ":locations",
         ":validator_extension",  # keep: supplies the native implementation of this stub
+        "//source_rendering/python:rendering",
     ],
 )
 
@@ -133,7 +124,6 @@ pyo3_extension(
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
         "//source_rendering/python:capsule",
-        "//source_rendering/rust:source_rendering",
         "@crates//:prost",
     ],
 )
@@ -154,7 +144,6 @@ py_test(
     deps = [
         ":error_types",
         ":errors",
-        ":locations",
         ":validator",
         "//source_rendering/python:rendering",
         "//tools:runfiles",
@@ -187,7 +176,6 @@ pyright_test(
         ":loader",
         ":loader_fuzz_test",
         ":loader_test",
-        ":locations",
         ":python",
         ":validator",
         ":validator_test",

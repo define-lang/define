@@ -1,21 +1,18 @@
 //! The lines of a source file.
 
 use crate::SourceLocation;
-use std::borrow::Cow;
 
 /// The text of a source file, with where each of its lines starts, so that
 /// showing many locations in it reads it only once.
-pub struct SourceLines<'source> {
-    // Borrowed when the caller keeps the text, and owned when these lines are
-    // all that keeps it, as in a `SourceMap`.
-    source: Cow<'source, str>,
+pub struct SourceLines {
+    source: String,
     // The byte offset of each line's first character.
     line_starts: Vec<usize>,
 }
 
-impl<'source> SourceLines<'source> {
+impl SourceLines {
     #[must_use]
-    pub fn new(source: impl Into<Cow<'source, str>>) -> Self {
+    pub fn new(source: impl Into<String>) -> Self {
         let source = source.into();
         let mut line_starts = vec![0];
         line_starts.extend(source.match_indices('\n').map(|(offset, _)| offset + 1));

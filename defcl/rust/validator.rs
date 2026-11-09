@@ -3,7 +3,6 @@
 
 use defcl_parser::{SyntaxError, parse};
 use defcl_semantics::{FileDescriptorSet, Schema, SchemaError, SemanticError, check_semantics};
-use source_rendering::SourceLines;
 use std::io;
 use std::path::Path;
 
@@ -14,18 +13,9 @@ pub enum ValidationError {
     /// type's name.
     Schema(SchemaError),
     /// The first syntax error, which stops parsing.
-    Syntax(RenderedError<SyntaxError>),
+    Syntax(SyntaxError),
     /// Every semantic error, in source order.
-    Semantic(Vec<RenderedError<SemanticError>>),
-}
-
-/// An error in a DCL file, with the text that shows it to a developer.
-#[derive(Debug, PartialEq, Eq)]
-pub struct RenderedError<E> {
-    pub error: E,
-    /// The error's location, as its source line underlined with carets, then
-    /// its message.
-    pub rendered: String,
+    Semantic(Vec<SemanticError>),
 }
 
 /// Validates `source`, the text of a DCL file, against the schema whose
@@ -41,12 +31,14 @@ pub fn validate(
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
 ) -> Result<(), ValidationError> {
-    validate_source(source, None, descriptor_set, top_level_message_type)
+    let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)
+        .map_err(ValidationError::Schema)?;
+    let file = parse(source).map_err(ValidationError::Syntax)?;
+    check_semantics(&file, &schema).map_err(ValidationError::Semantic)
 }
 
 /// Validates the DCL file at `path` as `validate` validates its text, and
-/// returns the text with the result of validating it. The rendered errors
-/// name the file.
+/// returns the text with the result of validating it.
 ///
 /// # Errors
 ///
@@ -59,50 +51,16 @@ pub fn validate_file(
     top_level_message_type: &str,
 ) -> io::Result<(String, Result<(), ValidationError>)> {
     let source = std::fs::read_to_string(path)?;
-    let result = validate_source(
-        &source,
-        Some(&path.display().to_string()),
-        descriptor_set,
-        top_level_message_type,
-    );
+    let result = validate(&source, descriptor_set, top_level_message_type);
     Ok((source, result))
-}
-
-fn validate_source(
-    source: &str,
-    file_path: Option<&str>,
-    descriptor_set: FileDescriptorSet,
-    top_level_message_type: &str,
-) -> Result<(), ValidationError> {
-    let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)
-        .map_err(ValidationError::Schema)?;
-    // The line table is built only for a file with errors, which is rare.
-    let file = parse(source).map_err(|error| {
-        ValidationError::Syntax(RenderedError {
-            rendered: error.render(&SourceLines::new(source), file_path),
-            error,
-        })
-    })?;
-    check_semantics(&file, &schema).map_err(|errors| {
-        let source_lines = SourceLines::new(source);
-        let mut rendered_errors = Vec::with_capacity(errors.len());
-        for error in errors {
-            rendered_errors.push(RenderedError {
-                rendered: error.render(&source_lines, file_path),
-                error,
-            });
-        }
-        ValidationError::Semantic(rendered_errors)
-    })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{RenderedError, ValidationError, validate, validate_file};
+    use super::{ValidationError, validate, validate_file};
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
-    use indoc::{formatdoc, indoc};
     use prost::Message as _;
     use runfiles::Runfiles;
     use source_rendering::{Position, SourceLocation};
@@ -159,20 +117,12 @@ mod tests {
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             ),
-            err(eq(&ValidationError::Syntax(RenderedError {
-                error: SyntaxError {
-                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                    location: SourceLocation {
-                        start: Position { line: 2, column: 8 },
-                        end: Position { line: 2, column: 8 }
-                    },
+            err(eq(&ValidationError::Syntax(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                location: SourceLocation {
+                    start: Position { line: 2, column: 8 },
+                    end: Position { line: 2, column: 8 }
                 },
-                rendered: indoc! {"
-                    line 2, column 8
-                        b: @
-                           ^
-                    Unexpected character '@' (U+0040)"}
-                .to_owned(),
             })))
         )
     }
@@ -188,46 +138,36 @@ mod tests {
                 "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
             ),
             err(eq(&ValidationError::Semantic(vec![
-                RenderedError {
-                    error: SemanticError {
-                        kind: SemanticErrorKind::UnknownFieldName {
-                            message_type:
-                                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
-                                    .to_owned(),
-                        },
-                        location: SourceLocation { start: Position { line: 2, column: 5 }, end: Position { line: 2, column: 8 } },
-                        field_name: "size".to_owned(),
+                SemanticError {
+                    kind: SemanticErrorKind::UnknownFieldName {
+                        message_type:
+                            "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                                .to_owned(),
                     },
-                    rendered: indoc! {"
-                        line 2, column 5
-                            size: 1
-                            ^^^^
-                        size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"}
-                    .to_owned(),
+                    location: SourceLocation {
+                        start: Position { line: 2, column: 5 },
+                        end: Position { line: 2, column: 8 }
+                    },
+                    field_name: "size".to_owned(),
                 },
-                RenderedError {
-                    error: SemanticError {
-                        kind: SemanticErrorKind::UnknownFieldName {
-                            message_type:
-                                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
-                                    .to_owned(),
-                        },
-                        location: SourceLocation { start: Position { line: 3, column: 5 }, end: Position { line: 3, column: 8 } },
-                        field_name: "size".to_owned(),
+                SemanticError {
+                    kind: SemanticErrorKind::UnknownFieldName {
+                        message_type:
+                            "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                                .to_owned(),
                     },
-                    rendered: indoc! {"
-                        line 3, column 5
-                            size: 2
-                            ^^^^
-                        size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"}
-                    .to_owned(),
+                    location: SourceLocation {
+                        start: Position { line: 3, column: 5 },
+                        end: Position { line: 3, column: 8 }
+                    },
+                    field_name: "size".to_owned(),
                 },
             ])))
         )
     }
 
     #[gtest]
-    fn validate_file_returns_the_text_and_names_the_file_in_rendered_errors() -> Result<()> {
+    fn validate_file_returns_the_text_with_the_result() -> Result<()> {
         let runfiles = Runfiles::create().or_fail()?;
         let path = runfiles::rlocation!(
             runfiles,
@@ -243,20 +183,11 @@ mod tests {
             .or_fail()?,
             (
                 eq("a: {\n    b: @\n}\n"),
-                err(eq(&ValidationError::Syntax(RenderedError {
-                    error: SyntaxError {
-                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                        location: SourceLocation {
-                            start: Position { line: 2, column: 8 },
-                            end: Position { line: 2, column: 8 }
-                        },
-                    },
-                    rendered: formatdoc! {r#"
-                        File "{path}", line 2, column 8
-                            b: @
-                               ^
-                        Unexpected character '@' (U+0040)"#,
-                        path = path.display()
+                err(eq(&ValidationError::Syntax(SyntaxError {
+                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                    location: SourceLocation {
+                        start: Position { line: 2, column: 8 },
+                        end: Position { line: 2, column: 8 }
                     },
                 })))
             )

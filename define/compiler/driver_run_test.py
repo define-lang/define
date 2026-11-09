@@ -152,7 +152,9 @@ def test_invalid_config_returns_error_and_prints_to_stream(
     result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
-        'File ".define/project/config.defcl"\n'
+        'File ".define/project/config.defcl", line 1, column 1\n'
+        "    project: {}\n"
+        "    ^\n"
         "Invalid configuration:\n"
         "  - project.universe_name: value is required\n"
     )
@@ -181,7 +183,9 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     assert result == driver.ExitCode.ERROR
     assert captured.out == ""
     assert captured.err == (
-        'File ".define/project/config.defcl"\n'
+        'File ".define/project/config.defcl", line 1, column 1\n'
+        "    project: {}\n"
+        "    ^\n"
         "Invalid configuration:\n"
         "  - project.universe_name: value is required\n"
     )

@@ -68,43 +68,32 @@ def test_semantic_errors_are_diagnostics_without_a_message():
         line=2, column=13, end_line=2, end_column=13
     )
     assert integer_enum.field_name == "status"
-    assert integer_enum.rendered == (
-        "line 2, column 13\n"
-        "    status: 0\n"
-        "            ^\n"
-        "status: Integer enum values are not allowed"
-    )
 
 
 def test_syntax_error_is_a_diagnostic_without_a_message():
-    assert loader.load(
+    result = loader.load(
         _testdata("invalid/syntax/characters/at_sign.defcl"),
         single_toplevel_pb2.SingleToplevelFile,
-    ) == loader.LoadResult(
-        message=None,
-        diagnostics=[
-            errors.UnexpectedCharacterDiagnostic(
-                message="Unexpected character '@' (U+0040)",
-                location=rendering.SourceLocation(
-                    line=2, column=8, end_line=2, end_column=8
-                ),
-                rendered=(
-                    "line 2, column 8\n"
-                    "    b: @\n"
-                    "       ^\n"
-                    "Unexpected character '@' (U+0040)"
-                ),
-                kind=error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER,
-                character="@",
-            )
-        ],
     )
+
+    assert result.message is None
+    (unexpected_character,) = result.diagnostics
+    assert type(unexpected_character) is errors.UnexpectedCharacterDiagnostic
+    assert (
+        unexpected_character.kind
+        == error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER
+    )
+    assert unexpected_character.location == rendering.SourceLocation(
+        line=2, column=8, end_line=2, end_column=8
+    )
+    assert unexpected_character.character == "@"
 
 
 def test_load_file_reads_the_file():
     result = loader.load_file(
         _testdata_path("valid/single_toplevel.defcl"),
         single_toplevel_pb2.SingleToplevelFile,
+        rendering.SourceMap(),
     )
 
     assert result.message == single_toplevel_pb2.SingleToplevelFile(
@@ -116,19 +105,17 @@ def test_load_file_reads_the_file():
 def test_load_file_diagnostics_name_the_file():
     path = _testdata_path("invalid/semantics/enums/integer_enum.defcl")
 
-    result = loader.load_file(path, integer_enum_pb2.IntegerEnumFile)
+    result = loader.load_file(
+        path,
+        integer_enum_pb2.IntegerEnumFile,
+        rendering.SourceMap(),
+    )
 
     assert result.message is None
     (integer_enum,) = result.diagnostics
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13
+        line=2, column=13, end_line=2, end_column=13, file_path=path
     )
     assert integer_enum.field_name == "status"
-    assert integer_enum.rendered == (
-        f'File "{path}", line 2, column 13\n'
-        "    status: 0\n"
-        "            ^\n"
-        "status: Integer enum values are not allowed"
-    )

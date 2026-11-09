@@ -173,6 +173,7 @@ struct PySourceMap {
 #[pymethods]
 impl PySourceMap {
     #[new]
+    #[pyo3(signature = (in_memory_source = None))]
     fn new(in_memory_source: Option<String>) -> Self {
         Self {
             source_map: source_rendering::SourceMap::new(in_memory_source),

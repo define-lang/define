@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.structural import (
         file_validator,
     )
+    from source_rendering.python import rendering
 
 
 class ReachedDefinition(msgspec.Struct):
@@ -54,9 +55,11 @@ class ReferenceResolver:
     # use that universe.
     _disabled_universes: set[tuple[define_path.DefinePath, str]]
     _config_diagnostics: list[diagnostics.ConfigDiagnostic]
+    _source_map: rendering.SourceMap
 
-    def __init__(self):
-        """Initialize with no files loaded."""
+    def __init__(self, source_map: rendering.SourceMap):
+        """Initialize with the source map to register the program's files with, and no files loaded."""
+        self._source_map = source_map
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
         self._disabled_universes = set()
@@ -324,9 +327,9 @@ class ReferenceResolver:
                 fqun=constants.STANDARD_UNIVERSE, sub_roots={}
             )
         else:
-            result = config.ConfigLoader(root_prefix).load_project_root_config(
-                expected_fqun
-            )
+            result = config.ConfigLoader(
+                root_prefix, self._source_map
+            ).load_project_root_config(expected_fqun)
             if result.root_config is None:
                 self._path_tracker.mark_root_failed(root_prefix)
                 self._config_diagnostics.extend(result.diagnostics)

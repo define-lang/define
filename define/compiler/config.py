@@ -16,12 +16,11 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
-from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from defcl.python import errors as dcl_errors
+    from source_rendering.python import rendering
 
 
 CONFIG_PATH = define_path.DefinePathFromPosix(
@@ -61,10 +60,12 @@ class ConfigLoader:
     """Loads and validates Define project configuration files."""
 
     _root: define_path.DefinePath
+    _source_map: rendering.SourceMap
 
-    def __init__(self, root: define_path.DefinePath):
-        """Initialize with the project root path."""
+    def __init__(self, root: define_path.DefinePath, source_map: rendering.SourceMap):
+        """Initialize with the project root path and the source map to register config files with."""
         self._root = root
+        self._source_map = source_map
 
     def config_path(self) -> PurePosixPath:
         """Return the path of the root's project config file."""
@@ -131,11 +132,15 @@ class ConfigLoader:
     ) -> M | list[diagnostics.ConfigDiagnostic]:
         """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
         path = (self._root / subpath).as_posix_path()
-        loaded = dcl_loader.load_file(path, message_type)
+        loaded = dcl_loader.load_file(str(path), message_type, self._source_map)
         if loaded.message is None:
             found_diagnostics: list[diagnostics.ConfigDiagnostic] = []
             for dcl_diagnostic in loaded.diagnostics:
-                found_diagnostics.append(_dcl_diagnostic(str(path), dcl_diagnostic))
+                found_diagnostics.append(
+                    diagnostics.ConfigDclDiagnostic(
+                        location=dcl_diagnostic.location, dcl_diagnostic=dcl_diagnostic
+                    )
+                )
             return found_diagnostics
         result = loaded.message
         try:
@@ -190,19 +195,3 @@ class ConfigLoader:
                 PurePosixPath(dep.path)
             )
         return types.MappingProxyType(deps)
-
-
-def _dcl_diagnostic(
-    path: str, dcl_diagnostic: dcl_errors.DclDiagnostic
-) -> diagnostics.ConfigDclDiagnostic:
-    location = dcl_diagnostic.location
-    return diagnostics.ConfigDclDiagnostic(
-        location=rendering.SourceLocation(
-            line=location.line,
-            column=location.column,
-            end_line=location.end_line,
-            end_column=location.end_column,
-            file_path=path,
-        ),
-        dcl_diagnostic=dcl_diagnostic,
-    )

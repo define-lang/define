@@ -118,7 +118,7 @@ def test_at_without_a_file_is_in_no_file():
 def test_source_map_shows_a_registered_file_s_source_line(tmp_path: Path):
     path = tmp_path / "test.dfn"
     _ = path.write_bytes(b"first\n  second\n")
-    sources = rendering.SourceMap(in_memory_source=None)
+    sources = rendering.SourceMap()
     sources.register_file(str(path), b"first\n  second\n")
     location = rendering.SourceLocation(
         line=2, column=3, end_line=2, end_column=8, file_path=str(path)

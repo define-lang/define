@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
         file_validation_context,
         file_validator,
     )
+    from source_rendering.python import rendering
 
 
 @typing.final
@@ -37,9 +38,11 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     # The universes that the supplied source defines anything in.
     _source_universes: set[str]
 
-    def __init__(self, source_file: file_validator.LoadedFile):
-        """Initialize with the supplied source as the program's only loaded file."""
-        super().__init__()
+    def __init__(
+        self, source_file: file_validator.LoadedFile, source_map: rendering.SourceMap
+    ):
+        """Initialize with the supplied source as the program's only loaded file, and the source map to register config files with."""
+        super().__init__(source_map)
         self._source_file = source_file
         self._unknown_universes = set()
         self._source_universes = {
@@ -131,7 +134,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             # is in, which the supplied source defines, so a reference to any
             # other universe writes its FQUN.
             location = typing.cast("ast.Fqun", reference.name_content.fqun).location
-        config_loader = config.ConfigLoader(constants.PROJECT_ROOT)
+        config_loader = config.ConfigLoader(constants.PROJECT_ROOT, self._source_map)
         if config_loader.is_project_root():
             return self._load_root_config(constants.PROJECT_ROOT)
         self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)

@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 /// of its source lines, since a changed file's new text would put the carets
 /// under the wrong code.
 pub struct SourceMap {
-    in_memory_lines: Option<SourceLines<'static>>,
+    in_memory_lines: Option<SourceLines>,
     files: Mutex<FxHashMap<Box<str>, File>>,
 }
 
@@ -41,7 +41,7 @@ impl fmt::Display for NoInMemorySource {
 
 impl std::error::Error for NoInMemorySource {}
 
-type FileLines = Result<Arc<SourceLines<'static>>, SourceUnavailable>;
+type FileLines = Result<Arc<SourceLines>, SourceUnavailable>;
 
 /// Why a registered file's source lines cannot be shown.
 #[derive(Clone)]
