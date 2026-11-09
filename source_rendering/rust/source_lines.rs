@@ -68,7 +68,10 @@ mod tests {
                 },
                 Some("config.defcl")
             ),
-            eq("File \"config.defcl\", line 2, column 11\n    name: @\n          ^")
+            eq(indoc! {r#"
+                File "config.defcl", line 2, column 11
+                    name: @
+                          ^"#})
         )
     }
 
@@ -82,7 +85,10 @@ mod tests {
                 },
                 None
             ),
-            eq("line 1, column 1\n\n    ^")
+            eq(indoc! {"
+                line 1, column 1
+
+                    ^"})
         )
     }
 
@@ -96,7 +102,10 @@ mod tests {
                 },
                 None
             ),
-            eq("line 1, column 4\n    a: {}\n       ^^")
+            eq(indoc! {"
+                line 1, column 4
+                    a: {}
+                       ^^"})
         )
     }
 

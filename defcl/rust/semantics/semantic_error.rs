@@ -110,6 +110,7 @@ pub enum SemanticErrorKind {
 mod tests {
     use super::{SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
+    use indoc::indoc;
     use source_rendering::{Position, SourceLines, SourceLocation};
 
     #[gtest]
@@ -130,9 +131,11 @@ mod tests {
                 field_name: "status".to_owned(),
             }
             .render(&SourceLines::new("config: {\n    status: 1\n}\n"), None),
-            eq(
-                "line 2, column 13\n    status: 1\n            ^\nstatus: Integer enum values are not allowed"
-            )
+            eq(indoc! {"
+                line 2, column 13
+                    status: 1
+                            ^
+                status: Integer enum values are not allowed"})
         )
     }
 }

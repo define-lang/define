@@ -36,6 +36,7 @@ rust_test(
     compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":parser",
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     deps = ["@crates//:googletest"],
 )
 

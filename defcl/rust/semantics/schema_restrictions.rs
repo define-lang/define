@@ -190,6 +190,7 @@ mod tests {
     use crate::schema::{Schema, SchemaError};
     use crate::test_support::invalid_schemas;
     use googletest::prelude::*;
+    use indoc::indoc;
 
     const PACKAGE: &str = "defcl.testdata.invalid.schemas";
 
@@ -285,9 +286,11 @@ mod tests {
             )
             .err()
             .map(|error| error.to_string()),
-            some(eq(
-                "Cannot create a DCL schema:\n  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.enabled is a bool field, which DCL does not allow\n  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.data is a bytes field, which DCL does not allow\n  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.extra is a google.protobuf.Any field, which DCL does not allow"
-            ))
+            some(eq(indoc! {"
+                Cannot create a DCL schema:
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.enabled is a bool field, which DCL does not allow
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.data is a bytes field, which DCL does not allow
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.extra is a google.protobuf.Any field, which DCL does not allow"}))
         )
     }
 }

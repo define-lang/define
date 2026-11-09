@@ -102,6 +102,7 @@ mod tests {
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
+    use indoc::{formatdoc, indoc};
     use prost::Message as _;
     use runfiles::Runfiles;
     use source_rendering::{Position, SourceLocation};
@@ -166,8 +167,12 @@ mod tests {
                         end: Position { line: 2, column: 8 }
                     },
                 },
-                rendered: "line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)"
-                    .to_owned(),
+                rendered: indoc! {"
+                    line 2, column 8
+                        b: @
+                           ^
+                    Unexpected character '@' (U+0040)"}
+                .to_owned(),
             })))
         )
     }
@@ -193,8 +198,12 @@ mod tests {
                         location: SourceLocation { start: Position { line: 2, column: 5 }, end: Position { line: 2, column: 8 } },
                         field_name: "size".to_owned(),
                     },
-                    rendered: "line 2, column 5\n    size: 1\n    ^^^^\nsize: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
-                        .to_owned(),
+                    rendered: indoc! {"
+                        line 2, column 5
+                            size: 1
+                            ^^^^
+                        size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"}
+                    .to_owned(),
                 },
                 RenderedError {
                     error: SemanticError {
@@ -206,8 +215,12 @@ mod tests {
                         location: SourceLocation { start: Position { line: 3, column: 5 }, end: Position { line: 3, column: 8 } },
                         field_name: "size".to_owned(),
                     },
-                    rendered: "line 3, column 5\n    size: 2\n    ^^^^\nsize: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"
-                        .to_owned(),
+                    rendered: indoc! {"
+                        line 3, column 5
+                            size: 2
+                            ^^^^
+                        size: defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config has no field with this name"}
+                    .to_owned(),
                 },
             ])))
         )
@@ -238,10 +251,13 @@ mod tests {
                             end: Position { line: 2, column: 8 }
                         },
                     },
-                    rendered: format!(
-                        "File \"{}\", line 2, column 8\n    b: @\n       ^\nUnexpected character '@' (U+0040)",
-                        path.display()
-                    ),
+                    rendered: formatdoc! {r#"
+                        File "{path}", line 2, column 8
+                            b: @
+                               ^
+                        Unexpected character '@' (U+0040)"#,
+                        path = path.display()
+                    },
                 })))
             )
         )

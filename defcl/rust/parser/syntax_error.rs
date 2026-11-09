@@ -144,6 +144,7 @@ pub enum SyntaxErrorKind {
 mod tests {
     use super::{SyntaxError, SyntaxErrorKind};
     use googletest::prelude::*;
+    use indoc::indoc;
     use source_rendering::{Position, SourceLines, SourceLocation};
 
     #[gtest]
@@ -157,9 +158,11 @@ mod tests {
                 },
             }
             .render(&SourceLines::new("count {}\n"), Some("config.defcl")),
-            eq(
-                "File \"config.defcl\", line 1, column 6\n    count {}\n         ^\nMissing colon after field name"
-            )
+            eq(indoc! {r#"
+                File "config.defcl", line 1, column 6
+                    count {}
+                         ^
+                Missing colon after field name"#})
         )
     }
 }

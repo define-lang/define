@@ -191,6 +191,7 @@ fn push_escaped(
 mod tests {
     use super::{Position, SourceLocation, escape_invisible};
     use googletest::prelude::*;
+    use indoc::indoc;
 
     const fn location(line: u32, column: u32, end_line: u32, end_column: u32) -> SourceLocation {
         SourceLocation {
@@ -206,7 +207,10 @@ mod tests {
     fn underlines_the_location_after_the_file_header() -> Result<()> {
         verify_that!(
             location(2, 11, 2, 11).render(Some("    name: @"), Some("config.defcl")),
-            eq("File \"config.defcl\", line 2, column 11\n    name: @\n          ^")
+            eq(indoc! {r#"
+                File "config.defcl", line 2, column 11
+                    name: @
+                          ^"#})
         )
     }
 
@@ -214,7 +218,10 @@ mod tests {
     fn without_a_file_path_the_header_has_only_the_line_and_column() -> Result<()> {
         verify_that!(
             location(1, 8, 1, 9).render(Some("count: {}"), None),
-            eq("line 1, column 8\n    count: {}\n           ^^")
+            eq(indoc! {"
+                line 1, column 8
+                    count: {}
+                           ^^"})
         )
     }
 
@@ -230,6 +237,8 @@ mod tests {
     fn location_in_the_indentation_keeps_the_indentation() -> Result<()> {
         verify_that!(
             location(2, 2, 2, 2).render(Some("  "), None),
+            // One string, since its second line has only spaces, which editors
+            // strip from the end of a line.
             eq("line 2, column 2\n      \n     ^")
         )
     }
@@ -238,7 +247,10 @@ mod tests {
     fn location_onto_later_lines_is_underlined_to_the_end_of_its_first_line() -> Result<()> {
         verify_that!(
             location(1, 8, 2, 1).render(Some("count: {"), None),
-            eq("line 1, column 8\n    count: {\n           ^")
+            eq(indoc! {"
+                line 1, column 8
+                    count: {
+                           ^"})
         )
     }
 
@@ -246,7 +258,10 @@ mod tests {
     fn control_characters_are_escaped_and_the_underline_moves_with_them() -> Result<()> {
         verify_that!(
             location(1, 5, 1, 5).render(Some("a:\t{\0}\r"), None),
-            eq("line 1, column 5\n    a:\\t{\\0}\\r\n         ^^")
+            eq(indoc! {r"
+                line 1, column 5
+                    a:\t{\0}\r
+                         ^^"})
         )
     }
 
@@ -254,6 +269,8 @@ mod tests {
     fn invisible_characters_are_escaped() -> Result<()> {
         verify_that!(
             location(1, 7, 1, 7).render(Some("# a\u{200b}b\u{e0001}c\u{301}\\"), None),
+            // One string, since rustfmt reindents the line after one that ends
+            // in a backslash, and the combining character must stay escaped.
             eq(
                 "line 1, column 7\n    # a\\u{200b}b\\u{e0001}c\u{301}\\\n                         ^"
             )
@@ -264,7 +281,10 @@ mod tests {
     fn empty_source_line_shows_no_code() -> Result<()> {
         verify_that!(
             location(1, 1, 1, 1).render(Some(""), None),
-            eq("line 1, column 1\n\n    ^")
+            eq(indoc! {"
+                line 1, column 1
+
+                    ^"})
         )
     }
 
