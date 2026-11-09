@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	cloud.google.com/go/longrunning v1.5.0
 	github.com/bazelbuild/remote-apis v0.0.0-20261020142950-c2c07e3d718d
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20261104224025-d1e00e9f33ab
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261104224025-d1e00e9f33ab
 	google.golang.org/grpc v1.85.0
