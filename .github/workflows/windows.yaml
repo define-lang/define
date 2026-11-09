@@ -191,9 +191,12 @@ jobs:
           -Root "$env:RUNNER_TEMP\rbe" -Port 8980 -StatusPort 8981
           -ReadyHostname $env:WINDOWS_HOSTNAME
 
-      # Shows how large a cache of the store would be.
+      # Shows how large a cache of the store would be. Listing a store this
+      # size takes seconds, so the timeout only stops a hung runner from
+      # holding up the Windows runs queued behind this one.
       - name: Report the size of rbe's store
         if: ${{ always() }}
+        timeout-minutes: 5
         run: |
           foreach ($name in 'blobs', 'ac') {
             $files = Get-ChildItem -Recurse -File "$env:RUNNER_TEMP\rbe\cas\$name" -ErrorAction SilentlyContinue |
