@@ -144,6 +144,9 @@ build --aspects=//tools/bzl:linters.bzl%ast_grep
 # link. Windows MSVC links with lld-link, which rejects this clang flag.
 build:linux --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
 build:macos --@rules_rust//rust/settings:extra_rustc_flag=-Clink-arg=-Qunused-arguments
+# Build tools use exec flags instead of the target flags above.
+build:linux --@rules_rust//rust/settings:extra_exec_rustc_flag=-Clink-arg=-Qunused-arguments
+build:macos --@rules_rust//rust/settings:extra_exec_rustc_flag=-Clink-arg=-Qunused-arguments
 
 # Builds and tests use every instruction this machine supports, including the
 # vector instructions the parser's byte loops can compile to.
