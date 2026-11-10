@@ -329,23 +329,14 @@ class ReferenceResolver:
         reference, so they are recorded once, however many references lead
         into the root.
         """
-        # The standard universe ships with the compiler, so its root has no
-        # config file.
-        # TODO: Remove this special case once the Define Standard Library
-        # exists.
-        if root_prefix == constants.STANDARD_LIBRARY_ROOT:
-            root_config = config.ProjectRootConfig(
-                fqun=constants.STANDARD_UNIVERSE, sub_roots={}
-            )
-        else:
-            result = config.ConfigLoader(
-                root_prefix, self._source_map
-            ).load_project_root_config(declaring_entry)
-            if result.root_config is None:
-                self._path_tracker.mark_root_failed(root_prefix)
-                self._program_diagnostics.extend(result.diagnostics)
-                return None
-            root_config = result.root_config
+        result = config.ConfigLoader(
+            root_prefix, self._source_map
+        ).load_project_root_config(declaring_entry)
+        if result.root_config is None:
+            self._path_tracker.mark_root_failed(root_prefix)
+            self._program_diagnostics.extend(result.diagnostics)
+            return None
+        root_config = result.root_config
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             self._path_tracker.mark_root_failed(root_prefix)
