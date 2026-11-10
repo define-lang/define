@@ -1,0 +1,61 @@
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "lint_config")
+
+rust_binary(
+    name = "defclfmt",
+    srcs = ["main.rs"],
+    lint_config = lint_config(),
+    deps = [":formatter"],
+)
+
+rust_test(
+    name = "defclfmt_test",
+    size = "small",
+    crate = ":defclfmt",
+    lint_config = lint_config(),
+    deps = ["@crates//:googletest"],
+)
+
+rust_library(
+    name = "formatter",
+    srcs = ["formatter.rs"],
+    crate_name = "defcl_formatter",
+    crate_root = "formatter.rs",
+    lint_config = lint_config(),
+    deps = ["//defcl/rust/parser"],
+)
+
+rust_test(
+    name = "formatter_test",
+    size = "small",
+    crate = ":formatter",
+    lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
+    deps = [
+        "//source_rendering/rust:source_rendering",
+        "@crates//:googletest",
+    ],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = [
+        "clippy",
+        "precommit",
+    ],
+    targets = [
+        ":defclfmt",
+        ":defclfmt_test",
+        ":formatter",
+        ":formatter_test",
+    ],
+)
+
+check_build_file()

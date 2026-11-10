@@ -54,11 +54,10 @@ pub enum SyntaxErrorKind {
     /// belongs.
     #[display("Missing colon after field name")]
     MissingColon,
-    /// Whitespace or comments between a field name and its colon. A layout
-    /// error.
+    /// Whitespace between a field name and its colon. A layout error.
     #[display("No whitespace allowed before the colon")]
     WhitespaceBeforeColon,
-    /// Whitespace or comments after a colon that are not exactly one space.
+    /// Whitespace after a colon that is not exactly one space.
     /// The location is where the space belongs if there are none. A layout
     /// error.
     #[display("Expected exactly one space after the colon")]
@@ -83,6 +82,12 @@ pub enum SyntaxErrorKind {
     /// A comment after something else on its line. A layout error.
     #[display("Comments must be on their own line")]
     CommentNotOnOwnLine,
+    /// A comment between a field name and its colon, between a colon and its
+    /// value, or between an element of a repeated value and the `,` after it.
+    /// The location is from the first comment's `#` to the end of the last.
+    /// A layout error.
+    #[display("Comments can only go on their own line, between fields or elements")]
+    MisplacedComment,
     /// A comment whose text follows its `#` with no space between them. The
     /// location is the `#`. A layout error.
     #[display("Expected a space after #")]
@@ -112,8 +117,8 @@ pub enum SyntaxErrorKind {
     /// Something other than a `,` or a `]` after a value in a repeated value.
     #[display("Expected , or ] after the value")]
     ExpectedCommaOrCloseBracket,
-    /// Whitespace or comments between a value and the `,` after it in a
-    /// repeated value. A layout error.
+    /// Whitespace between a value and the `,` after it in a repeated value. A
+    /// layout error.
     #[display("No whitespace allowed before the comma")]
     WhitespaceBeforeComma,
     /// A `,` between fields, or a `;` anywhere outside a string or a comment.

@@ -2251,8 +2251,8 @@ mod invalid_separators {
                 "../../testdata/invalid/syntax/separators/comment_before_top_level_colon.defcl"
             ))?,
             vec![SyntaxError {
-                kind: SyntaxErrorKind::WhitespaceBeforeColon,
-                location: location(1, 2, 1, 6),
+                kind: SyntaxErrorKind::MisplacedComment,
+                location: location(1, 3, 1, 5),
             },]
         )
     }
@@ -2305,6 +2305,19 @@ mod invalid_repeated_values {
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeComma,
                 location: location(3, 6, 3, 6),
+            },]
+        )
+    }
+
+    #[gtest]
+    fn comment_before_comma() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/repeated_values/comment_before_comma.defcl"
+            ))?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::MisplacedComment,
+                location: location(3, 7, 4, 7),
             },]
         )
     }
@@ -2941,8 +2954,8 @@ mod invalid_toplevel {
                 "../../testdata/invalid/syntax/toplevel/comment_after_space_after_top_level_colon.defcl"
             ))?,
             vec![SyntaxError {
-                kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(1, 3, 1, 7),
+                kind: SyntaxErrorKind::MisplacedComment,
+                location: location(1, 4, 1, 6),
             },]
         )
     }

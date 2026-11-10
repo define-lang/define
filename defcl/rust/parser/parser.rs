@@ -22,14 +22,38 @@ pub struct ParseResult<'source> {
     pub errors: Vec<SyntaxError>,
 }
 
+/// A replacement for the bytes of a DCL file from `start` up to `end` that
+/// fixes the layout errors in them.
+#[derive(Debug, PartialEq, Eq)]
+pub struct LayoutFix {
+    pub start: usize,
+    pub end: usize,
+    pub replacement: String,
+}
+
 /// Parses `source`, the text of a DCL file, into its syntax tree and its
 /// syntax errors. An error in the layout of the file, such as its whitespace,
 /// does not stop the parse; any other syntax error does.
 #[must_use]
 pub fn parse(source: &str) -> ParseResult<'_> {
+    parse_with(source, false).0
+}
+
+/// Parses `source` as `parse` does, and also returns the fixes for its layout
+/// errors that only change its whitespace and comments, in source order.
+#[must_use]
+pub fn parse_with_layout_fixes(source: &str) -> (ParseResult<'_>, Vec<LayoutFix>) {
+    parse_with(source, true)
+}
+
+/// Parses `source`, and records the fixes for its layout errors if
+/// `records_fixes`.
+fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<LayoutFix>) {
     let mut parser = Parser {
         scanner: Scanner::new(source),
         errors: Vec::new(),
+        records_fixes,
+        fixes: Vec::new(),
     };
     let file = match parser.parse_file() {
         Ok(file) => Some(file),
@@ -38,10 +62,13 @@ pub fn parse(source: &str) -> ParseResult<'_> {
             None
         }
     };
-    ParseResult {
-        file,
-        errors: parser.errors,
-    }
+    (
+        ParseResult {
+            file,
+            errors: parser.errors,
+        },
+        parser.fixes,
+    )
 }
 
 const fn is_field_name_start(byte: u8) -> bool {
@@ -226,6 +253,10 @@ struct Parser<'source> {
     /// The errors in the layout of the file so far, which do not stop the
     /// parse.
     errors: Vec<SyntaxError>,
+    /// Whether the parse records the fixes for its layout errors.
+    records_fixes: bool,
+    /// The fixes for the layout errors so far, if the parse records them.
+    fixes: Vec<LayoutFix>,
 }
 
 /// Consumes whitespace and comments at `scanner`'s position, and returns
@@ -242,6 +273,29 @@ fn skip_whitespace(scanner: &mut Scanner<'_>) -> Result<bool, SyntaxError> {
             Some(b' ' | b'\n') => scanner.advance(),
             Some(b'#') => skip_comment(scanner)?,
             _ => return Ok(scanner.offset() != start),
+        }
+    }
+}
+
+/// Consumes whitespace and comments as `skip_whitespace` does, and returns
+/// the location of the comments among them, from the `#` of the first to the
+/// end of the last, if there are any.
+fn skip_whitespace_locating_comments(
+    scanner: &mut Scanner<'_>,
+) -> Result<Option<SourceLocation>, SyntaxError> {
+    let mut comments: Option<SourceLocation> = None;
+    loop {
+        match scanner.peek() {
+            Some(b' ' | b'\n') => scanner.advance(),
+            Some(b'#') => {
+                let start = scanner.position();
+                skip_comment(scanner)?;
+                comments = Some(SourceLocation {
+                    start: comments.map_or(start, |comments| comments.start),
+                    end: scanner.last_consumed(),
+                });
+            }
+            _ => return Ok(comments),
         }
     }
 }
@@ -266,6 +320,13 @@ fn skip_comment(scanner: &mut Scanner<'_>) -> Result<(), SyntaxError> {
 /// The spaces of `level` levels of indentation.
 const fn indentation(level: u32) -> u32 {
     level * INDENTATION_WIDTH
+}
+
+/// Appends the spaces of `level` levels of indentation to `text`.
+fn push_indentation(text: &mut String, level: u32) {
+    for _ in 0..indentation(level) {
+        text.push(' ');
+    }
 }
 
 impl<'source> Parser<'source> {
@@ -338,6 +399,64 @@ impl<'source> Parser<'source> {
     /// comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - "\t" - newline ) ] ;
     /// ```
     fn expect_line_break(&mut self, level: u32) {
+        let start = self.scanner.offset();
+        let errors = self.errors.len();
+        self.check_line_break(level);
+        if self.records_fixes && self.errors.len() > errors {
+            self.fix_line_break(start, level);
+        }
+    }
+
+    /// Records the fix for the whitespace and comments from the byte `start`
+    /// up to the scanner's position, which `expect_line_break(level)` found
+    /// errors in: a line feed, unless they start the file, then each comment
+    /// on a line of its own, then the next token's indentation.
+    #[cold]
+    #[inline(never)]
+    fn fix_line_break(&mut self, start: usize, level: u32) {
+        let mut replacement = String::new();
+        if start != 0 {
+            replacement.push('\n');
+        }
+        for line in self.scanner.text_from(start).split('\n') {
+            let Some(comment) = line.trim_start_matches(' ').strip_prefix('#') else {
+                continue;
+            };
+            push_indentation(&mut replacement, level);
+            replacement.push('#');
+            // Spaces at the start of the text are part of it, such as to draw
+            // a diagram, so only the space after the `#` is added.
+            let text = comment.trim_end_matches([' ', '\t']);
+            if !text.is_empty() {
+                if !text.starts_with(' ') {
+                    replacement.push(' ');
+                }
+                replacement.push_str(text);
+            }
+            replacement.push('\n');
+        }
+        match self.scanner.peek() {
+            None => {}
+            Some(b'}' | b']') => push_indentation(&mut replacement, level.saturating_sub(1)),
+            Some(_) => push_indentation(&mut replacement, level),
+        }
+        self.push_fix(start, replacement);
+    }
+
+    /// Records the fix that replaces the bytes from `start` up to the
+    /// scanner's position with `replacement`, if the parse records fixes.
+    fn push_fix(&mut self, start: usize, replacement: String) {
+        if self.records_fixes {
+            self.fixes.push(LayoutFix {
+                start,
+                end: self.scanner.offset(),
+                replacement,
+            });
+        }
+    }
+
+    /// Checks the whitespace and comments for `expect_line_break(level)`.
+    fn check_line_break(&mut self, level: u32) {
         // The file starts at the start of a line, and everything else that
         // comes before whitespace ends on the line it starts on.
         if self.scanner.position().column != 1 && !self.finish_line() {
@@ -519,37 +638,56 @@ impl<'source> Parser<'source> {
     /// Consumes the whitespace and comments between a field name and its
     /// colon, or between an element of a repeated value and the comma after
     /// it, where nothing belongs, if the next character after them is
-    /// `separator`. Records an error of the kind `kind` if there were any.
+    /// `separator`. Records a `MisplacedComment` error if there were comments,
+    /// or else an error of the kind `kind` if there was whitespace.
     fn skip_misplaced_whitespace_before(
         &mut self,
         separator: u8,
         kind: SyntaxErrorKind,
     ) -> Result<(), SyntaxError> {
         let start = self.scanner.position();
+        let start_offset = self.scanner.offset();
         let mut lookahead = self.scanner;
-        if !skip_whitespace(&mut lookahead)? || lookahead.peek() != Some(separator) {
+        let comments = skip_whitespace_locating_comments(&mut lookahead)?;
+        if lookahead.offset() == start_offset || lookahead.peek() != Some(separator) {
             return Ok(());
         }
         self.scanner = lookahead;
+        if let Some(location) = comments {
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::MisplacedComment,
+                location,
+            });
+            return Ok(());
+        }
         self.errors.push(SyntaxError {
             kind,
             location: self.location_from(start),
         });
+        self.push_fix(start_offset, String::new());
         Ok(())
     }
 
     /// Consumes the whitespace and comments after a field's colon, where
-    /// exactly one space belongs, and records an error if they are anything
-    /// else and are followed by what may start a value.
+    /// exactly one space belongs, and, if they are followed by what may start
+    /// a value, records a `MisplacedComment` error if there were comments, or
+    /// else an error if the whitespace is not one space.
     fn expect_one_space(&mut self) -> Result<(), SyntaxError> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
-        skip_whitespace(&mut self.scanner)?;
+        let comments = skip_whitespace_locating_comments(&mut self.scanner)?;
         if !self
             .scanner
             .peek()
             .is_some_and(|byte| byte == b'[' || is_element_start(byte))
         {
+            return Ok(());
+        }
+        if let Some(location) = comments {
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::MisplacedComment,
+                location,
+            });
             return Ok(());
         }
         let whitespace = self.scanner.text_from(start_offset);
@@ -565,6 +703,7 @@ impl<'source> Parser<'source> {
             kind: SyntaxErrorKind::WrongSpacingAfterColon,
             location,
         });
+        self.push_fix(start_offset, " ".to_owned());
         Ok(())
     }
 
