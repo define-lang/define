@@ -1038,6 +1038,35 @@ fully_qualified_encoding_name = "encoding", "<", fully_qualified_global_name, ">
 encoding_definition = "define the", " ", fully_qualified_encoding_name, terminator ;
 ```
 
+## Value Encoding Associations
+
+Proposals:
+
+- [DLP 47: Value Encoding Associations](../proposals/00047-value-encoding-associations.md)
+
+The configuration file `.define/encodings/encodings.defcl` contains associations
+between value qualities and encodings. The project root configuration states
+whether this file exists, and the compiler throws an error if the file is
+expected to exist and does not.
+
+An association declares that an encoding is potentially available for a value
+quality. Each association names a value quality and an encoding, both as short
+global names, so both must be defined in the project's own universe. Naming a
+value quality or encoding from any other universe is an error.
+
+A value quality may be associated with several encodings, and an encoding with
+several value qualities. Associating the same value quality and encoding more
+than once is an error. The associations must be sorted lexicographically by
+value quality name.
+
+### Choosing Encodings
+
+The compiler chooses encodings using these associations, based on its
+determination of what will be the most efficient to represent the program.
+
+<!-- TODO: A library compiled for consumption by other projects may leave
+its encodings unresolved for the consuming project's target configuration. -->
+
 ## Defining Potential Literals
 
 Proposals:
