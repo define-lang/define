@@ -1,1 +1,3 @@
-project: { universe_name: "standard" }
+project: {
+  universe_name: "standard"
+}
