@@ -14,6 +14,9 @@ file must be parseable by a textproto parser, but DCL rejects many constructs
 that are valid in textproto in order to enforce stricter rules and improve
 consistency.
 
+This specification uses standard terms used when discussing protocol buffers and
+their schemas, and expects the reader to be familiar with those terms.
+
 ### Relationship to Textproto
 
 DCL is based on textproto, but with the following key differences:
@@ -21,8 +24,13 @@ DCL is based on textproto, but with the following key differences:
 - DCL is more restrictive: many valid textproto constructs are errors in DCL
 - DCL enforces stricter formatting rules for consistency
 - DCL requires schema validation: unknown field names are errors
-- DCL enforces that all top-level fields must be of type Message.
+- DCL enforces that every field of the top-level message type is a message
+  field.
 - DCL allows a field name only once in a message, even for repeated fields.
+- DCL allows only one way to write a file: its layout and the order of its
+  fields are fixed, so that two files with the same fields, values and comments
+  are the same bytes, except that the characters of a string can be written in
+  more than one way.
 
 Any valid DCL file is also a valid textproto file, and can be parsed by standard
 textproto parsers. However, a textproto parser will accept many files that DCL
@@ -71,18 +79,22 @@ hex = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
     | "a" | "b" | "c" | "d" | "e" | "f" ;
 ```
 
-### Whitespace and Comments
+### Whitespace
 
 DCL restricts whitespace to only space characters and newlines. Tabs, carriage
 returns, and other whitespace characters are not allowed except in comments.
 
-```ebnf
-COMMENT    = "#", { char - newline }, [ newline ] ;
-WHITESPACE = " " | newline ;
-```
+### Comments
 
 Comments are shell-style line comments using `#`. Everything from `#` to the end
-of the line is treated as a comment.
+of the line is treated as a comment. A comment is a `#`, then exactly one space,
+then its text, which does not end with a space or a tab. A comment may also be a
+`#` alone.
+
+```ebnf
+COMMENT      = "#", [ " ", comment_text ] ;
+comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - "\t" - newline ) ] ;
+```
 
 ### Field Names
 
@@ -102,16 +114,16 @@ FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_lette
 
 Examples of valid field names:
 
-- `universe_name`
-- `project_id`
+- `host_name`
+- `max_connections`
 
 Examples of invalid field names:
 
-- `UniverseName` (contains uppercase)
-- `universe-name` (contains hyphen)
-- `universe.name` (contains period)
-- `_universe_name` (starts with underscore)
-- `universe_name_` (ends with underscore)
+- `HostName` (contains uppercase)
+- `host-name` (contains hyphen)
+- `host.name` (contains period)
+- `_host_name` (starts with underscore)
+- `host_name_` (ends with underscore)
 - `123field` (starts with digit)
 - `config_value_1` (underscore followed by digit)
 - `config__value` (double underscore)
@@ -211,6 +223,102 @@ Invalid string literals:
 - `"\xc3"` (an incomplete UTF-8 sequence)
 - `"\xc3\n\xa9"` (an escape splits the UTF-8 sequence)
 
+## Layout
+
+A DCL file has exactly one correct layout, so two files with the same contents
+are the same bytes.
+
+### Lines
+
+Each line holds one field, one element of a repeated value, one comment, or one
+closing `}` or `]`. Two fields never share a line.
+
+A message value's `{` goes at the end of its field's line. Its fields go on the
+lines below, and its `}` goes on a line of its own. A repeated value works the
+same way with `[` and `]`.
+
+There are no blank lines, and the file ends with exactly one newline. Trailing
+whitespace is forbidden on all lines.
+
+### Indentation
+
+Each level of indentation is 2 spaces. Everything inside a `{ }` or `[ ]` is
+indented one level more than the line with its `{` or `[`. A closing `}` or `]`
+is indented the same as the line with its opening `{` or `[`. Top-level messages
+are not indented.
+
+For example:
+
+```
+server: {
+  host: "localhost"
+  tags: [
+    "web"
+  ]
+}
+```
+
+`server` and its `}` are at level 0. `host`, `tags`, and the `]` that closes
+`tags` are at level 1. `"web"` is at level 2.
+
+```ebnf
+indentation = { "  " } ;
+```
+
+The number of times `indentation` repeats is the level of its line.
+
+### Spacing
+
+A field's name is followed directly by its colon, then exactly one space, then
+its value. Each element of a repeated value except the last is followed directly
+by a comma.
+
+### Comments
+
+A comment goes on a line of its own, indented the same as the field or element
+after it. A comment after the last field or element of a message value, a
+repeated value, or the file is indented the same as that field or element.
+
+The whitespace and comments between two lines' contents are a `line_break`:
+
+```ebnf
+line_break   = newline, { comment_line }, indentation ;
+comment_line = indentation, COMMENT, newline ;
+```
+
+### Examples
+
+Valid:
+
+```
+# The database that the service uses.
+database: {
+  host: "db.example.com"
+  replicas: [
+    {
+      host: "replica1.example.com"
+    },
+    # More replicas go here.
+    {
+      host: "replica2.example.com"
+    }
+  ]
+}
+```
+
+Invalid:
+
+```
+database: { host: "db.example.com" }
+database: {
+ host: "db.example.com"
+}
+database: {
+  host: "db.example.com" # The primary.
+
+}
+```
+
 ## Syntax Elements
 
 ### Top-Level Syntax
@@ -219,7 +327,8 @@ A DCL file consists of one or more top-level messages. Each top-level message
 has a field name followed by a colon, exactly one space, and a message value.
 
 ```ebnf
-file = { WHITESPACE }, top_level_message, { WHITESPACE, top_level_message }, { WHITESPACE } ;
+file = { comment_line }, top_level_message, { line_break, top_level_message },
+       newline, { comment_line } ;
 
 top_level_message = FIELD_NAME, ":", " ", message_value ;
 ```
@@ -229,19 +338,19 @@ Note that `message_value` is defined below.
 Valid:
 
 ```
-project: {
-    universe_name: "example"
+server: {
+  host: "localhost"
 }
 ```
 
 Multiple top-level messages are allowed:
 
 ```
-project: {
-    universe_name: "example"
+server: {
+  host: "localhost"
 }
-settings: {
-    debug_mode: false
+database: {
+  host: "db.example.com"
 }
 ```
 
@@ -250,7 +359,7 @@ settings: {
 In DCL, field names must be followed by a colon. The syntax for fields is:
 
 ```ebnf
-field = FIELD_NAME, ":", [ WHITESPACE ], value ;
+field = FIELD_NAME, ":", " ", value ;
 ```
 
 Note that `value` is defined below.
@@ -258,13 +367,15 @@ Note that `value` is defined below.
 Valid:
 
 ```
-universe_name: "example"
+host: "localhost"
 ```
 
 Invalid:
 
 ```
-universe_name "example"
+host "localhost"
+host:"localhost"
+host : "localhost"
 ```
 
 ### Values
@@ -367,27 +478,25 @@ Message fields in DCL must always use curly braces `{}`, never angle brackets
 `<>`.
 
 ```ebnf
-message_value = "{", [ WHITESPACE ], [ field_list ], [ WHITESPACE ], "}" ;
-
-field_list = field, { WHITESPACE, field } ;
+message_value = "{", line_break, field, { line_break, field }, line_break, "}" ;
 ```
 
-Empty message values `{}` are allowed. Whitespace (spaces and newlines) is
-allowed before and after the field list within the braces.
+A message value must have at least one field. Empty message values `{}` are not
+allowed.
 
 Valid:
 
 ```
-project: {
-    universe_name: "example"
+server: {
+  host: "localhost"
 }
 ```
 
 Invalid:
 
 ```
-project: <
-    universe_name: "example"
+server: <
+  host: "localhost"
 >
 ```
 
@@ -397,7 +506,7 @@ Valid (assuming `path` and `url` are the fields of a oneof):
 
 ```
 source: {
-    url: "https://example.com"
+  url: "https://example.com"
 }
 ```
 
@@ -405,46 +514,89 @@ Invalid:
 
 ```
 source: {
-    path: "config.txt"
-    url: "https://example.com"
+  path: "config.txt"
+  url: "https://example.com"
+}
+```
+
+### Field Order
+
+The fields of a message value, and the top-level messages of a file, must be
+written in the order of their field numbers in the schema.
+
+Valid (assuming `host` is field 1 and `port` is field 2):
+
+```
+server: {
+  host: "localhost"
+  port: 8080
+}
+```
+
+Invalid:
+
+```
+server: {
+  port: 8080
+  host: "localhost"
 }
 ```
 
 ### Repeated Field Syntax
 
 Repeated fields must be written as a single list using square brackets `[]`.
-This applies to both repeated message values and repeated scalar literals
-(strings, numbers, enums).
+This applies both to repeated message fields and to repeated fields of scalars.
 
 ```ebnf
-repeated_value = "[", [ WHITESPACE ], [ element_list ], [ WHITESPACE ], "]" ;
-
-element_list = element, { ",", [ WHITESPACE ], element } ;
+repeated_value = "[", line_break, element, { ",", line_break, element }, line_break, "]" ;
 
 element = STRING | INTEGER | FLOAT | enum_value | message_value ;
 ```
 
-An element of a repeated value cannot itself be a repeated value.
+An element of a repeated value cannot itself be a repeated value. A repeated
+value has at least one element: empty repeated values `[]` are not allowed.
 
 Valid (repeated message values):
 
 ```
-dependencies: [
-    { universe: "mv:example.com:lib1" },
-    { universe: "mv:example.com:lib2" }
+replicas: [
+  {
+    host: "replica1.example.com"
+  },
+  {
+    host: "replica2.example.com"
+  }
 ]
 ```
 
-Valid (repeated literals):
+Valid (repeated scalars):
+
+```
+tags: [
+  "tag1",
+  "tag2",
+  "tag3"
+]
+```
+
+Valid (one scalar in a repeated field):
+
+```
+tags: [
+  "tag1"
+]
+```
+
+Invalid (empty repeated value):
+
+```
+tags: []
+```
+
+Invalid (elements on one line):
 
 ```
 tags: ["tag1", "tag2", "tag3"]
-```
-
-Valid (single literal in a repeated field):
-
-```
-tags: ["tag1"]
 ```
 
 Invalid (single scalar in a repeated field with no brackets):
@@ -456,8 +608,12 @@ tags: "tag1"
 Invalid (repeated message fields without brackets):
 
 ```
-dependencies: { universe: "mv:example.com:lib1" }
-dependencies: { universe: "mv:example.com:lib2" }
+replicas: {
+  host: "replica1.example.com"
+}
+replicas: {
+  host: "replica2.example.com"
+}
 ```
 
 Invalid (repeated scalar without brackets):
@@ -471,20 +627,34 @@ tags: "tag3"
 Invalid (repeated field written more than once, even with brackets):
 
 ```
-tags: ["tag1", "tag2"]
-tags: ["tag3"]
+tags: [
+  "tag1",
+  "tag2"
+]
+tags: [
+  "tag3"
+]
 ```
 
 Write it as one list instead:
 
 ```
-tags: ["tag1", "tag2", "tag3"]
+tags: [
+  "tag1",
+  "tag2",
+  "tag3"
+]
 ```
 
 Invalid (repeated value as an element of a repeated value):
 
 ```
-tags: ["tag1", ["tag2"]]
+tags: [
+  "tag1",
+  [
+    "tag2"
+  ]
+]
 ```
 
 ## Schema Restrictions
@@ -507,9 +677,9 @@ message may only contain message fields.
 
 The following field types are not allowed in DCL:
 
-- `bool` (DCL instead provides a standard enum `Defcl::Boolean` which has the
-  values `UNSPECIFIED`, `TRUE`, and `FALSE`, though schemas are encouraged to
-  define their own enums with more appropriate names)
+- `bool` (DCL instead provides a standard enum `defcl.schema.core.Defcl.Boolean`
+  which has the values `UNSPECIFIED`, `TRUE`, and `FALSE`, though schemas are
+  encouraged to define their own enums with more appropriate names)
 - `bytes`
 - `Any` (`google.protobuf.Any`)
 - Extension annotations (using `[package.field]` syntax) are not allowed
@@ -517,6 +687,11 @@ The following field types are not allowed in DCL:
 
 <!-- TODO: Decide whether map fields are allowed, and if so, how their entries
 are written and whether duplicate keys are errors. -->
+
+### Message Types Without Fields
+
+A field's type must not be a message type that has no fields, since its value
+could only be written as an empty message value. Use an enum field instead.
 
 ### Required Fields
 
@@ -599,6 +774,12 @@ Fields ending with those suffixes must also always have those well-known types.
 
 ## Parser Behavior
 
+### Syntax Errors
+
+A parser reports every error in a file's layout and keeps parsing, so that it
+can report every such error at once and also check the file against its schema.
+Any other syntax error stops the parse. A file with any error is not valid.
+
 ### Unknown Fields
 
 When parsing a DCL file, unknown field names (fields not present in the schema)
@@ -608,18 +789,27 @@ and reject the file if any unknown fields are encountered.
 ## Example of a Valid DCL File
 
 ```
-project: {
-    universe_name: "mv:example.com:my_project"
-    author: "Max Developer"
-    dependencies: [
-        { universe: "mv:alice.com:math_utils" },
-        { universe: "mv:bob.com:networking" }
-    ]
-    settings: {
-        debug_mode: FALSE
-        log_level: 3
-        timeout_seconds: 30.5
+server: {
+  host: "localhost"
+  port: 8080
+  debug_mode: FALSE
+  timeout_seconds: 30.5
+  tags: [
+    "web",
+    "public"
+  ]
+}
+database: {
+  host: "db.example.com"
+  max_connections: 20
+  replicas: [
+    {
+      host: "replica1.example.com"
+    },
+    {
+      host: "replica2.example.com"
     }
+  ]
 }
 ```
 
@@ -627,52 +817,48 @@ project: {
 
 Defining the schema for the above DCL file requires multiple schema files.
 
-Root schema file (defines the top-level structure):
+Root schema file (defines the top-level message type):
 
 ```proto
 edition = "2024";
 
-import "project.proto"
+import "server.proto";
+import "database.proto";
 
-message ProjectConfigFile {
-    Project project = 1;
+message ServiceConfigFile {
+    Server server = 1;
+    Database database = 2;
 }
 ```
 
-`project.proto`:
+`server.proto`:
 
 ```proto
 edition = "2024";
 
-import "dependency.proto";
-import "settings.proto";
+import "defcl/schema/core/boolean.proto";
 
-message Project {
-    string universe_name = 1;
-    string author = 2;
-    repeated Dependency dependencies = 3;
-    Settings settings = 4;
+message Server {
+    string host = 1;
+    uint32 port = 2;
+    defcl.schema.core.Defcl.Boolean debug_mode = 3;
+    float timeout_seconds = 4;
+    repeated string tags = 5;
 }
 ```
 
-`dependency.proto`
+`database.proto`:
 
 ```proto
 edition = "2024";
 
-message Dependency {
-    string universe = 1;
+message Database {
+    string host = 1;
+    int32 max_connections = 2;
+    repeated Replica replicas = 3;
 }
-```
 
-`settings.proto`:
-
-```proto
-edition = "2024";
-
-message Settings {
-    Defcl::Boolean debug_mode = 1;
-    int32 log_level = 2;
-    float timeout_seconds = 3;
+message Replica {
+    string host = 1;
 }
 ```
