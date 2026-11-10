@@ -1,6 +1,10 @@
 project: {
-    dependencies: [
-        { universe: "mv:example.com:lib1" },
-        { universe: "mv:example.com:lib2" }
-    ]
+  dependencies: [
+    {
+      universe: "mv:example.com:lib1"
+    },
+    {
+      universe: "mv:example.com:lib2"
+    }
+  ]
 }

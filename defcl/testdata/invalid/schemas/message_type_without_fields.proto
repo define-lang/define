@@ -1,0 +1,12 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+message MessageTypeWithoutFieldsFile {
+  Config config = 1;
+  message Config {
+    Marker marker = 1;
+    string name = 2;
+  }
+  message Marker {}
+}

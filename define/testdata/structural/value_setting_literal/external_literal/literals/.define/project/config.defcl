@@ -1,1 +1,3 @@
-project: { universe_name: "literals.org:literals" }
+project: {
+  universe_name: "literals.org:literals"
+}

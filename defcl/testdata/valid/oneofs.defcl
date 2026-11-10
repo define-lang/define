@@ -1,4 +1,4 @@
 config: {
-    url: "https://example.com"
-    name: "example"
+  url: "https://example.com"
+  name: "example"
 }

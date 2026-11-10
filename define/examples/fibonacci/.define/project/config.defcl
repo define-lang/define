@@ -1,1 +1,3 @@
-project: { universe_name: "define-lang.org:fibonacci" }
+project: {
+  universe_name: "define-lang.org:fibonacci"
+}

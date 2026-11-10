@@ -1,7 +1,0 @@
-project: {
-    name: "test"
-}
-
-settings: {
-    level: 1
-}

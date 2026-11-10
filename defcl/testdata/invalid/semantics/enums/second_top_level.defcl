@@ -1,6 +1,6 @@
-metadata: {
-    name: "example"
-}
 config: {
-    status: 0
+  status: 0
+}
+metadata: {
+  name: "example"
 }

@@ -1,4 +1,4 @@
 config: {
-    value: "hello
+  value: "hello
 world"
 }

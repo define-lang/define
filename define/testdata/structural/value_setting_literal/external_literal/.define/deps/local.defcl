@@ -1,1 +1,8 @@
-deps: { local: [{ universe_name: "literals.org:literals" path: "literals" }] }
+deps: {
+  local: [
+    {
+      universe_name: "literals.org:literals"
+      path: "literals"
+    }
+  ]
+}

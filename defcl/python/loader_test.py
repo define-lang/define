@@ -71,7 +71,7 @@ def test_loading_a_message_type_again_loads_the_same_message():
 )
 def test_unicode_escapes_preserve_the_decoded_value(text: str, expected: str):
     result = loader.load(
-        f'project: {{ universe_name: "{text}" }}\n',
+        f'project: {{\n  universe_name: "{text}"\n}}\n',
         single_toplevel_pb2.SingleToplevelFile,
     )
 
@@ -96,7 +96,7 @@ def test_semantic_errors_are_diagnostics_without_a_message():
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13
+        line=2, column=11, end_line=2, end_column=11
     )
     assert integer_enum.field_name == "status"
 
@@ -115,7 +115,7 @@ def test_syntax_error_is_a_diagnostic_without_a_message():
         == error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER
     )
     assert unexpected_character.location == rendering.SourceLocation(
-        line=2, column=8, end_line=2, end_column=8
+        line=2, column=6, end_line=2, end_column=6
     )
     assert unexpected_character.character == "@"
 
@@ -147,6 +147,6 @@ def test_load_file_diagnostics_name_the_file():
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13, file_path=path
+        line=2, column=11, end_line=2, end_column=11, file_path=path
     )
     assert integer_enum.field_name == "status"

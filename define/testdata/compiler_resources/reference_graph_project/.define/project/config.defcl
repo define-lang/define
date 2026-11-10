@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:compiler_memory" }
+project: {
+  universe_name: "mv:define-lang.org:compiler_memory"
+}

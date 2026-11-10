@@ -1,5 +1,5 @@
 project: {
-    config: <
-        name: "test"
-    >
+  config: <
+    name: "test"
+  >
 }

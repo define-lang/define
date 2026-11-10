@@ -6,35 +6,40 @@ use defcl_semantics::{FileDescriptorSet, Schema, SchemaError, SemanticError, che
 use std::io;
 use std::path::Path;
 
-/// Why a DCL file is not valid.
+/// The errors in a DCL file, which it has none of if it is valid.
 #[derive(Debug, PartialEq, Eq)]
-pub enum ValidationError {
-    /// The descriptor set has no message type with the top-level message
-    /// type's name.
-    Schema(SchemaError),
-    /// The first syntax error, which stops parsing.
-    Syntax(SyntaxError),
-    /// Every semantic error, in source order.
-    Semantic(Vec<SemanticError>),
+pub struct FileErrors {
+    /// Every syntax error, in the order the parser found them. If one stopped
+    /// the parse, it is the last.
+    pub syntax_errors: Vec<SyntaxError>,
+    /// Every semantic error, in source order, unless a syntax error stopped the
+    /// parse.
+    pub semantic_errors: Vec<SemanticError>,
 }
 
 /// Validates `source`, the text of a DCL file, against the schema whose
 /// top-level message type has the full name `top_level_message_type` in
-/// `descriptor_set`.
+/// `descriptor_set`, and returns its errors.
 ///
 /// # Errors
 ///
-/// Returns the schema's error, or the first syntax error in `source`, or, if
-/// it has none, every semantic error in it.
+/// Returns the schema's error if the descriptor set has no message type with
+/// the top-level message type's name, or the schema breaks DCL's rules.
 pub fn validate(
     source: &str,
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
-) -> Result<(), ValidationError> {
-    let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)
-        .map_err(ValidationError::Schema)?;
-    let file = parse(source).map_err(ValidationError::Syntax)?;
-    check_semantics(&file, &schema).map_err(ValidationError::Semantic)
+) -> Result<FileErrors, SchemaError> {
+    let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)?;
+    let parsed = parse(source);
+    let semantic_errors = match &parsed.file {
+        Some(file) => check_semantics(file, &schema),
+        None => Vec::new(),
+    };
+    Ok(FileErrors {
+        syntax_errors: parsed.errors,
+        semantic_errors,
+    })
 }
 
 /// Validates the DCL file at `path` as `validate` validates its text, and
@@ -49,7 +54,7 @@ pub fn validate_file(
     path: &Path,
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
-) -> io::Result<(String, Result<(), ValidationError>)> {
+) -> io::Result<(String, Result<FileErrors, SchemaError>)> {
     let source = std::fs::read_to_string(path)?;
     let result = validate(&source, descriptor_set, top_level_message_type);
     Ok((source, result))
@@ -57,7 +62,7 @@ pub fn validate_file(
 
 #[cfg(test)]
 mod tests {
-    use super::{ValidationError, validate, validate_file};
+    use super::{FileErrors, validate, validate_file};
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
@@ -86,11 +91,17 @@ mod tests {
 
     #[gtest]
     fn valid_file() -> Result<()> {
-        verify_ok!(validate(
-            include_str!("../testdata/valid/single_toplevel.defcl"),
-            valid_schemas()?,
-            "defcl.testdata.valid.schemas.SingleToplevelFile",
-        ))
+        verify_that!(
+            validate(
+                include_str!("../testdata/valid/single_toplevel.defcl"),
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.SingleToplevelFile",
+            ),
+            ok(eq(&FileErrors {
+                syntax_errors: vec![],
+                semantic_errors: vec![],
+            }))
+        )
     }
 
     #[gtest]
@@ -101,11 +112,9 @@ mod tests {
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.NoSuchFile",
             ),
-            err(eq(&ValidationError::Schema(
-                SchemaError::MissingMessageType {
-                    message_type: "defcl.testdata.valid.schemas.NoSuchFile".to_owned(),
-                }
-            )))
+            err(eq(&SchemaError::MissingMessageType {
+                message_type: "defcl.testdata.valid.schemas.NoSuchFile".to_owned(),
+            }))
         )
     }
 
@@ -117,13 +126,16 @@ mod tests {
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             ),
-            err(eq(&ValidationError::Syntax(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                location: SourceLocation {
-                    start: Position { line: 2, column: 8 },
-                    end: Position { line: 2, column: 8 }
-                },
-            })))
+            ok(eq(&FileErrors {
+                syntax_errors: vec![SyntaxError {
+                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                    location: SourceLocation {
+                        start: Position { line: 2, column: 6 },
+                        end: Position { line: 2, column: 6 }
+                    },
+                }],
+                semantic_errors: vec![],
+            }))
         )
     }
 
@@ -137,32 +149,66 @@ mod tests {
                 invalid_semantics_schemas()?,
                 "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile",
             ),
-            err(eq(&ValidationError::Semantic(vec![
-                SemanticError {
+            ok(eq(&FileErrors {
+                syntax_errors: vec![],
+                semantic_errors: vec![
+                    SemanticError {
+                        kind: SemanticErrorKind::UnknownFieldName {
+                            message_type:
+                                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                                    .to_owned(),
+                        },
+                        location: SourceLocation {
+                            start: Position { line: 2, column: 3 },
+                            end: Position { line: 2, column: 6 }
+                        },
+                        field_name: "size".to_owned(),
+                    },
+                    SemanticError {
+                        kind: SemanticErrorKind::UnknownFieldName {
+                            message_type:
+                                "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
+                                    .to_owned(),
+                        },
+                        location: SourceLocation {
+                            start: Position { line: 3, column: 3 },
+                            end: Position { line: 3, column: 6 }
+                        },
+                        field_name: "size".to_owned(),
+                    },
+                ],
+            }))
+        )
+    }
+
+    #[gtest]
+    fn layout_errors_and_semantic_errors() -> Result<()> {
+        verify_that!(
+            validate(
+                "project: {\n size: 1\n}\n",
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.SingleToplevelFile",
+            ),
+            ok(eq(&FileErrors {
+                syntax_errors: vec![SyntaxError {
+                    kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
+                    location: SourceLocation {
+                        start: Position { line: 2, column: 1 },
+                        end: Position { line: 2, column: 1 }
+                    },
+                }],
+                semantic_errors: vec![SemanticError {
                     kind: SemanticErrorKind::UnknownFieldName {
-                        message_type:
-                            "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
-                                .to_owned(),
+                        message_type: "defcl.testdata.valid.schemas.SingleToplevelFile.Project"
+                            .to_owned(),
                     },
                     location: SourceLocation {
-                        start: Position { line: 2, column: 5 },
-                        end: Position { line: 2, column: 8 }
+                        start: Position { line: 2, column: 2 },
+                        end: Position { line: 2, column: 5 }
                     },
                     field_name: "size".to_owned(),
-                },
-                SemanticError {
-                    kind: SemanticErrorKind::UnknownFieldName {
-                        message_type:
-                            "defcl.testdata.invalid.semantics.schemas.MultipleErrorsFile.Config"
-                                .to_owned(),
-                    },
-                    location: SourceLocation {
-                        start: Position { line: 3, column: 5 },
-                        end: Position { line: 3, column: 8 }
-                    },
-                    field_name: "size".to_owned(),
-                },
-            ])))
+                }],
+            }))
         )
     }
 
@@ -182,14 +228,17 @@ mod tests {
             )
             .or_fail()?,
             (
-                eq("a: {\n    b: @\n}\n"),
-                err(eq(&ValidationError::Syntax(SyntaxError {
-                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                    location: SourceLocation {
-                        start: Position { line: 2, column: 8 },
-                        end: Position { line: 2, column: 8 }
-                    },
-                })))
+                eq("a: {\n  b: @\n}\n"),
+                ok(eq(&FileErrors {
+                    syntax_errors: vec![SyntaxError {
+                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                        location: SourceLocation {
+                            start: Position { line: 2, column: 6 },
+                            end: Position { line: 2, column: 6 }
+                        },
+                    }],
+                    semantic_errors: vec![],
+                }))
             )
         )
     }

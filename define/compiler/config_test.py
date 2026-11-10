@@ -34,7 +34,7 @@ def _write_local_deps(root: Path, content: str):
 
 def _write_valid_project_config(root: Path):
     _write_project_config(
-        root, 'project: {\n  universe_name: "test.example.com:my_lib"\n}\n'
+        root, ('project: {\n  universe_name: "test.example.com:my_lib"\n}\n')
     )
 
 
@@ -187,7 +187,13 @@ class TestProjectConfig:
     ):
         _write_project_config(
             tmp_path,
-            'project: {\n  universe_name: "test.example.com:my_lib"\n  universe_nam: "x"\n  owner: "y"\n}\n',
+            (
+                "project: {\n"
+                '  universe_name: "test.example.com:my_lib"\n'
+                '  universe_nam: "x"\n'
+                '  owner: "y"\n'
+                "}\n"
+            ),
         )
         monkeypatch.chdir(tmp_path)
 
@@ -220,7 +226,7 @@ class TestProjectConfig:
     def test_value_of_the_wrong_kind_is_a_diagnostic(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        _write_project_config(tmp_path, "project: {\n  universe_name: 5\n}\n")
+        _write_project_config(tmp_path, ("project: {\n  universe_name: 5\n}\n"))
         monkeypatch.chdir(tmp_path)
 
         result = _load()
@@ -241,7 +247,7 @@ class TestProjectConfig:
         assert diagnostic.field_name == "universe_name"
 
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        _write_project_config(tmp_path, 'project: {\n  universe_name: ""\n}\n')
+        _write_project_config(tmp_path, ('project: {\n  universe_name: ""\n}\n'))
         monkeypatch.chdir(tmp_path)
 
         assert _load() == config.RootConfigResult(
@@ -255,26 +261,10 @@ class TestProjectConfig:
             ],
         )
 
-    def test_missing_universe_name(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _write_project_config(tmp_path, "project: {}\n")
-        monkeypatch.chdir(tmp_path)
-
-        assert _load() == config.RootConfigResult(
-            root_config=None,
-            diagnostics=[
-                diagnostics.ConfigViolationDiagnostic(
-                    config_path=str(_PROJECT_CONFIG_PATH),
-                    field_path=("project", "universe_name"),
-                    violation_message="value is required",
-                )
-            ],
-        )
-
     def test_syntax_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_project_config(
-            tmp_path, 'project: {\n  universe_name "test.example.com:my_lib"\n}\n'
+            tmp_path,
+            ('project: {\n  universe_name "test.example.com:my_lib"\n}\n'),
         )
         monkeypatch.chdir(tmp_path)
 
@@ -293,35 +283,14 @@ class TestProjectConfig:
 
 
 class TestLocalDepsConfig:
-    def test_empty_deps_list(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        _write_valid_project_config(tmp_path)
-        _write_local_deps(tmp_path, "deps: {}\n")
-        monkeypatch.chdir(tmp_path)
-
-        assert _load() == config.RootConfigResult(
-            root_config=config.ProjectRootConfig(
-                fqun="test.example.com:my_lib", sub_roots={}
-            ),
-            diagnostics=[],
-        )
-
-    def test_empty_local_list(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        _write_valid_project_config(tmp_path)
-        _write_local_deps(tmp_path, "deps: { local: [] }\n")
-        monkeypatch.chdir(tmp_path)
-
-        assert _load() == config.RootConfigResult(
-            root_config=config.ProjectRootConfig(
-                fqun="test.example.com:my_lib", sub_roots={}
-            ),
-            diagnostics=[],
-        )
-
     def test_missing_universe_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         _write_valid_project_config(tmp_path)
-        _write_local_deps(tmp_path, 'deps: { local: [{ path: "vendor/lib" }] }\n')
+        _write_local_deps(
+            tmp_path,
+            ('deps: {\n  local: [\n    {\n      path: "vendor/lib"\n    }\n  ]\n}\n'),
+        )
         monkeypatch.chdir(tmp_path)
 
         assert _load() == _invalid_local_dep_field("universe_name", "value is required")
@@ -329,7 +298,17 @@ class TestLocalDepsConfig:
     def test_empty_universe_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
         _write_local_deps(
-            tmp_path, 'deps: { local: [{ universe_name: "" path: "vendor/lib" }] }\n'
+            tmp_path,
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: ""\n'
+                '      path: "vendor/lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
         )
         monkeypatch.chdir(tmp_path)
 
@@ -341,7 +320,15 @@ class TestLocalDepsConfig:
         _write_valid_project_config(tmp_path)
         _write_local_deps(
             tmp_path,
-            'deps: { local: [{ universe_name: "mv:define-lang.org:lib" }] }\n',
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
         )
         monkeypatch.chdir(tmp_path)
 
@@ -352,10 +339,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "/absolute/path"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "/absolute/path"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -367,10 +358,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "vendor/../lib"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor/../lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -386,10 +381,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "../lib"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "../lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -403,10 +402,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "./vendor/lib"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "./vendor/lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -420,10 +423,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "."'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "."\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -437,10 +444,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "vendor//lib"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor//lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -452,10 +463,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "vendor\\\\lib"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor\\\\lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -471,10 +486,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "vendor/lib..v2/.hidden"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor/lib..v2/.hidden"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -503,10 +522,14 @@ class TestLocalDepsConfig:
         _write_local_deps(
             tmp_path,
             (
-                "deps: { local: [{"
-                ' universe_name: "mv:define-lang.org:lib"'
-                ' path: "vendor/lib/"'
-                " }] }\n"
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor/lib/"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
             ),
         )
         monkeypatch.chdir(tmp_path)
@@ -550,7 +573,10 @@ class TestLocalDepsConfig:
 
     def test_syntax_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_valid_project_config(tmp_path)
-        _write_local_deps(tmp_path, "deps: { local: [{ universe_name: 'bad' }] }\n")
+        _write_local_deps(
+            tmp_path,
+            ("deps: {\n  local: [\n    {\n      universe_name: 'bad'\n    }\n  ]\n}\n"),
+        )
         monkeypatch.chdir(tmp_path)
 
         result = _load()
@@ -558,10 +584,10 @@ class TestLocalDepsConfig:
         (diagnostic,) = result.diagnostics
         assert isinstance(diagnostic, errors.SyntaxDiagnostic)
         assert diagnostic.location == rendering.SourceLocation(
-            line=1,
-            column=34,
-            end_line=1,
-            end_column=38,
+            line=4,
+            column=22,
+            end_line=4,
+            end_column=26,
             file_path=str(_LOCAL_DEPS_PATH),
         )
         assert (
@@ -596,7 +622,7 @@ class TestSubRoot:
     ):
         _write_project_config(
             tmp_path / "subroot",
-            'project: {\n  universe_name: "sub.example.com:lib"\n}\n',
+            ('project: {\n  universe_name: "sub.example.com:lib"\n}\n'),
         )
         _write_local_deps(
             tmp_path / "subroot",
@@ -633,7 +659,10 @@ class TestSubRoot:
     def test_project_config_validation_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        _write_project_config(tmp_path / "subroot", "project: {}\n")
+        _write_project_config(
+            tmp_path / "subroot",
+            ('project: {\n  universe_name: ""\n}\n'),
+        )
         monkeypatch.chdir(tmp_path)
 
         config_path = PurePosixPath("subroot/.define/project/config.defcl")
@@ -643,7 +672,7 @@ class TestSubRoot:
                 diagnostics.ConfigViolationDiagnostic(
                     config_path=str(config_path),
                     field_path=("project", "universe_name"),
-                    violation_message="value is required",
+                    violation_message="must be at least 1 characters",
                 )
             ],
         )
@@ -653,11 +682,19 @@ class TestSubRoot:
     ):
         _write_project_config(
             tmp_path / "subroot",
-            'project: {\n  universe_name: "sub.example.com:lib"\n}\n',
+            ('project: {\n  universe_name: "sub.example.com:lib"\n}\n'),
         )
         _write_local_deps(
             tmp_path / "subroot",
-            'deps: { local: [{ universe_name: "mv:define-lang.org:lib" }] }\n',
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
         )
         monkeypatch.chdir(tmp_path)
 

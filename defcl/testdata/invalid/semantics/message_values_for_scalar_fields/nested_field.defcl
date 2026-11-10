@@ -1,3 +1,5 @@
 config: {
-    basic: {}
+  basic: {
+    value: 1
+  }
 }

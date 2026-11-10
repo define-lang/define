@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:driver_reference_graph" }
+project: {
+  universe_name: "mv:define-lang.org:driver_reference_graph"
+}

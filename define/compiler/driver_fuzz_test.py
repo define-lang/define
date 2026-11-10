@@ -302,20 +302,20 @@ def _setup_project(
         encoding="utf-8",
         newline="\n",
     )
-    if local_deps is None:
+    # A deps config cannot be written without deps.
+    if not local_deps:
         return
     deps_dir = root / ".define" / "deps"
     deps_dir.mkdir(parents=True, exist_ok=True)
-    entries = ",\n    ".join(
-        f'{{\n      universe_name: "{name}"\n      path: "{path}"\n    }}'
+    entries = ",\n".join(
+        f'    {{\n      universe_name: "{name}"\n      path: "{path}"\n    }}'
         for name, path in local_deps.items()
     )
-    content = (
-        f"deps: {{\n  local: [\n    {entries}\n  ]\n}}\n"
-        if local_deps
-        else "deps: {}\n"
+    (deps_dir / "local.defcl").write_text(
+        f"deps: {{\n  local: [\n{entries}\n  ]\n}}\n",
+        encoding="utf-8",
+        newline="\n",
     )
-    (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")
 
 
 def _write_files(root: Path, files: dict[str, str]):

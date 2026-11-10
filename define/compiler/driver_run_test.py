@@ -20,7 +20,7 @@ def _write_valid_position_project(project_root: Path, universe_name: str):
     config_dir = project_root / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        f'project: {{ universe_name: "{universe_name}" }}\n',
+        f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
         encoding="utf-8",
         newline="\n",
     )
@@ -139,7 +139,9 @@ def test_invalid_config_returns_error_and_prints_to_stream(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        "project: {}\n", encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: ""\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n",
@@ -152,10 +154,10 @@ def test_invalid_config_returns_error_and_prints_to_stream(
     result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
-        'File ".define/project/config.defcl", line 1, column 1\n'
-        "    project: {}\n"
-        "    ^^^^^^^\n"
-        "project.universe_name: value is required\n"
+        'File ".define/project/config.defcl", line 2, column 18\n'
+        '    universe_name: ""\n'
+        "                   ^^\n"
+        "project.universe_name: must be at least 1 characters\n"
     )
 
 
@@ -167,7 +169,9 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        "project: {}\n", encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: ""\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n",
@@ -182,10 +186,10 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     assert result == driver.ExitCode.ERROR
     assert captured.out == ""
     assert captured.err == (
-        'File ".define/project/config.defcl", line 1, column 1\n'
-        "    project: {}\n"
-        "    ^^^^^^^\n"
-        "project.universe_name: value is required\n"
+        'File ".define/project/config.defcl", line 2, column 18\n'
+        '    universe_name: ""\n'
+        "                   ^^\n"
+        "project.universe_name: must be at least 1 characters\n"
     )
 
 
@@ -207,12 +211,23 @@ def test_referenced_project_config_error_returns_error_and_prints_to_stream(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        'project: { universe_name: "x.com:parent" }\n', encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: "x.com:parent"\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     deps_dir = tmp_path / ".define" / "deps"
     deps_dir.mkdir(parents=True)
     _ = (deps_dir / "local.defcl").write_text(
-        'deps: { local: [{ universe_name: "x.com:child" path: "lib" }] }\n',
+        (
+            "deps: {\n"
+            "  local: [\n"
+            "    {\n"
+            '      universe_name: "x.com:child"\n'
+            '      path: "lib"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
         encoding="utf-8",
         newline="\n",
     )
@@ -234,9 +249,9 @@ def test_referenced_project_config_error_returns_error_and_prints_to_stream(
     result = driver.Driver().run(Path("test.dfn"), error_stream=error_stream)
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
-        'File ".define/deps/local.defcl", line 1, column 54\n'
-        '    deps: { local: [{ universe_name: "x.com:child" path: "lib" }] }\n'
-        "                                                         ^^^^^\n"
+        'File ".define/deps/local.defcl", line 5, column 13\n'
+        '    path: "lib"\n'
+        "          ^^^^^\n"
         "The referenced subroot (lib) is not a valid project root:"
         " lib/.define/project/config.defcl not found.\n"
         "A project root is any directory containing lib/.define/project/config.defcl.\n"
@@ -326,7 +341,7 @@ def test_multiple_errors_are_separated_by_divider(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        'project: { universe_name: "mv:define-lang.org:test_path" }\n',
+        ('project: {\n  universe_name: "mv:define-lang.org:test_path"\n}\n'),
         encoding="utf-8",
         newline="\n",
     )

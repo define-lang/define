@@ -1,3 +1,8 @@
 config: {
-    tags: ["a", {}]
+  tags: [
+    "a",
+    {
+      value: 1
+    }
+  ]
 }

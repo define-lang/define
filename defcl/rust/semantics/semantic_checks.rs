@@ -8,13 +8,11 @@ use defcl_parser::{Field, FieldName, ParsedFile, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
 use source_rendering::SourceLocation;
 
-/// Checks the syntax tree of a DCL file against `schema`.
-///
-/// # Errors
-///
-/// Returns every error it finds, in source order. A value that an error leaves
-/// without a type to check against is not checked further.
-pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), Vec<SemanticError>> {
+/// Checks the syntax tree of a DCL file against `schema`, and returns every
+/// error it finds, in source order. A value that an error leaves without a type
+/// to check against is not checked further.
+#[must_use]
+pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Vec<SemanticError> {
     let mut errors = Vec::new();
     let top_level_message_type = schema.top_level_message_type();
     let mut written_fields = WrittenFields::new(file.top_level_messages.len());
@@ -43,10 +41,7 @@ pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Result<(), Vec<Sem
             &mut errors,
         );
     }
-    if errors.is_empty() {
-        return Ok(());
-    }
-    Err(errors)
+    errors
 }
 
 fn check_fields(
@@ -76,6 +71,8 @@ struct WrittenFields<'source> {
     /// The index in the message type's descriptor of each oneof that has a
     /// field written.
     oneofs: Vec<i32>,
+    /// The number and name of the field with the highest field number.
+    highest: Option<(i32, &'source str)>,
 }
 
 impl WrittenFields<'_> {
@@ -83,6 +80,7 @@ impl WrittenFields<'_> {
         Self {
             names: FxHashSet::with_capacity_and_hasher(capacity, FxBuildHasher),
             oneofs: Vec::new(),
+            highest: None,
         }
     }
 }
@@ -105,6 +103,14 @@ fn find_field<'schema, 'source>(
     if !written_fields.names.insert(name.text) {
         errors.push(field_written_twice(name));
         return Some(schema_field);
+    }
+    let number = schema_field.descriptor.number();
+    match written_fields.highest {
+        // A field written before this one has a higher field number.
+        Some((highest_number, highest_name)) if highest_number > number => {
+            errors.push(field_out_of_order(name, highest_name));
+        }
+        _ => written_fields.highest = Some((number, name.text)),
     }
     if let Some(oneof) = schema_field.descriptor.oneof_index {
         // The message value already has another field of the field's oneof.
@@ -225,6 +231,20 @@ fn is_float_in_range(text: &str, field_type: FloatFieldType) -> bool {
 }
 
 // The functions that only run on an error path.
+
+/// The error for the field named `name`, which is written after
+/// `later_field`, a field with a higher field number.
+#[cold]
+#[inline(never)]
+fn field_out_of_order(name: &FieldName, later_field: &str) -> SemanticError {
+    SemanticError {
+        kind: SemanticErrorKind::FieldOutOfOrder {
+            later_field: later_field.to_owned(),
+        },
+        location: name.location,
+        field_name: name.text.to_owned(),
+    }
+}
 
 #[cold]
 #[inline(never)]

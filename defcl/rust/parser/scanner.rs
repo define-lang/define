@@ -96,6 +96,21 @@ impl<'source> Scanner<'source> {
         &self.source[start..self.offset]
     }
 
+    /// Consumes the spaces at the scanner's position, and returns how many
+    /// there were.
+    pub fn consume_spaces(&mut self) -> usize {
+        let count = self.source.as_bytes()[self.offset..]
+            .iter()
+            .take_while(|&&byte| byte == b' ')
+            .count();
+        if count > 0 {
+            self.offset += count;
+            self.last_consumed = self.position.columns_later(count - 1);
+            self.position = self.position.columns_later(count);
+        }
+        count
+    }
+
     /// Consumes up to `limit` bytes that `is_included` accepts, which must be
     /// ASCII other than a line feed, and returns how many it consumed.
     pub fn consume_up_to(&mut self, limit: usize, is_included: impl Fn(u8) -> bool) -> usize {

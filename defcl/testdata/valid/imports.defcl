@@ -1,8 +1,8 @@
 wrapper: {
-    shared: {
-        name: "a"
-    }
+  shared: {
+    name: "a"
+  }
 }
 shared: {
-    name: "b"
+  name: "b"
 }

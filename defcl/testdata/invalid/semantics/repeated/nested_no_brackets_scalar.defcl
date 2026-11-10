@@ -1,5 +1,5 @@
 project: {
-    config: {
-        tags: "tag1"
-    }
+  config: {
+    tags: "tag1"
+  }
 }

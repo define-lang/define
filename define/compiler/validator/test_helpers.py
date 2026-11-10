@@ -47,14 +47,15 @@ def write_project_config(tmp_path: Path, universe_name: str):
 
 
 def write_local_deps_config(tmp_path: Path, deps: dict[str, str]):
-    """Write a .define/deps/local.defcl file under tmp_path."""
+    """Write a .define/deps/local.defcl file under tmp_path with deps, which must not be empty."""
     deps_dir = tmp_path / ".define" / "deps"
     deps_dir.mkdir(parents=True, exist_ok=True)
-    entries = ",\n    ".join(
-        f'{{\n      universe_name: "{name}"\n      path: "{path}"\n    }}'
+    entries = ",\n".join(
+        f'    {{\n      universe_name: "{name}"\n      path: "{path}"\n    }}'
         for name, path in deps.items()
     )
-    content = (
-        f"deps: {{\n  local: [\n    {entries}\n  ]\n}}\n" if deps else "deps: {}\n"
+    (deps_dir / "local.defcl").write_text(
+        f"deps: {{\n  local: [\n{entries}\n  ]\n}}\n",
+        encoding="utf-8",
+        newline="\n",
     )
-    (deps_dir / "local.defcl").write_text(content, encoding="utf-8", newline="\n")

@@ -8,6 +8,11 @@ proto_library(
 )
 
 proto_library(
+    name = "message_type_without_fields_proto",
+    srcs = ["message_type_without_fields.proto"],
+)
+
+proto_library(
     name = "older_editions_proto",
     srcs = ["older_editions.proto"],
     deps = [
@@ -44,6 +49,7 @@ proto_descriptor_set(
     testonly = True,
     visibility = ["//defcl/rust/semantics:__pkg__"],
     deps = [
+        ":message_type_without_fields_proto",
         ":older_editions_proto",
         ":prohibited_field_types_proto",
         ":required_field_proto",

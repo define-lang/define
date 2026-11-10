@@ -85,14 +85,16 @@ mod tests {
     }
 
     fn location_of(path: &[FieldPathElement]) -> Result<Option<SourceLocation>> {
-        Ok(parse(SOURCE).or_fail()?.location_of(path))
+        let parsed = parse(SOURCE);
+        verify_that!(parsed.errors, is_empty())?;
+        Ok(parsed.file.or_fail()?.location_of(path))
     }
 
     #[gtest]
     fn top_level_message() -> Result<()> {
         verify_that!(
             location_of(&[Field("project")])?,
-            some(eq(location(1, 10, 13, 1)))
+            some(eq(location(1, 10, 18, 1)))
         )
     }
 
@@ -100,7 +102,7 @@ mod tests {
     fn field_of_a_second_top_level_message() -> Result<()> {
         verify_that!(
             location_of(&[Field("settings"), Field("log_level")])?,
-            some(eq(location(15, 16, 15, 16)))
+            some(eq(location(20, 14, 20, 14)))
         )
     }
 
@@ -108,7 +110,7 @@ mod tests {
     fn field_of_a_nested_message() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("database"), Field("host")])?,
-            some(eq(location(4, 15, 4, 25)))
+            some(eq(location(4, 11, 4, 21)))
         )
     }
 
@@ -116,7 +118,7 @@ mod tests {
     fn element_of_a_repeated_field_has_no_name() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("dependencies"), Index(1)])?,
-            some(eq(location(8, 9, 10, 9)))
+            some(eq(location(10, 5, 12, 5)))
         )
     }
 
@@ -129,7 +131,7 @@ mod tests {
                 Index(1),
                 Field("universe")
             ])?,
-            some(eq(location(9, 23, 9, 25)))
+            some(eq(location(11, 17, 11, 19)))
         )
     }
 
@@ -137,7 +139,7 @@ mod tests {
     fn scalar_element_of_a_repeated_field() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("tags"), Index(0)])?,
-            some(eq(location(12, 12, 12, 14)))
+            some(eq(location(15, 5, 15, 7)))
         )
     }
 
@@ -158,7 +160,7 @@ mod tests {
                 Index(1),
                 Field("owner")
             ])?,
-            some(eq(location(8, 9, 10, 9)))
+            some(eq(location(10, 5, 12, 5)))
         )
     }
 
@@ -166,7 +168,7 @@ mod tests {
     fn index_past_the_last_element_finds_the_repeated_field() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("dependencies"), Index(2)])?,
-            some(eq(location(6, 5, 6, 16)))
+            some(eq(location(6, 3, 6, 14)))
         )
     }
 
@@ -174,7 +176,7 @@ mod tests {
     fn index_of_a_field_that_is_not_repeated_finds_the_field() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("name"), Index(0)])?,
-            some(eq(location(2, 5, 2, 8)))
+            some(eq(location(2, 3, 2, 6)))
         )
     }
 
@@ -182,7 +184,7 @@ mod tests {
     fn field_of_a_scalar_finds_the_scalar_field() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("name"), Field("length")])?,
-            some(eq(location(2, 5, 2, 8)))
+            some(eq(location(2, 3, 2, 6)))
         )
     }
 
@@ -190,7 +192,7 @@ mod tests {
     fn index_of_a_top_level_message_finds_the_message() -> Result<()> {
         verify_that!(
             location_of(&[Field("settings"), Index(0)])?,
-            some(eq(location(14, 1, 14, 8)))
+            some(eq(location(19, 1, 19, 8)))
         )
     }
 

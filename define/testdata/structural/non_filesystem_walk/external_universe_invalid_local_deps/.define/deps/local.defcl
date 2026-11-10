@@ -1,5 +1,7 @@
 deps: {
   local: [
-    {}
+    {
+      path: "lib"
+    }
   ]
 }

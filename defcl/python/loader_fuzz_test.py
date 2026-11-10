@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import string
 import sys
 
@@ -101,32 +102,83 @@ def _strings() -> st.SearchStrategy[str]:
     return st.lists(pieces, max_size=6).map(lambda parts: '"' + "".join(parts) + '"')
 
 
-def _repeated_value(elements: list[str]) -> str:
-    return "[" + ", ".join(elements) + "]"
+@dataclasses.dataclass(frozen=True)
+class _Message:
+    fields: list[tuple[str, _Value]]
 
 
-def _message_value(fields: list[tuple[str, str]]) -> str:
-    if not fields:
-        return "{}"
-    written: list[str] = []
-    for name, value in fields:
-        written.append(f"{name}: {value}")
-    return "{ " + " ".join(written) + " }"
+@dataclasses.dataclass(frozen=True)
+class _Repeated:
+    elements: list[_Value]
+
+
+# A scalar's source text, or a message value or repeated value.
+type _Value = str | _Message | _Repeated
+
+# The fields of every_field_type.proto's Values in field number order, which
+# is the order that a message value writes them in.
+_FIELD_ORDER = [
+    "int32_value",
+    "int64_value",
+    "uint32_value",
+    "uint64_value",
+    "sint32_value",
+    "sint64_value",
+    "fixed32_value",
+    "fixed64_value",
+    "sfixed32_value",
+    "sfixed64_value",
+    "float_value",
+    "double_value",
+    "string_value",
+    "enum_value",
+    "message_value",
+    "delimited_value",
+    "uint32_values",
+    "float_values",
+    "string_values",
+    "enum_values",
+    "message_values",
+    "first_choice",
+    "second_choice",
+]
+
+
+def _render(value: _Value, level: int) -> str:
+    """Return the source text of value, written on a line indented level levels."""
+    if isinstance(value, str):
+        return value
+    indentation = "  " * (level + 1)
+    if isinstance(value, _Message):
+        lines: list[str] = []
+        for name, field_value in value.fields:
+            lines.append(f"{indentation}{name}: {_render(field_value, level + 1)}\n")
+        return "{\n" + "".join(lines) + "  " * level + "}"
+    elements: list[str] = []
+    for element in value.elements:
+        elements.append(indentation + _render(element, level + 1))
+    return "[\n" + ",\n".join(elements) + "\n" + "  " * level + "]"
+
+
+def _message_in_field_order(fields: list[tuple[str, _Value]]) -> _Message:
+    return _Message(sorted(fields, key=lambda field: _FIELD_ORDER.index(field[0])))
 
 
 def _field(
-    name: str, values: st.SearchStrategy[str]
-) -> st.SearchStrategy[tuple[str, str]]:
+    name: str, values: st.SearchStrategy[_Value]
+) -> st.SearchStrategy[tuple[str, _Value]]:
     return st.tuples(st.just(name), values)
 
 
 def _repeated_field(
-    name: str, elements: st.SearchStrategy[str]
-) -> st.SearchStrategy[tuple[str, str]]:
-    return st.tuples(st.just(name), st.lists(elements, max_size=3).map(_repeated_value))
+    name: str, elements: st.SearchStrategy[_Value]
+) -> st.SearchStrategy[tuple[str, _Value]]:
+    return st.tuples(
+        st.just(name), st.lists(elements, min_size=1, max_size=3).map(_Repeated)
+    )
 
 
-def _message_values(depth: int) -> st.SearchStrategy[str]:
+def _message_values(depth: int) -> st.SearchStrategy[_Value]:
     enum_values = st.sampled_from(_ENUM_VALUES)
     fields = [
         _field("int32_value", _integers()),
@@ -159,20 +211,41 @@ def _message_values(depth: int) -> st.SearchStrategy[str]:
                 _repeated_field("message_values", nested),
             ]
         )
-    return st.lists(st.one_of(fields), max_size=5).map(_message_value)
+    return st.lists(st.one_of(fields), min_size=1, max_size=5).map(
+        _message_in_field_order
+    )
 
 
 @settings(max_examples=500, deadline=None)
 @given(_message_values(0))
-@example(r'{ string_value: "\u005c" }')
-@example(r'{ string_value: "\U0000005cn" }')
-@example(r'{ string_value: "caf\u00e9 \U0001F600 \xc3\xa9 \303\251 日" }')
-@example("{ float_value: 340282346638528859811704183484516925440.0 }")
-@example(f"{{ double_value: -{_LARGEST_FLOAT}.0 }}")
-@example("{ uint64_value: 18446744073709551615 sint64_value: -9223372036854775808 }")
-@example("{ delimited_value: { enum_values: [MODE_ACTIVE] } second_choice: 1 }")
-def test_text_format_parses_every_file_the_checks_accept(values: str):
-    result = loader.load(f"values: {values}\n", every_field_type_pb2.EveryFieldTypeFile)
+@example(_Message([("string_value", r'"\u005c"')]))
+@example(_Message([("string_value", r'"\U0000005cn"')]))
+@example(_Message([("string_value", r'"caf\u00e9 \U0001F600 \xc3\xa9 \303\251 日"')]))
+@example(_Message([("float_value", "340282346638528859811704183484516925440.0")]))
+@example(_Message([("double_value", f"-{_LARGEST_FLOAT}.0")]))
+@example(
+    _Message(
+        [
+            ("uint64_value", "18446744073709551615"),
+            ("sint64_value", "-9223372036854775808"),
+        ]
+    )
+)
+@example(
+    _Message(
+        [
+            (
+                "delimited_value",
+                _Message([("enum_values", _Repeated(["MODE_ACTIVE"]))]),
+            ),
+            ("second_choice", "1"),
+        ]
+    )
+)
+def test_text_format_parses_every_file_the_checks_accept(values: _Value):
+    result = loader.load(
+        f"values: {_render(values, 0)}\n", every_field_type_pb2.EveryFieldTypeFile
+    )
     if any(
         isinstance(diagnostic, errors.SyntaxDiagnostic)
         for diagnostic in result.diagnostics

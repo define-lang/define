@@ -25,6 +25,17 @@ pub enum SemanticErrorKind {
         /// The full name of the message type.
         message_type: String,
     },
+    /// A field written after a field of the same message value, or after a
+    /// top-level message, with a higher field number. The location is the
+    /// field's name.
+    #[display(
+        "Fields must be written in the order of their field numbers, so this field must come before {later_field}"
+    )]
+    FieldOutOfOrder {
+        /// The name of the field with the highest field number that is written
+        /// before it.
+        later_field: String,
+    },
     /// A field written a second time in the same message. The location is the
     /// second field name.
     #[display("A message value can have each field only once")]

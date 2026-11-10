@@ -1,4 +1,4 @@
 config: {
-    tags: "tag1"
-    tags: "tag2"
+  tags: "tag1"
+  tags: "tag2"
 }

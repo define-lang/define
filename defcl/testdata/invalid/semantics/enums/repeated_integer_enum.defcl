@@ -1,6 +1,10 @@
 project: {
-    items: [
-        { status: STATUS_ACTIVE },
-        { status: 1 }
-    ]
+  items: [
+    {
+      status: STATUS_ACTIVE
+    },
+    {
+      status: 1
+    }
+  ]
 }

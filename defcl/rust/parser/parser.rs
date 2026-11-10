@@ -9,17 +9,39 @@ use source_rendering::{Position, SourceLocation};
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
 
-/// Parses `source`, the text of a DCL file, into its syntax tree, or returns
-/// the first syntax error in it.
-///
-/// # Errors
-///
-/// Returns the first syntax error in `source`.
-pub fn parse(source: &str) -> Result<ParsedFile<'_>, SyntaxError> {
-    Parser {
+/// The spaces of one level of indentation.
+const INDENTATION_WIDTH: u32 = 2;
+
+/// The syntax tree of a DCL file, and its syntax errors.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseResult<'source> {
+    /// The syntax tree, unless a syntax error stopped the parse.
+    pub file: Option<ParsedFile<'source>>,
+    /// Every syntax error found, in the order found. If a syntax error stopped
+    /// the parse, it is the last.
+    pub errors: Vec<SyntaxError>,
+}
+
+/// Parses `source`, the text of a DCL file, into its syntax tree and its
+/// syntax errors. An error in the layout of the file, such as its whitespace,
+/// does not stop the parse; any other syntax error does.
+#[must_use]
+pub fn parse(source: &str) -> ParseResult<'_> {
+    let mut parser = Parser {
         scanner: Scanner::new(source),
+        errors: Vec::new(),
+    };
+    let file = match parser.parse_file() {
+        Ok(file) => Some(file),
+        Err(error) => {
+            parser.errors.push(error);
+            None
+        }
+    };
+    ParseResult {
+        file,
+        errors: parser.errors,
     }
-    .parse_file()
 }
 
 const fn is_field_name_start(byte: u8) -> bool {
@@ -30,6 +52,12 @@ const fn is_field_name_start(byte: u8) -> bool {
 /// an invalid field name.
 const fn is_field_name_word_character(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.')
+}
+
+/// Whether `byte` starts an element of a repeated value, which may be an
+/// invalid one, other than a repeated value.
+const fn is_element_start(byte: u8) -> bool {
+    matches!(byte, b'"' | b'{') || is_number_start(byte) || byte.is_ascii_alphabetic()
 }
 
 /// Whether `byte` starts a number where a value belongs, which may be an
@@ -193,16 +221,58 @@ impl ByteEscapeRun {
     }
 }
 
-#[derive(Clone, Copy)]
 struct Parser<'source> {
     scanner: Scanner<'source>,
+    /// The errors in the layout of the file so far, which do not stop the
+    /// parse.
+    errors: Vec<SyntaxError>,
+}
+
+/// Consumes whitespace and comments at `scanner`'s position, and returns
+/// whether there were any.
+///
+/// ```ebnf
+/// COMMENT    = "#", { char - newline }, [ newline ] ;
+/// WHITESPACE = " " | newline ;
+/// ```
+fn skip_whitespace(scanner: &mut Scanner<'_>) -> Result<bool, SyntaxError> {
+    let start = scanner.offset();
+    loop {
+        match scanner.peek() {
+            Some(b' ' | b'\n') => scanner.advance(),
+            Some(b'#') => skip_comment(scanner)?,
+            _ => return Ok(scanner.offset() != start),
+        }
+    }
+}
+
+/// Consumes a comment up to its line feed.
+fn skip_comment(scanner: &mut Scanner<'_>) -> Result<(), SyntaxError> {
+    loop {
+        match scanner.peek() {
+            None | Some(b'\n') => return Ok(()),
+            // The comment has a NUL.
+            Some(b'\0') => {
+                return Err(SyntaxError {
+                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                    location: SourceLocation::at(scanner.position()),
+                });
+            }
+            Some(_) => scanner.advance(),
+        }
+    }
+}
+
+/// The spaces of `level` levels of indentation.
+const fn indentation(level: u32) -> u32 {
+    level * INDENTATION_WIDTH
 }
 
 impl<'source> Parser<'source> {
     /// ```ebnf
-    /// file = { WHITESPACE }, top_level_message, { WHITESPACE, top_level_message }, { WHITESPACE } ;
+    /// file = { comment_line }, top_level_message, { line_break(0), top_level_message }, line_break(0) ;
     /// ```
-    fn parse_file(mut self) -> Result<ParsedFile<'source>, SyntaxError> {
+    fn parse_file(&mut self) -> Result<ParsedFile<'source>, SyntaxError> {
         // The file starts with a byte order mark.
         if self.scanner.peek_character() == Some(BYTE_ORDER_MARK) {
             return Err(SyntaxError {
@@ -211,23 +281,15 @@ impl<'source> Parser<'source> {
             });
         }
         let mut top_level_messages = Vec::new();
-        let mut has_whitespace = self.skip_whitespace()?;
-        while let Some(byte) = self.scanner.peek() {
+        while let Some(byte) =
+            self.line_break_before(0, |next| next.is_none_or(is_field_name_start))?
+        {
             // Something other than a field name starts where a top-level
             // message belongs.
             if !is_field_name_start(byte) {
                 return Err(self.error_where_field_belongs(SyntaxErrorKind::ExpectedFieldName));
             }
-            // The top-level message follows the one before it with no
-            // whitespace between them.
-            if !has_whitespace && !top_level_messages.is_empty() {
-                return Err(SyntaxError {
-                    kind: SyntaxErrorKind::MissingWhitespace,
-                    location: SourceLocation::at(self.scanner.position()),
-                });
-            }
             top_level_messages.push(self.parse_top_level_message()?);
-            has_whitespace = self.skip_whitespace()?;
         }
         // The file has no top-level message.
         if top_level_messages.is_empty() {
@@ -236,68 +298,309 @@ impl<'source> Parser<'source> {
                 location: SourceLocation::at(self.scanner.position()),
             });
         }
-        // The file does not end with a line feed. Only a line feed moves the
-        // scanner to the first column, and the file is not empty.
-        if self.scanner.position().column != 1 {
-            return Err(SyntaxError {
-                kind: SyntaxErrorKind::MissingTrailingNewline,
-                location: SourceLocation::at(self.scanner.last_consumed()),
-            });
-        }
         Ok(ParsedFile { top_level_messages })
     }
 
-    /// Consumes whitespace and comments, and returns whether there were any.
+    /// Consumes the whitespace and comments before the next token, and returns
+    /// its first byte, or `None` at the end of the source. Checks them as
+    /// `expect_line_break(level)` does if `is_expected` accepts that byte, so
+    /// that a token that is a syntax error is not also reported as out of
+    /// place.
+    fn line_break_before(
+        &mut self,
+        level: u32,
+        is_expected: impl Fn(Option<u8>) -> bool,
+    ) -> Result<Option<u8>, SyntaxError> {
+        let mut lookahead = self.scanner;
+        // The whitespace and comments have no NUL if this succeeds, so
+        // checking them cannot fail.
+        skip_whitespace(&mut lookahead)?;
+        let next = lookahead.peek();
+        if is_expected(next) {
+            self.expect_line_break(level);
+        } else {
+            self.scanner = lookahead;
+        }
+        Ok(next)
+    }
+
+    /// Consumes the whitespace and comments before the next field or element
+    /// of a block whose fields or elements are indented `level` levels, or
+    /// before the block's closing `}` or `]`, which is indented one level
+    /// less. The top-level messages are a block of level 0 that the end of the
+    /// file closes. Records an error for each way that they are not a line
+    /// feed, then comment lines indented `level` levels, then the next token's
+    /// indentation. The whitespace and comments must have no NUL.
     ///
     /// ```ebnf
-    /// COMMENT    = "#", { char - newline }, [ newline ] ;
-    /// WHITESPACE = " " | newline ;
+    /// line_break(level) = newline, { comment_line(level) }, indentation(level) ;
+    /// comment_line(level) = indentation(level), "#", [ " ", comment_text ], newline ;
+    /// comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - "\t" - newline ) ] ;
     /// ```
-    fn skip_whitespace(&mut self) -> Result<bool, SyntaxError> {
-        let start = self.scanner.offset();
+    fn expect_line_break(&mut self, level: u32) {
+        // The file starts at the start of a line, and everything else that
+        // comes before whitespace ends on the line it starts on.
+        if self.scanner.position().column != 1 && !self.finish_line() {
+            return;
+        }
         loop {
+            let line_start = self.scanner.position();
+            let spaces = self.scanner.consume_spaces();
             match self.scanner.peek() {
-                Some(b' ' | b'\n') => self.scanner.advance(),
-                Some(b'#') => self.skip_comment()?,
-                _ => return Ok(self.scanner.offset() != start),
+                // The line has nothing but spaces.
+                Some(b'\n') => {
+                    self.scanner.advance();
+                    self.errors.push(SyntaxError {
+                        kind: SyntaxErrorKind::BlankLine,
+                        location: self.location_from(line_start),
+                    });
+                }
+                // The file ends with spaces after its last line feed.
+                None if spaces > 0 => {
+                    self.errors.push(SyntaxError {
+                        kind: SyntaxErrorKind::TrailingWhitespace,
+                        location: self.location_from(line_start),
+                    });
+                    return;
+                }
+                None => return,
+                Some(b'#') => {
+                    self.check_indentation(line_start, spaces, indentation(level));
+                    self.consume_comment_line();
+                    // The file ends without a line feed after the comment.
+                    if !self.scanner.consume_byte(b'\n') {
+                        self.errors.push(SyntaxError {
+                            kind: SyntaxErrorKind::MissingTrailingNewline,
+                            location: SourceLocation::at(self.scanner.last_consumed()),
+                        });
+                        return;
+                    }
+                }
+                Some(byte) => {
+                    let token_level = if matches!(byte, b'}' | b']') {
+                        level.saturating_sub(1)
+                    } else {
+                        level
+                    };
+                    self.check_indentation(line_start, spaces, indentation(token_level));
+                    return;
+                }
             }
         }
     }
 
-    /// Consumes a comment up to its line feed.
-    fn skip_comment(&mut self) -> Result<(), SyntaxError> {
-        loop {
-            match self.scanner.peek() {
-                None | Some(b'\n') => return Ok(()),
-                // The comment has a NUL.
-                Some(b'\0') => {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
-                        location: SourceLocation::at(self.scanner.position()),
+    /// Consumes the rest of the line that the scanner is in the middle of,
+    /// where only its line feed belongs, and returns whether it ended with
+    /// one. Records an error for each thing other than the line feed.
+    fn finish_line(&mut self) -> bool {
+        let spaces_start = self.scanner.position();
+        let spaces = self.scanner.consume_spaces();
+        match self.scanner.peek() {
+            Some(b'\n') => {
+                // The line ends with spaces.
+                if spaces > 0 {
+                    self.errors.push(SyntaxError {
+                        kind: SyntaxErrorKind::TrailingWhitespace,
+                        location: self.location_from(spaces_start),
                     });
                 }
-                Some(_) => self.scanner.advance(),
+            }
+            // A comment follows something else on its line.
+            Some(b'#') => {
+                let comment_start = self.scanner.position();
+                self.skip_to_line_end();
+                self.errors.push(SyntaxError {
+                    kind: SyntaxErrorKind::CommentNotOnOwnLine,
+                    location: self.location_from(comment_start),
+                });
+            }
+            // The file does not end with a line feed.
+            None => {
+                self.errors.push(SyntaxError {
+                    kind: SyntaxErrorKind::MissingTrailingNewline,
+                    location: SourceLocation::at(self.scanner.last_consumed()),
+                });
+                return false;
+            }
+            // The next token is on the same line as the one before it.
+            Some(_) => {
+                self.errors.push(SyntaxError {
+                    kind: SyntaxErrorKind::MissingLineBreak,
+                    location: SourceLocation::at(self.scanner.position()),
+                });
+                return false;
             }
         }
+        // The file does not end with a line feed after the comment.
+        if !self.scanner.consume_byte(b'\n') {
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::MissingTrailingNewline,
+                location: SourceLocation::at(self.scanner.last_consumed()),
+            });
+            return false;
+        }
+        true
+    }
+
+    /// Consumes everything up to the next line feed or the end of the source.
+    fn skip_to_line_end(&mut self) {
+        while self.scanner.peek().is_some_and(|byte| byte != b'\n') {
+            self.scanner.advance();
+        }
+    }
+
+    /// Records an error if `spaces`, the spaces that start the line that
+    /// starts at `line_start`, are not `expected` spaces.
+    fn check_indentation(&mut self, line_start: Position, spaces: usize, expected: u32) {
+        if spaces != expected as usize {
+            let location = if spaces == 0 {
+                SourceLocation::at(line_start)
+            } else {
+                self.location_from(line_start)
+            };
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::WrongIndentation {
+                    expected_spaces: expected,
+                },
+                location,
+            });
+        }
+    }
+
+    /// Consumes the comment that starts with the `#` at the scanner's position
+    /// on a line of its own, up to its line feed. Records an error if the `#`
+    /// is followed directly by text, without a space between them, and if the
+    /// comment ends with spaces or tabs. The comment must have no NUL.
+    fn consume_comment_line(&mut self) {
+        let hash = self.scanner.position();
+        self.scanner.advance();
+        let spaces = self.scanner.consume_spaces();
+        // Where the spaces and tabs at the end of the comment so far start.
+        let mut trailing_start = (spaces > 0).then(|| hash.next_column());
+        let mut has_text = false;
+        loop {
+            match self.scanner.peek() {
+                None | Some(b'\n') => break,
+                Some(b' ' | b'\t') => {
+                    trailing_start.get_or_insert_with(|| self.scanner.position());
+                    self.scanner.advance();
+                }
+                Some(_) => {
+                    has_text = true;
+                    trailing_start = None;
+                    self.scanner.advance();
+                }
+            }
+        }
+        // The comment's text follows its `#` with no space between them.
+        if has_text && spaces == 0 {
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::CommentSpacing,
+                location: SourceLocation::at(hash),
+            });
+        }
+        // The comment ends with spaces or tabs.
+        if let Some(start) = trailing_start {
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::TrailingWhitespace,
+                location: self.location_from(start),
+            });
+        }
+    }
+
+    /// The location from `start` through the last character consumed.
+    const fn location_from(&self, start: Position) -> SourceLocation {
+        SourceLocation {
+            start,
+            end: self.scanner.last_consumed(),
+        }
+    }
+
+    /// Consumes the whitespace and comments between a field name and its
+    /// colon, or between an element of a repeated value and the comma after
+    /// it, where nothing belongs, if the next character after them is
+    /// `separator`. Records an error of the kind `kind` if there were any.
+    fn skip_misplaced_whitespace_before(
+        &mut self,
+        separator: u8,
+        kind: SyntaxErrorKind,
+    ) -> Result<(), SyntaxError> {
+        let start = self.scanner.position();
+        let mut lookahead = self.scanner;
+        if !skip_whitespace(&mut lookahead)? || lookahead.peek() != Some(separator) {
+            return Ok(());
+        }
+        self.scanner = lookahead;
+        self.errors.push(SyntaxError {
+            kind,
+            location: self.location_from(start),
+        });
+        Ok(())
+    }
+
+    /// Consumes the whitespace and comments after a field's colon, where
+    /// exactly one space belongs, and records an error if they are anything
+    /// else and are followed by what may start a value.
+    fn expect_one_space(&mut self) -> Result<(), SyntaxError> {
+        let start = self.scanner.position();
+        let start_offset = self.scanner.offset();
+        skip_whitespace(&mut self.scanner)?;
+        if !self
+            .scanner
+            .peek()
+            .is_some_and(|byte| byte == b'[' || is_element_start(byte))
+        {
+            return Ok(());
+        }
+        let whitespace = self.scanner.text_from(start_offset);
+        if whitespace == " " {
+            return Ok(());
+        }
+        let location = if whitespace.is_empty() {
+            SourceLocation::at(start)
+        } else {
+            self.location_from(start)
+        };
+        self.errors.push(SyntaxError {
+            kind: SyntaxErrorKind::WrongSpacingAfterColon,
+            location,
+        });
+        Ok(())
+    }
+
+    /// Consumes a message value or a repeated value whose opening `{` or `[`
+    /// is at `start` and has been consumed, if it has nothing but whitespace
+    /// and comments before `close`, and records an error of the kind `kind`
+    /// for it. Returns whether it did.
+    fn skip_empty_block(
+        &mut self,
+        start: Position,
+        close: u8,
+        kind: SyntaxErrorKind,
+    ) -> Result<bool, SyntaxError> {
+        let mut lookahead = self.scanner;
+        skip_whitespace(&mut lookahead)?;
+        if !lookahead.consume_byte(close) {
+            return Ok(false);
+        }
+        self.scanner = lookahead;
+        self.errors.push(SyntaxError {
+            kind,
+            location: self.location_from(start),
+        });
+        Ok(true)
     }
 
     /// Parses a top-level message, which starts at the scanner's position with
     /// a byte that may start a field name.
     ///
     /// ```ebnf
-    /// top_level_message = FIELD_NAME, ":", " ", message_value ;
+    /// top_level_message = FIELD_NAME, ":", " ", message_value(0) ;
     /// ```
     fn parse_top_level_message(&mut self) -> Result<TopLevelMessage<'source>, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
-        // The colon is not followed by a space.
-        if !self.scanner.consume_byte(b' ') {
-            return Err(self.missing_space_after_colon());
-        }
-        // The space after the colon is followed by more whitespace.
-        if matches!(self.scanner.peek(), Some(b' ' | b'\n' | b'#')) {
-            return Err(self.extra_whitespace_after_colon());
-        }
-        let value = self.parse_value()?;
+        self.expect_one_space()?;
+        let value = self.parse_value(0)?;
         let Value::Message(value) = value else {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
@@ -315,16 +618,16 @@ impl<'source> Parser<'source> {
         })
     }
 
-    /// Parses a field, which starts at the scanner's position with a byte that
-    /// may start a field name.
+    /// Parses a field indented `level` levels, which starts at the scanner's
+    /// position with a byte that may start a field name.
     ///
     /// ```ebnf
-    /// field = FIELD_NAME, ":", [ WHITESPACE ], value ;
+    /// field(level) = FIELD_NAME, ":", " ", value(level) ;
     /// ```
-    fn parse_field(&mut self) -> Result<Field<'source>, SyntaxError> {
+    fn parse_field(&mut self, level: u32) -> Result<Field<'source>, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
-        self.skip_whitespace()?;
-        let value = self.parse_value()?;
+        self.expect_one_space()?;
+        let value = self.parse_value(level)?;
         let location = SourceLocation {
             start: name.location.start,
             end: value.location().end,
@@ -350,21 +653,24 @@ impl<'source> Parser<'source> {
                 location,
             });
         }
-        // The field name is not followed directly by a colon.
+        self.skip_misplaced_whitespace_before(b':', SyntaxErrorKind::WhitespaceBeforeColon)?;
+        // The field name is not followed by a colon.
         if !self.scanner.consume_byte(b':') {
             return Err(self.missing_colon());
         }
         Ok(FieldName { text, location })
     }
 
+    /// Parses a value on a line indented `level` levels.
+    ///
     /// ```ebnf
-    /// value = STRING | INTEGER | FLOAT | enum_value | message_value | repeated_value ;
+    /// value(level) = STRING | INTEGER | FLOAT | enum_value | message_value(level) | repeated_value(level) ;
     /// ```
-    fn parse_value(&mut self) -> Result<Value<'source>, SyntaxError> {
+    fn parse_value(&mut self, level: u32) -> Result<Value<'source>, SyntaxError> {
         match self.scanner.peek() {
             Some(b'"') => self.parse_string(),
-            Some(b'{') => Ok(Value::Message(self.parse_message_value()?)),
-            Some(b'[') => Ok(Value::Repeated(self.parse_repeated_value()?)),
+            Some(b'{') => Ok(Value::Message(self.parse_message_value(level)?)),
+            Some(b'[') => Ok(Value::Repeated(self.parse_repeated_value(level)?)),
             Some(byte) if is_number_start(byte) => self.parse_number(),
             Some(byte) if byte.is_ascii_alphabetic() => self.parse_enum_value(),
             // Something other than a value is where a value belongs.
@@ -372,10 +678,13 @@ impl<'source> Parser<'source> {
         }
     }
 
+    /// Parses an element of a repeated value, on a line indented `level`
+    /// levels.
+    ///
     /// ```ebnf
-    /// element = STRING | INTEGER | FLOAT | enum_value | message_value ;
+    /// element(level) = STRING | INTEGER | FLOAT | enum_value | message_value(level) ;
     /// ```
-    fn parse_element(&mut self) -> Result<Value<'source>, SyntaxError> {
+    fn parse_element(&mut self, level: u32) -> Result<Value<'source>, SyntaxError> {
         // A repeated value is an element of a repeated value.
         if self.scanner.peek() == Some(b'[') {
             return Err(SyntaxError {
@@ -383,7 +692,7 @@ impl<'source> Parser<'source> {
                 location: SourceLocation::at(self.scanner.position()),
             });
         }
-        self.parse_value()
+        self.parse_value(level)
     }
 
     /// ```ebnf
@@ -593,189 +902,126 @@ impl<'source> Parser<'source> {
         Ok(Value::Enum(Scalar { text, location }))
     }
 
+    /// Parses a message value on a line indented `level` levels, whose fields
+    /// are indented one level more.
+    ///
     /// ```ebnf
-    /// message_value = "{", [ WHITESPACE ], [ field_list ], [ WHITESPACE ], "}" ;
-    /// field_list = field, { WHITESPACE, field } ;
+    /// message_value(level) = "{", line_break(level + 1), field(level + 1),
+    ///     { line_break(level + 1), field(level + 1) }, line_break(level + 1), "}" ;
     /// ```
-    fn parse_message_value(&mut self) -> Result<MessageValue<'source>, SyntaxError> {
+    fn parse_message_value(&mut self, level: u32) -> Result<MessageValue<'source>, SyntaxError> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut fields = Vec::new();
-        let mut has_whitespace = self.skip_whitespace()?;
-        loop {
-            match self.scanner.peek() {
-                Some(b'}') => break,
-                Some(byte) if is_field_name_start(byte) => {
-                    // The field follows the one before it with no whitespace
-                    // between them.
-                    if !has_whitespace && !fields.is_empty() {
+        if !self.skip_empty_block(start, b'}', SyntaxErrorKind::EmptyMessageValue)? {
+            loop {
+                let next = self.line_break_before(level + 1, |next| {
+                    next == Some(b'}') || next.is_some_and(is_field_name_start)
+                })?;
+                match next {
+                    Some(b'}') => {
+                        self.scanner.advance();
+                        break;
+                    }
+                    Some(byte) if is_field_name_start(byte) => {
+                        fields.push(self.parse_field(level + 1)?);
+                    }
+                    // The source ends before the message value's `}`.
+                    None => {
                         return Err(SyntaxError {
-                            kind: SyntaxErrorKind::MissingWhitespace,
-                            location: SourceLocation::at(self.scanner.position()),
+                            kind: SyntaxErrorKind::UnclosedMessage,
+                            location: SourceLocation::at(start),
                         });
                     }
-                    fields.push(self.parse_field()?);
-                    has_whitespace = self.skip_whitespace()?;
-                }
-                // The source ends before the message value's `}`.
-                None => {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::UnclosedMessage,
-                        location: SourceLocation::at(start),
-                    });
-                }
-                // Something other than a field name or a `}` is where a field
-                // belongs.
-                Some(_) => {
-                    return Err(self.error_where_field_belongs(
-                        SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
-                    ));
+                    // Something other than a field name or a `}` is where a
+                    // field belongs.
+                    Some(_) => {
+                        return Err(self.error_where_field_belongs(
+                            SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
+                        ));
+                    }
                 }
             }
         }
-        self.scanner.advance();
         Ok(MessageValue {
             fields,
-            location: SourceLocation {
-                start,
-                end: self.scanner.last_consumed(),
-            },
+            location: self.location_from(start),
         })
     }
 
+    /// Parses a repeated value on a line indented `level` levels, whose
+    /// elements are indented one level more.
+    ///
     /// ```ebnf
-    /// repeated_value = "[", [ WHITESPACE ], [ element_list ], [ WHITESPACE ], "]" ;
-    /// element_list = element, { ",", [ WHITESPACE ], element } ;
+    /// repeated_value(level) = "[", line_break(level + 1), element(level + 1),
+    ///     { ",", line_break(level + 1), element(level + 1) }, line_break(level + 1), "]" ;
     /// ```
-    fn parse_repeated_value(&mut self) -> Result<RepeatedValue<'source>, SyntaxError> {
+    fn parse_repeated_value(&mut self, level: u32) -> Result<RepeatedValue<'source>, SyntaxError> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut values = Vec::new();
-        self.skip_whitespace()?;
-        if !self.scanner.consume_byte(b']') {
-            // The source ends before the repeated value's `]`.
-            if self.scanner.is_at_end() {
-                return Err(SyntaxError {
-                    kind: SyntaxErrorKind::UnclosedRepeatedValue,
-                    location: SourceLocation::at(start),
-                });
-            }
+        if !self.skip_empty_block(start, b']', SyntaxErrorKind::EmptyRepeatedValue)? {
             loop {
-                values.push(self.parse_element()?);
+                // The source ends before the repeated value's `]`.
+                if self
+                    .line_break_before(level + 1, |next| next.is_some_and(is_element_start))?
+                    .is_none()
+                {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::UnclosedRepeatedValue,
+                        location: SourceLocation::at(start),
+                    });
+                }
+                values.push(self.parse_element(level + 1)?);
+                self.skip_misplaced_whitespace_before(
+                    b',',
+                    SyntaxErrorKind::WhitespaceBeforeComma,
+                )?;
                 if self.scanner.consume_byte(b',') {
-                    self.skip_whitespace()?;
                     continue;
                 }
-                let whitespace_start = self.scanner.position();
-                self.skip_whitespace()?;
+                self.line_break_before(level + 1, |next| next == Some(b']'))?;
                 if self.scanner.consume_byte(b']') {
                     break;
                 }
-                return Err(self.error_after_repeated_element(start, whitespace_start));
+                return Err(self.error_after_repeated_element(start));
             }
         }
         Ok(RepeatedValue {
             values,
-            location: SourceLocation {
-                start,
-                end: self.scanner.last_consumed(),
-            },
+            location: self.location_from(start),
         })
     }
 }
 
 // The functions that only run on an error path.
 impl Parser<'_> {
-    /// The error for the field name at the scanner's position, which is not
-    /// followed directly by a colon.
+    /// The error for the field name before the scanner's position, which is
+    /// not followed by a colon, even after whitespace.
     #[cold]
     #[inline(never)]
     fn missing_colon(&self) -> SyntaxError {
-        let after_name = self.scanner.position();
-        let mut lookahead = *self;
-        match lookahead.skip_whitespace() {
-            Err(error) => return error,
-            // Whitespace separates the field name from its colon.
-            Ok(true) if lookahead.scanner.peek() == Some(b':') => {
-                return SyntaxError {
-                    kind: SyntaxErrorKind::WhitespaceBeforeColon,
-                    location: SourceLocation {
-                        start: after_name,
-                        end: lookahead.scanner.last_consumed(),
-                    },
-                };
-            }
-            Ok(_) => {}
-        }
         // Whitespace follows the field name where its colon belongs.
         if matches!(self.scanner.peek(), Some(b' ' | b'\n' | b'#')) {
             return SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation::at(after_name),
+                location: SourceLocation::at(self.scanner.position()),
             };
         }
         self.unexpected(SyntaxErrorKind::MissingColon)
     }
 
-    /// The error for what follows the colon of a top-level message, which is
-    /// not a space.
+    /// The error for what follows an element of the repeated value that starts
+    /// at `start`, at the scanner's position after any whitespace, when it is
+    /// not a `,` or the `]`.
     #[cold]
     #[inline(never)]
-    fn missing_space_after_colon(&self) -> SyntaxError {
-        // A line feed or a comment is where the space belongs.
-        if matches!(self.scanner.peek(), Some(b'\n' | b'#')) {
-            return SyntaxError {
-                kind: SyntaxErrorKind::MissingSpaceAfterColon,
-                location: SourceLocation::at(self.scanner.position()),
-            };
-        }
-        self.unexpected(SyntaxErrorKind::MissingSpaceAfterColon)
-    }
-
-    /// The error for the whitespace and comments that follow the space after
-    /// the colon of a top-level message.
-    #[cold]
-    #[inline(never)]
-    fn extra_whitespace_after_colon(&self) -> SyntaxError {
-        let start = self.scanner.position();
-        let mut lookahead = *self;
-        if let Err(error) = lookahead.skip_whitespace() {
-            return error;
-        }
-        SyntaxError {
-            kind: SyntaxErrorKind::ExtraWhitespaceAfterColon,
-            location: SourceLocation {
-                start,
-                end: lookahead.scanner.last_consumed(),
-            },
-        }
-    }
-
-    /// The error for what follows a value in the repeated value that starts at
-    /// `start`, when it is not a `,` or the `]`. Any whitespace after the
-    /// value, which started at `whitespace_start`, has been consumed.
-    #[cold]
-    #[inline(never)]
-    fn error_after_repeated_element(
-        &self,
-        start: Position,
-        whitespace_start: Position,
-    ) -> SyntaxError {
+    fn error_after_repeated_element(&self, start: Position) -> SyntaxError {
         // The source ends before the repeated value's `]`.
         if self.scanner.is_at_end() {
             return SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
                 location: SourceLocation::at(start),
-            };
-        }
-        // Whitespace separates the value from the `,` after it.
-        if self.scanner.peek() == Some(b',') {
-            return SyntaxError {
-                kind: SyntaxErrorKind::WhitespaceBeforeComma,
-                location: SourceLocation {
-                    start: whitespace_start,
-                    end: self.scanner.last_consumed(),
-                },
             };
         }
         self.unexpected(SyntaxErrorKind::ExpectedCommaOrCloseBracket)

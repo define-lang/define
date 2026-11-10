@@ -1,5 +1,6 @@
 project: {
-    universe_name: "example"
+  universe_name: "example"
 }
 settings: {
+  level: 1
 }

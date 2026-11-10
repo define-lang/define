@@ -1,5 +1,5 @@
 config: {
-    size: {
-        status: 1
-    }
+  size: {
+    status: 1
+  }
 }

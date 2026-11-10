@@ -38,6 +38,17 @@ pub enum SchemaViolation {
         message_type: String,
         field_name: String,
     },
+    /// A field whose type is a message type with no fields, which a DCL file
+    /// could only write as an empty message value.
+    #[display(
+        "{message_type}.{field_name} is a {field_type} field, a message type with no fields, which DCL does not allow"
+    )]
+    FieldOfMessageTypeWithoutFields {
+        message_type: String,
+        field_name: String,
+        /// The full name of the field's message type.
+        field_type: String,
+    },
     /// A string field whose `utf8_validation` is `NONE`.
     #[display("{message_type}.{field_name} does not validate UTF-8, which DCL does not allow")]
     Utf8ValidationNone {
@@ -124,9 +135,18 @@ pub(crate) fn violations(
             if field.type_name() == ANY_TYPE_NAME {
                 continue;
             }
-            if let Some(field_message_type) = message_type.field_message_type(field.name())
-                && !reached[field_message_type]
-            {
+            let Some(field_message_type) = message_type.field_message_type(field.name()) else {
+                continue;
+            };
+            let field_type = &message_types[field_message_type];
+            if field_type.descriptor.field.is_empty() {
+                violations.push(SchemaViolation::FieldOfMessageTypeWithoutFields {
+                    message_type: message_type.full_name.clone(),
+                    field_name: field.name().to_owned(),
+                    field_type: field_type.full_name.clone(),
+                });
+            }
+            if !reached[field_message_type] {
                 reached[field_message_type] = true;
                 pending.push(field_message_type);
             }
@@ -236,6 +256,20 @@ mod tests {
                 violations: vec![SchemaViolation::RequiredField {
                     message_type: format!("{PACKAGE}.RequiredFieldFile.Config"),
                     field_name: "name".to_owned(),
+                }]
+            }))
+        )
+    }
+
+    #[gtest]
+    fn field_of_message_type_without_fields() -> Result<()> {
+        verify_that!(
+            schema_error("MessageTypeWithoutFieldsFile")?,
+            some(eq(&SchemaError::BreaksRestrictions {
+                violations: vec![SchemaViolation::FieldOfMessageTypeWithoutFields {
+                    message_type: format!("{PACKAGE}.MessageTypeWithoutFieldsFile.Config"),
+                    field_name: "marker".to_owned(),
+                    field_type: format!("{PACKAGE}.MessageTypeWithoutFieldsFile.Marker"),
                 }]
             }))
         )

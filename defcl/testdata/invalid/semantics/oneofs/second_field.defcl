@@ -1,4 +1,4 @@
 config: {
-    path: "a"
-    url: "b"
+  path: "a"
+  url: "b"
 }

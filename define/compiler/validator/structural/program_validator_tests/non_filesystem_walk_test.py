@@ -100,11 +100,6 @@ def test_external_universe_invalid_local_deps(
             field_path=("deps", "local", 0, "universe_name"),
             violation_message="value is required",
         ),
-        diagnostics.ConfigViolationDiagnostic(
-            config_path=".define/deps/local.defcl",
-            field_path=("deps", "local", 0, "path"),
-            violation_message="value is required",
-        ),
     ]
 
 
@@ -131,11 +126,6 @@ def test_source_universe_definition_invalid_local_deps(
         diagnostics.ConfigViolationDiagnostic(
             config_path=".define/deps/local.defcl",
             field_path=("deps", "local", 0, "universe_name"),
-            violation_message="value is required",
-        ),
-        diagnostics.ConfigViolationDiagnostic(
-            config_path=".define/deps/local.defcl",
-            field_path=("deps", "local", 0, "path"),
             violation_message="value is required",
         ),
     ]

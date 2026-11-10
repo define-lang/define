@@ -613,7 +613,9 @@ def test_invalid_config_format_for_supplied_source(
     deps_path = tmp_path / ".define" / "deps" / "local.defcl"
     deps_path.parent.mkdir(parents=True)
     _ = deps_path.write_text(
-        "deps: {\n  local: [\n    {}\n  ]\n}\n", encoding="utf-8", newline="\n"
+        ('deps: {\n  local: [\n    {\n      path: "lib"\n    }\n  ]\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     monkeypatch.chdir(tmp_path)
     source = (
@@ -624,19 +626,13 @@ def test_invalid_config_format_for_supplied_source(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source)
-    missing_universe_name, missing_path = program_result.all_diagnostics
+    (missing_universe_name,) = program_result.all_diagnostics
     assert isinstance(missing_universe_name, diagnostics.ConfigViolationDiagnostic)
-    assert isinstance(missing_path, diagnostics.ConfigViolationDiagnostic)
     assert missing_universe_name.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/deps/local.defcl", line 3, column 5
-            {}
-            ^^
+            {
+            ^
         deps.local[0].universe_name: value is required""")
-    assert missing_path.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/deps/local.defcl", line 3, column 5
-            {}
-            ^^
-        deps.local[0].path: value is required""")
 
 
 def test_external_universe_not_configured_format_for_supplied_source_project(
@@ -908,7 +904,7 @@ def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        'project: {\n  universe_name: "x.com:lib"\n  owner: "y"\n}\n',
+        ('project: {\n  universe_name: "x.com:lib"\n  owner: "y"\n}\n'),
         encoding="utf-8",
         newline="\n",
     )
@@ -935,7 +931,9 @@ def test_config_validation_error_message(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
-        "project: {}\n", encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: ""\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n",
@@ -948,10 +946,10 @@ def test_config_validation_error_message(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/project/config.defcl", line 1, column 1
-            project: {}
-            ^^^^^^^
-        project.universe_name: value is required""")
+        File ".define/project/config.defcl", line 2, column 18
+            universe_name: ""
+                           ^^
+        project.universe_name: must be at least 1 characters""")
 
 
 def test_duplicate_local_dependency_error_message(
@@ -1003,7 +1001,11 @@ def test_config_field_error_message_for_a_changed_config_file(
 ):
     config_path = tmp_path / ".define" / "project" / "config.defcl"
     config_path.parent.mkdir(parents=True)
-    _ = config_path.write_text("project: {}\n", encoding="utf-8", newline="\n")
+    _ = config_path.write_text(
+        ('project: {\n  universe_name: ""\n}\n'),
+        encoding="utf-8",
+        newline="\n",
+    )
     _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n",
         encoding="utf-8",
@@ -1013,14 +1015,16 @@ def test_config_field_error_message_for_a_changed_config_file(
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     _ = config_path.write_text(
-        'project: {\n  universe_name: "x.com:lib"\n}\n', encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: "x.com:lib"\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl"
             (source not shown: the file changed after it was validated)
-        project.universe_name: value is required""")
+        project.universe_name: must be at least 1 characters""")
 
 
 def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

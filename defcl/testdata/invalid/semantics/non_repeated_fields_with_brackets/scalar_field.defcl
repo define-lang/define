@@ -1,3 +1,5 @@
 config: {
-    name: ["a"]
+  name: [
+    "a"
+  ]
 }

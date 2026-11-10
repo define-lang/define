@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:test_pos_init_chain_bad" }
+project: {
+  universe_name: "mv:define-lang.org:test_pos_init_chain_bad"
+}

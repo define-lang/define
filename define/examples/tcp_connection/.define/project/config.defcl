@@ -1,1 +1,3 @@
-project: { universe_name: "define-lang.org:tcp" }
+project: {
+  universe_name: "define-lang.org:tcp"
+}

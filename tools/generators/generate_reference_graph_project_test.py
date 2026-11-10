@@ -239,11 +239,21 @@ def test_universes_shape_gives_every_dependency_its_own_universe():
         "universes/u1/lib/pkg1/m1.dfn",
     ]
     assert files[".define/deps/local.defcl"] == (
-        f'deps: {{ local: [{{ universe_name: "{first}" path: "universes/u0" }}, '
-        f'{{ universe_name: "{second}" path: "universes/u1" }}] }}\n'
+        "deps: {\n"
+        "  local: [\n"
+        "    {\n"
+        f'      universe_name: "{first}"\n'
+        '      path: "universes/u0"\n'
+        "    },\n"
+        "    {\n"
+        f'      universe_name: "{second}"\n'
+        '      path: "universes/u1"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
     )
     assert files["universes/u1/.define/project/config.defcl"] == (
-        f'project: {{ universe_name: "{second}" }}\n'
+        f'project: {{\n  universe_name: "{second}"\n}}\n'
     )
     assert files["universes/u1/lib/pkg1/m1.dfn"] == (
         f"define the potential position<{second}:/lib/pkg1/m1>.\n"

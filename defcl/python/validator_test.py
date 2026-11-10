@@ -59,7 +59,7 @@ def test_semantic_errors_are_diagnostics():
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13
+        line=2, column=11, end_line=2, end_column=11
     )
     assert integer_enum.field_name == "status"
     assert type(scalar_for_message_field) is errors.SemanticDiagnostic
@@ -68,7 +68,7 @@ def test_semantic_errors_are_diagnostics():
         == error_types.SemanticDiagnosticKind.SCALAR_FOR_MESSAGE_FIELD
     )
     assert scalar_for_message_field.location == rendering.SourceLocation(
-        line=3, column=15, end_line=3, end_column=25
+        line=3, column=13, end_line=3, end_column=23
     )
     assert scalar_for_message_field.field_name == "database"
     assert type(message_value_for_scalar_field) is errors.SemanticDiagnostic
@@ -77,7 +77,7 @@ def test_semantic_errors_are_diagnostics():
         == error_types.SemanticDiagnosticKind.MESSAGE_VALUE_FOR_SCALAR_FIELD
     )
     assert message_value_for_scalar_field.location == rendering.SourceLocation(
-        line=5, column=8, end_line=5, end_column=9
+        line=5, column=8, end_line=7, end_column=1
     )
     assert message_value_for_scalar_field.field_name == "count"
 
@@ -94,7 +94,7 @@ def test_unknown_field_name_diagnostic_has_message_type():
         unknown_field_name.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
     )
     assert unknown_field_name.location == rendering.SourceLocation(
-        line=2, column=5, end_line=2, end_column=8
+        line=2, column=3, end_line=2, end_column=6
     )
     assert unknown_field_name.field_name == "size"
     assert (
@@ -115,7 +115,7 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
         unknown_enum_value.kind == error_types.SemanticDiagnosticKind.UNKNOWN_ENUM_VALUE
     )
     assert unknown_enum_value.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=18
+        line=2, column=11, end_line=2, end_column=16
     )
     assert unknown_enum_value.field_name == "status"
     assert (
@@ -137,7 +137,7 @@ def test_integer_out_of_range_diagnostic_has_field_type():
         == error_types.SemanticDiagnosticKind.INTEGER_OUT_OF_RANGE
     )
     assert integer_out_of_range.location == rendering.SourceLocation(
-        line=2, column=19, end_line=2, end_column=20
+        line=2, column=17, end_line=2, end_column=18
     )
     assert integer_out_of_range.field_name == "uint32_value"
     assert integer_out_of_range.field_type == "uint32"
@@ -155,7 +155,7 @@ def test_float_out_of_range_diagnostic_has_field_type():
         float_out_of_range.kind == error_types.SemanticDiagnosticKind.FLOAT_OUT_OF_RANGE
     )
     assert float_out_of_range.location == rendering.SourceLocation(
-        line=2, column=18, end_line=2, end_column=58
+        line=2, column=16, end_line=2, end_column=56
     )
     assert float_out_of_range.field_name == "float_value"
     assert float_out_of_range.field_type == "float"
@@ -174,12 +174,72 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
         == error_types.SemanticDiagnosticKind.SECOND_FIELD_OF_ONEOF
     )
     assert second_field_of_oneof.location == rendering.SourceLocation(
-        line=3, column=5, end_line=3, end_column=7
+        line=3, column=3, end_line=3, end_column=5
     )
     assert second_field_of_oneof.field_name == "url"
     assert (
         second_field_of_oneof.oneof
         == "defcl.testdata.invalid.semantics.schemas.OneofsFile.Config.source"
+    )
+
+
+def test_field_out_of_order_diagnostic_has_later_field():
+    (field_out_of_order,) = validator.validate(
+        _testdata("invalid/semantics/field_order/field_after_higher_number.defcl"),
+        _invalid_semantics_schemas(),
+        _WRONG_VALUE_KINDS_FILE,
+    )
+
+    assert isinstance(field_out_of_order, errors.FieldOutOfOrderDiagnostic)
+    assert (
+        field_out_of_order.kind == error_types.SemanticDiagnosticKind.FIELD_OUT_OF_ORDER
+    )
+    assert field_out_of_order.location == rendering.SourceLocation(
+        line=3, column=3, end_line=3, end_column=6
+    )
+    assert field_out_of_order.field_name == "name"
+    assert field_out_of_order.later_field == "count"
+
+
+def test_wrong_indentation_diagnostic_has_expected_spaces():
+    (wrong_indentation,) = validator.validate(
+        'project: {\n universe_name: "example"\n}\n',
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    )
+
+    assert isinstance(wrong_indentation, errors.WrongIndentationDiagnostic)
+    assert wrong_indentation.kind == error_types.SyntaxDiagnosticKind.WRONG_INDENTATION
+    assert wrong_indentation.location == rendering.SourceLocation(
+        line=2, column=1, end_line=2, end_column=1
+    )
+    assert wrong_indentation.expected_spaces == 2
+
+
+def test_layout_errors_come_before_semantic_errors():
+    wrong_indentation, unknown_field_name = validator.validate(
+        "project: {\n size: 1\n}\n",
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    )
+
+    assert isinstance(wrong_indentation, errors.WrongIndentationDiagnostic)
+    assert wrong_indentation.kind == error_types.SyntaxDiagnosticKind.WRONG_INDENTATION
+    assert wrong_indentation.location == rendering.SourceLocation(
+        line=2, column=1, end_line=2, end_column=1
+    )
+    assert wrong_indentation.expected_spaces == 2
+    assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
+    assert (
+        unknown_field_name.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
+    )
+    assert unknown_field_name.location == rendering.SourceLocation(
+        line=2, column=2, end_line=2, end_column=5
+    )
+    assert unknown_field_name.field_name == "size"
+    assert (
+        unknown_field_name.message_type
+        == "defcl.testdata.valid.schemas.SingleToplevelFile.Project"
     )
 
 
@@ -196,7 +256,7 @@ def test_syntax_error_is_a_diagnostic():
         == error_types.SyntaxDiagnosticKind.UNEXPECTED_CHARACTER
     )
     assert unexpected_character.location == rendering.SourceLocation(
-        line=2, column=8, end_line=2, end_column=8
+        line=2, column=6, end_line=2, end_column=6
     )
     assert unexpected_character.character == "@"
 
@@ -211,7 +271,7 @@ def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
     assert type(missing_colon) is errors.SyntaxDiagnostic
     assert missing_colon.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
     assert missing_colon.location == rendering.SourceLocation(
-        line=2, column=10, end_line=2, end_column=10
+        line=2, column=8, end_line=2, end_column=8
     )
 
 
@@ -237,7 +297,7 @@ def test_validate_file_of_a_valid_file_returns_its_text_and_no_diagnostics():
         rendering.SourceMap(),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
-    ) == ('project: {\n    universe_name: "example"\n}\n', [])
+    ) == ('project: {\n  universe_name: "example"\n}\n', [])
 
 
 def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
@@ -251,15 +311,15 @@ def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
         "defcl.testdata.invalid.semantics.schemas.IntegerEnumFile",
     )
 
-    assert source == "config: {\n    status: 0\n}\n"
+    assert source == "config: {\n  status: 0\n}\n"
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
-        line=2, column=13, end_line=2, end_column=13, file_path=path
+        line=2, column=11, end_line=2, end_column=11, file_path=path
     )
     assert integer_enum.field_name == "status"
     assert integer_enum.format(source_map) == (
-        f'File "{path}", line 2, column 13\n'
+        f'File "{path}", line 2, column 11\n'
         "    status: 0\n"
         "            ^\n"
         "status: Integer enum values are not allowed"

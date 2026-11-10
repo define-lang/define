@@ -28,7 +28,7 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
 
 
 class SyntaxDiagnostic(DclDiagnostic, frozen=True):
-    """A file's first syntax error, after which the file is not checked further."""
+    """A syntax error in a file. Each error in the file's layout is reported; any other syntax error stops the checks of the file."""
 
     kind: error_types.SyntaxDiagnosticKind
 
@@ -37,6 +37,12 @@ class UnexpectedCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
     """An UNEXPECTED_CHARACTER diagnostic: a character that DCL does not allow."""
 
     character: str
+
+
+class WrongIndentationDiagnostic(SyntaxDiagnostic, frozen=True):
+    """A WRONG_INDENTATION diagnostic: a line that does not start with the spaces of its indentation."""
+
+    expected_spaces: int
 
 
 class SemanticDiagnostic(DclDiagnostic, frozen=True):
@@ -80,3 +86,11 @@ class SecondFieldOfOneofDiagnostic(SemanticDiagnostic, frozen=True):
 
     # The oneof's full name: its message type's full name, then its own name.
     oneof: str
+
+
+class FieldOutOfOrderDiagnostic(SemanticDiagnostic, frozen=True):
+    """A FIELD_OUT_OF_ORDER diagnostic: a field written after a field with a higher field number."""
+
+    # The name of the field with the highest field number that is written
+    # before field_name.
+    later_field: str

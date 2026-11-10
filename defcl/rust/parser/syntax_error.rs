@@ -12,7 +12,8 @@ pub struct SyntaxError {
 }
 
 /// Which syntax error a `SyntaxError` is. Its message does not include the
-/// location.
+/// location. An error in the layout of a file, which the parser records
+/// without stopping, says so.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr, VariantNames)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SyntaxErrorKind {
@@ -23,7 +24,7 @@ pub enum SyntaxErrorKind {
     #[display("The file has no top-level message")]
     MissingTopLevelMessage,
     /// The file does not end with a line feed. The location is the file's
-    /// last character.
+    /// last character. A layout error.
     #[display("The file does not end with a newline")]
     MissingTrailingNewline,
     /// A tab outside a string or a comment.
@@ -49,25 +50,49 @@ pub enum SyntaxErrorKind {
     /// Something other than a field name or a `}` in a message value.
     #[display("Expected a field name or }}")]
     ExpectedFieldNameOrCloseBrace,
-    /// A field, or a top-level message, that follows the one before it with
-    /// no whitespace between them.
-    #[display("Missing whitespace before the field name")]
-    MissingWhitespace,
     /// A field name not followed by a colon. The location is where the colon
     /// belongs.
     #[display("Missing colon after field name")]
     MissingColon,
-    /// Whitespace between a field name and its colon.
+    /// Whitespace or comments between a field name and its colon. A layout
+    /// error.
     #[display("No whitespace allowed before the colon")]
     WhitespaceBeforeColon,
-    /// The colon of a top-level message not followed by a space. The location
-    /// is where the space belongs.
-    #[display("Missing space after the colon")]
-    MissingSpaceAfterColon,
-    /// Whitespace or comments after the one space that follows the colon of a
-    /// top-level message.
-    #[display("Only one space allowed after the colon of a top-level message")]
-    ExtraWhitespaceAfterColon,
+    /// Whitespace or comments after a colon that are not exactly one space.
+    /// The location is where the space belongs if there are none. A layout
+    /// error.
+    #[display("Expected exactly one space after the colon")]
+    WrongSpacingAfterColon,
+    /// A field, an element of a repeated value, or a `}` or `]` that closes
+    /// one with fields or elements, on the same line as what comes before it.
+    /// The location is where its line belongs to start. A layout error.
+    #[display("Missing line break: put this on a new line")]
+    MissingLineBreak,
+    /// A line with nothing but spaces, or nothing at all. A layout error.
+    #[display("Blank lines not allowed")]
+    BlankLine,
+    /// A line that does not start with the spaces of its indentation: 2 for
+    /// each level of the fields and elements that it is in. The location is
+    /// the spaces that start the line. A layout error.
+    #[display("Expected {expected_spaces} spaces of indentation")]
+    WrongIndentation { expected_spaces: u32 },
+    /// Spaces at the end of a line, or spaces or tabs at the end of a comment.
+    /// A layout error.
+    #[display("Trailing whitespace not allowed")]
+    TrailingWhitespace,
+    /// A comment after something else on its line. A layout error.
+    #[display("Comments must be on their own line")]
+    CommentNotOnOwnLine,
+    /// A comment whose text follows its `#` with no space between them. The
+    /// location is the `#`. A layout error.
+    #[display("Expected a space after #")]
+    CommentSpacing,
+    /// A message value with no fields. A layout error.
+    #[display("Empty message values not allowed - leave the field out")]
+    EmptyMessageValue,
+    /// A repeated value with no elements. A layout error.
+    #[display("Empty repeated values not allowed - leave the field out")]
+    EmptyRepeatedValue,
     /// Something other than a value where a value belongs.
     #[display("Expected a value")]
     ExpectedValue,
@@ -87,7 +112,8 @@ pub enum SyntaxErrorKind {
     /// Something other than a `,` or a `]` after a value in a repeated value.
     #[display("Expected , or ] after the value")]
     ExpectedCommaOrCloseBracket,
-    /// Whitespace between a value and the `,` after it in a repeated value.
+    /// Whitespace or comments between a value and the `,` after it in a
+    /// repeated value. A layout error.
     #[display("No whitespace allowed before the comma")]
     WhitespaceBeforeComma,
     /// A `,` between fields, or a `;` anywhere outside a string or a comment.

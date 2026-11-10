@@ -1,4 +1,12 @@
 project: {
-    dependencies: [{ universe: "lib1" }]
-    dependencies: [{ universe: "lib2" }]
+  dependencies: [
+    {
+      universe: "lib1"
+    }
+  ]
+  dependencies: [
+    {
+      universe: "lib2"
+    }
+  ]
 }

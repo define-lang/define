@@ -1,3 +1,5 @@
 config: {
-    replicas: { size: 1 }
+  replicas: {
+    size: 1
+  }
 }

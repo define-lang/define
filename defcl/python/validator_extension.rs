@@ -1,8 +1,8 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
-use defcl_parser::{FieldPathElement, SyntaxError, SyntaxErrorKind, parse};
-use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
-use defcl_validator::ValidationError;
+use defcl_parser::{FieldPathElement, ParseResult, SyntaxError, SyntaxErrorKind, parse};
+use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
+use defcl_validator::FileErrors;
 use prost::Message as _;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -15,6 +15,7 @@ use std::path::Path;
 struct PythonClasses {
     syntax_diagnostic: Py<PyType>,
     unexpected_character_diagnostic: Py<PyType>,
+    wrong_indentation_diagnostic: Py<PyType>,
     syntax_diagnostic_kind: Py<PyType>,
     invalid_schema_error: Py<PyType>,
     semantic_diagnostic: Py<PyType>,
@@ -23,6 +24,7 @@ struct PythonClasses {
     integer_out_of_range_diagnostic: Py<PyType>,
     float_out_of_range_diagnostic: Py<PyType>,
     second_field_of_oneof_diagnostic: Py<PyType>,
+    field_out_of_order_diagnostic: Py<PyType>,
     semantic_diagnostic_kind: Py<PyType>,
 }
 
@@ -39,6 +41,7 @@ impl PythonClasses {
         Ok(Self {
             syntax_diagnostic: class(&errors, "SyntaxDiagnostic")?,
             unexpected_character_diagnostic: class(&errors, "UnexpectedCharacterDiagnostic")?,
+            wrong_indentation_diagnostic: class(&errors, "WrongIndentationDiagnostic")?,
             syntax_diagnostic_kind: class(&error_types, "SyntaxDiagnosticKind")?,
             invalid_schema_error: class(&errors, "InvalidSchemaError")?,
             semantic_diagnostic: class(&errors, "SemanticDiagnostic")?,
@@ -47,6 +50,7 @@ impl PythonClasses {
             integer_out_of_range_diagnostic: class(&errors, "IntegerOutOfRangeDiagnostic")?,
             float_out_of_range_diagnostic: class(&errors, "FloatOutOfRangeDiagnostic")?,
             second_field_of_oneof_diagnostic: class(&errors, "SecondFieldOfOneofDiagnostic")?,
+            field_out_of_order_diagnostic: class(&errors, "FieldOutOfOrderDiagnostic")?,
             semantic_diagnostic_kind: class(&error_types, "SemanticDiagnosticKind")?,
         })
     }
@@ -69,15 +73,20 @@ impl PythonClasses {
         let kind = self.syntax_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
         let location = new_source_location(py, error.location, file_path)?;
-        if let SyntaxErrorKind::UnexpectedCharacter { character } = error.kind {
-            return self
+        match error.kind {
+            SyntaxErrorKind::UnexpectedCharacter { character } => self
                 .unexpected_character_diagnostic
                 .bind(py)
-                .call1((message, location, kind, character));
+                .call1((message, location, kind, character)),
+            SyntaxErrorKind::WrongIndentation { expected_spaces } => self
+                .wrong_indentation_diagnostic
+                .bind(py)
+                .call1((message, location, kind, expected_spaces)),
+            _ => self
+                .syntax_diagnostic
+                .bind(py)
+                .call1((message, location, kind)),
         }
-        self.syntax_diagnostic
-            .bind(py)
-            .call1((message, location, kind))
     }
 
     fn semantic_diagnostic<'py>(
@@ -112,6 +121,10 @@ impl PythonClasses {
                 .second_field_of_oneof_diagnostic
                 .bind(py)
                 .call1((message, location, kind, field_name, oneof)),
+            SemanticErrorKind::FieldOutOfOrder { later_field } => self
+                .field_out_of_order_diagnostic
+                .bind(py)
+                .call1((message, location, kind, field_name, later_field)),
             _ => self
                 .semantic_diagnostic
                 .bind(py)
@@ -139,7 +152,8 @@ fn raise(exception: PyResult<Bound<'_, PyAny>>) -> PyErr {
 /// Validates the DCL text `source` against the schema whose top-level message
 /// type has the full name `top_level_message_type` in the binary
 /// `FileDescriptorSet` `descriptor_set`, and returns a `SyntaxDiagnostic` for
-/// its first syntax error, or else a `SemanticDiagnostic` for each semantic
+/// each of its syntax errors, in the order the parser found them, then, unless
+/// one of them stopped the parse, a `SemanticDiagnostic` for each semantic
 /// error, in source order. Raises `InvalidSchemaError` if the descriptor set
 /// cannot be decoded or has no such message type.
 #[pyfunction]
@@ -217,7 +231,10 @@ fn locate_field<'py>(
     // TODO: If rendering many diagnostics in one config file ever makes
     // parsing it again for each one too slow, keep each parsed file by its path
     // and digest so that later lookups in it reuse the tree.
-    let file = parse(&text).map_err(|error| {
+    let ParseResult { file, errors } = parse(&text);
+    let file = file.filter(|_| errors.is_empty()).ok_or_else(|| {
+        // A parse without a syntax tree has the error that stopped it.
+        let error = &errors[0];
         PyValueError::new_err(format!("{}\n{error}", error.location.render(None, None)))
     })?;
     let mut elements = Vec::with_capacity(field_path.len());
@@ -242,26 +259,25 @@ fn decode_descriptor_set(
         .map_err(|error| classes.invalid_schema_error(py, &error))
 }
 
-/// The `DclDiagnostic`s of `result`'s syntax or semantic errors, in the file at
-/// `file_path` if the text is from a file, or the exception that its schema
-/// error raises.
+/// The `DclDiagnostic`s of `result`'s syntax errors and then its semantic
+/// errors, in the file at `file_path` if the text is from a file, or the
+/// exception that its schema error raises.
 fn diagnostics<'py>(
     py: Python<'py>,
     classes: &PythonClasses,
-    result: Result<(), ValidationError>,
+    result: Result<FileErrors, SchemaError>,
     file_path: Option<&Bound<'py, PyString>>,
 ) -> PyResult<Vec<Bound<'py, PyAny>>> {
-    match result {
-        Ok(()) => Ok(Vec::new()),
-        Err(ValidationError::Schema(error)) => Err(classes.invalid_schema_error(py, &error)),
-        Err(ValidationError::Syntax(error)) => {
-            Ok(vec![classes.syntax_diagnostic(py, &error, file_path)?])
-        }
-        Err(ValidationError::Semantic(errors)) => errors
-            .iter()
-            .map(|error| classes.semantic_diagnostic(py, error, file_path))
-            .collect(),
+    let errors = result.map_err(|error| classes.invalid_schema_error(py, &error))?;
+    let mut diagnostics =
+        Vec::with_capacity(errors.syntax_errors.len() + errors.semantic_errors.len());
+    for error in &errors.syntax_errors {
+        diagnostics.push(classes.syntax_diagnostic(py, error, file_path)?);
     }
+    for error in &errors.semantic_errors {
+        diagnostics.push(classes.semantic_diagnostic(py, error, file_path)?);
+    }
+    Ok(diagnostics)
 }
 
 #[pymodule(gil_used = false)]

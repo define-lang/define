@@ -278,7 +278,7 @@ def test_profiles_project_entry_through_public_profiler_and_analyzer(tmp_path: P
     config_path = project_path / ".define/project/config.defcl"
     config_path.parent.mkdir(parents=True)
     _ = config_path.write_text(
-        'project: { universe_name: "my.domain.com:my_lib" }\n',
+        'project: {\n  universe_name: "my.domain.com:my_lib"\n}\n',
         encoding="utf-8",
         newline="\n",
     )

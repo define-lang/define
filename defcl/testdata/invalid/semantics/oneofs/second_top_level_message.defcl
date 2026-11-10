@@ -1,2 +1,6 @@
-config: {}
-fallback: {}
+config: {
+  path: "a"
+}
+fallback: {
+  path: "b"
+}

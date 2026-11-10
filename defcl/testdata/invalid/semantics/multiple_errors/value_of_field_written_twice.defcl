@@ -1,4 +1,4 @@
 config: {
-    status: ACTIVE
-    status: 1
+  status: ACTIVE
+  status: 1
 }

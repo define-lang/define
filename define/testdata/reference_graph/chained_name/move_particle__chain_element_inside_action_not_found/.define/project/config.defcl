@@ -1,1 +1,3 @@
-project: { universe_name: "mv:define-lang.org:test_move_bad_action" }
+project: {
+  universe_name: "mv:define-lang.org:test_move_bad_action"
+}

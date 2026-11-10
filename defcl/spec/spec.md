@@ -87,13 +87,13 @@ returns, and other whitespace characters are not allowed except in comments.
 ### Comments
 
 Comments are shell-style line comments using `#`. Everything from `#` to the end
-of the line is treated as a comment. A comment is a `#`, then exactly one space,
-then its text, which does not end with a space or a tab. A comment may also be a
-`#` alone.
+of the line is treated as a comment. A comment is a `#`, then a space, then its
+text, which does not end with a space or a tab. A comment may also be just a `#`
+alone.
 
 ```ebnf
 COMMENT      = "#", [ " ", comment_text ] ;
-comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - "\t" - newline ) ] ;
+comment_text = { char - newline }, ( char - " " - "\t" - newline ) ;
 ```
 
 ### Field Names

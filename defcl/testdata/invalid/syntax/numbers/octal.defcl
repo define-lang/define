@@ -1,3 +1,3 @@
 config: {
-    value: 0777
+  value: 0777
 }

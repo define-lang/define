@@ -1,5 +1,5 @@
 project: {
-    config: {
-        status: 1
-    }
+  config: {
+    status: 1
+  }
 }

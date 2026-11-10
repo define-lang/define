@@ -1,4 +1,4 @@
 project: {
-    universe_name: "example"
-    universe_name: "other"
+  universe_name: "example"
+  universe_name: "other"
 }

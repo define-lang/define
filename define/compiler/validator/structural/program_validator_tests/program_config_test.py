@@ -33,7 +33,9 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     (config_dir / "config.defcl").write_text(
-        "project: {}\n", encoding="utf-8", newline="\n"
+        ('project: {\n  universe_name: ""\n}\n'),
+        encoding="utf-8",
+        newline="\n",
     )
     (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n",
@@ -48,6 +50,6 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         diagnostics.ConfigViolationDiagnostic(
             config_path=".define/project/config.defcl",
             field_path=("project", "universe_name"),
-            violation_message="value is required",
+            violation_message="must be at least 1 characters",
         )
     ]

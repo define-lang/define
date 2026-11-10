@@ -174,6 +174,19 @@ def _structured_targets(  # noqa: PLR0912 - Each case describes one reference sh
             raise ValueError(f"Not a structured shape: {shape}")
 
 
+def _project_config(universe_name: str) -> str:
+    return f'project: {{\n  universe_name: "{universe_name}"\n}}\n'
+
+
+def _local_deps_config(dependencies: Sequence[tuple[str, str]]) -> str:
+    """Return the text of a local deps config with each (universe name, path) in dependencies."""
+    entries = ",\n".join(
+        f'    {{\n      universe_name: "{universe}"\n      path: "{path}"\n    }}'
+        for universe, path in dependencies
+    )
+    return f"deps: {{\n  local: [\n{entries}\n  ]\n}}\n"
+
+
 def _config_chain(modules: int, universe_name: str, path_depth: int) -> dict[str, str]:
     files: dict[str, str] = {}
     for index in range(modules + 1):
@@ -181,14 +194,12 @@ def _config_chain(modules: int, universe_name: str, path_depth: int) -> dict[str
         universe = (
             universe_name if index == 0 else f"{universe_name}_dependency_{index}"
         )
-        files[directory + ".define/project/config.defcl"] = (
-            f'project: {{ universe_name: "{universe}" }}\n'
-        )
+        files[directory + ".define/project/config.defcl"] = _project_config(universe)
         next_universe = f"{universe_name}_dependency_{index + 1}"
         target = f"{next_universe}:{_definition_path(index + 1, path_depth)}"
         if index < modules:
-            files[directory + ".define/deps/local.defcl"] = (
-                f'deps: {{ local: [{{ universe_name: "{next_universe}" path: "dependency" }}] }}\n'
+            files[directory + ".define/deps/local.defcl"] = _local_deps_config(
+                [(next_universe, "dependency")]
             )
         if index == 0:
             files["test.dfn"] = (
@@ -227,23 +238,15 @@ def _dependency_universe(universe_name: str, index: int) -> str:
 
 
 def _universes(modules: int, universe_name: str, path_depth: int) -> dict[str, str]:
-    files = {
-        ".define/project/config.defcl": (
-            f'project: {{ universe_name: "{universe_name}" }}\n'
-        )
-    }
-    dependencies: list[str] = []
+    files = {".define/project/config.defcl": _project_config(universe_name)}
+    dependencies: list[tuple[str, str]] = []
     entry_quality_assignments: list[str] = []
     entry_references: list[str] = []
     for index in range(modules):
         universe = _dependency_universe(universe_name, index)
         directory = f"universes/u{index}/"
-        dependencies.append(
-            f'{{ universe_name: "{universe}" path: "universes/u{index}" }}'
-        )
-        files[directory + ".define/project/config.defcl"] = (
-            f'project: {{ universe_name: "{universe}" }}\n'
-        )
+        dependencies.append((universe, f"universes/u{index}"))
+        files[directory + ".define/project/config.defcl"] = _project_config(universe)
         files[directory + _file_path(index, path_depth)] = _definition(
             universe, index, [], path_depth
         )
@@ -254,9 +257,7 @@ def _universes(modules: int, universe_name: str, path_depth: int) -> dict[str, s
         entry_references.append(
             f"        create a particle in position<references>::position<{target}>.\n"
         )
-    files[".define/deps/local.defcl"] = (
-        "deps: { local: [" + ", ".join(dependencies) + "] }\n"
-    )
+    files[".define/deps/local.defcl"] = _local_deps_config(dependencies)
     files["test.dfn"] = _entry_file(
         universe_name, "".join(entry_quality_assignments), "".join(entry_references)
     )
@@ -325,11 +326,7 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
     if shape == Shape.UNIVERSES:
         return _universes(modules, universe_name, path_depth)
 
-    files = {
-        ".define/project/config.defcl": (
-            f'project: {{ universe_name: "{universe_name}" }}\n'
-        )
-    }
+    files = {".define/project/config.defcl": _project_config(universe_name)}
     if shape == Shape.LAYERED:
         # A seeded generator makes the project shape reproducible; nothing here
         # needs cryptographic randomness.
