@@ -1,0 +1,25 @@
+id: testdata-tests-use-all-diagnostics
+language: python
+severity: error
+message:
+  A data-backed test must assert on all_diagnostics, not on one file's
+  diagnostics or load_failure.
+note:
+  all_diagnostics holds every diagnostic of the program, so asserting on it
+  cannot miss a diagnostic in another file or a file that failed to load.
+files:
+  - "**/*_test.py"
+rule:
+  kind: function_definition
+  has:
+    field: parameters
+    has:
+      stopBy: end
+      kind: identifier
+      regex: ^(validate_testdata_structural|validate_testdata_structural_non_filesystem|validate_testdata_project_with_reference_graph|validate_testdata_non_filesystem_with_reference_graph|testdata_project_directory)$
+  all:
+    - has:
+        stopBy: end
+        any:
+          - pattern: $_.diagnostics
+          - pattern: $_.load_failure

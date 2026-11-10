@@ -21,9 +21,7 @@ def test_undefined_local_position_in_destroy(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    assert results[0].load_failure is None
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.line == 5
@@ -36,9 +34,7 @@ def test_non_self_ref_global_in_action_body(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    assert results[0].load_failure is None
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(
         diags[0], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic

@@ -1,0 +1,86 @@
+id: testdata-tests-use-all-diagnostics
+snapshots:
+  "class TestCase:\n    def test_method(self, testdata_project_directory):\n        result = run(testdata_project_directory)\n        assert result.diagnostics == []\n":
+    labels:
+    - source: |-
+        def test_method(self, testdata_project_directory):
+                result = run(testdata_project_directory)
+                assert result.diagnostics == []
+      style: primary
+      start: 20
+      end: 159
+    - source: result.diagnostics
+      style: secondary
+      start: 135
+      end: 153
+    - source: testdata_project_directory
+      style: secondary
+      start: 42
+      end: 68
+    - source: testdata_project_directory
+      style: secondary
+      start: 42
+      end: 68
+  "def test_file_diagnostics(validate_testdata_structural):\n    result = validate_testdata_structural()\n    assert result.file_results[0].diagnostics == []\n":
+    labels:
+    - source: |-
+        def test_file_diagnostics(validate_testdata_structural):
+            result = validate_testdata_structural()
+            assert result.file_results[0].diagnostics == []
+      style: primary
+      start: 0
+      end: 152
+    - source: result.file_results[0].diagnostics
+      style: secondary
+      start: 112
+      end: 146
+    - source: validate_testdata_structural
+      style: secondary
+      start: 26
+      end: 54
+    - source: validate_testdata_structural
+      style: secondary
+      start: 26
+      end: 54
+  "def test_load_failure(validate_testdata_structural_non_filesystem):\n    result = validate_testdata_structural_non_filesystem()\n    assert result.file_results[0].load_failure is None\n":
+    labels:
+    - source: |-
+        def test_load_failure(validate_testdata_structural_non_filesystem):
+            result = validate_testdata_structural_non_filesystem()
+            assert result.file_results[0].load_failure is None
+      style: primary
+      start: 0
+      end: 181
+    - source: result.file_results[0].load_failure
+      style: secondary
+      start: 138
+      end: 173
+    - source: validate_testdata_structural_non_filesystem
+      style: secondary
+      start: 22
+      end: 65
+    - source: validate_testdata_structural_non_filesystem
+      style: secondary
+      start: 22
+      end: 65
+  "def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):\n    assert validate_testdata_non_filesystem_with_reference_graph().file_results[1].diagnostics == []\n":
+    labels:
+    - source: |-
+        def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
+            assert validate_testdata_non_filesystem_with_reference_graph().file_results[1].diagnostics == []
+      style: primary
+      start: 0
+      end: 237
+    - source: >-
+        validate_testdata_non_filesystem_with_reference_graph().file_results[1].diagnostics
+      style: secondary
+      start: 148
+      end: 231
+    - source: validate_testdata_non_filesystem_with_reference_graph
+      style: secondary
+      start: 23
+      end: 76
+    - source: validate_testdata_non_filesystem_with_reference_graph
+      style: secondary
+      start: 23
+      end: 76

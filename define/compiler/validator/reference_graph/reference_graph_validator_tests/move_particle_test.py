@@ -83,8 +83,7 @@ def test_undefined_from_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -97,8 +96,7 @@ def test_undefined_to_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -126,8 +124,7 @@ def test_both_positions_undefined(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -191,8 +188,7 @@ def test_move_to_same_position_does_not_mark_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert diags[0].location.file_path is None

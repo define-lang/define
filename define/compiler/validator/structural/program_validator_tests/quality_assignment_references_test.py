@@ -38,7 +38,7 @@ def test_same_fqun_quality_assignment_reference_in_global_position_must_use_shor
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "mv:define-lang.org:test_files"
@@ -53,7 +53,7 @@ def test_same_fqun_quality_assignment_reference_in_move_must_use_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "mv:define-lang.org:test_files"
@@ -75,7 +75,7 @@ def test_quality_assignment_reference_with_invalid_path(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].location.file_path is None
@@ -89,7 +89,7 @@ def test_same_fqun_quality_assignment_reference_must_use_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].location.file_path is None
@@ -102,7 +102,7 @@ def test_same_fqun_quality_assignment_reference_in_local_position_must_use_short
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].location.file_path is None
@@ -117,16 +117,16 @@ def test_invalid_quality_assignment_does_not_skip_remaining_quality_assignments(
     result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diags[0].location.file_path == "test.dfn"
-    assert diags[0].segment == "Bad"
-    assert diags[0].chars == ("B",)
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 30
+    assert len(result.all_diagnostics) == 1
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].segment == "Bad"
+    assert result.all_diagnostics[0].chars == ("B",)
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 30
     assert result.file_results[1].file_path == define_path.DefinePath("valid.dfn")
-    assert result.file_results[1].diagnostics == []
 
 
 def test_referenced_global_name_wrong_type_position(
@@ -136,18 +136,18 @@ def test_referenced_global_name_wrong_type_position(
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].diagnostics == []
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[0].location.file_path == "test.dfn"
-    assert diags[0].file_path == "target.dfn"
+    assert len(result.all_diagnostics) == 1
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].file_path == "target.dfn"
     assert (
-        diags[0].definition_name
+        result.all_diagnostics[0].definition_name
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 20
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 20
 
 
 def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
@@ -157,24 +157,26 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].diagnostics == []
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[0].location.file_path == "test.dfn"
-    assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[1].location.file_path == "test.dfn"
-    assert diags[0].file_path == "target.dfn"
+    assert len(result.all_diagnostics) == 2
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert isinstance(
+        result.all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert result.all_diagnostics[1].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].file_path == "target.dfn"
     assert (
-        diags[0].definition_name
+        result.all_diagnostics[0].definition_name
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 20
-    assert diags[1].file_path == "target.dfn"
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 20
+    assert result.all_diagnostics[1].file_path == "target.dfn"
     assert (
-        diags[1].definition_name
+        result.all_diagnostics[1].definition_name
         == "position<mv:define-lang.org:test_walk_wrong_type:/target>"
     )
-    assert diags[1].location.line == 12
-    assert diags[1].location.column == 28
+    assert result.all_diagnostics[1].location.line == 12
+    assert result.all_diagnostics[1].location.column == 28

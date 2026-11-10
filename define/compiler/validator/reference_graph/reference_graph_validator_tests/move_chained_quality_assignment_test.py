@@ -184,40 +184,38 @@ def test_move_from_local_local_chain(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    assert len(results[0].diagnostics) == 1
+    assert len(result.all_diagnostics) == 1
     assert isinstance(
-        results[0].diagnostics[0],
+        result.all_diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert results[0].diagnostics[0].location.line == 9
-    assert results[0].diagnostics[0].location.column == 43
-    assert results[0].diagnostics[0].location.file_path is None
-    assert results[0].diagnostics[0].local_name == "position<b>"
-    assert results[0].diagnostics[0].preceding_name == "position<a>"
+    assert result.all_diagnostics[0].location.line == 9
+    assert result.all_diagnostics[0].location.column == 43
+    assert result.all_diagnostics[0].location.file_path is None
+    assert result.all_diagnostics[0].local_name == "position<b>"
+    assert result.all_diagnostics[0].preceding_name == "position<a>"
 
 
 def test_move_from_local_local_local_chain(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    results = result.file_results
-    assert len(results[0].diagnostics) == 2
+    assert len(result.all_diagnostics) == 2
     assert isinstance(
-        results[0].diagnostics[0],
+        result.all_diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert results[0].diagnostics[0].location.line == 11
-    assert results[0].diagnostics[0].location.column == 43
-    assert results[0].diagnostics[0].location.file_path is None
-    assert results[0].diagnostics[0].local_name == "position<b>"
-    assert results[0].diagnostics[0].preceding_name == "position<a>"
+    assert result.all_diagnostics[0].location.line == 11
+    assert result.all_diagnostics[0].location.column == 43
+    assert result.all_diagnostics[0].location.file_path is None
+    assert result.all_diagnostics[0].local_name == "position<b>"
+    assert result.all_diagnostics[0].preceding_name == "position<a>"
     assert isinstance(
-        results[0].diagnostics[1],
+        result.all_diagnostics[1],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert results[0].diagnostics[1].location.line == 11
-    assert results[0].diagnostics[1].location.column == 56
-    assert results[0].diagnostics[1].location.file_path is None
-    assert results[0].diagnostics[1].local_name == "position<c>"
-    assert results[0].diagnostics[1].preceding_name == "position<b>"
+    assert result.all_diagnostics[1].location.line == 11
+    assert result.all_diagnostics[1].location.column == 56
+    assert result.all_diagnostics[1].location.file_path is None
+    assert result.all_diagnostics[1].local_name == "position<c>"
+    assert result.all_diagnostics[1].preceding_name == "position<b>"

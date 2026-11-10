@@ -31,8 +31,8 @@ def test_referenced_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.file_results[0].diagnostics) == 1
-    diag = result.file_results[0].diagnostics[0]
+    assert len(result.all_diagnostics) == 1
+    diag = result.all_diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.location.file_path == "test.dfn"
     assert diag.file_path == "missing.dfn"
@@ -46,36 +46,30 @@ def test_referenced_file_not_found_via_already_completed_target(
     result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].load_failure is None
-    assert len(result.file_results[0].diagnostics) == 1
+    assert len(result.all_diagnostics) == 2
     assert isinstance(
-        result.file_results[0].diagnostics[0],
+        result.all_diagnostics[0],
         diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].location.line == 3
-    assert result.file_results[0].diagnostics[0].location.column == 29
-    assert result.file_results[0].diagnostics[0].location.file_path == "test.dfn"
-    assert result.file_results[0].diagnostics[0].file_path == "missing.dfn"
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 29
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].file_path == "missing.dfn"
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].load_failure is None
-    assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
-        result.file_results[1].diagnostics[0],
+        result.all_diagnostics[1],
         diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert result.file_results[1].diagnostics[0].location.line == 3
-    assert result.file_results[1].diagnostics[0].location.column == 29
-    assert result.file_results[1].diagnostics[0].location.file_path == "target.dfn"
-    assert result.file_results[1].diagnostics[0].file_path == "missing.dfn"
+    assert result.all_diagnostics[1].location.line == 3
+    assert result.all_diagnostics[1].location.column == 29
+    assert result.all_diagnostics[1].location.file_path == "target.dfn"
+    assert result.all_diagnostics[1].file_path == "missing.dfn"
 
 
 def test_referenced_file_not_found_for_two_definitions_in_same_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    program_result = validate_testdata_structural()
-    result = program_result.file_results[0]
-    assert result.load_failure is None
-    diags = result.diagnostics
+    diags = validate_testdata_structural().all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -92,10 +86,7 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
 def test_same_missing_file_referenced_as_two_types_in_one_definition(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    program_result = validate_testdata_structural()
-    result = program_result.file_results[0]
-    assert result.load_failure is None
-    diags = result.diagnostics
+    diags = validate_testdata_structural().all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"

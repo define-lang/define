@@ -21,8 +21,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -76,8 +75,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -146,8 +144,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -185,8 +182,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -220,8 +216,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -260,8 +255,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 4
         assert isinstance(
             diags[0],

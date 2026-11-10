@@ -18,7 +18,7 @@ def test_move_from_empty_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -33,7 +33,7 @@ def test_move_to_occupied_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -57,7 +57,7 @@ def test_cannot_create_in_position_that_was_moved_into(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -80,7 +80,7 @@ def test_same_move_twice_in_a_row(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -104,7 +104,7 @@ def test_round_trip_move_fails_second_return(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -167,7 +167,7 @@ def test_move_from_empty_marks_both_positions_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -182,7 +182,7 @@ def test_move_to_occupied_marks_both_positions_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -199,7 +199,7 @@ def test_both_from_empty_and_to_occupied_marks_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -223,7 +223,7 @@ def test_error_state_does_not_affect_other_positions(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -247,7 +247,7 @@ def test_single_error_position_marks_both_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None

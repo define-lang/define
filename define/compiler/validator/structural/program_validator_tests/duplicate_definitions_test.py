@@ -25,7 +25,7 @@ def test_duplicate_position_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
@@ -40,7 +40,7 @@ def test_duplicate_action_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
@@ -62,7 +62,7 @@ def test_three_duplicates_two_errors(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None

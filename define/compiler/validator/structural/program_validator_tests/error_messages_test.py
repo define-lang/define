@@ -54,7 +54,7 @@ def test_invalid_fqun_format_format(validate_project: ValidateProject):
             )
         }
     )
-    load_failure = result.program_result.file_results[0].load_failure
+    [load_failure] = result.program_result.all_diagnostics
     assert isinstance(load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert (
         load_failure.format(result.program_result.source_map)
@@ -871,9 +871,8 @@ def test_source_file_not_found_error_message(
     validate_project: ValidateProject,
 ):
     result = validate_project({}, entry_file="nonexistent.dfn")
-    results = result.program_result.file_results
-    assert len(results) == 1
-    load_failure = results[0].load_failure
+    assert len(result.program_result.file_results) == 1
+    [load_failure] = result.program_result.all_diagnostics
     assert isinstance(load_failure, diagnostics.SourceFileNotFoundDiagnostic)
     assert load_failure.file_path == "nonexistent.dfn"
     assert (
@@ -1032,9 +1031,9 @@ def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     monkeypatch.chdir(tmp_path)
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
-    (result,) = program_result.file_results
-    assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
-    assert result.load_failure.format(program_result.source_map) == textwrap.dedent("""\
+    [syntax_error] = program_result.all_diagnostics
+    assert isinstance(syntax_error, syntax_errors.InvalidEncodingError)
+    assert syntax_error.format(program_result.source_map) == textwrap.dedent("""\
         File "test.dfn", line 2, column 6
             # caf\ufffd
                  ^

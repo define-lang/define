@@ -25,7 +25,7 @@ def test_mismatched_universe(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].expected == "my.domain.com:my_lib"
@@ -41,7 +41,7 @@ def test_mismatched_authority(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -55,7 +55,7 @@ def test_mismatched_multiverse(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -78,7 +78,7 @@ def test_standard_universe_matching(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -100,7 +100,7 @@ def test_authority_with_path_mismatch(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"

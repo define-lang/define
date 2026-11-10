@@ -42,14 +42,11 @@ def test_wrong_type_detected_without_deferral(
     result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 4
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].diagnostics == []
+    assert len(result.all_diagnostics) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("hub.dfn")
-    assert result.file_results[1].diagnostics == []
     assert result.file_results[2].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[2].diagnostics == []
     assert result.file_results[3].file_path == define_path.DefinePath("checker.dfn")
-    assert len(result.file_results[3].diagnostics) == 1
-    diag = result.file_results[3].diagnostics[0]
+    diag = result.all_diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag.location.file_path == "checker.dfn"
     assert diag.location.line == 3
@@ -63,8 +60,8 @@ def test_reference_edges_resolve_by_file_completion_order(
 ):
     result = validate_testdata_structural(max_workers=2)
     assert len(result.file_results) == 2
-    assert len(result.file_results[0].diagnostics) == 2
-    diag0 = result.file_results[0].diagnostics[0]
+    assert len(result.all_diagnostics) == 3
+    diag0 = result.all_diagnostics[0]
     assert isinstance(diag0, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diag0.location.file_path == "test.dfn"
     assert diag0.location.line == 3
@@ -73,15 +70,14 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert (
         diag0.definition_name == "position<mv:define-lang.org:test_parent:/lib/target>"
     )
-    diag1 = result.file_results[0].diagnostics[1]
+    diag1 = result.all_diagnostics[1]
     assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag1.location.file_path == "test.dfn"
     assert diag1.location.line == 4
     assert diag1.location.column == 29
     assert diag1.file_path == "target.dfn"
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert len(result.file_results[1].diagnostics) == 1
-    diag2 = result.file_results[1].diagnostics[0]
+    diag2 = result.all_diagnostics[2]
     assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)
     assert diag2.location.file_path == "lib/target.dfn"
     assert diag2.location.line == 1

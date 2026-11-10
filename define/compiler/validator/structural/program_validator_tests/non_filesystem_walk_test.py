@@ -24,8 +24,7 @@ def test_external_universe_no_project_config(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
@@ -42,7 +41,7 @@ def test_config_failure_still_validates_same_file_cycles(
 ):
     result = validate_testdata_structural_non_filesystem(max_workers=1)
     assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
@@ -67,8 +66,7 @@ def test_external_universe_without_local_deps(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -82,8 +80,7 @@ def test_external_universe_not_in_local_deps(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -165,8 +162,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     child_b = "mv:define-lang.org:child_b"
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
-    assert result.file_results[0].load_failure is None
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -175,16 +171,13 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert result.file_results[1].file_path.name == "target_a.dfn"
-    assert result.file_results[1].load_failure is None
-    assert result.file_results[1].diagnostics == []
 
 
 def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -229,7 +222,7 @@ def test_same_target_file_referenced_as_two_types_loads_once_non_filesystem(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diags[0].location.file_path is None
@@ -240,7 +233,6 @@ def test_same_target_file_referenced_as_two_types_loads_once_non_filesystem(
     assert diags[0].location.line == 4
     assert diags[0].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert result.file_results[1].diagnostics == []
 
 
 def test_non_filesystem_cross_universe_reference(
@@ -249,9 +241,8 @@ def test_non_filesystem_cross_universe_reference(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
-    assert result.file_results[0].load_failure is None
-    assert len(result.file_results[0].diagnostics) == 1
-    diag = result.file_results[0].diagnostics[0]
+    assert len(result.all_diagnostics) == 1
+    diag = result.all_diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.location.file_path is None
     assert diag.file_path == "lib/missing.dfn"
@@ -259,8 +250,6 @@ def test_non_filesystem_cross_universe_reference(
     assert diag.location.column == 58
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
-    assert result.file_results[1].load_failure is None
-    assert result.file_results[1].diagnostics == []
 
 
 def test_unknown_universe_does_not_block_known_universe_for_same_path(
@@ -269,7 +258,7 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -279,7 +268,6 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
     assert diags[0].location.column == 29
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
-    assert result.file_results[1].diagnostics == []
 
 
 def test_unknown_universe_reported_with_sub_root_config_error(
@@ -309,7 +297,7 @@ def test_two_unknown_universes_for_same_path_each_diagnosed(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path is None
@@ -367,7 +355,7 @@ def test_forward_reference_within_non_filesystem_source_reports_missing_file(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 1
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     diag = diags[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -393,9 +381,8 @@ def test_non_filesystem_file_back_reference_reports_cycle(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert len(result.file_results) == 2
-    assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    diags = result.file_results[1].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     diag = diags[0]
     assert isinstance(diag, diagnostics.CircularGlobalReferenceDiagnostic)

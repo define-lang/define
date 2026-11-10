@@ -52,19 +52,15 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     result = validate_testdata_structural(max_workers=1)
     assert len(result.file_results) == 3
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].diagnostics == []
+    assert len(result.all_diagnostics) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].diagnostics == []
     assert result.file_results[2].file_path == define_path.DefinePath("dup.dfn")
-    assert len(result.file_results[2].diagnostics) == 1
-    assert isinstance(
-        result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
-    )
-    assert result.file_results[2].diagnostics[0].location.file_path == "dup.dfn"
-    assert result.file_results[2].diagnostics[0].location.line == 1
-    assert result.file_results[2].diagnostics[0].location.column == 52
-    assert result.file_results[2].diagnostics[0].expected_path == "/dup"
-    assert result.file_results[2].diagnostics[0].actual_path == "/target"
+    assert isinstance(result.all_diagnostics[0], diagnostics.PathMismatchDiagnostic)
+    assert result.all_diagnostics[0].location.file_path == "dup.dfn"
+    assert result.all_diagnostics[0].location.line == 1
+    assert result.all_diagnostics[0].location.column == 52
+    assert result.all_diagnostics[0].expected_path == "/dup"
+    assert result.all_diagnostics[0].actual_path == "/target"
 
 
 def test_duplicate_source_definition_does_not_add_reference_edges(
@@ -88,18 +84,16 @@ def test_cross_file_duplicate_definition_reports_path_mismatch(
     result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].diagnostics == []
+    assert len(result.all_diagnostics) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("other.dfn")
-    diags = result.file_results[1].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
-    assert diags[0].expected_path == "/other"
-    assert diags[0].actual_path == "/test"
-    assert diags[0].location.line == 2
-    assert diags[0].location.column == 70
-    assert diags[0].location.end_line == 2
-    assert diags[0].location.end_column == 74
-    assert diags[0].location.file_path == "other.dfn"
+    assert isinstance(result.all_diagnostics[0], diagnostics.PathMismatchDiagnostic)
+    assert result.all_diagnostics[0].expected_path == "/other"
+    assert result.all_diagnostics[0].actual_path == "/test"
+    assert result.all_diagnostics[0].location.line == 2
+    assert result.all_diagnostics[0].location.column == 70
+    assert result.all_diagnostics[0].location.end_line == 2
+    assert result.all_diagnostics[0].location.end_column == 74
+    assert result.all_diagnostics[0].location.file_path == "other.dfn"
 
 
 def test_back_reference_to_earlier_definition_does_not_load_its_file(
@@ -108,7 +102,7 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     result = validate_testdata_structural()
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -155,23 +149,26 @@ def test_same_target_file_referenced_as_two_types_loads_once(
     assert loaded_paths == ["test.dfn", "target.dfn"]
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[0].location.file_path == "test.dfn"
-    assert diags[0].file_path == "target.dfn"
-    assert diags[0].definition_name == "action<my.domain.com:my_lib:/target>"
-    assert diags[0].location.line == 4
-    assert diags[0].location.column == 20
+    assert len(result.all_diagnostics) == 1
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].file_path == "target.dfn"
+    assert (
+        result.all_diagnostics[0].definition_name
+        == "action<my.domain.com:my_lib:/target>"
+    )
+    assert result.all_diagnostics[0].location.line == 4
+    assert result.all_diagnostics[0].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[1].diagnostics == []
 
 
 def test_self_cycle_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -189,21 +186,19 @@ def test_two_file_cycle_emits_diagnostic(
     result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    assert result.file_results[0].load_failure is None
-    assert result.file_results[0].diagnostics == []
+    assert len(result.all_diagnostics) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("loop.dfn")
-    assert result.file_results[1].load_failure is None
-    diags = result.file_results[1].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diags[0].location.file_path == "loop.dfn"
-    assert diags[0].cycle == [
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "loop.dfn"
+    assert result.all_diagnostics[0].cycle == [
         "position<mv:define-lang.org:test_walk_cycle:/test>",
         "position<mv:define-lang.org:test_walk_cycle:/loop>",
         "position<mv:define-lang.org:test_walk_cycle:/test>",
     ]
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 20
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 20
 
 
 def test_shared_target_depth_increases_through_paths_of_different_lengths(
@@ -236,7 +231,7 @@ def test_unknown_universe_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -250,7 +245,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -300,24 +295,29 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.file_results[0].diagnostics
-    assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diags[0].location.file_path == "test.dfn"
-    assert diags[0].cycle == [
+    assert len(result.all_diagnostics) == 2
+    assert isinstance(
+        result.all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert result.all_diagnostics[0].cycle == [
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
     ]
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 20
-    assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    assert diags[1].location.file_path == "test.dfn"
-    assert diags[1].file_path == "wrong_type.dfn"
-    assert diags[1].definition_name == "position<my.domain.com:my_lib:/wrong_type>"
-    assert diags[1].location.line == 4
-    assert diags[1].location.column == 20
+    assert result.all_diagnostics[0].location.line == 3
+    assert result.all_diagnostics[0].location.column == 20
+    assert isinstance(
+        result.all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert result.all_diagnostics[1].location.file_path == "test.dfn"
+    assert result.all_diagnostics[1].file_path == "wrong_type.dfn"
+    assert (
+        result.all_diagnostics[1].definition_name
+        == "position<my.domain.com:my_lib:/wrong_type>"
+    )
+    assert result.all_diagnostics[1].location.line == 4
+    assert result.all_diagnostics[1].location.column == 20
     assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
-    assert result.file_results[1].diagnostics == []
 
 
 def test_unreferenced_definition_in_loaded_file_is_not_validated(
@@ -343,17 +343,15 @@ def test_reference_to_earlier_definition_with_mismatched_path_reaches_it(
         define_path.DefinePath("test.dfn"),
         define_path.DefinePath("x.dfn"),
     ]
-    assert result.file_results[0].diagnostics == []
-    diags = result.file_results[1].diagnostics
-    assert len(diags) == 2
-    path_diag = diags[0]
+    assert len(result.all_diagnostics) == 2
+    path_diag = result.all_diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathMismatchDiagnostic)
     assert path_diag.location.file_path == "x.dfn"
     assert path_diag.location.line == 1
     assert path_diag.location.column == 52
     assert path_diag.expected_path == "/x"
     assert path_diag.actual_path == "/y"
-    not_found_diag = diags[1]
+    not_found_diag = result.all_diagnostics[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.location.file_path == "x.dfn"
     assert not_found_diag.location.line == 3

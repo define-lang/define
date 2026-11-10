@@ -25,8 +25,7 @@ def test_duplicate_name_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
@@ -40,7 +39,7 @@ def test_three_locals_two_same_one_diagnostic(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
@@ -54,7 +53,7 @@ def test_three_same_name_two_diagnostics(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
@@ -102,8 +101,7 @@ def test_action_statements_duplicate_name_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
@@ -117,8 +115,7 @@ def test_action_statements_name_conflicts_with_parent_scope(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    results = result.file_results
-    diags = results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
@@ -132,7 +129,7 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.file_results[0].diagnostics
+    diags = result.all_diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None

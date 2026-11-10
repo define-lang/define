@@ -21,8 +21,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == (
@@ -39,8 +38,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -53,8 +51,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -67,8 +64,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -81,8 +77,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        results = result.file_results
-        diags = results[0].diagnostics
+        diags = result.all_diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[0].location.file_path is None
