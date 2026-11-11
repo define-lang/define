@@ -8,7 +8,8 @@ use strum::{IntoStaticStr, VariantNames};
 #[display("{kind}")]
 pub struct SyntaxError {
     pub kind: SyntaxErrorKind,
-    pub location: SourceLocation,
+    /// Where the error is, or `None` if it is about the whole file.
+    pub location: Option<SourceLocation>,
 }
 
 /// Which syntax error a `SyntaxError` is.
@@ -23,7 +24,8 @@ pub enum SyntaxErrorKind {
     /// were not there, unless it splits a word such as a field name.
     #[display("Byte order mark not allowed")]
     ByteOrderMark,
-    /// The file has no top-level message.
+    /// The file has no top-level message. It has no location, since it is
+    /// about the whole file.
     #[display("The file has no top-level message")]
     MissingTopLevelMessage,
     /// The file does not end with a line feed. The location is the file's
@@ -62,9 +64,20 @@ pub enum SyntaxErrorKind {
         u32::from(*character)
     )]
     UnexpectedCharacter { character: char },
-    /// A field name that does not follow the rules for field names.
-    #[display("Invalid field name")]
-    InvalidFieldName,
+    /// An uppercase letter in a field name. The location is the first one.
+    #[display("Field names cannot have uppercase letters")]
+    UppercaseInFieldName,
+    /// A field name that starts with a digit or an underscore. The location is
+    /// that character.
+    #[display("Field names must start with a lowercase letter")]
+    FieldNameStartsWithNonLetter,
+    /// A `-` or `.` in a field name. The location is the first one.
+    #[display("Field names can only have lowercase letters, digits and underscores")]
+    InvalidCharacterInFieldName,
+    /// An underscore in a field name that is not followed by a lowercase
+    /// letter. The location is the first one.
+    #[display("Each underscore in a field name must come before a lowercase letter")]
+    UnderscoreNotBeforeLetter,
     /// Something other than a field name where a top-level message belongs.
     #[display("Expected a field name")]
     ExpectedFieldName,
@@ -142,9 +155,12 @@ pub enum SyntaxErrorKind {
     /// layout error.
     #[display("No whitespace allowed before the comma")]
     WhitespaceBeforeComma,
-    /// A `,` between fields, or a `;` anywhere outside a string or a comment.
-    #[display("Invalid separator")]
-    InvalidSeparator,
+    /// A `,` after a field, where only a line break belongs.
+    #[display("Commas not allowed between fields - put each field on its own line")]
+    CommaBetweenFields,
+    /// A `;` anywhere outside a string or a comment.
+    #[display("Semicolons not allowed")]
+    SemicolonNotAllowed,
     /// A `<`, where a message value belongs or anywhere else outside a string
     /// or a comment.
     #[display("Use curly braces {{}} for messages")]
@@ -166,15 +182,55 @@ pub enum SyntaxErrorKind {
     /// UTF-8. The location is the run.
     #[display("Escape sequences must produce valid UTF-8")]
     InvalidUtf8,
-    /// A word that starts like a number where a value belongs, but is not an
-    /// integer or a float.
-    #[display("Invalid number format")]
-    InvalidNumberFormat,
+    /// A `+` that starts a number. The location is the `+`.
+    #[display("Numbers cannot have a plus sign")]
+    PlusSignInNumber,
+    /// A `-` not directly followed by a digit or a decimal point. The location
+    /// is the `-`.
+    #[display("A minus sign must be directly followed by digits")]
+    MinusSignWithoutDigits,
+    /// A `0` followed by a digit at the start of a number. The location is the
+    /// `0`.
+    #[display("Numbers cannot have leading zeros")]
+    LeadingZeroInNumber,
+    /// A `0x` or `0X` at the start of a number. The location is the `0`.
+    #[display("Hexadecimal numbers not allowed - write the number in decimal")]
+    HexadecimalNumber,
+    /// A decimal point with no digit before it. The location is the decimal
+    /// point.
+    #[display("A decimal point needs a digit before it, such as 0.5")]
+    MissingDigitBeforeDecimalPoint,
+    /// A decimal point with no digit after it. The location is the decimal
+    /// point.
+    #[display("A decimal point needs a digit after it, such as 10.0")]
+    MissingDigitAfterDecimalPoint,
+    /// A fraction other than `0` that ends with `0`. The location is the last
+    /// `0`.
+    #[display("Fractions cannot end with 0, except a fraction of just 0, such as 2.0")]
+    TrailingZeroInFraction,
+    /// A second decimal point in a number. The location is that decimal
+    /// point.
+    #[display("A number can only have one decimal point")]
+    SecondDecimalPoint,
+    /// An `e` or `E` after the digits of a number. The location is the `e` or
+    /// `E`.
+    #[display("Scientific notation not allowed - write the number out in full")]
+    ScientificNotation,
+    /// A letter other than `e` or `E` after the digits of a number. The
+    /// location is the letter.
+    #[display("Numbers cannot have suffixes")]
+    SuffixOnNumber,
+    /// A `_`, or a `-` or `+` other than at the start, in a number. The
+    /// location is that character.
+    #[display("Numbers can only have digits, a leading minus sign and a decimal point")]
+    InvalidCharacterInNumber,
     /// `-0` or `-0.0`.
     #[display("Negative zero is not allowed")]
     NegativeZero,
     /// `true` or `false` where a value belongs.
-    #[display("Boolean literals not supported - use enums instead")]
+    #[display(
+        "Boolean literals not supported - write the field's enum value, such as TRUE or FALSE for DCL's Boolean enum"
+    )]
     BooleanNotSupported,
     /// A word that starts with a letter where a value belongs and has a
     /// lowercase letter.

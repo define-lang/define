@@ -156,7 +156,7 @@ mod tests {
                 none(),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                    location: location(2, 6, 2, 6),
+                    location: Some(location(2, 6, 2, 6)),
                 }])
             )
         )
@@ -294,7 +294,7 @@ mod tests {
                 "})),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
-                    location: location(2, 6, 2, 7),
+                    location: Some(location(2, 6, 2, 7)),
                 }])
             )
         )
@@ -314,7 +314,7 @@ mod tests {
                 none(),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::MisplacedComment,
-                    location: location(1, 3, 1, 5),
+                    location: Some(location(1, 3, 1, 5)),
                 }])
             )
         )
@@ -333,7 +333,7 @@ mod tests {
                 none(),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                    location: location(2, 8, 2, 8),
+                    location: Some(location(2, 8, 2, 8)),
                 }])
             )
         )

@@ -88,6 +88,7 @@ def test_project_config_with_layout_error_is_still_used(
         end_column=1,
         file_path=".define/project/config.defcl",
     )
+    assert blank_line.file_path == ".define/project/config.defcl"
     assert duplicate_definition == diagnostics.DuplicateDefinitionDiagnostic(
         location=rendering.SourceLocation(
             line=2, column=1, end_line=2, end_column=47, file_path="test.dfn"

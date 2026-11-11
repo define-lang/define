@@ -1,5 +1,7 @@
 //! The checks of a parsed DCL file against its schema.
 
+#[cfg(test)]
+mod error_messages_test;
 mod schema;
 mod schema_restrictions;
 mod semantic_checks;

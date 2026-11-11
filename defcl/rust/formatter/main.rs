@@ -78,11 +78,12 @@ fn format_files(
         let file_path = path.to_string_lossy();
         let lines = SourceLines::new(file.text);
         for error in &file.errors {
-            writeln!(
-                errors,
-                "{}\n{error}",
-                lines.render(error.location, Some(&file_path))
-            )?;
+            let header = match error.location {
+                Some(location) => lines.render(location, Some(&file_path)),
+                // The error is about the whole file.
+                None => format!("File \"{file_path}\""),
+            };
+            writeln!(errors, "{header}\n{error}")?;
         }
         outcome = Outcome::Errors;
     }
@@ -324,6 +325,31 @@ mod tests {
         verify_that!(
             std::fs::read(&path).or_fail()?,
             eq(b"a: {\n    b: \"\xff\"\n}\n")
+        )
+    }
+
+    #[gtest]
+    fn reports_an_error_about_the_whole_file_with_only_its_path() -> Result<()> {
+        let directory = test_directory("reports_an_error_about_the_whole_file_with_only_its_path")?;
+        let path = directory.join("empty.defcl");
+        std::fs::write(&path, "").or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            std::slice::from_ref(&path),
+            false,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(unformatted, is_empty())?;
+        verify_that!(
+            String::from_utf8(errors).or_fail()?,
+            eq(&format!(
+                "File \"{}\"\nThe file has no top-level message\n",
+                path.display()
+            ))
         )
     }
 }

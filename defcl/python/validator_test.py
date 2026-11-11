@@ -65,6 +65,7 @@ def test_semantic_errors_are_diagnostics():
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=11, end_line=2, end_column=11
     )
+    assert integer_enum.file_path is None
     assert integer_enum.field_name == "status"
     assert type(scalar_for_message_field) is errors.SemanticDiagnostic
     assert (
@@ -74,6 +75,7 @@ def test_semantic_errors_are_diagnostics():
     assert scalar_for_message_field.location == rendering.SourceLocation(
         line=3, column=13, end_line=3, end_column=23
     )
+    assert scalar_for_message_field.file_path is None
     assert scalar_for_message_field.field_name == "database"
     assert type(message_value_for_scalar_field) is errors.SemanticDiagnostic
     assert (
@@ -83,6 +85,7 @@ def test_semantic_errors_are_diagnostics():
     assert message_value_for_scalar_field.location == rendering.SourceLocation(
         line=5, column=8, end_line=7, end_column=1
     )
+    assert message_value_for_scalar_field.file_path is None
     assert message_value_for_scalar_field.field_name == "count"
 
 
@@ -102,6 +105,7 @@ def test_unknown_field_name_diagnostic_has_message_type():
     assert unknown_field_name.location == rendering.SourceLocation(
         line=2, column=3, end_line=2, end_column=6
     )
+    assert unknown_field_name.file_path is None
     assert unknown_field_name.field_name == "size"
     assert (
         unknown_field_name.message_type
@@ -125,6 +129,7 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
     assert unknown_enum_value.location == rendering.SourceLocation(
         line=2, column=11, end_line=2, end_column=16
     )
+    assert unknown_enum_value.file_path is None
     assert unknown_enum_value.field_name == "status"
     assert (
         unknown_enum_value.enum_type
@@ -149,6 +154,7 @@ def test_integer_out_of_range_diagnostic_has_field_type():
     assert integer_out_of_range.location == rendering.SourceLocation(
         line=2, column=17, end_line=2, end_column=18
     )
+    assert integer_out_of_range.file_path is None
     assert integer_out_of_range.field_name == "uint32_value"
     assert integer_out_of_range.field_type == "uint32"
 
@@ -169,6 +175,7 @@ def test_float_out_of_range_diagnostic_has_field_type():
     assert float_out_of_range.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=56
     )
+    assert float_out_of_range.file_path is None
     assert float_out_of_range.field_name == "float_value"
     assert float_out_of_range.field_type == "float"
 
@@ -190,6 +197,7 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
     assert second_field_of_oneof.location == rendering.SourceLocation(
         line=3, column=3, end_line=3, end_column=5
     )
+    assert second_field_of_oneof.file_path is None
     assert second_field_of_oneof.field_name == "url"
     assert (
         second_field_of_oneof.oneof
@@ -213,6 +221,7 @@ def test_field_out_of_order_diagnostic_has_later_field():
     assert field_out_of_order.location == rendering.SourceLocation(
         line=3, column=3, end_line=3, end_column=6
     )
+    assert field_out_of_order.file_path is None
     assert field_out_of_order.field_name == "name"
     assert field_out_of_order.later_field == "count"
 
@@ -231,6 +240,7 @@ def test_wrong_indentation_diagnostic_has_expected_spaces():
     assert wrong_indentation.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=1
     )
+    assert wrong_indentation.file_path is None
     assert wrong_indentation.expected_spaces == 2
 
 
@@ -248,6 +258,7 @@ def test_layout_errors_come_before_semantic_errors():
     assert wrong_indentation.location == rendering.SourceLocation(
         line=2, column=1, end_line=2, end_column=1
     )
+    assert wrong_indentation.file_path is None
     assert wrong_indentation.expected_spaces == 2
     assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
     assert (
@@ -256,6 +267,7 @@ def test_layout_errors_come_before_semantic_errors():
     assert unknown_field_name.location == rendering.SourceLocation(
         line=2, column=2, end_line=2, end_column=5
     )
+    assert unknown_field_name.file_path is None
     assert unknown_field_name.field_name == "size"
     assert (
         unknown_field_name.message_type
@@ -280,6 +292,7 @@ def test_syntax_error_is_a_diagnostic():
     assert unexpected_character.location == rendering.SourceLocation(
         line=2, column=6, end_line=2, end_column=6
     )
+    assert unexpected_character.file_path is None
     assert unexpected_character.character == "@"
 
 
@@ -297,6 +310,7 @@ def test_invalid_utf8_is_an_invalid_encoding_diagnostic():
     assert invalid_encoding.location == rendering.SourceLocation(
         line=2, column=12, end_line=2, end_column=12, file_path=path
     )
+    assert invalid_encoding.file_path == path
     assert invalid_encoding.byte == 0xFF
     assert invalid_encoding.format(source_map) == (
         f'File "{path}", line 2, column 12\n'
@@ -319,6 +333,7 @@ def test_control_character_in_a_comment_is_a_control_character_diagnostic():
     assert control_character.location == rendering.SourceLocation(
         line=2, column=6, end_line=2, end_column=6
     )
+    assert control_character.file_path is None
     assert control_character.character == "\x01"
 
 
@@ -337,6 +352,7 @@ def test_invisible_character_in_a_string_is_an_invisible_character_diagnostic():
     assert invisible_character.location == rendering.SourceLocation(
         line=2, column=20, end_line=2, end_column=20
     )
+    assert invisible_character.file_path is None
     assert invisible_character.character == _RIGHT_TO_LEFT_OVERRIDE
 
 
@@ -353,6 +369,47 @@ def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
     assert missing_colon.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
     assert missing_colon.location == rendering.SourceLocation(
         line=2, column=8, end_line=2, end_column=8
+    )
+    assert missing_colon.file_path is None
+
+
+def test_error_about_the_whole_text_has_no_location():
+    understood, (missing_top_level_message,) = validator.validate(
+        "", _valid_schemas(), _SINGLE_TOPLEVEL_FILE
+    )
+
+    assert understood is False
+    assert type(missing_top_level_message) is errors.SyntaxDiagnostic
+    assert (
+        missing_top_level_message.kind
+        == error_types.SyntaxDiagnosticKind.MISSING_TOP_LEVEL_MESSAGE
+    )
+    assert missing_top_level_message.location is None
+    assert missing_top_level_message.file_path is None
+    assert (
+        missing_top_level_message.format(rendering.SourceMap())
+        == "The file has no top-level message"
+    )
+
+
+def test_error_about_the_whole_file_names_the_file():
+    path = str(_testdata_path("invalid/syntax/file_format/empty_file.defcl"))
+    source_map = rendering.SourceMap()
+
+    source, (missing_top_level_message,) = validator.validate_file(
+        path, source_map, _valid_schemas(), _SINGLE_TOPLEVEL_FILE
+    )
+
+    assert source is None
+    assert type(missing_top_level_message) is errors.SyntaxDiagnostic
+    assert (
+        missing_top_level_message.kind
+        == error_types.SyntaxDiagnosticKind.MISSING_TOP_LEVEL_MESSAGE
+    )
+    assert missing_top_level_message.location is None
+    assert missing_top_level_message.file_path == path
+    assert missing_top_level_message.format(source_map) == (
+        f'File "{path}"\nThe file has no top-level message'
     )
 
 
@@ -398,6 +455,7 @@ def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=11, end_line=2, end_column=11, file_path=path
     )
+    assert integer_enum.file_path == path
     assert integer_enum.field_name == "status"
     assert integer_enum.format(source_map) == (
         f'File "{path}", line 2, column 11\n'
@@ -427,6 +485,7 @@ def test_validate_file_of_a_file_with_only_fields_out_of_order_returns_its_text(
     assert field_out_of_order.location == rendering.SourceLocation(
         line=3, column=3, end_line=3, end_column=6, file_path=path
     )
+    assert field_out_of_order.file_path == path
     assert field_out_of_order.field_name == "name"
     assert field_out_of_order.later_field == "count"
 

@@ -101,6 +101,7 @@ def test_semantic_errors_are_diagnostics_without_a_message():
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=11, end_line=2, end_column=11
     )
+    assert integer_enum.file_path is None
     assert integer_enum.field_name == "status"
 
 
@@ -120,6 +121,7 @@ def test_syntax_error_is_a_diagnostic_without_a_message():
     assert unexpected_character.location == rendering.SourceLocation(
         line=2, column=6, end_line=2, end_column=6
     )
+    assert unexpected_character.file_path is None
     assert unexpected_character.character == "@"
 
 
@@ -138,6 +140,7 @@ def test_file_with_only_layout_errors_loads_with_its_diagnostics():
     assert blank_line.location == rendering.SourceLocation(
         line=3, column=1, end_line=3, end_column=1
     )
+    assert blank_line.file_path is None
 
 
 def test_load_file_of_a_file_with_only_fields_out_of_order_loads_with_its_diagnostics():
@@ -160,6 +163,7 @@ def test_load_file_of_a_file_with_only_fields_out_of_order_loads_with_its_diagno
     assert field_out_of_order.location == rendering.SourceLocation(
         line=3, column=3, end_line=3, end_column=6, file_path=path
     )
+    assert field_out_of_order.file_path == path
     assert field_out_of_order.field_name == "name"
     assert field_out_of_order.later_field == "count"
 
@@ -193,4 +197,5 @@ def test_load_file_diagnostics_name_the_file():
     assert integer_enum.location == rendering.SourceLocation(
         line=2, column=11, end_line=2, end_column=11, file_path=path
     )
+    assert integer_enum.file_path == path
     assert integer_enum.field_name == "status"

@@ -1,6 +1,8 @@
 //! The Define Configuration Language (DCL) parser, which tracks the source
 //! location of every part of a file.
 
+#[cfg(test)]
+mod error_messages_test;
 mod field_path;
 mod parser;
 #[cfg(test)]

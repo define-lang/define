@@ -421,8 +421,18 @@ mod tests {
                 ..FileDescriptorProto::default()
             }],
         };
+        let error = Schema::from_descriptor_set(file_descriptor_set, "package.File").err();
+        // protoc never writes such a descriptor set, so the message is tested
+        // here instead of with the other errors' messages, which come from
+        // test data files.
+        expect_that!(
+            error.as_ref().map(ToString::to_string),
+            some(eq(
+                "Cannot create a DCL schema: the field package.File.config has the type .package.Missing, which the FileDescriptorSet does not define"
+            ))
+        );
         verify_that!(
-            Schema::from_descriptor_set(file_descriptor_set, "package.File").err(),
+            error,
             some(eq(&SchemaError::UnknownFieldType {
                 message_type: "package.File".to_owned(),
                 field_name: "config".to_owned(),

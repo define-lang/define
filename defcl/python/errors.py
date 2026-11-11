@@ -20,11 +20,19 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
 
     # The diagnostic's message, without its location.
     message: str
-    location: rendering.SourceLocation
+    # None when the diagnostic is about the whole file.
+    location: rendering.SourceLocation | None
+    # The file that the diagnostic is in, or None for text that is not from a
+    # file.
+    file_path: str | None
 
     def format(self, sources: rendering.SourceMap) -> str:
-        """Format the diagnostic: its location, with its source line underlined with carets, then its message."""
-        return f"{sources.render_location(self.location)}\n{self.message}"
+        """Format the diagnostic: its location, with its source line underlined with carets, or else its file, then its message."""
+        if self.location is not None:
+            return f"{sources.render_location(self.location)}\n{self.message}"
+        if self.file_path is not None:
+            return f"{sources.render_header_without_position(self.file_path)}\n{self.message}"
+        return self.message
 
 
 class SyntaxDiagnostic(DclDiagnostic, frozen=True):

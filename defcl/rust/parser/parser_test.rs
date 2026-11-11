@@ -797,7 +797,7 @@ mod invalid_layout {
             layout_errors("a: {\n b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                location: location(2, 1, 2, 1),
+                location: Some(location(2, 1, 2, 1)),
             },]
         )
     }
@@ -808,7 +808,7 @@ mod invalid_layout {
             layout_errors("a: {\nb: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                location: location(2, 1, 2, 1),
+                location: Some(location(2, 1, 2, 1)),
             },]
         )
     }
@@ -819,7 +819,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1\n  }\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 0 },
-                location: location(3, 1, 3, 2),
+                location: Some(location(3, 1, 3, 2)),
             },]
         )
     }
@@ -830,7 +830,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: [\n   1\n  ]\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 4 },
-                location: location(3, 1, 3, 3),
+                location: Some(location(3, 1, 3, 3)),
             },]
         )
     }
@@ -841,7 +841,7 @@ mod invalid_layout {
             layout_errors("a: {\n # c\n  b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                location: location(2, 1, 2, 1),
+                location: Some(location(2, 1, 2, 1)),
             },]
         )
     }
@@ -852,7 +852,7 @@ mod invalid_layout {
             layout_errors("a: { b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
-                location: location(1, 6, 1, 6),
+                location: Some(location(1, 6, 1, 6)),
             },]
         )
     }
@@ -863,7 +863,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1 }\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             },]
         )
     }
@@ -874,7 +874,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1 c: 2\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             },]
         )
     }
@@ -886,15 +886,15 @@ mod invalid_layout {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::MissingLineBreak,
-                    location: location(2, 7, 2, 7),
+                    location: Some(location(2, 7, 2, 7)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::MissingLineBreak,
-                    location: location(2, 10, 2, 10),
+                    location: Some(location(2, 10, 2, 10)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::MissingLineBreak,
-                    location: location(2, 11, 2, 11),
+                    location: Some(location(2, 11, 2, 11)),
                 },
             ]
         )
@@ -906,7 +906,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1\n  \n  c: 2\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::BlankLine,
-                location: location(3, 1, 3, 3),
+                location: Some(location(3, 1, 3, 3)),
             },]
         )
     }
@@ -917,7 +917,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1  \n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
-                location: location(2, 7, 2, 8),
+                location: Some(location(2, 7, 2, 8)),
             },]
         )
     }
@@ -928,7 +928,7 @@ mod invalid_layout {
             layout_errors("a: {\n  # c  \n  b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
-                location: location(2, 6, 2, 7),
+                location: Some(location(2, 6, 2, 7)),
             },]
         )
     }
@@ -940,11 +940,11 @@ mod invalid_layout {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TrailingWhitespace,
-                    location: location(2, 6, 2, 7),
+                    location: Some(location(2, 6, 2, 7)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::TabNotAllowed,
-                    location: location(2, 7, 2, 7),
+                    location: Some(location(2, 7, 2, 7)),
                 },
             ]
         )
@@ -959,41 +959,41 @@ mod invalid_layout {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TrailingWhitespace,
-                    location: location(1, 2, 1, 3),
+                    location: Some(location(1, 2, 1, 3)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: RIGHT_TO_LEFT_OVERRIDE
                     },
-                    location: location(1, 3, 1, 3),
+                    location: Some(location(1, 3, 1, 3)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
-                    location: location(3, 8, 3, 10),
+                    location: Some(location(3, 8, 3, 10)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::ByteOrderMark,
-                    location: location(3, 10, 3, 10),
+                    location: Some(location(3, 10, 3, 10)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyRepeatedValue,
-                    location: location(4, 6, 6, 3),
+                    location: Some(location(4, 6, 6, 3)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: ZERO_WIDTH_SPACE
                     },
-                    location: location(5, 7, 5, 7),
+                    location: Some(location(5, 7, 5, 7)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::MisplacedComment,
-                    location: location(7, 5, 7, 7),
+                    location: Some(location(7, 5, 7, 7)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: ZERO_WIDTH_SPACE
                     },
-                    location: location(7, 7, 7, 7),
+                    location: Some(location(7, 7, 7, 7)),
                 },
             ]
         )
@@ -1006,15 +1006,15 @@ mod invalid_layout {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TabNotAllowed,
-                    location: location(2, 1, 2, 1),
+                    location: Some(location(2, 1, 2, 1)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                    location: location(2, 1, 2, 1),
+                    location: Some(location(2, 1, 2, 1)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                    location: location(3, 1, 3, 1),
+                    location: Some(location(3, 1, 3, 1)),
                 },
             ]
         )
@@ -1031,19 +1031,19 @@ mod invalid_layout {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: ZERO_WIDTH_SPACE
                     },
-                    location: location(2, 4, 2, 4),
+                    location: Some(location(2, 4, 2, 4)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: ZERO_WIDTH_SPACE
                     },
-                    location: location(3, 5, 3, 5),
+                    location: Some(location(3, 5, 3, 5)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: ZERO_WIDTH_SPACE
                     },
-                    location: location(4, 7, 4, 7),
+                    location: Some(location(4, 7, 4, 7)),
                 },
             ]
         )
@@ -1055,7 +1055,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: [\n    1\t,\n    2\n  ]\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
-                location: location(3, 6, 3, 6),
+                location: Some(location(3, 6, 3, 6)),
             }]
         )
     }
@@ -1074,7 +1074,7 @@ mod invalid_layout {
             layout_errors("a: {\n  # \n  b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
-                location: location(2, 4, 2, 4),
+                location: Some(location(2, 4, 2, 4)),
             },]
         )
     }
@@ -1085,7 +1085,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1\n}\n ")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
-                location: location(4, 1, 4, 1),
+                location: Some(location(4, 1, 4, 1)),
             }]
         )
     }
@@ -1097,11 +1097,11 @@ mod invalid_layout {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
-                    location: location(3, 3, 3, 5),
+                    location: Some(location(3, 3, 3, 5)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::MissingTrailingNewline,
-                    location: location(3, 5, 3, 5),
+                    location: Some(location(3, 5, 3, 5)),
                 },
             ]
         )
@@ -1113,7 +1113,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: 1 # c\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CommentNotOnOwnLine,
-                location: location(2, 8, 2, 10),
+                location: Some(location(2, 8, 2, 10)),
             },]
         )
     }
@@ -1124,7 +1124,7 @@ mod invalid_layout {
             layout_errors("a: {\n  #c\n  b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CommentSpacing,
-                location: location(2, 3, 2, 3),
+                location: Some(location(2, 3, 2, 3)),
             },]
         )
     }
@@ -1135,7 +1135,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b:1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(2, 5, 2, 5),
+                location: Some(location(2, 5, 2, 5)),
             },]
         )
     }
@@ -1146,7 +1146,7 @@ mod invalid_layout {
             layout_errors("a: {\n  b: {\n  }\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::EmptyMessageValue,
-                location: location(2, 6, 3, 3),
+                location: Some(location(2, 6, 3, 3)),
             },]
         )
     }
@@ -1159,7 +1159,7 @@ mod invalid_layout {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::BlankLine,
-                location: location(4, 1, 4, 1),
+                location: Some(location(4, 1, 4, 1)),
             }]
         )
     }
@@ -1172,7 +1172,7 @@ mod invalid_layout {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::EmptyMessageValue,
-                location: location(1, 10, 1, 11),
+                location: Some(location(1, 10, 1, 11)),
             }]
         )
     }
@@ -1185,7 +1185,7 @@ mod invalid_layout {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::EmptyRepeatedValue,
-                location: location(2, 17, 2, 18),
+                location: Some(location(2, 17, 2, 18)),
             }]
         )
     }
@@ -1199,11 +1199,11 @@ mod invalid_layout {
                 errors: vec![
                     SyntaxError {
                         kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                        location: location(2, 1, 2, 1),
+                        location: Some(location(2, 1, 2, 1)),
                     },
                     SyntaxError {
                         kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                        location: location(2, 5, 2, 5),
+                        location: Some(location(2, 5, 2, 5)),
                     },
                 ],
             })
@@ -1222,7 +1222,7 @@ mod invalid_booleans {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::BooleanNotSupported,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 12
@@ -1231,7 +1231,7 @@ mod invalid_booleans {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -1244,7 +1244,7 @@ mod invalid_booleans {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::BooleanNotSupported,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 12
@@ -1253,7 +1253,7 @@ mod invalid_booleans {
                         line: 2,
                         column: 15
                     }
-                }
+                })
             }))
         )
     }
@@ -1270,7 +1270,7 @@ mod invalid_enums {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEnumCase,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 11
@@ -1279,7 +1279,7 @@ mod invalid_enums {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -1292,7 +1292,7 @@ mod invalid_enums {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEnumCase,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 11
@@ -1301,7 +1301,7 @@ mod invalid_enums {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -1317,14 +1317,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/double_underscore.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 15
-                    }
-                }
+                kind: SyntaxErrorKind::UnderscoreNotBeforeLetter,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -1336,14 +1330,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/hyphen.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 15
-                    }
-                }
+                kind: SyntaxErrorKind::InvalidCharacterInFieldName,
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -1355,14 +1343,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/leading_digit.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 10
-                    }
-                }
+                kind: SyntaxErrorKind::FieldNameStartsWithNonLetter,
+                location: Some(location(2, 3, 2, 3)),
             }))
         )
     }
@@ -1374,14 +1356,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/leading_underscore.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 16
-                    }
-                }
+                kind: SyntaxErrorKind::FieldNameStartsWithNonLetter,
+                location: Some(location(2, 3, 2, 3)),
             }))
         )
     }
@@ -1393,14 +1369,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/period.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 15
-                    }
-                }
+                kind: SyntaxErrorKind::InvalidCharacterInFieldName,
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -1412,14 +1382,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/trailing_underscore.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 16
-                    }
-                }
+                kind: SyntaxErrorKind::UnderscoreNotBeforeLetter,
+                location: Some(location(2, 16, 2, 16)),
             }))
         )
     }
@@ -1431,14 +1395,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/underscore_digit.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 10
-                    }
-                }
+                kind: SyntaxErrorKind::UnderscoreNotBeforeLetter,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -1450,14 +1408,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/uppercase.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 3 },
-                    end: Position {
-                        line: 2,
-                        column: 14
-                    }
-                }
+                kind: SyntaxErrorKind::UppercaseInFieldName,
+                location: Some(location(2, 3, 2, 3)),
             }))
         )
     }
@@ -1469,11 +1421,8 @@ mod invalid_field_names {
                 "../../testdata/invalid/syntax/field_names/top_level_message_name.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 1 },
-                    end: Position { line: 1, column: 7 }
-                }
+                kind: SyntaxErrorKind::UppercaseInFieldName,
+                location: Some(location(1, 1, 1, 1)),
             }))
         )
     }
@@ -1490,7 +1439,7 @@ mod invalid_file_format {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::ByteOrderMark,
-                location: location(1, 1, 1, 1),
+                location: Some(location(1, 1, 1, 1)),
             },]
         )
     }
@@ -1503,7 +1452,7 @@ mod invalid_file_format {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingTrailingNewline,
-                location: location(3, 1, 3, 1),
+                location: Some(location(3, 1, 3, 1)),
             },]
         )
     }
@@ -1516,7 +1465,7 @@ mod invalid_file_format {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingTrailingNewline,
-                location: location(4, 5, 4, 5),
+                location: Some(location(4, 5, 4, 5)),
             },]
         )
     }
@@ -1529,10 +1478,7 @@ mod invalid_file_format {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingTopLevelMessage,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 1 },
-                    end: Position { line: 1, column: 1 }
-                }
+                location: None,
             }))
         )
     }
@@ -1545,10 +1491,7 @@ mod invalid_file_format {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingTopLevelMessage,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 1 },
-                    end: Position { line: 2, column: 1 }
-                }
+                location: None,
             }))
         )
     }
@@ -1565,7 +1508,7 @@ mod invalid_messages {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::AngleBracketsNotAllowed,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 1,
                         column: 10
@@ -1574,7 +1517,7 @@ mod invalid_messages {
                         line: 1,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -1587,7 +1530,7 @@ mod invalid_messages {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::AngleBracketsNotAllowed,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 11
@@ -1596,7 +1539,7 @@ mod invalid_messages {
                         line: 2,
                         column: 11
                     }
-                }
+                })
             }))
         )
     }
@@ -1609,10 +1552,10 @@ mod invalid_messages {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedFieldNameOrCloseBrace,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 3 },
                     end: Position { line: 2, column: 3 }
-                }
+                })
             }))
         )
     }
@@ -1625,7 +1568,7 @@ mod invalid_messages {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
-                location: location(2, 9, 2, 9),
+                location: Some(location(2, 9, 2, 9)),
             },]
         )
     }
@@ -1638,7 +1581,7 @@ mod invalid_messages {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
-                location: location(3, 2, 3, 2),
+                location: Some(location(3, 2, 3, 2)),
             },]
         )
     }
@@ -1651,10 +1594,10 @@ mod invalid_messages {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedMessage,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 4 },
                     end: Position { line: 1, column: 4 }
-                }
+                })
             }))
         )
     }
@@ -1670,17 +1613,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/hex.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 13
-                    }
-                }
+                kind: SyntaxErrorKind::HexadecimalNumber,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1692,17 +1626,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/octal.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 13
-                    }
-                }
+                kind: SyntaxErrorKind::LeadingZeroInNumber,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1714,17 +1639,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/scientific_int.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::ScientificNotation,
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -1736,17 +1652,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/scientific_float.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 15
-                    }
-                }
+                kind: SyntaxErrorKind::ScientificNotation,
+                location: Some(location(2, 13, 2, 13)),
             }))
         )
     }
@@ -1758,17 +1665,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/leading_zeros.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::LeadingZeroInNumber,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1780,17 +1678,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/leading_decimal.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 11
-                    }
-                }
+                kind: SyntaxErrorKind::MissingDigitBeforeDecimalPoint,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1802,17 +1691,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/trailing_decimal.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::MissingDigitAfterDecimalPoint,
+                location: Some(location(2, 12, 2, 12)),
             }))
         )
     }
@@ -1825,7 +1705,7 @@ mod invalid_numbers {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::NegativeZero,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 10
@@ -1834,7 +1714,7 @@ mod invalid_numbers {
                         line: 2,
                         column: 11
                     }
-                }
+                })
             }))
         )
     }
@@ -1847,7 +1727,7 @@ mod invalid_numbers {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::NegativeZero,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 10
@@ -1856,7 +1736,7 @@ mod invalid_numbers {
                         line: 2,
                         column: 13
                     }
-                }
+                })
             }))
         )
     }
@@ -1868,17 +1748,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/plus_sign.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::PlusSignInNumber,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1890,17 +1761,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/space_after_sign.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 10
-                    }
-                }
+                kind: SyntaxErrorKind::MinusSignWithoutDigits,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -1912,17 +1774,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/type_suffix_f.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::SuffixOnNumber,
+                location: Some(location(2, 12, 2, 12)),
             }))
         )
     }
@@ -1934,17 +1787,34 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/type_suffix_upper_f.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position {
-                        line: 2,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 2,
-                        column: 12
-                    }
-                }
+                kind: SyntaxErrorKind::SuffixOnNumber,
+                location: Some(location(2, 12, 2, 12)),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn negative_leading_decimal() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/negative_leading_decimal.defcl"
+            )),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::MissingDigitBeforeDecimalPoint,
+                location: Some(location(2, 11, 2, 11)),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn underscore() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/underscore.defcl"
+            )),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::InvalidCharacterInNumber,
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -1956,11 +1826,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/type_suffix_d.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position { line: 2, column: 9 }
-                }
+                kind: SyntaxErrorKind::SuffixOnNumber,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -1972,11 +1839,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/type_suffix_l.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position { line: 2, column: 9 }
-                }
+                kind: SyntaxErrorKind::SuffixOnNumber,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -1988,11 +1852,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/bare_e_suffix.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position { line: 2, column: 9 }
-                }
+                kind: SyntaxErrorKind::ScientificNotation,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -2004,11 +1865,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/fraction_with_trailing_zero.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position { line: 2, column: 9 }
-                }
+                kind: SyntaxErrorKind::TrailingZeroInFraction,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -2020,11 +1878,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/fraction_of_only_zeros.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position { line: 2, column: 9 }
-                }
+                kind: SyntaxErrorKind::TrailingZeroInFraction,
+                location: Some(location(2, 9, 2, 9)),
             }))
         )
     }
@@ -2036,14 +1891,8 @@ mod invalid_numbers {
                 "../../testdata/invalid/syntax/numbers/extra_decimal_after_float.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidNumberFormat,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 6 },
-                    end: Position {
-                        line: 2,
-                        column: 11
-                    }
-                }
+                kind: SyntaxErrorKind::SecondDecimalPoint,
+                location: Some(location(2, 10, 2, 10)),
             }))
         )
     }
@@ -2061,7 +1910,7 @@ mod invalid_characters {
                 source: source.to_vec(),
                 error: SyntaxError {
                     kind: SyntaxErrorKind::InvalidEncoding { byte: 0xff },
-                    location: location(2, 12, 2, 12),
+                    location: Some(location(2, 12, 2, 12)),
                 },
             }))
         )
@@ -2075,7 +1924,7 @@ mod invalid_characters {
                 source: b"a: {\n  b: \"\xc3".to_vec(),
                 error: SyntaxError {
                     kind: SyntaxErrorKind::InvalidEncoding { byte: 0xc3 },
-                    location: location(2, 7, 2, 7),
+                    location: Some(location(2, 7, 2, 7)),
                 },
             }))
         )
@@ -2097,10 +1946,10 @@ mod invalid_characters {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
-                },
+                }),
             }))
         )
     }
@@ -2113,10 +1962,10 @@ mod invalid_characters {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnexpectedCharacter { character: 'é' },
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
-                },
+                }),
             }))
         )
     }
@@ -2129,7 +1978,7 @@ mod invalid_characters {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ControlCharacter { character: '\0' },
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             }))
         )
     }
@@ -2143,7 +1992,7 @@ mod invalid_characters {
                 kind: SyntaxErrorKind::InvisibleCharacter {
                     character: ZERO_WIDTH_SPACE
                 },
-                location: location(2, 5, 2, 5),
+                location: Some(location(2, 5, 2, 5)),
             }))
         )
     }
@@ -2157,7 +2006,7 @@ mod invalid_characters {
                 kind: SyntaxErrorKind::InvisibleCharacter {
                     character: ZERO_WIDTH_SPACE
                 },
-                location: location(2, 7, 2, 7),
+                location: Some(location(2, 7, 2, 7)),
             }))
         )
     }
@@ -2168,7 +2017,7 @@ mod invalid_characters {
             parse("a: {\n  b: AB\tC\n}\n"),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             }))
         )
     }
@@ -2179,7 +2028,7 @@ mod invalid_characters {
             parse("a: {\n  b: \"x\ty\"\n}\n"),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             }))
         )
     }
@@ -2190,7 +2039,7 @@ mod invalid_characters {
             parse("a: {\n  b: \"x\ry\"\n}\n"),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             }))
         )
     }
@@ -2204,7 +2053,7 @@ mod invalid_characters {
                 kind: SyntaxErrorKind::InvisibleCharacter {
                     character: RIGHT_TO_LEFT_OVERRIDE
                 },
-                location: location(2, 11, 2, 11),
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -2218,7 +2067,7 @@ mod invalid_characters {
                 kind: SyntaxErrorKind::InvisibleCharacter {
                     character: LEFT_TO_RIGHT_MARK
                 },
-                location: location(2, 8, 2, 8),
+                location: Some(location(2, 8, 2, 8)),
             }))
         )
     }
@@ -2230,7 +2079,7 @@ mod invalid_characters {
             parse(&source),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ByteOrderMark,
-                location: location(2, 7, 2, 7),
+                location: Some(location(2, 7, 2, 7)),
             }))
         )
     }
@@ -2243,7 +2092,7 @@ mod invalid_characters {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::ControlCharacter { character: '\0' },
-                location: location(4, 4, 4, 4),
+                location: Some(location(4, 4, 4, 4)),
             }]
         )
     }
@@ -2257,11 +2106,11 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(1, 2, 1, 2),
+                    location: Some(location(1, 2, 1, 2)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
-                    location: location(2, 4, 2, 5),
+                    location: Some(location(2, 4, 2, 5)),
                 },
             ]
         )
@@ -2276,15 +2125,15 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::MisplacedComment,
-                    location: location(1, 4, 1, 5),
+                    location: Some(location(1, 4, 1, 5)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(1, 5, 1, 5),
+                    location: Some(location(1, 5, 1, 5)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
-                    location: location(2, 1, 2, 2),
+                    location: Some(location(2, 1, 2, 2)),
                 },
             ]
         )
@@ -2299,11 +2148,11 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::MisplacedComment,
-                    location: location(2, 6, 2, 7),
+                    location: Some(location(2, 6, 2, 7)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(2, 7, 2, 7),
+                    location: Some(location(2, 7, 2, 7)),
                 },
             ]
         )
@@ -2318,11 +2167,11 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
-                    location: location(1, 4, 2, 1),
+                    location: Some(location(1, 4, 2, 1)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(1, 7, 1, 7),
+                    location: Some(location(1, 7, 1, 7)),
                 },
             ]
         )
@@ -2337,11 +2186,11 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
-                    location: location(2, 8, 2, 9),
+                    location: Some(location(2, 8, 2, 9)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(2, 9, 2, 9),
+                    location: Some(location(2, 9, 2, 9)),
                 },
             ]
         )
@@ -2356,11 +2205,11 @@ mod invalid_characters {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyRepeatedValue,
-                    location: location(2, 6, 3, 1),
+                    location: Some(location(2, 6, 3, 1)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: location(2, 9, 2, 9),
+                    location: Some(location(2, 9, 2, 9)),
                 },
             ]
         )
@@ -2374,7 +2223,7 @@ mod invalid_characters {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: location(4, 6, 4, 6),
+                location: Some(location(4, 6, 4, 6)),
             },]
         )
     }
@@ -2387,7 +2236,7 @@ mod invalid_characters {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: location(4, 6, 4, 6),
+                location: Some(location(4, 6, 4, 6)),
             },]
         )
     }
@@ -2400,7 +2249,7 @@ mod invalid_characters {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: location(1, 2, 1, 2),
+                location: Some(location(1, 2, 1, 2)),
             }))
         )
     }
@@ -2416,11 +2265,11 @@ mod invalid_separators {
                 "../../testdata/invalid/syntax/separators/comma_separator.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: SourceLocation {
+                kind: SyntaxErrorKind::CommaBetweenFields,
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 7 }
-                }
+                })
             }))
         )
     }
@@ -2432,11 +2281,11 @@ mod invalid_separators {
                 "../../testdata/invalid/syntax/separators/trailing_comma_in_message.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: SourceLocation {
+                kind: SyntaxErrorKind::CommaBetweenFields,
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 7 }
-                }
+                })
             }))
         )
     }
@@ -2448,8 +2297,8 @@ mod invalid_separators {
                 "../../testdata/invalid/syntax/separators/comma_between_top_level_messages.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: location(3, 2, 3, 2),
+                kind: SyntaxErrorKind::CommaBetweenFields,
+                location: Some(location(3, 2, 3, 2)),
             }))
         )
     }
@@ -2462,10 +2311,10 @@ mod invalid_separators {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 8 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -2478,10 +2327,10 @@ mod invalid_separators {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 4 },
                     end: Position { line: 2, column: 4 }
-                }
+                })
             }))
         )
     }
@@ -2494,10 +2343,10 @@ mod invalid_separators {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 2 },
                     end: Position { line: 1, column: 2 }
-                }
+                })
             }))
         )
     }
@@ -2510,7 +2359,7 @@ mod invalid_separators {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeColon,
-                location: location(2, 4, 2, 4),
+                location: Some(location(2, 4, 2, 4)),
             },]
         )
     }
@@ -2523,7 +2372,7 @@ mod invalid_separators {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
-                location: location(1, 3, 1, 5),
+                location: Some(location(1, 3, 1, 5)),
             },]
         )
     }
@@ -2535,8 +2384,8 @@ mod invalid_separators {
                 "../../testdata/invalid/syntax/separators/semicolon.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: SourceLocation {
+                kind: SyntaxErrorKind::SemicolonNotAllowed,
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 16
@@ -2545,7 +2394,7 @@ mod invalid_separators {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -2562,7 +2411,7 @@ mod invalid_repeated_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedCommaOrCloseBracket,
-                location: location(4, 5, 4, 5),
+                location: Some(location(4, 5, 4, 5)),
             }))
         )
     }
@@ -2575,7 +2424,7 @@ mod invalid_repeated_values {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WhitespaceBeforeComma,
-                location: location(3, 6, 3, 6),
+                location: Some(location(3, 6, 3, 6)),
             },]
         )
     }
@@ -2588,7 +2437,7 @@ mod invalid_repeated_values {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
-                location: location(3, 7, 4, 7),
+                location: Some(location(3, 7, 4, 7)),
             },]
         )
     }
@@ -2601,7 +2450,7 @@ mod invalid_repeated_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
-                location: location(4, 3, 4, 3),
+                location: Some(location(4, 3, 4, 3)),
             }))
         )
     }
@@ -2614,10 +2463,10 @@ mod invalid_repeated_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
-                }
+                })
             }))
         )
     }
@@ -2630,7 +2479,7 @@ mod invalid_repeated_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
-                location: location(2, 6, 2, 6),
+                location: Some(location(2, 6, 2, 6)),
             }))
         )
     }
@@ -2642,8 +2491,8 @@ mod invalid_repeated_values {
                 "../../testdata/invalid/syntax/repeated_values/semicolon_between_values.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: location(3, 6, 3, 6),
+                kind: SyntaxErrorKind::SemicolonNotAllowed,
+                location: Some(location(3, 6, 3, 6)),
             }))
         )
     }
@@ -2656,7 +2505,7 @@ mod invalid_repeated_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::RepeatedValueInRepeatedValue,
-                location: location(4, 5, 4, 5),
+                location: Some(location(4, 5, 4, 5)),
             }))
         )
     }
@@ -2673,10 +2522,10 @@ mod invalid_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
-                }
+                })
             }))
         )
     }
@@ -2689,10 +2538,10 @@ mod invalid_values {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 5 },
                     end: Position { line: 2, column: 5 }
-                }
+                })
             }))
         )
     }
@@ -2709,7 +2558,7 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 10
@@ -2718,7 +2567,7 @@ mod invalid_strings {
                         line: 2,
                         column: 15
                     }
-                }
+                })
             }))
         )
     }
@@ -2731,10 +2580,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 7 }
-                }
+                })
             }))
         )
     }
@@ -2747,10 +2596,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -2763,10 +2612,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -2779,7 +2628,7 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::SingleQuotesNotAllowed,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position {
                         line: 2,
                         column: 10
@@ -2788,7 +2637,7 @@ mod invalid_strings {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -2801,10 +2650,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::SingleQuotesNotAllowed,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
-                }
+                })
             }))
         )
     }
@@ -2817,13 +2666,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -2836,13 +2685,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -2855,13 +2704,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 8 },
                     end: Position {
                         line: 2,
                         column: 15
                     }
-                }
+                })
             }))
         )
     }
@@ -2874,13 +2723,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -2893,13 +2742,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 14
                     }
-                }
+                })
             }))
         )
     }
@@ -2912,13 +2761,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::SurrogateEscape,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 12
                     }
-                }
+                })
             }))
         )
     }
@@ -2931,13 +2780,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -2950,13 +2799,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::UnterminatedString,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position {
                         line: 2,
                         column: 11
                     }
-                }
+                })
             }))
         )
     }
@@ -2969,10 +2818,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -2985,10 +2834,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -3001,10 +2850,10 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -3017,13 +2866,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 10
                     }
-                }
+                })
             }))
         )
     }
@@ -3036,13 +2885,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 16
                     }
-                }
+                })
             }))
         )
     }
@@ -3055,13 +2904,13 @@ mod invalid_strings {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEscapeSequence,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position {
                         line: 2,
                         column: 15
                     }
-                }
+                })
             }))
         )
     }
@@ -3078,10 +2927,10 @@ mod invalid_toplevel {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedFieldName,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 1 },
                     end: Position { line: 1, column: 1 }
-                }
+                })
             }))
         )
     }
@@ -3094,10 +2943,10 @@ mod invalid_toplevel {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 8 },
                     end: Position { line: 1, column: 8 }
-                }
+                })
             }))
         )
     }
@@ -3110,13 +2959,13 @@ mod invalid_toplevel {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 7 },
                     end: Position {
                         line: 1,
                         column: 13
                     }
-                }
+                })
             }))
         )
     }
@@ -3129,7 +2978,7 @@ mod invalid_toplevel {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
-                location: location(1, 4, 3, 1),
+                location: Some(location(1, 4, 3, 1)),
             }))
         )
     }
@@ -3142,7 +2991,7 @@ mod invalid_toplevel {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(1, 3, 1, 3),
+                location: Some(location(1, 3, 1, 3)),
             },]
         )
     }
@@ -3155,7 +3004,7 @@ mod invalid_toplevel {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(1, 3, 1, 3),
+                location: Some(location(1, 3, 1, 3)),
             },]
         )
     }
@@ -3168,10 +3017,10 @@ mod invalid_toplevel {
             )),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ExpectedValue,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: Position { line: 1, column: 3 },
                     end: Position { line: 1, column: 3 }
-                }
+                })
             }))
         )
     }
@@ -3185,15 +3034,15 @@ mod invalid_toplevel {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                    location: location(1, 3, 1, 3),
+                    location: Some(location(1, 3, 1, 3)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::TabNotAllowed,
-                    location: location(1, 3, 1, 3),
+                    location: Some(location(1, 3, 1, 3)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
-                    location: location(1, 4, 1, 5),
+                    location: Some(location(1, 4, 1, 5)),
                 },
             ]
         )
@@ -3207,7 +3056,7 @@ mod invalid_toplevel {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(1, 3, 1, 4),
+                location: Some(location(1, 3, 1, 4)),
             },]
         )
     }
@@ -3220,7 +3069,7 @@ mod invalid_toplevel {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location: location(1, 3, 1, 4),
+                location: Some(location(1, 3, 1, 4)),
             },]
         )
     }
@@ -3233,7 +3082,7 @@ mod invalid_toplevel {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
-                location: location(1, 4, 1, 6),
+                location: Some(location(1, 4, 1, 6)),
             },]
         )
     }
@@ -3250,7 +3099,7 @@ mod invalid_whitespace {
             ))?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: location(1, 10, 1, 10),
+                location: Some(location(1, 10, 1, 10)),
             },]
         )
     }
@@ -3264,11 +3113,11 @@ mod invalid_whitespace {
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TabNotAllowed,
-                    location: location(2, 1, 2, 1),
+                    location: Some(location(2, 1, 2, 1)),
                 },
                 SyntaxError {
                     kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                    location: location(2, 1, 2, 1),
+                    location: Some(location(2, 1, 2, 1)),
                 },
             ]
         )

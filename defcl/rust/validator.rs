@@ -162,10 +162,10 @@ mod tests {
             ok(eq(&FileErrors {
                 syntax_errors: vec![SyntaxError {
                     kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                    location: SourceLocation {
+                    location: Some(SourceLocation {
                         start: Position { line: 2, column: 6 },
                         end: Position { line: 2, column: 6 }
-                    },
+                    }),
                 }],
                 semantic_errors: vec![],
                 understood: false,
@@ -227,10 +227,10 @@ mod tests {
             ok(eq(&FileErrors {
                 syntax_errors: vec![SyntaxError {
                     kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
-                    location: SourceLocation {
+                    location: Some(SourceLocation {
                         start: Position { line: 2, column: 1 },
                         end: Position { line: 2, column: 1 }
-                    },
+                    }),
                 }],
                 semantic_errors: vec![SemanticError {
                     kind: SemanticErrorKind::UnknownFieldName {
@@ -259,10 +259,10 @@ mod tests {
             ok(eq(&FileErrors {
                 syntax_errors: vec![SyntaxError {
                     kind: SyntaxErrorKind::BlankLine,
-                    location: SourceLocation {
+                    location: Some(SourceLocation {
                         start: Position { line: 3, column: 1 },
                         end: Position { line: 3, column: 1 }
-                    },
+                    }),
                 }],
                 semantic_errors: vec![],
                 understood: true,
@@ -317,10 +317,10 @@ mod tests {
                 ok(eq(&FileErrors {
                     syntax_errors: vec![SyntaxError {
                         kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
-                        location: SourceLocation {
+                        location: Some(SourceLocation {
                             start: Position { line: 2, column: 6 },
                             end: Position { line: 2, column: 6 }
-                        },
+                        }),
                     }],
                     semantic_errors: vec![],
                     understood: false,
@@ -349,7 +349,7 @@ mod tests {
                 ok(eq(&FileErrors {
                     syntax_errors: vec![SyntaxError {
                         kind: SyntaxErrorKind::InvalidEncoding { byte: 0xff },
-                        location: SourceLocation {
+                        location: Some(SourceLocation {
                             start: Position {
                                 line: 2,
                                 column: 12
@@ -358,7 +358,7 @@ mod tests {
                                 line: 2,
                                 column: 12
                             }
-                        },
+                        }),
                     }],
                     semantic_errors: vec![],
                     understood: false,

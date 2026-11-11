@@ -15,6 +15,7 @@ rust_prost_library(
 rust_library(
     name = "semantics",
     srcs = [
+        "error_messages_test.rs",
         "lib.rs",
         "schema.rs",
         "schema_restrictions.rs",

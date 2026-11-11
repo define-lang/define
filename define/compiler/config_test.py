@@ -208,6 +208,7 @@ class TestProjectConfig:
             end_column=14,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert first.file_path == str(_PROJECT_CONFIG_PATH)
         assert first.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
         assert first.field_name == "universe_nam"
         assert first.message_type == "define.config.project.Project"
@@ -219,6 +220,7 @@ class TestProjectConfig:
             end_column=7,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert second.file_path == str(_PROJECT_CONFIG_PATH)
         assert second.kind == error_types.SemanticDiagnosticKind.UNKNOWN_FIELD_NAME
         assert second.field_name == "owner"
         assert second.message_type == "define.config.project.Project"
@@ -240,6 +242,7 @@ class TestProjectConfig:
             end_column=18,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert diagnostic.file_path == str(_PROJECT_CONFIG_PATH)
         assert (
             diagnostic.kind
             == error_types.SemanticDiagnosticKind.NON_STRING_FOR_STRING_FIELD
@@ -279,6 +282,7 @@ class TestProjectConfig:
             end_column=16,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert diagnostic.file_path == str(_PROJECT_CONFIG_PATH)
         assert diagnostic.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
 
     def test_layout_error_still_resolves(
@@ -303,6 +307,7 @@ class TestProjectConfig:
             end_column=1,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert diagnostic.file_path == str(_PROJECT_CONFIG_PATH)
 
     def test_layout_error_and_rule_violation(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -322,6 +327,7 @@ class TestProjectConfig:
             end_column=1,
             file_path=str(_PROJECT_CONFIG_PATH),
         )
+        assert blank_line.file_path == str(_PROJECT_CONFIG_PATH)
         assert violation == diagnostics.ConfigViolationDiagnostic(
             config_path=str(_PROJECT_CONFIG_PATH),
             field_path=("project", "universe_name"),
@@ -649,6 +655,7 @@ class TestLocalDepsConfig:
             end_column=26,
             file_path=str(_LOCAL_DEPS_PATH),
         )
+        assert diagnostic.file_path == str(_LOCAL_DEPS_PATH)
         assert (
             diagnostic.kind
             == error_types.SyntaxDiagnosticKind.SINGLE_QUOTES_NOT_ALLOWED

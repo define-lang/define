@@ -123,7 +123,7 @@ fn invalid_encoding(source: &[u8], offset: usize) -> SyntaxError {
         kind: SyntaxErrorKind::InvalidEncoding {
             byte: source[offset],
         },
-        location: SourceLocation::at(position),
+        location: Some(SourceLocation::at(position)),
     }
 }
 
@@ -157,6 +157,8 @@ const fn is_enum_word_character(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
+/// Whether `text` is a valid field name.
+///
 /// ```ebnf
 /// FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_letter ) } ;
 /// ```
@@ -180,6 +182,35 @@ fn is_field_name(text: &str) -> bool {
         index += 1;
     }
     true
+}
+
+/// The kind of syntax error in `text`, a word of field name characters that
+/// starts with a byte that may start a field name and that `is_field_name`
+/// rejects, and the byte offset of the character that it is about.
+#[cold]
+#[inline(never)]
+fn field_name_error(text: &str) -> (usize, SyntaxErrorKind) {
+    let bytes = text.as_bytes();
+    for (index, &byte) in bytes.iter().enumerate() {
+        // The field name has an uppercase letter.
+        if byte.is_ascii_uppercase() {
+            return (index, SyntaxErrorKind::UppercaseInFieldName);
+        }
+        // The field name starts with something other than a letter.
+        if index == 0 && !byte.is_ascii_lowercase() {
+            return (index, SyntaxErrorKind::FieldNameStartsWithNonLetter);
+        }
+        // The field name has an underscore that a lowercase letter does not
+        // follow.
+        if byte == b'_' && !bytes.get(index + 1).is_some_and(u8::is_ascii_lowercase) {
+            return (index, SyntaxErrorKind::UnderscoreNotBeforeLetter);
+        }
+        // The field name has a `-` or a `.`.
+        if matches!(byte, b'-' | b'.') {
+            return (index, SyntaxErrorKind::InvalidCharacterInFieldName);
+        }
+    }
+    unreachable!("is_field_name rejected the field name {text:?}")
 }
 
 /// ```ebnf
@@ -231,6 +262,80 @@ fn is_float(text: &str) -> bool {
     }
     fraction.bytes().all(|byte| byte.is_ascii_digit())
         && fraction.bytes().last().is_some_and(|byte| byte != b'0')
+}
+
+/// The kind of syntax error in `text`, a word of number characters that
+/// starts with a byte that may start a number and that is neither an integer,
+/// a float nor a negative zero, and the byte offset of the character that it is
+/// about.
+#[cold]
+#[inline(never)]
+fn number_error(text: &str) -> (usize, SyntaxErrorKind) {
+    let bytes = text.as_bytes();
+    let mut index = 0;
+    // The number starts with a plus sign.
+    if bytes[0] == b'+' {
+        return (0, SyntaxErrorKind::PlusSignInNumber);
+    }
+    if bytes[0] == b'-' {
+        // The minus sign is not followed by digits or a decimal point.
+        if !bytes
+            .get(1)
+            .is_some_and(|&byte| byte.is_ascii_digit() || byte == b'.')
+        {
+            return (0, SyntaxErrorKind::MinusSignWithoutDigits);
+        }
+        index = 1;
+    }
+    // The number has no digit before its decimal point.
+    if bytes[index] == b'.' {
+        return (index, SyntaxErrorKind::MissingDigitBeforeDecimalPoint);
+    }
+    if bytes[index] == b'0' {
+        // The number is hexadecimal.
+        if matches!(bytes.get(index + 1), Some(b'x' | b'X')) {
+            return (index, SyntaxErrorKind::HexadecimalNumber);
+        }
+        // The number has a leading zero.
+        if bytes.get(index + 1).is_some_and(u8::is_ascii_digit) {
+            return (index, SyntaxErrorKind::LeadingZeroInNumber);
+        }
+    }
+    index += digit_count(&bytes[index..]);
+    if bytes.get(index) == Some(&b'.') {
+        let point = index;
+        index += 1;
+        let fraction_length = digit_count(&bytes[index..]);
+        // The decimal point has no digit after it.
+        if fraction_length == 0 {
+            return (point, SyntaxErrorKind::MissingDigitAfterDecimalPoint);
+        }
+        index += fraction_length;
+        // The fraction ends the number, and ends with a zero.
+        if index == bytes.len() {
+            return (index - 1, SyntaxErrorKind::TrailingZeroInFraction);
+        }
+    }
+    let kind = match bytes.get(index) {
+        // The number has a second decimal point.
+        Some(b'.') => SyntaxErrorKind::SecondDecimalPoint,
+        // The number is in scientific notation.
+        Some(b'e' | b'E') => SyntaxErrorKind::ScientificNotation,
+        // The number has a suffix.
+        Some(byte) if byte.is_ascii_alphabetic() => SyntaxErrorKind::SuffixOnNumber,
+        // The number has another character that numbers do not have.
+        Some(_) => SyntaxErrorKind::InvalidCharacterInNumber,
+        None => unreachable!("{text:?} is a valid number"),
+    };
+    (index, kind)
+}
+
+/// The number of ASCII digits that `bytes` starts with.
+fn digit_count(bytes: &[u8]) -> usize {
+    bytes
+        .iter()
+        .take_while(|byte| byte.is_ascii_digit())
+        .count()
 }
 
 /// The value of `digits`, digits in base `radix` that are all valid in it.
@@ -293,10 +398,10 @@ impl ByteEscapeRun {
         if str::from_utf8(&self.bytes).is_err() {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidUtf8,
-                location: SourceLocation {
+                location: Some(SourceLocation {
                     start: self.start,
                     end: self.end,
-                },
+                }),
             });
         }
         self.bytes.clear();
@@ -391,7 +496,7 @@ const fn disallowed_character_error(found: DisallowedCharacter) -> SyntaxError {
     };
     SyntaxError {
         kind,
-        location: SourceLocation::at(found.position),
+        location: Some(SourceLocation::at(found.position)),
     }
 }
 
@@ -445,7 +550,7 @@ impl<'source> Parser<'source> {
         if top_level_messages.is_empty() {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::MissingTopLevelMessage,
-                location: SourceLocation::at(self.scanner.position()),
+                location: None,
             });
         }
         Ok(ParsedFile { top_level_messages })
@@ -566,14 +671,14 @@ impl<'source> Parser<'source> {
                     self.scanner.advance();
                     self.errors.push(SyntaxError {
                         kind: SyntaxErrorKind::BlankLine,
-                        location: self.location_from(line_start),
+                        location: Some(self.location_from(line_start)),
                     });
                 }
                 // The file ends with spaces after its last line feed.
                 None if spaces > 0 => {
                     self.errors.push(SyntaxError {
                         kind: SyntaxErrorKind::TrailingWhitespace,
-                        location: self.location_from(line_start),
+                        location: Some(self.location_from(line_start)),
                     });
                     return;
                 }
@@ -585,7 +690,7 @@ impl<'source> Parser<'source> {
                     if !self.scanner.consume_byte(b'\n') {
                         self.errors.push(SyntaxError {
                             kind: SyntaxErrorKind::MissingTrailingNewline,
-                            location: SourceLocation::at(self.scanner.last_consumed()),
+                            location: Some(SourceLocation::at(self.scanner.last_consumed())),
                         });
                         return;
                     }
@@ -615,7 +720,7 @@ impl<'source> Parser<'source> {
                 if spaces > 0 {
                     self.errors.push(SyntaxError {
                         kind: SyntaxErrorKind::TrailingWhitespace,
-                        location: self.location_from(spaces_start),
+                        location: Some(self.location_from(spaces_start)),
                     });
                 }
             }
@@ -626,7 +731,7 @@ impl<'source> Parser<'source> {
                 self.skip_to_line_end();
                 self.errors.push(SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
-                    location: self.location_from(comment_start),
+                    location: Some(self.location_from(comment_start)),
                 });
                 let comment = &self.scanner.text_from(comment_offset)[1..];
                 self.check_comment_characters(comment_start, comment);
@@ -635,7 +740,7 @@ impl<'source> Parser<'source> {
             None => {
                 self.errors.push(SyntaxError {
                     kind: SyntaxErrorKind::MissingTrailingNewline,
-                    location: SourceLocation::at(self.scanner.last_consumed()),
+                    location: Some(SourceLocation::at(self.scanner.last_consumed())),
                 });
                 return false;
             }
@@ -643,7 +748,7 @@ impl<'source> Parser<'source> {
             Some(_) => {
                 self.errors.push(SyntaxError {
                     kind: SyntaxErrorKind::MissingLineBreak,
-                    location: SourceLocation::at(self.scanner.position()),
+                    location: Some(SourceLocation::at(self.scanner.position())),
                 });
                 return false;
             }
@@ -652,7 +757,7 @@ impl<'source> Parser<'source> {
         if !self.scanner.consume_byte(b'\n') {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MissingTrailingNewline,
-                location: SourceLocation::at(self.scanner.last_consumed()),
+                location: Some(SourceLocation::at(self.scanner.last_consumed())),
             });
             return false;
         }
@@ -677,7 +782,7 @@ impl<'source> Parser<'source> {
                 kind: SyntaxErrorKind::WrongIndentation {
                     expected_spaces: expected,
                 },
-                location,
+                location: Some(location),
             });
         }
     }
@@ -696,14 +801,14 @@ impl<'source> Parser<'source> {
         if has_text && !comment.starts_with(' ') {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::CommentSpacing,
-                location: SourceLocation::at(hash),
+                location: Some(SourceLocation::at(hash)),
             });
         }
         // The comment ends with spaces.
         if let Some(start) = trailing_start {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
-                location: self.location_from(start),
+                location: Some(self.location_from(start)),
             });
         }
         // Comments allow every printable ASCII character, so only other
@@ -781,7 +886,7 @@ impl<'source> Parser<'source> {
         }
         self.errors.push(SyntaxError {
             kind: invisible_character_kind(character, reason),
-            location: SourceLocation::at(position),
+            location: Some(SourceLocation::at(position)),
         });
     }
 
@@ -826,7 +931,7 @@ impl<'source> Parser<'source> {
         if let Some(location) = comments {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
-                location,
+                location: Some(location),
             });
             self.check_skipped_characters(start, start_offset);
             return;
@@ -835,7 +940,7 @@ impl<'source> Parser<'source> {
         if self.scanner.text_from(start_offset).contains([' ', '\n']) {
             self.errors.push(SyntaxError {
                 kind,
-                location: self.location_from(start),
+                location: Some(self.location_from(start)),
             });
         }
         self.check_skipped_characters(start, start_offset);
@@ -861,7 +966,7 @@ impl<'source> Parser<'source> {
         if let Some(location) = comments {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
-                location,
+                location: Some(location),
             });
             self.check_skipped_characters(start, start_offset);
             return;
@@ -882,7 +987,7 @@ impl<'source> Parser<'source> {
             };
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
-                location,
+                location: Some(location),
             });
         }
         self.check_skipped_characters(start, start_offset);
@@ -904,7 +1009,7 @@ impl<'source> Parser<'source> {
         self.scanner = lookahead;
         self.errors.push(SyntaxError {
             kind,
-            location: self.location_from(start),
+            location: Some(self.location_from(start)),
         });
         self.check_skipped_characters(whitespace_start, whitespace_offset);
         true
@@ -923,7 +1028,7 @@ impl<'source> Parser<'source> {
         let Value::Message(value) = value else {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::ScalarAtToplevel,
-                location: value.location(),
+                location: Some(value.location()),
             });
         };
         let location = SourceLocation {
@@ -978,9 +1083,10 @@ impl<'source> Parser<'source> {
         };
         // The word where the field name belongs is not a valid field name.
         if !is_field_name(text) {
+            let (index, kind) = field_name_error(text);
             return Err(SyntaxError {
-                kind: SyntaxErrorKind::InvalidFieldName,
-                location,
+                kind,
+                location: Some(SourceLocation::at(start.columns_later(index))),
             });
         }
         self.skip_misplaced_whitespace_before(b':', SyntaxErrorKind::WhitespaceBeforeColon);
@@ -1019,7 +1125,7 @@ impl<'source> Parser<'source> {
         if self.scanner.peek() == Some(b'[') {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::RepeatedValueInRepeatedValue,
-                location: SourceLocation::at(self.scanner.position()),
+                location: Some(SourceLocation::at(self.scanner.position())),
             });
         }
         self.parse_value(level)
@@ -1043,10 +1149,10 @@ impl<'source> Parser<'source> {
                 None | Some(b'\n') => {
                     return Err(SyntaxError {
                         kind: SyntaxErrorKind::UnterminatedString,
-                        location: SourceLocation {
+                        location: Some(SourceLocation {
                             start,
                             end: self.scanner.last_consumed(),
-                        },
+                        }),
                     });
                 }
                 Some(b'"') => break,
@@ -1208,7 +1314,7 @@ impl<'source> Parser<'source> {
         if text == "-0" || text == "-0.0" {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::NegativeZero,
-                location: scalar.location,
+                location: Some(scalar.location),
             });
         }
         if is_integer(text) {
@@ -1218,9 +1324,10 @@ impl<'source> Parser<'source> {
             return Ok(Value::Float(scalar));
         }
         // The word that starts like a number is not an integer or a float.
+        let (index, kind) = number_error(text);
         Err(SyntaxError {
-            kind: SyntaxErrorKind::InvalidNumberFormat,
-            location: scalar.location,
+            kind,
+            location: Some(SourceLocation::at(start.columns_later(index))),
         })
     }
 
@@ -1245,14 +1352,14 @@ impl<'source> Parser<'source> {
         if text == "true" || text == "false" {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::BooleanNotSupported,
-                location,
+                location: Some(location),
             });
         }
         // The word has a lowercase letter.
         if !is_enum_value(text) {
             return Err(SyntaxError {
                 kind: SyntaxErrorKind::InvalidEnumCase,
-                location,
+                location: Some(location),
             });
         }
         Ok(Value::Enum(Scalar { text, location }))
@@ -1286,7 +1393,7 @@ impl<'source> Parser<'source> {
                     None => {
                         return Err(SyntaxError {
                             kind: SyntaxErrorKind::UnclosedMessage,
-                            location: SourceLocation::at(start),
+                            location: Some(SourceLocation::at(start)),
                         });
                     }
                     // Something other than a field name or a `}` is where a
@@ -1325,7 +1432,7 @@ impl<'source> Parser<'source> {
                 {
                     return Err(SyntaxError {
                         kind: SyntaxErrorKind::UnclosedRepeatedValue,
-                        location: SourceLocation::at(start),
+                        location: Some(SourceLocation::at(start)),
                     });
                 }
                 values.push(self.parse_element(level + 1)?);
@@ -1358,7 +1465,7 @@ impl Parser<'_> {
         if matches!(self.scanner.peek(), Some(b' ' | b'\n' | b'#')) {
             return SyntaxError {
                 kind: SyntaxErrorKind::MissingColon,
-                location: SourceLocation::at(self.scanner.position()),
+                location: Some(SourceLocation::at(self.scanner.position())),
             };
         }
         self.unexpected(SyntaxErrorKind::MissingColon)
@@ -1370,11 +1477,11 @@ impl Parser<'_> {
     #[cold]
     #[inline(never)]
     fn error_after_repeated_element(&self, start: Position) -> SyntaxError {
-        // The source ends before the repeated value's `]`.
+        // The source ends before the repeated value's `}`.
         if self.scanner.is_at_end() {
             return SyntaxError {
                 kind: SyntaxErrorKind::UnclosedRepeatedValue,
-                location: SourceLocation::at(start),
+                location: Some(SourceLocation::at(start)),
             };
         }
         self.unexpected(SyntaxErrorKind::ExpectedCommaOrCloseBracket)
@@ -1388,8 +1495,8 @@ impl Parser<'_> {
         // A comma separates fields.
         if self.scanner.peek() == Some(b',') {
             return SyntaxError {
-                kind: SyntaxErrorKind::InvalidSeparator,
-                location: SourceLocation::at(self.scanner.position()),
+                kind: SyntaxErrorKind::CommaBetweenFields,
+                location: Some(SourceLocation::at(self.scanner.position())),
             };
         }
         self.unexpected(expected)
@@ -1428,7 +1535,7 @@ impl Parser<'_> {
         }
         Some(SyntaxError {
             kind: invisible_character_kind(character, reason),
-            location: SourceLocation::at(self.scanner.position()),
+            location: Some(SourceLocation::at(self.scanner.position())),
         })
     }
 
@@ -1439,7 +1546,7 @@ impl Parser<'_> {
     #[cold]
     fn unexpected(&self, expected: SyntaxErrorKind) -> SyntaxError {
         let kind = match self.scanner.peek_character() {
-            Some(';') => SyntaxErrorKind::InvalidSeparator,
+            Some(';') => SyntaxErrorKind::SemicolonNotAllowed,
             Some('<') => SyntaxErrorKind::AngleBracketsNotAllowed,
             Some('\'') => return self.single_quotes_not_allowed(),
             Some(character)
@@ -1451,7 +1558,7 @@ impl Parser<'_> {
         };
         SyntaxError {
             kind,
-            location: SourceLocation::at(self.scanner.position()),
+            location: Some(SourceLocation::at(self.scanner.position())),
         }
     }
 
@@ -1462,10 +1569,10 @@ impl Parser<'_> {
     const fn invalid_escape(&self, start: Position, kind: SyntaxErrorKind) -> SyntaxError {
         SyntaxError {
             kind,
-            location: SourceLocation {
+            location: Some(SourceLocation {
                 start,
                 end: self.scanner.last_consumed(),
-            },
+            }),
         }
     }
 
@@ -1482,17 +1589,17 @@ impl Parser<'_> {
                 None | Some(b'\n') => {
                     return SyntaxError {
                         kind: SyntaxErrorKind::SingleQuotesNotAllowed,
-                        location: SourceLocation::at(start),
+                        location: Some(SourceLocation::at(start)),
                     };
                 }
                 Some(b'\'') => {
                     lookahead.advance();
                     return SyntaxError {
                         kind: SyntaxErrorKind::SingleQuotesNotAllowed,
-                        location: SourceLocation {
+                        location: Some(SourceLocation {
                             start,
                             end: lookahead.last_consumed(),
-                        },
+                        }),
                     };
                 }
                 Some(_) => lookahead.advance(),

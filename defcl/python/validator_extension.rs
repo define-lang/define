@@ -78,32 +78,35 @@ impl PythonClasses {
         let kind: &'static str = error.kind.into();
         let kind = self.syntax_diagnostic_kind.bind(py).getattr(kind)?;
         let message = error.to_string();
-        let location = new_source_location(py, error.location, file_path)?;
+        let location = error
+            .location
+            .map(|location| new_source_location(py, location, file_path))
+            .transpose()?;
         match error.kind {
             SyntaxErrorKind::UnexpectedCharacter { character } => self
                 .unexpected_character_diagnostic
                 .bind(py)
-                .call1((message, location, kind, character)),
+                .call1((message, location, file_path, kind, character)),
             SyntaxErrorKind::ControlCharacter { character } => self
                 .control_character_diagnostic
                 .bind(py)
-                .call1((message, location, kind, character)),
+                .call1((message, location, file_path, kind, character)),
             SyntaxErrorKind::InvisibleCharacter { character } => self
                 .invisible_character_diagnostic
                 .bind(py)
-                .call1((message, location, kind, character)),
+                .call1((message, location, file_path, kind, character)),
             SyntaxErrorKind::InvalidEncoding { byte } => self
                 .invalid_encoding_diagnostic
                 .bind(py)
-                .call1((message, location, kind, byte)),
+                .call1((message, location, file_path, kind, byte)),
             SyntaxErrorKind::WrongIndentation { expected_spaces } => self
                 .wrong_indentation_diagnostic
                 .bind(py)
-                .call1((message, location, kind, expected_spaces)),
+                .call1((message, location, file_path, kind, expected_spaces)),
             _ => self
                 .syntax_diagnostic
                 .bind(py)
-                .call1((message, location, kind)),
+                .call1((message, location, file_path, kind)),
         }
     }
 
@@ -122,31 +125,43 @@ impl PythonClasses {
             SemanticErrorKind::UnknownFieldName { message_type } => self
                 .unknown_field_name_diagnostic
                 .bind(py)
-                .call1((message, location, kind, field_name, message_type)),
+                .call1((message, location, file_path, kind, field_name, message_type)),
             SemanticErrorKind::UnknownEnumValue { enum_type } => self
                 .unknown_enum_value_diagnostic
                 .bind(py)
-                .call1((message, location, kind, field_name, enum_type)),
-            SemanticErrorKind::IntegerOutOfRange { field_type } => self
-                .integer_out_of_range_diagnostic
-                .bind(py)
-                .call1((message, location, kind, field_name, field_type.to_string())),
-            SemanticErrorKind::FloatOutOfRange { field_type } => self
-                .float_out_of_range_diagnostic
-                .bind(py)
-                .call1((message, location, kind, field_name, field_type.to_string())),
+                .call1((message, location, file_path, kind, field_name, enum_type)),
+            SemanticErrorKind::IntegerOutOfRange { field_type } => {
+                self.integer_out_of_range_diagnostic.bind(py).call1((
+                    message,
+                    location,
+                    file_path,
+                    kind,
+                    field_name,
+                    field_type.to_string(),
+                ))
+            }
+            SemanticErrorKind::FloatOutOfRange { field_type } => {
+                self.float_out_of_range_diagnostic.bind(py).call1((
+                    message,
+                    location,
+                    file_path,
+                    kind,
+                    field_name,
+                    field_type.to_string(),
+                ))
+            }
             SemanticErrorKind::SecondFieldOfOneof { oneof } => self
                 .second_field_of_oneof_diagnostic
                 .bind(py)
-                .call1((message, location, kind, field_name, oneof)),
+                .call1((message, location, file_path, kind, field_name, oneof)),
             SemanticErrorKind::FieldOutOfOrder { later_field } => self
                 .field_out_of_order_diagnostic
                 .bind(py)
-                .call1((message, location, kind, field_name, later_field)),
+                .call1((message, location, file_path, kind, field_name, later_field)),
             _ => self
                 .semantic_diagnostic
                 .bind(py)
-                .call1((message, location, kind, field_name)),
+                .call1((message, location, file_path, kind, field_name)),
         }
     }
 }
@@ -257,7 +272,10 @@ fn locate_field<'py>(
     let file = file.filter(|_| errors.is_empty()).ok_or_else(|| {
         // A parse without a syntax tree has the error that stopped it.
         let error = &errors[0];
-        PyValueError::new_err(format!("{}\n{error}", error.location.render(None, None)))
+        PyValueError::new_err(match error.location {
+            Some(location) => format!("{}\n{error}", location.render(None, None)),
+            None => error.to_string(),
+        })
     })?;
     let mut elements = Vec::with_capacity(field_path.len());
     for element in &field_path {

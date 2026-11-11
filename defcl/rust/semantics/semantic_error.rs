@@ -29,7 +29,7 @@ pub enum SemanticErrorKind {
     /// top-level message, with a higher field number. The location is the
     /// field's name.
     #[display(
-        "Fields must be written in the order of their field numbers, so this field must come before {later_field}"
+        "Fields must be written in the order of their field numbers, so this field must come before '{later_field}'"
     )]
     FieldOutOfOrder {
         /// The name of the field with the highest field number that is written
@@ -38,7 +38,7 @@ pub enum SemanticErrorKind {
     },
     /// A field written a second time in the same message. The location is the
     /// second field name.
-    #[display("A message value can have each field only once")]
+    #[display("Each field may be specified only once, but this one is specified more than once")]
     FieldWrittenTwice,
     /// A field of a oneof that the message value already has another field
     /// of. The location is the second field's name.
