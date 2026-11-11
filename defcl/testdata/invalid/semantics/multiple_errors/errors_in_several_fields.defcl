@@ -1,7 +1,7 @@
 config: {
   status: 1
   database: "localhost"
-}
-count: {
-  value: 1
+  count: {
+    value: 1
+  }
 }

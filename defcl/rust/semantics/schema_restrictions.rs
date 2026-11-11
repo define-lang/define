@@ -4,7 +4,7 @@
 use crate::schema::MessageType;
 use derive_more::Display;
 use descriptor_proto::google::protobuf::feature_set::{FieldPresence, Utf8Validation};
-use descriptor_proto::google::protobuf::field_descriptor_proto::Type;
+use descriptor_proto::google::protobuf::field_descriptor_proto::{Label, Type};
 use descriptor_proto::google::protobuf::{Edition, FieldDescriptorProto, FileDescriptorProto};
 
 const ANY_TYPE_NAME: &str = ".google.protobuf.Any";
@@ -48,6 +48,22 @@ pub enum SchemaViolation {
         field_name: String,
         /// The full name of the field's message type.
         field_type: String,
+    },
+    /// A field of the top-level message type that is not a message field.
+    #[display(
+        "{message_type}.{field_name} is not a message field, but the fields of the top-level message type must be message fields"
+    )]
+    TopLevelFieldNotMessageField {
+        message_type: String,
+        field_name: String,
+    },
+    /// A repeated field of the top-level message type.
+    #[display(
+        "{message_type}.{field_name} is a repeated field, but the fields of the top-level message type cannot be repeated"
+    )]
+    RepeatedTopLevelField {
+        message_type: String,
+        field_name: String,
     },
     /// A string field whose `utf8_validation` is `NONE`.
     #[display("{message_type}.{field_name} does not validate UTF-8, which DCL does not allow")]
@@ -131,6 +147,9 @@ pub(crate) fn violations(
         }
         for field in &message_type.descriptor.field {
             check_field(message_type, field, file, &mut violations);
+            if index == top_level_message_type {
+                check_top_level_field(message_type, field, &mut violations);
+            }
             // An Any field is reported, so what it holds is not checked.
             if field.type_name() == ANY_TYPE_NAME {
                 continue;
@@ -153,6 +172,25 @@ pub(crate) fn violations(
         }
     }
     violations
+}
+
+fn check_top_level_field(
+    message_type: &MessageType,
+    field: &FieldDescriptorProto,
+    violations: &mut Vec<SchemaViolation>,
+) {
+    if message_type.field_message_type(field.name()).is_none() {
+        violations.push(SchemaViolation::TopLevelFieldNotMessageField {
+            message_type: message_type.full_name.clone(),
+            field_name: field.name().to_owned(),
+        });
+    }
+    if field.label() == Label::Repeated {
+        violations.push(SchemaViolation::RepeatedTopLevelField {
+            message_type: message_type.full_name.clone(),
+            field_name: field.name().to_owned(),
+        });
+    }
 }
 
 fn check_field(
@@ -270,6 +308,33 @@ mod tests {
                     field_name: "marker".to_owned(),
                     field_type: format!("{PACKAGE}.MessageTypeWithoutFieldsFile.Marker"),
                 }]
+            }))
+        )
+    }
+
+    #[gtest]
+    fn top_level_fields_that_are_not_non_repeated_message_fields() -> Result<()> {
+        verify_that!(
+            schema_error("TopLevelFieldsFile")?,
+            some(eq(&SchemaError::BreaksRestrictions {
+                violations: vec![
+                    SchemaViolation::TopLevelFieldNotMessageField {
+                        message_type: format!("{PACKAGE}.TopLevelFieldsFile"),
+                        field_name: "count".to_owned(),
+                    },
+                    SchemaViolation::RepeatedTopLevelField {
+                        message_type: format!("{PACKAGE}.TopLevelFieldsFile"),
+                        field_name: "configs".to_owned(),
+                    },
+                    SchemaViolation::TopLevelFieldNotMessageField {
+                        message_type: format!("{PACKAGE}.TopLevelFieldsFile"),
+                        field_name: "names".to_owned(),
+                    },
+                    SchemaViolation::RepeatedTopLevelField {
+                        message_type: format!("{PACKAGE}.TopLevelFieldsFile"),
+                        field_name: "names".to_owned(),
+                    },
+                ]
             }))
         )
     }

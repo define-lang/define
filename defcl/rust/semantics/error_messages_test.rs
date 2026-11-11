@@ -78,14 +78,14 @@ const CASES: [(&str, &str, &str); 16] = [
     ),
     (
         include_str!(
-            "../../testdata/invalid/semantics/message_values_for_scalar_fields/top_level_field.defcl"
+            "../../testdata/invalid/semantics/message_values_for_scalar_fields/nested_field.defcl"
         ),
         "MessageValuesForScalarFieldsFile",
         indoc! {"
-            line 1, column 8
-                count: {
+            line 2, column 10
+                basic: {
                        ^
-            count: The field is not a message field, so its value cannot be a message value"},
+            basic: The field is not a message field, so its value cannot be a message value"},
     ),
     (
         include_str!("../../testdata/invalid/semantics/scalars_for_message_fields/string.defcl"),
@@ -261,6 +261,16 @@ fn each_schema_error_has_its_message() -> Result<()> {
             indoc! {"
                 Cannot create a DCL schema:
                   - defcl.testdata.invalid.schemas.Utf8ValidationNoneFile.Config.unchecked does not validate UTF-8, which DCL does not allow"},
+        ),
+        (
+            invalid_schemas()?,
+            "defcl.testdata.invalid.schemas.TopLevelFieldsFile",
+            indoc! {"
+                Cannot create a DCL schema:
+                  - defcl.testdata.invalid.schemas.TopLevelFieldsFile.count is not a message field, but the fields of the top-level message type must be message fields
+                  - defcl.testdata.invalid.schemas.TopLevelFieldsFile.configs is a repeated field, but the fields of the top-level message type cannot be repeated
+                  - defcl.testdata.invalid.schemas.TopLevelFieldsFile.names is not a message field, but the fields of the top-level message type must be message fields
+                  - defcl.testdata.invalid.schemas.TopLevelFieldsFile.names is a repeated field, but the fields of the top-level message type cannot be repeated"},
         ),
         (
             invalid_schemas()?,

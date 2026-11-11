@@ -83,7 +83,7 @@ def test_semantic_errors_are_diagnostics():
         == error_types.SemanticDiagnosticKind.MESSAGE_VALUE_FOR_SCALAR_FIELD
     )
     assert message_value_for_scalar_field.location == rendering.SourceLocation(
-        line=5, column=8, end_line=7, end_column=1
+        line=4, column=10, end_line=6, end_column=3
     )
     assert message_value_for_scalar_field.file_path is None
     assert message_value_for_scalar_field.field_name == "count"

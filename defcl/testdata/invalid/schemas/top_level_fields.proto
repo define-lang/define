@@ -1,0 +1,13 @@
+edition = "2024";
+
+package defcl.testdata.invalid.schemas;
+
+message TopLevelFieldsFile {
+  Config config = 1;
+  int32 count = 2;
+  repeated Config configs = 3;
+  repeated string names = 4;
+  message Config {
+    string name = 1;
+  }
+}

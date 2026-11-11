@@ -3,8 +3,7 @@ edition = "2024";
 package defcl.testdata.invalid.semantics.schemas;
 
 message MessageValuesForScalarFieldsFile {
-  int32 count = 1;
-  Config config = 2;
+  Config config = 1;
   message Config {
     string basic = 1;
     repeated string tags = 2;

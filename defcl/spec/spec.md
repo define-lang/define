@@ -24,8 +24,8 @@ DCL is based on textproto, but with the following key differences:
 - DCL is more restrictive: many valid textproto constructs are errors in DCL
 - DCL enforces stricter formatting rules for consistency
 - DCL requires schema validation: unknown field names are errors
-- DCL enforces that every field of the top-level message type is a message
-  field.
+- DCL enforces that every field of the top-level message type is a non-repeated
+  message field.
 - DCL allows a field name only once in a message, even for repeated fields.
 - DCL allows only one way to write a file: its layout and the order of its
   fields are fixed, so that two files with the same fields, values and comments
@@ -693,7 +693,7 @@ options, are not restricted.
 ### Top-Level Structure
 
 Literal values at the top level of a DCL file are not allowed. The top-level
-message may only contain message fields.
+message may only contain non-repeated message fields.
 
 ### Prohibited Field Types
 

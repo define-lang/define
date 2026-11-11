@@ -53,8 +53,14 @@ proto_descriptor_set(
         ":older_editions_proto",
         ":prohibited_field_types_proto",
         ":required_field_proto",
+        ":top_level_fields_proto",
         ":utf8_validation_none_proto",
     ],
+)
+
+proto_library(
+    name = "top_level_fields_proto",
+    srcs = ["top_level_fields.proto"],
 )
 
 proto_library(

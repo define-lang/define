@@ -194,27 +194,6 @@ mod message_values_for_scalar_fields {
     use super::*;
 
     #[gtest]
-    fn top_level_field() -> Result<()> {
-        verify_that!(
-            check_semantics_of_source(
-                include_str!(
-                    "../../testdata/invalid/semantics/message_values_for_scalar_fields/top_level_field.defcl"
-                ),
-                invalid_semantics_schemas()?,
-                "defcl.testdata.invalid.semantics.schemas.MessageValuesForScalarFieldsFile",
-            )?,
-            eq(&vec![SemanticError {
-                kind: SemanticErrorKind::MessageValueForScalarField,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 8 },
-                    end: Position { line: 3, column: 1 }
-                },
-                field_name: "count".to_owned(),
-            }])
-        )
-    }
-
-    #[gtest]
     fn nested_field() -> Result<()> {
         verify_that!(
             check_semantics_of_source(
@@ -1445,8 +1424,11 @@ mod multiple_errors {
                 SemanticError {
                     kind: SemanticErrorKind::MessageValueForScalarField,
                     location: SourceLocation {
-                        start: Position { line: 5, column: 8 },
-                        end: Position { line: 7, column: 1 }
+                        start: Position {
+                            line: 4,
+                            column: 10
+                        },
+                        end: Position { line: 6, column: 3 }
                     },
                     field_name: "count".to_owned(),
                 },

@@ -26,13 +26,8 @@ pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Vec<SemanticError>
         ) else {
             continue;
         };
-        // The top-level message's field is not a message field.
         let ValueType::Message(message_type) = schema_field.value_type else {
-            errors.push(message_value_for_scalar_field(
-                &top_level_message.name,
-                top_level_message.value.location,
-            ));
-            continue;
+            unreachable!("the schema's top-level fields are message fields");
         };
         check_fields(
             schema,
@@ -307,18 +302,6 @@ fn non_repeated_field_with_brackets(field: &Field, location: SourceLocation) -> 
         kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
         location,
         field_name: field.name.text.to_owned(),
-    }
-}
-
-/// The error for the message value at `location`, which is the value of the
-/// field named `name`.
-#[cold]
-#[inline(never)]
-fn message_value_for_scalar_field(name: &FieldName, location: SourceLocation) -> SemanticError {
-    SemanticError {
-        kind: SemanticErrorKind::MessageValueForScalarField,
-        location,
-        field_name: name.text.to_owned(),
     }
 }
 
