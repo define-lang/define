@@ -26,7 +26,7 @@
     // renovate: depName=dprint/dprint-plugin-oxc
     "https://plugins.dprint.dev/oxc-0.49.1.wasm@3e57b8336212859784b0b5bc9fc828be1f0daa24cf6fa690b97bfdf7a3aeaee7",
     // renovate: depName=kachick/dprint-plugin-sh
-    "https://plugins.dprint.dev/kachick/sh-0.2.4.wasm@57896f0aea2e29f38a581c8ddc0e61e4ff60e418baba0ab9507aa0962fd10dfc",
+    "https://plugins.dprint.dev/kachick/sh-0.2.5.wasm@8c1ba49d3b88c8a502074211b0ceb456e45a6efbb62417465ac1fbab6ac78160",
     // renovate: depName=dprint/dprint-plugin-toml
     "https://plugins.dprint.dev/toml-0.10.0.wasm@0a8af7f5fe70c7ec652d77198867b2a97a1e690d5f3697542c603610aa47d3b3",
     // renovate: depName=g-plane/pretty_yaml
