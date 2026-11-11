@@ -8,10 +8,12 @@ from define.compiler.codegen.literal.python import (
     action_statements,
     naming,
     renderer,
-    value_types,
 )
 
 if TYPE_CHECKING:
+    from define.compiler.codegen.literal.python import (
+        value_types,
+    )
     from define.compiler.validator import codegen_input
 
 
@@ -23,15 +25,18 @@ class ActionDefinitionGenerator:
         self,
         action_input: codegen_input.ActionCodegenInput,
         converter: naming.NameConverter,
+        python_value_types: value_types.PythonValueTypes,
         *,
         trace_operations: bool,
     ):
         """Initialize from validated definitions and known destructions."""
         self._action_input = action_input
         self._converter = converter
+        self._python_value_types = python_value_types
         self._statements = action_statements.ActionStatementsGenerator(
             action_input,
             converter,
+            python_value_types,
             trace_operations=trace_operations,
         )
         self._trace_operations = trace_operations
@@ -47,7 +52,7 @@ class ActionDefinitionGenerator:
                     assigned_qualities=self._converter.assigned_quality_class_references(
                         position.quality_assignment_block
                     ),
-                    value_type=value_types.assigned_python_value_type(
+                    value_type=self._python_value_types.assigned_python_value_type(
                         position.quality_assignment_block
                     ),
                 )

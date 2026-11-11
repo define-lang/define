@@ -34,13 +34,15 @@ def _requires_validation(
     | ast.ValueOperationDefinition
     | ast.EncodingOperationDefinition
     | ast.LogicalOperationDefinition
+    | ast.ValueDefinition
 ]:
     return isinstance(
         definition,
         ast.ActionDefinition
         | ast.ValueOperationDefinition
         | ast.EncodingOperationDefinition
-        | ast.LogicalOperationDefinition,
+        | ast.LogicalOperationDefinition
+        | ast.ValueDefinition,
     )
 
 
@@ -110,6 +112,7 @@ class ReferenceGraphValidator:
 
         actions: dict[str, codegen_input.ActionCodegenInput] = {}
         encoding_operations: dict[str, codegen_input.EncodingOperationCodegenInput] = {}
+        value_encodings: dict[str, str] = {}
         for result in results:
             match result:
                 case validation_result.ActionPostorderValidationResult():
@@ -122,6 +125,9 @@ class ReferenceGraphValidator:
                     encoding_operations[definition.typed_name.full_typed_name] = (
                         result.codegen_input
                     )
+                case validation_result.ValuePostorderValidationResult():
+                    if result.encoding is not None:
+                        value_encodings[result.value_quality] = result.encoding
                 case _:
                     pass
         entry_action = self._entry_action
@@ -135,6 +141,7 @@ class ReferenceGraphValidator:
                 definition_order=definition_order,
                 actions=actions,
                 encoding_operations=encoding_operations,
+                value_encodings=value_encodings,
             ),
         )
 
@@ -143,7 +150,8 @@ class ReferenceGraphValidator:
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
         | ast.EncodingOperationDefinition
-        | ast.LogicalOperationDefinition,
+        | ast.LogicalOperationDefinition
+        | ast.ValueDefinition,
     ) -> validation_result.PostorderValidationResult:
         match definition:
             case ast.ActionDefinition():
@@ -151,13 +159,13 @@ class ReferenceGraphValidator:
             case ast.ValueOperationDefinition():
                 result = (
                     operation_definition_validator.ValueOperationDefinitionValidator(
-                        definition, self._definition_results
+                        definition, self._definition_results, self._validation_state
                     ).analyze()
                 )
             case ast.EncodingOperationDefinition():
                 result = (
                     operation_definition_validator.EncodingOperationDefinitionValidator(
-                        definition, self._definition_results
+                        definition, self._definition_results, self._validation_state
                     ).analyze()
                 )
             case ast.LogicalOperationDefinition():
@@ -167,10 +175,41 @@ class ReferenceGraphValidator:
                 self._validation_state.publish_encoding_operations(
                     definition.typed_name, result.encoding_operations
                 )
+            case ast.ValueDefinition():
+                result = self._validate_value(definition)
         definition_result = self._definition_results[definition.typed_name]
         for d in result.diagnostics:
             definition_result.diagnostics.append(d)
         return result
+
+    def _validate_value(
+        self, definition: ast.ValueDefinition
+    ) -> validation_result.ValuePostorderValidationResult:
+        """Find the one encoding associated with a value quality, if it has one."""
+        encodings: list[str] = []
+        for encoding in self._definition_results[
+            definition.typed_name
+        ].associated_encodings:
+            # A missing encoding was already reported when its reference was
+            # resolved.
+            if encoding in self._definition_results:
+                encodings.append(encoding.full_typed_name)
+        self._validation_state.publish_value_encodings(definition.typed_name, encodings)
+        if len(encodings) > 1:
+            # TODO: Choose between a value quality's encodings when each
+            # particle is created, as the spec allows.
+            raise NotImplementedError(
+                f"{definition.typed_name.source_typed_name} has more than one encoding: {encodings}"
+            )
+        # A value quality without an encoding is not an error by itself. It is
+        # an error only when a literal sets the value, so the literal reports
+        # it.
+        encoding = encodings[0] if encodings else None
+        return validation_result.ValuePostorderValidationResult(
+            diagnostics=[],
+            value_quality=definition.typed_name.full_typed_name,
+            encoding=encoding,
+        )
 
     def _validate_action(
         self, definition: ast.ActionDefinition

@@ -1,0 +1,42 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "config_tests",
+    testonly = True,
+    srcs = ["__init__.py"],
+)
+
+py_test(
+    name = "encodings_test",
+    size = "small",
+    srcs = ["encodings_test.py"],
+    data = ["//define/testdata/config/encodings"],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:config",
+        "//define/compiler:conftest",
+        "//define/compiler:constants",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = ["encodings_test.py"],
+    visibility = ["//define/testdata:__pkg__"],
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":config_tests",
+        ":encodings_test",
+    ],
+)
+
+check_build_file()

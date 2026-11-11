@@ -42,6 +42,7 @@ class DefinitionStructuralValidator:
     _valid_typed_names: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
+    _associated_encodings: list[ast.GlobalTypedNameReference]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
@@ -69,6 +70,7 @@ class DefinitionStructuralValidator:
         self._valid_typed_names = set()
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
+        self._associated_encodings = []
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
@@ -109,6 +111,7 @@ class DefinitionStructuralValidator:
                 self._validate_logical_operation_support_statements(
                     definition.logical_operation_support_statements
                 )
+                self._reference_associated_encodings(definition)
             case _:
                 pass
         return self.build_result()
@@ -121,6 +124,7 @@ class DefinitionStructuralValidator:
             reference_edges=self._reference_edges,
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,
+            associated_encodings=self._associated_encodings,
         )
 
     def _validate_action_definition(
@@ -139,6 +143,33 @@ class DefinitionStructuralValidator:
         )
         self._check_unreferenced_positions()
         self._check_unused_quality_implications()
+
+    def _reference_associated_encodings(self, definition: ast.ValueDefinition):
+        """Record and reference each encoding that the project associates with the value quality, so that each loads with it."""
+        root_config = self._context.root_config
+        # Source compiled without a project root has no associations.
+        if root_config is None:
+            return
+        location = definition.typed_name.location
+        # TODO: Stop synthesizing references that have no source, as
+        # encoding_operation_associations.py also does. The references are
+        # located at the value quality's name, so diagnostics about them point
+        # there.
+        for encoding_path in root_config.value_encodings.get(
+            definition.typed_name.name_content.path.name, ()
+        ):
+            encoding = ast.GlobalTypedNameReference(
+                name_type=name_types.NameType.ENCODING,
+                name_content=ast.ReferenceGlobalNameContent(
+                    fqun=None,
+                    path=ast.GlobalPathName(name=encoding_path, location=location),
+                    location=location,
+                ),
+                enclosing_fqun=definition.typed_name.name_content.fqun,
+                location=location,
+            )
+            self._associated_encodings.append(encoding)
+            self._process_reference(encoding)
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
         if isinstance(definition, ast.ValueOperationDefinition):

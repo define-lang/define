@@ -1,6 +1,6 @@
 # Moving a particle must satisfy the destination value quality.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</text_copy>.
+    it also assigns the position</integer_copy>.
     it also assigns the position</number_copy>.
     it happens when {
         this particle is created.
@@ -12,7 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<target> {
             it may only contain particles where {
-                it has the value</text>.
+                it has the value<standard:/number/integer>.
             }
         }
         create a particle in position<source>.
@@ -20,9 +20,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         set the value of position<source> from literal<standard:/number>"5".
         set the value of position</number_copy> from position<source>.
         create a particle in position<target>.
-        create a particle in position</text_copy>.
+        create a particle in position</integer_copy>.
         set the value of position<target> from literal<standard:/number>"5".
-        set the value of position</text_copy> from position<target>.
+        set the value of position</integer_copy> from position<target>.
         destroy the particle in position<target>.
         move the particle in position<source> to position<target>.
         destroy the particle in position<target>.

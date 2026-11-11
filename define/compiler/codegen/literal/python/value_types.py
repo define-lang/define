@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 from define.compiler import constants
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from define.compiler import ast
     from define.compiler.validator import codegen_input
@@ -79,13 +79,6 @@ def python_literal(literal: codegen_input.EncodedLiteral) -> str:
     return _ENCODING_PYTHON_LITERALS[literal.encoding](literal.content)
 
 
-def python_value_type(value_quality: ast.GlobalTypedNameReference) -> str:
-    """Return the Python type that generated code uses for values of a value quality."""
-    return _ENCODING_PYTHON_TYPES[
-        constants.BUILT_IN_VALUE_ENCODINGS[value_quality.full_typed_name]
-    ]
-
-
 def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
     """Return the Python type that generated code uses for values with the encoding this block assigns."""
     # Validation allows only encodings on an Encoding Operation view, and
@@ -94,10 +87,25 @@ def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
     return _ENCODING_PYTHON_TYPES[block.statements[0].typed_global_name.full_typed_name]
 
 
-def assigned_python_value_type(
-    block: ast.QualityAssignmentBlock | None,
-) -> str:
-    """Return the Python value type of particles with these quality assignments, or NO_VALUE when they assign no value quality."""
-    if block is None or block.value_quality is None:
-        return NO_VALUE
-    return python_value_type(block.value_quality)
+class PythonValueTypes:
+    """The Python types of values in generated code, by their value qualities."""
+
+    _value_encodings: Mapping[str, str]
+
+    def __init__(self, value_encodings: Mapping[str, str]):
+        """Initialize with the full typed name of each value quality's encoding."""
+        self._value_encodings = value_encodings
+
+    def python_value_type(self, value_quality: ast.GlobalTypedNameReference) -> str:
+        """Return the Python type that generated code uses for values of a value quality."""
+        return _ENCODING_PYTHON_TYPES[
+            self._value_encodings[value_quality.full_typed_name]
+        ]
+
+    def assigned_python_value_type(
+        self, block: ast.QualityAssignmentBlock | None
+    ) -> str:
+        """Return the Python value type of particles with these quality assignments, or NO_VALUE when they assign no value quality."""
+        if block is None or block.value_quality is None:
+            return NO_VALUE
+        return self.python_value_type(block.value_quality)

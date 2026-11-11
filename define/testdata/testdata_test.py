@@ -16,6 +16,7 @@ from define.testdata import diagnostic_assertions, path_resolver
 _TESTDATA_ROOT = Path("define/testdata")
 _TEST_SOURCE_ROOTS = {
     "codegen": Path("define/compiler/codegen"),
+    "config": Path("define/compiler/config_tests"),
     "driver": Path("define/compiler"),
     "structural": Path("define/compiler/validator/structural/program_validator_tests"),
     "reference_graph": Path(

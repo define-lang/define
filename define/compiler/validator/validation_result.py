@@ -49,6 +49,16 @@ class LogicalOperationPostorderValidationResult(PostorderValidationResult):
     encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition]
 
 
+class ValuePostorderValidationResult(PostorderValidationResult):
+    """Result of validating a value quality definition during the DFS post-order walk."""
+
+    # The full typed name of the value quality.
+    value_quality: str
+    # The full typed name of the value quality's one associated encoding, or
+    # None when it has none or more than one.
+    encoding: str | None
+
+
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
 
@@ -70,6 +80,11 @@ class DefinitionValidationResult(msgspec.Struct):
     # Whether each position looked at by an Operation Argument Statement in an
     # action is valid, in source order.
     looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
+    # For a value quality, the references to the encodings that its project
+    # associates with it.
+    associated_encodings: list[ast.GlobalTypedNameReference] = msgspec.field(
+        default_factory=list
+    )
 
 
 @dataclass

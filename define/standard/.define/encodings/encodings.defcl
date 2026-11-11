@@ -1,0 +1,24 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/binary"
+      encoding: "/binary/ascii"
+    },
+    {
+      value: "/boolean"
+      encoding: "/boolean/ascii"
+    },
+    {
+      value: "/number/integer"
+      encoding: "/number/integer/ascii"
+    },
+    {
+      value: "/number/natural"
+      encoding: "/number/natural/ascii"
+    },
+    {
+      value: "/text/unicode/scalar"
+      encoding: "/text/unicode/scalar/utf8"
+    }
+  ]
+}

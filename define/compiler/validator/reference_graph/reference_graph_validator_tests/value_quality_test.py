@@ -4,13 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import constants
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    import pytest
-
     from define.compiler.conftest import ValidateTestdataProjectWithReferenceGraph
 
 
@@ -28,14 +26,7 @@ def test_move_matching_value(
 
 def test_move_mismatched_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-    monkeypatch: pytest.MonkeyPatch,
 ):
-    # The target's value quality only stays alive if a literal can set it.
-    monkeypatch.setitem(
-        constants.BUILT_IN_VALUE_ENCODINGS,
-        "value<my.domain.com:my_lib:/text>",
-        constants.DECIMAL_ASCII_ENCODING,
-    )
     result = validate_testdata_project_with_reference_graph().program_result
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
@@ -45,7 +36,7 @@ def test_move_mismatched_value(
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
-    assert diagnostic.missing_qualities == ["value</text>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/integer>"]
 
 
 def test_move_without_value(
@@ -289,3 +280,47 @@ def test_unused_interface_value_is_dead(
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 5
     assert diagnostic.location.column == 24
+
+
+def test_project_value_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert result.reference_graph_result.codegen_input.value_encodings == {
+        "value<my.domain.com:my_lib:/test>": "encoding<my.domain.com:my_lib:/test/digits>"
+    }
+
+
+def test_associated_encoding_not_defined(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_diagnostics == [
+        diagnostics.ReferencedFileNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=2, column=22, end_line=2, end_column=54, file_path="test.dfn"
+            ),
+            file_path="test/missing.dfn",
+        )
+    ]
+
+
+def test_literal_sets_undefined_value(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_diagnostics == [
+        diagnostics.ReferencedFileNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=34, end_line=8, end_column=39, file_path="test.dfn"
+            ),
+            file_path="count.dfn",
+        ),
+        diagnostics.DeadValueWriteDiagnostic(
+            location=rendering.SourceLocation(
+                line=12, column=26, end_line=12, end_column=39, file_path="test.dfn"
+            ),
+            position_name="position<item>",
+        ),
+    ]

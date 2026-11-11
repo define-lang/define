@@ -5,6 +5,7 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 require_subpackages([
+    "config/**",
     "driver/**",
     "reference_graph/**",
     "resource_tests/**",
@@ -64,6 +65,7 @@ py_test(
     data = _TESTDATA_TARGETS + [
         "//define/compiler:driver_test_sources",
         "//define/compiler/codegen:generator_test_sources",
+        "//define/compiler/config_tests:test_sources",
         "//define/compiler/resource_tests:test_sources",
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:test_sources",
         "//define/compiler/validator/structural/program_validator_tests:test_sources",

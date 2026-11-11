@@ -110,7 +110,7 @@ class ActionDefinitionValidator:
     @cached_property
     def _literal_encoder(self) -> literal_encoder.LiteralEncoder:
         return literal_encoder.LiteralEncoder(
-            self._definition_results, self._enclosing_fqun
+            self._definition_results, self._validation_state, self._enclosing_fqun
         )
 
     @cached_property

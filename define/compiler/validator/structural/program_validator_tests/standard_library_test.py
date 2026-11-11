@@ -30,8 +30,10 @@ def test_referenced_definition_loads_only_its_file(
         standard_library_file("number/minimum.dfn"),
         standard_library_file("number/multiply.dfn"),
         standard_library_file("number/negate.dfn"),
+        standard_library_file("number/natural/ascii.dfn"),
     ]
     assert sorted(name.full_typed_name for name in result.definition_results) == [
+        "encoding<standard:/number/natural/ascii>",
         "logical_operation<standard:/number/absolute_value>",
         "logical_operation<standard:/number/add>",
         "logical_operation<standard:/number/less_than>",
@@ -61,12 +63,14 @@ def test_standard_references_load_their_files(
             standard_library_file("number/minimum.dfn"),
             standard_library_file("number/multiply.dfn"),
             standard_library_file("number/natural.dfn"),
+            standard_library_file("number/natural/ascii.dfn"),
             standard_library_file("number/negate.dfn"),
         ]
     )
     assert sorted(name.full_typed_name for name in result.definition_results) == [
         "action<my.domain.com:my_lib:/test>",
         "encoding<standard:/number/decimal/ascii>",
+        "encoding<standard:/number/natural/ascii>",
         "literal<standard:/number>",
         "logical_operation<standard:/number/absolute_value>",
         "logical_operation<standard:/number/add>",

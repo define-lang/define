@@ -1,0 +1,12 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/number/natural"
+      encoding: "/number/natural/ascii"
+    },
+    {
+      value: "/number/integer"
+      encoding: "/number/integer/ascii"
+    }
+  ]
+}

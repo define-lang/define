@@ -11,10 +11,12 @@ import protovalidate
 from google.protobuf import message
 
 from defcl.python import loader as defcl_loader
+from defcl.schema.core import boolean_pb2
 from define.compiler import constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.deps import local_pb2
+from define.config.encodings import encodings_pb2
 from define.config.project import config_pb2
 
 if typing.TYPE_CHECKING:
@@ -29,8 +31,14 @@ CONFIG_PATH = define_path.DefinePathFromPosix(
 LOCAL_DEPS_PATH = define_path.DefinePathFromPosix(
     PurePosixPath(".define/deps/local.defcl")
 )
+ENCODINGS_PATH = define_path.DefinePathFromPosix(
+    PurePosixPath(".define/encodings/encodings.defcl")
+)
 
 _EMPTY_DEPS: types.MappingProxyType[str, LocalDependencyEntry] = types.MappingProxyType(
+    {}
+)
+_EMPTY_VALUE_ENCODINGS: types.MappingProxyType[str, list[str]] = types.MappingProxyType(
     {}
 )
 
@@ -60,6 +68,9 @@ class ProjectRootConfig(msgspec.Struct):
     # The local dependency entry for each universe that the project configures
     # as a sub-root.
     sub_roots: Mapping[str, LocalDependencyEntry]
+    # The paths of the encodings associated with each of the project's value
+    # qualities, keyed by the value quality's path.
+    value_encodings: Mapping[str, list[str]] = _EMPTY_VALUE_ENCODINGS
 
 
 class RootConfigResult(msgspec.Struct, frozen=True):
@@ -123,13 +134,20 @@ class ConfigLoader:
                     )
                 ],
             )
+        # Every config file is loaded even when another has diagnostics that
+        # keep the configuration from being used, so that all of their
+        # diagnostics are reported at once.
         project_config, config_diagnostics = self._load_config(
             CONFIG_PATH, config_pb2.ProjectConfigFile
         )
+        sub_roots, deps_diagnostics = self._local_deps_config()
+        config_diagnostics.extend(deps_diagnostics)
         if project_config is None:
             return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
         fqun = project_config.project.universe_name or ""
+        fqun_matches = True
         if declaring_entry is not None and fqun != declaring_entry.universe:
+            fqun_matches = False
             config_diagnostics.append(
                 diagnostics.SubRootFqunMismatchDiagnostic(
                     config_path=str(config_path),
@@ -139,12 +157,18 @@ class ConfigLoader:
                     sub_root_path=str(self._root),
                 )
             )
-            return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
-        sub_roots = self._local_deps_config(config_diagnostics)
-        if sub_roots is None:
+        value_encodings, encodings_diagnostics = self._value_encodings_config(
+            project_config.project.associations
+        )
+        config_diagnostics.extend(encodings_diagnostics)
+        if not fqun_matches or sub_roots is None or value_encodings is None:
             return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
         return RootConfigResult(
-            root_config=ProjectRootConfig(fqun=fqun, sub_roots=sub_roots),
+            root_config=ProjectRootConfig(
+                fqun=fqun,
+                sub_roots=sub_roots,
+                value_encodings=value_encodings,
+            ),
             diagnostics=config_diagnostics,
         )
 
@@ -193,30 +217,33 @@ class ConfigLoader:
         return result, config_diagnostics
 
     def _local_deps_config(
-        self, config_diagnostics: list[diagnostics.FormattableDiagnostic]
-    ) -> types.MappingProxyType[str, LocalDependencyEntry] | None:
-        """Load and validate the local dependency overrides, adding their diagnostics to config_diagnostics.
+        self,
+    ) -> tuple[
+        types.MappingProxyType[str, LocalDependencyEntry] | None,
+        list[diagnostics.FormattableDiagnostic],
+    ]:
+        """Load and validate the local dependency overrides.
 
         Returns an immutable mapping from universe name to its entry, or None
-        if a diagnostic keeps the overrides from being used. When two entries
-        declare the same universe, the first is used.
+        if a diagnostic keeps the overrides from being used, with the
+        overrides' diagnostics. When two entries declare the same universe,
+        the first is used.
         """
-        deps_path = str((self._root / LOCAL_DEPS_PATH).as_posix_path())
+        deps_path = (self._root / LOCAL_DEPS_PATH).as_posix_path()
         if not Path(deps_path).exists():
-            return _EMPTY_DEPS
+            return _EMPTY_DEPS, []
         result, deps_diagnostics = self._load_config(
             LOCAL_DEPS_PATH, local_pb2.LocalDepsFile
         )
-        config_diagnostics.extend(deps_diagnostics)
         if result is None:
-            return None
+            return None, deps_diagnostics
         deps: dict[str, LocalDependencyEntry] = {}
         for index, dep in enumerate(result.deps.local):
             first_entry = deps.get(dep.universe_name)
             if first_entry is not None:
-                config_diagnostics.append(
+                deps_diagnostics.append(
                     diagnostics.DuplicateLocalDependencyDiagnostic(
-                        config_path=deps_path,
+                        config_path=str(deps_path),
                         field_path=("deps", "local", index, "universe_name"),
                         universe_name=dep.universe_name,
                         first_field_path=(
@@ -229,11 +256,83 @@ class ConfigLoader:
                 )
                 continue
             deps[dep.universe_name] = LocalDependencyEntry(
-                deps_path=deps_path,
+                deps_path=str(deps_path),
                 index=index,
                 universe=dep.universe_name,
                 # Parses the config's path string once, and keeps the parsed
                 # path for joining onto the project later.
                 path=define_path.DefinePathFromPosix(PurePosixPath(dep.path)),
             )
-        return types.MappingProxyType(deps)
+        return types.MappingProxyType(deps), deps_diagnostics
+
+    def _value_encodings_config(
+        self,
+        associations: config_pb2.Associations,
+    ) -> tuple[
+        types.MappingProxyType[str, list[str]] | None,
+        list[diagnostics.FormattableDiagnostic],
+    ]:
+        """Load and validate the Value Encoding Associations.
+
+        Returns an immutable mapping from each value quality's path to the
+        paths of its associated encodings, or None if a diagnostic keeps the
+        associations from being used, with the associations' diagnostics. The
+        mapping is empty when the project
+        config's associations say the project has no Value Encoding
+        Associations. An association repeated later is ignored.
+        """
+        if associations.has_encodings != boolean_pb2.Defcl.Boolean.TRUE:
+            return _EMPTY_VALUE_ENCODINGS, []
+        encodings_path = (self._root / ENCODINGS_PATH).as_posix_path()
+        # The project config says the file exists, so only then is it checked.
+        if not Path(encodings_path).exists():
+            return None, [
+                diagnostics.EncodingsConfigNotFoundDiagnostic(
+                    config_path=str(self.config_path()),
+                    field_path=("project", "associations", "has_encodings"),
+                    encodings_config_path=str(encodings_path),
+                )
+            ]
+        result, encodings_diagnostics = self._load_config(
+            ENCODINGS_PATH, encodings_pb2.EncodingsFile
+        )
+        if result is None:
+            return None, encodings_diagnostics
+        value_encodings: dict[str, list[str]] = {}
+        # The index of the first association of each value quality and encoding.
+        first_indexes: dict[tuple[str, str], int] = {}
+        previous_value = ""
+        for index, association in enumerate(result.encodings.value_encodings):
+            field_path = ("encodings", "value_encodings", index)
+            if association.value < previous_value:
+                encodings_diagnostics.append(
+                    diagnostics.UnsortedValueEncodingDiagnostic(
+                        config_path=str(encodings_path),
+                        field_path=(*field_path, "value"),
+                        value=association.value,
+                        previous_value=previous_value,
+                    )
+                )
+            previous_value = association.value
+            pair = (association.value, association.encoding)
+            first_index = first_indexes.get(pair)
+            if first_index is not None:
+                encodings_diagnostics.append(
+                    diagnostics.DuplicateValueEncodingDiagnostic(
+                        config_path=str(encodings_path),
+                        field_path=field_path,
+                        value=association.value,
+                        encoding=association.encoding,
+                        first_field_path=(
+                            "encodings",
+                            "value_encodings",
+                            first_index,
+                        ),
+                    )
+                )
+                continue
+            first_indexes[pair] = index
+            value_encodings.setdefault(association.value, []).append(
+                association.encoding
+            )
+        return types.MappingProxyType(value_encodings), encodings_diagnostics

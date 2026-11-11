@@ -1391,6 +1391,58 @@ class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
         )
 
 
+class EncodingsConfigNotFoundDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for a project config that says the project has encoding associations, when encodings_config_path does not exist.
+
+    Its field is the project config's has_encodings.
+    """
+
+    encodings_config_path: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            "The project says it has encoding associations, but"
+            + f" {self.encodings_config_path} was not found."
+        )
+
+
+class UnsortedValueEncodingDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for an encoding association whose value quality sorts before the association before it.
+
+    Its field is the association's value.
+    """
+
+    value: str
+    previous_value: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            "Encoding associations must be sorted by value quality, but"
+            + f" '{self.value}' comes after '{self.previous_value}'."
+        )
+
+
+class DuplicateValueEncodingDiagnostic(ConfigFieldDiagnostic):
+    """Diagnostic for an encoding association that an earlier association already makes.
+
+    Its field is the later association.
+    """
+
+    value: str
+    encoding: str
+    first_field_path: FieldPath
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"Value quality '{self.value}' is already associated with encoding"
+            + f" '{self.encoding}' here:\n"
+            + self._render_field(sources, self.config_path, self.first_field_path)
+        )
+
+
 class DuplicateFqunDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for two project roots that declare the same fully-qualified universe name.
 

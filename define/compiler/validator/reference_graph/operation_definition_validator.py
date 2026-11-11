@@ -19,6 +19,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator.reference_graph import (
+        reference_graph_validation_state,
+    )
 
 
 class _ViewArgument(typing.NamedTuple):
@@ -53,6 +56,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Operation Definition and known definitions."""
         self._definition = definition
@@ -70,7 +74,9 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             operation_arguments_validator.OperationArgumentsValidator(
                 definition_results,
                 enclosing_fqun,
-                literal_encoder.LiteralEncoder(definition_results, enclosing_fqun),
+                literal_encoder.LiteralEncoder(
+                    definition_results, validation_state, enclosing_fqun
+                ),
             )
         )
 
@@ -359,9 +365,10 @@ class EncodingOperationDefinitionValidator(
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Encoding Operation Definition and known definitions."""
-        super().__init__(definition, definition_results)
+        super().__init__(definition, definition_results, validation_state)
         self._steps = []
 
     @override

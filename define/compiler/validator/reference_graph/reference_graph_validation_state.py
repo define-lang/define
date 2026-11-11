@@ -46,6 +46,21 @@ class ReferenceGraphValidationState:
         self._encoding_operations_by_logical_operation: dict[
             str, dict[tuple[str, ...], ast.EncodingOperationDefinition]
         ] = {}
+        self._encodings_by_value_quality: dict[str, list[str]] = {}
+
+    def publish_value_encodings(
+        self,
+        value_quality: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        encodings: list[str],
+    ):
+        """Publish the full typed names of the loaded encodings associated with a value quality."""
+        self._encodings_by_value_quality[value_quality.full_typed_name] = encodings
+
+    def get_value_encodings(
+        self, value_quality: ast.GlobalTypedNameReference
+    ) -> list[str] | None:
+        """Return the full typed names of the encodings associated with a value quality, or None if it is not defined."""
+        return self._encodings_by_value_quality.get(value_quality.full_typed_name)
 
     def publish_contract(
         self,

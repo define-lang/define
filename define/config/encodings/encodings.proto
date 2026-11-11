@@ -1,0 +1,42 @@
+edition = "2024";
+
+package define.config.encodings;
+
+import "buf/validate/validate.proto";
+
+// Top-level wrapper for .define/encodings/encodings.defcl files.
+message EncodingsFile {
+  // The project's encoding associations.
+  Encodings encodings = 1;
+}
+
+// Wrapper for the repeated value encoding field.
+message Encodings {
+  // The associations between the project's value qualities and encodings,
+  // sorted by value quality. Each pair must be unique (enforced at load time,
+  // not by proto validation).
+  repeated ValueEncoding value_encodings = 1;
+}
+
+// Declares that an encoding is potentially available for a value quality.
+message ValueEncoding {
+  // The short global name of a value quality in the project's own universe.
+  string value = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "value_encoding.value.short_global_name"
+      message: "value must be a short global name, starting with '/'"
+      expression: "this.startsWith('/')"
+    }
+  ];
+
+  // The short global name of an encoding in the project's own universe.
+  string encoding = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "value_encoding.encoding.short_global_name"
+      message: "encoding must be a short global name, starting with '/'"
+      expression: "this.startsWith('/')"
+    }
+  ];
+}

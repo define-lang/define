@@ -1,3 +1,6 @@
 project: {
   universe_name: "standard"
+  associations: {
+    has_encodings: TRUE
+  }
 }

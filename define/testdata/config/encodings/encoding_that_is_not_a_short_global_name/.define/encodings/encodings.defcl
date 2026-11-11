@@ -1,0 +1,8 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/number"
+      encoding: "other.com:lib:/number/ascii"
+    }
+  ]
+}

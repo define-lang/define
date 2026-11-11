@@ -1,0 +1,1 @@
+"""Encoding association configuration schemas."""

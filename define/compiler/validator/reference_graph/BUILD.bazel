@@ -100,8 +100,8 @@ py_library(
     name = "literal_encoder",
     srcs = ["literal_encoder.py"],
     deps = [
+        ":reference_graph_validation_state",
         "//define/compiler:ast",
-        "//define/compiler:constants",
         "//define/compiler:literal_parsers",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
@@ -143,6 +143,7 @@ py_library(
     deps = [
         ":literal_encoder",
         ":operation_arguments_validator",
+        ":reference_graph_validation_state",
         ":view_use_tracker",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",

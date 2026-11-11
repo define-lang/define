@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import constants, literal_parsers
+from define.compiler import literal_parsers
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input
 
@@ -14,6 +14,9 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import (
+        reference_graph_validation_state,
+    )
 
 
 class LiteralEncoder:
@@ -23,6 +26,7 @@ class LiteralEncoder:
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
     ]
+    _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _enclosing_fqun: ast.Fqun
 
     def __init__(
@@ -31,10 +35,12 @@ class LiteralEncoder:
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         enclosing_fqun: ast.Fqun,
     ):
-        """Initialize with the known definitions and the FQUN of the definition containing the literals."""
+        """Initialize with the known definitions, the shared validation state, and the FQUN of the definition containing the literals."""
         self._definition_results = definition_results
+        self._validation_state = validation_state
         self._enclosing_fqun = enclosing_fqun
 
     def encode(
@@ -49,10 +55,12 @@ class LiteralEncoder:
             return None, []
         # TODO: Translate the literal into any encoding its target requires,
         # instead of always using the value quality's own encoding.
-        value_encoding = constants.BUILT_IN_VALUE_ENCODINGS.get(
-            value_quality.full_typed_name
-        )
-        if value_encoding is None:
+        value_encodings = self._validation_state.get_value_encodings(value_quality)
+        # A missing value quality was already reported when its reference was
+        # resolved.
+        if value_encodings is None:
+            return None, []
+        if not value_encodings:
             return None, [
                 diagnostics.ValueHasNoEncodingDiagnostic(
                     location=potential_literal.location,
@@ -61,6 +69,7 @@ class LiteralEncoder:
                     ),
                 )
             ]
+        (value_encoding,) = value_encodings
         parser = literal_parsers.LITERAL_PARSERS.get(
             (literal_encoding.full_typed_name, value_encoding)
         )

@@ -37,15 +37,6 @@ INTEGER_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/integer/a
 NATURAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/natural/ascii>"
 SCALAR_UTF8_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/text/unicode/scalar/utf8>"
 UTF8_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/text/unicode/utf8>"
-# TODO: Read value encodings from encodings configuration (DLP 47) once it
-# exists.
-BUILT_IN_VALUE_ENCODINGS: Final = {
-    f"value<{STANDARD_UNIVERSE}:/binary>": BINARY_ASCII_ENCODING,
-    f"value<{STANDARD_UNIVERSE}:/boolean>": BOOLEAN_ASCII_ENCODING,
-    f"value<{STANDARD_UNIVERSE}:/number/integer>": INTEGER_ASCII_ENCODING,
-    f"value<{STANDARD_UNIVERSE}:/number/natural>": NATURAL_ASCII_ENCODING,
-    f"value<{STANDARD_UNIVERSE}:/text/unicode/scalar>": SCALAR_UTF8_ENCODING,
-}
 # The paths, in the standard universe, of the Encoding Operations that perform
 # each logical operation, one for each combination of encodings they use.
 # TODO: Read Encoding Operation associations from configuration (DLP 48) once

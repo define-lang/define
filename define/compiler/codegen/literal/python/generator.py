@@ -174,6 +174,9 @@ class _DefinitionGenerator:
         self._module_plan = module_plan
         self._trace_operations = trace_operations
         self._output_dir = output_dir
+        self._python_value_types = value_types.PythonValueTypes(
+            codegen_input.value_encodings
+        )
         self._entry_definition: renderer.ActionDefinition
 
     def generate(
@@ -249,6 +252,7 @@ class _DefinitionGenerator:
             position = position_definition.PositionDefinitionGenerator(
                 definition,
                 self._converter,
+                self._python_value_types,
             ).generate()
             module_name = position.module_name
             part = _ModulePart(
@@ -277,6 +281,7 @@ class _DefinitionGenerator:
         context = action_definition.ActionDefinitionGenerator(
             self._codegen_input.actions[definition.typed_name.full_typed_name],
             self._converter,
+            self._python_value_types,
             trace_operations=self._trace_operations,
         ).generate()
         if definition.typed_name == self._entry_point.typed_name:

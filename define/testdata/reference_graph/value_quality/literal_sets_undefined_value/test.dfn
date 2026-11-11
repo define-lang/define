@@ -1,0 +1,15 @@
+# A literal setting an undefined value quality reports only the missing definition.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the value</count>.
+            }
+        }
+        create a particle in position<item>.
+        set the value of position<item> from literal<standard:/number>"5".
+        destroy the particle in position<item>.
+    }
+}

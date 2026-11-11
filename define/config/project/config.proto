@@ -3,6 +3,7 @@ edition = "2024";
 package define.config.project;
 
 import "buf/validate/validate.proto";
+import "defcl/schema/core/boolean.proto";
 
 // Top-level wrapper for .define/project/config.defcl files.
 message ProjectConfigFile {
@@ -17,4 +18,13 @@ message Project {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
+
+  // Which association configuration files the project has.
+  Associations associations = 2;
+}
+
+// Which association configuration files a project has.
+message Associations {
+  // Whether the project has .define/encodings/encodings.defcl.
+  defcl.schema.core.Defcl.Boolean has_encodings = 1;
 }

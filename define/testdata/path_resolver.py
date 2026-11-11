@@ -8,6 +8,7 @@ from pathlib import Path
 _TESTDATA_ROOT = Path("define/testdata")
 _PHASE_BY_TEST_DIRECTORY = {
     "codegen": "codegen",
+    "config_tests": "config",
     "program_validator_tests": "structural",
     "reference_graph_validator_tests": "reference_graph",
     "resource_tests": "resource_tests",

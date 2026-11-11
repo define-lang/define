@@ -1,0 +1,16 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/number/integer"
+      encoding: "/number/integer/twos_complement"
+    },
+    {
+      value: "/number/natural"
+      encoding: "/number/integer/twos_complement"
+    },
+    {
+      value: "/number/natural"
+      encoding: "/number/integer/unsigned"
+    }
+  ]
+}

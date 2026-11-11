@@ -264,6 +264,41 @@ class TestProjectConfig:
             ],
         )
 
+    def test_local_deps_diagnostics_reported_too(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_project_config(tmp_path, ('project: {\n  universe_name: ""\n}\n'))
+        _write_local_deps(
+            tmp_path,
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "/absolute/path"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert _load() == config.RootConfigResult(
+            root_config=None,
+            diagnostics=[
+                diagnostics.ConfigViolationDiagnostic(
+                    config_path=str(_PROJECT_CONFIG_PATH),
+                    field_path=("project", "universe_name"),
+                    violation_message="must be at least 1 characters",
+                ),
+                diagnostics.ConfigViolationDiagnostic(
+                    config_path=str(_LOCAL_DEPS_PATH),
+                    field_path=("deps", "local", 0, "path"),
+                    violation_message="path must not be absolute",
+                ),
+            ],
+        )
+
     def test_syntax_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_project_config(
             tmp_path,

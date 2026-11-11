@@ -996,6 +996,121 @@ def test_duplicate_local_dependency_error_message(
                            ^^^^^^^^^^^^^^^^^^^^^^^^""")
 
 
+def _write_project_with_encodings(root: Path, encodings: str | None):
+    config_path = root / ".define" / "project" / "config.defcl"
+    config_path.parent.mkdir(parents=True)
+    _ = config_path.write_text(
+        (
+            "project: {\n"
+            '  universe_name: "my.domain.com:my_lib"\n'
+            "  associations: {\n"
+            "    has_encodings: TRUE\n"
+            "  }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    if encodings is not None:
+        encodings_path = root / ".define" / "encodings" / "encodings.defcl"
+        encodings_path.parent.mkdir(parents=True)
+        _ = encodings_path.write_text(encodings, encoding="utf-8", newline="\n")
+    _ = (root / "test.dfn").write_text(
+        "define the potential position<my.domain.com:my_lib:/test>.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def test_encodings_config_not_found_error_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_project_with_encodings(tmp_path, None)
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.EncodingsConfigNotFoundDiagnostic)
+    assert (
+        diagnostic.format(program_result.source_map)
+        == textwrap.dedent("""\
+        File ".define/project/config.defcl", line 4, column 20
+            has_encodings: TRUE
+                           ^^^^
+        The project says it has encoding associations, but .define/encodings/encodings.defcl was not found.""")
+    )
+
+
+def test_unsorted_value_encoding_error_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_project_with_encodings(
+        tmp_path,
+        (
+            "encodings: {\n"
+            "  value_encodings: [\n"
+            "    {\n"
+            '      value: "/number/natural"\n'
+            '      encoding: "/number/natural/ascii"\n'
+            "    },\n"
+            "    {\n"
+            '      value: "/number/integer"\n'
+            '      encoding: "/number/integer/ascii"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.UnsortedValueEncodingDiagnostic)
+    assert (
+        diagnostic.format(program_result.source_map)
+        == textwrap.dedent("""\
+        File ".define/encodings/encodings.defcl", line 8, column 14
+            value: "/number/integer"
+                   ^^^^^^^^^^^^^^^^^
+        Encoding associations must be sorted by value quality, but '/number/integer' comes after '/number/natural'.""")
+    )
+
+
+def test_duplicate_value_encoding_error_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _write_project_with_encodings(
+        tmp_path,
+        (
+            "encodings: {\n"
+            "  value_encodings: [\n"
+            "    {\n"
+            '      value: "/number"\n'
+            '      encoding: "/number/ascii"\n'
+            "    },\n"
+            "    {\n"
+            '      value: "/number"\n'
+            '      encoding: "/number/ascii"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    (diagnostic,) = program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.DuplicateValueEncodingDiagnostic)
+    assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
+        File ".define/encodings/encodings.defcl", line 7, column 5
+            {
+            ^
+        Value quality '/number' is already associated with encoding '/number/ascii' here:
+        File ".define/encodings/encodings.defcl", line 3, column 5
+            {
+            ^""")
+
+
 def test_config_field_error_message_for_a_changed_config_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

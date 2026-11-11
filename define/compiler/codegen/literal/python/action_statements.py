@@ -43,12 +43,14 @@ class ActionStatementsGenerator:
         self,
         action_input: codegen_input.ActionCodegenInput,
         converter: naming.NameConverter,
+        python_value_types: value_types.PythonValueTypes,
         *,
         trace_operations: bool,
     ):
         """Initialize from validated definitions and known destructions."""
         self._action_input = action_input
         self._converter = converter
+        self._python_value_types = python_value_types
         self._trace_operations = trace_operations
         self._class_names = naming.LocalNameAllocator()
 
@@ -177,7 +179,7 @@ class ActionStatementsGenerator:
                             assigned_qualities=self._converter.assigned_quality_class_references(
                                 statement.quality_assignment_block
                             ),
-                            value_type=value_types.assigned_python_value_type(
+                            value_type=self._python_value_types.assigned_python_value_type(
                                 statement.quality_assignment_block
                             ),
                         )
@@ -214,7 +216,7 @@ class ActionStatementsGenerator:
                         renderer.ActionStatement.SetValue(
                             position=positions.build(
                                 statement.target_position,
-                                value_type=value_types.python_value_type(
+                                value_type=self._python_value_types.python_value_type(
                                     statement.value_quality
                                 ),
                             ),
@@ -225,7 +227,9 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.PositionValueSetting():
-                    value_type = value_types.python_value_type(statement.value_quality)
+                    value_type = self._python_value_types.python_value_type(
+                        statement.value_quality
+                    )
                     statements.append(
                         renderer.ActionStatement.SetValueFrom(
                             position=positions.build(
@@ -364,7 +368,7 @@ class ActionStatementsGenerator:
             if isinstance(looking_at, codegen_input.EncodedLiteral):
                 arguments.append(value_types.python_literal(looking_at))
                 continue
-            value_type = value_types.assigned_python_value_type(
+            value_type = self._python_value_types.assigned_python_value_type(
                 argument.interface_view.quality_assignment_block
             )
             if argument.interface_view.is_input:

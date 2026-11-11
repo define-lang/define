@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from define.compiler.codegen.literal.python import (
     renderer,
-    value_types,
 )
 
 if TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.codegen.literal.python import (
         naming,
+        value_types,
     )
 
 
@@ -21,15 +21,18 @@ class PositionDefinitionGenerator:
 
     _converter: naming.NameConverter
     _definition: ast.PositionDefinition
+    _python_value_types: value_types.PythonValueTypes
 
     def __init__(
         self,
         definition: ast.PositionDefinition,
         converter: naming.NameConverter,
+        python_value_types: value_types.PythonValueTypes,
     ):
         """Initialize with the position definition to extract data from."""
         self._definition = definition
         self._converter = converter
+        self._python_value_types = python_value_types
 
     def generate(self) -> renderer.PositionDefinition:
         """Generate template context for the position definition."""
@@ -50,7 +53,7 @@ class PositionDefinitionGenerator:
             class_name=class_name,
             module_name=module_name,
             assigned_qualities=assigned_qualities,
-            value_type=value_types.assigned_python_value_type(
+            value_type=self._python_value_types.assigned_python_value_type(
                 self._definition.quality_assignment_block
             ),
             imports=imports,

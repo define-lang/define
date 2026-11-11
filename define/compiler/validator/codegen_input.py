@@ -145,3 +145,6 @@ class CodegenInput(msgspec.Struct):
     definition_order: reference_graph_order.ReferenceGraphOrder
     actions: dict[str, ActionCodegenInput]
     encoding_operations: dict[str, EncodingOperationCodegenInput]
+    # The full typed name of each value quality's one associated encoding, keyed
+    # by the value quality's full typed name.
+    value_encodings: dict[str, str]
