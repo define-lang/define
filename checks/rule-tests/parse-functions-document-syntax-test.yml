@@ -1,36 +1,50 @@
 id: parse-functions-document-syntax
 valid:
   - |
-    /// Parses a terminator.
-    ///
-    /// ```ebnf
-    /// terminator = ".", newline ;
-    /// ```
-    fn parse_terminator() {}
+    impl Parser {
+        /// Parses a terminator.
+        ///
+        /// ```ebnf
+        /// terminator = ".", newline ;
+        /// ```
+        fn parse_terminator() {}
+    }
   - |
-    /// Parses a terminator.
-    ///
-    /// ```ebnf
-    /// terminator = ".", newline ;
-    /// ```
-    #[inline]
-    fn parse_terminator() {}
+    impl Parser {
+        /// Parses a terminator.
+        ///
+        /// ```ebnf
+        /// terminator = ".", newline ;
+        /// ```
+        #[inline]
+        fn parse_terminator() {}
+    }
   - |
-    fn consume_byte() {}
+    impl Parser {
+        fn consume_byte() {}
+    }
   - |
     #[pyfunction]
     fn parse() {}
+  - |
+    pub fn parse_with_layout_fixes() {}
 invalid:
   - |
-    fn parse_terminator() {}
+    impl Parser {
+        fn parse_terminator() {}
+    }
   - |
-    /// Parses a terminator.
-    fn parse_terminator() {}
+    impl Parser {
+        /// Parses a terminator.
+        fn parse_terminator() {}
+    }
   - |
-    /// ```ebnf
-    /// terminator = ".", newline ;
-    /// ```
-    fn consume_terminator() {}
+    impl Parser {
+        /// ```ebnf
+        /// terminator = ".", newline ;
+        /// ```
+        fn consume_terminator() {}
 
-    /// Parses a terminator.
-    fn parse_terminator() {}
+        /// Parses a terminator.
+        fn parse_terminator() {}
+    }

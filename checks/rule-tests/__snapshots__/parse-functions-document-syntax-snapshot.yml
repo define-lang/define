@@ -1,32 +1,60 @@
 id: parse-functions-document-syntax
 snapshots:
-  "/// Parses a terminator.\nfn parse_terminator() {}\n":
+  "impl Parser {\n    /// Parses a terminator.\n    fn parse_terminator() {}\n}\n":
     labels:
     - source: fn parse_terminator() {}
       style: primary
-      start: 25
-      end: 49
-    - source: parse_terminator
+      start: 47
+      end: 71
+    - source: |-
+        impl Parser {
+            /// Parses a terminator.
+            fn parse_terminator() {}
+        }
       style: secondary
-      start: 28
-      end: 44
-  "/// ```ebnf\n/// terminator = \".\", newline ;\n/// ```\nfn consume_terminator() {}\n\n/// Parses a terminator.\nfn parse_terminator() {}\n":
-    labels:
-    - source: fn parse_terminator() {}
-      style: primary
-      start: 105
-      end: 129
-    - source: parse_terminator
-      style: secondary
-      start: 108
-      end: 124
-  "fn parse_terminator() {}\n":
-    labels:
-    - source: fn parse_terminator() {}
-      style: primary
       start: 0
-      end: 24
+      end: 73
     - source: parse_terminator
       style: secondary
-      start: 3
-      end: 19
+      start: 50
+      end: 66
+  "impl Parser {\n    /// ```ebnf\n    /// terminator = \".\", newline ;\n    /// ```\n    fn consume_terminator() {}\n\n    /// Parses a terminator.\n    fn parse_terminator() {}\n}\n":
+    labels:
+    - source: fn parse_terminator() {}
+      style: primary
+      start: 143
+      end: 167
+    - source: |-
+        impl Parser {
+            /// ```ebnf
+            /// terminator = ".", newline ;
+            /// ```
+            fn consume_terminator() {}
+        
+            /// Parses a terminator.
+            fn parse_terminator() {}
+        }
+      style: secondary
+      start: 0
+      end: 169
+    - source: parse_terminator
+      style: secondary
+      start: 146
+      end: 162
+  "impl Parser {\n    fn parse_terminator() {}\n}\n":
+    labels:
+    - source: fn parse_terminator() {}
+      style: primary
+      start: 18
+      end: 42
+    - source: |-
+        impl Parser {
+            fn parse_terminator() {}
+        }
+      style: secondary
+      start: 0
+      end: 44
+    - source: parse_terminator
+      style: secondary
+      start: 21
+      end: 37

@@ -829,6 +829,13 @@ impl<'source> Parser<'source> {
         })
     }
 
+    /// Parses a field name and the colon after it, which start at the
+    /// scanner's position with a byte that may start a field name.
+    ///
+    /// ```ebnf
+    /// FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_letter ) } ;
+    /// field_name_and_colon = FIELD_NAME, ":" ;
+    /// ```
     fn parse_field_name_and_colon(&mut self) -> Result<FieldName<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_field_name_word_character);
@@ -1038,6 +1045,15 @@ impl<'source> Parser<'source> {
         }
     }
 
+    /// Parses a number, which starts at the scanner's position with a byte
+    /// that may start one.
+    ///
+    /// ```ebnf
+    /// INTEGER = ( [ "-" ], dec_lit ) - "-0" ;
+    /// FLOAT = ( [ "-" ], dec_lit, ".", fraction ) - "-0.0" ;
+    /// dec_lit = "0" | ( dec - "0" ), { dec } ;
+    /// fraction = "0" | { dec }, ( dec - "0" ) ;
+    /// ```
     fn parse_number(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_number_word_character);
@@ -1068,6 +1084,12 @@ impl<'source> Parser<'source> {
         })
     }
 
+    /// Parses an enum value, which starts at the scanner's position with a
+    /// letter.
+    ///
+    /// ```ebnf
+    /// enum_value = uppercase_letter, { uppercase_letter | dec | "_" } ;
+    /// ```
     fn parse_enum_value(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_enum_word_character);

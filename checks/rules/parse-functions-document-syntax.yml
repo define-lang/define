@@ -5,10 +5,16 @@ message:
   Document the syntax that a parse function parses in an `ebnf` code block in
   its doc comment.
 files:
+  - defcl/rust/parser/parser.rs
   - define/compiler/parsing/parser.rs
   - define/compiler/parsing/parser/*.rs
+# Only the parser's methods parse the grammar's productions. A free function
+# such as `parse_with_layout_fixes` is an entry point that parses a whole file.
 rule:
   kind: function_item
+  inside:
+    kind: impl_item
+    stopBy: end
   has:
     field: name
     regex: ^parse_
