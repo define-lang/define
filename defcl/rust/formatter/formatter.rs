@@ -1,7 +1,7 @@
 //! The formatting of a DCL file: fixing the layout errors that changing only
 //! its whitespace and comments fixes.
 
-use defcl_parser::{SyntaxError, parse, parse_with_layout_fixes};
+use defcl_parser::{LayoutFix, ParseResult, SyntaxError, parse, parse_with_layout_fixes};
 
 /// Formats `source`, the text of a DCL file.
 ///
@@ -12,12 +12,10 @@ use defcl_parser::{SyntaxError, parse, parse_with_layout_fixes};
 /// changed, and that error is the only one returned.
 #[must_use]
 pub fn format(source: &str) -> (Option<String>, Vec<SyntaxError>) {
-    let (mut result, fixes) = parse_with_layout_fixes(source);
-    if result.file.is_none() {
-        // The error that stopped the parse is the last.
-        let stop = result.errors.split_off(result.errors.len() - 1);
-        return (None, stop);
-    }
+    let (result, fixes) = match parse_unless_stopped(source) {
+        Ok(parsed) => parsed,
+        Err(stop) => return (None, stop),
+    };
     if fixes.is_empty() {
         return (None, result.errors);
     }
@@ -33,9 +31,43 @@ pub fn format(source: &str) -> (Option<String>, Vec<SyntaxError>) {
     (Some(formatted), errors)
 }
 
+/// Whether `format` changes `source`, the text of a DCL file, and the syntax
+/// errors that the formatted text still has, at their places in `source`.
+#[must_use]
+pub fn check(source: &str) -> (bool, Vec<SyntaxError>) {
+    let (mut result, fixes) = match parse_unless_stopped(source) {
+        Ok(parsed) => parsed,
+        Err(stop) => return (false, stop),
+    };
+    let mut fixed_errors = fixes.iter().map(|fix| &fix.fixed_errors).peekable();
+    let mut index = 0;
+    result.errors.retain(|_| {
+        let error = index;
+        index += 1;
+        while fixed_errors.next_if(|errors| errors.end <= error).is_some() {}
+        !fixed_errors
+            .peek()
+            .is_some_and(|errors| errors.contains(&error))
+    });
+    (!fixes.is_empty(), result.errors)
+}
+
+/// Parses `source` with the fixes for its layout errors, or returns the
+/// syntax error that stops its parse.
+fn parse_unless_stopped(
+    source: &str,
+) -> Result<(ParseResult<'_>, Vec<LayoutFix>), Vec<SyntaxError>> {
+    let (mut result, fixes) = parse_with_layout_fixes(source);
+    if result.file.is_none() {
+        // The error that stopped the parse is the last.
+        return Err(result.errors.split_off(result.errors.len() - 1));
+    }
+    Ok((result, fixes))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::format;
+    use super::{check, format};
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use googletest::prelude::*;
     use indoc::{formatdoc, indoc};
@@ -400,6 +432,95 @@ mod tests {
                     location: Some(location(2, 8, 2, 8)),
                 }])
             )
+        )
+    }
+
+    #[gtest]
+    fn check_finds_a_formatted_file_unchanged() -> Result<()> {
+        verify_that!(
+            check(indoc! {"
+                a: {
+                  b: 1
+                }
+            "}),
+            (eq(&false), is_empty())
+        )
+    }
+
+    #[gtest]
+    fn check_reports_the_remaining_errors_at_their_places_in_the_source() -> Result<()> {
+        verify_that!(
+            check(indoc! {"
+                a: {
+                    b: {}
+                }
+            "}),
+            (
+                eq(&true),
+                eq(&vec![SyntaxError {
+                    kind: SyntaxErrorKind::EmptyMessageValue,
+                    location: Some(location(2, 8, 2, 9)),
+                }])
+            )
+        )
+    }
+
+    #[gtest]
+    fn check_reports_an_error_that_formatting_leaves() -> Result<()> {
+        verify_that!(
+            check(indoc! {"
+                a # x
+                : {
+                    b: 1
+                }
+            "}),
+            (
+                eq(&true),
+                eq(&vec![SyntaxError {
+                    kind: SyntaxErrorKind::MisplacedComment,
+                    location: Some(location(1, 3, 1, 5)),
+                }])
+            )
+        )
+    }
+
+    #[gtest]
+    fn check_reports_the_first_carriage_return_that_formatting_leaves() -> Result<()> {
+        // Formatting deletes the carriage return on the first line, but not
+        // the one among the whitespace that the misplaced comment is in.
+        verify_that!(
+            check(indoc! {"
+                a: {\r
+                  b\r
+                  # x
+                  : 1
+                }
+            "}),
+            (
+                eq(&true),
+                eq(&vec![
+                    SyntaxError {
+                        kind: SyntaxErrorKind::MisplacedComment,
+                        location: Some(location(3, 3, 3, 5)),
+                    },
+                    SyntaxError {
+                        kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                        location: Some(location(2, 4, 2, 4)),
+                    },
+                ])
+            )
+        )
+    }
+
+    #[gtest]
+    fn check_reports_the_error_that_stops_the_parse() -> Result<()> {
+        verify_that!(
+            check(indoc! {"
+                a: {
+                    b: @
+                }
+            "}),
+            (eq(&false), len(eq(1)))
         )
     }
 }

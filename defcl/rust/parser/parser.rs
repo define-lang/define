@@ -15,6 +15,7 @@ use source_characters::{
 };
 use source_rendering::{Position, SourceLocation};
 use source_scanning::quoted_content;
+use std::ops::Range;
 
 /// The spaces of one level of indentation.
 const INDENTATION_WIDTH: u32 = 2;
@@ -36,6 +37,8 @@ pub struct LayoutFix {
     pub start: usize,
     pub end: usize,
     pub replacement: String,
+    /// The indices in the parse's errors of the errors that the fix fixes.
+    pub fixed_errors: Range<usize>,
 }
 
 /// Bytes of a DCL file that are not valid UTF-8, with the syntax error that
@@ -73,6 +76,11 @@ pub fn parse(source: &str) -> ParseResult<'_> {
 /// Parses `source`, the text of a DCL file, as `parse` does, and also returns
 /// the fixes for its layout errors that only change its whitespace and
 /// comments, in source order.
+///
+/// Unlike `parse`, once a fix fixes the error for
+/// the file's carriage returns or for its tabs that start lines, the next one
+/// gets an error, so that the errors that no fix fixes are the ones that the
+/// fixed text still has.
 #[must_use]
 pub fn parse_with_layout_fixes(source: &str) -> (ParseResult<'_>, Vec<LayoutFix>) {
     parse_with(source, true)
@@ -87,8 +95,8 @@ fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<Layout
         records_fixes,
         fixes: Vec::new(),
         invisible_characters: 0,
-        reported_carriage_return: false,
-        reported_indentation_tab: false,
+        carriage_return_error: None,
+        indentation_tab_error: None,
     };
     let file = match parser.parse_file() {
         Ok(file) => Some(file),
@@ -385,10 +393,12 @@ struct Parser<'source> {
     /// How many invisible characters outside strings the parse has skipped so
     /// far, each of which a fix deletes.
     invisible_characters: usize,
-    /// Whether the file has an error for a carriage return so far.
-    reported_carriage_return: bool,
-    /// Whether the file has an error for a tab that starts a line so far.
-    reported_indentation_tab: bool,
+    /// The index of the error for the file's carriage returns, if it has one
+    /// that no fix fixes so far.
+    carriage_return_error: Option<usize>,
+    /// The index of the error for the file's tabs that start lines, if it has
+    /// one that no fix fixes so far.
+    indentation_tab_error: Option<usize>,
 }
 
 /// Whether `comment`, the text after the `#` at `hash`, has text, and where
@@ -603,17 +613,17 @@ impl<'source> Parser<'source> {
         if self.records_fixes
             && (self.errors.len() > errors || self.invisible_characters > invisible_characters)
         {
-            self.fix_line_break(start, level);
+            self.fix_line_break(start, level, errors);
         }
     }
 
     /// Records the fix for the whitespace and comments from the byte `start`
     /// up to the scanner's position, which `expect_line_break(level)` found
-    /// errors in: a line feed, unless they start the file, then each comment
+    /// the errors from the index `first_error` on in: a line feed, unless they start the file, then each comment
     /// on a line of its own, then the next token's indentation.
     #[cold]
     #[inline(never)]
-    fn fix_line_break(&mut self, start: usize, level: u32) {
+    fn fix_line_break(&mut self, start: usize, level: u32, first_error: usize) {
         let mut replacement = String::new();
         if start != 0 {
             replacement.push('\n');
@@ -642,19 +652,35 @@ impl<'source> Parser<'source> {
             None => {}
             Some(byte) => push_indentation(&mut replacement, token_level(level, byte)),
         }
-        self.push_fix(start, replacement);
+        self.push_fix(start, replacement, first_error);
     }
 
     /// Records the fix that replaces the bytes from `start` up to the
-    /// scanner's position with `replacement`, if the parse records fixes.
-    fn push_fix(&mut self, start: usize, replacement: String) {
-        if self.records_fixes {
-            self.fixes.push(LayoutFix {
-                start,
-                end: self.scanner.offset(),
-                replacement,
-            });
+    /// scanner's position with `replacement`, and that fixes the errors from
+    /// the index `first_error` on, if the parse records fixes.
+    fn push_fix(&mut self, start: usize, replacement: String, first_error: usize) {
+        if !self.records_fixes {
+            return;
         }
+        let fixed_errors = first_error..self.errors.len();
+        if self
+            .carriage_return_error
+            .is_some_and(|index| fixed_errors.contains(&index))
+        {
+            self.carriage_return_error = None;
+        }
+        if self
+            .indentation_tab_error
+            .is_some_and(|index| fixed_errors.contains(&index))
+        {
+            self.indentation_tab_error = None;
+        }
+        self.fixes.push(LayoutFix {
+            start,
+            end: self.scanner.offset(),
+            replacement,
+            fixed_errors,
+        });
     }
 
     /// Checks the whitespace and comments for `expect_line_break(level)`.
@@ -872,16 +898,16 @@ impl<'source> Parser<'source> {
         // Carriage returns and tabs that start lines come from an editor's
         // settings for a whole file, so only the first of each gets an error.
         if character == '\r' {
-            if self.reported_carriage_return {
+            if self.carriage_return_error.is_some() {
                 return;
             }
-            self.reported_carriage_return = true;
+            self.carriage_return_error = Some(self.errors.len());
         }
         if character == '\t' && starts_line {
-            if self.reported_indentation_tab {
+            if self.indentation_tab_error.is_some() {
                 return;
             }
-            self.reported_indentation_tab = true;
+            self.indentation_tab_error = Some(self.errors.len());
         }
         self.errors.push(SyntaxError {
             kind: invisible_character_kind(character, reason),
@@ -935,6 +961,7 @@ impl<'source> Parser<'source> {
             return;
         }
         self.scanner = lookahead;
+        let errors = self.errors.len();
         if let Some(location) = comments {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
@@ -951,7 +978,7 @@ impl<'source> Parser<'source> {
             });
         }
         self.check_skipped_characters(start, start_offset);
-        self.push_fix(start_offset, String::new());
+        self.push_fix(start_offset, String::new(), errors);
     }
 
     /// Consumes the whitespace and comments after a field's colon, where
@@ -977,6 +1004,7 @@ impl<'source> Parser<'source> {
         {
             return;
         }
+        let errors = self.errors.len();
         if let Some(location) = comments {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
@@ -1002,7 +1030,7 @@ impl<'source> Parser<'source> {
             });
         }
         self.check_skipped_characters(start, start_offset);
-        self.push_fix(start_offset, " ".to_owned());
+        self.push_fix(start_offset, " ".to_owned(), errors);
     }
 
     /// Consumes a message value or a repeated value whose opening `{` or `[`

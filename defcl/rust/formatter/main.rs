@@ -89,10 +89,10 @@ fn format_standard_input(
         writeln!(errors, "File \"{STANDARD_INPUT}\"\n{error}")?;
         return Ok(Outcome::Errors);
     }
-    let file = format_source(bytes);
+    let file = format_source(bytes, check);
     let mut outcome = Outcome::Formatted;
     if check {
-        if file.formatted.is_some() {
+        if file.changed {
             writeln!(output, "{STANDARD_INPUT}")?;
             outcome = Outcome::Unformatted;
         }
@@ -158,7 +158,7 @@ fn report_file(path: &Path, check: bool) -> FileReport {
     let name = path.to_string_lossy();
     match format_file(path, check) {
         Ok(file) => FileReport {
-            changed: file.formatted.is_some(),
+            changed: file.changed,
             errors: render_errors(&name, file),
         },
         Err(error) => FileReport {
@@ -173,7 +173,7 @@ fn report_file(path: &Path, check: bool) -> FileReport {
 
 /// Formats the DCL file at `path`, writing it unless `check`.
 fn format_file(path: &Path, check: bool) -> std::io::Result<FormattedSource> {
-    let file = format_source(std::fs::read(path)?);
+    let file = format_source(std::fs::read(path)?, check);
     if !check && let Some(formatted) = &file.formatted {
         std::fs::write(path, formatted)?;
     }
@@ -184,28 +184,45 @@ fn format_file(path: &Path, check: bool) -> std::io::Result<FormattedSource> {
 struct FormattedSource {
     /// The source as it was read.
     source: Vec<u8>,
-    /// The formatted text, if formatting changes the source.
+    /// Whether formatting changes the source.
+    changed: bool,
+    /// The formatted text, if formatting changes the source and its formatted
+    /// text was asked for.
     formatted: Option<String>,
-    /// The syntax errors that the source still has, in the formatted text if
-    /// formatting changes the source.
+    /// The syntax errors that the formatted text still has, in the formatted
+    /// text if there is one, or else at their places in the source.
     errors: Vec<SyntaxError>,
 }
 
-fn format_source(bytes: Vec<u8>) -> FormattedSource {
-    match decode(bytes) {
-        Ok(source) => {
-            let (formatted, errors) = format(&source);
-            FormattedSource {
-                source: source.into_bytes(),
-                formatted,
-                errors,
-            }
+/// Formats `bytes`, or, if `check`, only finds whether formatting changes
+/// them and the errors that the formatted text would still have.
+fn format_source(bytes: Vec<u8>, check: bool) -> FormattedSource {
+    let source = match decode(bytes) {
+        Ok(source) => source,
+        Err(DecodeError { source, error }) => {
+            return FormattedSource {
+                source,
+                changed: false,
+                formatted: None,
+                errors: vec![error],
+            };
         }
-        Err(DecodeError { source, error }) => FormattedSource {
-            source,
+    };
+    if check {
+        let (changed, errors) = defcl_formatter::check(&source);
+        return FormattedSource {
+            source: source.into_bytes(),
+            changed,
             formatted: None,
-            errors: vec![error],
-        },
+            errors,
+        };
+    }
+    let (formatted, errors) = format(&source);
+    FormattedSource {
+        source: source.into_bytes(),
+        changed: formatted.is_some(),
+        formatted,
+        errors,
     }
 }
 
@@ -421,6 +438,46 @@ mod tests {
                 Empty message values not allowed - leave the field out
             ",
             with_error.display()})
+        )
+    }
+
+    #[gtest]
+    fn check_reports_errors_where_they_are_in_the_unformatted_file() -> Result<()> {
+        let directory =
+            test_directory("check_reports_errors_where_they_are_in_the_unformatted_file")?;
+        let path = directory.join("a.defcl");
+        std::fs::write(
+            &path,
+            indoc! {"
+                a: {
+                    b: {}
+                }
+            "},
+        )
+        .or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            std::slice::from_ref(&path),
+            true,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(
+            String::from_utf8(unformatted).or_fail()?,
+            eq(&format!("{}\n", path.display()))
+        )?;
+        verify_that!(
+            String::from_utf8(errors).or_fail()?,
+            eq(&formatdoc! {"
+                File \"{}\", line 2, column 8
+                    b: {{}}
+                       ^^
+                Empty message values not allowed - leave the field out
+            ",
+            path.display()})
         )
     }
 
