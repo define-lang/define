@@ -281,6 +281,53 @@ class TestProjectConfig:
         )
         assert diagnostic.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
 
+    def test_layout_error_still_resolves(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_project_config(
+            tmp_path, ('project: {\n  universe_name: "test.example.com:my_lib"\n\n}\n')
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = _load()
+        assert result.root_config == config.ProjectRootConfig(
+            fqun="test.example.com:my_lib", sub_roots={}
+        )
+        (diagnostic,) = result.diagnostics
+        assert type(diagnostic) is errors.SyntaxDiagnostic
+        assert diagnostic.kind == error_types.SyntaxDiagnosticKind.BLANK_LINE
+        assert diagnostic.location == rendering.SourceLocation(
+            line=3,
+            column=1,
+            end_line=3,
+            end_column=1,
+            file_path=str(_PROJECT_CONFIG_PATH),
+        )
+
+    def test_layout_error_and_rule_violation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_project_config(tmp_path, ('project: {\n  universe_name: ""\n\n}\n'))
+        monkeypatch.chdir(tmp_path)
+
+        result = _load()
+        assert result.root_config is None
+        blank_line, violation = result.diagnostics
+        assert type(blank_line) is errors.SyntaxDiagnostic
+        assert blank_line.kind == error_types.SyntaxDiagnosticKind.BLANK_LINE
+        assert blank_line.location == rendering.SourceLocation(
+            line=3,
+            column=1,
+            end_line=3,
+            end_column=1,
+            file_path=str(_PROJECT_CONFIG_PATH),
+        )
+        assert violation == diagnostics.ConfigViolationDiagnostic(
+            config_path=str(_PROJECT_CONFIG_PATH),
+            field_path=("project", "universe_name"),
+            violation_message="must be at least 1 characters",
+        )
+
 
 class TestLocalDepsConfig:
     def test_missing_universe_name(
@@ -536,7 +583,7 @@ class TestLocalDepsConfig:
 
         assert _load() == _invalid_local_dep_field("path", "path must not end with '/'")
 
-    def test_duplicate_universe_name(
+    def test_duplicate_universe_name_uses_the_first_entry(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         _write_valid_project_config(tmp_path)
@@ -560,7 +607,19 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         assert _load() == config.RootConfigResult(
-            root_config=None,
+            root_config=config.ProjectRootConfig(
+                fqun="test.example.com:my_lib",
+                sub_roots={
+                    "mv:define-lang.org:lib": config.LocalDependencyEntry(
+                        deps_path=str(_LOCAL_DEPS_PATH),
+                        index=0,
+                        universe="mv:define-lang.org:lib",
+                        path=define_path.DefinePathFromPosix(
+                            PurePosixPath("vendor/lib")
+                        ),
+                    )
+                },
+            ),
             diagnostics=[
                 diagnostics.DuplicateLocalDependencyDiagnostic(
                     config_path=str(_LOCAL_DEPS_PATH),

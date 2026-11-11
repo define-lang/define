@@ -5,7 +5,7 @@ from source_rendering.python import rendering
 
 def validate(
     source: str, descriptor_set: bytes, top_level_message_type: str
-) -> list[errors.DclDiagnostic]: ...
+) -> tuple[bool, list[errors.DclDiagnostic]]: ...
 def validate_file(
     path: str,
     source_map: rendering.SourceMap,

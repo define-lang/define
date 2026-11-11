@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 
 from defcl.python import error_types, errors, loader
-from defcl.testdata.invalid.semantics.schemas import integer_enum_pb2
+from defcl.testdata.invalid.semantics.schemas import (
+    integer_enum_pb2,
+    wrong_value_kinds_pb2,
+)
 from defcl.testdata.valid.schemas import (
     imports_pb2,
     shared_pb2,
@@ -118,6 +121,47 @@ def test_syntax_error_is_a_diagnostic_without_a_message():
         line=2, column=6, end_line=2, end_column=6
     )
     assert unexpected_character.character == "@"
+
+
+def test_file_with_only_layout_errors_loads_with_its_diagnostics():
+    result = loader.load(
+        'project: {\n  universe_name: "example"\n\n}\n',
+        single_toplevel_pb2.SingleToplevelFile,
+    )
+
+    assert result.message == single_toplevel_pb2.SingleToplevelFile(
+        project=single_toplevel_pb2.SingleToplevelFile.Project(universe_name="example")
+    )
+    (blank_line,) = result.diagnostics
+    assert type(blank_line) is errors.SyntaxDiagnostic
+    assert blank_line.kind == error_types.SyntaxDiagnosticKind.BLANK_LINE
+    assert blank_line.location == rendering.SourceLocation(
+        line=3, column=1, end_line=3, end_column=1
+    )
+
+
+def test_load_file_of_a_file_with_only_fields_out_of_order_loads_with_its_diagnostics():
+    path = _testdata_path(
+        "invalid/semantics/field_order/field_after_higher_number.defcl"
+    )
+
+    result = loader.load_file(
+        path, wrong_value_kinds_pb2.WrongValueKindsFile, rendering.SourceMap()
+    )
+
+    assert result.message == wrong_value_kinds_pb2.WrongValueKindsFile(
+        config=wrong_value_kinds_pb2.WrongValueKindsFile.Config(count=1, name="a")
+    )
+    (field_out_of_order,) = result.diagnostics
+    assert type(field_out_of_order) is errors.FieldOutOfOrderDiagnostic
+    assert (
+        field_out_of_order.kind == error_types.SemanticDiagnosticKind.FIELD_OUT_OF_ORDER
+    )
+    assert field_out_of_order.location == rendering.SourceLocation(
+        line=3, column=3, end_line=3, end_column=6, file_path=path
+    )
+    assert field_out_of_order.field_name == "name"
+    assert field_out_of_order.later_field == "count"
 
 
 def test_load_file_reads_the_file():

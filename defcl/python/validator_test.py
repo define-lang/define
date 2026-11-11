@@ -35,27 +35,28 @@ def _invalid_semantics_schemas() -> bytes:
 
 
 def test_valid_file_has_no_diagnostics():
-    assert (
-        validator.validate(
-            _testdata("valid/single_toplevel.defcl"),
-            _valid_schemas(),
-            _SINGLE_TOPLEVEL_FILE,
-        )
-        == []
-    )
+    assert validator.validate(
+        _testdata("valid/single_toplevel.defcl"),
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    ) == (True, [])
 
 
 def test_semantic_errors_are_diagnostics():
-    integer_enum, scalar_for_message_field, message_value_for_scalar_field = (
-        validator.validate(
-            _testdata(
-                "invalid/semantics/multiple_errors/errors_in_several_fields.defcl"
-            ),
-            _invalid_semantics_schemas(),
-            _MULTIPLE_ERRORS_FILE,
-        )
+    (
+        understood,
+        (
+            integer_enum,
+            scalar_for_message_field,
+            message_value_for_scalar_field,
+        ),
+    ) = validator.validate(
+        _testdata("invalid/semantics/multiple_errors/errors_in_several_fields.defcl"),
+        _invalid_semantics_schemas(),
+        _MULTIPLE_ERRORS_FILE,
     )
 
+    assert understood is False
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
@@ -83,11 +84,13 @@ def test_semantic_errors_are_diagnostics():
 
 
 def test_unknown_field_name_diagnostic_has_message_type():
-    (unknown_field_name,) = validator.validate(
+    understood, (unknown_field_name,) = validator.validate(
         _testdata("invalid/semantics/multiple_errors/value_of_unknown_field.defcl"),
         _invalid_semantics_schemas(),
         _MULTIPLE_ERRORS_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(unknown_field_name, errors.UnknownFieldNameDiagnostic)
     assert (
@@ -104,11 +107,13 @@ def test_unknown_field_name_diagnostic_has_message_type():
 
 
 def test_unknown_enum_value_diagnostic_has_enum_type():
-    (unknown_enum_value,) = validator.validate(
+    understood, (unknown_enum_value,) = validator.validate(
         _testdata("invalid/semantics/wrong_value_kinds/unknown_enum_value.defcl"),
         _invalid_semantics_schemas(),
         _WRONG_VALUE_KINDS_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(unknown_enum_value, errors.UnknownEnumValueDiagnostic)
     assert (
@@ -125,11 +130,13 @@ def test_unknown_enum_value_diagnostic_has_enum_type():
 
 
 def test_integer_out_of_range_diagnostic_has_field_type():
-    (integer_out_of_range,) = validator.validate(
+    understood, (integer_out_of_range,) = validator.validate(
         _testdata("invalid/semantics/out_of_range/negative_in_unsigned_field.defcl"),
         _invalid_semantics_schemas(),
         _OUT_OF_RANGE_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(integer_out_of_range, errors.IntegerOutOfRangeDiagnostic)
     assert (
@@ -144,11 +151,13 @@ def test_integer_out_of_range_diagnostic_has_field_type():
 
 
 def test_float_out_of_range_diagnostic_has_field_type():
-    (float_out_of_range,) = validator.validate(
+    understood, (float_out_of_range,) = validator.validate(
         _testdata("invalid/semantics/out_of_range/float_rounding_to_infinity.defcl"),
         _invalid_semantics_schemas(),
         _OUT_OF_RANGE_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(float_out_of_range, errors.FloatOutOfRangeDiagnostic)
     assert (
@@ -162,11 +171,13 @@ def test_float_out_of_range_diagnostic_has_field_type():
 
 
 def test_second_field_of_oneof_diagnostic_has_oneof():
-    (second_field_of_oneof,) = validator.validate(
+    understood, (second_field_of_oneof,) = validator.validate(
         _testdata("invalid/semantics/oneofs/second_field.defcl"),
         _invalid_semantics_schemas(),
         _ONEOFS_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(second_field_of_oneof, errors.SecondFieldOfOneofDiagnostic)
     assert (
@@ -184,11 +195,13 @@ def test_second_field_of_oneof_diagnostic_has_oneof():
 
 
 def test_field_out_of_order_diagnostic_has_later_field():
-    (field_out_of_order,) = validator.validate(
+    understood, (field_out_of_order,) = validator.validate(
         _testdata("invalid/semantics/field_order/field_after_higher_number.defcl"),
         _invalid_semantics_schemas(),
         _WRONG_VALUE_KINDS_FILE,
     )
+
+    assert understood is True
 
     assert isinstance(field_out_of_order, errors.FieldOutOfOrderDiagnostic)
     assert (
@@ -202,11 +215,13 @@ def test_field_out_of_order_diagnostic_has_later_field():
 
 
 def test_wrong_indentation_diagnostic_has_expected_spaces():
-    (wrong_indentation,) = validator.validate(
+    understood, (wrong_indentation,) = validator.validate(
         'project: {\n universe_name: "example"\n}\n',
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     )
+
+    assert understood is True
 
     assert isinstance(wrong_indentation, errors.WrongIndentationDiagnostic)
     assert wrong_indentation.kind == error_types.SyntaxDiagnosticKind.WRONG_INDENTATION
@@ -217,11 +232,13 @@ def test_wrong_indentation_diagnostic_has_expected_spaces():
 
 
 def test_layout_errors_come_before_semantic_errors():
-    wrong_indentation, unknown_field_name = validator.validate(
+    understood, (wrong_indentation, unknown_field_name) = validator.validate(
         "project: {\n size: 1\n}\n",
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     )
+
+    assert understood is False
 
     assert isinstance(wrong_indentation, errors.WrongIndentationDiagnostic)
     assert wrong_indentation.kind == error_types.SyntaxDiagnosticKind.WRONG_INDENTATION
@@ -244,11 +261,13 @@ def test_layout_errors_come_before_semantic_errors():
 
 
 def test_syntax_error_is_a_diagnostic():
-    (unexpected_character,) = validator.validate(
+    understood, (unexpected_character,) = validator.validate(
         _testdata("invalid/syntax/characters/at_sign.defcl"),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     )
+
+    assert understood is False
 
     assert type(unexpected_character) is errors.UnexpectedCharacterDiagnostic
     assert (
@@ -285,11 +304,13 @@ def test_invalid_utf8_is_an_invalid_encoding_diagnostic():
 
 
 def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
-    (missing_colon,) = validator.validate(
+    understood, (missing_colon,) = validator.validate(
         _testdata("invalid/syntax/separators/missing_colon.defcl"),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     )
+
+    assert understood is False
 
     assert type(missing_colon) is errors.SyntaxDiagnostic
     assert missing_colon.kind == error_types.SyntaxDiagnosticKind.MISSING_COLON
@@ -334,7 +355,7 @@ def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
         "defcl.testdata.invalid.semantics.schemas.IntegerEnumFile",
     )
 
-    assert source == "config: {\n  status: 0\n}\n"
+    assert source is None
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
     assert integer_enum.location == rendering.SourceLocation(
@@ -347,6 +368,30 @@ def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
         "            ^\n"
         "status: Integer enum values are not allowed"
     )
+
+
+def test_validate_file_of_a_file_with_only_fields_out_of_order_returns_its_text():
+    path = str(
+        _testdata_path("invalid/semantics/field_order/field_after_higher_number.defcl")
+    )
+
+    source, (field_out_of_order,) = validator.validate_file(
+        path,
+        rendering.SourceMap(),
+        _invalid_semantics_schemas(),
+        _WRONG_VALUE_KINDS_FILE,
+    )
+
+    assert source == 'config: {\n  count: 1\n  name: "a"\n}\n'
+    assert isinstance(field_out_of_order, errors.FieldOutOfOrderDiagnostic)
+    assert (
+        field_out_of_order.kind == error_types.SemanticDiagnosticKind.FIELD_OUT_OF_ORDER
+    )
+    assert field_out_of_order.location == rendering.SourceLocation(
+        line=3, column=3, end_line=3, end_column=6, file_path=path
+    )
+    assert field_out_of_order.field_name == "name"
+    assert field_out_of_order.later_field == "count"
 
 
 def test_validate_file_of_a_missing_file_raises_file_not_found_error():

@@ -9,7 +9,7 @@ import sys
 from hypothesis import event, example, given, settings
 from hypothesis import strategies as st
 
-from defcl.python import errors, loader
+from defcl.python import loader
 from defcl.testdata.valid.schemas import every_field_type_pb2
 
 _MAX_DEPTH = 2
@@ -246,15 +246,8 @@ def test_text_format_parses_every_file_the_checks_accept(values: _Value):
     result = loader.load(
         f"values: {_render(values, 0)}\n", every_field_type_pb2.EveryFieldTypeFile
     )
-    if any(
-        isinstance(diagnostic, errors.SyntaxDiagnostic)
-        for diagnostic in result.diagnostics
-    ):
-        event("syntax error")
+    if result.message is None:
+        event("not understood")
         return
-    if result.diagnostics:
-        event("diagnostics")
-        return
-    event("accepted")
-    assert result.message is not None
+    event("diagnostics" if result.diagnostics else "accepted")
     assert result.message.HasField("values")

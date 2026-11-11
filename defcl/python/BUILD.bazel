@@ -13,6 +13,7 @@ py_library(
     visibility = [
         "//define/compiler:__pkg__",
         "//define/compiler/resource_tests:__pkg__",
+        "//define/compiler/validator/structural/program_validator_tests:__pkg__",
     ],
 )
 
@@ -70,7 +71,6 @@ py_test(
     size = "small",
     srcs = ["loader_fuzz_test.py"],
     deps = [
-        ":errors",
         ":loader",
         "//defcl/testdata/valid/schemas:every_field_type_proto_py",
         "@pypi//hypothesis",
@@ -87,6 +87,7 @@ py_test(
         ":errors",
         ":loader",
         "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:wrong_value_kinds_proto_py",
         "//defcl/testdata/valid/schemas:imports_proto_py",
         "//defcl/testdata/valid/schemas:shared_proto_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",

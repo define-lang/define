@@ -1375,6 +1375,7 @@ class ConfigViolationDiagnostic(ConfigFieldDiagnostic):
 class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
     """Diagnostic for a local dependency whose universe name an earlier local dependency already declares.
 
+    The first declaration of a universe wins, and the later one is not used.
     Its field is the later local dependency's universe_name.
     """
 
@@ -1385,7 +1386,7 @@ class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
             f"Universe '{self.universe_name}' is already declared by an earlier"
-            " local dependency here:\n"
+            " local dependency, so only that one is used. It is here:\n"
             f"{self._render_field(sources, self.config_path, self.first_field_path)}"
         )
 

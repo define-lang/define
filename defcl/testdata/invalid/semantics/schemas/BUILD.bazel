@@ -125,4 +125,10 @@ proto_library(
     srcs = ["wrong_value_kinds.proto"],
 )
 
+py_proto_library(
+    name = "wrong_value_kinds_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":wrong_value_kinds_proto"],
+)
+
 check_build_file()

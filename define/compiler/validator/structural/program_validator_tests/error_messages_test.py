@@ -990,7 +990,7 @@ def test_duplicate_local_dependency_error_message(
         File ".define/deps/local.defcl", line 8, column 22
             universe_name: "mv:define-lang.org:lib"
                            ^^^^^^^^^^^^^^^^^^^^^^^^
-        Universe 'mv:define-lang.org:lib' is already declared by an earlier local dependency here:
+        Universe 'mv:define-lang.org:lib' is already declared by an earlier local dependency, so only that one is used. It is here:
         File ".define/deps/local.defcl", line 4, column 22
             universe_name: "mv:define-lang.org:lib"
                            ^^^^^^^^^^^^^^^^^^^^^^^^""")

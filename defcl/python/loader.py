@@ -16,9 +16,11 @@ if typing.TYPE_CHECKING:
 
 
 class LoadResult[M: message.Message](msgspec.Struct, frozen=True):
-    """The message that a DCL file holds, or the diagnostics that keep it from loading."""
+    """The message that a DCL file holds, if it still means exactly one message, and its diagnostics."""
 
-    # None when there are diagnostics.
+    # None when a diagnostic leaves the file's meaning unclear. Otherwise the
+    # message is here even if the file has diagnostics, so that a caller can go
+    # on to find other errors. The diagnostics still mean the file is invalid.
     message: M | None
     diagnostics: list[errors.DclDiagnostic]
 
@@ -30,14 +32,16 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
         text_format.ParseError: If `source` fails a check that only protobuf's
             text format parser makes.
     """
-    diagnostics = validator.validate(
+    understood, diagnostics = validator.validate(
         source,
         _descriptor_set(message_type),
         message_type.DESCRIPTOR.full_name,
     )
-    if diagnostics:
+    if not understood:
         return LoadResult(message=None, diagnostics=diagnostics)
-    return LoadResult(message=text_format.Parse(source, message_type()), diagnostics=[])
+    return LoadResult(
+        message=text_format.Parse(source, message_type()), diagnostics=diagnostics
+    )
 
 
 def load_file[M: message.Message](
@@ -56,13 +60,13 @@ def load_file[M: message.Message](
         _descriptor_set(message_type),
         message_type.DESCRIPTOR.full_name,
     )
-    if diagnostics:
+    if source is None:
         return LoadResult(message=None, diagnostics=diagnostics)
-    # Only a file that is not valid UTF-8 has no text, and it has a diagnostic.
     # The file's text, not a second read of the file, so that the text that is
     # parsed is the text that was validated.
-    text = typing.cast("str", source)
-    return LoadResult(message=text_format.Parse(text, message_type()), diagnostics=[])
+    return LoadResult(
+        message=text_format.Parse(source, message_type()), diagnostics=diagnostics
+    )
 
 
 # TODO: Move the walk over the imports into defcl/rust when the Rust crate

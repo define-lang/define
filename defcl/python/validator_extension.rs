@@ -1,7 +1,7 @@
 //! The Python module that validates DCL files: `defcl.python.validator`.
 
 use defcl_parser::{FieldPathElement, ParseResult, SyntaxError, SyntaxErrorKind, parse};
-use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
+use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::FileErrors;
 use prost::Message as _;
 use pyo3::exceptions::PyValueError;
@@ -157,7 +157,8 @@ fn raise(exception: PyResult<Bound<'_, PyAny>>) -> PyErr {
 
 /// Validates the DCL text `source` against the schema whose top-level message
 /// type has the full name `top_level_message_type` in the binary
-/// `FileDescriptorSet` `descriptor_set`, and returns a `SyntaxDiagnostic` for
+/// `FileDescriptorSet` `descriptor_set`. Returns whether the text still means
+/// exactly one message despite its diagnostics, with a `SyntaxDiagnostic` for
 /// each of its syntax errors, in the order the parser found them, then, unless
 /// one of them stopped the parse, a `SemanticDiagnostic` for each semantic
 /// error, in source order. Raises `InvalidSchemaError` if the descriptor set
@@ -168,20 +169,17 @@ fn validate<'py>(
     source: &str,
     descriptor_set: &[u8],
     top_level_message_type: &str,
-) -> PyResult<Vec<Bound<'py, PyAny>>> {
+) -> PyResult<(bool, Vec<Bound<'py, PyAny>>)> {
     let classes = PythonClasses::get(py)?;
     let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
-    diagnostics(
-        py,
-        classes,
-        defcl_validator::validate(source, descriptor_set, top_level_message_type),
-        None,
-    )
+    let errors = defcl_validator::validate(source, descriptor_set, top_level_message_type)
+        .map_err(|error| classes.invalid_schema_error(py, &error))?;
+    Ok((errors.understood, diagnostics(py, classes, &errors, None)?))
 }
 
 /// Validates the DCL file at `path` as `validate` validates its text, registers
-/// it with the `SourceMap` `source_map`, and returns the file's text, or `None`
-/// if it is not valid UTF-8, with the diagnostics, whose locations are in the file at `path`. Raises `OSError` if
+/// it with the `SourceMap` `source_map`, and returns the file's text if it
+/// still means exactly one message, or else `None`, with the diagnostics, whose locations are in the file at `path`. Raises `OSError` if
 /// the file cannot be read.
 #[pyfunction]
 fn validate_file<'py>(
@@ -193,7 +191,7 @@ fn validate_file<'py>(
     let py = path.py();
     let classes = PythonClasses::get(py)?;
     let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
-    let (source, result) = defcl_validator::validate_file(
+    let (source, errors) = defcl_validator::validate_file(
         Path::new(path.to_str()?),
         descriptor_set,
         top_level_message_type,
@@ -204,7 +202,9 @@ fn validate_file<'py>(
     };
     let _: Bound<'_, PyAny> =
         source_map.call_method1("register_file", (path, PyBytes::new(py, bytes)))?;
-    Ok((source.ok(), diagnostics(py, classes, result, Some(path))?))
+    let errors = errors.map_err(|error| classes.invalid_schema_error(py, &error))?;
+    let diagnostics = diagnostics(py, classes, &errors, Some(path))?;
+    Ok((source.ok().filter(|_| errors.understood), diagnostics))
 }
 
 /// An element of a field path from Python: a field name, or the index of an
@@ -269,16 +269,14 @@ fn decode_descriptor_set(
         .map_err(|error| classes.invalid_schema_error(py, &error))
 }
 
-/// The `DclDiagnostic`s of `result`'s syntax errors and then its semantic
-/// errors, in the file at `file_path` if the text is from a file, or the
-/// exception that its schema error raises.
+/// The `DclDiagnostic`s of `errors`' syntax errors and then its semantic
+/// errors, in the file at `file_path` if the text is from a file.
 fn diagnostics<'py>(
     py: Python<'py>,
     classes: &PythonClasses,
-    result: Result<FileErrors, SchemaError>,
+    errors: &FileErrors,
     file_path: Option<&Bound<'py, PyString>>,
 ) -> PyResult<Vec<Bound<'py, PyAny>>> {
-    let errors = result.map_err(|error| classes.invalid_schema_error(py, &error))?;
     let mut diagnostics =
         Vec::with_capacity(errors.syntax_errors.len() + errors.semantic_errors.len());
     for error in &errors.syntax_errors {

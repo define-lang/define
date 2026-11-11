@@ -63,9 +63,12 @@ class ProjectRootConfig(msgspec.Struct):
 
 
 class RootConfigResult(msgspec.Struct, frozen=True):
-    """A project root's resolved configuration, or the diagnostics that keep it from loading."""
+    """A project root's resolved configuration, if it can be resolved, and the diagnostics in its config files."""
 
-    # None when there are diagnostics.
+    # None when a diagnostic leaves the configuration's meaning unclear.
+    # Otherwise the configuration is used even if it has diagnostics, so that
+    # the compiler can go on to find other errors in the program. The compile
+    # still fails, since the diagnostics are reported.
     root_config: ProjectRootConfig | None
     diagnostics: list[diagnostics.FormattableDiagnostic]
 
@@ -98,36 +101,36 @@ class ConfigLoader:
         as a sub-root, or None for the project root. The universe name that a
         sub-root's own config declares must be the entry's.
         """
-        loaded = self._load_project_root_config(declaring_entry)
-        if isinstance(loaded, list):
-            return RootConfigResult(root_config=None, diagnostics=loaded)
-        return RootConfigResult(root_config=loaded, diagnostics=[])
-
-    def _load_project_root_config(
-        self, declaring_entry: LocalDependencyEntry | None
-    ) -> ProjectRootConfig | list[diagnostics.FormattableDiagnostic]:
         config_path = self.config_path()
         if not self.is_project_root():
             if declaring_entry is None:
-                return [
-                    diagnostics.NotRunFromProjectRootDiagnostic(
-                        config_path=str(config_path)
-                    )
-                ]
-            return [
-                diagnostics.SubRootNotProjectRootDiagnostic(
-                    config_path=declaring_entry.deps_path,
-                    field_path=("deps", "local", declaring_entry.index, "path"),
-                    sub_root_path=str(self._root),
-                    sub_root_config_path=str(config_path),
+                return RootConfigResult(
+                    root_config=None,
+                    diagnostics=[
+                        diagnostics.NotRunFromProjectRootDiagnostic(
+                            config_path=str(config_path)
+                        )
+                    ],
                 )
-            ]
-        project_config = self._load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
-        if isinstance(project_config, list):
-            return project_config
+            return RootConfigResult(
+                root_config=None,
+                diagnostics=[
+                    diagnostics.SubRootNotProjectRootDiagnostic(
+                        config_path=declaring_entry.deps_path,
+                        field_path=("deps", "local", declaring_entry.index, "path"),
+                        sub_root_path=str(self._root),
+                        sub_root_config_path=str(config_path),
+                    )
+                ],
+            )
+        project_config, config_diagnostics = self._load_config(
+            CONFIG_PATH, config_pb2.ProjectConfigFile
+        )
+        if project_config is None:
+            return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
         fqun = project_config.project.universe_name or ""
         if declaring_entry is not None and fqun != declaring_entry.universe:
-            return [
+            config_diagnostics.append(
                 diagnostics.SubRootFqunMismatchDiagnostic(
                     config_path=str(config_path),
                     field_path=("project", "universe_name"),
@@ -135,27 +138,37 @@ class ConfigLoader:
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
                 )
-            ]
-        sub_roots = self._local_deps_config()
-        if isinstance(sub_roots, list):
-            return sub_roots
-        return ProjectRootConfig(fqun=fqun, sub_roots=sub_roots)
+            )
+            return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
+        sub_roots = self._local_deps_config(config_diagnostics)
+        if sub_roots is None:
+            return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
+        return RootConfigResult(
+            root_config=ProjectRootConfig(fqun=fqun, sub_roots=sub_roots),
+            diagnostics=config_diagnostics,
+        )
 
     def _load_config[M: message.Message](
         self,
         subpath: define_path.DefinePath,
         message_type: type[M],
-    ) -> M | list[diagnostics.FormattableDiagnostic]:
-        """Load and validate a defcl config file, or return the diagnostics for why it is not valid."""
+    ) -> tuple[M | None, list[diagnostics.FormattableDiagnostic]]:
+        """Load and validate a defcl config file.
+
+        Returns its message, or None if a diagnostic keeps it from being used,
+        with its diagnostics.
+        """
         path = (self._root / subpath).as_posix_path()
         loaded = dcl_loader.load_file(str(path), message_type, self._source_map)
+        config_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
+            loaded.diagnostics
+        )
         if loaded.message is None:
-            return list(loaded.diagnostics)
+            return None, config_diagnostics
         result = loaded.message
         try:
             protovalidate.validate(result)
         except protovalidate.ValidationError as e:
-            violation_diagnostics: list[diagnostics.FormattableDiagnostic] = []
             for violation in e.violations:
                 field = violation.proto.field
                 # The config schemas have rules only on fields.
@@ -169,37 +182,39 @@ class ConfigLoader:
                     subscript = element.subscript
                     if subscript is not None and subscript.field == "index":
                         field_path.append(subscript.value)
-                violation_diagnostics.append(
+                config_diagnostics.append(
                     diagnostics.ConfigViolationDiagnostic(
                         config_path=str(path),
                         field_path=tuple(field_path),
                         violation_message=violation.proto.message,
                     )
                 )
-            return violation_diagnostics
-        return result
+            return None, config_diagnostics
+        return result, config_diagnostics
 
     def _local_deps_config(
-        self,
-    ) -> (
-        types.MappingProxyType[str, LocalDependencyEntry]
-        | list[diagnostics.FormattableDiagnostic]
-    ):
-        """Load and validate the local dependency overrides, or return the diagnostics for why they are not valid.
+        self, config_diagnostics: list[diagnostics.FormattableDiagnostic]
+    ) -> types.MappingProxyType[str, LocalDependencyEntry] | None:
+        """Load and validate the local dependency overrides, adding their diagnostics to config_diagnostics.
 
-        Returns an immutable mapping from universe name to its entry.
+        Returns an immutable mapping from universe name to its entry, or None
+        if a diagnostic keeps the overrides from being used. When two entries
+        declare the same universe, the first is used.
         """
         deps_path = str((self._root / LOCAL_DEPS_PATH).as_posix_path())
         if not Path(deps_path).exists():
             return _EMPTY_DEPS
-        result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
-        if isinstance(result, list):
-            return result
+        result, deps_diagnostics = self._load_config(
+            LOCAL_DEPS_PATH, local_pb2.LocalDepsFile
+        )
+        config_diagnostics.extend(deps_diagnostics)
+        if result is None:
+            return None
         deps: dict[str, LocalDependencyEntry] = {}
         for index, dep in enumerate(result.deps.local):
             first_entry = deps.get(dep.universe_name)
             if first_entry is not None:
-                return [
+                config_diagnostics.append(
                     diagnostics.DuplicateLocalDependencyDiagnostic(
                         config_path=deps_path,
                         field_path=("deps", "local", index, "universe_name"),
@@ -211,7 +226,8 @@ class ConfigLoader:
                             "universe_name",
                         ),
                     )
-                ]
+                )
+                continue
             deps[dep.universe_name] = LocalDependencyEntry(
                 deps_path=deps_path,
                 index=index,

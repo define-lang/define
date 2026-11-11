@@ -2,7 +2,9 @@
 //! checking it.
 
 use defcl_parser::{DecodeError, SyntaxError, decode, parse};
-use defcl_semantics::{FileDescriptorSet, Schema, SchemaError, SemanticError, check_semantics};
+use defcl_semantics::{
+    FileDescriptorSet, Schema, SchemaError, SemanticError, SemanticErrorKind, check_semantics,
+};
 use std::io;
 use std::path::Path;
 
@@ -15,6 +17,10 @@ pub struct FileErrors {
     /// Every semantic error, in source order, unless a syntax error stopped the
     /// parse.
     pub semantic_errors: Vec<SemanticError>,
+    /// Whether the file still means exactly one message despite its errors: no
+    /// syntax error stopped its parse, and its only semantic errors are fields
+    /// out of order.
+    pub understood: bool,
 }
 
 /// A DCL file's text, or its bytes if they are not valid UTF-8.
@@ -35,13 +41,21 @@ pub fn validate(
 ) -> Result<FileErrors, SchemaError> {
     let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)?;
     let parsed = parse(source);
-    let semantic_errors = match &parsed.file {
-        Some(file) => check_semantics(file, &schema),
-        None => Vec::new(),
+    let Some(file) = &parsed.file else {
+        return Ok(FileErrors {
+            syntax_errors: parsed.errors,
+            semantic_errors: Vec::new(),
+            understood: false,
+        });
     };
+    let semantic_errors = check_semantics(file, &schema);
+    let understood = semantic_errors
+        .iter()
+        .all(|error| matches!(error.kind, SemanticErrorKind::FieldOutOfOrder { .. }));
     Ok(FileErrors {
         syntax_errors: parsed.errors,
         semantic_errors,
+        understood,
     })
 }
 
@@ -70,6 +84,7 @@ pub fn validate_file(
                     FileErrors {
                         syntax_errors: vec![error],
                         semantic_errors: Vec::new(),
+                        understood: false,
                     }
                 });
             Ok((Err(source), result))
@@ -117,6 +132,7 @@ mod tests {
             ok(eq(&FileErrors {
                 syntax_errors: vec![],
                 semantic_errors: vec![],
+                understood: true,
             }))
         )
     }
@@ -152,6 +168,7 @@ mod tests {
                     },
                 }],
                 semantic_errors: vec![],
+                understood: false,
             }))
         )
     }
@@ -194,6 +211,7 @@ mod tests {
                         field_name: "size".to_owned(),
                     },
                 ],
+                understood: false,
             }))
         )
     }
@@ -225,6 +243,56 @@ mod tests {
                     },
                     field_name: "size".to_owned(),
                 }],
+                understood: false,
+            }))
+        )
+    }
+
+    #[gtest]
+    fn file_with_only_layout_errors_is_understood() -> Result<()> {
+        verify_that!(
+            validate(
+                "project: {\n  universe_name: \"example\"\n\n}\n",
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.SingleToplevelFile",
+            ),
+            ok(eq(&FileErrors {
+                syntax_errors: vec![SyntaxError {
+                    kind: SyntaxErrorKind::BlankLine,
+                    location: SourceLocation {
+                        start: Position { line: 3, column: 1 },
+                        end: Position { line: 3, column: 1 }
+                    },
+                }],
+                semantic_errors: vec![],
+                understood: true,
+            }))
+        )
+    }
+
+    #[gtest]
+    fn file_with_only_fields_out_of_order_is_understood() -> Result<()> {
+        verify_that!(
+            validate(
+                include_str!(
+                    "../testdata/invalid/semantics/field_order/field_after_higher_number.defcl"
+                ),
+                invalid_semantics_schemas()?,
+                "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile",
+            ),
+            ok(eq(&FileErrors {
+                syntax_errors: vec![],
+                semantic_errors: vec![SemanticError {
+                    kind: SemanticErrorKind::FieldOutOfOrder {
+                        later_field: "count".to_owned(),
+                    },
+                    location: SourceLocation {
+                        start: Position { line: 3, column: 3 },
+                        end: Position { line: 3, column: 6 }
+                    },
+                    field_name: "name".to_owned(),
+                }],
+                understood: true,
             }))
         )
     }
@@ -255,6 +323,7 @@ mod tests {
                         },
                     }],
                     semantic_errors: vec![],
+                    understood: false,
                 }))
             )
         )
@@ -292,6 +361,7 @@ mod tests {
                         },
                     }],
                     semantic_errors: vec![],
+                    understood: false,
                 }))
             )
         )

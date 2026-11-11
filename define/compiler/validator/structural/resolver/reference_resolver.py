@@ -324,17 +324,17 @@ class ReferenceResolver:
     ) -> config.ProjectRootConfig | None:
         """Load project config for a root and register it.
 
-        If it cannot load, marks the root failed and returns None after
-        recording the config's diagnostics. They are in the config, not at a
+        Records the config's diagnostics. They are in the config, not at a
         reference, so they are recorded once, however many references lead
-        into the root.
+        into the root. If the config cannot be used, marks the root failed and
+        returns None.
         """
         result = config.ConfigLoader(
             root_prefix, self._source_map
         ).load_project_root_config(declaring_entry)
+        self._program_diagnostics.extend(result.diagnostics)
         if result.root_config is None:
             self._path_tracker.mark_root_failed(root_prefix)
-            self._program_diagnostics.extend(result.diagnostics)
             return None
         root_config = result.root_config
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
