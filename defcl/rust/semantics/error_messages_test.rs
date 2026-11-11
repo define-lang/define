@@ -230,43 +230,43 @@ fn each_schema_error_has_its_message() -> Result<()> {
             valid_schemas()?,
             "defcl.testdata.valid.schemas.NoSuchFile",
             indoc! {"
-            Cannot create a DCL schema: the FileDescriptorSet has no message type named defcl.testdata.valid.schemas.NoSuchFile to use as the top-level message type"},
+            Cannot create a defcl schema: the FileDescriptorSet has no message type named defcl.testdata.valid.schemas.NoSuchFile to use as the top-level message type"},
         ),
         (
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile",
             indoc! {"
-                Cannot create a DCL schema:
-                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.enabled is a bool field, which DCL does not allow
-                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.data is a bytes field, which DCL does not allow
-                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.extra is a google.protobuf.Any field, which DCL does not allow"},
+                Cannot create a defcl schema:
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.enabled is a bool field, which defcl does not allow
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.data is a bytes field, which defcl does not allow
+                  - defcl.testdata.invalid.schemas.ProhibitedFieldTypesFile.Config.extra is a google.protobuf.Any field, which defcl does not allow"},
         ),
         (
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.RequiredFieldFile",
             indoc! {"
-                Cannot create a DCL schema:
-                  - defcl.testdata.invalid.schemas.RequiredFieldFile.Config.name is a required field, which DCL does not allow"},
+                Cannot create a defcl schema:
+                  - defcl.testdata.invalid.schemas.RequiredFieldFile.Config.name is a required field, which defcl does not allow"},
         ),
         (
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.MessageTypeWithoutFieldsFile",
             indoc! {"
-                Cannot create a DCL schema:
-                  - defcl.testdata.invalid.schemas.MessageTypeWithoutFieldsFile.Config.marker is a defcl.testdata.invalid.schemas.MessageTypeWithoutFieldsFile.Marker field, a message type with no fields, which DCL does not allow"},
+                Cannot create a defcl schema:
+                  - defcl.testdata.invalid.schemas.MessageTypeWithoutFieldsFile.Config.marker is a defcl.testdata.invalid.schemas.MessageTypeWithoutFieldsFile.Marker field, a message type with no fields, which defcl does not allow"},
         ),
         (
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.Utf8ValidationNoneFile",
             indoc! {"
-                Cannot create a DCL schema:
-                  - defcl.testdata.invalid.schemas.Utf8ValidationNoneFile.Config.unchecked does not validate UTF-8, which DCL does not allow"},
+                Cannot create a defcl schema:
+                  - defcl.testdata.invalid.schemas.Utf8ValidationNoneFile.Config.unchecked does not validate UTF-8, which defcl does not allow"},
         ),
         (
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.TopLevelFieldsFile",
             indoc! {"
-                Cannot create a DCL schema:
+                Cannot create a defcl schema:
                   - defcl.testdata.invalid.schemas.TopLevelFieldsFile.count is not a message field, but the fields of the top-level message type must be message fields
                   - defcl.testdata.invalid.schemas.TopLevelFieldsFile.configs is a repeated field, but the fields of the top-level message type cannot be repeated
                   - defcl.testdata.invalid.schemas.TopLevelFieldsFile.names is not a message field, but the fields of the top-level message type must be message fields
@@ -276,10 +276,10 @@ fn each_schema_error_has_its_message() -> Result<()> {
             invalid_schemas()?,
             "defcl.testdata.invalid.schemas.OlderEditionsFile",
             indoc! {"
-                Cannot create a DCL schema:
-                  - defcl/testdata/invalid/schemas/edition_2023.proto uses EDITION_2023, but the files of a DCL schema must use edition 2024 or later
-                  - defcl/testdata/invalid/schemas/proto3_config.proto uses proto3, but the files of a DCL schema must use edition 2024 or later
-                  - defcl/testdata/invalid/schemas/proto2_config.proto uses proto2, but the files of a DCL schema must use edition 2024 or later"},
+                Cannot create a defcl schema:
+                  - defcl/testdata/invalid/schemas/edition_2023.proto uses EDITION_2023, but the files of a defcl schema must use edition 2024 or later
+                  - defcl/testdata/invalid/schemas/proto3_config.proto uses proto3, but the files of a defcl schema must use edition 2024 or later
+                  - defcl/testdata/invalid/schemas/proto2_config.proto uses proto2, but the files of a defcl schema must use edition 2024 or later"},
         ),
     ];
     for (descriptor_set, top_level_message_type, expected) in cases {

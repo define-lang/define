@@ -1,4 +1,4 @@
-// Package main implements a buf plugin for DCL-specific proto schema validation.
+// Package main implements a buf plugin for defcl-specific proto schema validation.
 package main
 
 import (
@@ -30,7 +30,7 @@ var spec = &check.Spec{
 	Categories: []*check.CategorySpec{
 		{
 			ID:      "DEFCL",
-			Purpose: "All DCL-specific lint rules.",
+			Purpose: "All defcl-specific lint rules.",
 		},
 	},
 }
@@ -146,7 +146,7 @@ func checkMessagesForBool(messages protoreflect.MessageDescriptors, responseWrit
 			field := fields.Get(j)
 			if field.Kind() == protoreflect.BoolKind {
 				responseWriter.AddAnnotation(
-					check.WithMessagef("field %q uses bool type, which is not allowed in DCL", field.Name()),
+					check.WithMessagef("field %q uses bool type, which is not allowed in defcl", field.Name()),
 					check.WithDescriptor(field),
 				)
 			}
@@ -176,7 +176,7 @@ func checkMessagesForBytes(messages protoreflect.MessageDescriptors, responseWri
 			field := fields.Get(j)
 			if field.Kind() == protoreflect.BytesKind {
 				responseWriter.AddAnnotation(
-					check.WithMessagef("field %q uses bytes type, which is not allowed in DCL", field.Name()),
+					check.WithMessagef("field %q uses bytes type, which is not allowed in defcl", field.Name()),
 					check.WithDescriptor(field),
 				)
 			}
@@ -208,7 +208,7 @@ func checkMessagesForAny(messages protoreflect.MessageDescriptors, responseWrite
 				msgDesc := field.Message()
 				if msgDesc != nil && msgDesc.FullName() == "google.protobuf.Any" {
 					responseWriter.AddAnnotation(
-						check.WithMessagef("field %q uses google.protobuf.Any, which is not allowed in DCL", field.Name()),
+						check.WithMessagef("field %q uses google.protobuf.Any, which is not allowed in defcl", field.Name()),
 						check.WithDescriptor(field),
 					)
 				}

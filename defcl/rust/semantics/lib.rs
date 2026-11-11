@@ -1,4 +1,4 @@
-//! The checks of a parsed DCL file against its schema.
+//! The checks of a parsed defcl file against its schema.
 
 #[cfg(test)]
 mod error_messages_test;

@@ -1,4 +1,4 @@
-//! The schema that a DCL file is checked against: the message types of a
+//! The schema that a defcl file is checked against: the message types of a
 //! `FileDescriptorSet`, with lookup tables over their descriptors.
 
 use crate::schema_restrictions::{self, SchemaFile, SchemaViolation};
@@ -10,19 +10,19 @@ use descriptor_proto::google::protobuf::{
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use std::fmt::Write as _;
 
-/// A schema that the crate cannot check a DCL file against.
+/// A schema that the crate cannot check a defcl file against.
 #[derive(Debug, PartialEq, Eq, Display, Error)]
 pub enum SchemaError {
     /// The `FileDescriptorSet` has no message type named `message_type`, the
     /// requested top-level message type.
     #[display(
-        "Cannot create a DCL schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
+        "Cannot create a defcl schema: the FileDescriptorSet has no message type named {message_type} to use as the top-level message type"
     )]
     MissingMessageType { message_type: String },
     /// A message or enum field's type is not a message type or enum type in
     /// the `FileDescriptorSet`, which protoc never writes.
     #[display(
-        "Cannot create a DCL schema: the field {message_type}.{field_name} has the type {type_name}, which the FileDescriptorSet does not define"
+        "Cannot create a defcl schema: the field {message_type}.{field_name} has the type {type_name}, which the FileDescriptorSet does not define"
     )]
     UnknownFieldType {
         /// The full name of the message type that has the field.
@@ -32,8 +32,8 @@ pub enum SchemaError {
         type_name: String,
     },
     /// The top-level message type, or a message type that its fields lead
-    /// to, breaks DCL's rules for schemas.
-    #[display("Cannot create a DCL schema:{}", violation_list(violations))]
+    /// to, breaks defcl's rules for schemas.
+    #[display("Cannot create a defcl schema:{}", violation_list(violations))]
     BreaksRestrictions { violations: Vec<SchemaViolation> },
 }
 
@@ -47,7 +47,7 @@ fn violation_list(violations: &[SchemaViolation]) -> String {
 }
 
 /// The message types and enum types of a `FileDescriptorSet`, and which
-/// message type is the type of a whole DCL file.
+/// message type is the type of a whole defcl file.
 pub struct Schema {
     message_types: Vec<MessageType>,
     enum_types: Vec<EnumType>,
@@ -175,7 +175,7 @@ impl MessageType {
 }
 
 impl Schema {
-    /// Indexes `file_descriptor_set` for checking DCL files whose top-level
+    /// Indexes `file_descriptor_set` for checking defcl files whose top-level
     /// message type is the one with the full name `top_level_message_type`.
     ///
     /// `file_descriptor_set` must be as protoc writes it, with every file that
@@ -186,7 +186,7 @@ impl Schema {
     /// Returns an error if a message field's type is not a message type in
     /// the set, if the set does not have the top-level message type, or if
     /// that message type or the message types that its fields lead to break
-    /// DCL's rules for schemas. The error has every way that they break them.
+    /// defcl's rules for schemas. The error has every way that they break them.
     pub fn from_descriptor_set(
         file_descriptor_set: FileDescriptorSet,
         top_level_message_type: &str,
@@ -428,7 +428,7 @@ mod tests {
         expect_that!(
             error.as_ref().map(ToString::to_string),
             some(eq(
-                "Cannot create a DCL schema: the field package.File.config has the type .package.Missing, which the FileDescriptorSet does not define"
+                "Cannot create a defcl schema: the field package.File.config has the type .package.Missing, which the FileDescriptorSet does not define"
             ))
         );
         verify_that!(

@@ -44,7 +44,7 @@ rust_library(
 rust_test(
     name = "semantics_test",
     size = "small",
-    # The tests read their DCL files with include_str!, and their schemas from
+    # The tests read their defcl files with include_str!, and their schemas from
     # runfiles.
     compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":semantics",

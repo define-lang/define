@@ -1,4 +1,4 @@
-"""Loads DCL files into protobuf messages."""
+"""Loads defcl files into protobuf messages."""
 
 from __future__ import annotations
 
@@ -16,17 +16,17 @@ if typing.TYPE_CHECKING:
 
 
 class LoadResult[M: message.Message](msgspec.Struct, frozen=True):
-    """The message that a DCL file holds, if it still means exactly one message, and its diagnostics."""
+    """The message that a defcl file holds, if it still means exactly one message, and its diagnostics."""
 
     # None when a diagnostic leaves the file's meaning unclear. Otherwise the
     # message is here even if the file has diagnostics, so that a caller can go
     # on to find other errors. The diagnostics still mean the file is invalid.
     message: M | None
-    diagnostics: list[errors.DclDiagnostic]
+    diagnostics: list[errors.DefclDiagnostic]
 
 
 def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M]:
-    """Load the DCL text `source` into a message of `message_type`.
+    """Load the defcl text `source` into a message of `message_type`.
 
     Raises:
         text_format.ParseError: If `source` fails a check that only protobuf's
@@ -47,7 +47,7 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
 def load_file[M: message.Message](
     path: str, message_type: type[M], source_map: rendering.SourceMap
 ) -> LoadResult[M]:
-    """Load the DCL file at `path` into a message of `message_type`, registering it with `source_map`.
+    """Load the defcl file at `path` into a message of `message_type`, registering it with `source_map`.
 
     Raises:
         OSError: If the file cannot be read.

@@ -1,4 +1,4 @@
-//! The validation of a DCL file's text against its schema: parsing it, then
+//! The validation of a defcl file's text against its schema: parsing it, then
 //! checking it.
 
 use defcl_parser::{DecodeError, SyntaxError, decode, parse};
@@ -8,7 +8,7 @@ use defcl_semantics::{
 use std::io;
 use std::path::Path;
 
-/// The errors in a DCL file, which it has none of if it is valid.
+/// The errors in a defcl file, which it has none of if it is valid.
 #[derive(Debug, PartialEq, Eq)]
 pub struct FileErrors {
     /// Every syntax error, in the order the parser found them. If one stopped
@@ -23,17 +23,17 @@ pub struct FileErrors {
     pub understood: bool,
 }
 
-/// A DCL file's text, or its bytes if they are not valid UTF-8.
+/// A defcl file's text, or its bytes if they are not valid UTF-8.
 pub type FileSource = Result<String, Vec<u8>>;
 
-/// Validates `source`, the text of a DCL file, against the schema whose
+/// Validates `source`, the text of a defcl file, against the schema whose
 /// top-level message type has the full name `top_level_message_type` in
 /// `descriptor_set`, and returns its errors.
 ///
 /// # Errors
 ///
 /// Returns the schema's error if the descriptor set has no message type with
-/// the top-level message type's name, or the schema breaks DCL's rules.
+/// the top-level message type's name, or the schema breaks defcl's rules.
 pub fn validate(
     source: &str,
     descriptor_set: FileDescriptorSet,
@@ -59,7 +59,7 @@ pub fn validate(
     })
 }
 
-/// Validates the DCL file at `path` as `validate` validates its text, and
+/// Validates the defcl file at `path` as `validate` validates its text, and
 /// returns its text, or its bytes if they are not valid UTF-8, with the result
 /// of validating it.
 ///

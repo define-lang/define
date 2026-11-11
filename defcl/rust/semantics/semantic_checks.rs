@@ -1,4 +1,4 @@
-//! The checks of a DCL file's syntax tree against its schema.
+//! The checks of a defcl file's syntax tree against its schema.
 
 use crate::schema::{
     EnumType, FloatFieldType, IntegerFieldType, MessageType, Schema, SchemaField, ValueType,
@@ -8,7 +8,7 @@ use defcl_parser::{Field, FieldName, ParsedFile, Value};
 use rustc_hash::{FxBuildHasher, FxHashSet};
 use source_rendering::SourceLocation;
 
-/// Checks the syntax tree of a DCL file against `schema`, and returns every
+/// Checks the syntax tree of a defcl file against `schema`, and returns every
 /// error it finds, in source order. A value that an error leaves without a type
 /// to check against is not checked further.
 #[must_use]

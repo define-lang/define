@@ -2,7 +2,7 @@ edition = "2024";
 
 package defcl.testdata.valid.schemas;
 
-// A field of every type that DCL allows, for generating DCL files.
+// A field of every type that defcl allows, for generating defcl files.
 message EveryFieldTypeFile {
   Values values = 1;
   message Values {

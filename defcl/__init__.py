@@ -1,1 +1,1 @@
-"""Define Configuration Language (DCL) package."""
+"""Define Configuration Language (defcl) package."""

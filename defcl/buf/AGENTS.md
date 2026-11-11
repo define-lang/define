@@ -1,4 +1,4 @@
-# Rules for DCL Buf Plugin
+# Rules for defcl Buf Plugin
 
 This directory contains a custom buf lint plugin written in Go.
 

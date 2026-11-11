@@ -75,12 +75,12 @@ bools.
 
 ## Solution
 
-DCL does not allow `bool` fields in schemas.
+defcl does not allow `bool` fields in schemas.
 
 Instead, any "boolean-like" setting must be represented as an enum with an
 explicit `UNSPECIFIED` value.
 
-For convenience and consistency, DCL provides a standard enum `Defcl::Boolean`
+For convenience and consistency, defcl provides a standard enum `Defcl::Boolean`
 with these values:
 
 - `UNSPECIFIED`

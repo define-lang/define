@@ -1,6 +1,6 @@
 # defcl_semantics
 
-Checks a parsed DCL file against the protobuf schema of its top-level message
+Checks a parsed defcl file against the protobuf schema of its top-level message
 type. The input is the `ParsedFile` from `defcl_parser`, which only checks
 syntax.
 

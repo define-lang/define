@@ -12,7 +12,7 @@ import textwrap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from defcl.python import errors as dcl_errors
+from defcl.python import errors as defcl_errors
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator import test_helpers
@@ -892,7 +892,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, dcl_errors.SyntaxDiagnostic)
+    assert isinstance(diagnostic, defcl_errors.SyntaxDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 2, column 16
             universe_name "bad"
@@ -917,7 +917,7 @@ def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
     program_result = program_validator.validate_program(PurePosixPath("test.dfn"))
     (diagnostic,) = program_result.all_diagnostics
-    assert isinstance(diagnostic, dcl_errors.UnknownFieldNameDiagnostic)
+    assert isinstance(diagnostic, defcl_errors.UnknownFieldNameDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 3, column 3
             owner: "y"

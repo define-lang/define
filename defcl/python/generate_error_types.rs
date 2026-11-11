@@ -1,4 +1,4 @@
-//! Writes `error_types.py`, the Python enums of the kinds of DCL diagnostics, from
+//! Writes `error_types.py`, the Python enums of the kinds of defcl diagnostics, from
 //! the kinds of the Rust errors, to the path in its one argument.
 
 use defcl_parser::SyntaxErrorKind;
@@ -21,7 +21,7 @@ fn write_enum(module: &mut String, name: &str, docstring: &str, members: &[&str]
 
 fn main() -> std::io::Result<()> {
     let mut module = String::from(indoc! {r#"
-        """The kinds of DCL diagnostics, generated from the kinds of the Rust errors."""
+        """The kinds of defcl diagnostics, generated from the kinds of the Rust errors."""
 
         from __future__ import annotations
 
@@ -30,13 +30,13 @@ fn main() -> std::io::Result<()> {
     write_enum(
         &mut module,
         "SyntaxDiagnosticKind",
-        "The kinds of syntax error in a DCL file.",
+        "The kinds of syntax error in a defcl file.",
         SyntaxErrorKind::VARIANTS,
     );
     write_enum(
         &mut module,
         "SemanticDiagnosticKind",
-        "The kinds of error that checking a DCL file against its schema finds.",
+        "The kinds of error that checking a defcl file against its schema finds.",
         SemanticErrorKind::VARIANTS,
     );
     let path = std::env::args_os()

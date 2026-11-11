@@ -1,1 +1,1 @@
-"""Core DCL schema types."""
+"""Core defcl schema types."""

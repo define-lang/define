@@ -1,4 +1,4 @@
-"""The diagnostics that validating a DCL file reports, and the errors that it raises."""
+"""The diagnostics that validating a defcl file reports, and the errors that it raises."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ if typing.TYPE_CHECKING:
 
 
 class InvalidSchemaError(Exception):
-    """A descriptor set that DCL files cannot be checked against."""
+    """A descriptor set that defcl files cannot be checked against."""
 
 
-class DclDiagnostic(msgspec.Struct, frozen=True):
-    """An error in a DCL file."""
+class DefclDiagnostic(msgspec.Struct, frozen=True):
+    """An error in a defcl file."""
 
     # The diagnostic's message, without its location.
     message: str
@@ -35,14 +35,14 @@ class DclDiagnostic(msgspec.Struct, frozen=True):
         return self.message
 
 
-class SyntaxDiagnostic(DclDiagnostic, frozen=True):
+class SyntaxDiagnostic(DefclDiagnostic, frozen=True):
     """A syntax error in a file. Each error in the file's layout is reported; any other syntax error stops the checks of the file."""
 
     kind: error_types.SyntaxDiagnosticKind
 
 
 class UnexpectedCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
-    """An UNEXPECTED_CHARACTER diagnostic: a character that DCL does not allow."""
+    """An UNEXPECTED_CHARACTER diagnostic: a character that defcl does not allow."""
 
     character: str
 
@@ -71,8 +71,8 @@ class WrongIndentationDiagnostic(SyntaxDiagnostic, frozen=True):
     expected_spaces: int
 
 
-class SemanticDiagnostic(DclDiagnostic, frozen=True):
-    """An error that checking a DCL file against its schema found."""
+class SemanticDiagnostic(DefclDiagnostic, frozen=True):
+    """An error that checking a defcl file against its schema found."""
 
     kind: error_types.SemanticDiagnosticKind
     field_name: str

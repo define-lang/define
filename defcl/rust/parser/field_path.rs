@@ -1,10 +1,10 @@
-//! Finding where a DCL file writes the field that a field path names.
+//! Finding where a defcl file writes the field that a field path names.
 
 use crate::syntax_tree::{Field, ParsedFile, Value};
 use source_rendering::SourceLocation;
 
 /// One element of a field path.
-// TODO: Add map keys once the spec decides how DCL files write maps.
+// TODO: Add map keys once the spec decides how defcl files write maps.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FieldPathElement<'path> {
     /// A field of the message before it, by name.

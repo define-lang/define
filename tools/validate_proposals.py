@@ -31,7 +31,7 @@ REQUIRED_METADATA: list[str] = [
 ]
 
 PROPOSAL_TITLE_PREFIX = "Define Language Proposal"
-DCL_PROPOSAL_TITLE_PREFIX = "Define Configuration Language Proposal"
+DEFCL_PROPOSAL_TITLE_PREFIX = "Define Configuration Language Proposal"
 STANDARD_LIBRARY_PROPOSAL_TITLE_PREFIX = "Define Standard Library Proposal"
 
 FILENAME_PATTERN = re.compile(r"^(\d{5})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
@@ -87,7 +87,7 @@ def validate_title(
     proposal_number = filename_result.proposal_number
 
     if "defcl" in filepath.parts:
-        expected_prefix = DCL_PROPOSAL_TITLE_PREFIX
+        expected_prefix = DEFCL_PROPOSAL_TITLE_PREFIX
     elif "standard" in filepath.parts:
         expected_prefix = STANDARD_LIBRARY_PROPOSAL_TITLE_PREFIX
     else:

@@ -1,9 +1,9 @@
-//! The formatting of a DCL file: fixing the layout errors that changing only
+//! The formatting of a defcl file: fixing the layout errors that changing only
 //! its whitespace and comments fixes.
 
 use defcl_parser::{LayoutFix, ParseResult, SyntaxError, parse, parse_with_layout_fixes};
 
-/// Formats `source`, the text of a DCL file.
+/// Formats `source`, the text of a defcl file.
 ///
 /// Returns its text with each layout error fixed that changing only its
 /// whitespace and comments fixes, and each invisible character outside its
@@ -31,7 +31,7 @@ pub fn format(source: &str) -> (Option<String>, Vec<SyntaxError>) {
     (Some(formatted), errors)
 }
 
-/// Whether `format` changes `source`, the text of a DCL file, and the syntax
+/// Whether `format` changes `source`, the text of a defcl file, and the syntax
 /// errors that the formatted text still has, at their places in `source`.
 #[must_use]
 pub fn check(source: &str) -> (bool, Vec<SyntaxError>) {

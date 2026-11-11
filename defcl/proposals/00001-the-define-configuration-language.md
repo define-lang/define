@@ -111,19 +111,19 @@ configurations are correctly specified.
 
 ## Solution
 
-Make the Define Configuration Language (DCL) a strict subset of the
+Make the Define Configuration Language (defcl) a strict subset of the
 [Protocol Buffer Text Format](https://protobuf.dev/reference/protobuf/textformat-spec/)
 (textproto) that removes all ambiguity and "more than one way to do it" from the
 spec.
 
 Require `.proto` schema files for parsing and use a textproto parser to read the
-format (along with an additional validator to make sure the DCL files are in the
-correct format).
+format (along with an additional validator to make sure the defcl files are in
+the correct format).
 
-DCL is used for all configuration files in the `.define` directory, with the
+defcl is used for all configuration files in the `.define` directory, with the
 file extension `.defcl`.
 
-The syntax and parsing rules for DCL are specified in the
+The syntax and parsing rules for defcl are specified in the
 [Define Configuration Language Specification](../spec/spec.md).
 
 ## A Real Program
@@ -152,12 +152,12 @@ much easier.
 
 ### Simple Parsing Complexity for Self-Hosting
 
-The grammar of DCL format is recursive but extremely simple. It does not require
-lookahead for type inference (unlike YAML). It does not require complex state
-machines for table definitions (unlike TOML). The parser can be implemented in a
-few hundred lines of code in any language (Python, Rust, or Define itself). This
-drastically simplifies the eventual roadmap to a self-hosting compiler, as we do
-not need to port a heavy library like `toml++`.
+The grammar of defcl format is recursive but extremely simple. It does not
+require lookahead for type inference (unlike YAML). It does not require complex
+state machines for table definitions (unlike TOML). The parser can be
+implemented in a few hundred lines of code in any language (Python, Rust, or
+Define itself). This drastically simplifies the eventual roadmap to a
+self-hosting compiler, as we do not need to port a heavy library like `toml++`.
 
 ### Alternatives Considered
 
@@ -304,7 +304,7 @@ using protos over JSON. Provided we enforce certain proto best practices, we
 should be fine.
 
 If we needed to change the format entirely in the future, we could
-deterministically transform DCL files to any new format, as the structure is
+deterministically transform defcl files to any new format, as the structure is
 unambiguous and the schema provides the type information we would need to ensure
 this.
 

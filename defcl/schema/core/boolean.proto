@@ -2,9 +2,9 @@ edition = "2024";
 
 package defcl.schema.core;
 
-// Defcl is a namespace for DCL built-in types.
+// Defcl is a namespace for defcl built-in types.
 message Defcl {
-  // Boolean is the standard three-valued boolean type for DCL (replaces proto bool).
+  // Boolean is the standard three-valued boolean type for defcl (replaces proto bool).
   enum Boolean {
     // Value not set.
     UNSPECIFIED = 0;

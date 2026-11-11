@@ -8,8 +8,8 @@
 ## Problems
 
 Protocol Buffer Text Format lets a repeated field appear more than once in the
-same message, and it joins the values into one list. DCL inherits that, so these
-two files mean exactly the same thing:
+same message, and it joins the values into one list. defcl inherits that, so
+these two files mean exactly the same thing:
 
 ```
 deps: {
@@ -27,8 +27,9 @@ deps: {
 }
 ```
 
-That is two ways to do the same thing, which DCL intends to forbid. A reader of
-the second file also has to search the whole message to know what a list holds.
+That is two ways to do the same thing, which defcl intends to forbid. A reader
+of the second file also has to search the whole message to know what a list
+holds.
 
 Also, sometimes in error messages you might want to be able to say "this field
 that is set at this line and column." If a field can appear in more than one
@@ -59,7 +60,7 @@ deps: {
 
 ## Why This is the Right Solution
 
-It follows DCL's "one way" philosophy from
+It follows defcl's "one way" philosophy from
 [DCLP 1](00001-the-define-configuration-language.md): every list has one
 spelling, and every field has one location in the file.
 

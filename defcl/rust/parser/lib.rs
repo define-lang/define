@@ -1,4 +1,4 @@
-//! The Define Configuration Language (DCL) parser, which tracks the source
+//! The Define Configuration Language (defcl) parser, which tracks the source
 //! location of every part of a file.
 
 #[cfg(test)]

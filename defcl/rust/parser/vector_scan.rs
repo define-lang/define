@@ -1,4 +1,4 @@
-//! Scans of the words of DCL files (field names, numbers and enum values) that
+//! Scans of the words of defcl files (field names, numbers and enum values) that
 //! compare 32 bytes at a time.
 //!
 //! Benchmarks of field names, numbers and enum values showed these scans
@@ -200,7 +200,7 @@ fn alphanumeric_mask(vector: u8x32) -> u32 {
 
 // These tests cover the scans' own logic: what each scan reports, and the
 // separate paths for words near the end of the source and for words longer
-// than one vector. They are not tests of DCL syntax, which the parser tests
+// than one vector. They are not tests of defcl syntax, which the parser tests
 // cover.
 #[cfg(test)]
 mod tests {

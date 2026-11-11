@@ -4,13 +4,13 @@ Version: 0 (Subject to unpredictable breaking changes)
 
 ## Introduction
 
-The Define Configuration Language (DCL) is a strict subset of the
+The Define Configuration Language (defcl) is a strict subset of the
 [Protocol Buffers Text Format Language](https://protobuf.dev/reference/protobuf/textformat-spec/)
-(textproto). DCL is used for configuration files in the `.define` directory of
+(textproto). defcl is used for configuration files in the `.define` directory of
 Define projects, with the file extension `.defcl`.
 
-This specification defines the syntax and restrictions of DCL. Any valid DCL
-file must be parseable by a textproto parser, but DCL rejects many constructs
+This specification defines the syntax and restrictions of defcl. Any valid defcl
+file must be parseable by a textproto parser, but defcl rejects many constructs
 that are valid in textproto in order to enforce stricter rules and improve
 consistency.
 
@@ -19,41 +19,41 @@ their schemas, and expects the reader to be familiar with those terms.
 
 ### Relationship to Textproto
 
-DCL is based on textproto, but with the following key differences:
+defcl is based on textproto, but with the following key differences:
 
-- DCL is more restrictive: many valid textproto constructs are errors in DCL
-- DCL enforces stricter formatting rules for consistency
-- DCL requires schema validation: unknown field names are errors
-- DCL enforces that every field of the top-level message type is a non-repeated
-  message field.
-- DCL allows a field name only once in a message, even for repeated fields.
-- DCL allows only one way to write a file: its layout and the order of its
+- defcl is more restrictive: many valid textproto constructs are errors in defcl
+- defcl enforces stricter formatting rules for consistency
+- defcl requires schema validation: unknown field names are errors
+- defcl enforces that every field of the top-level message type is a
+  non-repeated message field.
+- defcl allows a field name only once in a message, even for repeated fields.
+- defcl allows only one way to write a file: its layout and the order of its
   fields are fixed, so that two files with the same fields, values and comments
   are the same bytes, except that the characters of a string can be written in
   more than one way.
 
-Any valid DCL file is also a valid textproto file, and can be parsed by standard
-textproto parsers. However, a textproto parser will accept many files that DCL
-rejects.
+Any valid defcl file is also a valid textproto file, and can be parsed by
+standard textproto parsers. However, a textproto parser will accept many files
+that defcl rejects.
 
 ## Strictness
 
-DCL is intended to be a very strict language. Any syntax or behavior not
+defcl is intended to be a very strict language. Any syntax or behavior not
 specified in this spec is an error.
 
 The language has no "undefined behavior." If a parser encounters a situation not
 described in this spec, it must provide an error and refuse to parse the file.
 
-Because DCL is derived from the textproto format, parts of this spec explicitly
-note that some textproto syntax is not supported. However, that is just advisory
-text---what matters are the statements of what we _do_ parse.
+Because defcl is derived from the textproto format, parts of this spec
+explicitly note that some textproto syntax is not supported. However, that is
+just advisory text---what matters are the statements of what we _do_ parse.
 
 ## File Format
 
-DCL files use the `.defcl` filename extension. They are UTF-8 encoded with no
+defcl files use the `.defcl` filename extension. They are UTF-8 encoded with no
 BOM.
 
-DCL files must end with a newline character.
+defcl files must end with a newline character.
 
 ## Lexical Elements
 
@@ -86,7 +86,7 @@ Zs, Zl, or Zp, or if it has the Default_Ignorable_Code_Point property. All other
 characters are visible. Tabs, carriage returns, NUL, and the byte order mark are
 all invisible.
 
-The only invisible characters allowed in a DCL file are:
+The only invisible characters allowed in a defcl file are:
 
 - Space (`U+0020`)
 - Line feed (`U+000A`)
@@ -104,7 +104,7 @@ through an escape, such as `\t` or `\u202E`.
 
 ### Whitespace
 
-DCL restricts whitespace to only space characters and newlines. Tabs, carriage
+defcl restricts whitespace to only space characters and newlines. Tabs, carriage
 returns, and other whitespace characters are not allowed anywhere.
 
 ### Comments
@@ -120,7 +120,7 @@ comment_text = { char - newline }, ( char - " " - newline ) ;
 
 ### Field Names
 
-Field names in DCL are restricted to lowercase ASCII letters, digits, and
+Field names in defcl are restricted to lowercase ASCII letters, digits, and
 underscores only. Field names must conform to Proto Edition 2024 naming style
 requirements:
 
@@ -152,7 +152,7 @@ Examples of invalid field names:
 
 ### Numeric Literals
 
-DCL has strict rules for numeric literals:
+defcl has strict rules for numeric literals:
 
 1. No space is allowed between a sign and the number
 2. The `+` sign is not allowed (only `-` for negative numbers)
@@ -193,7 +193,7 @@ Invalid numeric literals:
 
 ### String Literals
 
-DCL only allows double-quoted strings. Single-quoted strings are not allowed.
+defcl only allows double-quoted strings. Single-quoted strings are not allowed.
 
 ```ebnf
 STRING = '"', { escape | char - '"' - newline - "\" }, '"' ;
@@ -247,7 +247,7 @@ Invalid string literals:
 
 ## Layout
 
-A DCL file has exactly one correct layout, so two files with the same contents
+A defcl file has exactly one correct layout, so two files with the same contents
 are the same bytes.
 
 ### Lines
@@ -345,7 +345,7 @@ database: {
 
 ### Top-Level Syntax
 
-A DCL file consists of one or more top-level messages. Each top-level message
+A defcl file consists of one or more top-level messages. Each top-level message
 has a field name followed by a colon, exactly one space, and a message value.
 
 ```ebnf
@@ -378,7 +378,7 @@ database: {
 
 ### Field Syntax
 
-In DCL, field names must be followed by a colon. The syntax for fields is:
+In defcl, field names must be followed by a colon. The syntax for fields is:
 
 ```ebnf
 field = FIELD_NAME, ":", " ", value ;
@@ -402,7 +402,7 @@ host : "localhost"
 
 ### Values
 
-A value in DCL can be a string literal, numeric literal enum value, message
+A value in defcl can be a string literal, numeric literal enum value, message
 value, or repeated value:
 
 ```ebnf
@@ -417,7 +417,7 @@ value = STRING
 ### Numeric Values
 
 A value must be the kind of value that its field's type takes, as in textproto.
-DCL is stricter for floating-point fields (`float` and `double`): their values
+defcl is stricter for floating-point fields (`float` and `double`): their values
 must be floating-point literals, never integer literals. For a repeated field,
 this applies to each element.
 
@@ -496,7 +496,7 @@ status: Active
 
 ### Message Values
 
-Message fields in DCL must always use curly braces `{}`, never angle brackets
+Message fields in defcl must always use curly braces `{}`, never angle brackets
 `<>`.
 
 ```ebnf
@@ -681,27 +681,28 @@ tags: [
 
 ## Schema Restrictions
 
-Because DCL is intended to be parsed by a textproto parser, it is expected that
-its schema will be defined via protocol buffers. However, we place some
+Because defcl is intended to be parsed by a textproto parser, it is expected
+that its schema will be defined via protocol buffers. However, we place some
 restrictions on that schema.
 
-These restrictions apply to the top-level message type of a DCL file and to
+These restrictions apply to the top-level message type of a defcl file and to
 every message type that its fields lead to. Other message types in the same
 `.proto` files, or in the files they import, such as the definitions of field
 options, are not restricted.
 
 ### Top-Level Structure
 
-Literal values at the top level of a DCL file are not allowed. The top-level
+Literal values at the top level of a defcl file are not allowed. The top-level
 message may only contain non-repeated message fields.
 
 ### Prohibited Field Types
 
-The following field types are not allowed in DCL:
+The following field types are not allowed in defcl:
 
-- `bool` (DCL instead provides a standard enum `defcl.schema.core.Defcl.Boolean`
-  which has the values `UNSPECIFIED`, `TRUE`, and `FALSE`, though schemas are
-  encouraged to define their own enums with more appropriate names)
+- `bool` (defcl instead provides a standard enum
+  `defcl.schema.core.Defcl.Boolean` which has the values `UNSPECIFIED`, `TRUE`,
+  and `FALSE`, though schemas are encouraged to define their own enums with more
+  appropriate names)
 - `bytes`
 - `Any` (`google.protobuf.Any`)
 - Extension annotations (using `[package.field]` syntax) are not allowed
@@ -756,7 +757,7 @@ message User {
 
 ### Proto Best Practices
 
-For DCL schemas, the
+For defcl schemas, the
 [Proto Best Practices](https://protobuf.dev/best-practices/dos-donts/) are
 mandatory, with the following modifications:
 
@@ -767,15 +768,15 @@ mandatory, with the following modifications:
 - Don't move between repeated and scalar on a field at all (in either direction)
 - The point about keywords should strive to protect keywords in all common
   programming languages, so that tools can be built in all languages to parse
-  DCL.
+  defcl.
 
-Also, although DCL is a strictly-specified text format, do not use the Define
+Also, although defcl is a strictly-specified text format, do not use the Define
 Configuration Language for interchange between systems, do not send it across
 the wire, do not use it as a permanent storage format in a database, etc. This
 is a point already made in the Best Practices, but it is clarified that it does
-apply to DCL.
+apply to defcl.
 
-Other systems are free to use DCL for their own configuration needs, but it is
+Other systems are free to use defcl for their own configuration needs, but it is
 not intended to be a wire format, an API format, etc.
 
 ### Time Fields
@@ -804,11 +805,11 @@ Any other syntax error stops the parse. A file with any error is not valid.
 
 ### Unknown Fields
 
-When parsing a DCL file, unknown field names (fields not present in the schema)
-are errors. The parser must validate that all field names exist in the schema
-and reject the file if any unknown fields are encountered.
+When parsing a defcl file, unknown field names (fields not present in the
+schema) are errors. The parser must validate that all field names exist in the
+schema and reject the file if any unknown fields are encountered.
 
-## Example of a Valid DCL File
+## Example of a Valid defcl File
 
 ```
 server: {
@@ -837,7 +838,7 @@ database: {
 
 ### Example of Valid Schema Files
 
-Defining the schema for the above DCL file requires multiple schema files.
+Defining the schema for the above defcl file requires multiple schema files.
 
 Root schema file (defines the top-level message type):
 

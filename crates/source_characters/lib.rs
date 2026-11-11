@@ -1,4 +1,4 @@
-//! The characters that text in Define and DCL files may not have: the
+//! The characters that text in Define and defcl files may not have: the
 //! Invisible Characters rule that the two languages share, and the byte order
 //! marks, carriage returns and control characters that neither allows.
 
@@ -31,7 +31,7 @@ pub enum TextKind {
     /// have; any other character that does not belong is a syntax error.
     Syntax,
     Name,
-    /// The content of a Define literal or a DCL string.
+    /// The content of a Define literal or a defcl string.
     LiteralContent,
     Comment,
 }

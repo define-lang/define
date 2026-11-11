@@ -1,4 +1,4 @@
-//! The syntax tree of a DCL file, with the location of every node.
+//! The syntax tree of a defcl file, with the location of every node.
 
 use source_rendering::SourceLocation;
 

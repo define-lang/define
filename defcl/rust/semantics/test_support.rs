@@ -11,7 +11,7 @@ pub fn valid_schemas() -> Result<FileDescriptorSet> {
 }
 
 /// The descriptor set of the schemas in `defcl/testdata/invalid/schemas`, which
-/// break DCL's rules for schemas.
+/// break defcl's rules for schemas.
 pub fn invalid_schemas() -> Result<FileDescriptorSet> {
     read_runfile(env!("INVALID_SCHEMAS"))
 }

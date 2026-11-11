@@ -1,7 +1,7 @@
-# Rules for DCL Python Package
+# Rules for defcl Python Package
 
 This directory contains the Python implementation of the Define Configuration
-Language (DCL) parser.
+Language (defcl) parser.
 
 ## Adding New Proto Files
 

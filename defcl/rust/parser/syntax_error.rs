@@ -1,4 +1,4 @@
-//! The syntax errors that parsing a DCL file can end in.
+//! The syntax errors that parsing a defcl file can end in.
 
 use derive_more::{Display, Error};
 use source_rendering::SourceLocation;
@@ -57,7 +57,7 @@ pub enum SyntaxErrorKind {
     /// there, unless it splits a word such as a field name.
     #[display("Invisible character U+{:04X} not allowed", u32::from(*character))]
     InvisibleCharacter { character: char },
-    /// A character that DCL does not allow outside a string or a comment.
+    /// A character that defcl does not allow outside a string or a comment.
     #[display(
         "Unexpected character '{}' (U+{:04X})",
         character.escape_debug(),
@@ -165,7 +165,7 @@ pub enum SyntaxErrorKind {
     /// or a comment.
     #[display("Use curly braces {{}} for messages")]
     AngleBracketsNotAllowed,
-    /// A `'`, which DCL does not allow outside a string or a comment.
+    /// A `'`, which defcl does not allow outside a string or a comment.
     #[display("Use double quotes for strings")]
     SingleQuotesNotAllowed,
     /// A string with no closing `"` on its line.
@@ -229,7 +229,7 @@ pub enum SyntaxErrorKind {
     NegativeZero,
     /// `true` or `false` where a value belongs.
     #[display(
-        "Boolean literals not supported - write the field's enum value, such as TRUE or FALSE for DCL's Boolean enum"
+        "Boolean literals not supported - write the field's enum value, such as TRUE or FALSE for defcl's Boolean enum"
     )]
     BooleanNotSupported,
     /// A word that starts with a letter where a value belongs and has a

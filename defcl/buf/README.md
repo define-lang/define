@@ -1,7 +1,7 @@
-# DCL Buf Plugin
+# defcl Buf Plugin
 
-A custom [buf](https://buf.build/) lint plugin that enforces DCL-specific proto
-schema requirements.
+A custom [buf](https://buf.build/) lint plugin that enforces defcl-specific
+proto schema requirements.
 
 ## Rules
 

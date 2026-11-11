@@ -26,7 +26,7 @@ message EnumsFile {
     V1 = 1;
   }
   enum Level {
-    // DCL allows a digit after an underscore in an enum value's name, which
+    // defcl allows a digit after an underscore in an enum value's name, which
     // edition 2024's naming style does not.
     option features.enforce_naming_style = STYLE_LEGACY;
     LEVEL_UNSPECIFIED = 0;

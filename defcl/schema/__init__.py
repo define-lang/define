@@ -1,1 +1,1 @@
-"""DCL schema definitions."""
+"""defcl schema definitions."""

@@ -1,1 +1,1 @@
-"""Proto schemas for valid DCL test data."""
+"""Proto schemas for valid defcl test data."""

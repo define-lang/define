@@ -10,7 +10,7 @@ import msgspec
 import protovalidate
 from google.protobuf import message
 
-from defcl.python import loader as dcl_loader
+from defcl.python import loader as defcl_loader
 from define.compiler import constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -159,7 +159,7 @@ class ConfigLoader:
         with its diagnostics.
         """
         path = (self._root / subpath).as_posix_path()
-        loaded = dcl_loader.load_file(str(path), message_type, self._source_map)
+        loaded = defcl_loader.load_file(str(path), message_type, self._source_map)
         config_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
             loaded.diagnostics
         )

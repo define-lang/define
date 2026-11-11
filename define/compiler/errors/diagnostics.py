@@ -9,7 +9,7 @@ from typing import ClassVar, Final
 
 import msgspec
 
-from defcl.python import validator as dcl_validator
+from defcl.python import validator as defcl_validator
 from define.compiler import constants, name_types
 from define.compiler.errors import invisible_characters
 from define.compiler.validator.reference_graph import propagation_step
@@ -1283,7 +1283,7 @@ class ConfigFieldDiagnostic(ConfigDiagnostic):
         sources: rendering.SourceMap, config_path: str, field_path: FieldPath
     ) -> str:
         """Render where the config file at config_path writes the field at field_path, with its source line."""
-        location = dcl_validator.locate_field(sources, config_path, field_path)
+        location = defcl_validator.locate_field(sources, config_path, field_path)
         if location is None:
             return sources.render_header_without_position(config_path)
         return sources.render_location(location)

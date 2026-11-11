@@ -12,7 +12,7 @@ use std::io::{IsTerminal as _, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-/// Formats DCL files in place, or standard input to standard output.
+/// Formats defcl files in place, or standard input to standard output.
 ///
 /// Prints the syntax errors that each file still has, and each file that
 /// cannot be read or written, and exits with status 2 if there is any.
@@ -23,7 +23,7 @@ struct Arguments {
     /// Errors still exit with status 2.
     #[arg(long)]
     check: bool,
-    /// The DCL files to format. With none, formats standard input and writes
+    /// The defcl files to format. With none, formats standard input and writes
     /// the result to standard output.
     files: Vec<PathBuf>,
 }
@@ -33,13 +33,13 @@ const STANDARD_INPUT: &str = "<standard input>";
 
 fn main() -> std::io::Result<ExitCode> {
     let arguments = Arguments::parse();
-    // No one types DCL to the formatter, so with no files and no source piped
+    // No one types defcl to the formatter, so with no files and no source piped
     // in, show how to use it instead of waiting for input.
     if arguments.files.is_empty() && std::io::stdin().is_terminal() {
         Arguments::command()
             .error(
                 ErrorKind::MissingRequiredArgument,
-                "give the DCL files to format, or pipe DCL to standard input",
+                "give the defcl files to format, or pipe defcl to standard input",
             )
             .exit();
     }
@@ -70,7 +70,7 @@ enum Outcome {
     Errors = 2,
 }
 
-/// Formats the DCL source in `input` and writes the result to `output`, or, if
+/// Formats the defcl source in `input` and writes the result to `output`, or, if
 /// `check`, only writes `STANDARD_INPUT` to `output` if formatting would change
 /// the source. Writes each syntax error that the source still has, or the
 /// error that reading `input` ends in, to `errors`.
@@ -111,7 +111,7 @@ fn format_standard_input(
     Ok(outcome)
 }
 
-/// Formats the DCL file at each of `paths`, or, if `check`, only finds each
+/// Formats the defcl file at each of `paths`, or, if `check`, only finds each
 /// file that formatting would change and writes its path to `unformatted`.
 /// Writes each syntax error that a file still has, and the error for each file
 /// that cannot be read or written, to `errors`, in the order of `paths`.
@@ -143,7 +143,7 @@ fn format_files(
     Ok(outcome)
 }
 
-/// What formatting a DCL file found, ready to write.
+/// What formatting a defcl file found, ready to write.
 struct FileReport {
     /// Whether formatting changes the file.
     changed: bool,
@@ -152,7 +152,7 @@ struct FileReport {
     errors: String,
 }
 
-/// Formats the DCL file at `path`, writing it unless `check`, and renders its
+/// Formats the defcl file at `path`, writing it unless `check`, and renders its
 /// errors.
 fn report_file(path: &Path, check: bool) -> FileReport {
     let name = path.to_string_lossy();
@@ -171,7 +171,7 @@ fn report_file(path: &Path, check: bool) -> FileReport {
     }
 }
 
-/// Formats the DCL file at `path`, writing it unless `check`.
+/// Formats the defcl file at `path`, writing it unless `check`.
 fn format_file(path: &Path, check: bool) -> std::io::Result<FormattedSource> {
     let file = format_source(std::fs::read(path)?, check);
     if !check && let Some(formatted) = &file.formatted {
@@ -180,7 +180,7 @@ fn format_file(path: &Path, check: bool) -> std::io::Result<FormattedSource> {
     Ok(file)
 }
 
-/// What formatting DCL source found.
+/// What formatting defcl source found.
 struct FormattedSource {
     /// The source as it was read.
     source: Vec<u8>,

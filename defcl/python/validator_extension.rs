@@ -1,4 +1,4 @@
-//! The Python module that validates DCL files: `defcl.python.validator`.
+//! The Python module that validates defcl files: `defcl.python.validator`.
 
 use defcl_parser::{FieldPathElement, ParseResult, SyntaxError, SyntaxErrorKind, parse};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
@@ -182,7 +182,7 @@ fn raise(exception: PyResult<Bound<'_, PyAny>>) -> PyErr {
     }
 }
 
-/// Validates the DCL text `source` against the schema whose top-level message
+/// Validates the defcl text `source` against the schema whose top-level message
 /// type has the full name `top_level_message_type` in the binary
 /// `FileDescriptorSet` `descriptor_set`. Returns whether the text still means
 /// exactly one message despite its diagnostics, with a `SyntaxDiagnostic` for
@@ -204,7 +204,7 @@ fn validate<'py>(
     Ok((errors.understood, diagnostics(py, classes, &errors, None)?))
 }
 
-/// Validates the DCL file at `path` as `validate` validates its text, registers
+/// Validates the defcl file at `path` as `validate` validates its text, registers
 /// it with the `SourceMap` `source_map`, and returns the file's text if it
 /// still means exactly one message, or else `None`, with the diagnostics, whose locations are in the file at `path`. Raises `OSError` if
 /// the file cannot be read.
@@ -242,7 +242,7 @@ enum PythonFieldPathElement {
     Index(usize),
 }
 
-/// Where the DCL file at `path`, registered with the `SourceMap` `source_map`,
+/// Where the defcl file at `path`, registered with the `SourceMap` `source_map`,
 /// writes the field that `field_path` names: a sequence of field names and
 /// indices of repeated values' elements whose first element is a top-level
 /// message. A field that the file writes is located at its value, and one that
@@ -299,7 +299,7 @@ fn decode_descriptor_set(
         .map_err(|error| classes.invalid_schema_error(py, &error))
 }
 
-/// The `DclDiagnostic`s of `errors`' syntax errors and then its semantic
+/// The `DefclDiagnostic`s of `errors`' syntax errors and then its semantic
 /// errors, in the file at `file_path` if the text is from a file.
 fn diagnostics<'py>(
     py: Python<'py>,

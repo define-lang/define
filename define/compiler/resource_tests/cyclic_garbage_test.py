@@ -24,10 +24,10 @@ from define.compiler.resource_tests import resource_cases
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
-# The DCL validator extension imports these modules when it first reads a DCL
+# The defcl validator extension imports these modules when it first reads a defcl
 # file. Importing a module leaves a fixed amount of cyclic garbage, so they are
 # imported here instead of during the first measured compile.
-_MODULES_IMPORTED_ON_FIRST_DCL_FILE = (error_types, errors)
+_MODULES_IMPORTED_ON_FIRST_DEFCL_FILE = (error_types, errors)
 # The parser imports this module when it creates the first syntax error, so
 # it is imported here for the same reason.
 _MODULES_IMPORTED_ON_FIRST_SYNTAX_ERROR = (syntax_errors,)

@@ -1,4 +1,4 @@
-//! The errors that checking a DCL file against its schema can end in.
+//! The errors that checking a defcl file against its schema can end in.
 
 use crate::schema::{FloatFieldType, IntegerFieldType};
 use derive_more::{Display, Error};

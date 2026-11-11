@@ -552,7 +552,7 @@ Alternatives considered:
 
 ## Forward Compatibility
 
-The schema evolves under the protocol buffers rules that DCL already mandates.
+The schema evolves under the protocol buffers rules that defcl already mandates.
 New fields and enum values can be added without breaking existing Contract
 Files, and old enum names are never removed.
 
@@ -577,11 +577,11 @@ the compiler once to generate their text Contract Files and checking them in.
    callees. One option is to record each step as a statement index within the
    Action Statements Block, which changes only when statements are added or
    removed, and map it to a line only when rendering a diagnostic.
-2. **DCL's scope.** The DCL spec describes DCL as the language for configuration
-   files in the `.define` directory, and says not to use it as a storage format.
-   The text form is a generated, human-readable view that nothing reads back,
-   which is arguably neither, but the DCL spec needs a proposal that covers this
-   use.
+2. **defcl's scope.** The defcl spec describes defcl as the language for
+   configuration files in the `.define` directory, and says not to use it as a
+   storage format. The text form is a generated, human-readable view that
+   nothing reads back, which is arguably neither, but the defcl spec needs a
+   proposal that covers this use.
 3. **Compiler-only facts.** `self_contained` exists only so callers can skip
    work. It could stay in the schema, but agents and people have no use for it
    in the text form.

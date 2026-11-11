@@ -457,7 +457,7 @@ const CASES: [(&[u8], &str); 55] = [
             line 2, column 12
                 enabled: true
                          ^^^^
-            Boolean literals not supported - write the field's enum value, such as TRUE or FALSE for DCL's Boolean enum"},
+            Boolean literals not supported - write the field's enum value, such as TRUE or FALSE for defcl's Boolean enum"},
     ),
     (
         include_bytes!("../../testdata/invalid/syntax/enums/lowercase_enum.defcl"),
@@ -469,7 +469,7 @@ const CASES: [(&[u8], &str); 55] = [
     ),
 ];
 
-/// The syntax errors in the DCL file whose bytes are `source`, with the text
+/// The syntax errors in the defcl file whose bytes are `source`, with the text
 /// that their locations are in.
 fn syntax_errors(source: &[u8]) -> (String, Vec<SyntaxError>) {
     match decode(source.to_vec()) {
@@ -484,7 +484,7 @@ fn syntax_errors(source: &[u8]) -> (String, Vec<SyntaxError>) {
     }
 }
 
-/// Every syntax error in the DCL file whose bytes are `source`, rendered as
+/// Every syntax error in the defcl file whose bytes are `source`, rendered as
 /// its location, its source line with carets, then its message, or as just its
 /// message if it is about the whole file.
 fn rendered_errors(source: &[u8]) -> String {

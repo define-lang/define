@@ -1,4 +1,4 @@
-//! The parser: a DCL file into its syntax tree.
+//! The parser: a defcl file into its syntax tree.
 
 use crate::scanner::{Scanner, invisible_syntax_reason};
 use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
@@ -20,7 +20,7 @@ use std::ops::Range;
 /// The spaces of one level of indentation.
 const INDENTATION_WIDTH: u32 = 2;
 
-/// The syntax tree of a DCL file, and its syntax errors.
+/// The syntax tree of a defcl file, and its syntax errors.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseResult<'source> {
     /// The syntax tree, unless a syntax error stopped the parse.
@@ -30,7 +30,7 @@ pub struct ParseResult<'source> {
     pub errors: Vec<SyntaxError>,
 }
 
-/// A replacement for the bytes of a DCL file from `start` up to `end` that
+/// A replacement for the bytes of a defcl file from `start` up to `end` that
 /// fixes the layout errors in them.
 #[derive(Debug, PartialEq, Eq)]
 pub struct LayoutFix {
@@ -41,7 +41,7 @@ pub struct LayoutFix {
     pub fixed_errors: Range<usize>,
 }
 
-/// Bytes of a DCL file that are not valid UTF-8, with the syntax error that
+/// Bytes of a defcl file that are not valid UTF-8, with the syntax error that
 /// reports them.
 #[derive(Debug, PartialEq, Eq)]
 pub struct DecodeError {
@@ -49,7 +49,7 @@ pub struct DecodeError {
     pub error: SyntaxError,
 }
 
-/// Decodes `source`, the bytes of a DCL file, into its text.
+/// Decodes `source`, the bytes of a defcl file, into its text.
 ///
 /// # Errors
 ///
@@ -65,7 +65,7 @@ pub fn decode(source: Vec<u8>) -> Result<String, DecodeError> {
     })
 }
 
-/// Parses `source`, the text of a DCL file, into its syntax tree and its
+/// Parses `source`, the text of a defcl file, into its syntax tree and its
 /// syntax errors. An error in the layout of the file, such as its whitespace,
 /// does not stop the parse; any other syntax error does.
 #[must_use]
@@ -73,7 +73,7 @@ pub fn parse(source: &str) -> ParseResult<'_> {
     parse_with(source, false).0
 }
 
-/// Parses `source`, the text of a DCL file, as `parse` does, and also returns
+/// Parses `source`, the text of a defcl file, as `parse` does, and also returns
 /// the fixes for its layout errors that only change its whitespace and
 /// comments, in source order.
 ///
@@ -1592,7 +1592,7 @@ impl Parser<'_> {
     /// The error for the character at the scanner's position, which is not
     /// the start of what belongs there, or for the end of the source.
     /// `expected` is the kind of error for the end of the source and for a
-    /// character that DCL allows elsewhere.
+    /// character that defcl allows elsewhere.
     #[cold]
     fn unexpected(&self, expected: SyntaxErrorKind) -> SyntaxError {
         let kind = match self.scanner.peek_character() {

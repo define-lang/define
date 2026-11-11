@@ -1,4 +1,4 @@
-//! The rules that a schema's message types must follow for DCL files to be
+//! The rules that a schema's message types must follow for defcl files to be
 //! written in them.
 
 use crate::schema::MessageType;
@@ -9,14 +9,14 @@ use descriptor_proto::google::protobuf::{Edition, FieldDescriptorProto, FileDesc
 
 const ANY_TYPE_NAME: &str = ".google.protobuf.Any";
 
-/// A way that a message type which DCL files can write breaks DCL's rules for
+/// A way that a message type which defcl files can write breaks defcl's rules for
 /// schemas.
 #[derive(Debug, PartialEq, Eq, Display)]
 pub enum SchemaViolation {
     /// A file that defines such a message type uses an edition before 2024,
     /// or no edition. It is reported once for each file.
     #[display(
-        "{file} uses {edition}, but the files of a DCL schema must use edition 2024 or later"
+        "{file} uses {edition}, but the files of a defcl schema must use edition 2024 or later"
     )]
     UnsupportedEdition {
         /// The file's name, as the descriptor set has it.
@@ -25,23 +25,23 @@ pub enum SchemaViolation {
         /// that uses no edition, `proto2` or `proto3`.
         edition: String,
     },
-    /// A field of a type that DCL does not allow.
-    #[display("{message_type}.{field_name} is a {field_type} field, which DCL does not allow")]
+    /// A field of a type that defcl does not allow.
+    #[display("{message_type}.{field_name} is a {field_type} field, which defcl does not allow")]
     ProhibitedFieldType {
         message_type: String,
         field_name: String,
         field_type: ProhibitedFieldType,
     },
     /// A field whose presence is `LEGACY_REQUIRED`.
-    #[display("{message_type}.{field_name} is a required field, which DCL does not allow")]
+    #[display("{message_type}.{field_name} is a required field, which defcl does not allow")]
     RequiredField {
         message_type: String,
         field_name: String,
     },
-    /// A field whose type is a message type with no fields, which a DCL file
+    /// A field whose type is a message type with no fields, which a defcl file
     /// could only write as an empty message value.
     #[display(
-        "{message_type}.{field_name} is a {field_type} field, a message type with no fields, which DCL does not allow"
+        "{message_type}.{field_name} is a {field_type} field, a message type with no fields, which defcl does not allow"
     )]
     FieldOfMessageTypeWithoutFields {
         message_type: String,
@@ -66,14 +66,14 @@ pub enum SchemaViolation {
         field_name: String,
     },
     /// A string field whose `utf8_validation` is `NONE`.
-    #[display("{message_type}.{field_name} does not validate UTF-8, which DCL does not allow")]
+    #[display("{message_type}.{field_name} does not validate UTF-8, which defcl does not allow")]
     Utf8ValidationNone {
         message_type: String,
         field_name: String,
     },
 }
 
-/// A field type that DCL does not allow.
+/// A field type that defcl does not allow.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
 pub enum ProhibitedFieldType {
     #[display("bool")]
@@ -117,7 +117,7 @@ impl SchemaFile {
 }
 
 /// Every way that the message type at `top_level_message_type`, and the
-/// message types that its fields lead to, break DCL's rules for schemas.
+/// message types that its fields lead to, break defcl's rules for schemas.
 /// `files` has the files of the descriptor set, in its order.
 pub(crate) fn violations(
     message_types: &[MessageType],
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[gtest]
-    fn prohibited_field_types_that_dcl_files_can_write() -> Result<()> {
+    fn prohibited_field_types_that_defcl_files_can_write() -> Result<()> {
         verify_that!(
             schema_error("ProhibitedFieldTypesFile")?,
             some(eq(&SchemaError::BreaksRestrictions {

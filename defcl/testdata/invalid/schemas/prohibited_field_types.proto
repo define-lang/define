@@ -14,7 +14,7 @@ message ProhibitedFieldTypesFile {
   }
 }
 
-// DCL files cannot write this message type, so its field breaks no rule.
+// defcl files cannot write this message type, so its field breaks no rule.
 message Unreachable {
   bool enabled = 1;
 }

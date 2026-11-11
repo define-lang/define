@@ -1,1 +1,1 @@
-"""Python bindings for the Rust DCL parser and semantic checks."""
+"""Python bindings for the Rust defcl parser and semantic checks."""
