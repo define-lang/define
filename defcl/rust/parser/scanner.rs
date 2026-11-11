@@ -2,6 +2,7 @@
 
 use source_characters::{DisallowedReason, Neighbors, TextKind, disallowed_reason};
 use source_rendering::{Position, SourceLocation};
+use source_scanning::{character_count, rest_of_line};
 
 const LINE_FEED: u8 = b'\n';
 
@@ -83,23 +84,19 @@ impl<'source> Scanner<'source> {
     }
 
     /// Consumes everything up to the next line feed or the end of the source,
-    /// and returns it.
-    pub fn consume_to_line_end(&mut self) -> &'source str {
-        let rest = &self.source[self.offset..];
-        let length = rest.find('\n').unwrap_or(rest.len());
-        let text = &rest[..length];
-        // A column counts characters, so it skips the bytes that continue
-        // one. Counting every byte without stopping early lets the compiler
-        // count many at once.
-        let characters = text.bytes().fold(0, |count, byte| {
-            count + usize::from(!is_continuation_byte(byte))
-        });
-        if characters > 0 {
-            self.last_consumed = self.position.columns_later(characters - 1);
-            self.position = self.position.columns_later(characters);
-        }
-        self.offset += length;
-        text
+    /// and returns it, with whether it is all printable ASCII.
+    #[inline]
+    pub fn consume_to_line_end(&mut self) -> (&'source str, bool) {
+        let scanned = rest_of_line(self.rest());
+        let text = &self.source[self.offset..self.offset + scanned.length];
+        // Printable ASCII has as many characters as bytes.
+        let characters = if scanned.is_printable_ascii {
+            scanned.length
+        } else {
+            character_count(text.as_bytes())
+        };
+        self.consume_text(scanned.length, characters);
+        (text, scanned.is_printable_ascii)
     }
 
     /// Consumes `character`, which must be the next character.
@@ -163,7 +160,7 @@ impl<'source> Scanner<'source> {
 
     /// Consumes a comment up to its line feed.
     fn skip_comment(&mut self) {
-        let _: &str = self.consume_to_line_end();
+        let _: (&str, bool) = self.consume_to_line_end();
     }
 
     /// The invisible character at the scanner's position outside strings and
@@ -199,19 +196,36 @@ impl<'source> Scanner<'source> {
         true
     }
 
-    /// Consumes the bytes that `is_included` accepts, which must be ASCII
-    /// other than a line feed, up to the first byte that it does not accept,
-    /// and returns them. `is_included` must accept the next byte.
-    pub fn consume_while(&mut self, is_included: impl Fn(u8) -> bool) -> &'source str {
+    /// Consumes the next `length` bytes, which must be ASCII other than a
+    /// line feed, and returns them. `length` must not be zero.
+    pub fn consume_ascii(&mut self, length: usize) -> &'source str {
         let start = self.offset;
-        let length = self.source.as_bytes()[start..]
-            .iter()
-            .take_while(|&&byte| is_included(byte))
-            .count();
         self.offset += length;
         self.last_consumed = self.position.columns_later(length - 1);
         self.position = self.position.columns_later(length);
         &self.source[start..self.offset]
+    }
+
+    /// Consumes the next `length` bytes, which must be `character_count`
+    /// characters with no line feed.
+    pub const fn consume_text(&mut self, length: usize, character_count: usize) {
+        if character_count > 0 {
+            self.last_consumed = self.position.columns_later(character_count - 1);
+            self.position = self.position.columns_later(character_count);
+        }
+        self.offset += length;
+    }
+
+    /// Consumes a line feed, which must be the next byte, and then `spaces`
+    /// spaces, which must follow it.
+    pub const fn consume_line_feed_and_spaces(&mut self, spaces: usize) {
+        self.advance();
+        self.consume_text(spaces, spaces);
+    }
+
+    /// The bytes that have not been consumed.
+    pub fn rest(&self) -> &'source [u8] {
+        &self.source.as_bytes()[self.offset..]
     }
 
     /// Consumes the spaces at the scanner's position, and returns how many

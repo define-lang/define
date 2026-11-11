@@ -10,6 +10,7 @@ mod parser_test;
 mod scanner;
 mod syntax_error;
 mod syntax_tree;
+mod vector_scan;
 
 pub use field_path::FieldPathElement;
 pub use parser::{DecodeError, LayoutFix, ParseResult, decode, parse, parse_with_layout_fixes};

@@ -5,11 +5,16 @@ use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };
+use crate::vector_scan::{
+    enum_word_length, field_name_word, is_enum_word_character, is_field_name_word_character,
+    is_number_word_character, line_feed_and_spaces, number_word_length,
+};
 use source_characters::{
     DisallowedCharacter, DisallowedReason, Neighbors, TextKind, disallowed_characters,
     disallowed_reason, first_disallowed_character,
 };
 use source_rendering::{Position, SourceLocation};
+use source_scanning::quoted_content;
 
 /// The spaces of one level of indentation.
 const INDENTATION_WIDTH: u32 = 2;
@@ -131,12 +136,6 @@ const fn is_field_name_start(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
-/// Whether `byte` is part of the word that starts a field name, which may be
-/// an invalid field name.
-const fn is_field_name_word_character(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.')
-}
-
 /// Whether `byte` starts an element of a repeated value, which may be an
 /// invalid one, other than a repeated value.
 const fn is_element_start(byte: u8) -> bool {
@@ -149,44 +148,9 @@ const fn is_number_start(byte: u8) -> bool {
     byte.is_ascii_digit() || matches!(byte, b'-' | b'+' | b'.')
 }
 
-const fn is_number_word_character(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'+' | b'.')
-}
-
-const fn is_enum_word_character(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || byte == b'_'
-}
-
-/// Whether `text` is a valid field name.
-///
-/// ```ebnf
-/// FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_letter ) } ;
-/// ```
-fn is_field_name(text: &str) -> bool {
-    let bytes = text.as_bytes();
-    if !bytes.first().is_some_and(u8::is_ascii_lowercase) {
-        return false;
-    }
-    let mut index = 1;
-    while let Some(&byte) = bytes.get(index) {
-        if byte == b'_' {
-            if !bytes.get(index + 1).is_some_and(u8::is_ascii_lowercase) {
-                return false;
-            }
-            index += 2;
-            continue;
-        }
-        if !byte.is_ascii_lowercase() && !byte.is_ascii_digit() {
-            return false;
-        }
-        index += 1;
-    }
-    true
-}
-
 /// The kind of syntax error in `text`, a word of field name characters that
-/// starts with a byte that may start a field name and that `is_field_name`
-/// rejects, and the byte offset of the character that it is about.
+/// starts with a byte that may start a field name and that is not a valid
+/// field name, and the byte offset of the character that it is about.
 #[cold]
 #[inline(never)]
 fn field_name_error(text: &str) -> (usize, SyntaxErrorKind) {
@@ -210,7 +174,7 @@ fn field_name_error(text: &str) -> (usize, SyntaxErrorKind) {
             return (index, SyntaxErrorKind::InvalidCharacterInFieldName);
         }
     }
-    unreachable!("is_field_name rejected the field name {text:?}")
+    unreachable!("{text:?} is a valid field name")
 }
 
 /// ```ebnf
@@ -430,14 +394,22 @@ struct Parser<'source> {
 /// Whether `comment`, the text after the `#` at `hash`, has text, and where
 /// the spaces at its end start, if it ends with any. A fix deletes a character
 /// that comments do not allow, so such a character is neither text nor space.
-fn comment_text_and_trailing_spaces(hash: Position, comment: &str) -> (bool, Option<Position>) {
+/// `is_printable_ascii` is whether `comment` is all printable ASCII.
+fn comment_text_and_trailing_spaces(
+    hash: Position,
+    comment: &str,
+    is_printable_ascii: bool,
+) -> (bool, Option<Position>) {
     let text_start = hash.next_column();
-    // Nearly every comment is printable ASCII, whose characters are its bytes.
-    if is_printable_ascii(comment) {
-        let text = comment.trim_matches(' ');
+    // Nearly every comment is printable ASCII that ends with its text, so
+    // has text exactly if it is not empty.
+    if is_printable_ascii && comment.as_bytes().last() != Some(&b' ') {
+        return (!comment.is_empty(), None);
+    }
+    if is_printable_ascii {
+        // The comment's characters are its bytes.
         let text_end = comment.trim_end_matches(' ').len();
-        let trailing_start = (text_end < comment.len()).then(|| text_start.columns_later(text_end));
-        return (!text.is_empty(), trailing_start);
+        return (text_end > 0, Some(text_start.columns_later(text_end)));
     }
     let mut has_text = false;
     let mut trailing_start = None;
@@ -473,15 +445,6 @@ const fn invisible_character_kind(character: char, reason: DisallowedReason) -> 
         DisallowedReason::Control => SyntaxErrorKind::ControlCharacter { character },
         DisallowedReason::Invisible => SyntaxErrorKind::InvisibleCharacter { character },
     }
-}
-
-/// Whether `text` has only printable ASCII characters, which every comment and
-/// string allows.
-fn is_printable_ascii(text: &str) -> bool {
-    // Checking every byte without stopping early lets the compiler check many
-    // at once.
-    text.bytes()
-        .fold(true, |all, byte| all & matches!(byte, b' '..=b'~'))
 }
 
 /// The error for `found`, a character that a comment or a string does not
@@ -521,6 +484,17 @@ fn without_disallowed_characters(comment: &str) -> String {
 /// The spaces of `level` levels of indentation.
 const fn indentation(level: u32) -> u32 {
     level * INDENTATION_WIDTH
+}
+
+/// The level of indentation of a token that starts with `byte` and starts a
+/// line in a block whose fields or elements are indented `level` levels: one
+/// less for the `}` or `]` that closes the block.
+const fn token_level(level: u32, byte: u8) -> u32 {
+    if matches!(byte, b'}' | b']') {
+        level.saturating_sub(1)
+    } else {
+        level
+    }
 }
 
 /// Appends the spaces of `level` levels of indentation to `text`.
@@ -566,6 +540,35 @@ impl<'source> Parser<'source> {
         level: u32,
         is_expected: impl Fn(Option<u8>) -> bool,
     ) -> Option<u8> {
+        let rest = self.scanner.rest();
+        // The file starts with the first byte of a token that belongs there,
+        // with no indentation.
+        if self.scanner.offset() == 0
+            && let Some(&first) = rest.first()
+            && first.is_ascii_graphic()
+            && first != b'#'
+            && is_expected(Some(first))
+        {
+            return Some(first);
+        }
+        // The file ends with the line feed after its last token.
+        if rest == b"\n" && self.scanner.position().column != 1 && is_expected(None) {
+            self.scanner.consume_line_feed_and_spaces(0);
+            return None;
+        }
+        // Nearly every line break after a token is a line feed and then the
+        // indentation of a token that belongs there, which needs no other
+        // check.
+        if self.scanner.position().column != 1
+            && let Some((spaces, next)) = line_feed_and_spaces(rest)
+            && next != b'#'
+            && next.is_ascii_graphic()
+            && is_expected(Some(next))
+            && spaces == indentation(token_level(level, next)) as usize
+        {
+            self.scanner.consume_line_feed_and_spaces(spaces);
+            return Some(next);
+        }
         let mut lookahead = self.scanner;
         lookahead.skip_whitespace();
         let next = lookahead.peek();
@@ -637,8 +640,7 @@ impl<'source> Parser<'source> {
         }
         match self.scanner.peek() {
             None => {}
-            Some(b'}' | b']') => push_indentation(&mut replacement, level.saturating_sub(1)),
-            Some(_) => push_indentation(&mut replacement, level),
+            Some(byte) => push_indentation(&mut replacement, token_level(level, byte)),
         }
         self.push_fix(start, replacement);
     }
@@ -696,12 +698,8 @@ impl<'source> Parser<'source> {
                     }
                 }
                 Some(byte) => {
-                    let token_level = if matches!(byte, b'}' | b']') {
-                        level.saturating_sub(1)
-                    } else {
-                        level
-                    };
-                    self.check_indentation(line_start, spaces, indentation(token_level));
+                    let expected = indentation(token_level(level, byte));
+                    self.check_indentation(line_start, spaces, expected);
                     return;
                 }
             }
@@ -766,7 +764,7 @@ impl<'source> Parser<'source> {
 
     /// Consumes everything up to the next line feed or the end of the source.
     fn skip_to_line_end(&mut self) {
-        let _: &str = self.scanner.consume_to_line_end();
+        let _: (&str, bool) = self.scanner.consume_to_line_end();
     }
 
     /// Records an error if `spaces`, the spaces that start the line that
@@ -795,8 +793,9 @@ impl<'source> Parser<'source> {
     fn consume_comment_line(&mut self) {
         let hash = self.scanner.position();
         self.scanner.advance();
-        let comment = self.scanner.consume_to_line_end();
-        let (has_text, trailing_start) = comment_text_and_trailing_spaces(hash, comment);
+        let (comment, is_printable_ascii) = self.scanner.consume_to_line_end();
+        let (has_text, trailing_start) =
+            comment_text_and_trailing_spaces(hash, comment, is_printable_ascii);
         // The comment's text follows its `#` with no space between them.
         if has_text && !comment.starts_with(' ') {
             self.errors.push(SyntaxError {
@@ -814,7 +813,7 @@ impl<'source> Parser<'source> {
         // Comments allow every printable ASCII character, so only other
         // characters need checking, which keeps the check out of the parse
         // of nearly every comment.
-        if !is_printable_ascii(comment) {
+        if !is_printable_ascii {
             self.check_comment_characters(hash, comment);
         }
     }
@@ -920,6 +919,14 @@ impl<'source> Parser<'source> {
     /// or else an error of the kind `kind` if there was whitespace, and an
     /// error for each invisible character.
     fn skip_misplaced_whitespace_before(&mut self, separator: u8, kind: SyntaxErrorKind) {
+        // Nearly always, nothing comes before the separator.
+        if self
+            .scanner
+            .peek()
+            .is_some_and(|byte| byte.is_ascii_graphic() && byte != b'#')
+        {
+            return;
+        }
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         let mut lookahead = self.scanner;
@@ -953,6 +960,13 @@ impl<'source> Parser<'source> {
     /// else an error if the whitespace other than invisible characters is not
     /// one space, and an error for each invisible character.
     fn expect_one_space(&mut self) {
+        // Nearly always, the space is there and a value follows it.
+        if let [b' ', next, ..] = *self.scanner.rest()
+            && (next == b'[' || is_element_start(next))
+        {
+            self.scanner.advance();
+            return;
+        }
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         let comments = self.scanner.skip_whitespace_locating_comments();
@@ -972,9 +986,6 @@ impl<'source> Parser<'source> {
             return;
         }
         let whitespace = self.scanner.text_from(start_offset);
-        if whitespace == " " {
-            return;
-        }
         let is_one_space = whitespace
             .chars()
             .filter(|&character| matches!(character, ' ' | '\n'))
@@ -1072,7 +1083,8 @@ impl<'source> Parser<'source> {
     /// ```
     fn parse_field_name_and_colon(&mut self) -> Result<FieldName<'source>, SyntaxError> {
         let start = self.scanner.position();
-        let text = self.scanner.consume_while(is_field_name_word_character);
+        let word = field_name_word(self.scanner.rest());
+        let text = self.scanner.consume_ascii(word.length);
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_field_name_word_character) {
             return Err(error);
@@ -1082,7 +1094,7 @@ impl<'source> Parser<'source> {
             end: self.scanner.last_consumed(),
         };
         // The word where the field name belongs is not a valid field name.
-        if !is_field_name(text) {
+        if !word.is_field_name {
             let (index, kind) = field_name_error(text);
             return Err(SyntaxError {
                 kind,
@@ -1143,6 +1155,9 @@ impl<'source> Parser<'source> {
             start,
             end: start,
         };
+        // Every escape is printable ASCII, so whether the string is printable
+        // ASCII depends only on the content between its escapes.
+        let mut is_printable_ascii = true;
         loop {
             match self.scanner.peek() {
                 // The string has no closing quote on its line.
@@ -1168,7 +1183,10 @@ impl<'source> Parser<'source> {
                 }
                 Some(_) => {
                     byte_escape_run.end()?;
-                    self.scanner.advance();
+                    let scanned = quoted_content(self.scanner.rest());
+                    is_printable_ascii &= scanned.is_printable_ascii;
+                    self.scanner
+                        .consume_text(scanned.length, scanned.character_count);
                 }
             }
         }
@@ -1176,7 +1194,7 @@ impl<'source> Parser<'source> {
         // Strings allow every printable ASCII character, so only a string with
         // other characters needs checking. The string has a character that
         // strings do not allow.
-        if !is_printable_ascii(content)
+        if !is_printable_ascii
             && let Some(found) =
                 first_disallowed_character(start.next_column(), content, TextKind::LiteralContent)
         {
@@ -1298,7 +1316,9 @@ impl<'source> Parser<'source> {
     /// ```
     fn parse_number(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
-        let text = self.scanner.consume_while(is_number_word_character);
+        let text = self
+            .scanner
+            .consume_ascii(number_word_length(self.scanner.rest()));
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_number_word_character) {
             return Err(error);
@@ -1339,7 +1359,9 @@ impl<'source> Parser<'source> {
     /// ```
     fn parse_enum_value(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
-        let text = self.scanner.consume_while(is_enum_word_character);
+        let text = self
+            .scanner
+            .consume_ascii(enum_word_length(self.scanner.rest()));
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_enum_word_character) {
             return Err(error);

@@ -22,7 +22,7 @@ impl SourceText<'_> {
         if self.is_known_ascii {
             self.bytes.len()
         } else {
-            vector_scan::character_count(self.bytes)
+            source_scanning::character_count(self.bytes)
         }
     }
 
@@ -227,7 +227,7 @@ impl<'source> Scanner<'source> {
         let mut is_printable_ascii = true;
         let mut has_escape = false;
         loop {
-            let scanned = vector_scan::literal_content(&self.rest[length..]);
+            let scanned = source_scanning::quoted_content(&self.rest[length..]);
             length += scanned.length;
             character_count += scanned.character_count;
             is_printable_ascii &= scanned.is_printable_ascii;
@@ -287,7 +287,7 @@ impl<'source> Scanner<'source> {
     #[cold]
     #[inline(never)]
     pub fn rest_of_line(&self) -> SourceText<'source> {
-        let scanned = vector_scan::rest_of_line(self.rest);
+        let scanned = source_scanning::rest_of_line(self.rest);
         SourceText {
             bytes: &self.rest[..scanned.length],
             is_known_ascii: scanned.is_printable_ascii,

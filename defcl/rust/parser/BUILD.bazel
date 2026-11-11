@@ -15,6 +15,7 @@ rust_library(
         "scanner.rs",
         "syntax_error.rs",
         "syntax_tree.rs",
+        "vector_scan.rs",
     ],
     crate_name = "defcl_parser",
     crate_root = "lib.rs",
@@ -26,8 +27,10 @@ rust_library(
     deps = [
         "//crates/source_characters",
         "//crates/source_rendering/rust:source_rendering",
+        "//crates/source_scanning",
         "@crates//:derive_more",
         "@crates//:strum",
+        "@crates//:wide",
     ],
 )
 
