@@ -18,6 +18,7 @@ from define.compiler.validator.reference_graph.destruction import (
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from crates.source_rendering.python import rendering
     from define.compiler import chained_name
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
@@ -36,7 +37,6 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
-    from source_rendering.python import rendering
 
 
 class CalleeExecutionValidationResult(msgspec.Struct):

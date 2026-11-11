@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
+from crates.source_rendering.python import rendering
 from defcl.python import errors
-from source_rendering.python import rendering
 
 def validate(
     source: str, descriptor_set: bytes, top_level_message_type: str

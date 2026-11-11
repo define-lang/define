@@ -14,6 +14,7 @@ from define.compiler.validator.structural import (
 from define.compiler.validator.structural.resolver import path_tracker
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
@@ -21,7 +22,6 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.structural import (
         file_validator,
     )
-    from source_rendering.python import rendering
 
 
 class ReachedDefinition(msgspec.Struct):

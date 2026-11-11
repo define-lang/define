@@ -17,7 +17,10 @@ DERIVED_CORE_PROPERTIES_URL = (
     "https://www.unicode.org/Public/18.0.0/ucd/DerivedCoreProperties.txt"
 )
 RUST_OUTPUT_PATH = (
-    Path(__file__).resolve().parent.parent / "source_characters" / "invisible_ranges.rs"
+    Path(__file__).resolve().parent.parent
+    / "crates"
+    / "source_characters"
+    / "invisible_ranges.rs"
 )
 
 # General categories whose characters never display.

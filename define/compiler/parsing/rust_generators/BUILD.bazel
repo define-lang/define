@@ -10,8 +10,8 @@ py_library(
     deps = [
         ":renderer_extension",
         ":rust_names",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

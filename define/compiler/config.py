@@ -20,7 +20,7 @@ from define.config.project import config_pb2
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from source_rendering.python import rendering
+    from crates.source_rendering.python import rendering
 
 
 CONFIG_PATH = define_path.DefinePathFromPosix(

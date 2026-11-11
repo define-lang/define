@@ -4,7 +4,8 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 py_library(
     name = "source_rendering",
     srcs = ["__init__.py"],
-    visibility = ["//source_rendering:__subpackages__"],
+    visibility = ["//crates/source_rendering:__subpackages__"],
+    deps = ["//crates"],
 )
 
 check_build_file()

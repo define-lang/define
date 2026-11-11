@@ -99,6 +99,7 @@ py_test(
     shard_count = 2,
     deps = [
         ":test_helpers",
+        "//crates/source_rendering/python:rendering",
         "//defcl/python:error_types",
         "//defcl/python:errors",
         "//define/compiler:ast",
@@ -111,7 +112,6 @@ py_test(
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

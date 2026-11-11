@@ -12,8 +12,8 @@ rust_binary(
     visibility = ["//tools/format:__pkg__"],
     deps = [
         ":formatter",
+        "//crates/source_rendering/rust:source_rendering",
         "//defcl/rust/parser",
-        "//source_rendering/rust:source_rendering",
         "@crates//:clap",
     ],
 )
@@ -42,7 +42,7 @@ rust_test(
     lint_config = lint_config(),
     proc_macro_deps = ["@crates//:indoc"],
     deps = [
-        "//source_rendering/rust:source_rendering",
+        "//crates/source_rendering/rust:source_rendering",
         "@crates//:googletest",
     ],
 )

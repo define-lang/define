@@ -7,8 +7,8 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from defcl.python import error_types
-    from source_rendering.python import rendering
 
 
 class InvalidSchemaError(Exception):

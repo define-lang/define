@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import name_validators
-from source_rendering.python import rendering
 
 _LOC = rendering.SourceLocation(line=1, column=10, end_line=1, end_column=19)
 

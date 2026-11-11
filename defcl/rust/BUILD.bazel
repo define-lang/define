@@ -35,7 +35,7 @@ rust_test(
         "VALID_SCHEMAS": "$(rlocationpath //defcl/testdata/valid/schemas:schemas_descriptor_set)",
     },
     deps = [
-        "//source_rendering/rust:source_rendering",
+        "//crates/source_rendering/rust:source_rendering",
         "@crates//:googletest",
         "@crates//:prost",
         "@rules_rust//rust/runfiles",

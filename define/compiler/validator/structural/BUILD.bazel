@@ -56,13 +56,13 @@ py_library(
     deps = [
         ":definition_validator",
         ":file_validation_context",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/parsing:parser",
         "//define/compiler/validator:validation_result",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -74,13 +74,13 @@ py_test(
     deps = [
         ":file_validation_context",
         ":file_validator",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:validation_result",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -90,10 +90,10 @@ py_library(
     data = ["//define/reserved_words"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/errors:diagnostics",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -103,10 +103,10 @@ py_test(
     srcs = ["name_validators_test.py"],
     deps = [
         ":name_validators",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -121,6 +121,7 @@ py_library(
     deps = [
         ":file_validation_context",
         ":file_validator",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:work_pool",
         "//define/compiler/data_structures:typed_name_dict",
@@ -131,7 +132,6 @@ py_library(
         "//define/compiler/validator/structural/resolver:filesystem_reference_resolver",
         "//define/compiler/validator/structural/resolver:non_filesystem_reference_resolver",
         "//define/compiler/validator/structural/resolver:reference_resolver",
-        "//source_rendering/python:rendering",
     ],
 )
 

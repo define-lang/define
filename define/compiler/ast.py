@@ -20,12 +20,11 @@ from typing import (
 
 import msgspec
 
-from define.compiler import chained_name, constants, name_types
-from define.compiler.data_structures import define_path
-
 # The parser's AST node generator resolves the location fields' annotations at
 # runtime, so this import cannot be only for type checking.
-from source_rendering.python import rendering  # noqa: TC001
+from crates.source_rendering.python import rendering  # noqa: TC001
+from define.compiler import chained_name, constants, name_types
+from define.compiler.data_structures import define_path
 
 # Marks a field whose value is computed from the other fields. Python code that
 # constructs a node does not pass it, and `__post_init__` or a property computes

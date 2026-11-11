@@ -15,12 +15,12 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.validator.reference_graph.destruction import (
         destruction_walk,
     )
     from define.compiler.validator.reference_graph.particles import particle_info
-    from source_rendering.python import rendering
 
 
 class KnownAtDestruction(msgspec.Struct, frozen=True):

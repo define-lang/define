@@ -10,8 +10,8 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler import name_types
-    from source_rendering.python import rendering
 
 
 class _ViewUse(msgspec.Struct):

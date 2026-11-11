@@ -18,9 +18,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
     from collections.abc import Set as AbstractSet
 
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import interned_set
-    from source_rendering.python import rendering
 
 
 class OccupancyInfo(msgspec.Struct, frozen=True):

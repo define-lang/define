@@ -70,11 +70,11 @@ py_test(
     ],
     deps = [
         ":conftest",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
-        "//source_rendering/python:rendering",
     ],
 )
 

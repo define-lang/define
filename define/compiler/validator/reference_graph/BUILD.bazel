@@ -11,13 +11,13 @@ py_library(
         ":position_occupancy",
         ":propagation_step",
         ":quality_assignment",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/data_structures:interned_set",
         "//define/compiler/validator/reference_graph/destruction:child_state",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/particles:particle_info",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -71,6 +71,7 @@ py_library(
         ":action_contract",
         ":position_occupancy",
         ":position_quality_resolver",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
@@ -78,7 +79,6 @@ py_library(
         "//define/compiler/validator/reference_graph/callee_execution",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -196,7 +196,7 @@ py_library(
     srcs = ["propagation_step.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -217,9 +217,9 @@ py_test(
     srcs = ["quality_assignment_test.py"],
     deps = [
         ":quality_assignment",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -253,11 +253,11 @@ py_test(
         ":action_contract",
         ":quality_assignment",
         ":reference_graph_validation_state",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:interned_set",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -317,10 +317,10 @@ py_library(
     name = "view_use_tracker",
     srcs = ["view_use_tracker.py"],
     deps = [
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

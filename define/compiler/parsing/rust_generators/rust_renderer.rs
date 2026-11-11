@@ -28,7 +28,7 @@ enum FieldType {
     Enum {
         name: String,
     },
-    /// A `source_rendering.python.rendering.SourceLocation`.
+    /// A `crates.source_rendering.python.rendering.SourceLocation`.
     Location {},
 }
 

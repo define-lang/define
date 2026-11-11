@@ -40,7 +40,7 @@ impl<'py, Value> FieldValue<'py> for Bound<'py, Value> {
     }
 }
 
-/// A `source_rendering.python.rendering.SourceLocation`.
+/// A `crates.source_rendering.python.rendering.SourceLocation`.
 #[derive(Clone)]
 pub struct SourceLocation<'py>(Bound<'py, PyAny>);
 

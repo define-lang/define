@@ -75,9 +75,9 @@ py_test(
     srcs = ["typed_name_dict_test.py"],
     deps = [
         ":typed_name_dict",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

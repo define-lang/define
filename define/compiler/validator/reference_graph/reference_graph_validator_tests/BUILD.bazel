@@ -181,6 +181,7 @@ py_test(
     shard_count = 6,
     deps = [
         ":test_helpers",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler:conftest",
@@ -198,7 +199,6 @@ py_test(
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph:test_helpers",
         "//define/compiler/validator/reference_graph/destruction:child_state",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )

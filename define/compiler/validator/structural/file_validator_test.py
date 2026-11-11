@@ -9,6 +9,7 @@ import types
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler import config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
@@ -16,7 +17,6 @@ from define.compiler.validator.structural import (
     file_validation_context,
     file_validator,
 )
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from pathlib import Path

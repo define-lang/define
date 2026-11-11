@@ -23,8 +23,8 @@ from define.compiler.validator.structural import (
 )
 
 if TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler.data_structures import define_path
-    from source_rendering.python import rendering
 
 
 type FileDefinitions = typed_name_dict.TypedNameDict[

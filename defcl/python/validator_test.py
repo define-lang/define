@@ -4,8 +4,8 @@ import typing
 
 import pytest
 
+from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors, validator
-from source_rendering.python import rendering
 from tools import runfiles
 
 if typing.TYPE_CHECKING:

@@ -22,6 +22,7 @@ if typing.TYPE_CHECKING:
     )
     from collections.abc import Set as AbstractSet
 
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import (
@@ -29,7 +30,6 @@ if typing.TYPE_CHECKING:
         position_occupancy,
         quality_assignment,
     )
-    from source_rendering.python import rendering
 
 
 @typing.final

@@ -39,10 +39,10 @@ py_library(
     ],
     deps = [
         ":parser_extension",  # keep: supplies the native implementation of this stub
+        "//crates/source_rendering/python:rendering",  # keep: the parser imports it to construct locations
         "//define/compiler:ast",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
-        "//source_rendering/python:rendering",  # keep: the parser imports it to construct locations
     ],
 )
 
@@ -95,9 +95,9 @@ pyo3_extension(
     deps = [
         ":terminals",
         ":vector_scan",
-        "//source_characters",
-        "//source_rendering/python:capsule",
-        "//source_rendering/rust:source_rendering",
+        "//crates/source_characters",
+        "//crates/source_rendering/python:capsule",
+        "//crates/source_rendering/rust:source_rendering",
         "@crates//:rustc-hash",
     ],
 )

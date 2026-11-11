@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, constants, name_types
 
 if TYPE_CHECKING:
-    from source_rendering.python import rendering
+    from crates.source_rendering.python import rendering
 
 
 def _standard_encoding_operation_reference(

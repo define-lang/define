@@ -29,9 +29,9 @@ py_test(
     srcs = ["scope_tracker_test.py"],
     deps = [
         ":scope_tracker",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )
@@ -57,6 +57,7 @@ py_library(
     ],
     deps = [
         ":codegen_input",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
@@ -64,7 +65,6 @@ py_library(
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

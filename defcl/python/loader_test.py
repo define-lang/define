@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors, loader
 from defcl.testdata.invalid.semantics.schemas import (
     integer_enum_pb2,
@@ -13,7 +14,6 @@ from defcl.testdata.valid.schemas import (
     single_toplevel_pb2,
     wrapper_pb2,
 )
-from source_rendering.python import rendering
 from tools import runfiles
 
 

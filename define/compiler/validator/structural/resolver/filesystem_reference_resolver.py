@@ -15,7 +15,7 @@ from define.compiler.validator.structural import (
 from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
-    from source_rendering.python import rendering
+    from crates.source_rendering.python import rendering
 
 
 @typing.final

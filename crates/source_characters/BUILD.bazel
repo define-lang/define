@@ -18,7 +18,7 @@ rust_library(
         "//defcl/rust:__subpackages__",
         "//define/compiler/parsing:__pkg__",
     ],
-    deps = ["//source_rendering/rust:source_rendering"],
+    deps = ["//crates/source_rendering/rust:source_rendering"],
 )
 
 rust_test(

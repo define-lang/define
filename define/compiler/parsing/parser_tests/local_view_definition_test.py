@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
 from define.compiler.errors import syntax_errors
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (

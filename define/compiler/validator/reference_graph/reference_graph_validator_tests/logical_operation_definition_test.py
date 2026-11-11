@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler import constants
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import standard_library_file
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     import pytest

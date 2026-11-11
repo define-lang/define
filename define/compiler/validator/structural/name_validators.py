@@ -13,7 +13,7 @@ from define.compiler.errors import diagnostics
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from source_rendering.python import rendering
+    from crates.source_rendering.python import rendering
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 

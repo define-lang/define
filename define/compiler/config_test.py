@@ -3,11 +3,11 @@ from __future__ import annotations
 import typing
 from pathlib import PurePosixPath
 
+from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from pathlib import Path

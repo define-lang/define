@@ -11,8 +11,8 @@ from google.protobuf import descriptor_pb2, message, text_format
 from defcl.python import validator
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from defcl.python import errors
-    from source_rendering.python import rendering
 
 
 class LoadResult[M: message.Message](msgspec.Struct, frozen=True):

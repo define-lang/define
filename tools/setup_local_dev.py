@@ -40,7 +40,7 @@ NATIVE_EXTENSION_PACKAGES = [
     "defcl/python",
     "define/compiler/codegen/literal/python",
     "define/compiler/parsing",
-    "source_rendering/python",
+    "crates/source_rendering/python",
 ]
 
 # re2 makes only its py_library public, so its files are found by their path in

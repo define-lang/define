@@ -9,10 +9,10 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import program_validator
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from pathlib import Path

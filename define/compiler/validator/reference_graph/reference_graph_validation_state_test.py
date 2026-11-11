@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
+from crates.source_rendering.python import rendering
 from define.compiler import ast, chained_name, name_types
 from define.compiler.data_structures import interned_set
 from define.compiler.validator.reference_graph import (
@@ -10,7 +11,6 @@ from define.compiler.validator.reference_graph import (
     quality_assignment,
     reference_graph_validation_state,
 )
-from source_rendering.python import rendering
 
 _LOCATION = rendering.SourceLocation(
     line=1, column=1, end_line=1, end_column=1, file_path="test.dfn"

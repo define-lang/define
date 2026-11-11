@@ -18,6 +18,7 @@ from define.compiler.validator.reference_graph.particles import particle_info
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import quality_assignment
@@ -25,7 +26,6 @@ if typing.TYPE_CHECKING:
         child_state,
         destruction_contract,
     )
-    from source_rendering.python import rendering
 
 
 class PropagationHistory(msgspec.Struct, frozen=True, eq=False):

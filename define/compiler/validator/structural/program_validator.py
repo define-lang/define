@@ -14,7 +14,7 @@ from __future__ import annotations
 import functools
 import typing
 
-from source_rendering.python import rendering
+from crates.source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     import pathlib

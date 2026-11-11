@@ -44,9 +44,9 @@ import typing
 
 import msgspec
 
+from crates.source_rendering.python import rendering
 from define.compiler import ast
 from define.compiler.parsing.rust_generators import rust_names, rust_renderer
-from source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Collection

@@ -10,13 +10,13 @@ import msgspec
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
-    from source_rendering.python import rendering
 
 
 class ParticleStatementValidity(msgspec.Struct, frozen=True):

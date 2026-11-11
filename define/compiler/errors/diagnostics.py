@@ -17,7 +17,7 @@ from define.compiler.validator.reference_graph import propagation_step
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from source_rendering.python import rendering
+    from crates.source_rendering.python import rendering
 
 
 # The statement that reads every input view and writes every output view of

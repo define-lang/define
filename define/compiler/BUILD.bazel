@@ -14,8 +14,8 @@ py_library(
         ":chained_name",
         ":constants",
         ":name_types",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler/data_structures:define_path",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -28,9 +28,9 @@ py_test(
         ":ast",
         ":chained_name",
         ":name_types",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/parsing:test_helpers",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )
@@ -61,12 +61,12 @@ py_library(
     visibility = [":__subpackages__"],
     deps = [
         ":constants",
+        "//crates/source_rendering/python:rendering",
         "//defcl/python:loader",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/config/deps:local_proto_py",
         "//define/config/project:config_proto_py",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
         "@pypi//protobuf",
         "@pypi//protovalidate",
@@ -80,11 +80,11 @@ py_test(
     deps = [
         ":config",
         ":constants",
+        "//crates/source_rendering/python:rendering",
         "//defcl/python:error_types",
         "//defcl/python:errors",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
-        "//source_rendering/python:rendering",
         "@pypi//pytest",
     ],
 )
@@ -188,7 +188,7 @@ py_library(
         ":ast",
         ":constants",
         ":name_types",
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
     ],
 )
 

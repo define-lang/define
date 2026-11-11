@@ -10,6 +10,7 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:__pkg__",
     ],
     deps = [
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
@@ -18,7 +19,6 @@ py_library(
         "//define/compiler/validator/reference_graph:propagation_step",
         "//define/compiler/validator/reference_graph/destruction:destruction_walk",
         "//define/compiler/validator/reference_graph/particles:particle_info",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -32,6 +32,7 @@ py_library(
     ],
     deps = [
         ":callee_execution",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/data_structures:typed_name_dict",
@@ -46,7 +47,6 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )

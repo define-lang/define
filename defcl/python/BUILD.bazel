@@ -37,7 +37,7 @@ py_library(
     ],
     deps = [
         ":error_types",
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
@@ -60,7 +60,7 @@ py_library(
     deps = [
         ":errors",
         ":validator",
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
         "@pypi//msgspec",
         "@pypi//protobuf",
     ],
@@ -86,13 +86,13 @@ py_test(
         ":error_types",
         ":errors",
         ":loader",
+        "//crates/source_rendering/python:rendering",
         "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:wrong_value_kinds_proto_py",
         "//defcl/testdata/valid/schemas:imports_proto_py",
         "//defcl/testdata/valid/schemas:shared_proto_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
         "//defcl/testdata/valid/schemas:wrapper_proto_py",
-        "//source_rendering/python:rendering",
         "//tools:runfiles",
         "@pypi//pytest",
     ],
@@ -112,7 +112,7 @@ py_library(
         ":error_types",  # keep: the native implementation looks up its kinds
         ":errors",
         ":validator_extension",  # keep: supplies the native implementation of this stub
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
     ],
 )
 
@@ -124,10 +124,10 @@ pyo3_extension(
     stubs = False,
     visibility = ["//tools:__pkg__"],
     deps = [
+        "//crates/source_rendering/python:capsule",
         "//defcl/rust:validator",
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
-        "//source_rendering/python:capsule",
         "@crates//:prost",
     ],
 )
@@ -149,7 +149,7 @@ py_test(
         ":error_types",
         ":errors",
         ":validator",
-        "//source_rendering/python:rendering",
+        "//crates/source_rendering/python:rendering",
         "//tools:runfiles",
         "@pypi//pytest",
     ],

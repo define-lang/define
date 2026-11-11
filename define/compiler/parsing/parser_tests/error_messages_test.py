@@ -12,8 +12,8 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics, syntax_errors
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (

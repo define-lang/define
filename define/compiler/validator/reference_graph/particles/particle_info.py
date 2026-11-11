@@ -8,9 +8,9 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
-    from source_rendering.python import rendering
 
 
 class ParticleValueState(enum.Enum):

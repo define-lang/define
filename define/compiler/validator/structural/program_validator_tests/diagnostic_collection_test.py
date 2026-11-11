@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
-from source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem

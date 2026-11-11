@@ -13,6 +13,7 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
+    from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -20,7 +21,6 @@ if typing.TYPE_CHECKING:
         file_validation_context,
         file_validator,
     )
-    from source_rendering.python import rendering
 
 
 @typing.final

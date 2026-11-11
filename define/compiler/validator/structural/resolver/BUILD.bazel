@@ -9,12 +9,12 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":reference_resolver",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -24,6 +24,7 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":reference_resolver",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
@@ -32,7 +33,6 @@ py_library(
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
-        "//source_rendering/python:rendering",
     ],
 )
 
@@ -66,6 +66,7 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":path_tracker",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
@@ -75,7 +76,6 @@ py_library(
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_validation_context",
         "//define/compiler/validator/structural:file_validator",
-        "//source_rendering/python:rendering",
         "@pypi//msgspec",
     ],
 )
