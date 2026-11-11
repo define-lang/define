@@ -1,4 +1,4 @@
-"""Generate the parser's invisible-character data from the Unicode Character Database."""
+"""Generate the invisible-character data of the Invisible Characters rule from the Unicode Character Database."""
 
 from __future__ import annotations
 
@@ -16,15 +16,14 @@ UNICODE_DATA_URL = "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
 DERIVED_CORE_PROPERTIES_URL = (
     "https://www.unicode.org/Public/18.0.0/ucd/DerivedCoreProperties.txt"
 )
-_PARSING_PATH = (
-    Path(__file__).resolve().parent.parent / "define" / "compiler" / "parsing"
+RUST_OUTPUT_PATH = (
+    Path(__file__).resolve().parent.parent / "source_characters" / "invisible_ranges.rs"
 )
-RUST_OUTPUT_PATH = _PARSING_PATH / "characters" / "invisible_ranges.rs"
 
 # General categories whose characters never display.
 _INVISIBLE_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn", "Zs", "Zl", "Zp"})
 # The Invisible Characters rule allows these only in some contexts, so the
-# parser checks them in context instead of listing them as invisible.
+# rule checks them in context instead of listing them as invisible.
 _CONTEXTUAL_CHARACTERS = frozenset(
     {0x061C, 0x200C, 0x200D, 0x200E, 0x200F, 0xFE0E, 0xFE0F}
 )

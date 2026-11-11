@@ -1,35 +1,70 @@
 //! The formatting of a DCL file: fixing the layout errors that changing only
 //! its whitespace and comments fixes.
 
-use defcl_parser::{SyntaxError, parse, parse_with_layout_fixes};
+use defcl_parser::{SyntaxError, SyntaxErrorKind, parse, parse_with_layout_fixes};
 
 /// Formats `source`, the text of a DCL file.
 ///
-/// Returns its text with each layout error fixed that changing only its
-/// whitespace and comments fixes, or `None` if that changes nothing, and the
-/// syntax errors that the text still has. A file whose parse a syntax error
-/// stops is not changed, and that error is the only one returned.
+/// Returns its text with Windows line endings replaced by line feeds and each
+/// layout error fixed that changing only its whitespace and comments fixes, or
+/// `None` if that changes nothing, and the syntax errors that the text still
+/// has. A file whose parse a syntax error stops is not changed, and that error
+/// is the only one returned.
 #[must_use]
 pub fn format(source: &str) -> (Option<String>, Vec<SyntaxError>) {
-    let (mut result, fixes) = parse_with_layout_fixes(source);
+    match format_layout(source) {
+        Formatted::Parsed(formatted, errors) => (formatted, errors),
+        // A Windows line ending stops the parse at its carriage return, so only
+        // a file whose parse stops there needs its line endings replaced. A
+        // string cannot span lines, so a carriage return before a line feed is
+        // always part of a line ending.
+        Formatted::Stopped(stop)
+            if stop.kind == SyntaxErrorKind::CarriageReturnNotAllowed
+                && source.contains("\r\n") =>
+        {
+            let line_feeds_only = source.replace("\r\n", "\n");
+            match format_layout(&line_feeds_only) {
+                Formatted::Parsed(formatted, errors) => {
+                    (Some(formatted.unwrap_or(line_feeds_only)), errors)
+                }
+                Formatted::Stopped(error) => (None, vec![error]),
+            }
+        }
+        Formatted::Stopped(error) => (None, vec![error]),
+    }
+}
+
+/// What fixing the layout errors of a DCL file's text found.
+enum Formatted {
+    /// The text with its layout errors fixed, or `None` if it had none to fix,
+    /// and the syntax errors that it still has.
+    Parsed(Option<String>, Vec<SyntaxError>),
+    /// The syntax error that stopped the parse of the text.
+    Stopped(SyntaxError),
+}
+
+/// Fixes the layout errors in `text` that changing only its whitespace and
+/// comments fixes.
+fn format_layout(text: &str) -> Formatted {
+    let (mut result, fixes) = parse_with_layout_fixes(text);
     if result.file.is_none() {
         // The error that stopped the parse is the last.
-        let stop = result.errors.split_off(result.errors.len() - 1);
-        return (None, stop);
+        return Formatted::Stopped(result.errors.swap_remove(result.errors.len() - 1));
     }
     if fixes.is_empty() {
-        return (None, result.errors);
+        let errors = result.errors;
+        return Formatted::Parsed(None, errors);
     }
-    let mut formatted = String::with_capacity(source.len());
+    let mut formatted = String::with_capacity(text.len());
     let mut copied = 0;
     for fix in &fixes {
-        formatted.push_str(&source[copied..fix.start]);
+        formatted.push_str(&text[copied..fix.start]);
         formatted.push_str(&fix.replacement);
         copied = fix.end;
     }
-    formatted.push_str(&source[copied..]);
+    formatted.push_str(&text[copied..]);
     let errors = parse(&formatted).errors;
-    (Some(formatted), errors)
+    Formatted::Parsed(Some(formatted), errors)
 }
 
 #[cfg(test)]
@@ -124,6 +159,64 @@ mod tests {
                     }
                 "})),
                 is_empty()
+            )
+        )
+    }
+
+    #[gtest]
+    fn windows_line_endings_become_line_feeds() -> Result<()> {
+        verify_that!(
+            format("# x\r\na: {\r\n  b: \"y\"\r\n}\r\n"),
+            (some(eq("# x\na: {\n  b: \"y\"\n}\n")), is_empty())
+        )
+    }
+
+    #[gtest]
+    fn windows_line_endings_with_layout_errors() -> Result<()> {
+        verify_that!(
+            format("a: {\r\n    b: 1\r\n}\r\n"),
+            (some(eq("a: {\n  b: 1\n}\n")), is_empty())
+        )
+    }
+
+    #[gtest]
+    fn windows_line_endings_and_another_stopping_error_are_left_unchanged() -> Result<()> {
+        verify_that!(
+            format("a: {\r\n  b: @\r\n}\r\n"),
+            (
+                none(),
+                eq(&vec![SyntaxError {
+                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                    location: location(2, 6, 2, 6),
+                }])
+            )
+        )
+    }
+
+    #[gtest]
+    fn carriage_return_without_a_line_feed_is_left_with_its_error() -> Result<()> {
+        verify_that!(
+            format("a: {\n  b: 1\r}\n"),
+            (
+                none(),
+                eq(&vec![SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(2, 7, 2, 7),
+                }])
+            )
+        )
+    }
+
+    #[gtest]
+    fn tabs_that_end_a_comment_are_removed() -> Result<()> {
+        verify_that!(
+            format("a: {\n  # x \t\n  # y\tz\n  b: 1\n}\n"),
+            (
+                some(eq("a: {\n  # x\n  # y\tz\n  b: 1\n}\n")),
+                eq(&vec![SyntaxError {
+                    kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
+                    location: location(3, 6, 3, 6),
+                }])
             )
         )
     }

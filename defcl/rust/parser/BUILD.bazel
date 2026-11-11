@@ -23,6 +23,7 @@ rust_library(
         "//defcl/rust:__subpackages__",
     ],
     deps = [
+        "//source_characters",
         "//source_rendering/rust:source_rendering",
         "@crates//:derive_more",
         "@crates//:strum",

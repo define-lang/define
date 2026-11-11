@@ -39,6 +39,18 @@ class UnexpectedCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
     character: str
 
 
+class ControlCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
+    """A CONTROL_CHARACTER diagnostic: a control character in a comment or a string."""
+
+    character: str
+
+
+class InvisibleCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
+    """An INVISIBLE_CHARACTER diagnostic: an invisible character that the Invisible Characters rule does not allow in a comment or a string."""
+
+    character: str
+
+
 class InvalidEncodingDiagnostic(SyntaxDiagnostic, frozen=True):
     """An INVALID_ENCODING diagnostic: a byte that does not start a valid UTF-8 character."""
 

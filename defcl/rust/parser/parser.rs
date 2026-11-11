@@ -5,6 +5,10 @@ use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };
+use source_characters::{
+    DisallowedCharacter, DisallowedReason, TextKind, disallowed_characters,
+    first_disallowed_character,
+};
 use source_rendering::{Position, SourceLocation};
 
 const BYTE_ORDER_MARK: char = '\u{feff}';
@@ -356,15 +360,42 @@ fn skip_comment(scanner: &mut Scanner<'_>) -> Result<(), SyntaxError> {
     loop {
         match scanner.peek() {
             None | Some(b'\n') => return Ok(()),
-            // The comment has a NUL.
-            Some(b'\0') => {
+            // The comment has a carriage return, which comes from the line
+            // endings of a whole file, so it stops the parse instead of
+            // getting an error on every line.
+            Some(b'\r') => {
                 return Err(SyntaxError {
-                    kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                     location: SourceLocation::at(scanner.position()),
                 });
             }
             Some(_) => scanner.advance(),
         }
+    }
+}
+
+/// Whether `text` has only printable ASCII characters, which every comment and
+/// string allows.
+fn is_printable_ascii(text: &str) -> bool {
+    // Checking every byte without stopping early lets the compiler check many
+    // at once.
+    text.bytes()
+        .fold(true, |all, byte| all & matches!(byte, b' '..=b'~'))
+}
+
+/// The error for `found`, a character that a comment or a string does not
+/// allow.
+const fn disallowed_character_error(found: DisallowedCharacter) -> SyntaxError {
+    let character = found.character;
+    let kind = match found.reason {
+        DisallowedReason::ByteOrderMark => SyntaxErrorKind::ByteOrderMark,
+        DisallowedReason::CarriageReturn => SyntaxErrorKind::CarriageReturnNotAllowed,
+        DisallowedReason::Control => SyntaxErrorKind::ControlCharacter { character },
+        DisallowedReason::Invisible => SyntaxErrorKind::InvisibleCharacter { character },
+    };
+    SyntaxError {
+        kind,
+        location: SourceLocation::at(found.position),
     }
 }
 
@@ -424,8 +455,8 @@ impl<'source> Parser<'source> {
         is_expected: impl Fn(Option<u8>) -> bool,
     ) -> Result<Option<u8>, SyntaxError> {
         let mut lookahead = self.scanner;
-        // The whitespace and comments have no NUL if this succeeds, so
-        // checking them cannot fail.
+        // The comments have no carriage return if this succeeds, so checking
+        // them cannot fail.
         skip_whitespace(&mut lookahead)?;
         let next = lookahead.peek();
         if is_expected(next) {
@@ -442,12 +473,12 @@ impl<'source> Parser<'source> {
     /// less. The top-level messages are a block of level 0 that the end of the
     /// file closes. Records an error for each way that they are not a line
     /// feed, then comment lines indented `level` levels, then the next token's
-    /// indentation. The whitespace and comments must have no NUL.
+    /// indentation. The comments must have no carriage return.
     ///
     /// ```ebnf
     /// line_break(level) = newline, { comment_line(level) }, indentation(level) ;
     /// comment_line(level) = indentation(level), "#", [ " ", comment_text ], newline ;
-    /// comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - "\t" - newline ) ] ;
+    /// comment_text = ( char - " " - newline ), [ { char - newline }, ( char - " " - newline ) ] ;
     /// ```
     fn expect_line_break(&mut self, level: u32) {
         let start = self.scanner.offset();
@@ -477,6 +508,8 @@ impl<'source> Parser<'source> {
             replacement.push('#');
             // Spaces at the start of the text are part of it, such as to draw
             // a diagram, so only the space after the `#` is added.
+            // Tabs at the end are invisible, so removing them with the spaces
+            // there changes nothing that the comment says.
             let text = comment.trim_end_matches([' ', '\t']);
             if !text.is_empty() {
                 if !text.starts_with(' ') {
@@ -578,11 +611,14 @@ impl<'source> Parser<'source> {
             // A comment follows something else on its line.
             Some(b'#') => {
                 let comment_start = self.scanner.position();
+                let comment_offset = self.scanner.offset();
                 self.skip_to_line_end();
                 self.errors.push(SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
                     location: self.location_from(comment_start),
                 });
+                let comment = &self.scanner.text_from(comment_offset)[1..];
+                self.check_comment_characters(comment_start, comment);
             }
             // The file does not end with a line feed.
             None => {
@@ -639,19 +675,21 @@ impl<'source> Parser<'source> {
 
     /// Consumes the comment that starts with the `#` at the scanner's position
     /// on a line of its own, up to its line feed. Records an error if the `#`
-    /// is followed directly by text, without a space between them, and if the
-    /// comment ends with spaces or tabs. The comment must have no NUL.
+    /// is followed directly by text, without a space between them, if the
+    /// comment ends with spaces, and for each character that comments do not
+    /// allow. The comment must have no carriage return.
     fn consume_comment_line(&mut self) {
         let hash = self.scanner.position();
+        let hash_offset = self.scanner.offset();
         self.scanner.advance();
         let spaces = self.scanner.consume_spaces();
-        // Where the spaces and tabs at the end of the comment so far start.
+        // Where the spaces at the end of the comment so far start.
         let mut trailing_start = (spaces > 0).then(|| hash.next_column());
         let mut has_text = false;
         loop {
             match self.scanner.peek() {
                 None | Some(b'\n') => break,
-                Some(b' ' | b'\t') => {
+                Some(b' ') => {
                     trailing_start.get_or_insert_with(|| self.scanner.position());
                     self.scanner.advance();
                 }
@@ -669,12 +707,46 @@ impl<'source> Parser<'source> {
                 location: SourceLocation::at(hash),
             });
         }
-        // The comment ends with spaces or tabs.
+        // The comment ends with spaces.
         if let Some(start) = trailing_start {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
                 location: self.location_from(start),
             });
+        }
+        // Comments allow every printable ASCII character, so only other
+        // characters need checking, which keeps the check out of the parse
+        // of nearly every comment.
+        let comment = &self.scanner.text_from(hash_offset)[1..];
+        if !is_printable_ascii(comment) {
+            self.check_comment_characters(hash, comment);
+        }
+    }
+
+    /// Records an error for each character that comments do not allow in
+    /// `comment`, the text after the `#` at `hash`.
+    fn check_comment_characters(&mut self, hash: Position, comment: &str) {
+        for found in disallowed_characters(hash.next_column(), comment, TextKind::Comment) {
+            self.errors.push(disallowed_character_error(found));
+        }
+    }
+
+    /// Records an error for each character that comments do not allow in the
+    /// comments among the whitespace and comments from `start`, the byte
+    /// `start_offset`, up to the scanner's position.
+    fn check_comments_from(&mut self, start: Position, start_offset: usize) {
+        let mut line_start = start;
+        for line in self.scanner.text_from(start_offset).split_inclusive('\n') {
+            // Only spaces come before a comment among whitespace, so its `#`
+            // is as many columns along as bytes.
+            if let Some(index) = line.find('#') {
+                let comment = line[index + 1..].trim_end_matches('\n');
+                self.check_comment_characters(line_start.columns_later(index), comment);
+            }
+            line_start = Position {
+                line: line_start.line + 1,
+                column: 1,
+            };
         }
     }
 
@@ -709,6 +781,7 @@ impl<'source> Parser<'source> {
                 kind: SyntaxErrorKind::MisplacedComment,
                 location,
             });
+            self.check_comments_from(start, start_offset);
             return Ok(());
         }
         self.errors.push(SyntaxError {
@@ -739,6 +812,7 @@ impl<'source> Parser<'source> {
                 kind: SyntaxErrorKind::MisplacedComment,
                 location,
             });
+            self.check_comments_from(start, start_offset);
             return Ok(());
         }
         let whitespace = self.scanner.text_from(start_offset);
@@ -768,6 +842,8 @@ impl<'source> Parser<'source> {
         close: u8,
         kind: SyntaxErrorKind,
     ) -> Result<bool, SyntaxError> {
+        let whitespace_start = self.scanner.position();
+        let whitespace_offset = self.scanner.offset();
         let mut lookahead = self.scanner;
         skip_whitespace(&mut lookahead)?;
         if !lookahead.consume_byte(close) {
@@ -778,6 +854,7 @@ impl<'source> Parser<'source> {
             kind,
             location: self.location_from(start),
         });
+        self.check_comments_from(whitespace_start, whitespace_offset);
         Ok(true)
     }
 
@@ -927,18 +1004,21 @@ impl<'source> Parser<'source> {
                         Escape::Unfinished => {}
                     }
                 }
-                // The string has a NUL.
-                Some(b'\0') => {
-                    return Err(SyntaxError {
-                        kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
-                        location: SourceLocation::at(self.scanner.position()),
-                    });
-                }
                 Some(_) => {
                     byte_escape_run.end()?;
                     self.scanner.advance();
                 }
             }
+        }
+        let content = &self.scanner.text_from(start_offset)[1..];
+        // Strings allow every printable ASCII character, so only a string with
+        // other characters needs checking. The string has a character that
+        // strings do not allow.
+        if !is_printable_ascii(content)
+            && let Some(found) =
+                first_disallowed_character(start.next_column(), content, TextKind::LiteralContent)
+        {
+            return Err(disallowed_character_error(found));
         }
         byte_escape_run.end()?;
         self.scanner.advance();

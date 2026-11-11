@@ -83,6 +83,12 @@ const fn location(line: u32, column: u32, end_line: u32, end_column: u32) -> Sou
     }
 }
 
+const RIGHT_TO_LEFT_OVERRIDE: char = '\u{202e}';
+const BYTE_ORDER_MARK: char = '\u{feff}';
+const ZERO_WIDTH_SPACE: char = '\u{200b}';
+const LEFT_TO_RIGHT_MARK: char = '\u{200e}';
+const RIGHT_TO_LEFT_MARK: char = '\u{200f}';
+
 /// The syntax errors of `source`, none of which stopped its parse.
 fn layout_errors(source: &str) -> Result<Vec<SyntaxError>> {
     let parsed = parse(source);
@@ -664,7 +670,7 @@ mod valid_source {
     #[gtest]
     fn columns_count_characters() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: \"caf\u{e9}\"\n  # \u{e9}\n  c: 1\n}\n"),
+            parse("a: {\n  b: \"café\"\n  # é\n  c: 1\n}\n"),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -673,32 +679,13 @@ mod valid_source {
                             field(
                                 name("b", 2, 3),
                                 Value::String(Scalar {
-                                    text: "\"caf\u{e9}\"",
+                                    text: "\"café\"",
                                     location: location(2, 6, 2, 11),
                                 }),
                             ),
                             field(name("c", 4, 3), Value::Integer(scalar("1", 4, 6))),
                         ],
                         location: location(1, 4, 5, 1),
-                    },
-                )],
-            }))
-        )
-    }
-
-    #[gtest]
-    fn tabs_and_carriage_returns_in_strings_and_comments() -> Result<()> {
-        verify_that!(
-            parse("a: {\n  # \t\rc\n  b: \"x\t\ry\"\n}\n"),
-            eq(&parsed(ParsedFile {
-                top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
-                    MessageValue {
-                        fields: vec![field(
-                            name("b", 3, 3),
-                            Value::String(scalar("\"x\t\ry\"", 3, 6)),
-                        )],
-                        location: location(1, 4, 4, 1),
                     },
                 )],
             }))
@@ -938,11 +925,75 @@ mod invalid_layout {
     #[gtest]
     fn trailing_whitespace_in_comment() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  # c \t\n  b: 1\n}\n")?,
+            layout_errors("a: {\n  # c  \n  b: 1\n}\n")?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TrailingWhitespace,
                 location: location(2, 6, 2, 7),
             },]
+        )
+    }
+
+    #[gtest]
+    fn tab_in_comment() -> Result<()> {
+        verify_eq!(
+            layout_errors("a: {\n  # c \t\n  b: 1\n}\n")?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
+                location: location(2, 7, 2, 7),
+            },]
+        )
+    }
+
+    #[gtest]
+    fn invisible_characters_in_comments() -> Result<()> {
+        verify_eq!(
+            layout_errors(&format!(
+                "# {RIGHT_TO_LEFT_OVERRIDE}\na: {{\n  b: 1 # {BYTE_ORDER_MARK}\n  c: [\n    # {ZERO_WIDTH_SPACE}\n  ]\n  d # {ZERO_WIDTH_SPACE}\n  : 1\n}}\n"
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: RIGHT_TO_LEFT_OVERRIDE
+                    },
+                    location: location(1, 3, 1, 3),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::CommentNotOnOwnLine,
+                    location: location(3, 8, 3, 10),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::ByteOrderMark,
+                    location: location(3, 10, 3, 10),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyRepeatedValue,
+                    location: location(4, 6, 6, 3),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: location(5, 7, 5, 7),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::MisplacedComment,
+                    location: location(7, 5, 7, 7),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: location(7, 7, 7, 7),
+                },
+            ]
+        )
+    }
+
+    #[gtest]
+    fn direction_marks_in_comments() -> Result<()> {
+        verify_eq!(
+            layout_errors(&format!("a: {{\n  # {RIGHT_TO_LEFT_MARK}\n  b: 1\n}}\n"))?,
+            vec![]
         )
     }
 
@@ -1965,8 +2016,8 @@ mod invalid_characters {
     #[gtest]
     fn valid_utf8_is_decoded() -> Result<()> {
         verify_that!(
-            decode("a: {\n  b: \"caf\u{e9}\"\n}\n".as_bytes().to_vec()),
-            ok(eq("a: {\n  b: \"caf\u{e9}\"\n}\n"))
+            decode("a: {\n  b: \"café\"\n}\n".as_bytes().to_vec()),
+            ok(eq("a: {\n  b: \"café\"\n}\n"))
         )
     }
 
@@ -1993,9 +2044,7 @@ mod invalid_characters {
                 "../../testdata/invalid/syntax/characters/non_ascii_character_outside_strings_and_comments.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter {
-                    character: '\u{e9}'
-                },
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: 'é' },
                 location: SourceLocation {
                     start: Position { line: 2, column: 6 },
                     end: Position { line: 2, column: 6 }
@@ -2011,36 +2060,95 @@ mod invalid_characters {
                 "../../testdata/invalid/syntax/characters/nul_in_string.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
-                location: SourceLocation {
-                    start: Position { line: 2, column: 8 },
-                    end: Position { line: 2, column: 8 }
+                kind: SyntaxErrorKind::ControlCharacter { character: '\0' },
+                location: location(2, 8, 2, 8),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn tab_in_string() -> Result<()> {
+        verify_that!(
+            parse("a: {\n  b: \"x\ty\"\n}\n"),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
+                location: location(2, 8, 2, 8),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn carriage_return_in_string() -> Result<()> {
+        verify_that!(
+            parse("a: {\n  b: \"x\ry\"\n}\n"),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                location: location(2, 8, 2, 8),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn invisible_character_in_string() -> Result<()> {
+        let source = format!("a: {{\n  b: \"café{RIGHT_TO_LEFT_OVERRIDE}\"\n}}\n");
+        verify_that!(
+            parse(&source),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::InvisibleCharacter {
+                    character: RIGHT_TO_LEFT_OVERRIDE
                 },
+                location: location(2, 11, 2, 11),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn direction_mark_in_string() -> Result<()> {
+        let source = format!("a: {{\n  b: \"x{LEFT_TO_RIGHT_MARK}\"\n}}\n");
+        verify_that!(
+            parse(&source),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::InvisibleCharacter {
+                    character: LEFT_TO_RIGHT_MARK
+                },
+                location: location(2, 8, 2, 8),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn byte_order_mark_in_string() -> Result<()> {
+        let source = format!("a: {{\n  b: \"{BYTE_ORDER_MARK}\"\n}}\n");
+        verify_that!(
+            parse(&source),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::ByteOrderMark,
+                location: location(2, 7, 2, 7),
             }))
         )
     }
 
     #[gtest]
     fn nul_in_comment() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/nul_in_comment.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+            ))?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::ControlCharacter { character: '\0' },
                 location: location(4, 4, 4, 4),
-            }))
+            }]
         )
     }
 
     #[gtest]
-    fn nul_in_comment_at_start_of_file() -> Result<()> {
+    fn carriage_return_in_comment_at_start_of_file() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_file.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_file.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 1, column: 2 },
                     end: Position { line: 1, column: 2 }
@@ -2050,13 +2158,13 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_after_top_level_colon() -> Result<()> {
+    fn carriage_return_in_comment_after_top_level_colon() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_top_level_colon.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_top_level_colon.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 1, column: 5 },
                     end: Position { line: 1, column: 5 }
@@ -2066,13 +2174,13 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_after_field_colon() -> Result<()> {
+    fn carriage_return_in_comment_after_field_colon() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_colon.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field_colon.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 2, column: 7 },
                     end: Position { line: 2, column: 7 }
@@ -2082,13 +2190,13 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_at_start_of_message_value() -> Result<()> {
+    fn carriage_return_in_comment_at_start_of_message_value() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_message_value.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_message_value.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 1, column: 7 },
                     end: Position { line: 1, column: 7 }
@@ -2098,13 +2206,13 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_after_field() -> Result<()> {
+    fn carriage_return_in_comment_after_field() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 2, column: 9 },
                     end: Position { line: 2, column: 9 }
@@ -2114,13 +2222,13 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_at_start_of_repeated_value() -> Result<()> {
+    fn carriage_return_in_comment_at_start_of_repeated_value() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_at_start_of_repeated_value.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_repeated_value.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 2, column: 9 },
                     end: Position { line: 2, column: 9 }
@@ -2130,39 +2238,39 @@ mod invalid_characters {
     }
 
     #[gtest]
-    fn nul_in_comment_after_comma() -> Result<()> {
+    fn carriage_return_in_comment_after_comma() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_comma.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_comma.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: location(4, 6, 4, 6),
             }))
         )
     }
 
     #[gtest]
-    fn nul_in_comment_after_repeated_element() -> Result<()> {
+    fn carriage_return_in_comment_after_repeated_element() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_repeated_element.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_repeated_element.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: location(4, 6, 4, 6),
             }))
         )
     }
 
     #[gtest]
-    fn nul_in_comment_after_field_name() -> Result<()> {
+    fn carriage_return_in_comment_after_field_name() -> Result<()> {
         verify_that!(
             parse(include_str!(
-                "../../testdata/invalid/syntax/characters/nul_in_comment_after_field_name.defcl"
+                "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field_name.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::UnexpectedCharacter { character: '\0' },
+                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: SourceLocation {
                     start: Position { line: 1, column: 4 },
                     end: Position { line: 1, column: 4 }

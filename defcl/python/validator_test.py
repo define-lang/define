@@ -16,6 +16,9 @@ _ONEOFS_FILE = "defcl.testdata.invalid.semantics.schemas.OneofsFile"
 _OUT_OF_RANGE_FILE = "defcl.testdata.invalid.semantics.schemas.OutOfRangeFile"
 _SINGLE_TOPLEVEL_FILE = "defcl.testdata.valid.schemas.SingleToplevelFile"
 _WRONG_VALUE_KINDS_FILE = "defcl.testdata.invalid.semantics.schemas.WrongValueKindsFile"
+_RIGHT_TO_LEFT_OVERRIDE = "\u202e"
+# What a line with bytes that are not valid UTF-8 shows in their place.
+_REPLACEMENT_CHARACTER = "\ufffd"
 
 
 def _testdata_path(path: str) -> pathlib.Path:
@@ -297,10 +300,44 @@ def test_invalid_utf8_is_an_invalid_encoding_diagnostic():
     assert invalid_encoding.byte == 0xFF
     assert invalid_encoding.format(source_map) == (
         f'File "{path}", line 2, column 12\n'
-        '    b: "café \ufffd"\n'
+        f'    b: "café {_REPLACEMENT_CHARACTER}"\n'
         "             ^\n"
         "Invalid UTF-8: the byte \\xff does not start a valid character"
     )
+
+
+def test_control_character_in_a_comment_is_a_control_character_diagnostic():
+    understood, (control_character,) = validator.validate(
+        'project: {\n  # a\tb\n  universe_name: "example"\n}\n',
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    )
+
+    assert understood is True
+    assert type(control_character) is errors.ControlCharacterDiagnostic
+    assert control_character.kind == error_types.SyntaxDiagnosticKind.CONTROL_CHARACTER
+    assert control_character.location == rendering.SourceLocation(
+        line=2, column=6, end_line=2, end_column=6
+    )
+    assert control_character.character == "\t"
+
+
+def test_invisible_character_in_a_string_is_an_invisible_character_diagnostic():
+    understood, (invisible_character,) = validator.validate(
+        f'project: {{\n  universe_name: "a{_RIGHT_TO_LEFT_OVERRIDE}b"\n}}\n',
+        _valid_schemas(),
+        _SINGLE_TOPLEVEL_FILE,
+    )
+
+    assert understood is False
+    assert type(invisible_character) is errors.InvisibleCharacterDiagnostic
+    assert (
+        invisible_character.kind == error_types.SyntaxDiagnosticKind.INVISIBLE_CHARACTER
+    )
+    assert invisible_character.location == rendering.SourceLocation(
+        line=2, column=20, end_line=2, end_column=20
+    )
+    assert invisible_character.character == _RIGHT_TO_LEFT_OVERRIDE
 
 
 def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
@@ -392,6 +429,16 @@ def test_validate_file_of_a_file_with_only_fields_out_of_order_returns_its_text(
     )
     assert field_out_of_order.field_name == "name"
     assert field_out_of_order.later_field == "count"
+
+
+def test_validate_file_with_a_missing_message_type_raises_invalid_schema_error():
+    with pytest.raises(errors.InvalidSchemaError):
+        _ = validator.validate_file(
+            str(_testdata_path("valid/single_toplevel.defcl")),
+            rendering.SourceMap(),
+            _valid_schemas(),
+            "defcl.testdata.valid.schemas.NoSuchFile",
+        )
 
 
 def test_validate_file_of_a_missing_file_raises_file_not_found_error():

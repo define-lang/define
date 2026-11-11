@@ -176,8 +176,8 @@ py_test(
     name = "generate_invisible_characters_test",
     size = "small",
     srcs = ["generate_invisible_characters_test.py"],
-    data = ["//define/compiler/parsing:characters/invisible_ranges.rs"],
-    env = {"INVISIBLE_RANGES": "$(rlocationpath //define/compiler/parsing:characters/invisible_ranges.rs)"},
+    data = ["//source_characters:invisible_ranges.rs"],
+    env = {"INVISIBLE_RANGES": "$(rlocationpath //source_characters:invisible_ranges.rs)"},
     deps = [
         ":generate_invisible_characters",
         ":runfiles",

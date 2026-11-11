@@ -1,0 +1,47 @@
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "lint_config")
+
+exports_files(["invisible_ranges.rs"])
+
+rust_library(
+    name = "source_characters",
+    srcs = [
+        "invisible_ranges.rs",
+        "lib.rs",
+    ],
+    crate_root = "lib.rs",
+    lint_config = lint_config(),
+    visibility = [
+        "//defcl/rust:__subpackages__",
+        "//define/compiler/parsing:__pkg__",
+    ],
+    deps = ["//source_rendering/rust:source_rendering"],
+)
+
+rust_test(
+    name = "source_characters_test",
+    size = "small",
+    crate = ":source_characters",
+    lint_config = lint_config(),
+    deps = ["@crates//:googletest"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    tags = [
+        "clippy",
+        "precommit",
+    ],
+    targets = [
+        ":source_characters",
+        ":source_characters_test",
+    ],
+)
+
+check_build_file()

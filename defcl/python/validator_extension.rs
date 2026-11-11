@@ -15,6 +15,8 @@ use std::path::Path;
 struct PythonClasses {
     syntax_diagnostic: Py<PyType>,
     unexpected_character_diagnostic: Py<PyType>,
+    control_character_diagnostic: Py<PyType>,
+    invisible_character_diagnostic: Py<PyType>,
     invalid_encoding_diagnostic: Py<PyType>,
     wrong_indentation_diagnostic: Py<PyType>,
     syntax_diagnostic_kind: Py<PyType>,
@@ -42,6 +44,8 @@ impl PythonClasses {
         Ok(Self {
             syntax_diagnostic: class(&errors, "SyntaxDiagnostic")?,
             unexpected_character_diagnostic: class(&errors, "UnexpectedCharacterDiagnostic")?,
+            control_character_diagnostic: class(&errors, "ControlCharacterDiagnostic")?,
+            invisible_character_diagnostic: class(&errors, "InvisibleCharacterDiagnostic")?,
             invalid_encoding_diagnostic: class(&errors, "InvalidEncodingDiagnostic")?,
             wrong_indentation_diagnostic: class(&errors, "WrongIndentationDiagnostic")?,
             syntax_diagnostic_kind: class(&error_types, "SyntaxDiagnosticKind")?,
@@ -78,6 +82,14 @@ impl PythonClasses {
         match error.kind {
             SyntaxErrorKind::UnexpectedCharacter { character } => self
                 .unexpected_character_diagnostic
+                .bind(py)
+                .call1((message, location, kind, character)),
+            SyntaxErrorKind::ControlCharacter { character } => self
+                .control_character_diagnostic
+                .bind(py)
+                .call1((message, location, kind, character)),
+            SyntaxErrorKind::InvisibleCharacter { character } => self
+                .invisible_character_diagnostic
                 .bind(py)
                 .call1((message, location, kind, character)),
             SyntaxErrorKind::InvalidEncoding { byte } => self

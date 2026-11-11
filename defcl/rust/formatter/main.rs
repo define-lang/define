@@ -138,6 +138,9 @@ mod tests {
     use googletest::prelude::*;
     use std::path::PathBuf;
 
+    /// What a line with bytes that are not valid UTF-8 shows in their place.
+    const REPLACEMENT_CHARACTER: char = '\u{fffd}';
+
     /// A new directory for a test's files, under the test's temporary
     /// directory.
     fn test_directory(name: &str) -> Result<PathBuf> {
@@ -314,7 +317,7 @@ mod tests {
         verify_that!(
             String::from_utf8(errors).or_fail()?,
             eq(&format!(
-                "File \"{}\", line 2, column 9\n    b: \"\u{fffd}\"\n        ^\nInvalid UTF-8: the byte \\xff does not start a valid character\n",
+                "File \"{}\", line 2, column 9\n    b: \"{REPLACEMENT_CHARACTER}\"\n        ^\nInvalid UTF-8: the byte \\xff does not start a valid character\n",
                 path.display()
             ))
         )?;

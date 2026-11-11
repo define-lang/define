@@ -11,13 +11,16 @@ pub struct SyntaxError {
     pub location: SourceLocation,
 }
 
-/// Which syntax error a `SyntaxError` is. Its message does not include the
-/// location. An error in the layout of a file, which the parser records
-/// without stopping, says so.
+/// Which syntax error a `SyntaxError` is.
+///
+/// Its message does not include the location. Every error stops the parse,
+/// except a layout error, which is an error in the layout of a file and says
+/// so, and an error that says where the parse goes on past it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr, VariantNames)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SyntaxErrorKind {
-    /// The file starts with a byte order mark.
+    /// A byte order mark at the start of the file, or in a comment or a
+    /// string. In a comment, the parse goes on past it.
     #[display("Byte order mark not allowed")]
     ByteOrderMark,
     /// The file has no top-level message.
@@ -34,11 +37,20 @@ pub enum SyntaxErrorKind {
     /// A tab outside a string or a comment.
     #[display("Tabs not allowed - use spaces")]
     TabNotAllowed,
-    /// A carriage return outside a string or a comment.
+    /// A carriage return anywhere.
     #[display("Carriage returns not allowed - use LF only")]
     CarriageReturnNotAllowed,
-    /// A character that DCL does not allow outside a string or a comment, or
-    /// a NUL in a string or a comment.
+    /// A control character other than a line feed in a comment or a string.
+    /// A string can only have one through an escape. In a comment, the parse
+    /// goes on past it.
+    #[display("Control character U+{:04X} not allowed", u32::from(*character))]
+    ControlCharacter { character: char },
+    /// An invisible character that the Invisible Characters rule does not
+    /// allow, in a comment or a string. In a comment, the parse goes on past
+    /// it.
+    #[display("Invisible character U+{:04X} not allowed", u32::from(*character))]
+    InvisibleCharacter { character: char },
+    /// A character that DCL does not allow outside a string or a comment.
     #[display(
         "Unexpected character '{}' (U+{:04X})",
         character.escape_debug(),
@@ -79,8 +91,8 @@ pub enum SyntaxErrorKind {
     /// the spaces that start the line. A layout error.
     #[display("Expected {expected_spaces} spaces of indentation")]
     WrongIndentation { expected_spaces: u32 },
-    /// Spaces at the end of a line, or spaces or tabs at the end of a comment.
-    /// A layout error.
+    /// Spaces at the end of a line, including a comment's line. A layout
+    /// error.
     #[display("Trailing whitespace not allowed")]
     TrailingWhitespace,
     /// A comment after something else on its line. A layout error.

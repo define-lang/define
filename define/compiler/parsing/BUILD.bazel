@@ -7,8 +7,6 @@ load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 load("//tools/bzl:rust.bzl", "lint_config")
 
-exports_files(["characters/invisible_ranges.rs"])
-
 genrule(
     name = "ast",
     outs = ["ast.rs"],
@@ -64,7 +62,6 @@ pyo3_extension(
     srcs = [
         "ast_builder.rs",
         "characters.rs",
-        "characters/invisible_ranges.rs",
         "element_stack.rs",
         "node_construction.rs",
         "parse_error.rs",
@@ -98,6 +95,7 @@ pyo3_extension(
     deps = [
         ":terminals",
         ":vector_scan",
+        "//source_characters",
         "//source_rendering/python:capsule",
         "//source_rendering/rust:source_rendering",
         "@crates//:rustc-hash",

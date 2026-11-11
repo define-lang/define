@@ -3,49 +3,16 @@
 // Everything here runs only after parsing has already failed, or after a
 // vector scan has found text that is not printable ASCII, such as a comment in
 // a language other than English. Source that is printable ASCII never comes
-// here, so this decodes and checks characters one at a time instead of
-// vectorizing.
-
-mod invisible_ranges;
+// here.
 
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::Scanner;
 use crate::syntax_errors::SyntaxErrors;
-use invisible_ranges::INVISIBLE_RANGES;
+pub use source_characters::TextKind;
+use source_characters::{DisallowedCharacter, DisallowedReason, Neighbors, disallowed_reason};
 use source_rendering::{Position, escape_invisible};
 use std::fmt::Write as _;
-
-const BYTE_ORDER_MARK: char = '\u{feff}';
-const CARRIAGE_RETURN: char = '\r';
-/// The direction marks, which only comments may have.
-const DIRECTION_MARKS: [char; 3] = ['\u{061c}', '\u{200e}', '\u{200f}'];
-/// Variation selectors 15 and 16, which may only follow a visible character.
-const VARIATION_SELECTORS: [char; 2] = ['\u{fe0e}', '\u{fe0f}'];
-/// The zero width non-joiner and joiner, which may only come between a visible
-/// character or variation selector and a visible character.
-const JOINERS: [char; 2] = ['\u{200c}', '\u{200d}'];
-
-/// The kind of text that characters are in, which decides which characters
-/// it may have.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum TextKind {
-    /// Syntax with semantics. Its errors are for characters that no syntax may
-    /// have; any other character that does not belong is a syntax error.
-    Syntax,
-    Name,
-    LiteralContent,
-    Comment,
-}
-
-/// Why a kind of text does not allow a character.
-#[derive(Clone, Copy)]
-enum DisallowedCharacter {
-    ByteOrderMark,
-    CarriageReturn,
-    Control,
-    Invisible,
-}
 
 /// Returns the error for the first character in `text`, which begins at
 /// `start` and has no line feed, that `kind` does not allow.
@@ -55,15 +22,11 @@ pub fn first_disallowed_character(
     text: &[u8],
     kind: TextKind,
 ) -> Option<ParseError> {
-    find_disallowed(
-        start,
-        text,
-        kind,
-        |position, character, disallowed| {
-            Some(character_error(errors, position, character, disallowed))
-        },
-        |position, bytes| invalid_encoding(errors, position, bytes),
-    )
+    let (valid, invalid) = split_at_invalid_bytes(text);
+    if let Some(found) = source_characters::first_disallowed_character(start, valid, kind) {
+        return Some(character_error(errors, found));
+    }
+    invalid_bytes_error(errors, start, valid, invalid)
 }
 
 /// Adds a diagnostic for each byte order mark, control character, and
@@ -76,181 +39,93 @@ pub fn check_comment_characters(
     start: Position,
     comment: &[u8],
 ) -> ParseResult<()> {
-    let error = find_disallowed(
-        start,
-        comment,
-        TextKind::Comment,
-        |position, character, disallowed| {
-            add_comment_character_diagnostic(errors, diagnostics, position, character, disallowed)
-        },
-        |position, bytes| invalid_encoding(errors, position, bytes),
-    );
-    error.map_or(Ok(()), Err)
-}
-
-/// Calls `found` with each character in `text`, which begins at `start` and
-/// has no line feed, that `kind` does not allow, and `invalid` with the first
-/// bytes that are not valid UTF-8, and returns the first result of either.
-fn find_disallowed<'text>(
-    start: Position,
-    text: &'text [u8],
-    kind: TextKind,
-    mut found: impl FnMut(Position, &'text str, DisallowedCharacter) -> Option<ParseError>,
-    invalid: impl FnOnce(Position, &'text [u8]) -> ParseError,
-) -> Option<ParseError> {
-    let mut position = start;
-    // A joiner or variation selector must be next to visible characters in
-    // the same text, so a character outside `text` does not count.
-    let mut previous = None;
-    for chunk in text.utf8_chunks() {
-        let valid = chunk.valid();
-        let mut characters = valid.char_indices().peekable();
-        while let Some((index, character)) = characters.next() {
-            let next = characters.peek().map(|&(_, next)| next);
-            let neighbors = Neighbors { previous, next };
-            if let Some(disallowed) = disallowed_character(character, kind, neighbors) {
-                let character_text = &valid[index..index + character.len_utf8()];
-                if let Some(error) = found(position, character_text, disallowed) {
-                    return Some(error);
-                }
-            }
-            previous = Some(character);
-            position = position.next_column();
-        }
-        if !chunk.invalid().is_empty() {
-            return Some(invalid(position, chunk.invalid()));
+    let (valid, invalid) = split_at_invalid_bytes(comment);
+    for found in source_characters::disallowed_characters(start, valid, TextKind::Comment) {
+        if let Some(error) = add_comment_character_diagnostic(errors, diagnostics, found) {
+            return Err(error);
         }
     }
-    None
+    invalid_bytes_error(errors, start, valid, invalid).map_or(Ok(()), Err)
 }
 
-/// Returns the error for `character` at `position`, which a kind of text does
-/// not allow for the reason `disallowed`.
-fn character_error(
+/// The characters of `text` up to its first bytes that are not valid UTF-8,
+/// and those bytes, which are empty if it has none.
+fn split_at_invalid_bytes(text: &[u8]) -> (&str, &[u8]) {
+    // Only the last chunk can end without invalid bytes, so the first chunk
+    // ends either with the first invalid bytes or with the text.
+    text.utf8_chunks()
+        .next()
+        .map_or(("", &[]), |chunk| (chunk.valid(), chunk.invalid()))
+}
+
+/// Returns the error for `invalid`, the bytes that are not valid UTF-8 after
+/// the characters `valid` that begin at `start`, if there are any.
+fn invalid_bytes_error(
     errors: &SyntaxErrors,
-    position: Position,
-    character: &str,
-    disallowed: DisallowedCharacter,
-) -> ParseError {
-    match disallowed {
-        DisallowedCharacter::ByteOrderMark => {
+    start: Position,
+    valid: &str,
+    invalid: &[u8],
+) -> Option<ParseError> {
+    if invalid.is_empty() {
+        return None;
+    }
+    let position = start.columns_later(valid.chars().count());
+    Some(invalid_encoding(errors, position, invalid))
+}
+
+/// Returns the error for `found`, a character that a kind of text does not
+/// allow.
+fn character_error(errors: &SyntaxErrors, found: DisallowedCharacter) -> ParseError {
+    let position = found.position;
+    // The errors show the character as text.
+    let mut buffer = [0; 4];
+    let character = &*found.character.encode_utf8(&mut buffer);
+    match found.reason {
+        DisallowedReason::ByteOrderMark => {
             errors.byte_order_mark_error(position, position, &escape_invisible(character))
         }
-        DisallowedCharacter::CarriageReturn => {
+        DisallowedReason::CarriageReturn => {
             errors.carriage_return_error(position, position, &escape_invisible(character))
         }
-        DisallowedCharacter::Control => {
+        DisallowedReason::Control => {
             errors.control_character_error(position, position, &escape_invisible(character))
         }
-        DisallowedCharacter::Invisible => {
+        DisallowedReason::Invisible => {
             errors.invisible_character_error(position, position, character)
         }
     }
 }
 
-/// Adds the diagnostic for `character` at `position` in a comment, which
-/// comments do not allow for the reason `disallowed`, and returns the error
-/// if `character` must stop the parse instead.
+/// Adds the diagnostic for `found`, a character that comments do not allow,
+/// and returns the error if it must stop the parse instead.
 fn add_comment_character_diagnostic(
     errors: &SyntaxErrors,
     diagnostics: &mut ParserDiagnostics,
-    position: Position,
-    character: &str,
-    disallowed: DisallowedCharacter,
+    found: DisallowedCharacter,
 ) -> Option<ParseError> {
-    let added = match disallowed {
-        DisallowedCharacter::ByteOrderMark => {
+    let position = found.position;
+    // The diagnostics show the character as text.
+    let mut buffer = [0; 4];
+    let text = &*found.character.encode_utf8(&mut buffer);
+    let added = match found.reason {
+        DisallowedReason::ByteOrderMark => {
             diagnostics.byte_order_mark_in_comment_diagnostic(position, position)
         }
-        DisallowedCharacter::Control => diagnostics.control_character_in_comment_diagnostic(
+        DisallowedReason::Control => diagnostics.control_character_in_comment_diagnostic(
             position,
             position,
-            &escape_invisible(character),
+            &escape_invisible(text),
         ),
-        DisallowedCharacter::Invisible => {
-            diagnostics.invisible_character_in_comment_diagnostic(position, position, character)
+        DisallowedReason::Invisible => {
+            diagnostics.invisible_character_in_comment_diagnostic(position, position, text)
         }
         // Carriage returns come from the line endings of a whole file, so they
         // stop the parse instead of getting a diagnostic on every line.
-        DisallowedCharacter::CarriageReturn => {
-            return Some(character_error(errors, position, character, disallowed));
+        DisallowedReason::CarriageReturn => {
+            return Some(character_error(errors, found));
         }
     };
     added.err().map(ParseError::from)
-}
-
-/// The characters on either side of a character being checked, where `None`
-/// is something other than a character.
-#[derive(Clone, Copy)]
-struct Neighbors {
-    previous: Option<char>,
-    next: Option<char>,
-}
-
-/// Returns why `kind` does not allow `character` between `neighbors`, if it
-/// does not.
-fn disallowed_character(
-    character: char,
-    kind: TextKind,
-    neighbors: Neighbors,
-) -> Option<DisallowedCharacter> {
-    let disallowed = match character {
-        // Most characters in comments are printable ASCII, which every kind
-        // of text allows.
-        ' '..='~' => return None,
-        BYTE_ORDER_MARK => DisallowedCharacter::ByteOrderMark,
-        CARRIAGE_RETURN => DisallowedCharacter::CarriageReturn,
-        _ if character.is_control() => DisallowedCharacter::Control,
-        _ if DIRECTION_MARKS.contains(&character) => {
-            if kind == TextKind::Comment {
-                return None;
-            }
-            DisallowedCharacter::Invisible
-        }
-        // Where syntax goes wrong, a variation selector or joiner is a syntax
-        // error, since syntax may not have it either way.
-        _ if kind == TextKind::Syntax
-            && (VARIATION_SELECTORS.contains(&character) || JOINERS.contains(&character)) =>
-        {
-            return None;
-        }
-        _ if VARIATION_SELECTORS.contains(&character) => {
-            if neighbors.previous.is_some_and(is_visible) {
-                return None;
-            }
-            DisallowedCharacter::Invisible
-        }
-        _ if JOINERS.contains(&character) => {
-            let previous_allows = neighbors.previous.is_some_and(|previous| {
-                is_visible(previous) || VARIATION_SELECTORS.contains(&previous)
-            });
-            if previous_allows && neighbors.next.is_some_and(is_visible) {
-                return None;
-            }
-            DisallowedCharacter::Invisible
-        }
-        _ if is_invisible(character) => DisallowedCharacter::Invisible,
-        _ => return None,
-    };
-    Some(disallowed)
-}
-
-/// Whether `character` is in the spec's invisible ranges, apart from the
-/// characters that its Invisible Characters rule allows in some contexts.
-fn is_invisible(character: char) -> bool {
-    let code_point = u32::from(character);
-    let after = INVISIBLE_RANGES.partition_point(|&(start, _)| start <= code_point);
-    after > 0 && code_point <= INVISIBLE_RANGES[after - 1].1
-}
-
-/// Whether `character` is visible under the spec's Invisible Characters rule.
-fn is_visible(character: char) -> bool {
-    character > ' '
-        && character != '\u{7f}'
-        && !DIRECTION_MARKS.contains(&character)
-        && !VARIATION_SELECTORS.contains(&character)
-        && !JOINERS.contains(&character)
-        && !is_invisible(character)
 }
 
 /// Returns the error for the character `offset` bytes, which are ASCII, past
@@ -283,13 +158,14 @@ pub fn disallowed_first_character(
         previous: None,
         next: None,
     };
-    let disallowed = disallowed_character(character, TextKind::Syntax, neighbors)?;
-    let character_text = &chunk.valid()[..character.len_utf8()];
+    let reason = disallowed_reason(character, TextKind::Syntax, neighbors)?;
     Some(character_error(
         errors,
-        position,
-        character_text,
-        disallowed,
+        DisallowedCharacter {
+            position,
+            character,
+            reason,
+        },
     ))
 }
 

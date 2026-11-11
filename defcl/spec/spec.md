@@ -63,7 +63,7 @@ restrictions. Lexical elements must match the input text exactly as described.
 ### Characters
 
 ```ebnf
-char    = ? Any non-NUL unicode character ? ;
+char    = ? Any Unicode character that the Invisible Characters rule allows ? ;
 newline = ? ASCII #10 (line feed) ? ;
 
 lowercase_letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
@@ -79,21 +79,43 @@ hex = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
     | "a" | "b" | "c" | "d" | "e" | "f" ;
 ```
 
+### Invisible Characters
+
+A character is invisible if its Unicode General_Category is Cc, Cf, Cs, Co, Cn,
+Zs, Zl, or Zp, or if it has the Default_Ignorable_Code_Point property. All other
+characters are visible. Tabs, carriage returns, NUL, and the byte order mark are
+all invisible.
+
+The only invisible characters allowed in a DCL file are:
+
+- Space (`U+0020`)
+- Line feed (`U+000A`)
+- Variation selectors 15 and 16 (`U+FE0E` and `U+FE0F`), when the character
+  before them is visible and in the same comment or string.
+- Zero width non-joiner and zero width joiner (`U+200C` and `U+200D`), when the
+  character after them is visible, the character before them is visible or is
+  `U+FE0E` or `U+FE0F`, and both are in the same comment or string.
+- Left-to-right mark, right-to-left mark, and Arabic letter mark (`U+200E`,
+  `U+200F`, and `U+061C`), in comments only.
+
+This rule applies everywhere in a file, including comments and strings, so that
+a file always looks the way it is read. A string can still hold any character
+through an escape, such as `\t` or `\u202E`.
+
 ### Whitespace
 
 DCL restricts whitespace to only space characters and newlines. Tabs, carriage
-returns, and other whitespace characters are not allowed except in comments.
+returns, and other whitespace characters are not allowed anywhere.
 
 ### Comments
 
 Comments are shell-style line comments using `#`. Everything from `#` to the end
 of the line is treated as a comment. A comment is a `#`, then a space, then its
-text, which does not end with a space or a tab. A comment may also be just a `#`
-alone.
+text, which does not end with a space. A comment may also be just a `#` alone.
 
 ```ebnf
 COMMENT      = "#", [ " ", comment_text ] ;
-comment_text = { char - newline }, ( char - " " - "\t" - newline ) ;
+comment_text = { char - newline }, ( char - " " - newline ) ;
 ```
 
 ### Field Names
