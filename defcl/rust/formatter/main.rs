@@ -3,7 +3,9 @@
 use clap::Parser;
 use defcl_formatter::format;
 use defcl_parser::{DecodeError, SyntaxError, decode};
+use rayon::iter::{IntoParallelRefIterator as _, ParallelIterator as _};
 use source_rendering::SourceLines;
+use std::fmt::Write as _;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -47,7 +49,7 @@ enum Outcome {
 /// Formats the DCL file at each of `paths`, or, if `check`, only finds each
 /// file that formatting would change and writes its path to `unformatted`.
 /// Writes each syntax error that a file still has, and the error for each file
-/// that cannot be read or written, to `errors`.
+/// that cannot be read or written, to `errors`, in the order of `paths`.
 ///
 /// # Errors
 ///
@@ -58,23 +60,47 @@ fn format_files(
     unformatted: &mut impl Write,
     errors: &mut impl Write,
 ) -> std::io::Result<Outcome> {
+    let reports: Vec<FileReport> = paths
+        .par_iter()
+        .map(|path| report_file(path, check))
+        .collect();
     let mut outcome = Outcome::Formatted;
-    for path in paths {
-        let file = match format_file(path, check) {
-            Ok(file) => file,
-            Err(error) => {
-                writeln!(errors, "File \"{}\"\n{error}", path.display())?;
-                outcome = Outcome::Errors;
-                continue;
-            }
-        };
-        if file.changed && check {
+    for (path, report) in paths.iter().zip(reports) {
+        if report.changed && check {
             writeln!(unformatted, "{}", path.display())?;
             outcome = outcome.max(Outcome::Unformatted);
         }
-        if file.errors.is_empty() {
-            continue;
+        if !report.errors.is_empty() {
+            errors.write_all(report.errors.as_bytes())?;
+            outcome = Outcome::Errors;
         }
+    }
+    Ok(outcome)
+}
+
+/// What formatting a DCL file found, ready to write.
+struct FileReport {
+    /// Whether formatting changes the file.
+    changed: bool,
+    /// The rendered errors: the file's syntax errors, or why it cannot be read
+    /// or written.
+    errors: String,
+}
+
+/// Formats the DCL file at `path`, writing it unless `check`, and renders its
+/// errors.
+fn report_file(path: &Path, check: bool) -> FileReport {
+    let file = match format_file(path, check) {
+        Ok(file) => file,
+        Err(error) => {
+            return FileReport {
+                changed: false,
+                errors: format!("File \"{}\"\n{error}\n", path.display()),
+            };
+        }
+    };
+    let mut errors = String::new();
+    if !file.errors.is_empty() {
         let file_path = path.to_string_lossy();
         let lines = SourceLines::new(file.text);
         for error in &file.errors {
@@ -83,11 +109,13 @@ fn format_files(
                 // The error is about the whole file.
                 None => format!("File \"{file_path}\""),
             };
-            writeln!(errors, "{header}\n{error}")?;
+            let _ = writeln!(errors, "{header}\n{error}");
         }
-        outcome = Outcome::Errors;
     }
-    Ok(outcome)
+    FileReport {
+        changed: file.changed,
+        errors,
+    }
 }
 
 /// What formatting a DCL file found.
@@ -137,6 +165,7 @@ mod tests {
     use super::{Arguments, Outcome, format_files};
     use clap::CommandFactory as _;
     use googletest::prelude::*;
+    use std::fmt::Write as _;
     use std::path::PathBuf;
 
     /// What a line with bytes that are not valid UTF-8 shows in their place.
@@ -326,6 +355,30 @@ mod tests {
             std::fs::read(&path).or_fail()?,
             eq(b"a: {\n    b: \"\xff\"\n}\n")
         )
+    }
+
+    #[gtest]
+    fn reports_errors_in_the_order_of_the_files() -> Result<()> {
+        let directory = test_directory("reports_errors_in_the_order_of_the_files")?;
+        let mut paths = Vec::new();
+        let mut expected = String::new();
+        for index in 0..100 {
+            let path = directory.join(format!("{index}.defcl"));
+            std::fs::write(&path, "").or_fail()?;
+            writeln!(
+                expected,
+                "File \"{}\"\nThe file has no top-level message",
+                path.display()
+            )
+            .or_fail()?;
+            paths.push(path);
+        }
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(&paths, false, &mut unformatted, &mut errors).or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(unformatted, is_empty())?;
+        verify_that!(String::from_utf8(errors).or_fail()?, eq(&expected))
     }
 
     #[gtest]

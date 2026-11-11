@@ -15,6 +15,7 @@ rust_binary(
         "//crates/source_rendering/rust:source_rendering",
         "//defcl/rust/parser",
         "@crates//:clap",
+        "@crates//:rayon",
     ],
 )
 
