@@ -1,8 +1,18 @@
 //! Moving through the source and tracking positions in it.
 
-use source_rendering::Position;
+use source_characters::{DisallowedReason, Neighbors, TextKind, disallowed_reason};
+use source_rendering::{Position, SourceLocation};
 
 const LINE_FEED: u8 = b'\n';
+
+/// Why `character` is not allowed outside strings and comments, if it is an
+/// invisible character.
+pub fn invisible_syntax_reason(character: char) -> Option<DisallowedReason> {
+    // No invisible character is allowed there, not even a joiner or variation
+    // selector between visible characters, which is the rule for string
+    // content with nothing next to the character.
+    disallowed_reason(character, TextKind::LiteralContent, Neighbors::NONE)
+}
 
 /// Whether `byte` continues a UTF-8 character instead of starting one.
 const fn is_continuation_byte(byte: u8) -> bool {
@@ -70,6 +80,114 @@ impl<'source> Scanner<'source> {
         } else {
             self.position = self.position.next_column();
         }
+    }
+
+    /// Consumes everything up to the next line feed or the end of the source,
+    /// and returns it.
+    pub fn consume_to_line_end(&mut self) -> &'source str {
+        let rest = &self.source[self.offset..];
+        let length = rest.find('\n').unwrap_or(rest.len());
+        let text = &rest[..length];
+        // A column counts characters, so it skips the bytes that continue
+        // one. Counting every byte without stopping early lets the compiler
+        // count many at once.
+        let characters = text.bytes().fold(0, |count, byte| {
+            count + usize::from(!is_continuation_byte(byte))
+        });
+        if characters > 0 {
+            self.last_consumed = self.position.columns_later(characters - 1);
+            self.position = self.position.columns_later(characters);
+        }
+        self.offset += length;
+        text
+    }
+
+    /// Consumes `character`, which must be the next character.
+    pub fn advance_character(&mut self, character: char) {
+        for _ in 0..character.len_utf8() {
+            self.advance();
+        }
+    }
+
+    /// Consumes whitespace, comments and invisible characters, and returns
+    /// whether there were any.
+    ///
+    /// ```ebnf
+    /// COMMENT    = "#", { char - newline }, [ newline ] ;
+    /// WHITESPACE = " " | newline ;
+    /// ```
+    #[inline(always)]
+    pub fn skip_whitespace(&mut self) -> bool {
+        let start = self.offset;
+        loop {
+            match self.peek() {
+                Some(b' ' | b'\n') => self.advance(),
+                Some(b'#') => self.skip_comment(),
+                _ => {
+                    let Some((character, _)) = self.peek_invisible_character() else {
+                        return self.offset != start;
+                    };
+                    self.advance_character(character);
+                }
+            }
+        }
+    }
+
+    /// Consumes whitespace, comments and invisible characters as
+    /// `skip_whitespace` does, and returns the location of the comments among
+    /// them, from the `#` of the first to the end of the last, if there are
+    /// any.
+    #[inline(always)]
+    pub fn skip_whitespace_locating_comments(&mut self) -> Option<SourceLocation> {
+        let mut comments: Option<SourceLocation> = None;
+        loop {
+            match self.peek() {
+                Some(b' ' | b'\n') => self.advance(),
+                Some(b'#') => {
+                    let start = self.position;
+                    self.skip_comment();
+                    comments = Some(SourceLocation {
+                        start: comments.map_or(start, |comments| comments.start),
+                        end: self.last_consumed,
+                    });
+                }
+                _ => {
+                    let Some((character, _)) = self.peek_invisible_character() else {
+                        return comments;
+                    };
+                    self.advance_character(character);
+                }
+            }
+        }
+    }
+
+    /// Consumes a comment up to its line feed.
+    fn skip_comment(&mut self) {
+        let _: &str = self.consume_to_line_end();
+    }
+
+    /// The invisible character at the scanner's position outside strings and
+    /// comments, other than a line feed, and why it is not allowed, if there
+    /// is one. The parse skips such a character as if it were not there.
+    #[inline(always)]
+    pub fn peek_invisible_character(&self) -> Option<(char, DisallowedReason)> {
+        let byte = self.peek()?;
+        // Printable ASCII is never invisible, which keeps the decoding off the
+        // path of nearly every byte.
+        if matches!(byte, b' '..=b'~' | b'\n') {
+            return None;
+        }
+        self.decode_invisible_character()
+    }
+
+    /// `peek_invisible_character` for a character that is not printable
+    /// ASCII.
+    #[cold]
+    #[inline(never)]
+    fn decode_invisible_character(&self) -> Option<(char, DisallowedReason)> {
+        let character = self.peek_character()?;
+        let reason = invisible_syntax_reason(character)?;
+        Some((character, reason))
     }
 
     /// Consumes `expected` if it is the next byte.

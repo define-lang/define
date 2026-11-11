@@ -308,7 +308,7 @@ def test_invalid_utf8_is_an_invalid_encoding_diagnostic():
 
 def test_control_character_in_a_comment_is_a_control_character_diagnostic():
     understood, (control_character,) = validator.validate(
-        'project: {\n  # a\tb\n  universe_name: "example"\n}\n',
+        'project: {\n  # a\x01b\n  universe_name: "example"\n}\n',
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
     )
@@ -319,7 +319,7 @@ def test_control_character_in_a_comment_is_a_control_character_diagnostic():
     assert control_character.location == rendering.SourceLocation(
         line=2, column=6, end_line=2, end_column=6
     )
-    assert control_character.character == "\t"
+    assert control_character.character == "\x01"
 
 
 def test_invisible_character_in_a_string_is_an_invisible_character_diagnostic():

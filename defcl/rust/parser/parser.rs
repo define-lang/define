@@ -1,17 +1,15 @@
 //! The parser: a DCL file into its syntax tree.
 
-use crate::scanner::Scanner;
+use crate::scanner::{Scanner, invisible_syntax_reason};
 use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
 };
 use source_characters::{
-    DisallowedCharacter, DisallowedReason, TextKind, disallowed_characters,
-    first_disallowed_character,
+    DisallowedCharacter, DisallowedReason, Neighbors, TextKind, disallowed_characters,
+    disallowed_reason, first_disallowed_character,
 };
 use source_rendering::{Position, SourceLocation};
-
-const BYTE_ORDER_MARK: char = '\u{feff}';
 
 /// The spaces of one level of indentation.
 const INDENTATION_WIDTH: u32 = 2;
@@ -83,6 +81,9 @@ fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<Layout
         errors: Vec::new(),
         records_fixes,
         fixes: Vec::new(),
+        invisible_characters: 0,
+        reported_carriage_return: false,
+        reported_indentation_tab: false,
     };
     let file = match parser.parse_file() {
         Ok(file) => Some(file),
@@ -312,65 +313,60 @@ struct Parser<'source> {
     records_fixes: bool,
     /// The fixes for the layout errors so far, if the parse records them.
     fixes: Vec<LayoutFix>,
+    /// How many invisible characters outside strings the parse has skipped so
+    /// far, each of which a fix deletes.
+    invisible_characters: usize,
+    /// Whether the file has an error for a carriage return so far.
+    reported_carriage_return: bool,
+    /// Whether the file has an error for a tab that starts a line so far.
+    reported_indentation_tab: bool,
 }
 
-/// Consumes whitespace and comments at `scanner`'s position, and returns
-/// whether there were any.
-///
-/// ```ebnf
-/// COMMENT    = "#", { char - newline }, [ newline ] ;
-/// WHITESPACE = " " | newline ;
-/// ```
-fn skip_whitespace(scanner: &mut Scanner<'_>) -> Result<bool, SyntaxError> {
-    let start = scanner.offset();
-    loop {
-        match scanner.peek() {
-            Some(b' ' | b'\n') => scanner.advance(),
-            Some(b'#') => skip_comment(scanner)?,
-            _ => return Ok(scanner.offset() != start),
-        }
+/// Whether `comment`, the text after the `#` at `hash`, has text, and where
+/// the spaces at its end start, if it ends with any. A fix deletes a character
+/// that comments do not allow, so such a character is neither text nor space.
+fn comment_text_and_trailing_spaces(hash: Position, comment: &str) -> (bool, Option<Position>) {
+    let text_start = hash.next_column();
+    // Nearly every comment is printable ASCII, whose characters are its bytes.
+    if is_printable_ascii(comment) {
+        let text = comment.trim_matches(' ');
+        let text_end = comment.trim_end_matches(' ').len();
+        let trailing_start = (text_end < comment.len()).then(|| text_start.columns_later(text_end));
+        return (!text.is_empty(), trailing_start);
     }
-}
-
-/// Consumes whitespace and comments as `skip_whitespace` does, and returns
-/// the location of the comments among them, from the `#` of the first to the
-/// end of the last, if there are any.
-fn skip_whitespace_locating_comments(
-    scanner: &mut Scanner<'_>,
-) -> Result<Option<SourceLocation>, SyntaxError> {
-    let mut comments: Option<SourceLocation> = None;
-    loop {
-        match scanner.peek() {
-            Some(b' ' | b'\n') => scanner.advance(),
-            Some(b'#') => {
-                let start = scanner.position();
-                skip_comment(scanner)?;
-                comments = Some(SourceLocation {
-                    start: comments.map_or(start, |comments| comments.start),
-                    end: scanner.last_consumed(),
-                });
-            }
-            _ => return Ok(comments),
+    let mut has_text = false;
+    let mut trailing_start = None;
+    let mut position = text_start;
+    for character in comment.chars() {
+        if character == ' ' {
+            trailing_start.get_or_insert(position);
+        } else if !is_disallowed_in_comment(character) {
+            has_text = true;
+            trailing_start = None;
         }
+        position = position.next_column();
     }
+    (has_text, trailing_start)
 }
 
-/// Consumes a comment up to its line feed.
-fn skip_comment(scanner: &mut Scanner<'_>) -> Result<(), SyntaxError> {
-    loop {
-        match scanner.peek() {
-            None | Some(b'\n') => return Ok(()),
-            // The comment has a carriage return, which comes from the line
-            // endings of a whole file, so it stops the parse instead of
-            // getting an error on every line.
-            Some(b'\r') => {
-                return Err(SyntaxError {
-                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                    location: SourceLocation::at(scanner.position()),
-                });
-            }
-            Some(_) => scanner.advance(),
-        }
+/// Whether comments do not allow `character` wherever it is. A joiner or
+/// variation selector is allowed between visible characters, which a comment
+/// line's spacing does not depend on, so it counts as not allowed.
+fn is_disallowed_in_comment(character: char) -> bool {
+    disallowed_reason(character, TextKind::Comment, Neighbors::NONE).is_some()
+}
+
+/// The kind of error for `character`, an invisible character outside a string
+/// that is not allowed for the reason `reason`.
+const fn invisible_character_kind(character: char, reason: DisallowedReason) -> SyntaxErrorKind {
+    if character == '\t' {
+        return SyntaxErrorKind::TabNotAllowed;
+    }
+    match reason {
+        DisallowedReason::ByteOrderMark => SyntaxErrorKind::ByteOrderMark,
+        DisallowedReason::CarriageReturn => SyntaxErrorKind::CarriageReturnNotAllowed,
+        DisallowedReason::Control => SyntaxErrorKind::ControlCharacter { character },
+        DisallowedReason::Invisible => SyntaxErrorKind::InvisibleCharacter { character },
     }
 }
 
@@ -399,6 +395,24 @@ const fn disallowed_character_error(found: DisallowedCharacter) -> SyntaxError {
     }
 }
 
+/// `comment`, the text of a comment, without the characters that comments do
+/// not allow.
+fn without_disallowed_characters(comment: &str) -> String {
+    let start = Position { line: 1, column: 1 };
+    // The comment has no line feed, so the column of each character tells
+    // which character it is.
+    let disallowed: Vec<u32> = disallowed_characters(start, comment, TextKind::Comment)
+        .map(|found| found.position.column)
+        .collect();
+    let mut kept = String::with_capacity(comment.len());
+    for (column, character) in (1..).zip(comment.chars()) {
+        if !disallowed.contains(&column) {
+            kept.push(character);
+        }
+    }
+    kept
+}
+
 /// The spaces of `level` levels of indentation.
 const fn indentation(level: u32) -> u32 {
     level * INDENTATION_WIDTH
@@ -416,16 +430,9 @@ impl<'source> Parser<'source> {
     /// file = { comment_line }, top_level_message, { line_break(0), top_level_message }, line_break(0) ;
     /// ```
     fn parse_file(&mut self) -> Result<ParsedFile<'source>, SyntaxError> {
-        // The file starts with a byte order mark.
-        if self.scanner.peek_character() == Some(BYTE_ORDER_MARK) {
-            return Err(SyntaxError {
-                kind: SyntaxErrorKind::ByteOrderMark,
-                location: SourceLocation::at(self.scanner.position()),
-            });
-        }
         let mut top_level_messages = Vec::new();
         while let Some(byte) =
-            self.line_break_before(0, |next| next.is_none_or(is_field_name_start))?
+            self.line_break_before(0, |next| next.is_none_or(is_field_name_start))
         {
             // Something other than a field name starts where a top-level
             // message belongs.
@@ -453,18 +460,16 @@ impl<'source> Parser<'source> {
         &mut self,
         level: u32,
         is_expected: impl Fn(Option<u8>) -> bool,
-    ) -> Result<Option<u8>, SyntaxError> {
+    ) -> Option<u8> {
         let mut lookahead = self.scanner;
-        // The comments have no carriage return if this succeeds, so checking
-        // them cannot fail.
-        skip_whitespace(&mut lookahead)?;
+        lookahead.skip_whitespace();
         let next = lookahead.peek();
         if is_expected(next) {
             self.expect_line_break(level);
         } else {
             self.scanner = lookahead;
         }
-        Ok(next)
+        next
     }
 
     /// Consumes the whitespace and comments before the next field or element
@@ -473,7 +478,7 @@ impl<'source> Parser<'source> {
     /// less. The top-level messages are a block of level 0 that the end of the
     /// file closes. Records an error for each way that they are not a line
     /// feed, then comment lines indented `level` levels, then the next token's
-    /// indentation. The comments must have no carriage return.
+    /// indentation.
     ///
     /// ```ebnf
     /// line_break(level) = newline, { comment_line(level) }, indentation(level) ;
@@ -483,8 +488,13 @@ impl<'source> Parser<'source> {
     fn expect_line_break(&mut self, level: u32) {
         let start = self.scanner.offset();
         let errors = self.errors.len();
+        let invisible_characters = self.invisible_characters;
         self.check_line_break(level);
-        if self.records_fixes && self.errors.len() > errors {
+        // A carriage return or a tab that starts a line may have no error of
+        // its own, since a file gets only one for each, but is still deleted.
+        if self.records_fixes
+            && (self.errors.len() > errors || self.invisible_characters > invisible_characters)
+        {
             self.fix_line_break(start, level);
         }
     }
@@ -501,16 +511,17 @@ impl<'source> Parser<'source> {
             replacement.push('\n');
         }
         for line in self.scanner.text_from(start).split('\n') {
-            let Some(comment) = line.trim_start_matches(' ').strip_prefix('#') else {
+            // Only spaces and invisible characters come before a comment's
+            // `#` among whitespace.
+            let Some(hash) = line.find('#') else {
                 continue;
             };
             push_indentation(&mut replacement, level);
             replacement.push('#');
+            let comment = without_disallowed_characters(&line[hash + 1..]);
             // Spaces at the start of the text are part of it, such as to draw
             // a diagram, so only the space after the `#` is added.
-            // Tabs at the end are invisible, so removing them with the spaces
-            // there changes nothing that the comment says.
-            let text = comment.trim_end_matches([' ', '\t']);
+            let text = comment.trim_end_matches(' ');
             if !text.is_empty() {
                 if !text.starts_with(' ') {
                     replacement.push(' ');
@@ -548,7 +559,7 @@ impl<'source> Parser<'source> {
         }
         loop {
             let line_start = self.scanner.position();
-            let spaces = self.scanner.consume_spaces();
+            let spaces = self.consume_spaces_and_invisible_characters(true);
             match self.scanner.peek() {
                 // The line has nothing but spaces.
                 Some(b'\n') => {
@@ -597,7 +608,7 @@ impl<'source> Parser<'source> {
     /// one. Records an error for each thing other than the line feed.
     fn finish_line(&mut self) -> bool {
         let spaces_start = self.scanner.position();
-        let spaces = self.scanner.consume_spaces();
+        let spaces = self.consume_spaces_and_invisible_characters(false);
         match self.scanner.peek() {
             Some(b'\n') => {
                 // The line ends with spaces.
@@ -650,9 +661,7 @@ impl<'source> Parser<'source> {
 
     /// Consumes everything up to the next line feed or the end of the source.
     fn skip_to_line_end(&mut self) {
-        while self.scanner.peek().is_some_and(|byte| byte != b'\n') {
-            self.scanner.advance();
-        }
+        let _: &str = self.scanner.consume_to_line_end();
     }
 
     /// Records an error if `spaces`, the spaces that start the line that
@@ -680,28 +689,11 @@ impl<'source> Parser<'source> {
     /// allow. The comment must have no carriage return.
     fn consume_comment_line(&mut self) {
         let hash = self.scanner.position();
-        let hash_offset = self.scanner.offset();
         self.scanner.advance();
-        let spaces = self.scanner.consume_spaces();
-        // Where the spaces at the end of the comment so far start.
-        let mut trailing_start = (spaces > 0).then(|| hash.next_column());
-        let mut has_text = false;
-        loop {
-            match self.scanner.peek() {
-                None | Some(b'\n') => break,
-                Some(b' ') => {
-                    trailing_start.get_or_insert_with(|| self.scanner.position());
-                    self.scanner.advance();
-                }
-                Some(_) => {
-                    has_text = true;
-                    trailing_start = None;
-                    self.scanner.advance();
-                }
-            }
-        }
+        let comment = self.scanner.consume_to_line_end();
+        let (has_text, trailing_start) = comment_text_and_trailing_spaces(hash, comment);
         // The comment's text follows its `#` with no space between them.
-        if has_text && spaces == 0 {
+        if has_text && !comment.starts_with(' ') {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::CommentSpacing,
                 location: SourceLocation::at(hash),
@@ -717,7 +709,6 @@ impl<'source> Parser<'source> {
         // Comments allow every printable ASCII character, so only other
         // characters need checking, which keeps the check out of the parse
         // of nearly every comment.
-        let comment = &self.scanner.text_from(hash_offset)[1..];
         if !is_printable_ascii(comment) {
             self.check_comment_characters(hash, comment);
         }
@@ -727,27 +718,86 @@ impl<'source> Parser<'source> {
     /// `comment`, the text after the `#` at `hash`.
     fn check_comment_characters(&mut self, hash: Position, comment: &str) {
         for found in disallowed_characters(hash.next_column(), comment, TextKind::Comment) {
-            self.errors.push(disallowed_character_error(found));
+            self.record_invisible_character(found.position, found.character, found.reason, false);
         }
     }
 
-    /// Records an error for each character that comments do not allow in the
-    /// comments among the whitespace and comments from `start`, the byte
-    /// `start_offset`, up to the scanner's position.
-    fn check_comments_from(&mut self, start: Position, start_offset: usize) {
-        let mut line_start = start;
+    /// Records an error for each invisible character among the whitespace and
+    /// comments from `start`, the byte `start_offset`, up to the scanner's
+    /// position, and for each character that comments do not allow in the
+    /// comments among them.
+    fn check_skipped_characters(&mut self, start: Position, start_offset: usize) {
+        let mut position = start;
         for line in self.scanner.text_from(start_offset).split_inclusive('\n') {
-            // Only spaces come before a comment among whitespace, so its `#`
-            // is as many columns along as bytes.
-            if let Some(index) = line.find('#') {
-                let comment = line[index + 1..].trim_end_matches('\n');
-                self.check_comment_characters(line_start.columns_later(index), comment);
+            let (blank, comment) = match line.find('#') {
+                Some(hash) => (&line[..hash], Some(&line[hash + 1..])),
+                None => (line, None),
+            };
+            for character in blank.chars() {
+                if character != '\n'
+                    && let Some(reason) = invisible_syntax_reason(character)
+                {
+                    self.record_invisible_character(position, character, reason, false);
+                }
+                position = position.next_column();
             }
-            line_start = Position {
-                line: line_start.line + 1,
+            if let Some(comment) = comment {
+                self.check_comment_characters(position, comment.trim_end_matches('\n'));
+            }
+            position = Position {
+                line: position.line + 1,
                 column: 1,
             };
         }
+    }
+
+    /// Records the error for `character` at `position`, an invisible
+    /// character outside a string that is not allowed for the reason `reason`
+    /// and that a fix deletes. `starts_line` is whether only spaces and
+    /// invisible characters come before it on its line.
+    #[cold]
+    #[inline(never)]
+    fn record_invisible_character(
+        &mut self,
+        position: Position,
+        character: char,
+        reason: DisallowedReason,
+        starts_line: bool,
+    ) {
+        self.invisible_characters += 1;
+        // Carriage returns and tabs that start lines come from an editor's
+        // settings for a whole file, so only the first of each gets an error.
+        if character == '\r' {
+            if self.reported_carriage_return {
+                return;
+            }
+            self.reported_carriage_return = true;
+        }
+        if character == '\t' && starts_line {
+            if self.reported_indentation_tab {
+                return;
+            }
+            self.reported_indentation_tab = true;
+        }
+        self.errors.push(SyntaxError {
+            kind: invisible_character_kind(character, reason),
+            location: SourceLocation::at(position),
+        });
+    }
+
+    /// Consumes the spaces and invisible characters at the scanner's
+    /// position, records an error for each invisible character, and returns
+    /// how many spaces there were. `starts_line` is whether they start a line.
+    #[inline(always)]
+    fn consume_spaces_and_invisible_characters(&mut self, starts_line: bool) -> usize {
+        let mut spaces = self.scanner.consume_spaces();
+        while let Some((character, reason)) = self.scanner.peek_invisible_character() {
+            let position = self.scanner.position();
+            self.record_invisible_character(position, character, reason, starts_line);
+            self.scanner.advance_character(character);
+            spaces += self.scanner.consume_spaces();
+        }
+        spaces
     }
 
     /// The location from `start` through the last character consumed.
@@ -762,18 +812,15 @@ impl<'source> Parser<'source> {
     /// colon, or between an element of a repeated value and the comma after
     /// it, where nothing belongs, if the next character after them is
     /// `separator`. Records a `MisplacedComment` error if there were comments,
-    /// or else an error of the kind `kind` if there was whitespace.
-    fn skip_misplaced_whitespace_before(
-        &mut self,
-        separator: u8,
-        kind: SyntaxErrorKind,
-    ) -> Result<(), SyntaxError> {
+    /// or else an error of the kind `kind` if there was whitespace, and an
+    /// error for each invisible character.
+    fn skip_misplaced_whitespace_before(&mut self, separator: u8, kind: SyntaxErrorKind) {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         let mut lookahead = self.scanner;
-        let comments = skip_whitespace_locating_comments(&mut lookahead)?;
+        let comments = lookahead.skip_whitespace_locating_comments();
         if lookahead.offset() == start_offset || lookahead.peek() != Some(separator) {
-            return Ok(());
+            return;
         }
         self.scanner = lookahead;
         if let Some(location) = comments {
@@ -781,81 +828,86 @@ impl<'source> Parser<'source> {
                 kind: SyntaxErrorKind::MisplacedComment,
                 location,
             });
-            self.check_comments_from(start, start_offset);
-            return Ok(());
+            self.check_skipped_characters(start, start_offset);
+            return;
         }
-        self.errors.push(SyntaxError {
-            kind,
-            location: self.location_from(start),
-        });
+        // Invisible characters alone get only their own errors.
+        if self.scanner.text_from(start_offset).contains([' ', '\n']) {
+            self.errors.push(SyntaxError {
+                kind,
+                location: self.location_from(start),
+            });
+        }
+        self.check_skipped_characters(start, start_offset);
         self.push_fix(start_offset, String::new());
-        Ok(())
     }
 
     /// Consumes the whitespace and comments after a field's colon, where
     /// exactly one space belongs, and, if they are followed by what may start
     /// a value, records a `MisplacedComment` error if there were comments, or
-    /// else an error if the whitespace is not one space.
-    fn expect_one_space(&mut self) -> Result<(), SyntaxError> {
+    /// else an error if the whitespace other than invisible characters is not
+    /// one space, and an error for each invisible character.
+    fn expect_one_space(&mut self) {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
-        let comments = skip_whitespace_locating_comments(&mut self.scanner)?;
+        let comments = self.scanner.skip_whitespace_locating_comments();
         if !self
             .scanner
             .peek()
             .is_some_and(|byte| byte == b'[' || is_element_start(byte))
         {
-            return Ok(());
+            return;
         }
         if let Some(location) = comments {
             self.errors.push(SyntaxError {
                 kind: SyntaxErrorKind::MisplacedComment,
                 location,
             });
-            self.check_comments_from(start, start_offset);
-            return Ok(());
+            self.check_skipped_characters(start, start_offset);
+            return;
         }
         let whitespace = self.scanner.text_from(start_offset);
         if whitespace == " " {
-            return Ok(());
+            return;
         }
-        let location = if whitespace.is_empty() {
-            SourceLocation::at(start)
-        } else {
-            self.location_from(start)
-        };
-        self.errors.push(SyntaxError {
-            kind: SyntaxErrorKind::WrongSpacingAfterColon,
-            location,
-        });
+        let is_one_space = whitespace
+            .chars()
+            .filter(|&character| matches!(character, ' ' | '\n'))
+            .eq([' ']);
+        if !is_one_space {
+            let location = if whitespace.is_empty() {
+                SourceLocation::at(start)
+            } else {
+                self.location_from(start)
+            };
+            self.errors.push(SyntaxError {
+                kind: SyntaxErrorKind::WrongSpacingAfterColon,
+                location,
+            });
+        }
+        self.check_skipped_characters(start, start_offset);
         self.push_fix(start_offset, " ".to_owned());
-        Ok(())
     }
 
     /// Consumes a message value or a repeated value whose opening `{` or `[`
     /// is at `start` and has been consumed, if it has nothing but whitespace
     /// and comments before `close`, and records an error of the kind `kind`
     /// for it. Returns whether it did.
-    fn skip_empty_block(
-        &mut self,
-        start: Position,
-        close: u8,
-        kind: SyntaxErrorKind,
-    ) -> Result<bool, SyntaxError> {
+    fn skip_empty_block(&mut self, start: Position, close: u8, kind: SyntaxErrorKind) -> bool {
         let whitespace_start = self.scanner.position();
         let whitespace_offset = self.scanner.offset();
         let mut lookahead = self.scanner;
-        skip_whitespace(&mut lookahead)?;
+        lookahead.skip_whitespace();
         if !lookahead.consume_byte(close) {
-            return Ok(false);
+            return false;
         }
         self.scanner = lookahead;
         self.errors.push(SyntaxError {
             kind,
             location: self.location_from(start),
         });
-        self.check_comments_from(whitespace_start, whitespace_offset);
-        Ok(true)
+        self.check_skipped_characters(whitespace_start, whitespace_offset);
+        true
     }
 
     /// Parses a top-level message, which starts at the scanner's position with
@@ -866,7 +918,7 @@ impl<'source> Parser<'source> {
     /// ```
     fn parse_top_level_message(&mut self) -> Result<TopLevelMessage<'source>, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
-        self.expect_one_space()?;
+        self.expect_one_space();
         let value = self.parse_value(0)?;
         let Value::Message(value) = value else {
             return Err(SyntaxError {
@@ -893,7 +945,7 @@ impl<'source> Parser<'source> {
     /// ```
     fn parse_field(&mut self, level: u32) -> Result<Field<'source>, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
-        self.expect_one_space()?;
+        self.expect_one_space();
         let value = self.parse_value(level)?;
         let location = SourceLocation {
             start: name.location.start,
@@ -916,6 +968,10 @@ impl<'source> Parser<'source> {
     fn parse_field_name_and_colon(&mut self) -> Result<FieldName<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_field_name_word_character);
+        // An invisible character splits the word.
+        if let Some(error) = self.invisible_character_in_word(is_field_name_word_character) {
+            return Err(error);
+        }
         let location = SourceLocation {
             start,
             end: self.scanner.last_consumed(),
@@ -927,7 +983,7 @@ impl<'source> Parser<'source> {
                 location,
             });
         }
-        self.skip_misplaced_whitespace_before(b':', SyntaxErrorKind::WhitespaceBeforeColon)?;
+        self.skip_misplaced_whitespace_before(b':', SyntaxErrorKind::WhitespaceBeforeColon);
         // The field name is not followed by a colon.
         if !self.scanner.consume_byte(b':') {
             return Err(self.missing_colon());
@@ -1137,6 +1193,10 @@ impl<'source> Parser<'source> {
     fn parse_number(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_number_word_character);
+        // An invisible character splits the word.
+        if let Some(error) = self.invisible_character_in_word(is_number_word_character) {
+            return Err(error);
+        }
         let scalar = Scalar {
             text,
             location: SourceLocation {
@@ -1173,6 +1233,10 @@ impl<'source> Parser<'source> {
     fn parse_enum_value(&mut self) -> Result<Value<'source>, SyntaxError> {
         let start = self.scanner.position();
         let text = self.scanner.consume_while(is_enum_word_character);
+        // An invisible character splits the word.
+        if let Some(error) = self.invisible_character_in_word(is_enum_word_character) {
+            return Err(error);
+        }
         let location = SourceLocation {
             start,
             end: self.scanner.last_consumed(),
@@ -1205,11 +1269,11 @@ impl<'source> Parser<'source> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut fields = Vec::new();
-        if !self.skip_empty_block(start, b'}', SyntaxErrorKind::EmptyMessageValue)? {
+        if !self.skip_empty_block(start, b'}', SyntaxErrorKind::EmptyMessageValue) {
             loop {
                 let next = self.line_break_before(level + 1, |next| {
                     next == Some(b'}') || next.is_some_and(is_field_name_start)
-                })?;
+                });
                 match next {
                     Some(b'}') => {
                         self.scanner.advance();
@@ -1252,11 +1316,11 @@ impl<'source> Parser<'source> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut values = Vec::new();
-        if !self.skip_empty_block(start, b']', SyntaxErrorKind::EmptyRepeatedValue)? {
+        if !self.skip_empty_block(start, b']', SyntaxErrorKind::EmptyRepeatedValue) {
             loop {
                 // The source ends before the repeated value's `]`.
                 if self
-                    .line_break_before(level + 1, |next| next.is_some_and(is_element_start))?
+                    .line_break_before(level + 1, |next| next.is_some_and(is_element_start))
                     .is_none()
                 {
                     return Err(SyntaxError {
@@ -1265,14 +1329,11 @@ impl<'source> Parser<'source> {
                     });
                 }
                 values.push(self.parse_element(level + 1)?);
-                self.skip_misplaced_whitespace_before(
-                    b',',
-                    SyntaxErrorKind::WhitespaceBeforeComma,
-                )?;
+                self.skip_misplaced_whitespace_before(b',', SyntaxErrorKind::WhitespaceBeforeComma);
                 if self.scanner.consume_byte(b',') {
                     continue;
                 }
-                self.line_break_before(level + 1, |next| next == Some(b']'))?;
+                self.line_break_before(level + 1, |next| next == Some(b']'));
                 if self.scanner.consume_byte(b']') {
                     break;
                 }
@@ -1334,6 +1395,43 @@ impl Parser<'_> {
         self.unexpected(expected)
     }
 
+    /// The error for the invisible characters at the scanner's position, if
+    /// there are any and `is_word_character` accepts the character after them,
+    /// so that they split a word such as a field name in two. The error is for
+    /// the first of them.
+    #[inline(always)]
+    fn invisible_character_in_word(
+        &self,
+        is_word_character: fn(u8) -> bool,
+    ) -> Option<SyntaxError> {
+        let (character, reason) = self.scanner.peek_invisible_character()?;
+        self.invisible_character_splitting_word(character, reason, is_word_character)
+    }
+
+    /// `invisible_character_in_word` for `character`, the invisible character
+    /// at the scanner's position, which is not allowed for the reason `reason`.
+    #[cold]
+    #[inline(never)]
+    fn invisible_character_splitting_word(
+        &self,
+        character: char,
+        reason: DisallowedReason,
+        is_word_character: fn(u8) -> bool,
+    ) -> Option<SyntaxError> {
+        let mut lookahead = self.scanner;
+        lookahead.advance_character(character);
+        while let Some((next, _)) = lookahead.peek_invisible_character() {
+            lookahead.advance_character(next);
+        }
+        if !lookahead.peek().is_some_and(is_word_character) {
+            return None;
+        }
+        Some(SyntaxError {
+            kind: invisible_character_kind(character, reason),
+            location: SourceLocation::at(self.scanner.position()),
+        })
+    }
+
     /// The error for the character at the scanner's position, which is not
     /// the start of what belongs there, or for the end of the source.
     /// `expected` is the kind of error for the end of the source and for a
@@ -1341,8 +1439,6 @@ impl Parser<'_> {
     #[cold]
     fn unexpected(&self, expected: SyntaxErrorKind) -> SyntaxError {
         let kind = match self.scanner.peek_character() {
-            Some('\t') => SyntaxErrorKind::TabNotAllowed,
-            Some('\r') => SyntaxErrorKind::CarriageReturnNotAllowed,
             Some(';') => SyntaxErrorKind::InvalidSeparator,
             Some('<') => SyntaxErrorKind::AngleBracketsNotAllowed,
             Some('\'') => return self.single_quotes_not_allowed(),

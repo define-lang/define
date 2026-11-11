@@ -937,10 +937,16 @@ mod invalid_layout {
     fn tab_in_comment() -> Result<()> {
         verify_eq!(
             layout_errors("a: {\n  # c \t\n  b: 1\n}\n")?,
-            vec![SyntaxError {
-                kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
-                location: location(2, 7, 2, 7),
-            },]
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::TrailingWhitespace,
+                    location: location(2, 6, 2, 7),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::TabNotAllowed,
+                    location: location(2, 7, 2, 7),
+                },
+            ]
         )
     }
 
@@ -951,6 +957,10 @@ mod invalid_layout {
                 "# {RIGHT_TO_LEFT_OVERRIDE}\na: {{\n  b: 1 # {BYTE_ORDER_MARK}\n  c: [\n    # {ZERO_WIDTH_SPACE}\n  ]\n  d # {ZERO_WIDTH_SPACE}\n  : 1\n}}\n"
             ))?,
             vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::TrailingWhitespace,
+                    location: location(1, 2, 1, 3),
+                },
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
                         character: RIGHT_TO_LEFT_OVERRIDE
@@ -986,6 +996,67 @@ mod invalid_layout {
                     location: location(7, 7, 7, 7),
                 },
             ]
+        )
+    }
+
+    #[gtest]
+    fn tabs_that_start_lines_get_one_error() -> Result<()> {
+        verify_eq!(
+            layout_errors("a: {\n\tb: 1\n\tc: 2\n}\n")?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::TabNotAllowed,
+                    location: location(2, 1, 2, 1),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
+                    location: location(2, 1, 2, 1),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
+                    location: location(3, 1, 3, 1),
+                },
+            ]
+        )
+    }
+
+    #[gtest]
+    fn invisible_characters_between_tokens() -> Result<()> {
+        verify_eq!(
+            layout_errors(&format!(
+                "a: {{\n  b{ZERO_WIDTH_SPACE}: 1\n  c:{ZERO_WIDTH_SPACE} 2\n  d: 3{ZERO_WIDTH_SPACE}\n}}\n"
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: location(2, 4, 2, 4),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: location(3, 5, 3, 5),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: location(4, 7, 4, 7),
+                },
+            ]
+        )
+    }
+
+    #[gtest]
+    fn tab_before_a_comma() -> Result<()> {
+        verify_eq!(
+            layout_errors("a: {\n  b: [\n    1\t,\n    2\n  ]\n}\n")?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::TabNotAllowed,
+                location: location(3, 6, 3, 6),
+            }]
         )
     }
 
@@ -1413,17 +1484,14 @@ mod invalid_file_format {
 
     #[gtest]
     fn bom() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/file_format/bom.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
+            ))?,
+            vec![SyntaxError {
                 kind: SyntaxErrorKind::ByteOrderMark,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 1 },
-                    end: Position { line: 1, column: 1 }
-                }
-            }))
+                location: location(1, 1, 1, 1),
+            },]
         )
     }
 
@@ -2067,6 +2135,45 @@ mod invalid_characters {
     }
 
     #[gtest]
+    fn invisible_character_in_a_field_name() -> Result<()> {
+        let source = format!("a: {{\n  na{ZERO_WIDTH_SPACE}me: 1\n}}\n");
+        verify_that!(
+            parse(&source),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::InvisibleCharacter {
+                    character: ZERO_WIDTH_SPACE
+                },
+                location: location(2, 5, 2, 5),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn invisible_characters_in_a_number() -> Result<()> {
+        let source = format!("a: {{\n  b: 1{ZERO_WIDTH_SPACE}\t0\n}}\n");
+        verify_that!(
+            parse(&source),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::InvisibleCharacter {
+                    character: ZERO_WIDTH_SPACE
+                },
+                location: location(2, 7, 2, 7),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn tab_in_an_enum_value() -> Result<()> {
+        verify_that!(
+            parse("a: {\n  b: AB\tC\n}\n"),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::TabNotAllowed,
+                location: location(2, 8, 2, 8),
+            }))
+        )
+    }
+
+    #[gtest]
     fn tab_in_string() -> Result<()> {
         verify_that!(
             parse("a: {\n  b: \"x\ty\"\n}\n"),
@@ -2143,123 +2250,145 @@ mod invalid_characters {
 
     #[gtest]
     fn carriage_return_in_comment_at_start_of_file() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_file.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 2 },
-                    end: Position { line: 1, column: 2 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(1, 2, 1, 2),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyMessageValue,
+                    location: location(2, 4, 2, 5),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_after_top_level_colon() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_top_level_colon.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 5 },
-                    end: Position { line: 1, column: 5 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::MisplacedComment,
+                    location: location(1, 4, 1, 5),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(1, 5, 1, 5),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyMessageValue,
+                    location: location(2, 1, 2, 2),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_after_field_colon() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field_colon.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 7 },
-                    end: Position { line: 2, column: 7 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::MisplacedComment,
+                    location: location(2, 6, 2, 7),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(2, 7, 2, 7),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_at_start_of_message_value() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_message_value.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 7 },
-                    end: Position { line: 1, column: 7 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyMessageValue,
+                    location: location(1, 4, 2, 1),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(1, 7, 1, 7),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_after_field() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 9 },
-                    end: Position { line: 2, column: 9 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::CommentNotOnOwnLine,
+                    location: location(2, 8, 2, 9),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(2, 9, 2, 9),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_at_start_of_repeated_value() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_at_start_of_repeated_value.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 9 },
-                    end: Position { line: 2, column: 9 }
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyRepeatedValue,
+                    location: location(2, 6, 3, 1),
                 },
-            }))
+                SyntaxError {
+                    kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                    location: location(2, 9, 2, 9),
+                },
+            ]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_after_comma() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_comma.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
+            ))?,
+            vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: location(4, 6, 4, 6),
-            }))
+            },]
         )
     }
 
     #[gtest]
     fn carriage_return_in_comment_after_repeated_element() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_repeated_element.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
+            ))?,
+            vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: location(4, 6, 4, 6),
-            }))
+            },]
         )
     }
 
@@ -2270,11 +2399,8 @@ mod invalid_characters {
                 "../../testdata/invalid/syntax/characters/carriage_return_in_comment_after_field_name.defcl"
             )),
             eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 4 },
-                    end: Position { line: 1, column: 4 }
-                },
+                kind: SyntaxErrorKind::MissingColon,
+                location: location(1, 2, 1, 2),
             }))
         )
     }
@@ -3052,17 +3178,24 @@ mod invalid_toplevel {
 
     #[gtest]
     fn tab_after_top_level_colon() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/toplevel/tab_after_top_level_colon.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::TabNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 1, column: 3 },
-                    end: Position { line: 1, column: 3 }
-                }
-            }))
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::WrongSpacingAfterColon,
+                    location: location(1, 3, 1, 3),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::TabNotAllowed,
+                    location: location(1, 3, 1, 3),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::EmptyMessageValue,
+                    location: location(1, 4, 1, 5),
+                },
+            ]
         )
     }
 
@@ -3111,39 +3244,33 @@ mod invalid_whitespace {
 
     #[gtest]
     fn carriage_return() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/whitespace/carriage_return.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
+            ))?,
+            vec![SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
-                location: SourceLocation {
-                    start: Position {
-                        line: 1,
-                        column: 10
-                    },
-                    end: Position {
-                        line: 1,
-                        column: 10
-                    }
-                }
-            }))
+                location: location(1, 10, 1, 10),
+            },]
         )
     }
 
     #[gtest]
     fn tab_char() -> Result<()> {
-        verify_that!(
-            parse(include_str!(
+        verify_eq!(
+            layout_errors(include_str!(
                 "../../testdata/invalid/syntax/whitespace/tab_char.defcl"
-            )),
-            eq(&stopped_by(SyntaxError {
-                kind: SyntaxErrorKind::TabNotAllowed,
-                location: SourceLocation {
-                    start: Position { line: 2, column: 1 },
-                    end: Position { line: 2, column: 1 }
-                }
-            }))
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::TabNotAllowed,
+                    location: location(2, 1, 2, 1),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
+                    location: location(2, 1, 2, 1),
+                },
+            ]
         )
     }
 }

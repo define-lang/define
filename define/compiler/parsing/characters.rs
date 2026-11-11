@@ -154,11 +154,7 @@ pub fn disallowed_first_character(
     let Some(character) = chunk.valid().chars().next() else {
         return Some(invalid_encoding(errors, position, chunk.invalid()));
     };
-    let neighbors = Neighbors {
-        previous: None,
-        next: None,
-    };
-    let reason = disallowed_reason(character, TextKind::Syntax, neighbors)?;
+    let reason = disallowed_reason(character, TextKind::Syntax, Neighbors::NONE)?;
     Some(character_error(
         errors,
         DisallowedCharacter {

@@ -61,6 +61,14 @@ pub struct Neighbors {
     pub next: Option<char>,
 }
 
+impl Neighbors {
+    /// No character on either side, for a character checked on its own.
+    pub const NONE: Self = Self {
+        previous: None,
+        next: None,
+    };
+}
+
 /// The first character in `text`, which begins at `start` and has no line
 /// feed, that `kind` does not allow, if there is one.
 #[must_use]

@@ -19,8 +19,8 @@ pub struct SyntaxError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr, VariantNames)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SyntaxErrorKind {
-    /// A byte order mark at the start of the file, or in a comment or a
-    /// string. In a comment, the parse goes on past it.
+    /// A byte order mark. Outside strings, the parse goes on past it as if it
+    /// were not there, unless it splits a word such as a field name.
     #[display("Byte order mark not allowed")]
     ByteOrderMark,
     /// The file has no top-level message.
@@ -34,20 +34,25 @@ pub enum SyntaxErrorKind {
     /// is not. The location is the byte.
     #[display("Invalid UTF-8: the byte \\x{byte:02x} does not start a valid character")]
     InvalidEncoding { byte: u8 },
-    /// A tab outside a string or a comment.
+    /// A tab outside a string. The parse goes on past it as if it were not
+    /// there, unless it splits a word such as a field name. Only the first tab
+    /// that starts a line in a file gets an error.
     #[display("Tabs not allowed - use spaces")]
     TabNotAllowed,
-    /// A carriage return anywhere.
+    /// A carriage return. Outside strings, the parse goes on past it as if it
+    /// were not there, unless it splits a word such as a field name, and only
+    /// the first in a file gets an error.
     #[display("Carriage returns not allowed - use LF only")]
     CarriageReturnNotAllowed,
-    /// A control character other than a line feed in a comment or a string.
-    /// A string can only have one through an escape. In a comment, the parse
-    /// goes on past it.
+    /// A control character other than a line feed or a carriage return, or a
+    /// tab in a string. A string can only have one through an escape. Outside strings, the parse
+    /// goes on past it as if it were not there, unless it splits a word such as
+    /// a field name.
     #[display("Control character U+{:04X} not allowed", u32::from(*character))]
     ControlCharacter { character: char },
     /// An invisible character that the Invisible Characters rule does not
-    /// allow, in a comment or a string. In a comment, the parse goes on past
-    /// it.
+    /// allow. Outside strings, the parse goes on past it as if it were not
+    /// there, unless it splits a word such as a field name.
     #[display("Invisible character U+{:04X} not allowed", u32::from(*character))]
     InvisibleCharacter { character: char },
     /// A character that DCL does not allow outside a string or a comment.
