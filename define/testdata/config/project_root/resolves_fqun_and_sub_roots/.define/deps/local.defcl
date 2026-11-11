@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:lib"
+      path: "vendor/lib"
+    },
+    {
+      universe_name: "mv:define-lang.org:core"
+      path: "vendor/core"
+    }
+  ]
+}

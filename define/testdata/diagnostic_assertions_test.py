@@ -252,3 +252,14 @@ def test_case(validate_testdata_structural):
 """).body[0]
     assert isinstance(function, ast.FunctionDef)
     assert diagnostic_assertions.diagnostic_message_assertions(function) == []
+
+
+def test_defcl_diagnostic_fields_other_than_message():
+    assert _problems("""
+def test_case(testdata_project_directory):
+    (diagnostic,) = load().diagnostics
+    assert type(diagnostic) is errors.SyntaxDiagnostic
+    assert diagnostic.location == location
+""") == [
+        "line 4: load().diagnostics[0] is a SyntaxDiagnostic, but the test does not assert on file_path, kind"
+    ]

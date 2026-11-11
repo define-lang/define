@@ -1,0 +1,7 @@
+deps: {
+  local: [
+    {
+      path: "vendor/lib"
+    }
+  ]
+}

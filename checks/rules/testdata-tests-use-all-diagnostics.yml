@@ -9,6 +9,10 @@ note:
   cannot miss a diagnostic in another file or a file that failed to load.
 files:
   - "**/*_test.py"
+# Loading a project's config has no per-file diagnostics, and
+# config-tests-unpack-every-diagnostic checks those tests instead.
+ignores:
+  - "define/compiler/config_tests/**"
 rule:
   kind: function_definition
   has:

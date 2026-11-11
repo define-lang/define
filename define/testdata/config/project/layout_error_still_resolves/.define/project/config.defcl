@@ -1,0 +1,4 @@
+project: {
+  universe_name: "test.example.com:my_lib"
+
+}

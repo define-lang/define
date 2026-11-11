@@ -75,22 +75,6 @@ py_library(
     ],
 )
 
-py_test(
-    name = "config_test",
-    size = "small",
-    srcs = ["config_test.py"],
-    deps = [
-        ":config",
-        ":constants",
-        "//crates/source_rendering/python:rendering",
-        "//defcl/python:error_types",
-        "//defcl/python:errors",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
     name = "conftest",
     testonly = True,
@@ -280,7 +264,6 @@ pyright_test(
         ":chained_name_test",
         ":compiler",
         ":config",
-        ":config_test",
         ":conftest",
         ":constants",
         ":driver",

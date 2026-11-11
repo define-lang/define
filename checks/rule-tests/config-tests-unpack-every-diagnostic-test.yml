@@ -1,0 +1,29 @@
+id: config-tests-unpack-every-diagnostic
+valid:
+  - |
+    def test_one(testdata_project_directory):
+        (diagnostic,) = test_helpers.load_project_root_config().diagnostics
+        assert type(diagnostic) is errors.SyntaxDiagnostic
+  - |
+    def test_two(testdata_project_directory):
+        result = test_helpers.load_project_root_config()
+        first, second = result.diagnostics
+        assert isinstance(first, errors.UnknownFieldNameDiagnostic)
+  - |
+    def test_whole_result(testdata_project_directory):
+        assert test_helpers.load_project_root_config() == config.RootConfigResult(
+            root_config=None,
+            diagnostics=[diagnostics.NotRunFromProjectRootDiagnostic(config_path=path)],
+        )
+invalid:
+  - |
+    def test_index(testdata_project_directory):
+        result = test_helpers.load_project_root_config()
+        assert isinstance(result.diagnostics[0], errors.SyntaxDiagnostic)
+  - |
+    def test_whole_list(testdata_project_directory):
+        assert test_helpers.load_project_root_config().diagnostics == []
+  - |
+    def test_one_name(testdata_project_directory):
+        found = test_helpers.load_project_root_config().diagnostics
+        assert len(found) == 1

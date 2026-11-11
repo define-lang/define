@@ -15,19 +15,102 @@ py_test(
     srcs = ["encodings_test.py"],
     data = ["//define/testdata/config/encodings"],
     deps = [
+        ":test_helpers",
+        "//define/compiler:config",
+        "//define/compiler:conftest",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "local_deps_test",
+    size = "small",
+    srcs = ["local_deps_test.py"],
+    data = ["//define/testdata/config/local_deps"],
+    deps = [
+        ":test_helpers",
         "//crates/source_rendering/python:rendering",
+        "//defcl/python:error_types",
+        "//defcl/python:errors",
+        "//define/compiler:config",
+        "//define/compiler:conftest",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "project_root_test",
+    size = "small",
+    srcs = ["project_root_test.py"],
+    data = ["//define/testdata/config/project_root"],
+    deps = [
+        ":test_helpers",
         "//define/compiler:config",
         "//define/compiler:conftest",
         "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "project_test",
+    size = "small",
+    srcs = ["project_test.py"],
+    data = ["//define/testdata/config/project"],
+    deps = [
+        ":test_helpers",
+        "//crates/source_rendering/python:rendering",
+        "//defcl/python:error_types",
+        "//defcl/python:errors",
+        "//define/compiler:config",
+        "//define/compiler:conftest",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "sub_root_test",
+    size = "small",
+    srcs = ["sub_root_test.py"],
+    data = ["//define/testdata/config/sub_root"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:config",
+        "//define/compiler:conftest",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
     ],
 )
 
 filegroup(
     name = "test_sources",
     testonly = True,
-    srcs = ["encodings_test.py"],
+    srcs = [
+        "encodings_test.py",
+        "local_deps_test.py",
+        "project_root_test.py",
+        "project_test.py",
+        "sub_root_test.py",
+    ],
     visibility = ["//define/testdata:__pkg__"],
 )
 
@@ -36,6 +119,11 @@ pyright_test(
     deps = [
         ":config_tests",
         ":encodings_test",
+        ":local_deps_test",
+        ":project_root_test",
+        ":project_test",
+        ":sub_root_test",
+        ":test_helpers",
     ],
 )
 

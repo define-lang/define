@@ -8,6 +8,7 @@ import functools
 import inspect
 from typing import TYPE_CHECKING, cast, override
 
+from defcl.python import errors
 from define.compiler.errors import diagnostics, syntax_errors
 
 if TYPE_CHECKING:
@@ -17,8 +18,12 @@ if TYPE_CHECKING:
 # syntax_errors here also registers its classes as subclasses of
 # diagnostics.Diagnostic.
 _DIAGNOSTIC_MODULE_NAMES = frozenset(
-    module.__name__.rpartition(".")[2] for module in (diagnostics, syntax_errors)
+    module.__name__.rpartition(".")[2]
+    for module in (diagnostics, syntax_errors, errors)
 )
+# A defcl diagnostic's message is a field, and tests assert on the fields that
+# the message is made from instead.
+_DEFCL_MESSAGE_FIELD = "message"
 _DIAGNOSTIC_LISTS = frozenset({"all_diagnostics", "diagnostics"})
 _MESSAGE_PROPERTY = "message"
 _LOCATION_TYPE = "SourceLocation"
@@ -40,7 +45,10 @@ type FieldPath = tuple[str, ...]
 def diagnostic_fields() -> dict[str, dict[str, str]]:
     """Return the annotation text of each field of each diagnostic class, by class name."""
     fields_by_class: dict[str, dict[str, str]] = {}
-    pending: list[type[diagnostics.Diagnostic]] = [diagnostics.Diagnostic]
+    pending: list[type[diagnostics.Diagnostic | errors.DefclDiagnostic]] = [
+        diagnostics.Diagnostic,
+        errors.DefclDiagnostic,
+    ]
     while pending:
         diagnostic_class = pending.pop()
         pending.extend(diagnostic_class.__subclasses__())
@@ -49,6 +57,11 @@ def diagnostic_fields() -> dict[str, dict[str, str]]:
             annotations.update(inspect.get_annotations(ancestor))
         fields: dict[str, str] = {}
         for field_name in diagnostic_class.__struct_fields__:
+            if (
+                issubclass(diagnostic_class, errors.DefclDiagnostic)
+                and field_name == _DEFCL_MESSAGE_FIELD
+            ):
+                continue
             fields[field_name] = annotations[field_name]
         fields_by_class[diagnostic_class.__name__] = fields
     return fields_by_class
@@ -134,6 +147,17 @@ class _TestFunctionAssertions:
                 args=[
                     checked,
                     ast.Attribute(value=ast.Name(id=module_name), attr=class_name),
+                ],
+            ) if (
+                module_name in _DIAGNOSTIC_MODULE_NAMES
+                and class_name in diagnostic_fields()
+            ):
+                self._checked_classes[self._key(checked)] = (class_name, line)
+            case ast.Compare(
+                left=ast.Call(func=ast.Name(id="type"), args=[checked]),
+                ops=[ast.Is()],
+                comparators=[
+                    ast.Attribute(value=ast.Name(id=module_name), attr=class_name)
                 ],
             ) if (
                 module_name in _DIAGNOSTIC_MODULE_NAMES

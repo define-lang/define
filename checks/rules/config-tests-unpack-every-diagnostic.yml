@@ -1,0 +1,23 @@
+id: config-tests-unpack-every-diagnostic
+language: python
+severity: error
+message:
+  A config test must compare the whole loading result, or unpack its
+  diagnostics into one name per diagnostic.
+note:
+  Unpacking fails when the number of diagnostics differs, so the test cannot
+  miss a diagnostic, and testdata_test checks every field of each unpacked
+  diagnostic.
+files:
+  - "define/compiler/config_tests/*_test.py"
+rule:
+  pattern: $_.diagnostics
+  not:
+    inside:
+      kind: assignment
+      field: right
+      has:
+        field: left
+        any:
+          - kind: pattern_list
+          - kind: tuple_pattern

@@ -11,7 +11,7 @@ py_library(
     name = "error_types",
     srcs = [":error_types.py"],
     visibility = [
-        "//define/compiler:__pkg__",
+        "//define/compiler/config_tests:__pkg__",
         "//define/compiler/resource_tests:__pkg__",
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",
     ],
@@ -30,10 +30,11 @@ py_library(
     name = "errors",
     srcs = ["errors.py"],
     visibility = [
-        "//define/compiler:__pkg__",
+        "//define/compiler/config_tests:__pkg__",
         "//define/compiler/errors:__pkg__",
         "//define/compiler/resource_tests:__pkg__",
         "//define/compiler/validator/structural/program_validator_tests:__pkg__",
+        "//define/testdata:__pkg__",
     ],
     deps = [
         ":error_types",

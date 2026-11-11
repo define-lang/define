@@ -6,3 +6,7 @@ checks/rule-tests/__snapshots__/** linguist-generated
 pnpm-lock.yaml linguist-generated
 # These files' layout errors are what their tests are about.
 defcl/testdata/invalid/syntax/** unformatted
+define/testdata/config/project/syntax_error/** unformatted
+define/testdata/config/project/layout_error_still_resolves/** unformatted
+define/testdata/config/project/layout_error_and_rule_violation/** unformatted
+define/testdata/config/local_deps/syntax_error/** unformatted

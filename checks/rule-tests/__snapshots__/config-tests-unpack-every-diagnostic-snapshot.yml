@@ -1,0 +1,20 @@
+id: config-tests-unpack-every-diagnostic
+snapshots:
+  "def test_index(testdata_project_directory):\n    result = test_helpers.load_project_root_config()\n    assert isinstance(result.diagnostics[0], errors.SyntaxDiagnostic)\n":
+    labels:
+    - source: result.diagnostics
+      style: primary
+      start: 119
+      end: 137
+  "def test_one_name(testdata_project_directory):\n    found = test_helpers.load_project_root_config().diagnostics\n    assert len(found) == 1\n":
+    labels:
+    - source: test_helpers.load_project_root_config().diagnostics
+      style: primary
+      start: 59
+      end: 110
+  "def test_whole_list(testdata_project_directory):\n    assert test_helpers.load_project_root_config().diagnostics == []\n":
+    labels:
+    - source: test_helpers.load_project_root_config().diagnostics
+      style: primary
+      start: 60
+      end: 111

@@ -1,0 +1,7 @@
+deps: {
+  local: [
+    {
+      universe_name: 'bad'
+    }
+  ]
+}
