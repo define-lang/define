@@ -35,6 +35,7 @@ static CONSTRUCTOR: PyOnceLock<NewSourceLocation> = PyOnceLock::new();
     unsafe_code,
     reason = "Only a C function can cross from one extension to another."
 )]
+#[inline]
 pub fn new_source_location<'py>(
     py: Python<'py>,
     location: SourceLocation,

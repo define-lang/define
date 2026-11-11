@@ -57,7 +57,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_literal_content_end());
         }
         self.disallowed_literal_character(content.written, start)?;
-        Ok(self.ast.string(content.written.bytes)?)
+        Ok(self.ast.string(content.written)?)
     }
 
     /// Parses the `"` after literal content, as it is `written` with its
@@ -83,7 +83,11 @@ impl<'py, 'source> Parser<'py, 'source> {
         // The content is checked as it is written, escapes and all, so that the
         // characters on either side of each character are the ones written.
         self.disallowed_literal_character(written, start)?;
-        Ok(self.ast.string(&content)?)
+        // Removing escapes leaves ASCII as ASCII.
+        Ok(self.ast.string(SourceText {
+            bytes: &content,
+            is_known_ascii: written.is_known_ascii,
+        })?)
     }
 
     /// Returns literal content, as it is `written` with its escapes, which

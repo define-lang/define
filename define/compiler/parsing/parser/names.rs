@@ -23,7 +23,7 @@ pub(crate) const POSITION_OR_ACTION: [(&[u8], ast::NameType); 2] = [
 /// An FQUN, with its canonical form, which is its text in the source.
 pub(crate) struct FqunWithCanonicalText<'py, 'source> {
     pub(crate) node: ast::Fqun<'py>,
-    pub(crate) canonical: &'source [u8],
+    pub(crate) canonical: SourceText<'source>,
 }
 
 /// The parts of a global name's content.
@@ -32,13 +32,13 @@ pub(crate) struct GlobalNameParts<'py, 'source> {
     pub(crate) fqun: Option<FqunWithCanonicalText<'py, 'source>>,
     pub(crate) path: ast::GlobalPathName<'py>,
     /// The name content's text in the source, which is its source name.
-    pub(crate) text: &'source [u8],
+    pub(crate) text: SourceText<'source>,
 }
 
 /// A local name's content, with its text in the source.
 pub(crate) struct LocalNameParts<'py, 'source> {
     pub(crate) content: ast::LocalNameContent<'py>,
-    pub(crate) text: &'source [u8],
+    pub(crate) text: SourceText<'source>,
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
@@ -152,20 +152,25 @@ impl<'py, 'source> Parser<'py, 'source> {
     fn typed_name_text(
         &mut self,
         name_type: ast::NameType,
-        fqun: Option<&[u8]>,
-        content: &[u8],
+        fqun: Option<SourceText<'source>>,
+        content: SourceText<'source>,
     ) -> PyResult<Bound<'py, PyString>> {
         let text = &mut self.typed_name_text_buffer;
         text.clear();
         text.extend_from_slice(name_type.value().as_bytes());
         text.push(NAME_CONTENT_START);
+        let mut is_known_ascii = content.is_known_ascii;
         if let Some(fqun) = fqun {
-            text.extend_from_slice(fqun);
+            text.extend_from_slice(fqun.bytes);
             text.push(COMPONENT_SEPARATOR);
+            is_known_ascii &= fqun.is_known_ascii;
         }
-        text.extend_from_slice(content);
+        text.extend_from_slice(content.bytes);
         text.push(NAME_CONTENT_END);
-        self.ast.interned(text)
+        self.ast.interned(SourceText {
+            bytes: text,
+            is_known_ascii,
+        })
     }
 
     /// Constructs a typed local name reference with `name_type` to the local
@@ -285,10 +290,10 @@ impl<'py, 'source> Parser<'py, 'source> {
         self.disallowed_name_character(content, start)?;
         self.scanner.consume_bytes(1);
         let location = self.ast.location(start, end)?;
-        let name = self.ast.interned(content.bytes)?;
+        let name = self.ast.interned(content)?;
         Ok(LocalNameParts {
             content: self.ast.local_name_content(location, name)?,
-            text: content.bytes,
+            text: content,
         })
     }
 
@@ -328,7 +333,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
     ) -> ParseResult<(
         ast::DefinitionGlobalNameContent<'py>,
-        &'source [u8],
+        SourceText<'source>,
         FqunWithCanonicalText<'py, 'source>,
     )> {
         let content_start = self.scanner.position.next_column();
@@ -419,14 +424,14 @@ impl<'py, 'source> Parser<'py, 'source> {
             }
         };
         let path_location = self.ast.location(path_start, end)?;
-        let path_name = self.ast.interned(path_text.bytes)?;
+        let path_name = self.ast.interned(path_text)?;
         let path = self.ast.global_path_name(path_location, path_name)?;
         let location = self.ast.location(start, end)?;
         Ok(GlobalNameParts {
             location,
             fqun,
             path,
-            text: content.bytes,
+            text: content,
         })
     }
 
@@ -493,7 +498,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // The FQUN's canonical form is its components joined by `:`, as they
         // are written.
         let canonical = content.slice(..last);
-        let canonical_name = self.ast.interned(canonical.bytes)?;
+        let canonical_name = self.ast.interned(canonical)?;
         let node = self.ast.fqun(
             location,
             multiverse,
@@ -501,13 +506,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             universe_node,
             canonical_name,
         )?;
-        Ok((
-            FqunWithCanonicalText {
-                node,
-                canonical: canonical.bytes,
-            },
-            end,
-        ))
+        Ok((FqunWithCanonicalText { node, canonical }, end))
     }
 
     /// Returns the location and name of the FQUN component `name` that begins
@@ -519,7 +518,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     ) -> PyResult<(SourceLocation<'py>, Bound<'py, PyString>, Position)> {
         let end = start.columns_later(name.character_count());
         let location = self.ast.location(start, end)?;
-        Ok((location, self.ast.interned(name.bytes)?, end))
+        Ok((location, self.ast.interned(name)?, end))
     }
 }
 
