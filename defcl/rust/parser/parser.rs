@@ -31,6 +31,30 @@ pub struct LayoutFix {
     pub replacement: String,
 }
 
+/// Bytes of a DCL file that are not valid UTF-8, with the syntax error that
+/// reports them.
+#[derive(Debug, PartialEq, Eq)]
+pub struct DecodeError {
+    pub source: Vec<u8>,
+    pub error: SyntaxError,
+}
+
+/// Decodes `source`, the bytes of a DCL file, into its text.
+///
+/// # Errors
+///
+/// Returns the bytes with an `InvalidEncoding` error if they are not valid
+/// UTF-8.
+pub fn decode(source: Vec<u8>) -> Result<String, DecodeError> {
+    String::from_utf8(source).map_err(|error| {
+        let syntax_error = invalid_encoding(error.as_bytes(), error.utf8_error().valid_up_to());
+        DecodeError {
+            source: error.into_bytes(),
+            error: syntax_error,
+        }
+    })
+}
+
 /// Parses `source`, the text of a DCL file, into its syntax tree and its
 /// syntax errors. An error in the layout of the file, such as its whitespace,
 /// does not stop the parse; any other syntax error does.
@@ -39,8 +63,9 @@ pub fn parse(source: &str) -> ParseResult<'_> {
     parse_with(source, false).0
 }
 
-/// Parses `source` as `parse` does, and also returns the fixes for its layout
-/// errors that only change its whitespace and comments, in source order.
+/// Parses `source`, the text of a DCL file, as `parse` does, and also returns
+/// the fixes for its layout errors that only change its whitespace and
+/// comments, in source order.
 #[must_use]
 pub fn parse_with_layout_fixes(source: &str) -> (ParseResult<'_>, Vec<LayoutFix>) {
     parse_with(source, true)
@@ -69,6 +94,32 @@ fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<Layout
         },
         parser.fixes,
     )
+}
+
+/// The error for the byte at `offset` in `source`, which starts the first
+/// bytes that are not valid UTF-8.
+#[cold]
+#[inline(never)]
+fn invalid_encoding(source: &[u8], offset: usize) -> SyntaxError {
+    let mut position = Position { line: 1, column: 1 };
+    for &byte in &source[..offset] {
+        if byte == b'\n' {
+            position = Position {
+                line: position.line + 1,
+                column: 1,
+            };
+        } else if byte & 0b1100_0000 != 0b1000_0000 {
+            // A column counts characters, so it skips the bytes that continue
+            // one.
+            position.column += 1;
+        }
+    }
+    SyntaxError {
+        kind: SyntaxErrorKind::InvalidEncoding {
+            byte: source[offset],
+        },
+        location: SourceLocation::at(position),
+    }
 }
 
 const fn is_field_name_start(byte: u8) -> bool {

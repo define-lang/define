@@ -39,6 +39,12 @@ class UnexpectedCharacterDiagnostic(SyntaxDiagnostic, frozen=True):
     character: str
 
 
+class InvalidEncodingDiagnostic(SyntaxDiagnostic, frozen=True):
+    """An INVALID_ENCODING diagnostic: a byte that does not start a valid UTF-8 character."""
+
+    byte: int
+
+
 class WrongIndentationDiagnostic(SyntaxDiagnostic, frozen=True):
     """A WRONG_INDENTATION diagnostic: a line that does not start with the spaces of its indentation."""
 

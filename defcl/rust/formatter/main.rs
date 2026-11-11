@@ -1,54 +1,140 @@
-//! Formats DCL files in place: `defclfmt FILE...`. Prints the syntax
-//! errors that each file still has, and exits with status 2 if any does.
+//! The `defclfmt` command.
 
+use clap::Parser;
 use defcl_formatter::format;
-use std::ffi::OsString;
+use defcl_parser::{DecodeError, SyntaxError, decode};
+use source_rendering::SourceLines;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-fn main() -> std::io::Result<ExitCode> {
-    let paths = std::env::args_os().skip(1);
-    let all_formatted = format_files(paths, &mut std::io::stderr())?;
-    Ok(if all_formatted {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::from(2)
-    })
+/// Formats DCL files in place.
+///
+/// Prints the syntax errors that each file still has, and each file that
+/// cannot be read or written, and exits with status 2 if there is any.
+#[derive(Parser)]
+struct Arguments {
+    /// Don't change any files. Instead, list the files that need formatting,
+    /// and exit with status 1 if there are any. Errors still exit with
+    /// status 2.
+    #[arg(long)]
+    check: bool,
+    /// The DCL files to format.
+    #[arg(required = true)]
+    files: Vec<PathBuf>,
 }
 
-/// Formats the DCL file at each of `paths`, and writes each syntax error that
-/// a file still has to `errors`. Returns whether every file is free of syntax errors.
+fn main() -> std::io::Result<ExitCode> {
+    let arguments = Arguments::parse();
+    let outcome = format_files(
+        &arguments.files,
+        arguments.check,
+        &mut std::io::stdout(),
+        &mut std::io::stderr(),
+    )?;
+    Ok(ExitCode::from(outcome as u8))
+}
+
+/// What formatting a set of files found, from best to worst. Each is the exit
+/// status that reports it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Outcome {
+    Formatted = 0,
+    Unformatted = 1,
+    Errors = 2,
+}
+
+/// Formats the DCL file at each of `paths`, or, if `check`, only finds each
+/// file that formatting would change and writes its path to `unformatted`.
+/// Writes each syntax error that a file still has, and the error for each file
+/// that cannot be read or written, to `errors`.
+///
+/// # Errors
+///
+/// Returns the error that writing to `unformatted` or `errors` ends in.
 fn format_files(
-    paths: impl Iterator<Item = OsString>,
+    paths: &[PathBuf],
+    check: bool,
+    unformatted: &mut impl Write,
     errors: &mut impl Write,
-) -> std::io::Result<bool> {
-    let mut all_formatted = true;
+) -> std::io::Result<Outcome> {
+    let mut outcome = Outcome::Formatted;
     for path in paths {
-        let path = PathBuf::from(path);
-        let source = std::fs::read_to_string(&path)?;
-        let (formatted, file_errors) = format(&source);
-        if formatted != source {
-            std::fs::write(&path, formatted)?;
+        let file = match format_file(path, check) {
+            Ok(file) => file,
+            Err(error) => {
+                writeln!(errors, "File \"{}\"\n{error}", path.display())?;
+                outcome = Outcome::Errors;
+                continue;
+            }
+        };
+        if file.changed && check {
+            writeln!(unformatted, "{}", path.display())?;
+            outcome = outcome.max(Outcome::Unformatted);
         }
-        for error in &file_errors {
-            let start = error.location.start;
+        if file.errors.is_empty() {
+            continue;
+        }
+        let file_path = path.to_string_lossy();
+        let lines = SourceLines::new(file.text);
+        for error in &file.errors {
             writeln!(
                 errors,
-                "{}:{}:{}: {error}",
-                path.display(),
-                start.line,
-                start.column
+                "{}\n{error}",
+                lines.render(error.location, Some(&file_path))
             )?;
-            all_formatted = false;
         }
+        outcome = Outcome::Errors;
     }
-    Ok(all_formatted)
+    Ok(outcome)
+}
+
+/// What formatting a DCL file found.
+struct FormattedFile {
+    /// Whether formatting changes the file.
+    changed: bool,
+    /// The text that `errors` are in: the formatted text if formatting changes
+    /// the file.
+    text: String,
+    /// The syntax errors that the file still has.
+    errors: Vec<SyntaxError>,
+}
+
+/// Formats the DCL file at `path`, writing it unless `check`.
+fn format_file(path: &Path, check: bool) -> std::io::Result<FormattedFile> {
+    let source = match decode(std::fs::read(path)?) {
+        Ok(source) => source,
+        Err(DecodeError { source, error }) => {
+            return Ok(FormattedFile {
+                changed: false,
+                // Only to show the error's line.
+                text: String::from_utf8_lossy(&source).into_owned(),
+                errors: vec![error],
+            });
+        }
+    };
+    let (formatted, errors) = format(&source);
+    let Some(formatted) = formatted else {
+        return Ok(FormattedFile {
+            changed: false,
+            text: source,
+            errors,
+        });
+    };
+    if !check {
+        std::fs::write(path, &formatted)?;
+    }
+    Ok(FormattedFile {
+        changed: true,
+        text: formatted,
+        errors,
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::format_files;
+    use super::{Arguments, Outcome, format_files};
+    use clap::CommandFactory as _;
     use googletest::prelude::*;
     use std::path::PathBuf;
 
@@ -61,21 +147,26 @@ mod tests {
     }
 
     #[gtest]
+    fn arguments_are_well_formed() {
+        Arguments::command().debug_assert();
+    }
+
+    #[gtest]
     fn formats_each_file() -> Result<()> {
         let directory = test_directory("formats_each_file")?;
         std::fs::write(directory.join("a.defcl"), "a: { b: 1 }\n").or_fail()?;
         std::fs::write(directory.join("c.defcl"), "c: {\n  d: 1\n}\n").or_fail()?;
+        let mut unformatted = Vec::new();
         let mut errors = Vec::new();
-        let all_formatted = format_files(
-            [
-                directory.join("a.defcl").into_os_string(),
-                directory.join("c.defcl").into_os_string(),
-            ]
-            .into_iter(),
+        let outcome = format_files(
+            &[directory.join("a.defcl"), directory.join("c.defcl")],
+            false,
+            &mut unformatted,
             &mut errors,
         )
         .or_fail()?;
-        verify_that!(all_formatted, eq(true))?;
+        verify_that!(outcome, eq(Outcome::Formatted))?;
+        verify_that!(unformatted, is_empty())?;
         verify_that!(errors, is_empty())?;
         verify_that!(
             std::fs::read_to_string(directory.join("a.defcl")).or_fail()?,
@@ -92,14 +183,21 @@ mod tests {
         let directory = test_directory("reports_the_errors_that_a_file_still_has")?;
         let path = directory.join("a.defcl");
         std::fs::write(&path, "a: {\n    b: {}\n}\n").or_fail()?;
+        let mut unformatted = Vec::new();
         let mut errors = Vec::new();
-        let all_formatted =
-            format_files([path.clone().into_os_string()].into_iter(), &mut errors).or_fail()?;
-        verify_that!(all_formatted, eq(false))?;
+        let outcome = format_files(
+            std::slice::from_ref(&path),
+            false,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(unformatted, is_empty())?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
             eq(&format!(
-                "{}:2:6: Empty message values not allowed - leave the field out\n",
+                "File \"{}\", line 2, column 6\n    b: {{}}\n       ^^\nEmpty message values not allowed - leave the field out\n",
                 path.display()
             ))
         )?;
@@ -110,15 +208,119 @@ mod tests {
     }
 
     #[gtest]
-    fn missing_file_is_an_error() -> Result<()> {
-        let directory = test_directory("missing_file_is_an_error")?;
+    fn check_lists_each_unformatted_file_without_changing_it() -> Result<()> {
+        let directory = test_directory("check_lists_each_unformatted_file_without_changing_it")?;
+        let unformatted_path = directory.join("a.defcl");
+        let formatted_path = directory.join("c.defcl");
+        std::fs::write(&unformatted_path, "a: { b: 1 }\n").or_fail()?;
+        std::fs::write(&formatted_path, "c: {\n  d: 1\n}\n").or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            &[unformatted_path.clone(), formatted_path],
+            true,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Unformatted))?;
         verify_that!(
-            format_files(
-                [directory.join("missing.defcl").into_os_string()].into_iter(),
-                &mut Vec::new(),
-            )
-            .map_err(|error| error.kind()),
-            err(eq(std::io::ErrorKind::NotFound))
+            String::from_utf8(unformatted).or_fail()?,
+            eq(&format!("{}\n", unformatted_path.display()))
+        )?;
+        verify_that!(errors, is_empty())?;
+        verify_that!(
+            std::fs::read_to_string(&unformatted_path).or_fail()?,
+            eq("a: { b: 1 }\n")
+        )
+    }
+
+    #[gtest]
+    fn check_reports_a_syntax_error_over_an_unformatted_file() -> Result<()> {
+        let directory = test_directory("check_reports_a_syntax_error_over_an_unformatted_file")?;
+        let with_error = directory.join("a.defcl");
+        let unformatted_path = directory.join("c.defcl");
+        std::fs::write(&with_error, "a: {\n  b: {}\n}\n").or_fail()?;
+        std::fs::write(&unformatted_path, "c: { d: 1 }\n").or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            &[with_error.clone(), unformatted_path.clone()],
+            true,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(
+            String::from_utf8(unformatted).or_fail()?,
+            eq(&format!("{}\n", unformatted_path.display()))
+        )?;
+        verify_that!(
+            String::from_utf8(errors).or_fail()?,
+            eq(&format!(
+                "File \"{}\", line 2, column 6\n    b: {{}}\n       ^^\nEmpty message values not allowed - leave the field out\n",
+                with_error.display()
+            ))
+        )
+    }
+
+    #[gtest]
+    fn reports_a_file_that_cannot_be_read_and_formats_the_rest() -> Result<()> {
+        let directory = test_directory("reports_a_file_that_cannot_be_read_and_formats_the_rest")?;
+        let missing = directory.join("missing.defcl");
+        let present = directory.join("a.defcl");
+        std::fs::write(&present, "a: { b: 1 }\n").or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            &[missing.clone(), present.clone()],
+            false,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(unformatted, is_empty())?;
+        // The operating system words the error.
+        let not_found = std::fs::read(&missing).err().or_fail()?;
+        verify_that!(
+            String::from_utf8(errors).or_fail()?,
+            eq(&format!("File \"{}\"\n{not_found}\n", missing.display()))
+        )?;
+        verify_that!(
+            std::fs::read_to_string(&present).or_fail()?,
+            eq("a: {\n  b: 1\n}\n")
+        )
+    }
+
+    #[gtest]
+    fn reports_a_file_that_is_not_valid_utf8_without_changing_it() -> Result<()> {
+        let directory =
+            test_directory("reports_a_file_that_is_not_valid_utf8_without_changing_it")?;
+        let path = directory.join("a.defcl");
+        std::fs::write(&path, b"a: {\n    b: \"\xff\"\n}\n").or_fail()?;
+        let mut unformatted = Vec::new();
+        let mut errors = Vec::new();
+        let outcome = format_files(
+            std::slice::from_ref(&path),
+            false,
+            &mut unformatted,
+            &mut errors,
+        )
+        .or_fail()?;
+        verify_that!(outcome, eq(Outcome::Errors))?;
+        verify_that!(unformatted, is_empty())?;
+        verify_that!(
+            String::from_utf8(errors).or_fail()?,
+            eq(&format!(
+                "File \"{}\", line 2, column 9\n    b: \"\u{fffd}\"\n        ^\nInvalid UTF-8: the byte \\xff does not start a valid character\n",
+                path.display()
+            ))
+        )?;
+        verify_that!(
+            std::fs::read(&path).or_fail()?,
+            eq(b"a: {\n    b: \"\xff\"\n}\n")
         )
     }
 }

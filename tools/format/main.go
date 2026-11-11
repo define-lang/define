@@ -31,6 +31,7 @@ import (
 var (
 	bufRlocationPath           string
 	buildifierRlocationPath    string
+	defclfmtRlocationPath      string
 	dprintPluginRlocationPaths string
 	dprintRlocationPath        string
 	gofumptRlocationPath       string
@@ -41,9 +42,11 @@ var (
 // Windows limits a command line to 32767 characters.
 const maxBatchCharacters = 30000
 
-// Files with these attributes in .gitattributes are not maintained in this
-// repository, so they keep their upstream formatting.
-var ignoredAttributes = []string{"linguist-generated", "linguist-vendored"}
+// Files with these attributes in .gitattributes keep the formatting they have:
+// either they are not maintained in this repository, or, with unformatted,
+// their formatting is deliberately wrong, as in test data for formatting
+// errors.
+var ignoredAttributes = []string{"linguist-generated", "linguist-vendored", "unformatted"}
 
 type formatter struct {
 	rlocationPath  string
@@ -76,6 +79,11 @@ var (
 		rlocationPath: buildifierRlocationPath,
 		fixArguments:  []string{"-mode=check", "-lint=warn"},
 	}
+	defclfmt = &formatter{
+		rlocationPath:  defclfmtRlocationPath,
+		fixArguments:   []string{},
+		checkArguments: []string{"--check"},
+	}
 	dprint = &formatter{
 		rlocationPath: dprintRlocationPath,
 		// At the default log level, dprint reports every file it formats, and
@@ -106,13 +114,14 @@ var (
 )
 
 // The formatters run in this order so that their output is deterministic.
-var formatters = []*formatter{buf, buildifier, buildifierLint, dprint, gofumpt, ruff, rustfmt}
+var formatters = []*formatter{buf, buildifier, buildifierLint, defclfmt, dprint, gofumpt, ruff, rustfmt}
 
 // Formatters rewrite whole files, so a file with several formatters is
 // formatted by one of them at a time, in order.
 var formattersByExtension = map[string][]*formatter{
 	".bazel": {buildifier, buildifierLint},
 	".bzl":   {buildifier, buildifierLint},
+	".defcl": {defclfmt},
 	".go":    {gofumpt},
 	".json":  {dprint},
 	".json5": {dprint},

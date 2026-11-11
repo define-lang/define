@@ -27,6 +27,10 @@ pub enum SyntaxErrorKind {
     /// last character. A layout error.
     #[display("The file does not end with a newline")]
     MissingTrailingNewline,
+    /// A byte that is not valid UTF-8, or that starts a sequence of bytes that
+    /// is not. The location is the byte.
+    #[display("Invalid UTF-8: the byte \\x{byte:02x} does not start a valid character")]
+    InvalidEncoding { byte: u8 },
     /// A tab outside a string or a comment.
     #[display("Tabs not allowed - use spaces")]
     TabNotAllowed,

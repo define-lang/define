@@ -139,6 +139,7 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 		"BUILD.bazel": "filegroup(name=\"all\")\n",
 		// gofmt keeps a blank line at the start of a function body, but
 		// gofumpt removes it.
+		"a.defcl": "a: { b: 1 }\n",
 		"a.go":    "package a\n\nfunc f() {\n\n\tf()\n}\n",
 		"a.json":  "{\"a\":1}\n",
 		"a.json5": "{a:1}\n",
@@ -155,6 +156,7 @@ func TestAllFormatsEveryLanguage(t *testing.T) {
 	assertSucceeded(t, output, exitCode)
 	assertFiles(t, repository, map[string]string{
 		"BUILD.bazel": "filegroup(name = \"all\")\n",
+		"a.defcl":     "a: {\n  b: 1\n}\n",
 		"a.go":        "package a\n\nfunc f() {\n\tf()\n}\n",
 		"a.json":      "{ \"a\": 1 }\n",
 		"a.json5":     "{ a: 1 }\n",
@@ -224,17 +226,19 @@ func TestPathsFormatEveryFileUnderThem(t *testing.T) {
 	})
 }
 
-func TestSkipsVendoredAndGeneratedFiles(t *testing.T) {
+func TestSkipsVendoredGeneratedAndUnformattedFiles(t *testing.T) {
 	repository := newRepository(t, map[string]string{
-		".gitattributes": "vendored/** linguist-vendored\ngenerated.py linguist-generated\n",
-		"generated.py":   "x  =  1\n",
-		"vendored/a.py":  "x  =  2\n",
+		".gitattributes":    "vendored/** linguist-vendored\ngenerated.py linguist-generated\nunformatted.defcl unformatted\n",
+		"generated.py":      "x  =  1\n",
+		"unformatted.defcl": "a: { b: 1 }\n",
+		"vendored/a.py":     "x  =  2\n",
 	})
 	output, exitCode := runFormatIn(t, repository, repository, "--all")
 	assertSucceeded(t, output, exitCode)
 	assertFiles(t, repository, map[string]string{
-		"generated.py":  "x  =  1\n",
-		"vendored/a.py": "x  =  2\n",
+		"generated.py":      "x  =  1\n",
+		"unformatted.defcl": "a: { b: 1 }\n",
+		"vendored/a.py":     "x  =  2\n",
 	})
 }
 
@@ -304,6 +308,27 @@ func TestCheckReportsUnformattedGoFiles(t *testing.T) {
 		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
 	}
 	assertFiles(t, repository, map[string]string{"a.go": "package  a\n"})
+}
+
+func TestCheckReportsUnformattedDefclFiles(t *testing.T) {
+	repository := newRepository(t, map[string]string{"a.defcl": "a: { b: 1 }\n"})
+	output, exitCode := runFormatIn(t, repository, repository, "--check", "--all")
+	expected := "a.defcl\ndefclfmt: exit status 1\nFiles are not formatted. Run `bazelisk run //:format -- --all` to format them.\n"
+	if exitCode != 1 || output != expected {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+	assertFiles(t, repository, map[string]string{"a.defcl": "a: { b: 1 }\n"})
+}
+
+func TestFormatReportsDefclErrorsThatItCannotFix(t *testing.T) {
+	repository := newRepository(t, map[string]string{})
+	writeFiles(t, repository, map[string]string{"a.defcl": "a: {\n    b: {}\n}\n"})
+	output, exitCode := runFormatIn(t, repository, repository)
+	expected := "File \"a.defcl\", line 2, column 6\n    b: {}\n       ^^\nEmpty message values not allowed - leave the field out\ndefclfmt: exit status 2\n"
+	if exitCode != 1 || output != expected {
+		t.Errorf("format exited with %d and output:\n%s", exitCode, output)
+	}
+	assertFiles(t, repository, map[string]string{"a.defcl": "a: {\n  b: {}\n}\n"})
 }
 
 func TestFormatReportsBuildifierWarningsThatItCannotFix(t *testing.T) {

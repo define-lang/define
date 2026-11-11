@@ -261,6 +261,29 @@ def test_syntax_error_is_a_diagnostic():
     assert unexpected_character.character == "@"
 
 
+def test_invalid_utf8_is_an_invalid_encoding_diagnostic():
+    path = str(_testdata_path("invalid/syntax/characters/invalid_utf8.defcl"))
+    source_map = rendering.SourceMap()
+
+    source, (invalid_encoding,) = validator.validate_file(
+        path, source_map, _valid_schemas(), _SINGLE_TOPLEVEL_FILE
+    )
+
+    assert source is None
+    assert type(invalid_encoding) is errors.InvalidEncodingDiagnostic
+    assert invalid_encoding.kind == error_types.SyntaxDiagnosticKind.INVALID_ENCODING
+    assert invalid_encoding.location == rendering.SourceLocation(
+        line=2, column=12, end_line=2, end_column=12, file_path=path
+    )
+    assert invalid_encoding.byte == 0xFF
+    assert invalid_encoding.format(source_map) == (
+        f'File "{path}", line 2, column 12\n'
+        '    b: "café \ufffd"\n'
+        "             ^\n"
+        "Invalid UTF-8: the byte \\xff does not start a valid character"
+    )
+
+
 def test_syntax_error_without_a_character_is_a_plain_syntax_diagnostic():
     (missing_colon,) = validator.validate(
         _testdata("invalid/syntax/separators/missing_colon.defcl"),

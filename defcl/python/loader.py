@@ -58,9 +58,11 @@ def load_file[M: message.Message](
     )
     if diagnostics:
         return LoadResult(message=None, diagnostics=diagnostics)
+    # Only a file that is not valid UTF-8 has no text, and it has a diagnostic.
     # The file's text, not a second read of the file, so that the text that is
     # parsed is the text that was validated.
-    return LoadResult(message=text_format.Parse(source, message_type()), diagnostics=[])
+    text = typing.cast("str", source)
+    return LoadResult(message=text_format.Parse(text, message_type()), diagnostics=[])
 
 
 # TODO: Move the walk over the imports into defcl/rust when the Rust crate

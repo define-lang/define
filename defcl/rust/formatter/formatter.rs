@@ -6,19 +6,19 @@ use defcl_parser::{SyntaxError, parse, parse_with_layout_fixes};
 /// Formats `source`, the text of a DCL file.
 ///
 /// Returns its text with each layout error fixed that changing only its
-/// whitespace and comments fixes, and the syntax errors that the text still
-/// has. A file whose parse a syntax error stops is not changed, and that
-/// error is the only one returned.
+/// whitespace and comments fixes, or `None` if that changes nothing, and the
+/// syntax errors that the text still has. A file whose parse a syntax error
+/// stops is not changed, and that error is the only one returned.
 #[must_use]
-pub fn format(source: &str) -> (String, Vec<SyntaxError>) {
+pub fn format(source: &str) -> (Option<String>, Vec<SyntaxError>) {
     let (mut result, fixes) = parse_with_layout_fixes(source);
     if result.file.is_none() {
         // The error that stopped the parse is the last.
         let stop = result.errors.split_off(result.errors.len() - 1);
-        return (source.to_owned(), stop);
+        return (None, stop);
     }
     if fixes.is_empty() {
-        return (source.to_owned(), result.errors);
+        return (None, result.errors);
     }
     let mut formatted = String::with_capacity(source.len());
     let mut copied = 0;
@@ -29,7 +29,7 @@ pub fn format(source: &str) -> (String, Vec<SyntaxError>) {
     }
     formatted.push_str(&source[copied..]);
     let errors = parse(&formatted).errors;
-    (formatted, errors)
+    (Some(formatted), errors)
 }
 
 #[cfg(test)]
@@ -57,7 +57,7 @@ mod tests {
               b: 1
             }
         "};
-        verify_that!(format(source), (eq(source), is_empty()))
+        verify_that!(format(source), (none(), is_empty()))
     }
 
     #[gtest]
@@ -71,13 +71,13 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       b: {
                         c: 1
                       }
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -88,7 +88,7 @@ mod tests {
         verify_that!(
             format("a: { b: 1 c: [1, 2] }\n"),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       b: 1
                       c: [
@@ -96,7 +96,7 @@ mod tests {
                         2
                       ]
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -114,7 +114,7 @@ mod tests {
                   c: 2\x20\x20
                 }"}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     # top
                     a: {
                       b: 1
@@ -122,7 +122,7 @@ mod tests {
                       # x
                       c: 2
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -138,12 +138,12 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       #   |
                       b: 1
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -159,12 +159,12 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     # top
                     a: {
                       b: 1
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -180,12 +180,12 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       #
                       b: 1
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -204,7 +204,7 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       b: 1
                       c: [
@@ -212,7 +212,7 @@ mod tests {
                         2
                       ]
                     }
-                "}),
+                "})),
                 is_empty()
             )
         )
@@ -227,11 +227,11 @@ mod tests {
                 }
             "}),
             (
-                eq(indoc! {"
+                some(eq(indoc! {"
                     a: {
                       b: {}
                     }
-                "}),
+                "})),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::EmptyMessageValue,
                     location: location(2, 6, 2, 7),
@@ -251,7 +251,7 @@ mod tests {
         verify_that!(
             format(source),
             (
-                eq(source),
+                none(),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::MisplacedComment,
                     location: location(1, 3, 1, 5),
@@ -270,7 +270,7 @@ mod tests {
         verify_that!(
             format(source),
             (
-                eq(source),
+                none(),
                 eq(&vec![SyntaxError {
                     kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                     location: location(2, 8, 2, 8),

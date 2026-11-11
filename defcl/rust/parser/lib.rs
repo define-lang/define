@@ -10,7 +10,7 @@ mod syntax_error;
 mod syntax_tree;
 
 pub use field_path::FieldPathElement;
-pub use parser::{LayoutFix, ParseResult, parse, parse_with_layout_fixes};
+pub use parser::{DecodeError, LayoutFix, ParseResult, decode, parse, parse_with_layout_fixes};
 pub use syntax_error::{SyntaxError, SyntaxErrorKind};
 pub use syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,

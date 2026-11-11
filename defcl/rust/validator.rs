@@ -1,7 +1,7 @@
 //! The validation of a DCL file's text against its schema: parsing it, then
 //! checking it.
 
-use defcl_parser::{SyntaxError, parse};
+use defcl_parser::{DecodeError, SyntaxError, decode, parse};
 use defcl_semantics::{FileDescriptorSet, Schema, SchemaError, SemanticError, check_semantics};
 use std::io;
 use std::path::Path;
@@ -16,6 +16,9 @@ pub struct FileErrors {
     /// parse.
     pub semantic_errors: Vec<SemanticError>,
 }
+
+/// A DCL file's text, or its bytes if they are not valid UTF-8.
+pub type FileSource = Result<String, Vec<u8>>;
 
 /// Validates `source`, the text of a DCL file, against the schema whose
 /// top-level message type has the full name `top_level_message_type` in
@@ -43,7 +46,8 @@ pub fn validate(
 }
 
 /// Validates the DCL file at `path` as `validate` validates its text, and
-/// returns the text with the result of validating it.
+/// returns its text, or its bytes if they are not valid UTF-8, with the result
+/// of validating it.
 ///
 /// # Errors
 ///
@@ -54,10 +58,23 @@ pub fn validate_file(
     path: &Path,
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
-) -> io::Result<(String, Result<FileErrors, SchemaError>)> {
-    let source = std::fs::read_to_string(path)?;
-    let result = validate(&source, descriptor_set, top_level_message_type);
-    Ok((source, result))
+) -> io::Result<(FileSource, Result<FileErrors, SchemaError>)> {
+    match decode(std::fs::read(path)?) {
+        Ok(source) => {
+            let result = validate(&source, descriptor_set, top_level_message_type);
+            Ok((Ok(source), result))
+        }
+        Err(DecodeError { source, error }) => {
+            let result =
+                Schema::from_descriptor_set(descriptor_set, top_level_message_type).map(|_| {
+                    FileErrors {
+                        syntax_errors: vec![error],
+                        semantic_errors: Vec::new(),
+                    }
+                });
+            Ok((Err(source), result))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -228,13 +245,50 @@ mod tests {
             )
             .or_fail()?,
             (
-                eq("a: {\n  b: @\n}\n"),
+                ok(eq("a: {\n  b: @\n}\n")),
                 ok(eq(&FileErrors {
                     syntax_errors: vec![SyntaxError {
                         kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
                         location: SourceLocation {
                             start: Position { line: 2, column: 6 },
                             end: Position { line: 2, column: 6 }
+                        },
+                    }],
+                    semantic_errors: vec![],
+                }))
+            )
+        )
+    }
+
+    #[gtest]
+    fn validate_file_of_invalid_utf8_returns_the_bytes_with_the_error() -> Result<()> {
+        let runfiles = Runfiles::create().or_fail()?;
+        let path = runfiles::rlocation!(
+            runfiles,
+            "_main/defcl/testdata/invalid/syntax/characters/invalid_utf8.defcl"
+        )
+        .or_fail()?;
+        verify_that!(
+            validate_file(
+                &path,
+                valid_schemas()?,
+                "defcl.testdata.valid.schemas.SingleToplevelFile",
+            )
+            .or_fail()?,
+            (
+                err(eq(b"a: {\n  b: \"caf\xc3\xa9 \xff\"\n}\n")),
+                ok(eq(&FileErrors {
+                    syntax_errors: vec![SyntaxError {
+                        kind: SyntaxErrorKind::InvalidEncoding { byte: 0xff },
+                        location: SourceLocation {
+                            start: Position {
+                                line: 2,
+                                column: 12
+                            },
+                            end: Position {
+                                line: 2,
+                                column: 12
+                            }
                         },
                     }],
                     semantic_errors: vec![],

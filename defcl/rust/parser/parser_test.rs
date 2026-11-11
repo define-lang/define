@@ -1,6 +1,6 @@
 use crate::{
-    Field, FieldName, MessageValue, ParseResult, ParsedFile, RepeatedValue, Scalar, SyntaxError,
-    SyntaxErrorKind, TopLevelMessage, Value, parse,
+    DecodeError, Field, FieldName, MessageValue, ParseResult, ParsedFile, RepeatedValue, Scalar,
+    SyntaxError, SyntaxErrorKind, TopLevelMessage, Value, decode, parse,
 };
 use googletest::prelude::*;
 use source_rendering::{Position, SourceLocation};
@@ -1932,6 +1932,43 @@ mod invalid_numbers {
 
 mod invalid_characters {
     use super::*;
+
+    #[gtest]
+    fn invalid_utf8() -> Result<()> {
+        let source = include_bytes!("../../testdata/invalid/syntax/characters/invalid_utf8.defcl");
+        verify_that!(
+            decode(source.to_vec()),
+            err(eq(&DecodeError {
+                source: source.to_vec(),
+                error: SyntaxError {
+                    kind: SyntaxErrorKind::InvalidEncoding { byte: 0xff },
+                    location: location(2, 12, 2, 12),
+                },
+            }))
+        )
+    }
+
+    #[gtest]
+    fn incomplete_utf8_character_at_the_end() -> Result<()> {
+        verify_that!(
+            decode(b"a: {\n  b: \"\xc3".to_vec()),
+            err(eq(&DecodeError {
+                source: b"a: {\n  b: \"\xc3".to_vec(),
+                error: SyntaxError {
+                    kind: SyntaxErrorKind::InvalidEncoding { byte: 0xc3 },
+                    location: location(2, 7, 2, 7),
+                },
+            }))
+        )
+    }
+
+    #[gtest]
+    fn valid_utf8_is_decoded() -> Result<()> {
+        verify_that!(
+            decode("a: {\n  b: \"caf\u{e9}\"\n}\n".as_bytes().to_vec()),
+            ok(eq("a: {\n  b: \"caf\u{e9}\"\n}\n"))
+        )
+    }
 
     #[gtest]
     fn at_sign() -> Result<()> {

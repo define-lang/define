@@ -12,10 +12,11 @@ crate-type = ["cdylib"]
 
 # Bazel targets list their own crates; this package only tells the @crates hub
 # which crates to fetch. It also lists the crates for //defcl/rust and for the
-# prost toolchain in //tools/bzl: prost, prost-types, protoc-gen-prost,
+# prost toolchain in //tools/bzl: clap, prost, prost-types, protoc-gen-prost,
 # derive_more and strum.
 [dependencies]
 askama.workspace = true
+clap.workspace = true
 derive_more.workspace = true
 prost.workspace = true
 prost-types.workspace = true

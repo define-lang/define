@@ -4,3 +4,5 @@
 vendored/** linguist-vendored
 checks/rule-tests/__snapshots__/** linguist-generated
 pnpm-lock.yaml linguist-generated
+# These files' layout errors are what their tests are about.
+defcl/testdata/invalid/syntax/** unformatted

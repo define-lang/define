@@ -15,6 +15,7 @@ use std::path::Path;
 struct PythonClasses {
     syntax_diagnostic: Py<PyType>,
     unexpected_character_diagnostic: Py<PyType>,
+    invalid_encoding_diagnostic: Py<PyType>,
     wrong_indentation_diagnostic: Py<PyType>,
     syntax_diagnostic_kind: Py<PyType>,
     invalid_schema_error: Py<PyType>,
@@ -41,6 +42,7 @@ impl PythonClasses {
         Ok(Self {
             syntax_diagnostic: class(&errors, "SyntaxDiagnostic")?,
             unexpected_character_diagnostic: class(&errors, "UnexpectedCharacterDiagnostic")?,
+            invalid_encoding_diagnostic: class(&errors, "InvalidEncodingDiagnostic")?,
             wrong_indentation_diagnostic: class(&errors, "WrongIndentationDiagnostic")?,
             syntax_diagnostic_kind: class(&error_types, "SyntaxDiagnosticKind")?,
             invalid_schema_error: class(&errors, "InvalidSchemaError")?,
@@ -78,6 +80,10 @@ impl PythonClasses {
                 .unexpected_character_diagnostic
                 .bind(py)
                 .call1((message, location, kind, character)),
+            SyntaxErrorKind::InvalidEncoding { byte } => self
+                .invalid_encoding_diagnostic
+                .bind(py)
+                .call1((message, location, kind, byte)),
             SyntaxErrorKind::WrongIndentation { expected_spaces } => self
                 .wrong_indentation_diagnostic
                 .bind(py)
@@ -174,8 +180,8 @@ fn validate<'py>(
 }
 
 /// Validates the DCL file at `path` as `validate` validates its text, registers
-/// it with the `SourceMap` `source_map`, and returns the file's text with the
-/// diagnostics, whose locations are in the file at `path`. Raises `OSError` if
+/// it with the `SourceMap` `source_map`, and returns the file's text, or `None`
+/// if it is not valid UTF-8, with the diagnostics, whose locations are in the file at `path`. Raises `OSError` if
 /// the file cannot be read.
 #[pyfunction]
 fn validate_file<'py>(
@@ -183,7 +189,7 @@ fn validate_file<'py>(
     source_map: &Bound<'py, PyAny>,
     descriptor_set: &[u8],
     top_level_message_type: &str,
-) -> PyResult<(String, Vec<Bound<'py, PyAny>>)> {
+) -> PyResult<(Option<String>, Vec<Bound<'py, PyAny>>)> {
     let py = path.py();
     let classes = PythonClasses::get(py)?;
     let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
@@ -192,9 +198,13 @@ fn validate_file<'py>(
         descriptor_set,
         top_level_message_type,
     )?;
+    let bytes = match &source {
+        Ok(text) => text.as_bytes(),
+        Err(bytes) => bytes,
+    };
     let _: Bound<'_, PyAny> =
-        source_map.call_method1("register_file", (path, PyBytes::new(py, source.as_bytes())))?;
-    Ok((source, diagnostics(py, classes, result, Some(path))?))
+        source_map.call_method1("register_file", (path, PyBytes::new(py, bytes)))?;
+    Ok((source.ok(), diagnostics(py, classes, result, Some(path))?))
 }
 
 /// An element of a field path from Python: a field name, or the index of an

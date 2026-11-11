@@ -5,6 +5,7 @@ go_binary(
     name = "format",
     srcs = ["main.go"],
     data = [
+        "//defcl/rust/formatter:defclfmt",
         "@dprint_plugins",
         "@multitool//tools/buf",
         "@multitool//tools/buildifier",
@@ -18,6 +19,7 @@ go_binary(
     x_defs = {
         "bufRlocationPath": "$(rlocationpath @multitool//tools/buf)",
         "buildifierRlocationPath": "$(rlocationpath @multitool//tools/buildifier)",
+        "defclfmtRlocationPath": "$(rlocationpath //defcl/rust/formatter:defclfmt)",
         "dprintPluginRlocationPaths": "$(rlocationpaths @dprint_plugins)",
         "dprintRlocationPath": "$(rlocationpath @multitool//tools/dprint)",
         "gofumptRlocationPath": "$(rlocationpath @multitool//tools/gofumpt)",

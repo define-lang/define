@@ -5,7 +5,7 @@
 mod source_lines;
 mod source_map;
 
-use source_lines::SourceLines;
+pub use source_lines::SourceLines;
 pub use source_map::{NoInMemorySource, SourceMap};
 
 pub(crate) const CODE_INDENTATION: &str = "    ";
@@ -83,6 +83,9 @@ impl SourceLocation {
         }
     }
 
+    // TODO: Consider a `<file_path>:N:M` header instead of Python's traceback
+    // style. VS Code's terminal and Emacs link both to the line, but Vim's
+    // quickfix and most plain terminals recognize only `<file_path>:N:M`.
     /// The header `File "<file_path>", line N, column M`, or
     /// `line N, column M` with no `file_path`, then `source_line`, the line
     /// that the location starts on, with carets under the part that it covers.
