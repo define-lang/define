@@ -38,7 +38,7 @@ mod tests {
     use super::format;
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use googletest::prelude::*;
-    use indoc::indoc;
+    use indoc::{formatdoc, indoc};
     use source_rendering::{Position, SourceLocation};
 
     const BYTE_ORDER_MARK: char = '\u{feff}';
@@ -135,23 +135,51 @@ mod tests {
     #[gtest]
     fn windows_line_endings_become_line_feeds() -> Result<()> {
         verify_that!(
-            format("# x\r\na: {\r\n  b: \"y\"\r\n}\r\n"),
-            (some(eq("# x\na: {\n  b: \"y\"\n}\n")), is_empty())
+            format(indoc! {"
+                # x\r
+                a: {\r
+                  b: \"y\"\r
+                }\r
+            "}),
+            (
+                some(eq(indoc! {"
+                    # x
+                    a: {
+                      b: \"y\"
+                    }
+                "})),
+                is_empty()
+            )
         )
     }
 
     #[gtest]
     fn windows_line_endings_with_layout_errors() -> Result<()> {
         verify_that!(
-            format("a: {\r\n    b: 1\r\n}\r\n"),
-            (some(eq("a: {\n  b: 1\n}\n")), is_empty())
+            format(indoc! {"
+                a: {\r
+                    b: 1\r
+                }\r
+            "}),
+            (
+                some(eq(indoc! {"
+                    a: {
+                      b: 1
+                    }
+                "})),
+                is_empty()
+            )
         )
     }
 
     #[gtest]
     fn windows_line_endings_and_another_stopping_error_are_left_unchanged() -> Result<()> {
         verify_that!(
-            format("a: {\r\n  b: @\r\n}\r\n"),
+            format(indoc! {"
+                a: {\r
+                  b: @\r
+                }\r
+            "}),
             (
                 none(),
                 eq(&vec![SyntaxError {
@@ -165,26 +193,62 @@ mod tests {
     #[gtest]
     fn carriage_return_without_a_line_feed_is_deleted() -> Result<()> {
         verify_that!(
-            format("a: {\n  b: 1\r}\n"),
-            (some(eq("a: {\n  b: 1\n}\n")), is_empty())
+            format(indoc! {"
+                a: {
+                  b: 1\r}
+            "}),
+            (
+                some(eq(indoc! {"
+                    a: {
+                      b: 1
+                    }
+                "})),
+                is_empty()
+            )
         )
     }
 
     #[gtest]
     fn invisible_characters_outside_strings_are_deleted() -> Result<()> {
         verify_that!(
-            format(&format!(
-                "{BYTE_ORDER_MARK}a: {{\n\tb:\t1\n  c: \"\\t\"{ZERO_WIDTH_SPACE}\n}}\n"
-            )),
-            (some(eq("a: {\n  b: 1\n  c: \"\\t\"\n}\n")), is_empty())
+            format(&formatdoc! {"
+                {BYTE_ORDER_MARK}a: {{
+                \tb:\t1
+                  c: \"\\t\"{ZERO_WIDTH_SPACE}
+                }}
+            "}),
+            (
+                some(eq(indoc! {"
+                    a: {
+                      b: 1
+                      c: \"\\t\"
+                    }
+                "})),
+                is_empty()
+            )
         )
     }
 
     #[gtest]
     fn tabs_in_comments_are_deleted() -> Result<()> {
         verify_that!(
-            format("a: {\n  # x \t\n  # y\tz\n  b: 1\n}\n"),
-            (some(eq("a: {\n  # x\n  # yz\n  b: 1\n}\n")), is_empty())
+            format(indoc! {"
+                a: {
+                  # x \t
+                  # y\tz
+                  b: 1
+                }
+            "}),
+            (
+                some(eq(indoc! {"
+                    a: {
+                      # x
+                      # yz
+                      b: 1
+                    }
+                "})),
+                is_empty()
+            )
         )
     }
 

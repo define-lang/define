@@ -46,6 +46,7 @@ rust_binary(
     name = "generate_error_types",
     srcs = ["generate_error_types.rs"],
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     deps = [
         "//defcl/rust/parser",
         "//defcl/rust/semantics",

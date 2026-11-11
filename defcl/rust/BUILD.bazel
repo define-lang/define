@@ -30,6 +30,7 @@ rust_test(
         "//defcl/testdata/valid/schemas:schemas_descriptor_set",
     ],
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     rustc_env = {
         "INVALID_SEMANTICS_SCHEMAS": "$(rlocationpath //defcl/testdata/invalid/semantics/schemas:schemas_descriptor_set)",
         "VALID_SCHEMAS": "$(rlocationpath //defcl/testdata/valid/schemas:schemas_descriptor_set)",

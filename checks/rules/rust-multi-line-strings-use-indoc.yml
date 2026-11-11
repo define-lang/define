@@ -1,0 +1,20 @@
+id: rust-multi-line-strings-use-indoc
+language: rust
+severity: error
+message:
+  Write a string with more than one line of text over several lines in
+  `indoc!` or `formatdoc!`, so that it reads the way it prints.
+rule:
+  kind: string_literal
+  regex: '\\n(?:[^\\]|\\[^n])+\\n'
+  not:
+    any:
+      - inside:
+          kind: macro_invocation
+          stopBy: end
+          has:
+            field: macro
+            regex: "^(indoc|formatdoc)$"
+      # A line that ends in spaces cannot be written over several lines,
+      # since trailing spaces are removed from source files.
+      - regex: ' (\\n|"$)'

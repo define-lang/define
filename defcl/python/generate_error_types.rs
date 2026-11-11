@@ -3,6 +3,7 @@
 
 use defcl_parser::SyntaxErrorKind;
 use defcl_semantics::SemanticErrorKind;
+use indoc::indoc;
 use std::fmt::Write as _;
 use strum::VariantNames as _;
 
@@ -19,11 +20,13 @@ fn write_enum(module: &mut String, name: &str, docstring: &str, members: &[&str]
 }
 
 fn main() -> std::io::Result<()> {
-    let mut module = String::from(
-        "\"\"\"The kinds of DCL diagnostics, generated from the kinds of the Rust errors.\"\"\"\n\n\
-         from __future__ import annotations\n\n\
-         import enum\n",
-    );
+    let mut module = String::from(indoc! {r#"
+        """The kinds of DCL diagnostics, generated from the kinds of the Rust errors."""
+
+        from __future__ import annotations
+
+        import enum
+    "#});
     write_enum(
         &mut module,
         "SyntaxDiagnosticKind",

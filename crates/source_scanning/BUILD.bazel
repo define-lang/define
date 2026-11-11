@@ -21,6 +21,7 @@ rust_test(
     size = "small",
     crate = ":source_scanning",
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     deps = ["@crates//:googletest"],
 )
 

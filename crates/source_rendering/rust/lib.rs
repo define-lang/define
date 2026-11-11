@@ -275,6 +275,7 @@ mod tests {
             // One string, since rustfmt reindents the line after one that ends
             // in a backslash, and the combining character must stay escaped.
             eq(
+                // ast-grep-ignore: rust-multi-line-strings-use-indoc
                 "line 1, column 7\n    # a\\u{200b}b\\u{e0001}c\u{301}\\\n                         ^"
             )
         )

@@ -1,0 +1,20 @@
+id: rust-multi-line-strings-use-indoc
+snapshots:
+  "fn f() -> &'static [u8] {\n    b\"a: {\\n  b: 1\\n}\\n\"\n}\n":
+    labels:
+    - source: "b\"a: {\\n  b: 1\\n}\\n\""
+      style: primary
+      start: 30
+      end: 50
+  "fn f() -> &'static str {\n    \"a: {\\n  b: 1\\n}\\n\"\n}\n":
+    labels:
+    - source: "\"a: {\\n  b: 1\\n}\\n\""
+      style: primary
+      start: 29
+      end: 48
+  "fn f(name: &str) -> String {\n    format!(\"File \\\"{name}\\\"\\nline\\n\")\n}\n":
+    labels:
+    - source: "\"File \\\"{name}\\\"\\nline\\n\""
+      style: primary
+      start: 41
+      end: 66

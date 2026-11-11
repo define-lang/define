@@ -269,6 +269,7 @@ pub const fn low_bits(count: usize) -> u32 {
 mod tests {
     use super::*;
     use googletest::prelude::*;
+    use indoc::indoc;
 
     #[gtest]
     fn quoted_content_ending_at_delimiter_near_end_of_source() -> Result<()> {
@@ -297,7 +298,10 @@ mod tests {
     #[gtest]
     fn quoted_content_ending_at_escape() -> Result<()> {
         verify_that!(
-            quoted_content(b"a\\\"b\".\ndefine the potential position<standard:/after>.\n"),
+            quoted_content(indoc! {b"
+                a\\\"b\".
+                define the potential position<standard:/after>.
+            "}),
             eq(QuotedContent {
                 length: 1,
                 character_count: 1,
@@ -309,7 +313,10 @@ mod tests {
     #[gtest]
     fn quoted_content_ending_at_line_feed() -> Result<()> {
         verify_that!(
-            quoted_content(b"abc\ndefine the potential position<standard:/after>.\n"),
+            quoted_content(indoc! {b"
+                abc
+                define the potential position<standard:/after>.
+            "}),
             eq(QuotedContent {
                 length: 3,
                 character_count: 3,
@@ -321,7 +328,13 @@ mod tests {
     #[gtest]
     fn quoted_content_with_non_ascii_character() -> Result<()> {
         verify_that!(
-            quoted_content("café\".\ndefine the potential position<standard:/after>.\n".as_bytes()),
+            quoted_content(
+                indoc! {"
+                    café\".
+                    define the potential position<standard:/after>.
+                "}
+                .as_bytes()
+            ),
             eq(QuotedContent {
                 length: 5,
                 character_count: 4,
@@ -333,7 +346,10 @@ mod tests {
     #[gtest]
     fn quoted_content_with_unprintable_character() -> Result<()> {
         verify_that!(
-            quoted_content(b"a\tb\".\ndefine the potential position<standard:/after>.\n"),
+            quoted_content(indoc! {b"
+                a\tb\".
+                define the potential position<standard:/after>.
+            "}),
             eq(QuotedContent {
                 length: 3,
                 character_count: 3,
@@ -458,7 +474,10 @@ mod tests {
     #[gtest]
     fn rest_of_line_ending_at_line_feed() -> Result<()> {
         verify_that!(
-            rest_of_line(b"# a comment\ndefine the potential position<standard:/path>.\n"),
+            rest_of_line(indoc! {b"
+                # a comment
+                define the potential position<standard:/path>.
+            "}),
             eq(RestOfLine {
                 length: 11,
                 is_printable_ascii: true,
@@ -491,7 +510,10 @@ mod tests {
     #[gtest]
     fn rest_of_line_longer_than_one_vector() -> Result<()> {
         verify_that!(
-            rest_of_line(b"# A comment that is longer than one vector of thirty-two bytes.\nx\n"),
+            rest_of_line(indoc! {b"
+                # A comment that is longer than one vector of thirty-two bytes.
+                x
+            "}),
             eq(RestOfLine {
                 length: 63,
                 is_printable_ascii: true,
@@ -525,7 +547,13 @@ mod tests {
     #[gtest]
     fn rest_of_line_with_non_ascii_character_after_line_feed() -> Result<()> {
         verify_that!(
-            rest_of_line("# ascii\né\n".as_bytes()),
+            rest_of_line(
+                indoc! {"
+                    # ascii
+                    é
+                "}
+                .as_bytes()
+            ),
             eq(RestOfLine {
                 length: 7,
                 is_printable_ascii: true,

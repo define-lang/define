@@ -158,6 +158,7 @@ rust_test(
     size = "small",
     crate = ":vector_scan",
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     deps = ["@crates//:googletest"],
 )
 

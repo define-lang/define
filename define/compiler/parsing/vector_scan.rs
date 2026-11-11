@@ -742,11 +742,15 @@ fn long_line_end(source: &[u8], leading_space_count: usize) -> LineEnd {
 mod tests {
     use super::*;
     use googletest::prelude::*;
+    use indoc::indoc;
 
     #[gtest]
     fn name_content_with_fqun() -> Result<()> {
         verify_that!(
-            name_content(b"standard:/path>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                standard:/path>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 14,
                 character_count: 14,
@@ -766,7 +770,10 @@ mod tests {
     #[gtest]
     fn name_content_with_several_component_separators() -> Result<()> {
         verify_that!(
-            name_content(b"authority:universe:/a/b>.\ndefine the potential position<x>.\n"),
+            name_content(indoc! {b"
+                authority:universe:/a/b>.
+                define the potential position<x>.
+            "}),
             eq(NameContent {
                 length: 23,
                 character_count: 23,
@@ -887,7 +894,10 @@ mod tests {
     #[gtest]
     fn name_content_with_path_only() -> Result<()> {
         verify_that!(
-            name_content(b"/path>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                /path>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 5,
                 character_count: 5,
@@ -902,7 +912,10 @@ mod tests {
     #[gtest]
     fn name_content_with_space_before_path_is_not_global() -> Result<()> {
         verify_that!(
-            name_content(b"a b:/c>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                a b:/c>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 6,
                 character_count: 6,
@@ -917,7 +930,10 @@ mod tests {
     #[gtest]
     fn name_content_with_empty_path_is_not_global() -> Result<()> {
         verify_that!(
-            name_content(b"standard:/>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                standard:/>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 10,
                 character_count: 10,
@@ -932,7 +948,10 @@ mod tests {
     #[gtest]
     fn name_content_with_slash_after_letter_is_not_global() -> Result<()> {
         verify_that!(
-            name_content(b"x/y>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                x/y>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 3,
                 character_count: 3,
@@ -947,7 +966,10 @@ mod tests {
     #[gtest]
     fn name_content_ends_at_line_feed() -> Result<()> {
         verify_that!(
-            name_content(b"standard:/path\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                standard:/path
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 14,
                 character_count: 14,
@@ -967,7 +989,13 @@ mod tests {
     #[gtest]
     fn name_content_with_non_ascii_character() -> Result<()> {
         verify_that!(
-            name_content("café:/x>.\ndefine the potential position<standard:/other>.\n".as_bytes()),
+            name_content(
+                indoc! {"
+                    café:/x>.
+                    define the potential position<standard:/other>.
+                "}
+                .as_bytes()
+            ),
             eq(NameContent {
                 length: 8,
                 character_count: 7,
@@ -1102,9 +1130,10 @@ mod tests {
     #[gtest]
     fn global_name_content_with_fqun() -> Result<()> {
         verify_that!(
-            global_name_content(
-                b"standard:/path>.\ndefine the potential position<standard:/other>.\n"
-            ),
+            global_name_content(indoc! {b"
+                standard:/path>.
+                define the potential position<standard:/other>.
+            "}),
             eq(GlobalNameContent {
                 length: 14,
                 character_count: 14,
@@ -1156,7 +1185,10 @@ mod tests {
     #[gtest]
     fn name_content_of_local_name() -> Result<()> {
         verify_that!(
-            name_content(b"run>.\ndefine the potential position<standard:/other>.\n"),
+            name_content(indoc! {b"
+                run>.
+                define the potential position<standard:/other>.
+            "}),
             eq(NameContent {
                 length: 3,
                 character_count: 3,
@@ -1186,15 +1218,21 @@ mod tests {
     #[gtest]
     fn name_content_longer_than_one_vector() -> Result<()> {
         verify_that!(
-            name_content(
-                b"multiverse:authority.example:universe:/a/very/long/path>.\ndefine the potential position<x>.\n"
-            ),
+            name_content(indoc! {b"
+                multiverse:authority.example:universe:/a/very/long/path>.
+                define the potential position<x>.
+            "}),
             eq(NameContent {
                 length: 55,
                 character_count: 55,
                 is_printable_ascii: true,
                 is_global_name: true,
-                fqun_separators: Some(FqunSeparators { count: NonZeroU32::new(3).or_fail()?, first: 10, second: 28, last: 37 }),
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(3).or_fail()?,
+                    first: 10,
+                    second: 28,
+                    last: 37
+                }),
                 is_local_name: false,
             })
         )
@@ -1443,7 +1481,10 @@ mod tests {
     #[gtest]
     fn line_end_at_line_feed() -> Result<()> {
         verify_that!(
-            line_end(b"\n# a comment\n"),
+            line_end(indoc! {b"
+
+                # a comment
+            "}),
             eq(LineEnd::EndOrAsciiComment {
                 length: 0,
                 leading_space_count: 0
@@ -1465,7 +1506,10 @@ mod tests {
     #[gtest]
     fn line_end_at_comment() -> Result<()> {
         verify_that!(
-            line_end(b"# a comment\ndefine the potential position<standard:/path>.\n"),
+            line_end(indoc! {b"
+                # a comment
+                define the potential position<standard:/path>.
+            "}),
             eq(LineEnd::EndOrAsciiComment {
                 length: 11,
                 leading_space_count: 0
@@ -1476,7 +1520,10 @@ mod tests {
     #[gtest]
     fn line_end_at_comment_after_spaces() -> Result<()> {
         verify_that!(
-            line_end(b"    # a comment\ndefine the potential position<standard:/path>.\n"),
+            line_end(indoc! {b"
+                    # a comment
+                define the potential position<standard:/path>.
+            "}),
             eq(LineEnd::EndOrAsciiComment {
                 length: 15,
                 leading_space_count: 4
@@ -1498,7 +1545,10 @@ mod tests {
     #[gtest]
     fn line_end_at_comment_longer_than_one_vector() -> Result<()> {
         verify_that!(
-            line_end(b"  # A comment that is longer than one vector of bytes.\nx\n"),
+            line_end(indoc! {b"
+                  # A comment that is longer than one vector of bytes.
+                x
+            "}),
             eq(LineEnd::EndOrAsciiComment {
                 length: 54,
                 leading_space_count: 2
@@ -1659,7 +1709,14 @@ mod tests {
 
     #[gtest]
     fn line_end_at_comment_after_more_than_one_vector_of_spaces() {
-        let source = [&[b' '; 40][..], b"# a comment\nx\n"].concat();
+        let source = [
+            &[b' '; 40][..],
+            indoc! {b"
+                # a comment
+                x
+            "},
+        ]
+        .concat();
         expect_that!(
             line_end(&source),
             eq(LineEnd::EndOrAsciiComment {
@@ -1687,7 +1744,14 @@ mod tests {
 
     #[gtest]
     fn line_end_at_two_vectors_of_spaces_before_line_feed() {
-        let source = [&[b' '; 64][..], b"\nx\n"].concat();
+        let source = [
+            &[b' '; 64][..],
+            indoc! {b"
+
+                x
+            "},
+        ]
+        .concat();
         expect_that!(
             line_end(&source),
             eq(LineEnd::Unusual {

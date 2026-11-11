@@ -98,6 +98,7 @@ mod tests {
     use defcl_parser::{SyntaxError, SyntaxErrorKind};
     use defcl_semantics::{FileDescriptorSet, SchemaError, SemanticError, SemanticErrorKind};
     use googletest::prelude::*;
+    use indoc::indoc;
     use prost::Message as _;
     use runfiles::Runfiles;
     use source_rendering::{Position, SourceLocation};
@@ -220,7 +221,11 @@ mod tests {
     fn layout_errors_and_semantic_errors() -> Result<()> {
         verify_that!(
             validate(
-                "project: {\n size: 1\n}\n",
+                indoc! {"
+                    project: {
+                     size: 1
+                    }
+                "},
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             ),
@@ -252,7 +257,12 @@ mod tests {
     fn file_with_only_layout_errors_is_understood() -> Result<()> {
         verify_that!(
             validate(
-                "project: {\n  universe_name: \"example\"\n\n}\n",
+                indoc! {"
+                    project: {
+                      universe_name: \"example\"
+
+                    }
+                "},
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             ),
@@ -313,7 +323,11 @@ mod tests {
             )
             .or_fail()?,
             (
-                ok(eq("a: {\n  b: @\n}\n")),
+                ok(eq(indoc! {"
+                    a: {
+                      b: @
+                    }
+                "})),
                 ok(eq(&FileErrors {
                     syntax_errors: vec![SyntaxError {
                         kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
@@ -345,7 +359,11 @@ mod tests {
             )
             .or_fail()?,
             (
-                err(eq(b"a: {\n  b: \"caf\xc3\xa9 \xff\"\n}\n")),
+                err(eq(indoc! {b"
+                    a: {
+                      b: \"caf\xc3\xa9 \xff\"
+                    }
+                "})),
                 ok(eq(&FileErrors {
                     syntax_errors: vec![SyntaxError {
                         kind: SyntaxErrorKind::InvalidEncoding { byte: 0xff },

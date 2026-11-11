@@ -320,7 +320,7 @@ mod tests {
 
     #[gtest]
     fn line_feed_and_spaces_near_end_of_source() -> Result<()> {
-        verify_that!(line_feed_and_spaces(b"\n  }\n"), some(eq((2, b'}'))))
+        verify_that!(line_feed_and_spaces(b"\n  }"), some(eq((2, b'}'))))
     }
 
     #[gtest]

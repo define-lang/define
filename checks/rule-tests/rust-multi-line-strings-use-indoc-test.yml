@@ -1,0 +1,54 @@
+id: rust-multi-line-strings-use-indoc
+valid:
+  - |
+    fn f() -> &'static str {
+        "a: {\n"
+    }
+  - |
+    fn f() -> &'static str {
+        "\n\n"
+    }
+  - |
+    fn f() -> &'static str {
+        indoc! {"
+            a: {
+              b: 1
+            }
+        "}
+    }
+  - |
+    fn f(name: &str) -> String {
+        formatdoc!("
+            File \"{name}\"
+            line
+        ")
+    }
+  - |
+    fn f() -> Vec<u8> {
+        parse(indoc! {b"a: {\n  b: 1\n}\n"})
+    }
+  - |
+    fn f() -> &'static str {
+        "a: 1 \n  b: 2\n"
+    }
+  - |
+    fn f() -> &'static str {
+        "a: {\n  b: 1\n}\n "
+    }
+  - |
+    fn f() -> &'static str {
+        "a\\nb\\nc"
+    }
+invalid:
+  - |
+    fn f() -> &'static str {
+        "a: {\n  b: 1\n}\n"
+    }
+  - |
+    fn f() -> &'static [u8] {
+        b"a: {\n  b: 1\n}\n"
+    }
+  - |
+    fn f(name: &str) -> String {
+        format!("File \"{name}\"\nline\n")
+    }

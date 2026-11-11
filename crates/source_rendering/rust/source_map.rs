@@ -203,9 +203,21 @@ mod tests {
 
     #[gtest]
     fn a_registered_file_shows_its_source_line() -> Result<()> {
-        let path = write_file("unchanged.dfn", "first\n    second line\n")?;
+        let path = write_file(
+            "unchanged.dfn",
+            indoc! {"
+                first
+                    second line
+            "},
+        )?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"first\n    second line\n");
+        source_map.register_file(
+            &path,
+            indoc! {b"
+                first
+                    second line
+            "},
+        );
         verify_that!(
             source_map.render_in_file(location(2, 5, 10), &path),
             eq(&formatdoc! {r#"
@@ -340,7 +352,10 @@ mod tests {
 
     #[gtest]
     fn the_in_memory_source_shows_its_source_line() -> Result<()> {
-        let source_map = SourceMap::new(Some(String::from("a\nb c\n")));
+        let source_map = SourceMap::new(Some(String::from(indoc! {"
+            a
+            b c
+        "})));
         verify_that!(
             source_map.render_in_memory(location(2, 3, 3)),
             ok(eq(indoc! {"

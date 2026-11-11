@@ -3,6 +3,7 @@ use crate::{
     SyntaxError, SyntaxErrorKind, TopLevelMessage, Value, decode, parse,
 };
 use googletest::prelude::*;
+use indoc::{formatdoc, indoc};
 use source_rendering::{Position, SourceLocation};
 
 /// A field name written in ASCII on one line.
@@ -670,7 +671,13 @@ mod valid_source {
     #[gtest]
     fn columns_count_characters() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: \"café\"\n  # é\n  c: 1\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: \"café\"
+                  # é
+                  c: 1
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -695,7 +702,11 @@ mod valid_source {
     #[gtest]
     fn fraction_with_zero_before_last_digit() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: 1.05\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: 1.05
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -714,7 +725,11 @@ mod valid_source {
     #[gtest]
     fn shortest_escapes() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: \"\\0\\x4\"\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: \"\\0\\x4\"
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -736,7 +751,14 @@ mod valid_source {
     #[gtest]
     fn comment_after_last_element() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: [\n    1\n    # one\n  ]\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: [
+                    1
+                    # one
+                  ]
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -758,7 +780,12 @@ mod valid_source {
     #[gtest]
     fn comment_text_that_starts_with_spaces() -> Result<()> {
         verify_that!(
-            parse("a: {\n  #   |\n  b: 1\n}\n"),
+            parse(indoc! {"
+                a: {
+                  #   |
+                  b: 1
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -774,7 +801,12 @@ mod valid_source {
     #[gtest]
     fn comment_without_text() -> Result<()> {
         verify_that!(
-            parse("a: {\n  #\n  b: 1\n}\n"),
+            parse(indoc! {"
+                a: {
+                  #
+                  b: 1
+                }
+            "}),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
                     name("a", 1, 1),
@@ -794,7 +826,11 @@ mod invalid_layout {
     #[gtest]
     fn field_indented_too_little() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n b: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                 b: 1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
                 location: Some(location(2, 1, 2, 1)),
@@ -805,7 +841,11 @@ mod invalid_layout {
     #[gtest]
     fn field_not_indented() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\nb: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                b: 1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
                 location: Some(location(2, 1, 2, 1)),
@@ -816,7 +856,11 @@ mod invalid_layout {
     #[gtest]
     fn close_brace_indented() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: 1\n  }\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: 1
+                  }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 0 },
                 location: Some(location(3, 1, 3, 2)),
@@ -827,7 +871,13 @@ mod invalid_layout {
     #[gtest]
     fn element_indented_too_little() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: [\n   1\n  ]\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: [
+                   1
+                  ]
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 4 },
                 location: Some(location(3, 1, 3, 3)),
@@ -838,7 +888,12 @@ mod invalid_layout {
     #[gtest]
     fn comment_indented_too_little() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n # c\n  b: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                 # c
+                  b: 1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongIndentation { expected_spaces: 2 },
                 location: Some(location(2, 1, 2, 1)),
@@ -849,7 +904,10 @@ mod invalid_layout {
     #[gtest]
     fn field_on_the_line_of_the_open_brace() -> Result<()> {
         verify_eq!(
-            layout_errors("a: { b: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: { b: 1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
                 location: Some(location(1, 6, 1, 6)),
@@ -860,7 +918,10 @@ mod invalid_layout {
     #[gtest]
     fn close_brace_on_the_line_of_the_last_field() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: 1 }\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: 1 }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
                 location: Some(location(2, 8, 2, 8)),
@@ -871,7 +932,11 @@ mod invalid_layout {
     #[gtest]
     fn two_fields_on_one_line() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: 1 c: 2\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: 1 c: 2
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::MissingLineBreak,
                 location: Some(location(2, 8, 2, 8)),
@@ -882,7 +947,11 @@ mod invalid_layout {
     #[gtest]
     fn elements_on_one_line() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: [1, 2]\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: [1, 2]
+                }
+            "})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::MissingLineBreak,
@@ -936,7 +1005,12 @@ mod invalid_layout {
     #[gtest]
     fn tab_in_comment() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  # c \t\n  b: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  # c \t
+                  b: 1
+                }
+            "})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TrailingWhitespace,
@@ -953,9 +1027,17 @@ mod invalid_layout {
     #[gtest]
     fn invisible_characters_in_comments() -> Result<()> {
         verify_eq!(
-            layout_errors(&format!(
-                "# {RIGHT_TO_LEFT_OVERRIDE}\na: {{\n  b: 1 # {BYTE_ORDER_MARK}\n  c: [\n    # {ZERO_WIDTH_SPACE}\n  ]\n  d # {ZERO_WIDTH_SPACE}\n  : 1\n}}\n"
-            ))?,
+            layout_errors(&formatdoc! {"
+                # {RIGHT_TO_LEFT_OVERRIDE}
+                a: {{
+                  b: 1 # {BYTE_ORDER_MARK}
+                  c: [
+                    # {ZERO_WIDTH_SPACE}
+                  ]
+                  d # {ZERO_WIDTH_SPACE}
+                  : 1
+                }}
+            "})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TrailingWhitespace,
@@ -1002,7 +1084,12 @@ mod invalid_layout {
     #[gtest]
     fn tabs_that_start_lines_get_one_error() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n\tb: 1\n\tc: 2\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                \tb: 1
+                \tc: 2
+                }
+            "})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::TabNotAllowed,
@@ -1023,9 +1110,13 @@ mod invalid_layout {
     #[gtest]
     fn invisible_characters_between_tokens() -> Result<()> {
         verify_eq!(
-            layout_errors(&format!(
-                "a: {{\n  b{ZERO_WIDTH_SPACE}: 1\n  c:{ZERO_WIDTH_SPACE} 2\n  d: 3{ZERO_WIDTH_SPACE}\n}}\n"
-            ))?,
+            layout_errors(&formatdoc! {"
+                a: {{
+                  b{ZERO_WIDTH_SPACE}: 1
+                  c:{ZERO_WIDTH_SPACE} 2
+                  d: 3{ZERO_WIDTH_SPACE}
+                }}
+            "})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::InvisibleCharacter {
@@ -1052,7 +1143,14 @@ mod invalid_layout {
     #[gtest]
     fn tab_before_a_comma() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: [\n    1\t,\n    2\n  ]\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: [
+                    1\t,
+                    2
+                  ]
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
                 location: Some(location(3, 6, 3, 6)),
@@ -1063,7 +1161,12 @@ mod invalid_layout {
     #[gtest]
     fn direction_marks_in_comments() -> Result<()> {
         verify_eq!(
-            layout_errors(&format!("a: {{\n  # {RIGHT_TO_LEFT_MARK}\n  b: 1\n}}\n"))?,
+            layout_errors(&formatdoc! {"
+                a: {{
+                  # {RIGHT_TO_LEFT_MARK}
+                  b: 1
+                }}
+            "})?,
             vec![]
         )
     }
@@ -1093,7 +1196,10 @@ mod invalid_layout {
     #[gtest]
     fn comment_after_the_last_message_without_a_line_feed() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: 1\n} # c")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: 1
+                } # c"})?,
             vec![
                 SyntaxError {
                     kind: SyntaxErrorKind::CommentNotOnOwnLine,
@@ -1110,7 +1216,11 @@ mod invalid_layout {
     #[gtest]
     fn comment_not_on_its_own_line() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: 1 # c\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: 1 # c
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CommentNotOnOwnLine,
                 location: Some(location(2, 8, 2, 10)),
@@ -1121,7 +1231,12 @@ mod invalid_layout {
     #[gtest]
     fn comment_without_space() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  #c\n  b: 1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  #c
+                  b: 1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::CommentSpacing,
                 location: Some(location(2, 3, 2, 3)),
@@ -1132,7 +1247,11 @@ mod invalid_layout {
     #[gtest]
     fn no_space_after_field_colon() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b:1\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b:1
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::WrongSpacingAfterColon,
                 location: Some(location(2, 5, 2, 5)),
@@ -1143,7 +1262,12 @@ mod invalid_layout {
     #[gtest]
     fn empty_message_value_over_two_lines() -> Result<()> {
         verify_eq!(
-            layout_errors("a: {\n  b: {\n  }\n}\n")?,
+            layout_errors(indoc! {"
+                a: {
+                  b: {
+                  }
+                }
+            "})?,
             vec![SyntaxError {
                 kind: SyntaxErrorKind::EmptyMessageValue,
                 location: Some(location(2, 6, 3, 3)),
@@ -1193,7 +1317,11 @@ mod invalid_layout {
     #[gtest]
     fn layout_errors_before_the_error_that_stops_the_parse() -> Result<()> {
         verify_that!(
-            parse("a: {\n b: @\n}\n"),
+            parse(indoc! {"
+                a: {
+                 b: @
+                }
+            "}),
             eq(&ParseResult {
                 file: None,
                 errors: vec![
@@ -1933,8 +2061,20 @@ mod invalid_characters {
     #[gtest]
     fn valid_utf8_is_decoded() -> Result<()> {
         verify_that!(
-            decode("a: {\n  b: \"café\"\n}\n".as_bytes().to_vec()),
-            ok(eq("a: {\n  b: \"café\"\n}\n"))
+            decode(
+                indoc! {"
+                    a: {
+                      b: \"café\"
+                    }
+                "}
+                .as_bytes()
+                .to_vec()
+            ),
+            ok(eq(indoc! {"
+                a: {
+                  b: \"café\"
+                }
+            "}))
         )
     }
 
@@ -1985,7 +2125,11 @@ mod invalid_characters {
 
     #[gtest]
     fn invisible_character_in_a_field_name() -> Result<()> {
-        let source = format!("a: {{\n  na{ZERO_WIDTH_SPACE}me: 1\n}}\n");
+        let source = formatdoc! {"
+            a: {{
+              na{ZERO_WIDTH_SPACE}me: 1
+            }}
+        "};
         verify_that!(
             parse(&source),
             eq(&stopped_by(SyntaxError {
@@ -1999,7 +2143,11 @@ mod invalid_characters {
 
     #[gtest]
     fn invisible_characters_in_a_number() -> Result<()> {
-        let source = format!("a: {{\n  b: 1{ZERO_WIDTH_SPACE}\t0\n}}\n");
+        let source = formatdoc! {"
+            a: {{
+              b: 1{ZERO_WIDTH_SPACE}\t0
+            }}
+        "};
         verify_that!(
             parse(&source),
             eq(&stopped_by(SyntaxError {
@@ -2014,7 +2162,11 @@ mod invalid_characters {
     #[gtest]
     fn tab_in_an_enum_value() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: AB\tC\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: AB\tC
+                }
+            "}),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::TabNotAllowed,
                 location: Some(location(2, 8, 2, 8)),
@@ -2025,7 +2177,11 @@ mod invalid_characters {
     #[gtest]
     fn tab_in_string() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: \"x\ty\"\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: \"x\ty\"
+                }
+            "}),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::ControlCharacter { character: '\t' },
                 location: Some(location(2, 8, 2, 8)),
@@ -2036,7 +2192,11 @@ mod invalid_characters {
     #[gtest]
     fn carriage_return_in_string() -> Result<()> {
         verify_that!(
-            parse("a: {\n  b: \"x\ry\"\n}\n"),
+            parse(indoc! {"
+                a: {
+                  b: \"x\ry\"
+                }
+            "}),
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::CarriageReturnNotAllowed,
                 location: Some(location(2, 8, 2, 8)),
@@ -2046,7 +2206,11 @@ mod invalid_characters {
 
     #[gtest]
     fn invisible_character_in_string() -> Result<()> {
-        let source = format!("a: {{\n  b: \"café{RIGHT_TO_LEFT_OVERRIDE}\"\n}}\n");
+        let source = formatdoc! {"
+            a: {{
+              b: \"café{RIGHT_TO_LEFT_OVERRIDE}\"
+            }}
+        "};
         verify_that!(
             parse(&source),
             eq(&stopped_by(SyntaxError {
@@ -2060,7 +2224,11 @@ mod invalid_characters {
 
     #[gtest]
     fn direction_mark_in_string() -> Result<()> {
-        let source = format!("a: {{\n  b: \"x{LEFT_TO_RIGHT_MARK}\"\n}}\n");
+        let source = formatdoc! {"
+            a: {{
+              b: \"x{LEFT_TO_RIGHT_MARK}\"
+            }}
+        "};
         verify_that!(
             parse(&source),
             eq(&stopped_by(SyntaxError {
@@ -2074,7 +2242,11 @@ mod invalid_characters {
 
     #[gtest]
     fn byte_order_mark_in_string() -> Result<()> {
-        let source = format!("a: {{\n  b: \"{BYTE_ORDER_MARK}\"\n}}\n");
+        let source = formatdoc! {"
+            a: {{
+              b: \"{BYTE_ORDER_MARK}\"
+            }}
+        "};
         verify_that!(
             parse(&source),
             eq(&stopped_by(SyntaxError {

@@ -57,7 +57,12 @@ mod tests {
     #[gtest]
     fn renders_a_location_with_the_line_that_it_starts_on() -> Result<()> {
         verify_that!(
-            SourceLines::new("project: {\n    name: @\n}\n").render(
+            SourceLines::new(indoc! {"
+                project: {
+                    name: @
+                }
+            "})
+            .render(
                 SourceLocation {
                     start: Position {
                         line: 2,

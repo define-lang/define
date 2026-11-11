@@ -4,6 +4,7 @@ use clap::error::ErrorKind;
 use clap::{CommandFactory as _, Parser};
 use defcl_formatter::format;
 use defcl_parser::{DecodeError, SyntaxError, decode};
+use indoc::formatdoc;
 use rayon::iter::{IntoParallelRefIterator as _, ParallelIterator as _};
 use source_rendering::SourceLines;
 use std::fmt::Write as _;
@@ -162,7 +163,10 @@ fn report_file(path: &Path, check: bool) -> FileReport {
         },
         Err(error) => FileReport {
             changed: false,
-            errors: format!("File \"{name}\"\n{error}\n"),
+            errors: formatdoc! {"
+                File \"{name}\"
+                {error}
+            "},
         },
     }
 }
@@ -236,6 +240,7 @@ mod tests {
     use super::{Arguments, Outcome, format_files, format_standard_input};
     use clap::CommandFactory as _;
     use googletest::prelude::*;
+    use indoc::{formatdoc, indoc};
     use std::fmt::Write as _;
     use std::path::PathBuf;
 
@@ -259,7 +264,15 @@ mod tests {
     fn formats_each_file() -> Result<()> {
         let directory = test_directory("formats_each_file")?;
         std::fs::write(directory.join("a.defcl"), "a: { b: 1 }\n").or_fail()?;
-        std::fs::write(directory.join("c.defcl"), "c: {\n  d: 1\n}\n").or_fail()?;
+        std::fs::write(
+            directory.join("c.defcl"),
+            indoc! {"
+                c: {
+                  d: 1
+                }
+            "},
+        )
+        .or_fail()?;
         let mut unformatted = Vec::new();
         let mut errors = Vec::new();
         let outcome = format_files(
@@ -274,11 +287,19 @@ mod tests {
         verify_that!(errors, is_empty())?;
         verify_that!(
             std::fs::read_to_string(directory.join("a.defcl")).or_fail()?,
-            eq("a: {\n  b: 1\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: 1
+                }
+            "})
         )?;
         verify_that!(
             std::fs::read_to_string(directory.join("c.defcl")).or_fail()?,
-            eq("c: {\n  d: 1\n}\n")
+            eq(indoc! {"
+                c: {
+                  d: 1
+                }
+            "})
         )
     }
 
@@ -286,7 +307,15 @@ mod tests {
     fn reports_the_errors_that_a_file_still_has() -> Result<()> {
         let directory = test_directory("reports_the_errors_that_a_file_still_has")?;
         let path = directory.join("a.defcl");
-        std::fs::write(&path, "a: {\n    b: {}\n}\n").or_fail()?;
+        std::fs::write(
+            &path,
+            indoc! {"
+                a: {
+                    b: {}
+                }
+            "},
+        )
+        .or_fail()?;
         let mut unformatted = Vec::new();
         let mut errors = Vec::new();
         let outcome = format_files(
@@ -300,14 +329,21 @@ mod tests {
         verify_that!(unformatted, is_empty())?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!(
-                "File \"{}\", line 2, column 6\n    b: {{}}\n       ^^\nEmpty message values not allowed - leave the field out\n",
-                path.display()
-            ))
+            eq(&formatdoc! {"
+                File \"{}\", line 2, column 6
+                    b: {{}}
+                       ^^
+                Empty message values not allowed - leave the field out
+            ",
+            path.display()})
         )?;
         verify_that!(
             std::fs::read_to_string(&path).or_fail()?,
-            eq("a: {\n  b: {}\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: {}
+                }
+            "})
         )
     }
 
@@ -317,7 +353,15 @@ mod tests {
         let unformatted_path = directory.join("a.defcl");
         let formatted_path = directory.join("c.defcl");
         std::fs::write(&unformatted_path, "a: { b: 1 }\n").or_fail()?;
-        std::fs::write(&formatted_path, "c: {\n  d: 1\n}\n").or_fail()?;
+        std::fs::write(
+            &formatted_path,
+            indoc! {"
+                c: {
+                  d: 1
+                }
+            "},
+        )
+        .or_fail()?;
         let mut unformatted = Vec::new();
         let mut errors = Vec::new();
         let outcome = format_files(
@@ -344,7 +388,15 @@ mod tests {
         let directory = test_directory("check_reports_a_syntax_error_over_an_unformatted_file")?;
         let with_error = directory.join("a.defcl");
         let unformatted_path = directory.join("c.defcl");
-        std::fs::write(&with_error, "a: {\n  b: {}\n}\n").or_fail()?;
+        std::fs::write(
+            &with_error,
+            indoc! {"
+                a: {
+                  b: {}
+                }
+            "},
+        )
+        .or_fail()?;
         std::fs::write(&unformatted_path, "c: { d: 1 }\n").or_fail()?;
         let mut unformatted = Vec::new();
         let mut errors = Vec::new();
@@ -362,10 +414,13 @@ mod tests {
         )?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!(
-                "File \"{}\", line 2, column 6\n    b: {{}}\n       ^^\nEmpty message values not allowed - leave the field out\n",
-                with_error.display()
-            ))
+            eq(&formatdoc! {"
+                File \"{}\", line 2, column 6
+                    b: {{}}
+                       ^^
+                Empty message values not allowed - leave the field out
+            ",
+            with_error.display()})
         )
     }
 
@@ -390,11 +445,19 @@ mod tests {
         let not_found = std::fs::read(&missing).err().or_fail()?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!("File \"{}\"\n{not_found}\n", missing.display()))
+            eq(&formatdoc! {"
+                File \"{}\"
+                {not_found}
+            ",
+            missing.display()})
         )?;
         verify_that!(
             std::fs::read_to_string(&present).or_fail()?,
-            eq("a: {\n  b: 1\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: 1
+                }
+            "})
         )
     }
 
@@ -403,7 +466,15 @@ mod tests {
         let directory =
             test_directory("reports_a_file_that_is_not_valid_utf8_without_changing_it")?;
         let path = directory.join("a.defcl");
-        std::fs::write(&path, b"a: {\n    b: \"\xff\"\n}\n").or_fail()?;
+        std::fs::write(
+            &path,
+            indoc! {b"
+                a: {
+                    b: \"\xff\"
+                }
+            "},
+        )
+        .or_fail()?;
         let mut unformatted = Vec::new();
         let mut errors = Vec::new();
         let outcome = format_files(
@@ -417,14 +488,21 @@ mod tests {
         verify_that!(unformatted, is_empty())?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!(
-                "File \"{}\", line 2, column 9\n    b: \"{REPLACEMENT_CHARACTER}\"\n        ^\nInvalid UTF-8: the byte \\xff does not start a valid character\n",
-                path.display()
-            ))
+            eq(&formatdoc! {"
+                File \"{}\", line 2, column 9
+                    b: \"{REPLACEMENT_CHARACTER}\"
+                        ^
+                Invalid UTF-8: the byte \\xff does not start a valid character
+            ",
+            path.display()})
         )?;
         verify_that!(
             std::fs::read(&path).or_fail()?,
-            eq(b"a: {\n    b: \"\xff\"\n}\n")
+            eq(indoc! {b"
+                a: {
+                    b: \"\xff\"
+                }
+            "})
         )
     }
 
@@ -470,10 +548,11 @@ mod tests {
         verify_that!(unformatted, is_empty())?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!(
-                "File \"{}\"\nThe file has no top-level message\n",
-                path.display()
-            ))
+            eq(&formatdoc! {"
+                File \"{}\"
+                The file has no top-level message
+            ",
+            path.display()})
         )
     }
 
@@ -491,7 +570,11 @@ mod tests {
         verify_that!(outcome, eq(Outcome::Formatted))?;
         verify_that!(
             String::from_utf8(output).or_fail()?,
-            eq("a: {\n  b: 1\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: 1
+                }
+            "})
         )?;
         verify_that!(errors, is_empty())
     }
@@ -502,7 +585,12 @@ mod tests {
         let mut errors = Vec::new();
         let outcome = format_standard_input(
             false,
-            &mut b"a: {\n  b: 1\n}\n".as_slice(),
+            &mut indoc! {b"
+                a: {
+                  b: 1
+                }
+            "}
+            .as_slice(),
             &mut output,
             &mut errors,
         )
@@ -510,7 +598,11 @@ mod tests {
         verify_that!(outcome, eq(Outcome::Formatted))?;
         verify_that!(
             String::from_utf8(output).or_fail()?,
-            eq("a: {\n  b: 1\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: 1
+                }
+            "})
         )?;
         verify_that!(errors, is_empty())
     }
@@ -540,7 +632,12 @@ mod tests {
         let mut errors = Vec::new();
         let outcome = format_standard_input(
             true,
-            &mut b"a: {\n  b: 1\n}\n".as_slice(),
+            &mut indoc! {b"
+                a: {
+                  b: 1
+                }
+            "}
+            .as_slice(),
             &mut output,
             &mut errors,
         )
@@ -556,7 +653,12 @@ mod tests {
         let mut errors = Vec::new();
         let outcome = format_standard_input(
             false,
-            &mut b"a: {\n    b: {}\n}\n".as_slice(),
+            &mut indoc! {b"
+                a: {
+                    b: {}
+                }
+            "}
+            .as_slice(),
             &mut output,
             &mut errors,
         )
@@ -564,13 +666,20 @@ mod tests {
         verify_that!(outcome, eq(Outcome::Errors))?;
         verify_that!(
             String::from_utf8(output).or_fail()?,
-            eq("a: {\n  b: {}\n}\n")
+            eq(indoc! {"
+                a: {
+                  b: {}
+                }
+            "})
         )?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(
-                "File \"<standard input>\", line 2, column 6\n    b: {}\n       ^^\nEmpty message values not allowed - leave the field out\n"
-            )
+            eq(indoc! {"
+                File \"<standard input>\", line 2, column 6
+                    b: {}
+                       ^^
+                Empty message values not allowed - leave the field out
+            "})
         )
     }
 
@@ -580,18 +689,33 @@ mod tests {
         let mut errors = Vec::new();
         let outcome = format_standard_input(
             false,
-            &mut b"a: {\n    b: \"\xff\"\n}\n".as_slice(),
+            &mut indoc! {b"
+                a: {
+                    b: \"\xff\"
+                }
+            "}
+            .as_slice(),
             &mut output,
             &mut errors,
         )
         .or_fail()?;
         verify_that!(outcome, eq(Outcome::Errors))?;
-        verify_that!(output, eq(b"a: {\n    b: \"\xff\"\n}\n"))?;
+        verify_that!(
+            output,
+            eq(indoc! {b"
+                a: {
+                    b: \"\xff\"
+                }
+            "})
+        )?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq(&format!(
-                "File \"<standard input>\", line 2, column 9\n    b: \"{REPLACEMENT_CHARACTER}\"\n        ^\nInvalid UTF-8: the byte \\xff does not start a valid character\n"
-            ))
+            eq(&formatdoc! {"
+                File \"<standard input>\", line 2, column 9
+                    b: \"{REPLACEMENT_CHARACTER}\"
+                        ^
+                Invalid UTF-8: the byte \\xff does not start a valid character
+            "})
         )
     }
 
@@ -614,7 +738,10 @@ mod tests {
         verify_that!(output, is_empty())?;
         verify_that!(
             String::from_utf8(errors).or_fail()?,
-            eq("File \"<standard input>\"\nis a directory\n")
+            eq(indoc! {"
+                File \"<standard input>\"
+                is a directory
+            "})
         )
     }
 }

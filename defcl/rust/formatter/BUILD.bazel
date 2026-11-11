@@ -9,6 +9,7 @@ rust_binary(
     name = "defclfmt",
     srcs = ["main.rs"],
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     visibility = ["//tools/format:__pkg__"],
     deps = [
         ":formatter",
@@ -24,6 +25,7 @@ rust_test(
     size = "small",
     crate = ":defclfmt",
     lint_config = lint_config(),
+    proc_macro_deps = ["@crates//:indoc"],
     deps = ["@crates//:googletest"],
 )
 
