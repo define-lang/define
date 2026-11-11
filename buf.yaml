@@ -2,12 +2,19 @@ version: v2
 deps:
   - buf.build/bufbuild/protovalidate
 modules:
+  # The repository root, so that imports have the paths that Bazel's
+  # proto_library resolves, and schemas in define can import defcl's. Only
+  # the schema directories are included, so buf does not walk the whole
+  # repository.
+  - path: .
+    includes:
+      - defcl/schema
+      - define/config
+  # The buf plugin's test schemas import each other from defcl.
   - path: defcl
-    # Bazel's proto_library resolves the test schemas' imports from the
-    # repository root, not from this module.
     excludes:
+      - defcl/schema
       - defcl/testdata
-  - path: define
 lint:
   use:
     - STANDARD
