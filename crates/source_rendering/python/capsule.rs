@@ -1,5 +1,5 @@
 //! Lets other Python extensions, such as Define's parser and defcl, construct
-//! `source_rendering.python.rendering.SourceLocation`s from Rust. Only the
+//! `crates.source_rendering.python.rendering.SourceLocation`s from Rust. Only the
 //! rendering extension can construct the class natively, so it exports its
 //! constructor in a capsule, which this crate imports once and calls.
 
@@ -20,11 +20,11 @@ pub type NewSourceLocation =
 
 /// The name of the capsule, which is also where the rendering extension's module
 /// holds it.
-pub const CAPSULE_NAME: &CStr = c"source_rendering.python.rendering._new_source_location";
+pub const CAPSULE_NAME: &CStr = c"crates.source_rendering.python.rendering._new_source_location";
 
 static CONSTRUCTOR: PyOnceLock<NewSourceLocation> = PyOnceLock::new();
 
-/// A new `source_rendering.python.rendering.SourceLocation` for `location` in
+/// A new `crates.source_rendering.python.rendering.SourceLocation` for `location` in
 /// the file at `file_path`.
 ///
 /// # Errors
@@ -58,7 +58,7 @@ fn import_constructor(py: Python<'_>) -> PyResult<NewSourceLocation> {
     // Importing a capsule only imports the top-level package and then looks up
     // each name after it, so a submodule that nothing has imported yet would
     // not be found.
-    let _: Bound<'_, PyModule> = py.import("source_rendering.python.rendering")?;
+    let _: Bound<'_, PyModule> = py.import("crates.source_rendering.python.rendering")?;
     let pointer = PyCapsule::import_pointer(py, CAPSULE_NAME)?;
     // SAFETY: The rendering extension's capsule points to a static
     // `NewSourceLocation`.

@@ -18,7 +18,7 @@ rust_library(
         "//define/compiler/parsing:__pkg__",
     ],
     deps = [
-        "//source_rendering/rust:source_rendering",
+        "//crates/source_rendering/rust:source_rendering",
         "@crates//:pyo3",
     ],
 )
@@ -26,7 +26,7 @@ rust_library(
 py_library(
     name = "python",
     srcs = ["__init__.py"],
-    deps = ["//source_rendering"],
+    deps = ["//crates/source_rendering"],
 )
 
 py_library(
@@ -51,7 +51,7 @@ pyo3_extension(
     visibility = ["//tools:__pkg__"],
     deps = [
         ":capsule",
-        "//source_rendering/rust:source_rendering",
+        "//crates/source_rendering/rust:source_rendering",
         "@crates//:rustc-hash",
     ],
 )

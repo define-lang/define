@@ -1,5 +1,5 @@
 //! The Python module that renders locations in source files:
-//! `source_rendering.python.rendering`.
+//! `crates.source_rendering.python.rendering`.
 
 use pyo3::basic::CompareOp;
 use pyo3::exceptions::PyValueError;
@@ -19,7 +19,7 @@ use std::hash::{Hash as _, Hasher as _};
 #[pyclass(
     frozen,
     name = "SourceLocation",
-    module = "source_rendering.python.rendering"
+    module = "crates.source_rendering.python.rendering"
 )]
 struct PySourceLocation {
     location: source_rendering::SourceLocation,
@@ -164,7 +164,7 @@ impl PySourceLocation {
 #[pyclass(
     frozen,
     name = "SourceMap",
-    module = "source_rendering.python.rendering"
+    module = "crates.source_rendering.python.rendering"
 )]
 struct PySourceMap {
     source_map: source_rendering::SourceMap,

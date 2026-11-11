@@ -3,7 +3,7 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
-from source_rendering.python import rendering
+from crates.source_rendering.python import rendering
 
 if TYPE_CHECKING:
     from pathlib import Path
