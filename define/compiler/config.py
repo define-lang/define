@@ -11,18 +11,22 @@ import protovalidate
 from google.protobuf import message
 
 from defcl.python import loader as defcl_loader
+from defcl.python import validator as defcl_validator
 from defcl.schema.core import boolean_pb2
 from define.compiler import constants
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.parsing import parser
+from define.compiler.validator.structural import name_validators
 from define.config.deps import local_pb2
 from define.config.encodings import encodings_pb2
 from define.config.project import config_pb2
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
+    from define.compiler import ast
 
 
 CONFIG_PATH = define_path.DefinePathFromPosix(
@@ -38,9 +42,9 @@ ENCODINGS_PATH = define_path.DefinePathFromPosix(
 _EMPTY_DEPS: types.MappingProxyType[str, LocalDependencyEntry] = types.MappingProxyType(
     {}
 )
-_EMPTY_VALUE_ENCODINGS: types.MappingProxyType[str, list[str]] = types.MappingProxyType(
-    {}
-)
+_EMPTY_VALUE_ENCODINGS: types.MappingProxyType[
+    str, list[ast.ReferenceGlobalNameContent]
+] = types.MappingProxyType({})
 
 
 def universe_needs_configuration(fqun: str) -> bool:
@@ -68,9 +72,12 @@ class ProjectRootConfig(msgspec.Struct):
     # The local dependency entry for each universe that the project configures
     # as a sub-root.
     sub_roots: Mapping[str, LocalDependencyEntry]
-    # The paths of the encodings associated with each of the project's value
-    # qualities, keyed by the value quality's path.
-    value_encodings: Mapping[str, list[str]] = _EMPTY_VALUE_ENCODINGS
+    # The global names of the encodings associated with each of the project's
+    # value qualities, located inside encodings.defcl, keyed by the value
+    # quality's short global name.
+    value_encodings: Mapping[str, list[ast.ReferenceGlobalNameContent]] = (
+        _EMPTY_VALUE_ENCODINGS
+    )
 
 
 class RootConfigResult(msgspec.Struct, frozen=True):
@@ -158,7 +165,7 @@ class ConfigLoader:
                 )
             )
         value_encodings, encodings_diagnostics = self._value_encodings_config(
-            project_config.project.associations
+            project_config.project.associations, fqun
         )
         config_diagnostics.extend(encodings_diagnostics)
         if not fqun_matches or sub_roots is None or value_encodings is None:
@@ -268,18 +275,21 @@ class ConfigLoader:
     def _value_encodings_config(
         self,
         associations: config_pb2.Associations,
+        fqun: str,
     ) -> tuple[
-        types.MappingProxyType[str, list[str]] | None,
+        types.MappingProxyType[str, list[ast.ReferenceGlobalNameContent]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
         """Load and validate the Value Encoding Associations.
 
-        Returns an immutable mapping from each value quality's path to the
-        paths of its associated encodings, or None if a diagnostic keeps the
-        associations from being used, with the associations' diagnostics. The
+        Returns an immutable mapping from each value quality's short global name to the
+        global names of its associated encodings, or None if a diagnostic keeps
+        the associations from being used, with the associations' diagnostics. The
         mapping is empty when the project
         config's associations say the project has no Value Encoding
-        Associations. An association repeated later is ignored.
+        Associations. An association repeated later, or whose encoding is not
+        a valid global name, is ignored. fqun is the project's universe, whose
+        encodings the config must write in short form.
         """
         # TODO: Once a library can be compiled, report each association whose
         # value quality the compile never validated. Until then, an association
@@ -302,41 +312,116 @@ class ConfigLoader:
         )
         if result is None:
             return None, encodings_diagnostics
-        value_encodings: dict[str, list[str]] = {}
-        # The index of the first association of each value quality and encoding.
-        first_indexes: dict[tuple[str, str], int] = {}
-        previous_value = ""
-        for index, association in enumerate(result.encodings.value_encodings):
-            field_path = ("encodings", "value_encodings", index)
-            if association.value < previous_value:
-                encodings_diagnostics.append(
-                    diagnostics.UnsortedValueEncodingDiagnostic(
-                        config_path=str(encodings_path),
-                        field_path=(*field_path, "value"),
-                        value=association.value,
-                        previous_value=previous_value,
-                    )
+        associations_list = result.encodings.value_encodings
+        names: list[tuple[diagnostics.FieldPath, str]] = []
+        for index, association in enumerate(associations_list):
+            names.append(
+                (
+                    ("encodings", "value_encodings", index, "encoding"),
+                    association.encoding,
                 )
-            previous_value = association.value
-            pair = (association.value, association.encoding)
-            first_index = first_indexes.get(pair)
-            if first_index is not None:
-                encodings_diagnostics.append(
-                    diagnostics.DuplicateValueEncodingDiagnostic(
-                        config_path=str(encodings_path),
-                        field_path=field_path,
-                        value=association.value,
-                        encoding=association.encoding,
-                        first_field_path=(
-                            "encodings",
-                            "value_encodings",
-                            first_index,
-                        ),
-                    )
-                )
-                continue
-            first_indexes[pair] = index
-            value_encodings.setdefault(association.value, []).append(
-                association.encoding
             )
+        encodings, name_diagnostics = self._config_global_names(
+            encodings_path, names, fqun
+        )
+        encodings_diagnostics.extend(name_diagnostics)
+        value_encodings, association_diagnostics = _value_encodings(
+            associations_list, encodings, encodings_path
+        )
+        encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
+
+    def _config_global_names(
+        self,
+        config_path: PurePosixPath,
+        names: Sequence[tuple[diagnostics.FieldPath, str]],
+        fqun: str,
+    ) -> tuple[
+        list[ast.ReferenceGlobalNameContent | None], list[diagnostics.Diagnostic]
+    ]:
+        """Parse and validate the global names that the config file at config_path writes, each in the field at its field path.
+
+        Returns each name's content, located where the file writes it, or None
+        for a name that is not valid, with the names' diagnostics. fqun is the
+        project's universe, whose names the file must write in short form.
+        """
+        path = str(config_path)
+        field_paths: list[diagnostics.FieldPath] = []
+        for field_path, _ in names:
+            field_paths.append(field_path)
+        # Each field's value is a string, so it is located at its opening quote.
+        opening_quotes = defcl_validator.locate_fields(
+            self._source_map, path, field_paths
+        )
+        # locate_fields returns None only for a file whose text differs from
+        # when it was registered, and the file was registered when it loaded.
+        if opening_quotes is None:
+            raise ValueError(f"{config_path} changed after it was loaded")
+        contents: list[ast.ReferenceGlobalNameContent | None] = []
+        name_diagnostics: list[diagnostics.Diagnostic] = []
+        for (_, name), quote in zip(names, opening_quotes, strict=True):
+            # The name starts after the opening quote.
+            content = parser.parse_global_name(
+                name.encode(), path, quote.line, quote.column + 1
+            )
+            if isinstance(content, syntax_errors.DefineSyntaxError):
+                name_diagnostics.append(content)
+                contents.append(None)
+                continue
+            content_diagnostics = name_validators.validate_global_name(
+                content, must_use_short_form=fqun
+            )
+            name_diagnostics.extend(content_diagnostics)
+            contents.append(None if content_diagnostics else content)
+        return contents, name_diagnostics
+
+
+def _value_encodings(
+    associations: Sequence[encodings_pb2.ValueEncoding],
+    encodings: Sequence[ast.ReferenceGlobalNameContent | None],
+    encodings_path: PurePosixPath,
+) -> tuple[
+    dict[str, list[ast.ReferenceGlobalNameContent]],
+    list[diagnostics.FormattableDiagnostic],
+]:
+    """Return each value quality's encodings from the Value Encoding Associations, whose encodings' parsed names are encodings, with the diagnostics about their order.
+
+    An association repeated later, or whose encoding's name is None, is
+    ignored.
+    """
+    value_encodings: dict[str, list[ast.ReferenceGlobalNameContent]] = {}
+    association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
+    # The index of the first association of each value quality and encoding.
+    first_indexes: dict[tuple[str, str], int] = {}
+    previous_value = ""
+    for index, (association, encoding) in enumerate(
+        zip(associations, encodings, strict=True)
+    ):
+        field_path = ("encodings", "value_encodings", index)
+        if association.value < previous_value:
+            association_diagnostics.append(
+                diagnostics.UnsortedValueEncodingDiagnostic(
+                    config_path=str(encodings_path),
+                    field_path=(*field_path, "value"),
+                    value=association.value,
+                    previous_value=previous_value,
+                )
+            )
+        previous_value = association.value
+        pair = (association.value, association.encoding)
+        first_index = first_indexes.get(pair)
+        if first_index is not None:
+            association_diagnostics.append(
+                diagnostics.DuplicateValueEncodingDiagnostic(
+                    config_path=str(encodings_path),
+                    field_path=field_path,
+                    value=association.value,
+                    encoding=association.encoding,
+                    first_field_path=("encodings", "value_encodings", first_index),
+                )
+            )
+            continue
+        first_indexes[pair] = index
+        if encoding is not None:
+            value_encodings.setdefault(association.value, []).append(encoding)
+    return value_encodings, association_diagnostics

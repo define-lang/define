@@ -60,14 +60,17 @@ pub(crate) struct Parser<'py, 'source> {
 }
 
 impl<'py, 'source> Parser<'py, 'source> {
+    /// Returns a parser for `source`, whose first character is at `start` in
+    /// the file at `file_path`.
     pub(crate) fn new(
         py: Python<'py>,
         source: &'source [u8],
+        start: Position,
         file_path: Option<Bound<'py, PyString>>,
         checks_indentation: bool,
     ) -> PyResult<Self> {
         Ok(Self {
-            scanner: Scanner::new(source),
+            scanner: Scanner::new(source, start),
             ast: AstBuilder::new(py, file_path.clone())?,
             nodes: ElementStack::new(py),
             texts: ElementStack::new(py),

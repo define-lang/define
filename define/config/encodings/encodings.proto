@@ -30,13 +30,9 @@ message ValueEncoding {
     }
   ];
 
-  // The short global name of an encoding in the project's own universe.
-  string encoding = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).cel = {
-      id: "value_encoding.encoding.short_global_name"
-      message: "encoding must be a short global name, starting with '/'"
-      expression: "this.startsWith('/')"
-    }
-  ];
+  // The global name of an encoding: a short global name for an encoding in
+  // the project's own universe, or a fully-qualified global name for an
+  // encoding in another universe. The compiler parses it as Define parses a
+  // global name.
+  string encoding = 2 [(buf.validate.field).required = true];
 }

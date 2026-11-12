@@ -105,6 +105,8 @@ impl<'py, 'source> Parser<'py, 'source> {
                 content_start,
                 content_end,
             )?;
+            // The `>` that ends the name content.
+            self.scanner.consume_bytes(1);
             let location = self.ast.location(start, self.scanner.position)?;
             let (typed_name, full_typed_name) =
                 self.global_typed_name_reference(location, fqun, name_type, name)?;
@@ -363,14 +365,58 @@ impl<'py, 'source> Parser<'py, 'source> {
         &mut self,
     ) -> ParseResult<GlobalNameParts<'py, 'source>> {
         self.consume_open_angle_bracket()?;
+        let name = self.parse_global_name_parts(
+            |parser| parser.scanner.next_byte_is(NAME_CONTENT_END),
+            Self::invalid_global_name_content,
+        )?;
+        // The `>` that ends the name content.
+        self.scanner.consume_bytes(1);
+        Ok(name)
+    }
+
+    /// Parses the global name content at the scanner's position, which must
+    /// be followed by what `ends_name` checks for, and returns its parts.
+    /// `invalid` returns the error for name content that is not a global name
+    /// followed by that.
+    ///
+    /// ```ebnf
+    /// global_name = [ fqun ], global_name_path ;
+    /// ```
+    // Generic, so that each caller gets its own copy with its end check
+    // inlined, as when the two were written separately.
+    fn parse_global_name_parts(
+        &mut self,
+        ends_name: impl Fn(&Self) -> bool,
+        invalid: impl Fn(&Self, SourceText<'source>, Position, Position) -> ParseError,
+    ) -> ParseResult<GlobalNameParts<'py, 'source>> {
         let start = self.scanner.position;
         let (content, scanned) = self.scanner.consume_global_name_content();
         let end = self.scanner.position;
-        // The name content is not a global name that ends with `>`.
-        if !scanned.is_global_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
-            return Err(self.invalid_global_name_content(content, start, end));
+        // The name content is not a global name that ends where it must.
+        if !scanned.is_global_name || !ends_name(self) {
+            return Err(invalid(self, content, start, end));
         }
         self.global_name_parts(content, scanned.fqun_separators, start, end)
+    }
+
+    /// Parses a global name that is the whole source, such as one that
+    /// configuration writes, and returns its content.
+    ///
+    /// ```ebnf
+    /// global_name = [ fqun ], global_name_path ;
+    /// ```
+    pub(crate) fn parse_global_name(
+        &mut self,
+    ) -> ParseResult<ast::ReferenceGlobalNameContent<'py>> {
+        let name = self.parse_global_name_parts(
+            |parser| parser.scanner.is_at_end(),
+            Self::invalid_global_name_source,
+        )?;
+        Ok(self.ast.reference_global_name_content(
+            name.location,
+            name.fqun.map(|name_fqun| name_fqun.node),
+            name.path,
+        )?)
     }
 
     /// Returns the error for a character in name `content`, which begins at
@@ -394,9 +440,9 @@ impl<'py, 'source> Parser<'py, 'source> {
         Ok(())
     }
 
-    /// Parses global name `content`, which runs from `start` up to `end`, where
-    /// the scanner is before its `>`, and whose `:`s before its path are at
-    /// `fqun_separators`, and returns its parts.
+    /// Parses global name `content`, which runs from `start` up to `end`, and
+    /// whose `:`s before its path are at `fqun_separators`, and returns its
+    /// parts.
     fn global_name_parts(
         &mut self,
         content: SourceText<'source>,
@@ -405,7 +451,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         end: Position,
     ) -> ParseResult<GlobalNameParts<'py, 'source>> {
         self.disallowed_name_character(content, start)?;
-        self.scanner.consume_bytes(1);
         let (fqun, path_start, path_text) = match fqun_separators {
             None => (None, start, content),
             // The name has a `:` but nothing before it.
@@ -682,16 +727,7 @@ impl<'source> Parser<'_, 'source> {
         start: Position,
         end: Position,
     ) -> ParseError {
-        // There is no name between the `<` and where the `>` belongs.
-        if content.bytes.is_empty() {
-            return self.errors.empty_name(start, start);
-        }
-        if let Some(error) = characters::first_disallowed_character(
-            &self.errors,
-            start,
-            content.bytes,
-            TextKind::Name,
-        ) {
+        if let Some(error) = self.empty_or_disallowed_name(content, start) {
             return error;
         }
         // The name content runs to the end of the line without a `>`.
@@ -704,5 +740,37 @@ impl<'source> Parser<'_, 'source> {
         }
         self.errors
             .invalid_global_name(start, end.previous_column())
+    }
+
+    /// Returns the error for a source, whose name content `content` runs from
+    /// `start` up to `end`, that is not one global name.
+    #[cold]
+    #[inline(never)]
+    fn invalid_global_name_source(
+        &self,
+        content: SourceText<'source>,
+        start: Position,
+        end: Position,
+    ) -> ParseError {
+        if let Some(error) = self.empty_or_disallowed_name(content, start) {
+            return error;
+        }
+        self.errors
+            .invalid_global_name(start, end.previous_column())
+    }
+
+    /// Returns the error for name content `content`, which begins at `start`,
+    /// if it is empty or has a character that names do not allow.
+    #[cold]
+    fn empty_or_disallowed_name(
+        &self,
+        content: SourceText<'source>,
+        start: Position,
+    ) -> Option<ParseError> {
+        // There is no name content.
+        if content.bytes.is_empty() {
+            return Some(self.errors.empty_name(start, start));
+        }
+        characters::first_disallowed_character(&self.errors, start, content.bytes, TextKind::Name)
     }
 }

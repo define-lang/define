@@ -260,6 +260,23 @@ fn locate_field<'py>(
     path: &Bound<'py, PyString>,
     field_path: Vec<PythonFieldPathElement>,
 ) -> PyResult<Option<Bound<'py, PyAny>>> {
+    let locations = locate_fields(source_map, path, vec![field_path])?;
+    Ok(locations.map(|mut locations| locations.remove(0)))
+}
+
+/// Where the defcl file at `path` writes each of the fields that
+/// `field_paths` name, as `locate_field` locates one, parsing the file only
+/// once. `None` if the file is no longer as it was registered.
+#[pyfunction]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "pyo3 can only extract a sequence argument as an owned Vec"
+)]
+fn locate_fields<'py>(
+    source_map: &Bound<'py, PyAny>,
+    path: &Bound<'py, PyString>,
+    field_paths: Vec<Vec<PythonFieldPathElement>>,
+) -> PyResult<Option<Vec<Bound<'py, PyAny>>>> {
     let py = path.py();
     let text: Option<String> = source_map.call_method1("file_text", (path,))?.extract()?;
     let Some(text) = text else {
@@ -277,17 +294,21 @@ fn locate_field<'py>(
             None => error.to_string(),
         })
     })?;
-    let mut elements = Vec::with_capacity(field_path.len());
-    for element in &field_path {
-        elements.push(match element {
-            PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
-            PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
-        });
+    let mut locations = Vec::with_capacity(field_paths.len());
+    for field_path in &field_paths {
+        let mut elements = Vec::with_capacity(field_path.len());
+        for element in field_path {
+            elements.push(match element {
+                PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
+                PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
+            });
+        }
+        let location = file.location_of(&elements).ok_or_else(|| {
+            PyValueError::new_err("the file does not write the field path's top-level message")
+        })?;
+        locations.push(new_source_location(py, location, Some(path))?);
     }
-    let location = file.location_of(&elements).ok_or_else(|| {
-        PyValueError::new_err("the file does not write the field path's top-level message")
-    })?;
-    new_source_location(py, location, Some(path)).map(Some)
+    Ok(Some(locations))
 }
 
 fn decode_descriptor_set(
@@ -321,5 +342,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{locate_field, validate, validate_file};
+    use super::{locate_field, locate_fields, validate, validate_file};
 }

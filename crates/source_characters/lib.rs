@@ -214,12 +214,10 @@ mod tests {
     const VARIATION_SELECTOR_16: char = '\u{fe0f}';
     const ZERO_WIDTH_JOINER: char = '\u{200d}';
 
-    const START: Position = Position { line: 1, column: 1 };
-
     /// Each character of `text`, which starts at line 1, column 1, that `kind`
     /// does not allow, with its column and why.
     fn disallowed(text: &str, kind: TextKind) -> Vec<(u32, char, DisallowedReason)> {
-        disallowed_characters(START, text, kind)
+        disallowed_characters(Position::START, text, kind)
             .map(|found| (found.position.column, found.character, found.reason))
             .collect()
     }
@@ -279,7 +277,7 @@ mod tests {
     #[gtest]
     fn first_disallowed_character_is_the_first() -> Result<()> {
         verify_that!(
-            first_disallowed_character(START, "a\tb\tc", TextKind::Comment),
+            first_disallowed_character(Position::START, "a\tb\tc", TextKind::Comment),
             some(eq(DisallowedCharacter {
                 position: Position { line: 1, column: 2 },
                 character: '\t',

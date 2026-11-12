@@ -54,10 +54,11 @@ pub struct Scanner<'source> {
 }
 
 impl<'source> Scanner<'source> {
-    pub const fn new(source: &'source [u8]) -> Self {
+    /// Returns a scanner for `source`, whose first character is at `start`.
+    pub const fn new(source: &'source [u8], start: Position) -> Self {
         Self {
             rest: source,
-            position: Position { line: 1, column: 1 },
+            position: start,
         }
     }
 

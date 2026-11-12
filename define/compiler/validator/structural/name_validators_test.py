@@ -834,7 +834,9 @@ class TestValidateGlobalName:
             path=_global_path_name("/valid_path"),
             location=_LOC,
         )
-        result = name_validators.validate_global_name(name, must_use_short_form=fqun)
+        result = name_validators.validate_global_name(
+            name, must_use_short_form=fqun.canonical
+        )
         assert len(result) == 1
         assert isinstance(
             result[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
@@ -851,7 +853,7 @@ class TestValidateGlobalName:
             location=_LOC,
         )
         result = name_validators.validate_global_name(
-            name, must_use_short_form=enclosing_fqun
+            name, must_use_short_form=enclosing_fqun.canonical
         )
         assert not result
 
@@ -863,7 +865,7 @@ class TestValidateGlobalName:
             location=_LOC,
         )
         result = name_validators.validate_global_name(
-            name, must_use_short_form=enclosing_fqun
+            name, must_use_short_form=enclosing_fqun.canonical
         )
         assert not result
 

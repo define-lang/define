@@ -20,6 +20,9 @@ pub struct Position {
 }
 
 impl Position {
+    /// The position of the first character of a source.
+    pub const START: Self = Self { line: 1, column: 1 };
+
     /// The 0-based index of the line.
     #[must_use]
     pub const fn line_index(self) -> usize {

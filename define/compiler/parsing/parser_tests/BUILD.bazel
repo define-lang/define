@@ -40,6 +40,7 @@ py_test(
         "error_messages_test.py",
         "extra_whitespace_test.py",
         "file_encoding_test.py",
+        "global_name_test.py",
         "incomplete_statements_test.py",
         "indentation_test.py",
         "local_name_format_test.py",
@@ -75,6 +76,7 @@ py_test(
         "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
+        "//define/compiler/parsing:parser",
     ],
 )
 

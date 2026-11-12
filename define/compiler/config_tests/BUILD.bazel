@@ -16,9 +16,11 @@ py_test(
     data = ["//define/testdata/config/encodings"],
     deps = [
         ":test_helpers",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:config",
         "//define/compiler:conftest",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
         "@pypi//pytest",
     ],
 )
@@ -95,6 +97,7 @@ py_library(
     srcs = ["test_helpers.py"],
     deps = [
         "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",

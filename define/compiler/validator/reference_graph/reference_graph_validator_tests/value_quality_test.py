@@ -292,6 +292,36 @@ def test_project_value_encoding(
     }
 
 
+def test_encoding_from_another_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert result.reference_graph_result.codegen_input.value_encodings == {
+        "value<my.domain.com:my_lib:/test>": "encoding<mv:define-lang.org:numbers:/number/digits>"
+    }
+
+
+def test_encoding_from_universe_without_multiverse(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert result.reference_graph_result.codegen_input.value_encodings == {
+        "value<my.domain.com:my_lib:/test>": "encoding<define-lang.org:numbers:/number/digits>"
+    }
+
+
+def test_standard_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert result.reference_graph_result.codegen_input.value_encodings == {
+        "value<my.domain.com:my_lib:/test>": "encoding<standard:/binary/ascii>"
+    }
+
+
 def test_associated_encoding_not_defined(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -299,7 +329,11 @@ def test_associated_encoding_not_defined(
     assert result.program_result.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
-                line=2, column=22, end_line=2, end_column=54, file_path="test.dfn"
+                line=5,
+                column=18,
+                end_line=5,
+                end_column=30,
+                file_path=".define/encodings/encodings.defcl",
             ),
             file_path="test/missing.dfn",
         )

@@ -15,3 +15,8 @@ def validate_file(
 def locate_field(
     source_map: rendering.SourceMap, path: str, field_path: Sequence[str | int]
 ) -> rendering.SourceLocation | None: ...
+def locate_fields(
+    source_map: rendering.SourceMap,
+    path: str,
+    field_paths: Sequence[Sequence[str | int]],
+) -> list[rendering.SourceLocation] | None: ...

@@ -10,6 +10,9 @@ class ParseResult:
     @property
     def syntax_error(self) -> syntax_errors.DefineSyntaxError | None: ...
 
+def parse_global_name(
+    name: bytes, file_path: str | None, line: int, column: int
+) -> ast.ReferenceGlobalNameContent | syntax_errors.DefineSyntaxError: ...
 def parse(
     source: bytes,
     file_path: str | None,

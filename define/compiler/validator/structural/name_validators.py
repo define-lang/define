@@ -413,12 +413,14 @@ def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
 
 def validate_global_name(
     name: ast.GlobalNameContent[ast.Fqun | None],
-    must_use_short_form: ast.Fqun | None = None,
+    must_use_short_form: str | None = None,
     *,
     allow_reserved_universe: bool = False,
 ) -> list[diagnostics.Diagnostic]:
     """Validate a global name and its FQUN.
 
+    must_use_short_form is the canonical FQUN, if any, that the name must not
+    write, because it is the FQUN that its short form means.
     allow_reserved_universe permits defining a name in a reserved universe,
     which only the standard universe itself may do.
     """
@@ -434,12 +436,12 @@ def validate_global_name(
             result.extend(_validate_universe_name_reserved(name.fqun.universe))
         if (
             must_use_short_form is not None
-            and name.fqun.canonical == must_use_short_form.canonical
+            and name.fqun.canonical == must_use_short_form
         ):
             result.append(
                 diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
                     location=name.fqun.location,
-                    fqun=must_use_short_form.canonical,
+                    fqun=must_use_short_form,
                 )
             )
     result.extend(_validate_global_name_path(name.path))
@@ -545,7 +547,7 @@ def validate_typed_name(
     enclosing_fqun = enclosing_definition.typed_name.name_content.fqun
     if isinstance(typed_name, ast.GlobalTypedNameReference):
         return validate_global_name(
-            typed_name.name_content, must_use_short_form=enclosing_fqun
+            typed_name.name_content, must_use_short_form=enclosing_fqun.canonical
         )
     result: list[diagnostics.Diagnostic] = list(
         validate_local_name_format(typed_name.name_content)

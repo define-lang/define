@@ -119,7 +119,7 @@ fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<Layout
 #[cold]
 #[inline(never)]
 fn invalid_encoding(source: &[u8], offset: usize) -> SyntaxError {
-    let mut position = Position { line: 1, column: 1 };
+    let mut position = Position::START;
     for &byte in &source[..offset] {
         if byte == b'\n' {
             position = Position {
@@ -476,7 +476,7 @@ const fn disallowed_character_error(found: DisallowedCharacter) -> SyntaxError {
 /// `comment`, the text of a comment, without the characters that comments do
 /// not allow.
 fn without_disallowed_characters(comment: &str) -> String {
-    let start = Position { line: 1, column: 1 };
+    let start = Position::START;
     // The comment has no line feed, so the column of each character tells
     // which character it is.
     let disallowed: Vec<u32> = disallowed_characters(start, comment, TextKind::Comment)

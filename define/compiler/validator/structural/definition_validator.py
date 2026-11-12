@@ -150,23 +150,22 @@ class DefinitionStructuralValidator:
         # Source compiled without a project root has no associations.
         if root_config is None:
             return
-        location = definition.typed_name.location
-        # TODO: Stop synthesizing references that have no source, as
-        # encoding_operation_associations.py also does. The references are
-        # located at the value quality's name, so diagnostics about them point
-        # there.
-        for encoding_path in root_config.value_encodings.get(
+        fqun = definition.typed_name.name_content.fqun
+        # TODO: Investigate having the config loader return each encoding as a
+        # `GlobalTypedNameReference` instead of only its name content, so that
+        # it is not built here. The loader would need an `ast.Fqun` for the
+        # project's universe, which means parsing the project config's
+        # `universe_name` with the parser, as encoding names are parsed.
+        # The encodings' names are located where the encodings config writes
+        # them, so diagnostics about them point there.
+        for encoding_name in root_config.value_encodings.get(
             definition.typed_name.name_content.path.name, ()
         ):
             encoding = ast.GlobalTypedNameReference(
                 name_type=name_types.NameType.ENCODING,
-                name_content=ast.ReferenceGlobalNameContent(
-                    fqun=None,
-                    path=ast.GlobalPathName(name=encoding_path, location=location),
-                    location=location,
-                ),
-                enclosing_fqun=definition.typed_name.name_content.fqun,
-                location=location,
+                name_content=encoding_name,
+                enclosing_fqun=fqun,
+                location=encoding_name.location,
             )
             self._associated_encodings.append(encoding)
             self._process_reference(encoding)

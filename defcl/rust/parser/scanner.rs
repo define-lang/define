@@ -34,7 +34,7 @@ pub struct Scanner<'source> {
 
 impl<'source> Scanner<'source> {
     pub const fn new(source: &'source str) -> Self {
-        let start = Position { line: 1, column: 1 };
+        let start = Position::START;
         Self {
             source,
             offset: 0,

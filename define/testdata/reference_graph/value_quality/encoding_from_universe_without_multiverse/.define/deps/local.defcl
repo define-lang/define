@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "define-lang.org:numbers"
+      path: "lib"
+    }
+  ]
+}
