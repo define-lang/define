@@ -56,7 +56,7 @@ because of options.
 The new field in the project root config is `has_converters`, like this:
 
 ```protocol-buffer-text-format
-    encodings: {
+    associations: {
         has_converters: TRUE
     }
 ```
@@ -69,7 +69,7 @@ The new field in the project root config is `has_converters`, like this:
 # .define/project/config.defcl
 project: {
     universe_name: "mv:example.com:numbers"
-    encodings: {
+    associations: {
         has_encodings: TRUE
         has_converters: TRUE
     }

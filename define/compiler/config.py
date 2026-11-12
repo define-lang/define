@@ -281,6 +281,10 @@ class ConfigLoader:
         config's associations say the project has no Value Encoding
         Associations. An association repeated later is ignored.
         """
+        # TODO: Once a library can be compiled, report each association whose
+        # value quality the compile never validated. Until then, an association
+        # is checked only when the program uses its value quality, so one that
+        # names an unused or undefined value quality goes unreported.
         if associations.has_encodings != boolean_pb2.Defcl.Boolean.TRUE:
             return _EMPTY_VALUE_ENCODINGS, []
         encodings_path = (self._root / ENCODINGS_PATH).as_posix_path()

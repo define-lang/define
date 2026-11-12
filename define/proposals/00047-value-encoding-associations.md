@@ -34,98 +34,7 @@ _can't_ discover them automatically, because normally the programmer will just
 specify the value quality, not the encoding. Also, you can't have new value
 qualities that use existing encodings.
 
-### 2: Extensibility
-
-As noted above, we have this problem of "value qualities with new encodings" and
-"new encodings for existing value qualities."
-
-Both of those are _theoretically_ possible.
-
-1. New Encodings for Existing Value Qualities: A library might want to support
-   new hardware for existing programs.
-2. New Value Qualities Re-using Existing Encodings: A new conceptual value
-   quality that can never be intermixed with another value quality, but behind
-   the scenes it uses the same encoding.
-
-The first would allow us a useful form of extensibility to support new hardware
-without requiring direct modifications of the compiler. That's a somewhat rare
-need, but then again, _any_ extension to this system should be a rare need.
-
-I'm more skeptical of the second problem (new value qualities re-using existing
-encodings). It prevents programs translating between values that are in fact
-equivalent, which allows programmers to paint themselves into a corner and have
-to write explicit conversion operations that are not actually logically
-necessary at runtime. Some of those conversions we could detect and eliminate
-when compiling, but I would _imagine_ it's possible for a developer to write a
-conversion in such a way that we _couldn't_ tractably optimize it away.
-
-More importantly, the second problem creates a whole system of typing somewhat
-akin to traditional type systems. The intentional design of Define is that those
-problems would be solved by global positions. Whatever we decide, we definitely
-don't want to _bake into the language_ two different ways to express the same
-logical intention. The whole value quality system is intended to represent
-primitives and abstract hardware operations only, not complex typing logic. That
-logic is supposed to be through constraints or particle structure if it goes
-beyond the actual physical representation or the actual fundamental _type_ of
-symbol being represented. (Not the program's domain model of the type of symbol,
-either, but the irreducible logical type of a primitive value.)
-
-I'm willing to change my mind about that stance, though, if real programs show
-us there is utility in this and we have some way to avoid the "two logical
-models for the same concept" problem.
-
-### 3: Conflicting Associations from Libraries
-
-So let's say we do allow libraries to add new encodings and new value qualities,
-which we should. (After all, why else have this system?) Now, our naming system
-already guarantees there cannot be a _name_ conflict between existing
-encodings/values and the library's encodings/values. But what about the
-_associations_?
-
-We somehow need to let libraries provide new associations between values and
-encodings, either a new encoding to an existing value, or potentially a new
-value to an existing encoding.
-
-What happens when that creates a conflict that the compiler can't resolve, where
-there are two encodings that the compiler could choose for the same value,
-provided by different libraries?
-
-### 4: Consistency
-
-Let's say we do have a conflict, as described above. When we resolve that
-conflict, who wins, the application that specified it? One of the libraries? If
-we let anything "win" then that creates an inconsistency: the library when
-compiled _by itself_ behaves a certain way, but when compiled into an
-application, it behaves another way.
-
-Ideally, the guarantees of Define would make that safe, because we would be
-promising that the _logical_ behavior of the system is identical no matter what
-encoding is chosen.
-
-Also, there might be situations in which a programmer genuinely _does_ want to
-change the encoding used across an entire program, or in a particular
-compilation. For example, they might be sometimes compiling for a Google TPU and
-want to change _all_ floats in the program to use the TPU's `bfloat` encoding,
-but other times are compiling for a CPU and want to use IEEE 754 for that CPU,
-regardless of what "preference" a library has for how to represent an encoding.
-
-All of that said, it does _feel_ concerning that a library's actual runtime
-behavior could change depending on who is consuming it. It also makes it harder
-to ship pre-compiled Define libraries and have them behave the way that the
-language expects. (We could say that that runtime behavior is past the
-guarantees we make about the language, though, because now that's machine code
-and not Define anymore, and _caveat emptor_ about what you do with dynamic
-library loads or post-compilation linking. There's probably some reasonable
-in-between stance, but we don't necessarily have to solve that right now, we
-just have to understand whether we are barring the door on _ever_ solving that
-problem, with our design.)
-
-It's worth noting that this has always been a problem, in all compiled
-languages. A library author could expect their library to be compiled with
-particular compiler flags, but the application compiles it with different
-compiler flags.
-
-### 5: Avoiding Search
+### 2: Avoiding Search
 
 If we don't let values say what encodings are supported for that value, and we
 have to discover the encoding, we must avoid having to _search_ for the encoding
@@ -138,7 +47,7 @@ We also ideally want to avoid excessive "search" logic at runtime, even if we do
 have all the encodings in memory, somehow. We can't make every value/encoding
 association the compiler does into an `O(n)` operation.
 
-### 6: Avoiding File Existence Checks
+### 3: Avoiding File Existence Checks
 
 This is more minor, but as I've noted elsewhere, one of the performance problems
 that compilers and build systems can get into is "I have to call `stat`
@@ -156,7 +65,7 @@ is that we have _one_ of those checks (the check to see if a project config
 exists) and we _fail the compiler_ if that one fails. There are no "optional
 files that we discover automatically."
 
-### 7: Eager Compilation of Encodings
+### 4: Eager Compilation of Encodings
 
 Even if we do have a configuration file for associating things, there is still
 one bad path we could go down. Let's imagine that our configuration file just
@@ -177,7 +86,7 @@ all the brittle problems of reserved words that we avoided via our naming design
 and would have imposed a structure on codebases that didn't seem necessary. I'm
 not looking to make this problem any worse.)
 
-### 8: Duplication
+### 5: Duplication
 
 If we did put things into a configuration file, how much do we put into the
 configuration file? Do we duplicate essentially all of the information in an
@@ -203,8 +112,8 @@ encodings: {
 }
 ```
 
-As you might infer from the above example, these use the global name short form,
-meaning they only refer to names in the current project.
+As you might infer from the above example, these use the global name short form
+when referring to names in the current project.
 
 The same value or the same encoding can be specified multiple times, to provide
 multiple different associations for a value or an encoding. However, it is an
@@ -220,86 +129,20 @@ information into this configuration file so that the compiler always knows what
 the right encoding to load is, though. Hopefully we make loading and parsing
 Define code so fast that we don't have to worry too much about this.
 
-### Banning Extensions
-
-For now, we ban specifying a value or encoding from another project. That means
-that these are banned:
-
-```protocol-buffer-text-format
-        # We have a value that uses an existing encoding from another project.
-        {
-            value: "/number/float"
-            encoding: "mv:example.com:example:/number/float/ieee754"
-        },
-        # We have an encoding that represents an existing value.
-        {
-            value: "mv:example.com:example:/number/integer/signed"
-            encoding: "/number/integer/twos_complement"
-        },
-```
-
-In other words, `encoding` must always be a global name short form.
-
-This means that a library can declare its own value qualities and encodings for
-those value qualities, but cannot change the allowed encodings for an existing
-value quality.
-
-However, it is very likely that we will allow them in the future, so this
-proposal does discuss some limitations that would still have to be in place and
-solutions for them when they arrive.
-
-### Pure-Association Libraries Will Never Be Allowed
-
-Even if we some day allow `value` or `encoding` to come from a sub-root, one of
-`value` or `encoding` must be in the current project. We will never allow
-configs that just define how values and encodings relate for other projects.
-
 ### Project Root Config
 
 We add a new field in the project root config, like this:
 
 ```
-    encodings: {
+    associations: {
         has_encodings: TRUE
     }
 ```
 
 `has_encodings` defaults to false.
 
-The compiler only _looks_ for the new `encodings.defcl` if this value is `TRUE`
-in the main project root config.
-
-### Conflicts
-
-A future proposal will create the ability to configure _compilation targets_,
-which will allow for configuring how Define performs code generation for
-particular target architectures, OSes, etc. Any conflict resolution system will
-happen in _that_ configuration. That is, any conflicts that occur between
-encodings are decided by the target configuration. However, the target
-configuration in general should only attempt to resolve conflicts, not allow for
-explicit specification of encodings, because explicit specifications override
-the compiler's ability to optimize.
-
-The goal here will be to allow libraries to compile according to their own
-configurations to the degree possible, but the actual current project being
-compiled will determine the overall behavior when there are conflicts.
-
-Note that this plan means that Define's compiled representation when compiling a
-library intended for consumption may need to be an IR that has not yet resolved
-its encodings, rather than machine code or fully-resolved operations.
-
-If the compiler does not have such a target config and there are conflicting
-encodings that would be valid for a concrete value, the compiler will throw an
-error at compile time.
-
-Since we currently ban redefining encodings and values in libraries, this would
-currently be a rare occurrence (a library author would have to, themselves,
-create this conflict) but it could still happen, and the system is worth
-recording for posterity if and when we do allow extensions.
-
-Note that a library newly introducing such a conflict would be a
-forward-compatibility issue and they would have to provide refactoring tools or
-default choices for their consumers when making this change.
+The compiler only _looks_ for a project's `encodings.defcl` if this value is
+`TRUE` in that project's root config.
 
 ## A Real Program
 
@@ -307,7 +150,7 @@ default choices for their consumers when making this change.
 # .define/project/config.defcl
 project: {
     universe_name: "mv:example.com:numbers"
-    encodings: {
+    associations: {
         has_encodings: TRUE
     }
 }
@@ -370,34 +213,10 @@ to `stat` for a config file, it provides us the flexibility to map values to
 encodings however is necessary (both now and in the future), it avoids circular
 references, and it avoids arbitrary searches or arbitrary eager loading.
 
-### Banning Extensions
-
-Originally when I drafted this proposal, I allowed "my encoding, their value."
-However, when writing the Forward Compatibility section I realized I was
-introducing a one-way door. Once I allowed libraries to provide new encodings
-for existing value qualities, I could never walk back that decision. Also, there
-was no actual mechanism proposed for the compiler to actually _implement_ those
-new encodings, and I was wary of proposing a mechanism that had no actual
-implementation (as one so often discovers one has done the wrong design during
-implementation).
-
-I did always ban "my value, their encoding." However, one of my concerns with
-that ban (and our current one) is that people will just work around it by
-copying out giant encoding and/or value definitions from one project into
-another, including a giant set of converters, and just rename them. So we may
-have to relent and allow extensibility in both directions. If we did that, we
-would seek to find some other way to stop bad practices from occurring.
-
-One thing we could do as enforcement is require that all encodings be
-_semantically_ different from each other. However, encodings would have to get
-more functionality than they currently have in order for that to be meaningful.
-
 ## Forward Compatibility
 
 As far as I can tell, everything about this configuration format could easily be
-converted into any other syntax or configuration format that we need. It is both
-the most potentially flexible format, while also banning the specific _forms_ of
-flexibility that would be hard to change our minds about in the future.
+converted into any other syntax or configuration format that we need.
 
 ## Refactoring Existing Systems
 
