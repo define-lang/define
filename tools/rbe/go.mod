@@ -1,6 +1,6 @@
 module github.com/define-lang/define/tools/rbe
 
-go 1.27.3
+go 1.27.4
 
 require (
 	cloud.google.com/go/longrunning v1.5.0
