@@ -4,49 +4,49 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-aarch64-unknown-linux-gnu.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-aarch64-unknown-linux-gnu.zip",
         "file": "ast-grep",
-        "sha256": "db02fae2d8eace5fc40c55242068882452dd03eab38a1d950d5fd981cf112926",
+        "sha256": "c3ab2bd43959db28621dc1551c13ea5fe5db4c1fc7b18086dade6b65042c78d0",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-x86_64-unknown-linux-gnu.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-x86_64-unknown-linux-gnu.zip",
         "file": "ast-grep",
-        "sha256": "42514f77ae0c8a25d7d32154d31d3e7e16f3ab894f8ce76ce417de234ee49157",
+        "sha256": "40604c21c38d4c7581c56bdddeef277c56bf3c0113620aa96e78ae87e82366df",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-aarch64-apple-darwin.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-aarch64-apple-darwin.zip",
         "file": "ast-grep",
-        "sha256": "a95772097b4d02bd9d45ed63b300c37041ae3c36632b3bf19250cc7c10187dc4",
+        "sha256": "ea4f4082d25e5f8e0450add6fd488dd008a373c90483cc2031759c8431f1dcfb",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-x86_64-apple-darwin.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-x86_64-apple-darwin.zip",
         "file": "ast-grep",
-        "sha256": "302b92868fa1b0439f0927b1f31668e03636b12a8e646fb1a3cd8de816c78242",
+        "sha256": "ef347c331d97cb6a043809091bd96bdd64de6a8354f01da66764496885230591",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-aarch64-pc-windows-msvc.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-aarch64-pc-windows-msvc.zip",
         "file": "ast-grep.exe",
-        "sha256": "8b3f8fed40e99e0fa4df050859d2897fce454cba262d903486dc12a464237126",
+        "sha256": "bceb859b8d9adb68398bff129ef9ea34dd045e81a5b304732a54d310adf599a5",
         "os": "windows",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-x86_64-pc-windows-msvc.zip",
         "file": "ast-grep.exe",
-        "sha256": "12a0cefb77498820ef6fb302ed8758cbda39be87d4c15120dc74c1dea968a50d",
+        "sha256": "7d5a83bf2f9a4020dc529df371537c860e7a665e52789ac67ef231123a6b4a7e",
         "os": "windows",
         "cpu": "x86_64"
       }
