@@ -133,6 +133,7 @@ pyo3_extension(
     visibility = ["//tools:__pkg__"],
     deps = [
         "//crates/source_rendering/python:capsule",
+        "//crates/source_rendering/rust:source_rendering",
         "//defcl/rust:validator",
         "//defcl/rust/parser",
         "//defcl/rust/semantics",

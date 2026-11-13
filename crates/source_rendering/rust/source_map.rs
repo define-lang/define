@@ -73,7 +73,12 @@ impl SourceMap {
     /// Records that the file at `path` was validated with the text `source`,
     /// without keeping the text.
     pub fn register_file(&self, path: &str, source: &[u8]) {
-        let digest = source_digest(source);
+        self.register_file_digest(path, source_digest(source));
+    }
+
+    /// Records that the file at `path` was validated with a text whose
+    /// `source_digest` is `digest`.
+    pub fn register_file_digest(&self, path: &str, digest: u64) {
         self.lock_files().insert(path.into(), File::Unread(digest));
     }
 
@@ -145,7 +150,12 @@ impl SourceMap {
 
 /// A digest of a source file's text, which shows whether the file changed. It
 /// detects accidental changes, not deliberate ones.
-fn source_digest(source: &[u8]) -> u64 {
+///
+/// It is an `FxHash`, which can change between versions of `rustc-hash`, so a
+/// digest only matches digests from the same build. Every extension that
+/// computes digests is built from the same lockfile.
+#[must_use]
+pub fn source_digest(source: &[u8]) -> u64 {
     FxBuildHasher.hash_one(source)
 }
 

@@ -7,7 +7,7 @@ use prost::Message as _;
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::{PyBytes, PyInt, PyString, PyTuple, PyType};
+use pyo3::types::{PyInt, PyString, PyTuple, PyType};
 use source_rendering_capsule::new_source_location;
 use std::path::Path;
 
@@ -228,8 +228,10 @@ fn validate_file<'py>(
         Ok(parsed) => parsed.text.as_bytes(),
         Err(bytes) => bytes,
     };
-    let _: Bound<'_, PyAny> =
-        source_map.call_method1("register_file", (path, PyBytes::new(py, bytes)))?;
+    let _: Bound<'_, PyAny> = source_map.call_method1(
+        "register_file_digest",
+        (path, source_rendering::source_digest(bytes)),
+    )?;
     let errors = errors.map_err(|error| classes.invalid_schema_error(py, &error))?;
     let diagnostics = diagnostics(py, classes, &errors, Some(path))?;
     // Only a file whose parse a syntax error did not stop means exactly one

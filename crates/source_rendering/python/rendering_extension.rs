@@ -186,6 +186,13 @@ impl PySourceMap {
         self.source_map.register_file(path, source);
     }
 
+    /// Records that the file at `path` was validated with a text whose digest
+    /// is `digest`, as an extension that has the text computes it with the
+    /// `source_rendering` crate, so that the text is not copied into Python.
+    fn register_file_digest(&self, path: &str, digest: u64) {
+        self.source_map.register_file_digest(path, digest);
+    }
+
     /// The header that names the file at `path`, then, if the file was
     /// registered but no longer has the text it was registered with, why its
     /// source lines cannot be shown.

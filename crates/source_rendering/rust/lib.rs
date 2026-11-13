@@ -6,7 +6,7 @@ mod source_lines;
 mod source_map;
 
 pub use source_lines::SourceLines;
-pub use source_map::{NoInMemorySource, SourceMap};
+pub use source_map::{NoInMemorySource, SourceMap, source_digest};
 
 pub(crate) const CODE_INDENTATION: &str = "    ";
 
