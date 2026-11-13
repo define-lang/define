@@ -2,42 +2,57 @@
 
 use source_rendering::SourceLocation;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParsedFile<'source> {
-    pub top_level_messages: Vec<TopLevelMessage<'source>>,
+/// The bytes of a node's text in the source of the file, by byte offset.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TextRange {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl TextRange {
+    /// The text in `source`, the source of the file the range is in.
+    #[must_use]
+    pub fn of(self, source: &str) -> &str {
+        &source[self.start..self.end]
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct TopLevelMessage<'source> {
-    pub name: FieldName<'source>,
-    pub value: MessageValue<'source>,
+pub struct ParsedFile {
+    pub top_level_messages: Vec<TopLevelMessage>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TopLevelMessage {
+    pub name: FieldName,
+    pub value: MessageValue,
     pub location: SourceLocation,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Field<'source> {
-    pub name: FieldName<'source>,
-    pub value: Value<'source>,
+pub struct Field {
+    pub name: FieldName,
+    pub value: Value,
     pub location: SourceLocation,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct FieldName<'source> {
-    pub text: &'source str,
+pub struct FieldName {
+    pub text: TextRange,
     pub location: SourceLocation,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Value<'source> {
-    String(Scalar<'source>),
-    Integer(Scalar<'source>),
-    Float(Scalar<'source>),
-    Enum(Scalar<'source>),
-    Message(MessageValue<'source>),
-    Repeated(RepeatedValue<'source>),
+pub enum Value {
+    String(Scalar),
+    Integer(Scalar),
+    Float(Scalar),
+    Enum(Scalar),
+    Message(MessageValue),
+    Repeated(RepeatedValue),
 }
 
-impl Value<'_> {
+impl Value {
     #[must_use]
     pub const fn location(&self) -> SourceLocation {
         match self {
@@ -53,20 +68,20 @@ impl Value<'_> {
 
 /// A string, integer, float, or enum value, as it is written in the source.
 #[derive(Debug, PartialEq, Eq)]
-pub struct Scalar<'source> {
+pub struct Scalar {
     /// The source text of the value, including a string's quotes.
-    pub text: &'source str,
+    pub text: TextRange,
     pub location: SourceLocation,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct MessageValue<'source> {
-    pub fields: Vec<Field<'source>>,
+pub struct MessageValue {
+    pub fields: Vec<Field>,
     pub location: SourceLocation,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct RepeatedValue<'source> {
-    pub values: Vec<Value<'source>>,
+pub struct RepeatedValue {
+    pub values: Vec<Value>,
     pub location: SourceLocation,
 }

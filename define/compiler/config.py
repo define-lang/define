@@ -11,7 +11,6 @@ import protovalidate
 from google.protobuf import message
 
 from defcl.python import loader as defcl_loader
-from defcl.python import validator as defcl_validator
 from defcl.schema.core import boolean_pb2
 from define.compiler import constants
 from define.compiler.data_structures import define_path
@@ -26,6 +25,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
+    from defcl.python import validator as defcl_validator
     from define.compiler import ast
 
 
@@ -151,7 +151,7 @@ class ConfigLoader:
         config_diagnostics.extend(deps_diagnostics)
         if project_config is None:
             return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
-        fqun = project_config.project.universe_name or ""
+        fqun = project_config.message.project.universe_name or ""
         fqun_matches = True
         if declaring_entry is not None and fqun != declaring_entry.universe:
             fqun_matches = False
@@ -165,7 +165,7 @@ class ConfigLoader:
                 )
             )
         value_encodings, encodings_diagnostics = self._value_encodings_config(
-            project_config.project.associations, fqun
+            project_config.message.project.associations, fqun
         )
         config_diagnostics.extend(encodings_diagnostics)
         if not fqun_matches or sub_roots is None or value_encodings is None:
@@ -183,23 +183,25 @@ class ConfigLoader:
         self,
         subpath: define_path.DefinePath,
         message_type: type[M],
-    ) -> tuple[M | None, list[diagnostics.FormattableDiagnostic]]:
+    ) -> tuple[
+        defcl_loader.LoadedMessage[M] | None, list[diagnostics.FormattableDiagnostic]
+    ]:
         """Load and validate a defcl config file.
 
-        Returns its message, or None if a diagnostic keeps it from being used,
-        with its diagnostics.
+        Returns its message with the file, or None if a diagnostic keeps it
+        from being used, with its diagnostics.
         """
         path = (self._root / subpath).as_posix_path()
-        loaded = defcl_loader.load_file(str(path), message_type, self._source_map)
+        result = defcl_loader.load_file(str(path), message_type, self._source_map)
         config_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
-            loaded.diagnostics
+            result.diagnostics
         )
-        if loaded.message is None:
+        if result.loaded is None:
             return None, config_diagnostics
-        result = loaded.message
         try:
-            protovalidate.validate(result)
+            protovalidate.validate(result.loaded.message)
         except protovalidate.ValidationError as e:
+            # TODO: Move this block into a helper function.
             for violation in e.violations:
                 field = violation.proto.field
                 # The config schemas have rules only on fields.
@@ -221,7 +223,7 @@ class ConfigLoader:
                     )
                 )
             return None, config_diagnostics
-        return result, config_diagnostics
+        return result.loaded, config_diagnostics
 
     def _local_deps_config(
         self,
@@ -245,7 +247,7 @@ class ConfigLoader:
         if result is None:
             return None, deps_diagnostics
         deps: dict[str, LocalDependencyEntry] = {}
-        for index, dep in enumerate(result.deps.local):
+        for index, dep in enumerate(result.message.deps.local):
             first_entry = deps.get(dep.universe_name)
             if first_entry is not None:
                 deps_diagnostics.append(
@@ -312,7 +314,7 @@ class ConfigLoader:
         )
         if result is None:
             return None, encodings_diagnostics
-        associations_list = result.encodings.value_encodings
+        associations_list = result.message.encodings.value_encodings
         names: list[tuple[diagnostics.FieldPath, str]] = []
         for index, association in enumerate(associations_list):
             names.append(
@@ -321,9 +323,7 @@ class ConfigLoader:
                     association.encoding,
                 )
             )
-        encodings, name_diagnostics = self._config_global_names(
-            encodings_path, names, fqun
-        )
+        encodings, name_diagnostics = _config_global_names(result.file, names, fqun)
         encodings_diagnostics.extend(name_diagnostics)
         value_encodings, association_diagnostics = _value_encodings(
             associations_list, encodings, encodings_path
@@ -331,49 +331,37 @@ class ConfigLoader:
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
 
-    def _config_global_names(
-        self,
-        config_path: PurePosixPath,
-        names: Sequence[tuple[diagnostics.FieldPath, str]],
-        fqun: str,
-    ) -> tuple[
-        list[ast.ReferenceGlobalNameContent | None], list[diagnostics.Diagnostic]
-    ]:
-        """Parse and validate the global names that the config file at config_path writes, each in the field at its field path.
 
-        Returns each name's content, located where the file writes it, or None
-        for a name that is not valid, with the names' diagnostics. fqun is the
-        project's universe, whose names the file must write in short form.
-        """
-        path = str(config_path)
-        field_paths: list[diagnostics.FieldPath] = []
-        for field_path, _ in names:
-            field_paths.append(field_path)
-        # Each field's value is a string, so it is located at its opening quote.
-        opening_quotes = defcl_validator.locate_fields(
-            self._source_map, path, field_paths
+def _config_global_names(
+    file: defcl_validator.ValidatedFile,
+    names: Sequence[tuple[diagnostics.FieldPath, str]],
+    fqun: str,
+) -> tuple[list[ast.ReferenceGlobalNameContent | None], list[diagnostics.Diagnostic]]:
+    """Parse and validate the global names that the config file writes, each in the field at its field path.
+
+    Returns each name's content, located where the file writes it, or None for
+    a name that is not valid, with the names' diagnostics. fqun is the
+    project's universe, whose names the file must write in short form.
+    """
+    contents: list[ast.ReferenceGlobalNameContent | None] = []
+    name_diagnostics: list[diagnostics.Diagnostic] = []
+    for field_path, name in names:
+        # Each field's value is a string, so it is located at its opening
+        # quote, and the name starts after it.
+        quote = file.location_of(field_path)
+        name_content = parser.parse_global_name(
+            name.encode(), quote.file_path, quote.line, quote.column + 1
         )
-        # locate_fields returns None only for a file whose text differs from
-        # when it was registered, and the file was registered when it loaded.
-        if opening_quotes is None:
-            raise ValueError(f"{config_path} changed after it was loaded")
-        contents: list[ast.ReferenceGlobalNameContent | None] = []
-        name_diagnostics: list[diagnostics.Diagnostic] = []
-        for (_, name), quote in zip(names, opening_quotes, strict=True):
-            # The name starts after the opening quote.
-            content = parser.parse_global_name(
-                name.encode(), path, quote.line, quote.column + 1
-            )
-            if isinstance(content, syntax_errors.DefineSyntaxError):
-                name_diagnostics.append(content)
-                contents.append(None)
-                continue
-            content_diagnostics = name_validators.validate_global_name(
-                content, must_use_short_form=fqun
-            )
-            name_diagnostics.extend(content_diagnostics)
-            contents.append(None if content_diagnostics else content)
-        return contents, name_diagnostics
+        if isinstance(name_content, syntax_errors.DefineSyntaxError):
+            name_diagnostics.append(name_content)
+            contents.append(None)
+            continue
+        content_diagnostics = name_validators.validate_global_name(
+            name_content, must_use_short_form=fqun
+        )
+        name_diagnostics.extend(content_diagnostics)
+        contents.append(None if content_diagnostics else name_content)
+    return contents, name_diagnostics
 
 
 def _value_encodings(

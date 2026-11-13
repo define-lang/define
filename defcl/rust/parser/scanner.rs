@@ -1,5 +1,6 @@
 //! Moving through the source and tracking positions in it.
 
+use crate::syntax_tree::TextRange;
 use source_characters::{DisallowedReason, Neighbors, TextKind, disallowed_reason};
 use source_rendering::{Position, SourceLocation};
 use source_scanning::{character_count, rest_of_line};
@@ -257,6 +258,15 @@ impl<'source> Scanner<'source> {
     /// The source from the byte offset `start` up to the next byte.
     pub fn text_from(&self, start: usize) -> &'source str {
         &self.source[start..self.offset]
+    }
+
+    /// The range of the source from the byte offset `start` up to the next
+    /// byte.
+    pub const fn range_from(&self, start: usize) -> TextRange {
+        TextRange {
+            start,
+            end: self.offset,
+        }
     }
 
     pub const fn offset(&self) -> usize {

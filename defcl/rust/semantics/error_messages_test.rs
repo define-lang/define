@@ -182,7 +182,7 @@ fn semantic_errors(source: &str, top_level_message_type: &str) -> Result<Vec<Sem
     .or_fail()?;
     let parsed = parse(source);
     verify_that!(parsed.errors, is_empty())?;
-    Ok(check_semantics(&parsed.file.or_fail()?, &schema))
+    Ok(check_semantics(&parsed.file.or_fail()?, source, &schema))
 }
 
 /// Every semantic error in `source`, rendered as its location, its source line

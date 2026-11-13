@@ -14,7 +14,7 @@ fn check_semantics_of_source(
     let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type).or_fail()?;
     let parsed = parse(source);
     verify_that!(parsed.errors, is_empty())?;
-    Ok(check_semantics(&parsed.file.or_fail()?, &schema))
+    Ok(check_semantics(&parsed.file.or_fail()?, source, &schema))
 }
 
 mod valid_files {

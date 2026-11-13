@@ -1,7 +1,7 @@
 //! The validation of a defcl file's text against its schema: parsing it, then
 //! checking it.
 
-use defcl_parser::{DecodeError, SyntaxError, decode, parse};
+use defcl_parser::{DecodeError, ParseResult, ParsedFile, SyntaxError, decode, parse};
 use defcl_semantics::{
     FileDescriptorSet, Schema, SchemaError, SemanticError, SemanticErrorKind, check_semantics,
 };
@@ -23,8 +23,17 @@ pub struct FileErrors {
     pub understood: bool,
 }
 
-/// A defcl file's text, or its bytes if they are not valid UTF-8.
-pub type FileSource = Result<String, Vec<u8>>;
+/// A defcl file's text with its syntax tree.
+#[derive(Debug)]
+pub struct ParsedSource {
+    pub text: String,
+    /// The syntax tree, unless a syntax error stopped the parse.
+    pub file: Option<ParsedFile>,
+}
+
+/// A defcl file's text with its syntax tree, or its bytes if they are not
+/// valid UTF-8.
+pub type FileSource = Result<ParsedSource, Vec<u8>>;
 
 /// Validates `source`, the text of a defcl file, against the schema whose
 /// top-level message type has the full name `top_level_message_type` in
@@ -39,29 +48,51 @@ pub fn validate(
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
 ) -> Result<FileErrors, SchemaError> {
+    let ParseResult { file, errors } = parse(source);
+    validate_parsed(
+        source,
+        file.as_ref(),
+        errors,
+        descriptor_set,
+        top_level_message_type,
+    )
+}
+
+/// Validates `source`, the text of a defcl file, as `validate` does, given its
+/// syntax tree `file` and its syntax errors `syntax_errors`.
+///
+/// # Errors
+///
+/// Returns the schema's error as `validate` does.
+fn validate_parsed(
+    source: &str,
+    file: Option<&ParsedFile>,
+    syntax_errors: Vec<SyntaxError>,
+    descriptor_set: FileDescriptorSet,
+    top_level_message_type: &str,
+) -> Result<FileErrors, SchemaError> {
     let schema = Schema::from_descriptor_set(descriptor_set, top_level_message_type)?;
-    let parsed = parse(source);
-    let Some(file) = &parsed.file else {
+    let Some(file) = file else {
         return Ok(FileErrors {
-            syntax_errors: parsed.errors,
+            syntax_errors,
             semantic_errors: Vec::new(),
             understood: false,
         });
     };
-    let semantic_errors = check_semantics(file, &schema);
+    let semantic_errors = check_semantics(file, source, &schema);
     let understood = semantic_errors
         .iter()
         .all(|error| matches!(error.kind, SemanticErrorKind::FieldOutOfOrder { .. }));
     Ok(FileErrors {
-        syntax_errors: parsed.errors,
+        syntax_errors,
         semantic_errors,
         understood,
     })
 }
 
 /// Validates the defcl file at `path` as `validate` validates its text, and
-/// returns its text, or its bytes if they are not valid UTF-8, with the result
-/// of validating it.
+/// returns its text with its syntax tree, or its bytes if they are not valid
+/// UTF-8, with the result of validating it.
 ///
 /// # Errors
 ///
@@ -73,23 +104,43 @@ pub fn validate_file(
     descriptor_set: FileDescriptorSet,
     top_level_message_type: &str,
 ) -> io::Result<(FileSource, Result<FileErrors, SchemaError>)> {
-    match decode(std::fs::read(path)?) {
-        Ok(source) => {
-            let result = validate(&source, descriptor_set, top_level_message_type);
-            Ok((Ok(source), result))
+    let text = match decode(std::fs::read(path)?) {
+        Ok(text) => text,
+        Err(error) => {
+            return Ok(invalid_encoding(
+                error,
+                descriptor_set,
+                top_level_message_type,
+            ));
         }
-        Err(DecodeError { source, error }) => {
-            let result =
-                Schema::from_descriptor_set(descriptor_set, top_level_message_type).map(|_| {
-                    FileErrors {
-                        syntax_errors: vec![error],
-                        semantic_errors: Vec::new(),
-                        understood: false,
-                    }
-                });
-            Ok((Err(source), result))
-        }
-    }
+    };
+    let ParseResult { file, errors } = parse(&text);
+    let result = validate_parsed(
+        &text,
+        file.as_ref(),
+        errors,
+        descriptor_set,
+        top_level_message_type,
+    );
+    Ok((Ok(ParsedSource { text, file }), result))
+}
+
+/// The bytes of a file that are not valid UTF-8, with the result of
+/// validating it, whose only error is `error`'s.
+#[cold]
+#[inline(never)]
+fn invalid_encoding(
+    error: DecodeError,
+    descriptor_set: FileDescriptorSet,
+    top_level_message_type: &str,
+) -> (FileSource, Result<FileErrors, SchemaError>) {
+    let result =
+        Schema::from_descriptor_set(descriptor_set, top_level_message_type).map(|_| FileErrors {
+            syntax_errors: vec![error.error],
+            semantic_errors: Vec::new(),
+            understood: false,
+        });
+    (Err(error.source), result)
 }
 
 #[cfg(test)]
@@ -321,6 +372,7 @@ mod tests {
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             )
+            .map(|(source, errors)| (source.map(|parsed| parsed.text), errors))
             .or_fail()?,
             (
                 ok(eq(indoc! {"
@@ -357,6 +409,7 @@ mod tests {
                 valid_schemas()?,
                 "defcl.testdata.valid.schemas.SingleToplevelFile",
             )
+            .map(|(source, errors)| (source.map(|parsed| parsed.text), errors))
             .or_fail()?,
             (
                 err(eq(indoc! {b"

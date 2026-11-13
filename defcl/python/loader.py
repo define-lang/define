@@ -25,6 +25,22 @@ class LoadResult[M: message.Message](msgspec.Struct, frozen=True):
     diagnostics: list[errors.DefclDiagnostic]
 
 
+class LoadedMessage[M: message.Message](msgspec.Struct, frozen=True):
+    """The message that a defcl file holds, with the file, which knows where it writes each field."""
+
+    message: M
+    file: validator.ValidatedFile
+
+
+class LoadFileResult[M: message.Message](msgspec.Struct, frozen=True):
+    """A defcl file's message and the file, if the file still means exactly one message, and its diagnostics."""
+
+    # None when a diagnostic leaves the file's meaning unclear, as for
+    # `LoadResult.message`.
+    loaded: LoadedMessage[M] | None
+    diagnostics: list[errors.DefclDiagnostic]
+
+
 def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M]:
     """Load the defcl text `source` into a message of `message_type`.
 
@@ -46,7 +62,7 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
 
 def load_file[M: message.Message](
     path: str, message_type: type[M], source_map: rendering.SourceMap
-) -> LoadResult[M]:
+) -> LoadFileResult[M]:
     """Load the defcl file at `path` into a message of `message_type`, registering it with `source_map`.
 
     Raises:
@@ -54,18 +70,20 @@ def load_file[M: message.Message](
         text_format.ParseError: If the file fails a check that only protobuf's
             text format parser makes.
     """
-    source, diagnostics = validator.validate_file(
+    file, diagnostics = validator.validate_file(
         path,
         source_map,
         _descriptor_set(message_type),
         message_type.DESCRIPTOR.full_name,
     )
-    if source is None:
-        return LoadResult(message=None, diagnostics=diagnostics)
+    if file is None:
+        return LoadFileResult(loaded=None, diagnostics=diagnostics)
     # The file's text, not a second read of the file, so that the text that is
     # parsed is the text that was validated.
-    return LoadResult(
-        message=text_format.Parse(source, message_type()), diagnostics=diagnostics
+    parsed_message = text_format.Parse(file.text(), message_type())
+    return LoadFileResult(
+        loaded=LoadedMessage(message=parsed_message, file=file),
+        diagnostics=diagnostics,
     )
 
 

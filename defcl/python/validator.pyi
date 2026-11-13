@@ -1,22 +1,22 @@
-from collections.abc import Sequence
-
 from crates.source_rendering.python import rendering
 from defcl.python import errors
 
 def validate(
     source: str, descriptor_set: bytes, top_level_message_type: str
 ) -> tuple[bool, list[errors.DefclDiagnostic]]: ...
+
+class ValidatedFile:
+    def text(self) -> str: ...
+    def location_of(
+        self, field_path: tuple[str | int, ...]
+    ) -> rendering.SourceLocation: ...
+
 def validate_file(
     path: str,
     source_map: rendering.SourceMap,
     descriptor_set: bytes,
     top_level_message_type: str,
-) -> tuple[str | None, list[errors.DefclDiagnostic]]: ...
+) -> tuple[ValidatedFile | None, list[errors.DefclDiagnostic]]: ...
 def locate_field(
-    source_map: rendering.SourceMap, path: str, field_path: Sequence[str | int]
+    source_map: rendering.SourceMap, path: str, field_path: tuple[str | int, ...]
 ) -> rendering.SourceLocation | None: ...
-def locate_fields(
-    source_map: rendering.SourceMap,
-    path: str,
-    field_paths: Sequence[Sequence[str | int]],
-) -> list[rendering.SourceLocation] | None: ...

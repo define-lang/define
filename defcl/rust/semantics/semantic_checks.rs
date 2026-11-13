@@ -9,10 +9,12 @@ use rustc_hash::{FxBuildHasher, FxHashSet};
 use source_rendering::SourceLocation;
 
 /// Checks the syntax tree of a defcl file against `schema`, and returns every
-/// error it finds, in source order. A value that an error leaves without a type
+/// error it finds, in source order.
+///
+/// `source` is the file's text. A value that an error leaves without a type
 /// to check against is not checked further.
 #[must_use]
-pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Vec<SemanticError> {
+pub fn check_semantics(file: &ParsedFile, source: &str, schema: &Schema) -> Vec<SemanticError> {
     let mut errors = Vec::new();
     let top_level_message_type = schema.top_level_message_type();
     let mut written_fields = WrittenFields::new(file.top_level_messages.len());
@@ -21,6 +23,7 @@ pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Vec<SemanticError>
             schema,
             top_level_message_type,
             &top_level_message.name,
+            source,
             &mut written_fields,
             &mut errors,
         ) else {
@@ -33,6 +36,7 @@ pub fn check_semantics(file: &ParsedFile, schema: &Schema) -> Vec<SemanticError>
             schema,
             message_type,
             &top_level_message.value.fields,
+            source,
             &mut errors,
         );
     }
@@ -43,6 +47,7 @@ fn check_fields(
     schema: &Schema,
     message_type: &MessageType,
     fields: &[Field],
+    source: &str,
     errors: &mut Vec<SemanticError>,
 ) {
     let mut written_fields = WrittenFields::new(fields.len());
@@ -51,10 +56,11 @@ fn check_fields(
             schema,
             message_type,
             &field.name,
+            source,
             &mut written_fields,
             errors,
         ) {
-            check_field(schema, field, &schema_field, errors);
+            check_field(schema, field, &schema_field, source, errors);
         }
     }
 }
@@ -85,32 +91,34 @@ impl WrittenFields<'_> {
 fn find_field<'schema, 'source>(
     schema: &'schema Schema,
     message_type: &'schema MessageType,
-    name: &FieldName<'source>,
+    name: &FieldName,
+    source: &'source str,
     written_fields: &mut WrittenFields<'source>,
     errors: &mut Vec<SemanticError>,
 ) -> Option<SchemaField<'schema>> {
+    let text = name.text.of(source);
     // The message type has no field with the name.
-    let Some(schema_field) = schema.field(message_type, name.text) else {
-        errors.push(unknown_field_name(name, message_type));
+    let Some(schema_field) = schema.field(message_type, text) else {
+        errors.push(unknown_field_name(name, text, message_type));
         return None;
     };
     // The message value already has a field with this name.
-    if !written_fields.names.insert(name.text) {
-        errors.push(field_written_twice(name));
+    if !written_fields.names.insert(text) {
+        errors.push(field_written_twice(name, text));
         return Some(schema_field);
     }
     let number = schema_field.descriptor.number();
     match written_fields.highest {
         // A field written before this one has a higher field number.
         Some((highest_number, highest_name)) if highest_number > number => {
-            errors.push(field_out_of_order(name, highest_name));
+            errors.push(field_out_of_order(name, text, highest_name));
         }
-        _ => written_fields.highest = Some((number, name.text)),
+        _ => written_fields.highest = Some((number, text)),
     }
     if let Some(oneof) = schema_field.descriptor.oneof_index {
         // The message value already has another field of the field's oneof.
         if written_fields.oneofs.contains(&oneof) {
-            errors.push(second_field_of_oneof(name, message_type, oneof));
+            errors.push(second_field_of_oneof(name, text, message_type, oneof));
         } else {
             written_fields.oneofs.push(oneof);
         }
@@ -122,24 +130,29 @@ fn check_field(
     schema: &Schema,
     field: &Field,
     schema_field: &SchemaField,
+    source: &str,
     errors: &mut Vec<SemanticError>,
 ) {
     if !schema_field.is_repeated() {
         // The non-repeated field's value is in brackets.
         if let Value::Repeated(repeated) = &field.value {
-            errors.push(non_repeated_field_with_brackets(field, repeated.location));
+            errors.push(non_repeated_field_with_brackets(
+                field,
+                source,
+                repeated.location,
+            ));
             return;
         }
-        check_value(schema, field, schema_field, &field.value, errors);
+        check_value(schema, field, schema_field, &field.value, source, errors);
         return;
     }
     // The repeated field's value is not in brackets.
     let Value::Repeated(repeated) = &field.value else {
-        errors.push(repeated_field_without_brackets(field));
+        errors.push(repeated_field_without_brackets(field, source));
         return;
     };
     for value in &repeated.values {
-        check_value(schema, field, schema_field, value, errors);
+        check_value(schema, field, schema_field, value, source, errors);
     }
 }
 
@@ -150,6 +163,7 @@ fn check_value(
     field: &Field,
     schema_field: &SchemaField,
     value: &Value,
+    source: &str,
     errors: &mut Vec<SemanticError>,
 ) {
     let kind = match (&schema_field.value_type, value) {
@@ -157,18 +171,19 @@ fn check_value(
         // check_field checks a field's repeated value element by element.
         (_, Value::Repeated(_)) => unreachable!("a repeated value is checked by its elements"),
         (ValueType::Message(message_type), Value::Message(message)) => {
-            check_fields(schema, message_type, &message.fields, errors);
+            check_fields(schema, message_type, &message.fields, source, errors);
             return;
         }
         (ValueType::String, Value::String(_)) => return,
         (ValueType::Integer(field_type), Value::Integer(integer)) => {
             // The integer is outside the field type's range.
-            if !is_integer_in_range(integer.text, *field_type) {
+            if !is_integer_in_range(integer.text.of(source), *field_type) {
                 errors.push(value_error(
                     SemanticErrorKind::IntegerOutOfRange {
                         field_type: *field_type,
                     },
                     field,
+                    source,
                     integer.location,
                 ));
             }
@@ -176,12 +191,13 @@ fn check_value(
         }
         (ValueType::Float(field_type), Value::Float(float)) => {
             // The number rounds to infinity in the field's type.
-            if !is_float_in_range(float.text, *field_type) {
+            if !is_float_in_range(float.text.of(source), *field_type) {
                 errors.push(value_error(
                     SemanticErrorKind::FloatOutOfRange {
                         field_type: *field_type,
                     },
                     field,
+                    source,
                     float.location,
                 ));
             }
@@ -189,8 +205,8 @@ fn check_value(
         }
         (ValueType::Enum(enum_type), Value::Enum(name)) => {
             // The enum type has no value with the name.
-            if !enum_type.has_value(name.text) {
-                errors.push(unknown_enum_value(field, enum_type, name.location));
+            if !enum_type.has_value(name.text.of(source)) {
+                errors.push(unknown_enum_value(field, source, enum_type, name.location));
             }
             return;
         }
@@ -205,7 +221,7 @@ fn check_value(
         (ValueType::Integer(_), _) => SemanticErrorKind::NonIntegerForIntegerField,
         (ValueType::Float(_), _) => SemanticErrorKind::NonFloatForFloatField,
     };
-    errors.push(value_error(kind, field, value.location()));
+    errors.push(value_error(kind, field, source, value.location()));
 }
 
 /// Whether the integer whose source text is `text` is within the range of
@@ -227,36 +243,38 @@ fn is_float_in_range(text: &str, field_type: FloatFieldType) -> bool {
 
 // The functions that only run on an error path.
 
-/// The error for the field named `name`, which is written after
-/// `later_field`, a field with a higher field number.
+/// The error for the field named `name`, whose text is `text`, which is
+/// written after `later_field`, a field with a higher field number.
 #[cold]
 #[inline(never)]
-fn field_out_of_order(name: &FieldName, later_field: &str) -> SemanticError {
+fn field_out_of_order(name: &FieldName, text: &str, later_field: &str) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::FieldOutOfOrder {
             later_field: later_field.to_owned(),
         },
         location: name.location,
-        field_name: name.text.to_owned(),
+        field_name: text.to_owned(),
     }
 }
 
 #[cold]
 #[inline(never)]
-fn field_written_twice(name: &FieldName) -> SemanticError {
+fn field_written_twice(name: &FieldName, text: &str) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::FieldWrittenTwice,
         location: name.location,
-        field_name: name.text.to_owned(),
+        field_name: text.to_owned(),
     }
 }
 
-/// The error for the field named `name`, a field of the oneof at index `oneof`
-/// in `message_type`'s descriptor, which already has another field written.
+/// The error for the field named `name`, whose text is `text`, a field of the
+/// oneof at index `oneof` in `message_type`'s descriptor, which already has
+/// another field written.
 #[cold]
 #[inline(never)]
 fn second_field_of_oneof(
     name: &FieldName,
+    text: &str,
     message_type: &MessageType,
     oneof: i32,
 ) -> SemanticError {
@@ -267,62 +285,73 @@ fn second_field_of_oneof(
             oneof: format!("{}.{oneof_name}", message_type.full_name),
         },
         location: name.location,
-        field_name: name.text.to_owned(),
+        field_name: text.to_owned(),
     }
 }
 
 #[cold]
 #[inline(never)]
-fn unknown_field_name(name: &FieldName, message_type: &MessageType) -> SemanticError {
+fn unknown_field_name(name: &FieldName, text: &str, message_type: &MessageType) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::UnknownFieldName {
             message_type: message_type.full_name.clone(),
         },
         location: name.location,
-        field_name: name.text.to_owned(),
+        field_name: text.to_owned(),
     }
 }
 
 #[cold]
 #[inline(never)]
-fn repeated_field_without_brackets(field: &Field) -> SemanticError {
+fn repeated_field_without_brackets(field: &Field, source: &str) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::RepeatedFieldWithoutBrackets,
         location: field.value.location(),
-        field_name: field.name.text.to_owned(),
+        field_name: field.name.text.of(source).to_owned(),
     }
 }
 
 /// The error for the repeated value at `location`, which is the value of
-/// `field`, a field that is not repeated.
+/// `field`, a field that is not repeated, in `source`.
 #[cold]
 #[inline(never)]
-fn non_repeated_field_with_brackets(field: &Field, location: SourceLocation) -> SemanticError {
+fn non_repeated_field_with_brackets(
+    field: &Field,
+    source: &str,
+    location: SourceLocation,
+) -> SemanticError {
     SemanticError {
         kind: SemanticErrorKind::NonRepeatedFieldWithBrackets,
         location,
-        field_name: field.name.text.to_owned(),
+        field_name: field.name.text.of(source).to_owned(),
     }
 }
 
 /// The error of the kind `kind` for the value at `location`, which is the
-/// value of `field` or an element of it.
+/// value of `field` or an element of it, in `source`.
 #[cold]
 #[inline(never)]
-fn value_error(kind: SemanticErrorKind, field: &Field, location: SourceLocation) -> SemanticError {
+fn value_error(
+    kind: SemanticErrorKind,
+    field: &Field,
+    source: &str,
+    location: SourceLocation,
+) -> SemanticError {
     SemanticError {
         kind,
         location,
-        field_name: field.name.text.to_owned(),
+        field_name: field.name.text.of(source).to_owned(),
     }
 }
 
 /// The error for the enum value at `location`, which is the value of
-/// `field` or an element of it, and whose name `enum_type` has no value for.
+/// `field` or an element of it in `source`, and whose name `enum_type` has no
+/// value for.
 #[cold]
 #[inline(never)]
 fn unknown_enum_value(
     field: &Field,
+    source: &str,
     enum_type: &EnumType,
     location: SourceLocation,
 ) -> SemanticError {
@@ -331,6 +360,6 @@ fn unknown_enum_value(
             enum_type: enum_type.full_name.clone(),
         },
         location,
-        field_name: field.name.text.to_owned(),
+        field_name: field.name.text.of(source).to_owned(),
     }
 }

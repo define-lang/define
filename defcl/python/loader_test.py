@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import pytest
 
 from crates.source_rendering.python import rendering
@@ -15,6 +17,9 @@ from defcl.testdata.valid.schemas import (
     wrapper_pb2,
 )
 from tools import runfiles
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _testdata_path(path: str) -> str:
@@ -152,7 +157,8 @@ def test_load_file_of_a_file_with_only_fields_out_of_order_loads_with_its_diagno
         path, wrong_value_kinds_pb2.WrongValueKindsFile, rendering.SourceMap()
     )
 
-    assert result.message == wrong_value_kinds_pb2.WrongValueKindsFile(
+    assert result.loaded is not None
+    assert result.loaded.message == wrong_value_kinds_pb2.WrongValueKindsFile(
         config=wrong_value_kinds_pb2.WrongValueKindsFile.Config(count=1, name="a")
     )
     (field_out_of_order,) = result.diagnostics
@@ -175,7 +181,8 @@ def test_load_file_reads_the_file():
         rendering.SourceMap(),
     )
 
-    assert result.message == single_toplevel_pb2.SingleToplevelFile(
+    assert result.loaded is not None
+    assert result.loaded.message == single_toplevel_pb2.SingleToplevelFile(
         project=single_toplevel_pb2.SingleToplevelFile.Project(universe_name="example")
     )
     assert result.diagnostics == []
@@ -190,7 +197,7 @@ def test_load_file_diagnostics_name_the_file():
         rendering.SourceMap(),
     )
 
-    assert result.message is None
+    assert result.loaded is None
     (integer_enum,) = result.diagnostics
     assert type(integer_enum) is errors.SemanticDiagnostic
     assert integer_enum.kind == error_types.SemanticDiagnosticKind.INTEGER_ENUM
@@ -199,3 +206,62 @@ def test_load_file_diagnostics_name_the_file():
     )
     assert integer_enum.file_path == path
     assert integer_enum.field_name == "status"
+
+
+def test_loaded_file_locates_a_field_at_its_value():
+    path = _testdata_path("valid/single_toplevel.defcl")
+
+    result = loader.load_file(
+        path, single_toplevel_pb2.SingleToplevelFile, rendering.SourceMap()
+    )
+
+    assert result.loaded is not None
+    assert result.loaded.file.location_of(
+        ("project", "universe_name")
+    ) == rendering.SourceLocation(
+        line=2, column=18, end_line=2, end_column=26, file_path=path
+    )
+
+
+def test_loaded_file_with_layout_errors_locates_a_field(tmp_path: Path):
+    path = tmp_path / "layout.defcl"
+    _ = path.write_text(
+        'project: {\n  universe_name:   "example"\n}\n', encoding="utf-8", newline="\n"
+    )
+
+    result = loader.load_file(
+        str(path), single_toplevel_pb2.SingleToplevelFile, rendering.SourceMap()
+    )
+
+    assert result.loaded is not None
+    assert result.loaded.file.location_of(
+        ("project", "universe_name")
+    ) == rendering.SourceLocation(
+        line=2, column=20, end_line=2, end_column=28, file_path=str(path)
+    )
+
+
+def test_loaded_file_cannot_locate_a_field_of_a_top_level_message_it_does_not_write():
+    result = loader.load_file(
+        _testdata_path("valid/single_toplevel.defcl"),
+        single_toplevel_pb2.SingleToplevelFile,
+        rendering.SourceMap(),
+    )
+
+    assert result.loaded is not None
+    with pytest.raises(
+        ValueError, match="the file does not contain the field path's top-level message"
+    ):
+        _ = result.loaded.file.location_of(("settings", "name"))
+
+
+def test_loaded_file_rejects_a_bool_as_an_index():
+    result = loader.load_file(
+        _testdata_path("valid/single_toplevel.defcl"),
+        single_toplevel_pb2.SingleToplevelFile,
+        rendering.SourceMap(),
+    )
+
+    assert result.loaded is not None
+    with pytest.raises(TypeError, match="a field path element must be a str or an int"):
+        _ = result.loaded.file.location_of(("project", True))

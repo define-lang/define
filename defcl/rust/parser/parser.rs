@@ -22,9 +22,9 @@ const INDENTATION_WIDTH: u32 = 2;
 
 /// The syntax tree of a defcl file, and its syntax errors.
 #[derive(Debug, PartialEq, Eq)]
-pub struct ParseResult<'source> {
+pub struct ParseResult {
     /// The syntax tree, unless a syntax error stopped the parse.
-    pub file: Option<ParsedFile<'source>>,
+    pub file: Option<ParsedFile>,
     /// Every syntax error found, in the order found. If a syntax error stopped
     /// the parse, it is the last.
     pub errors: Vec<SyntaxError>,
@@ -69,7 +69,7 @@ pub fn decode(source: Vec<u8>) -> Result<String, DecodeError> {
 /// syntax errors. An error in the layout of the file, such as its whitespace,
 /// does not stop the parse; any other syntax error does.
 #[must_use]
-pub fn parse(source: &str) -> ParseResult<'_> {
+pub fn parse(source: &str) -> ParseResult {
     parse_with(source, false).0
 }
 
@@ -82,13 +82,13 @@ pub fn parse(source: &str) -> ParseResult<'_> {
 /// gets an error, so that the errors that no fix fixes are the ones that the
 /// fixed text still has.
 #[must_use]
-pub fn parse_with_layout_fixes(source: &str) -> (ParseResult<'_>, Vec<LayoutFix>) {
+pub fn parse_with_layout_fixes(source: &str) -> (ParseResult, Vec<LayoutFix>) {
     parse_with(source, true)
 }
 
 /// Parses `source`, and records the fixes for its layout errors if
 /// `records_fixes`.
-fn parse_with(source: &str, records_fixes: bool) -> (ParseResult<'_>, Vec<LayoutFix>) {
+fn parse_with(source: &str, records_fixes: bool) -> (ParseResult, Vec<LayoutFix>) {
     let mut parser = Parser {
         scanner: Scanner::new(source),
         errors: Vec::new(),
@@ -514,11 +514,11 @@ fn push_indentation(text: &mut String, level: u32) {
     }
 }
 
-impl<'source> Parser<'source> {
+impl Parser<'_> {
     /// ```ebnf
     /// file = { comment_line }, top_level_message, { line_break(0), top_level_message }, line_break(0) ;
     /// ```
-    fn parse_file(&mut self) -> Result<ParsedFile<'source>, SyntaxError> {
+    fn parse_file(&mut self) -> Result<ParsedFile, SyntaxError> {
         let mut top_level_messages = Vec::new();
         while let Some(byte) =
             self.line_break_before(0, |next| next.is_none_or(is_field_name_start))
@@ -1060,7 +1060,7 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// top_level_message = FIELD_NAME, ":", " ", message_value(0) ;
     /// ```
-    fn parse_top_level_message(&mut self) -> Result<TopLevelMessage<'source>, SyntaxError> {
+    fn parse_top_level_message(&mut self) -> Result<TopLevelMessage, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
         self.expect_one_space();
         let value = self.parse_value(0)?;
@@ -1087,7 +1087,7 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// field(level) = FIELD_NAME, ":", " ", value(level) ;
     /// ```
-    fn parse_field(&mut self, level: u32) -> Result<Field<'source>, SyntaxError> {
+    fn parse_field(&mut self, level: u32) -> Result<Field, SyntaxError> {
         let name = self.parse_field_name_and_colon()?;
         self.expect_one_space();
         let value = self.parse_value(level)?;
@@ -1109,10 +1109,12 @@ impl<'source> Parser<'source> {
     /// FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_letter ) } ;
     /// field_name_and_colon = FIELD_NAME, ":" ;
     /// ```
-    fn parse_field_name_and_colon(&mut self) -> Result<FieldName<'source>, SyntaxError> {
+    fn parse_field_name_and_colon(&mut self) -> Result<FieldName, SyntaxError> {
         let start = self.scanner.position();
+        let start_offset = self.scanner.offset();
         let word = field_name_word(self.scanner.rest());
         let text = self.scanner.consume_ascii(word.length);
+        let text_range = self.scanner.range_from(start_offset);
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_field_name_word_character) {
             return Err(error);
@@ -1134,7 +1136,10 @@ impl<'source> Parser<'source> {
         if !self.scanner.consume_byte(b':') {
             return Err(self.missing_colon());
         }
-        Ok(FieldName { text, location })
+        Ok(FieldName {
+            text: text_range,
+            location,
+        })
     }
 
     /// Parses a value on a line indented `level` levels.
@@ -1142,7 +1147,7 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// value(level) = STRING | INTEGER | FLOAT | enum_value | message_value(level) | repeated_value(level) ;
     /// ```
-    fn parse_value(&mut self, level: u32) -> Result<Value<'source>, SyntaxError> {
+    fn parse_value(&mut self, level: u32) -> Result<Value, SyntaxError> {
         match self.scanner.peek() {
             Some(b'"') => self.parse_string(),
             Some(b'{') => Ok(Value::Message(self.parse_message_value(level)?)),
@@ -1160,7 +1165,7 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// element(level) = STRING | INTEGER | FLOAT | enum_value | message_value(level) ;
     /// ```
-    fn parse_element(&mut self, level: u32) -> Result<Value<'source>, SyntaxError> {
+    fn parse_element(&mut self, level: u32) -> Result<Value, SyntaxError> {
         // A repeated value is an element of a repeated value.
         if self.scanner.peek() == Some(b'[') {
             return Err(SyntaxError {
@@ -1174,7 +1179,7 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// STRING = '"', { escape | char - '"' - newline - "\" }, '"' ;
     /// ```
-    fn parse_string(&mut self) -> Result<Value<'source>, SyntaxError> {
+    fn parse_string(&mut self) -> Result<Value, SyntaxError> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         self.scanner.advance();
@@ -1231,7 +1236,7 @@ impl<'source> Parser<'source> {
         byte_escape_run.end()?;
         self.scanner.advance();
         Ok(Value::String(Scalar {
-            text: self.scanner.text_from(start_offset),
+            text: self.scanner.range_from(start_offset),
             location: SourceLocation {
                 start,
                 end: self.scanner.last_consumed(),
@@ -1342,8 +1347,9 @@ impl<'source> Parser<'source> {
     /// dec_lit = "0" | ( dec - "0" ), { dec } ;
     /// fraction = "0" | { dec }, ( dec - "0" ) ;
     /// ```
-    fn parse_number(&mut self) -> Result<Value<'source>, SyntaxError> {
+    fn parse_number(&mut self) -> Result<Value, SyntaxError> {
         let start = self.scanner.position();
+        let start_offset = self.scanner.offset();
         let text = self
             .scanner
             .consume_ascii(number_word_length(self.scanner.rest()));
@@ -1352,7 +1358,7 @@ impl<'source> Parser<'source> {
             return Err(error);
         }
         let scalar = Scalar {
-            text,
+            text: self.scanner.range_from(start_offset),
             location: SourceLocation {
                 start,
                 end: self.scanner.last_consumed(),
@@ -1385,8 +1391,9 @@ impl<'source> Parser<'source> {
     /// ```ebnf
     /// enum_value = uppercase_letter, { uppercase_letter | dec | "_" } ;
     /// ```
-    fn parse_enum_value(&mut self) -> Result<Value<'source>, SyntaxError> {
+    fn parse_enum_value(&mut self) -> Result<Value, SyntaxError> {
         let start = self.scanner.position();
+        let start_offset = self.scanner.offset();
         let text = self
             .scanner
             .consume_ascii(enum_word_length(self.scanner.rest()));
@@ -1412,7 +1419,10 @@ impl<'source> Parser<'source> {
                 location: Some(location),
             });
         }
-        Ok(Value::Enum(Scalar { text, location }))
+        Ok(Value::Enum(Scalar {
+            text: self.scanner.range_from(start_offset),
+            location,
+        }))
     }
 
     /// Parses a message value on a line indented `level` levels, whose fields
@@ -1422,7 +1432,7 @@ impl<'source> Parser<'source> {
     /// message_value(level) = "{", line_break(level + 1), field(level + 1),
     ///     { line_break(level + 1), field(level + 1) }, line_break(level + 1), "}" ;
     /// ```
-    fn parse_message_value(&mut self, level: u32) -> Result<MessageValue<'source>, SyntaxError> {
+    fn parse_message_value(&mut self, level: u32) -> Result<MessageValue, SyntaxError> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut fields = Vec::new();
@@ -1469,7 +1479,7 @@ impl<'source> Parser<'source> {
     /// repeated_value(level) = "[", line_break(level + 1), element(level + 1),
     ///     { ",", line_break(level + 1), element(level + 1) }, line_break(level + 1), "]" ;
     /// ```
-    fn parse_repeated_value(&mut self, level: u32) -> Result<RepeatedValue<'source>, SyntaxError> {
+    fn parse_repeated_value(&mut self, level: u32) -> Result<RepeatedValue, SyntaxError> {
         let start = self.scanner.position();
         self.scanner.advance();
         let mut values = Vec::new();

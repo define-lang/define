@@ -1,35 +1,69 @@
 use crate::{
     DecodeError, Field, FieldName, MessageValue, ParseResult, ParsedFile, RepeatedValue, Scalar,
-    SyntaxError, SyntaxErrorKind, TopLevelMessage, Value, decode, parse,
+    SyntaxError, SyntaxErrorKind, TextRange, TopLevelMessage, Value, decode, parse,
 };
 use googletest::prelude::*;
 use indoc::{formatdoc, indoc};
 use source_rendering::{Position, SourceLocation};
 
-/// A field name written in ASCII on one line.
-const fn name(text: &str, line: u32, column: u32) -> FieldName<'_> {
-    FieldName {
-        text,
-        location: SourceLocation {
-            start: Position { line, column },
-            end: Position { line, column }.columns_later(text.len() - 1),
-        },
+/// The expected nodes of the syntax tree of `source`, each of whose text it
+/// checks that `source` writes where the node says.
+struct Expected<'source> {
+    source: &'source str,
+}
+
+impl Expected<'_> {
+    /// A field name written in ASCII on one line.
+    fn name(&self, text: &str, line: u32, column: u32) -> FieldName {
+        FieldName {
+            text: self.range(text, line, column),
+            location: ascii_location(text, line, column),
+        }
+    }
+
+    /// A scalar written in ASCII on one line.
+    fn scalar(&self, text: &str, line: u32, column: u32) -> Scalar {
+        Scalar {
+            text: self.range(text, line, column),
+            location: ascii_location(text, line, column),
+        }
+    }
+
+    /// The range of `text`, which the source writes starting at `line` and
+    /// `column`.
+    fn range(&self, text: &str, line: u32, column: u32) -> TextRange {
+        let line_start: usize = self
+            .source
+            .split_inclusive('\n')
+            .take(line as usize - 1)
+            .map(str::len)
+            .sum();
+        let start = line_start
+            + self.source[line_start..]
+                .chars()
+                .take(column as usize - 1)
+                .map(char::len_utf8)
+                .sum::<usize>();
+        let range = TextRange {
+            start,
+            end: start + text.len(),
+        };
+        assert_eq!(range.of(self.source), text);
+        range
     }
 }
 
-/// A scalar written in ASCII on one line.
-const fn scalar(text: &str, line: u32, column: u32) -> Scalar<'_> {
-    Scalar {
-        text,
-        location: SourceLocation {
-            start: Position { line, column },
-            end: Position { line, column }.columns_later(text.len() - 1),
-        },
+/// The location of `text`, which is written in ASCII on one line starting at
+/// `line` and `column`.
+const fn ascii_location(text: &str, line: u32, column: u32) -> SourceLocation {
+    SourceLocation {
+        start: Position { line, column },
+        end: Position { line, column }.columns_later(text.len() - 1),
     }
 }
 
 /// A field, which covers its name through its value.
-fn field<'source>(name: FieldName<'source>, value: Value<'source>) -> Field<'source> {
+fn field(name: FieldName, value: Value) -> Field {
     let location = SourceLocation {
         start: name.location.start,
         end: value.location().end,
@@ -42,10 +76,7 @@ fn field<'source>(name: FieldName<'source>, value: Value<'source>) -> Field<'sou
 }
 
 /// A top-level message, which covers its name through its message value.
-const fn top_level_message<'source>(
-    name: FieldName<'source>,
-    value: MessageValue<'source>,
-) -> TopLevelMessage<'source> {
+const fn top_level_message(name: FieldName, value: MessageValue) -> TopLevelMessage {
     let location = SourceLocation {
         start: name.location.start,
         end: value.location.end,
@@ -58,7 +89,7 @@ const fn top_level_message<'source>(
 }
 
 /// The result of parsing a file with no syntax errors into `file`.
-const fn parsed(file: ParsedFile<'_>) -> ParseResult<'_> {
+const fn parsed(file: ParsedFile) -> ParseResult {
     ParseResult {
         file: Some(file),
         errors: Vec::new(),
@@ -66,7 +97,7 @@ const fn parsed(file: ParsedFile<'_>) -> ParseResult<'_> {
 }
 
 /// The result of a parse that `error` stopped, with no errors before it.
-fn stopped_by(error: SyntaxError) -> ParseResult<'static> {
+fn stopped_by(error: SyntaxError) -> ParseResult {
     ParseResult {
         file: None,
         errors: vec![error],
@@ -102,15 +133,17 @@ mod valid_files {
 
     #[gtest]
     fn single_toplevel() -> Result<()> {
+        let source = include_str!("../../testdata/valid/single_toplevel.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/single_toplevel.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("project", 1, 1),
+                    at.name("project", 1, 1),
                     MessageValue {
                         fields: vec![field(
-                            name("universe_name", 2, 3),
-                            Value::String(scalar("\"example\"", 2, 18)),
+                            at.name("universe_name", 2, 3),
+                            Value::String(at.scalar("\"example\"", 2, 18)),
                         )],
                         location: SourceLocation {
                             start: Position {
@@ -127,16 +160,18 @@ mod valid_files {
 
     #[gtest]
     fn multiple_toplevel() -> Result<()> {
+        let source = include_str!("../../testdata/valid/multiple_toplevel.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/multiple_toplevel.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![
                     top_level_message(
-                        name("project", 1, 1),
+                        at.name("project", 1, 1),
                         MessageValue {
                             fields: vec![field(
-                                name("universe_name", 2, 3),
-                                Value::String(scalar("\"example\"", 2, 18)),
+                                at.name("universe_name", 2, 3),
+                                Value::String(at.scalar("\"example\"", 2, 18)),
                             )],
                             location: SourceLocation {
                                 start: Position {
@@ -148,11 +183,11 @@ mod valid_files {
                         },
                     ),
                     top_level_message(
-                        name("settings", 4, 1),
+                        at.name("settings", 4, 1),
                         MessageValue {
                             fields: vec![field(
-                                name("log_level", 5, 3),
-                                Value::Integer(scalar("3", 5, 14)),
+                                at.name("log_level", 5, 3),
+                                Value::Integer(at.scalar("3", 5, 14)),
                             )],
                             location: SourceLocation {
                                 start: Position {
@@ -170,16 +205,18 @@ mod valid_files {
 
     #[gtest]
     fn comments() -> Result<()> {
+        let source = include_str!("../../testdata/valid/comments.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/comments.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![
                     top_level_message(
-                        name("project", 2, 1),
+                        at.name("project", 2, 1),
                         MessageValue {
                             fields: vec![field(
-                                name("universe_name", 4, 3),
-                                Value::String(scalar("\"example\"", 4, 18)),
+                                at.name("universe_name", 4, 3),
+                                Value::String(at.scalar("\"example\"", 4, 18)),
                             )],
                             location: SourceLocation {
                                 start: Position {
@@ -191,11 +228,11 @@ mod valid_files {
                         },
                     ),
                     top_level_message(
-                        name("settings", 7, 1),
+                        at.name("settings", 7, 1),
                         MessageValue {
                             fields: vec![field(
-                                name("log_level", 8, 3),
-                                Value::Integer(scalar("3", 8, 14)),
+                                at.name("log_level", 8, 3),
+                                Value::Integer(at.scalar("3", 8, 14)),
                             )],
                             location: SourceLocation {
                                 start: Position {
@@ -213,23 +250,34 @@ mod valid_files {
 
     #[gtest]
     fn enums() -> Result<()> {
+        let source = include_str!("../../testdata/valid/enums.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/enums.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
-                            field(name("status", 2, 3), Value::Enum(scalar("ACTIVE", 2, 11))),
                             field(
-                                name("mode", 3, 3),
-                                Value::Enum(scalar("STATUS_ACTIVE", 3, 9)),
+                                at.name("status", 2, 3),
+                                Value::Enum(at.scalar("ACTIVE", 2, 11))
                             ),
-                            field(name("version", 4, 3), Value::Enum(scalar("V1", 4, 12))),
-                            field(name("level", 5, 3), Value::Enum(scalar("LEVEL_2", 5, 10))),
                             field(
-                                name("state", 6, 3),
-                                Value::Enum(scalar("UNSPECIFIED", 6, 10)),
+                                at.name("mode", 3, 3),
+                                Value::Enum(at.scalar("STATUS_ACTIVE", 3, 9)),
+                            ),
+                            field(
+                                at.name("version", 4, 3),
+                                Value::Enum(at.scalar("V1", 4, 12))
+                            ),
+                            field(
+                                at.name("level", 5, 3),
+                                Value::Enum(at.scalar("LEVEL_2", 5, 10))
+                            ),
+                            field(
+                                at.name("state", 6, 3),
+                                Value::Enum(at.scalar("UNSPECIFIED", 6, 10)),
                             ),
                         ],
                         location: SourceLocation {
@@ -244,36 +292,38 @@ mod valid_files {
 
     #[gtest]
     fn field_names() -> Result<()> {
+        let source = include_str!("../../testdata/valid/field_names.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/field_names.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
                             field(
-                                name("universe_name", 2, 3),
-                                Value::String(scalar("\"example\"", 2, 18)),
+                                at.name("universe_name", 2, 3),
+                                Value::String(at.scalar("\"example\"", 2, 18)),
                             ),
                             field(
-                                name("project_id", 3, 3),
-                                Value::String(scalar("\"proj1\"", 3, 15)),
+                                at.name("project_id", 3, 3),
+                                Value::String(at.scalar("\"proj1\"", 3, 15)),
                             ),
                             field(
-                                name("retry_count", 4, 3),
-                                Value::Integer(scalar("3", 4, 16)),
+                                at.name("retry_count", 4, 3),
+                                Value::Integer(at.scalar("3", 4, 16)),
                             ),
                             field(
-                                name("field2name", 5, 3),
-                                Value::String(scalar("\"value\"", 5, 15)),
+                                at.name("field2name", 5, 3),
+                                Value::String(at.scalar("\"value\"", 5, 15)),
                             ),
                             field(
-                                name("max_retries", 6, 3),
-                                Value::Integer(scalar("5", 6, 16)),
+                                at.name("max_retries", 6, 3),
+                                Value::Integer(at.scalar("5", 6, 16)),
                             ),
                             field(
-                                name("api_v2_endpoint", 7, 3),
-                                Value::String(scalar("\"http://example.com\"", 7, 20)),
+                                at.name("api_v2_endpoint", 7, 3),
+                                Value::String(at.scalar("\"http://example.com\"", 7, 20)),
                             ),
                         ],
                         location: SourceLocation {
@@ -288,22 +338,27 @@ mod valid_files {
 
     #[gtest]
     fn floats() -> Result<()> {
+        let source = include_str!("../../testdata/valid/floats.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/floats.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
-                            field(name("pi", 2, 3), Value::Float(scalar("3.14", 2, 7))),
+                            field(at.name("pi", 2, 3), Value::Float(at.scalar("3.14", 2, 7))),
                             field(
-                                name("negative_float", 3, 3),
-                                Value::Float(scalar("-2.0", 3, 19)),
+                                at.name("negative_float", 3, 3),
+                                Value::Float(at.scalar("-2.0", 3, 19)),
                             ),
-                            field(name("small", 4, 3), Value::Float(scalar("0.5", 4, 10))),
                             field(
-                                name("precise", 5, 3),
-                                Value::Float(scalar("123.456789", 5, 12)),
+                                at.name("small", 4, 3),
+                                Value::Float(at.scalar("0.5", 4, 10))
+                            ),
+                            field(
+                                at.name("precise", 5, 3),
+                                Value::Float(at.scalar("123.456789", 5, 12)),
                             ),
                         ],
                         location: SourceLocation {
@@ -318,17 +373,28 @@ mod valid_files {
 
     #[gtest]
     fn integers() -> Result<()> {
+        let source = include_str!("../../testdata/valid/integers.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/integers.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
-                            field(name("positive", 2, 3), Value::Integer(scalar("10", 2, 13))),
-                            field(name("negative", 3, 3), Value::Integer(scalar("-5", 3, 13))),
-                            field(name("zero", 4, 3), Value::Integer(scalar("0", 4, 9))),
-                            field(name("large", 5, 3), Value::Integer(scalar("999999", 5, 10)),),
+                            field(
+                                at.name("positive", 2, 3),
+                                Value::Integer(at.scalar("10", 2, 13))
+                            ),
+                            field(
+                                at.name("negative", 3, 3),
+                                Value::Integer(at.scalar("-5", 3, 13))
+                            ),
+                            field(at.name("zero", 4, 3), Value::Integer(at.scalar("0", 4, 9))),
+                            field(
+                                at.name("large", 5, 3),
+                                Value::Integer(at.scalar("999999", 5, 10)),
+                            ),
                         ],
                         location: SourceLocation {
                             start: Position { line: 1, column: 9 },
@@ -342,35 +408,37 @@ mod valid_files {
 
     #[gtest]
     fn nested_messages() -> Result<()> {
+        let source = include_str!("../../testdata/valid/nested_messages.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/nested_messages.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("project", 1, 1),
+                    at.name("project", 1, 1),
                     MessageValue {
                         fields: vec![
                             field(
-                                name("name", 2, 3),
-                                Value::String(scalar("\"my_project\"", 2, 9)),
+                                at.name("name", 2, 3),
+                                Value::String(at.scalar("\"my_project\"", 2, 9)),
                             ),
                             field(
-                                name("database", 3, 3),
+                                at.name("database", 3, 3),
                                 Value::Message(MessageValue {
                                     fields: vec![
                                         field(
-                                            name("host", 4, 5),
-                                            Value::String(scalar("\"localhost\"", 4, 11)),
+                                            at.name("host", 4, 5),
+                                            Value::String(at.scalar("\"localhost\"", 4, 11)),
                                         ),
                                         field(
-                                            name("port", 5, 5),
-                                            Value::Integer(scalar("5432", 5, 11)),
+                                            at.name("port", 5, 5),
+                                            Value::Integer(at.scalar("5432", 5, 11)),
                                         ),
                                         field(
-                                            name("pool", 6, 5),
+                                            at.name("pool", 6, 5),
                                             Value::Message(MessageValue {
                                                 fields: vec![field(
-                                                    name("max_connections", 7, 7),
-                                                    Value::Integer(scalar("10", 7, 24)),
+                                                    at.name("max_connections", 7, 7),
+                                                    Value::Integer(at.scalar("10", 7, 24)),
                                                 )],
                                                 location: SourceLocation {
                                                     start: Position {
@@ -410,20 +478,26 @@ mod valid_files {
 
     #[gtest]
     fn repeated_messages() -> Result<()> {
+        let source = include_str!("../../testdata/valid/repeated_messages.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/repeated_messages.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("project", 1, 1),
+                    at.name("project", 1, 1),
                     MessageValue {
                         fields: vec![field(
-                            name("dependencies", 2, 3),
+                            at.name("dependencies", 2, 3),
                             Value::Repeated(RepeatedValue {
                                 values: vec![
                                     Value::Message(MessageValue {
                                         fields: vec![field(
-                                            name("universe", 4, 7),
-                                            Value::String(scalar("\"mv:example.com:lib1\"", 4, 17)),
+                                            at.name("universe", 4, 7),
+                                            Value::String(at.scalar(
+                                                "\"mv:example.com:lib1\"",
+                                                4,
+                                                17
+                                            )),
                                         )],
                                         location: SourceLocation {
                                             start: Position { line: 3, column: 5 },
@@ -432,8 +506,12 @@ mod valid_files {
                                     }),
                                     Value::Message(MessageValue {
                                         fields: vec![field(
-                                            name("universe", 7, 7),
-                                            Value::String(scalar("\"mv:example.com:lib2\"", 7, 17)),
+                                            at.name("universe", 7, 7),
+                                            Value::String(at.scalar(
+                                                "\"mv:example.com:lib2\"",
+                                                7,
+                                                17
+                                            )),
                                         )],
                                         location: SourceLocation {
                                             start: Position { line: 6, column: 5 },
@@ -468,20 +546,22 @@ mod valid_files {
 
     #[gtest]
     fn repeated_scalars() -> Result<()> {
+        let source = include_str!("../../testdata/valid/repeated_scalars.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/repeated_scalars.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
                             field(
-                                name("tags", 2, 3),
+                                at.name("tags", 2, 3),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![
-                                        Value::String(scalar("\"tag1\"", 3, 5)),
-                                        Value::String(scalar("\"tag2\"", 4, 5)),
-                                        Value::String(scalar("\"tag3\"", 5, 5)),
+                                        Value::String(at.scalar("\"tag1\"", 3, 5)),
+                                        Value::String(at.scalar("\"tag2\"", 4, 5)),
+                                        Value::String(at.scalar("\"tag3\"", 5, 5)),
                                     ],
                                     location: SourceLocation {
                                         start: Position { line: 2, column: 9 },
@@ -490,12 +570,12 @@ mod valid_files {
                                 }),
                             ),
                             field(
-                                name("counts", 7, 3),
+                                at.name("counts", 7, 3),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![
-                                        Value::Integer(scalar("1", 8, 5)),
-                                        Value::Integer(scalar("2", 9, 5)),
-                                        Value::Integer(scalar("3", 10, 5)),
+                                        Value::Integer(at.scalar("1", 8, 5)),
+                                        Value::Integer(at.scalar("2", 9, 5)),
+                                        Value::Integer(at.scalar("3", 10, 5)),
                                     ],
                                     location: SourceLocation {
                                         start: Position {
@@ -510,11 +590,11 @@ mod valid_files {
                                 }),
                             ),
                             field(
-                                name("values", 12, 3),
+                                at.name("values", 12, 3),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![
-                                        Value::Float(scalar("1.5", 13, 5)),
-                                        Value::Float(scalar("2.5", 14, 5)),
+                                        Value::Float(at.scalar("1.5", 13, 5)),
+                                        Value::Float(at.scalar("2.5", 14, 5)),
                                     ],
                                     location: SourceLocation {
                                         start: Position {
@@ -529,11 +609,11 @@ mod valid_files {
                                 }),
                             ),
                             field(
-                                name("modes", 16, 3),
+                                at.name("modes", 16, 3),
                                 Value::Repeated(RepeatedValue {
                                     values: vec![
-                                        Value::Enum(scalar("ACTIVE", 17, 5)),
-                                        Value::Enum(scalar("INACTIVE", 18, 5)),
+                                        Value::Enum(at.scalar("ACTIVE", 17, 5)),
+                                        Value::Enum(at.scalar("INACTIVE", 18, 5)),
                                     ],
                                     location: SourceLocation {
                                         start: Position {
@@ -563,92 +643,94 @@ mod valid_files {
 
     #[gtest]
     fn strings() -> Result<()> {
+        let source = include_str!("../../testdata/valid/strings.defcl");
+        let at = Expected { source };
         verify_that!(
-            parse(include_str!("../../testdata/valid/strings.defcl")),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("config", 1, 1),
+                    at.name("config", 1, 1),
                     MessageValue {
                         fields: vec![
                             field(
-                                name("basic", 2, 3),
-                                Value::String(scalar(r#""hello""#, 2, 10)),
+                                at.name("basic", 2, 3),
+                                Value::String(at.scalar(r#""hello""#, 2, 10)),
                             ),
                             field(
-                                name("with_spaces", 3, 3),
-                                Value::String(scalar(r#""hello world""#, 3, 16)),
+                                at.name("with_spaces", 3, 3),
+                                Value::String(at.scalar(r#""hello world""#, 3, 16)),
                             ),
                             field(
-                                name("with_newline", 4, 3),
-                                Value::String(scalar(r#""line1\nline2""#, 4, 17)),
+                                at.name("with_newline", 4, 3),
+                                Value::String(at.scalar(r#""line1\nline2""#, 4, 17)),
                             ),
                             field(
-                                name("with_tab", 5, 3),
-                                Value::String(scalar(r#""col1\tcol2""#, 5, 13)),
+                                at.name("with_tab", 5, 3),
+                                Value::String(at.scalar(r#""col1\tcol2""#, 5, 13)),
                             ),
                             field(
-                                name("with_backslash", 6, 3),
-                                Value::String(scalar(r#""path\\to\\file""#, 6, 19)),
+                                at.name("with_backslash", 6, 3),
+                                Value::String(at.scalar(r#""path\\to\\file""#, 6, 19)),
                             ),
                             field(
-                                name("with_quote", 7, 3),
-                                Value::String(scalar(r#""say \"hello\"""#, 7, 15)),
+                                at.name("with_quote", 7, 3),
+                                Value::String(at.scalar(r#""say \"hello\"""#, 7, 15)),
                             ),
                             field(
-                                name("with_apostrophe", 8, 3),
-                                Value::String(scalar(r#""it\'s fine""#, 8, 20)),
+                                at.name("with_apostrophe", 8, 3),
+                                Value::String(at.scalar(r#""it\'s fine""#, 8, 20)),
                             ),
                             field(
-                                name("with_bell", 9, 3),
-                                Value::String(scalar(r#""\a""#, 9, 14)),
+                                at.name("with_bell", 9, 3),
+                                Value::String(at.scalar(r#""\a""#, 9, 14)),
                             ),
                             field(
-                                name("with_backspace", 10, 3),
-                                Value::String(scalar(r#""\b""#, 10, 19)),
+                                at.name("with_backspace", 10, 3),
+                                Value::String(at.scalar(r#""\b""#, 10, 19)),
                             ),
                             field(
-                                name("with_formfeed", 11, 3),
-                                Value::String(scalar(r#""\f""#, 11, 18)),
+                                at.name("with_formfeed", 11, 3),
+                                Value::String(at.scalar(r#""\f""#, 11, 18)),
                             ),
                             field(
-                                name("with_return", 12, 3),
-                                Value::String(scalar(r#""\r""#, 12, 16)),
+                                at.name("with_return", 12, 3),
+                                Value::String(at.scalar(r#""\r""#, 12, 16)),
                             ),
                             field(
-                                name("with_vtab", 13, 3),
-                                Value::String(scalar(r#""\v""#, 13, 14)),
+                                at.name("with_vtab", 13, 3),
+                                Value::String(at.scalar(r#""\v""#, 13, 14)),
                             ),
                             field(
-                                name("with_question", 14, 3),
-                                Value::String(scalar(r#""\?""#, 14, 18)),
+                                at.name("with_question", 14, 3),
+                                Value::String(at.scalar(r#""\?""#, 14, 18)),
                             ),
                             field(
-                                name("octal_escape", 15, 3),
-                                Value::String(scalar(r#""\101""#, 15, 17)),
+                                at.name("octal_escape", 15, 3),
+                                Value::String(at.scalar(r#""\101""#, 15, 17)),
                             ),
                             field(
-                                name("hex_escape", 16, 3),
-                                Value::String(scalar(r#""\x41""#, 16, 15)),
+                                at.name("hex_escape", 16, 3),
+                                Value::String(at.scalar(r#""\x41""#, 16, 15)),
                             ),
                             field(
-                                name("unicode_bmp", 17, 3),
-                                Value::String(scalar(r#""\u0041""#, 17, 16)),
+                                at.name("unicode_bmp", 17, 3),
+                                Value::String(at.scalar(r#""\u0041""#, 17, 16)),
                             ),
                             field(
-                                name("unicode_smp", 18, 3),
-                                Value::String(scalar(r#""\U00000041""#, 18, 16)),
+                                at.name("unicode_smp", 18, 3),
+                                Value::String(at.scalar(r#""\U00000041""#, 18, 16)),
                             ),
                             field(
-                                name("unicode_spb", 19, 3),
-                                Value::String(scalar(r#""\U00100000""#, 19, 16)),
+                                at.name("unicode_spb", 19, 3),
+                                Value::String(at.scalar(r#""\U00100000""#, 19, 16)),
                             ),
                             field(
-                                name("utf8_hex_escapes", 20, 3),
-                                Value::String(scalar(r#""caf\xc3\xa9""#, 20, 21)),
+                                at.name("utf8_hex_escapes", 20, 3),
+                                Value::String(at.scalar(r#""caf\xc3\xa9""#, 20, 21)),
                             ),
                             field(
-                                name("utf8_octal_escapes", 21, 3),
-                                Value::String(scalar(r#""caf\303\251""#, 21, 23)),
+                                at.name("utf8_octal_escapes", 21, 3),
+                                Value::String(at.scalar(r#""caf\303\251""#, 21, 23)),
                             ),
                         ],
                         location: SourceLocation {
@@ -670,27 +752,29 @@ mod valid_source {
 
     #[gtest]
     fn columns_count_characters() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              b: \"café\"
+              # é
+              c: 1
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  b: \"café\"
-                  # é
-                  c: 1
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
                         fields: vec![
                             field(
-                                name("b", 2, 3),
+                                at.name("b", 2, 3),
                                 Value::String(Scalar {
-                                    text: "\"café\"",
+                                    text: at.range("\"café\"", 2, 6),
                                     location: location(2, 6, 2, 11),
                                 }),
                             ),
-                            field(name("c", 4, 3), Value::Integer(scalar("1", 4, 6))),
+                            field(at.name("c", 4, 3), Value::Integer(at.scalar("1", 4, 6))),
                         ],
                         location: location(1, 4, 5, 1),
                     },
@@ -701,17 +785,22 @@ mod valid_source {
 
     #[gtest]
     fn fraction_with_zero_before_last_digit() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              b: 1.05
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  b: 1.05
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
-                        fields: vec![field(name("b", 2, 3), Value::Float(scalar("1.05", 2, 6)))],
+                        fields: vec![field(
+                            at.name("b", 2, 3),
+                            Value::Float(at.scalar("1.05", 2, 6))
+                        )],
                         location: SourceLocation {
                             start: Position { line: 1, column: 4 },
                             end: Position { line: 3, column: 1 }
@@ -724,19 +813,21 @@ mod valid_source {
 
     #[gtest]
     fn shortest_escapes() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              b: \"\\0\\x4\"
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  b: \"\\0\\x4\"
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
                         fields: vec![field(
-                            name("b", 2, 3),
-                            Value::String(scalar("\"\\0\\x4\"", 2, 6)),
+                            at.name("b", 2, 3),
+                            Value::String(at.scalar("\"\\0\\x4\"", 2, 6)),
                         )],
                         location: SourceLocation {
                             start: Position { line: 1, column: 4 },
@@ -750,23 +841,25 @@ mod valid_source {
 
     #[gtest]
     fn comment_after_last_element() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              b: [
+                1
+                # one
+              ]
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  b: [
-                    1
-                    # one
-                  ]
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
                         fields: vec![field(
-                            name("b", 2, 3),
+                            at.name("b", 2, 3),
                             Value::Repeated(RepeatedValue {
-                                values: vec![Value::Integer(scalar("1", 3, 5))],
+                                values: vec![Value::Integer(at.scalar("1", 3, 5))],
                                 location: location(2, 6, 5, 3),
                             }),
                         )],
@@ -779,18 +872,23 @@ mod valid_source {
 
     #[gtest]
     fn comment_text_that_starts_with_spaces() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              #   |
+              b: 1
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  #   |
-                  b: 1
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
-                        fields: vec![field(name("b", 3, 3), Value::Integer(scalar("1", 3, 6)))],
+                        fields: vec![field(
+                            at.name("b", 3, 3),
+                            Value::Integer(at.scalar("1", 3, 6))
+                        )],
                         location: location(1, 4, 4, 1),
                     },
                 )],
@@ -800,18 +898,23 @@ mod valid_source {
 
     #[gtest]
     fn comment_without_text() -> Result<()> {
+        let source = indoc! {"
+            a: {
+              #
+              b: 1
+            }
+        "};
+        let at = Expected { source };
         verify_that!(
-            parse(indoc! {"
-                a: {
-                  #
-                  b: 1
-                }
-            "}),
+            parse(source),
             eq(&parsed(ParsedFile {
                 top_level_messages: vec![top_level_message(
-                    name("a", 1, 1),
+                    at.name("a", 1, 1),
                     MessageValue {
-                        fields: vec![field(name("b", 3, 3), Value::Integer(scalar("1", 3, 6)))],
+                        fields: vec![field(
+                            at.name("b", 3, 3),
+                            Value::Integer(at.scalar("1", 3, 6))
+                        )],
                         location: location(1, 4, 4, 1),
                     },
                 )],

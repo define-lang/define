@@ -1,13 +1,15 @@
 //! The Python module that validates defcl files: `defcl.python.validator`.
 
-use defcl_parser::{FieldPathElement, ParseResult, SyntaxError, SyntaxErrorKind, parse};
+use defcl_parser::{
+    FieldPathElement, ParseResult, ParsedFile, SyntaxError, SyntaxErrorKind, parse,
+};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::FileErrors;
 use prost::Message as _;
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::{PyBytes, PyString, PyType};
+use pyo3::types::{PyBytes, PyInt, PyString, PyTuple, PyType};
 use source_rendering_capsule::new_source_location;
 use std::path::Path;
 
@@ -205,16 +207,17 @@ fn validate<'py>(
 }
 
 /// Validates the defcl file at `path` as `validate` validates its text, registers
-/// it with the `SourceMap` `source_map`, and returns the file's text if it
-/// still means exactly one message, or else `None`, with the diagnostics, whose locations are in the file at `path`. Raises `OSError` if
-/// the file cannot be read.
+/// it with the `SourceMap` `source_map`, and returns the `ValidatedFile` if it
+/// still means exactly one message, or else `None`, with the diagnostics, whose
+/// locations are in the file at `path`. Raises `OSError` if the file cannot be
+/// read.
 #[pyfunction]
 fn validate_file<'py>(
     path: &Bound<'py, PyString>,
     source_map: &Bound<'py, PyAny>,
     descriptor_set: &[u8],
     top_level_message_type: &str,
-) -> PyResult<(Option<String>, Vec<Bound<'py, PyAny>>)> {
+) -> PyResult<(Option<ValidatedFile>, Vec<Bound<'py, PyAny>>)> {
     let py = path.py();
     let classes = PythonClasses::get(py)?;
     let descriptor_set = decode_descriptor_set(py, classes, descriptor_set)?;
@@ -224,60 +227,45 @@ fn validate_file<'py>(
         top_level_message_type,
     )?;
     let bytes = match &source {
-        Ok(text) => text.as_bytes(),
+        Ok(parsed) => parsed.text.as_bytes(),
         Err(bytes) => bytes,
     };
     let _: Bound<'_, PyAny> =
         source_map.call_method1("register_file", (path, PyBytes::new(py, bytes)))?;
     let errors = errors.map_err(|error| classes.invalid_schema_error(py, &error))?;
     let diagnostics = diagnostics(py, classes, &errors, Some(path))?;
-    Ok((source.ok().filter(|_| errors.understood), diagnostics))
-}
-
-/// An element of a field path from Python: a field name, or the index of an
-/// element of the repeated value before it.
-#[derive(FromPyObject)]
-enum PythonFieldPathElement {
-    Field(String),
-    Index(usize),
+    // Only a file whose parse a syntax error did not stop means exactly one
+    // message, so an understood file always has a syntax tree.
+    let validated = if errors.understood
+        && let Ok(parsed) = source
+        && let Some(file) = parsed.file
+    {
+        Some(ValidatedFile {
+            text: parsed.text,
+            file,
+            path: path.clone().unbind(),
+        })
+    } else {
+        None
+    };
+    Ok((validated, diagnostics))
 }
 
 /// Where the defcl file at `path`, registered with the `SourceMap` `source_map`,
-/// writes the field that `field_path` names: a sequence of field names and
+/// writes the field that `field_path` names: a tuple of field names and
 /// indices of repeated values' elements whose first element is a top-level
 /// message. A field that the file writes is located at its value, and one that
 /// it does not write at the name of the nearest field on its path that it
-/// writes. `None` if the file is no longer as it was registered. Raises `ValueError` if the file has a syntax error or does
-/// not write the path's top-level message, since only a file that validated has
-/// fields to find, and it writes its top-level message.
+/// writes. `None` if the file is no longer as it was registered. Raises
+/// `ValueError` if a syntax error stopped the file's parse, or if the path
+/// does not start with a top-level message that the file writes, since only a
+/// file that loaded has fields to find, and it writes its top-level message.
 #[pyfunction]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "pyo3 can only extract a sequence argument as an owned Vec"
-)]
 fn locate_field<'py>(
     source_map: &Bound<'py, PyAny>,
     path: &Bound<'py, PyString>,
-    field_path: Vec<PythonFieldPathElement>,
+    field_path: &Bound<'py, PyTuple>,
 ) -> PyResult<Option<Bound<'py, PyAny>>> {
-    let locations = locate_fields(source_map, path, vec![field_path])?;
-    Ok(locations.map(|mut locations| locations.remove(0)))
-}
-
-/// Where the defcl file at `path` writes each of the fields that
-/// `field_paths` name, as `locate_field` locates one, parsing the file only
-/// once. `None` if the file is no longer as it was registered.
-#[pyfunction]
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "pyo3 can only extract a sequence argument as an owned Vec"
-)]
-fn locate_fields<'py>(
-    source_map: &Bound<'py, PyAny>,
-    path: &Bound<'py, PyString>,
-    field_paths: Vec<Vec<PythonFieldPathElement>>,
-) -> PyResult<Option<Vec<Bound<'py, PyAny>>>> {
-    let py = path.py();
     let text: Option<String> = source_map.call_method1("file_text", (path,))?.extract()?;
     let Some(text) = text else {
         return Ok(None);
@@ -286,7 +274,7 @@ fn locate_fields<'py>(
     // parsing it again for each one too slow, keep each parsed file by its path
     // and digest so that later lookups in it reuse the tree.
     let ParseResult { file, errors } = parse(&text);
-    let file = file.filter(|_| errors.is_empty()).ok_or_else(|| {
+    let file = file.ok_or_else(|| {
         // A parse without a syntax tree has the error that stopped it.
         let error = &errors[0];
         PyValueError::new_err(match error.location {
@@ -294,21 +282,70 @@ fn locate_fields<'py>(
             None => error.to_string(),
         })
     })?;
-    let mut locations = Vec::with_capacity(field_paths.len());
-    for field_path in &field_paths {
-        let mut elements = Vec::with_capacity(field_path.len());
-        for element in field_path {
-            elements.push(match element {
-                PythonFieldPathElement::Field(name) => FieldPathElement::Field(name),
-                PythonFieldPathElement::Index(index) => FieldPathElement::Index(*index),
-            });
-        }
-        let location = file.location_of(&elements).ok_or_else(|| {
-            PyValueError::new_err("the file does not write the field path's top-level message")
-        })?;
-        locations.push(new_source_location(py, location, Some(path))?);
+    field_location(&file, &text, field_path, path).map(Some)
+}
+
+/// Where `file`, the syntax tree of the defcl file at `path` whose text is
+/// `text`, writes the field that `field_path` names, as `locate_field` locates
+/// it.
+fn field_location<'py>(
+    file: &ParsedFile,
+    text: &str,
+    field_path: &Bound<'py, PyTuple>,
+    path: &Bound<'py, PyString>,
+) -> PyResult<Bound<'py, PyAny>> {
+    let elements = field_path
+        .as_slice()
+        .iter()
+        .map(field_path_element)
+        .collect::<PyResult<Vec<_>>>()?;
+    let location = file
+        .location_of(text, &elements)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    new_source_location(path.py(), location, Some(path))
+}
+
+/// The element of a field path that `object` is: a field name if it is a
+/// `str`, or an index if it is an `int`.
+fn field_path_element<'object>(
+    object: &'object Bound<'_, PyAny>,
+) -> PyResult<FieldPathElement<'object>> {
+    if let Ok(name) = object.cast::<PyString>() {
+        return Ok(FieldPathElement::Field(name.to_str()?));
     }
-    Ok(Some(locations))
+    // A bool is also an int, but is not an index.
+    if let Ok(index) = object.cast_exact::<PyInt>() {
+        return Ok(FieldPathElement::Index(index.extract()?));
+    }
+    Err(PyTypeError::new_err(
+        "a field path element must be a str or an int",
+    ))
+}
+
+/// A defcl file that still means exactly one message: its text, and the
+/// syntax tree that validating it parsed, so that finding where it writes a
+/// field does not parse it again.
+#[pyclass(frozen, name = "ValidatedFile", module = "defcl.python.validator")]
+struct ValidatedFile {
+    text: String,
+    file: ParsedFile,
+    path: Py<PyString>,
+}
+
+#[pymethods]
+impl ValidatedFile {
+    /// The file's text, copied into a new `str`.
+    fn text(&self) -> &str {
+        &self.text
+    }
+
+    /// Where the file writes the field that `field_path` names, as
+    /// `locate_field` locates it. Raises `ValueError` if the path does not
+    /// start with a top-level message that the file writes.
+    fn location_of<'py>(&self, field_path: &Bound<'py, PyTuple>) -> PyResult<Bound<'py, PyAny>> {
+        let path = self.path.bind(field_path.py());
+        field_location(&self.file, &self.text, field_path, path)
+    }
 }
 
 fn decode_descriptor_set(
@@ -342,5 +379,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{locate_field, locate_fields, validate, validate_file};
+    use super::{ValidatedFile, locate_field, validate, validate_file};
 }

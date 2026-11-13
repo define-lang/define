@@ -54,9 +54,7 @@ pub fn check(source: &str) -> (bool, Vec<SyntaxError>) {
 
 /// Parses `source` with the fixes for its layout errors, or returns the
 /// syntax error that stops its parse.
-fn parse_unless_stopped(
-    source: &str,
-) -> Result<(ParseResult<'_>, Vec<LayoutFix>), Vec<SyntaxError>> {
+fn parse_unless_stopped(source: &str) -> Result<(ParseResult, Vec<LayoutFix>), Vec<SyntaxError>> {
     let (mut result, fixes) = parse_with_layout_fixes(source);
     if result.file.is_none() {
         // The error that stopped the parse is the last.

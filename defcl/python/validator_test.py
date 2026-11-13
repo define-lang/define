@@ -430,12 +430,16 @@ def test_missing_message_type_raises_invalid_schema_error():
 
 
 def test_validate_file_of_a_valid_file_returns_its_text_and_no_diagnostics():
-    assert validator.validate_file(
+    file, diagnostics = validator.validate_file(
         str(_testdata_path("valid/single_toplevel.defcl")),
         rendering.SourceMap(),
         _valid_schemas(),
         _SINGLE_TOPLEVEL_FILE,
-    ) == ('project: {\n  universe_name: "example"\n}\n', [])
+    )
+
+    assert file is not None
+    assert file.text() == 'project: {\n  universe_name: "example"\n}\n'
+    assert diagnostics == []
 
 
 def test_validate_file_registers_the_file_and_puts_its_diagnostics_in_it():
@@ -477,7 +481,8 @@ def test_validate_file_of_a_file_with_only_fields_out_of_order_returns_its_text(
         _WRONG_VALUE_KINDS_FILE,
     )
 
-    assert source == 'config: {\n  count: 1\n  name: "a"\n}\n'
+    assert source is not None
+    assert source.text() == 'config: {\n  count: 1\n  name: "a"\n}\n'
     assert isinstance(field_out_of_order, errors.FieldOutOfOrderDiagnostic)
     assert (
         field_out_of_order.kind == error_types.SemanticDiagnosticKind.FIELD_OUT_OF_ORDER
