@@ -62,6 +62,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator/reference_graph:action_contract",

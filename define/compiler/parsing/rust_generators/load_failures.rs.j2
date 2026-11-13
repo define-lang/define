@@ -1,0 +1,87 @@
+// Generated from `{{ module_name }}` by
+// //define/compiler/parsing/rust_generators:generate_load_failures.
+
+
+use crate::node_construction::{Node as _, SourceLocation};
+use crate::parse_error::ParseError;
+use source_rendering::Position;
+use pyo3::prelude::*;
+use pyo3::types::PyString;
+
+/// Creates the load failures of one parse, such as its syntax errors, as
+/// instances of classes from `{{ module_name }}`.
+pub struct LoadFailures<'py> {
+    py: Python<'py>,
+    file_path: Option<Bound<'py, PyString>>,
+}
+
+impl<'py> LoadFailures<'py> {
+    pub const fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> Self {
+        Self { py, file_path }
+    }
+
+    /// Returns the location from `start` through `end`, the position of its last
+    /// character.
+    fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
+        SourceLocation::new(
+            self.py,
+            source_rendering::SourceLocation { start, end },
+            self.file_path.as_ref(),
+        )
+    }
+
+    /// Returns the class `name` in `{{ module_name }}`. A parse ends in at most
+    /// one load failure, so its class is looked up only when it is created.
+    fn class(&self, name: &str) -> PyResult<Bound<'py, PyAny>> {
+        self.py.import("{{ module_name }}")?.getattr(name)
+    }
+
+    /// Returns `failure` as a load failure, or the exception that Python
+    /// raised while creating it.
+    fn load_failure(failure: PyResult<Bound<'py, PyAny>>) -> ParseError {
+        match failure {
+            Ok(failure) => ParseError::LoadFailure(failure.unbind()),
+            Err(error) => ParseError::Python(error),
+        }
+    }
+{% for load_failure in load_failures %}
+{%- if load_failure.has_location %}
+    /// Returns a `{{ module_name }}.{{ load_failure.name }}` from `start` through
+    /// `end`, the position of its last character.
+    pub fn {{ load_failure.snake_case_name }}(
+        &self,
+        start: Position,
+        end: Position,
+{%- for field in load_failure.fields %}
+        {{ field.name }}: {{ field.rust_type() }},
+{%- endfor %}
+    ) -> ParseError {
+        Self::load_failure(self.location(start, end).and_then(|location| {
+            self.class("{{ load_failure.name }}")?.call1((
+                location.into_object(),
+{%- for field in load_failure.fields %}
+                {{ field.python_value() }},
+{%- endfor %}
+            ))
+        }))
+    }
+{%- else %}
+    /// Returns a `{{ module_name }}.{{ load_failure.name }}`.
+    pub fn {{ load_failure.snake_case_name }}(
+        &self,
+{%- for field in load_failure.fields %}
+        {{ field.name }}: {{ field.rust_type() }},
+{%- endfor %}
+    ) -> ParseError {
+        Self::load_failure(self.class("{{ load_failure.name }}").and_then(|class| {
+            class.call1((
+{%- for field in load_failure.fields %}
+                {{ field.python_value() }},
+{%- endfor %}
+            ))
+        }))
+    }
+{%- endif %}
+{% endfor -%}
+}
+

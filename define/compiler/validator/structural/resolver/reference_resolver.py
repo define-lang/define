@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import config, constants
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.structural import (
     file_validation_context,
 )
@@ -282,9 +282,7 @@ class ReferenceResolver:
             self._path_tracker.find_enclosing_root(target_file)
             == constants.STANDARD_LIBRARY_ROOT
         ):
-            if isinstance(
-                target_load_failure, diagnostics.SourceFileNotFoundDiagnostic
-            ):
+            if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
                 return ReachedDefinition(target_loaded_file, target_definition)
@@ -296,7 +294,7 @@ class ReferenceResolver:
             )
             return None
 
-        if isinstance(target_load_failure, diagnostics.SourceFileNotFoundDiagnostic):
+        if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
             source_definition.diagnostics.append(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     location=edge.global_name_reference.name_content.path.location,

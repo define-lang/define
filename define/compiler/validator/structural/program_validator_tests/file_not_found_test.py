@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -22,7 +22,7 @@ def test_entrypoint_file_not_found(
 ):
     result = validate_testdata_structural(entry_file="nonexistent.dfn")
     assert result.all_diagnostics == [
-        diagnostics.SourceFileNotFoundDiagnostic(file_path="nonexistent.dfn")
+        syntax_errors.SourceFileNotFound(file_path="nonexistent.dfn")
     ]
     assert len(result.file_results) == 1
 

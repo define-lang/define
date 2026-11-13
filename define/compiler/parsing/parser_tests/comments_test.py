@@ -106,7 +106,7 @@ def test_non_ascii_comment_with_trailing_whitespace(
     result = parse_with_diagnostics(
         "define the potential position<standard:/path>. # café \n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -125,7 +125,7 @@ def test_control_character_in_comment(parse_with_diagnostics: ParseWithDiagnosti
         "# comment with\x01control char\n"
         + "define the potential position<standard:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
@@ -143,7 +143,7 @@ def test_control_character_in_inline_comment(
     result = parse_with_diagnostics(
         "define the potential position<standard:/path>. # comment\x00\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
@@ -164,8 +164,8 @@ def test_comment_with_trailing_whitespace(parse_with_diagnostics: ParseWithDiagn
             )
         ),
     ]
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1
     )
 
@@ -176,7 +176,7 @@ def test_same_line_comment_with_trailing_whitespace(
     result = parse_with_diagnostics(
         "define the potential position<standard:/path>. # comment \n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -230,8 +230,8 @@ def test_empty_comment_hash_space_file_by_itself(
             )
         ),
     ]
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1
     )
 
@@ -247,8 +247,8 @@ def test_empty_comment_hash_space_newline_file_by_itself(
             )
         ),
     ]
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1
     )
 
@@ -274,7 +274,7 @@ def test_empty_comment_hash_space_newline_above_statement(
     result = parse_with_diagnostics(
         "# \ndefine the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -294,7 +294,7 @@ def test_empty_comment_hash_only_after_statement_same_line(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. #"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
@@ -328,7 +328,7 @@ def test_empty_comment_hash_space_after_statement_same_line(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. # "
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -350,7 +350,7 @@ def test_empty_comment_hash_space_newline_after_statement_same_line(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. # \n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -373,7 +373,7 @@ def test_comment_with_trailing_whitespace_before_encoding_quality_assignment(
         + "    it has the encoding</decimal>.\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -396,7 +396,7 @@ def test_comment_with_trailing_whitespace_after_encoding_quality_assignment(
         + "    # note \n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -438,7 +438,7 @@ def test_comment_with_trailing_whitespace_before_operation_statements_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -463,7 +463,7 @@ def test_comment_with_trailing_whitespace_after_operation_statements_block(
         + "    # note \n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -488,7 +488,7 @@ def test_comment_with_trailing_whitespace_before_operation_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -513,7 +513,7 @@ def test_comment_with_trailing_whitespace_after_operation_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -540,7 +540,7 @@ def test_comment_with_trailing_whitespace_before_operation_argument(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -567,7 +567,7 @@ def test_comment_with_trailing_whitespace_after_operation_argument(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -598,7 +598,7 @@ def test_comment_with_trailing_whitespace_before_view_direction_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -629,7 +629,7 @@ def test_comment_with_trailing_whitespace_after_view_read_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -661,7 +661,7 @@ def test_comment_with_trailing_whitespace_after_view_written_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -692,7 +692,7 @@ def test_comment_with_trailing_whitespace_before_view_close(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -717,7 +717,7 @@ def test_disallowed_character_in_comment_does_not_stop_the_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
@@ -744,7 +744,7 @@ def test_each_disallowed_character_in_a_comment_gets_its_own_diagnostic(
         "# a\x01b\u200bc\ufeff\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
@@ -782,8 +782,8 @@ def test_carriage_return_after_disallowed_character_in_comment_is_reported_with_
             escaped_character="\\u{1}",
         )
     ]
-    assert isinstance(result.syntax_error, syntax_errors.CarriageReturnError)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.CarriageReturnError)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=6, end_line=1, end_column=6
     )
     assert result.program is None

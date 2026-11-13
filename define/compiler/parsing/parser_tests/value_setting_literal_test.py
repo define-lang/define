@@ -354,7 +354,7 @@ def test_literal_without_terminator_gets_a_diagnostic(
         + '        set the value of position<dest> from literal</text>"a"\n'
         + "    }\n}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(

@@ -1,11 +1,11 @@
 //! Logical operation definitions and their Logical Operation View Definitions.
 
 use crate::ast;
+use crate::load_failures::LoadFailures;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::operation_definition::VIEW_DIRECTION_STATEMENT_STARTS;
-use crate::syntax_errors::SyntaxErrors;
 use source_rendering::Position;
 use terminals::{DEFINE_THE, DEFINE_THE_VIEW, IT_IS_READ, IT_IS_WRITTEN, VIEW};
 
@@ -113,7 +113,7 @@ impl<'py> Parser<'py, '_> {
                 line,
                 block_open_end,
                 &VIEW_DIRECTION_STATEMENT_STARTS,
-                SyntaxErrors::missing_logical_operation_view_direction_statement,
+                LoadFailures::missing_logical_operation_view_direction_statement,
             ));
         }
         self.parse_statement_terminator()?;

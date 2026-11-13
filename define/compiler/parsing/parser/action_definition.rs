@@ -1,12 +1,12 @@
 //! Action definitions and the statements in them.
 
 use crate::ast;
+use crate::load_failures::LoadFailures;
 use crate::node_construction::{Node as _, NodeTuple};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::{FqunWithCanonicalText, POSITION_OR_ACTION};
-use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
 use source_rendering::Position;
@@ -573,7 +573,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let source = self.parse_statement_position_reference(fqun)?;
         // There is no ` to` after the source position.
         if !self.consume_connecting_word(SPACE_TO, &POSITION_REFERENCE_OR_LITERAL) {
-            return Err(self.missing_connecting_word(SyntaxErrors::invalid_move_statement_syntax));
+            return Err(self.missing_connecting_word(LoadFailures::invalid_move_statement_syntax));
         }
         let target = self.parse_statement_position_reference(fqun)?;
         let end = self.parse_reference_terminator()?;
@@ -598,7 +598,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // There is no ` from` after the target position.
         if !self.consume_connecting_word(SPACE_FROM, &POSITION_REFERENCE_OR_LITERAL) {
             return Err(
-                self.missing_connecting_word(SyntaxErrors::invalid_value_setting_statement_syntax)
+                self.missing_connecting_word(LoadFailures::invalid_value_setting_statement_syntax)
             );
         }
         // The line ends, or a non-letter character comes, where the value's
@@ -871,7 +871,7 @@ impl<'py> Parser<'py, '_> {
     #[inline(never)]
     pub(crate) fn missing_connecting_word(
         &mut self,
-        wrong_word: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
+        wrong_word: fn(&LoadFailures<'py>, Position, Position) -> ParseError,
     ) -> ParseError {
         if let Some(error) = self.disallowed_character_ahead(self.scanner.next_space_count()) {
             return error;

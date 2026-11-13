@@ -422,9 +422,9 @@ def test_missing_from_during_transformation(
     )
     assert result.diagnostics == []
     assert isinstance(
-        result.syntax_error, syntax_errors.InvalidValueSettingStatementSyntax
+        result.load_failure, syntax_errors.InvalidValueSettingStatementSyntax
     )
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert result.load_failure.location == rendering.SourceLocation(
         line=6, column=40, end_line=6, end_column=40
     )
 
@@ -439,8 +439,8 @@ def test_missing_move_to_after_value_setting(
         + "    }\n}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.syntax_error, syntax_errors.InvalidMoveStatementSyntax)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.InvalidMoveStatementSyntax)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=6, column=43, end_line=6, end_column=43
     )
 

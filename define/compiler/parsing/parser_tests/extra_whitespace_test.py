@@ -27,8 +27,8 @@ def test_file_all_spaces(parse_with_diagnostics: ParseWithDiagnostics):
             )
         ),
     ]
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1
     )
 
@@ -52,8 +52,8 @@ def test_file_spaces_and_newlines_only(parse_with_diagnostics: ParseWithDiagnost
             )
         ),
     ]
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=1
     )
 
@@ -228,7 +228,7 @@ def test_extra_space_before_local_name_in_quality_assignment_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
@@ -245,7 +245,7 @@ def test_space_before_name_in_position_definition(
     result = parse_with_diagnostics(
         "define the potential position <mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(

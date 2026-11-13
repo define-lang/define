@@ -23,7 +23,7 @@ GENERATED_RUST_SOURCES = [
     "define/compiler/parsing/ast.rs",
     "define/compiler/parsing/ast_constructors.rs",
     "define/compiler/parsing/parser_diagnostics.rs",
-    "define/compiler/parsing/syntax_errors.rs",
+    "define/compiler/parsing/load_failures.rs",
 ]
 
 # Type checkers and editors read generated Python modules, and the stubs of

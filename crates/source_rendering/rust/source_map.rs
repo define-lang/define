@@ -70,14 +70,8 @@ impl SourceMap {
         }
     }
 
-    /// Records that the file at `path` was validated with the text `source`,
-    /// without keeping the text.
-    pub fn register_file(&self, path: &str, source: &[u8]) {
-        self.register_file_digest(path, source_digest(source));
-    }
-
     /// Records that the file at `path` was validated with a text whose
-    /// `source_digest` is `digest`.
+    /// `source_digest` is `digest`, without keeping the text.
     pub fn register_file_digest(&self, path: &str, digest: u64) {
         self.lock_files().insert(path.into(), File::Unread(digest));
     }
@@ -176,7 +170,7 @@ fn read_lines(path: &str, digest: u64) -> FileLines {
 
 #[cfg(test)]
 mod tests {
-    use super::SourceMap;
+    use super::{SourceMap, source_digest};
     use crate::{Position, SourceLocation};
     use googletest::prelude::*;
     use indoc::{formatdoc, indoc};
@@ -212,12 +206,12 @@ mod tests {
             "},
         )?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(
+        source_map.register_file_digest(
             &path,
-            indoc! {b"
+            source_digest(indoc! {b"
                 first
                     second line
-            "},
+            "}),
         );
         verify_that!(
             source_map.render_in_file(location(2, 5, 10), &path),
@@ -232,7 +226,7 @@ mod tests {
     fn a_file_with_invalid_utf8_shows_replacement_characters() -> Result<()> {
         let path = write_file("invalid_utf8.dfn", b"caf\xe9\n")?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"caf\xe9\n");
+        source_map.register_file_digest(&path, source_digest(b"caf\xe9\n"));
         verify_that!(
             source_map.render_in_file(location(1, 4, 4), &path),
             eq(&formatdoc! {r#"
@@ -246,7 +240,7 @@ mod tests {
     fn a_changed_file_shows_that_it_changed() -> Result<()> {
         let path = write_file("changed.dfn", "changed\n")?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"original\n");
+        source_map.register_file_digest(&path, source_digest(b"original\n"));
         verify_that!(
             source_map.render_in_file(location(1, 1, 1), &path),
             eq(&formatdoc! {r#"
@@ -258,7 +252,7 @@ mod tests {
     #[gtest]
     fn a_missing_file_shows_that_it_cannot_be_read() -> Result<()> {
         let source_map = SourceMap::new(None);
-        source_map.register_file("no/such/file.dfn", b"text\n");
+        source_map.register_file_digest("no/such/file.dfn", source_digest(b"text\n"));
         // The operating system words the error.
         let error = std::fs::read("no/such/file.dfn").err().or_fail()?;
         verify_that!(
@@ -283,7 +277,7 @@ mod tests {
     fn a_file_is_read_once() -> Result<()> {
         let path = write_file("read_once.dfn", "before\n")?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"before\n");
+        source_map.register_file_digest(&path, source_digest(b"before\n"));
         verify_that!(
             source_map.render_in_file(location(1, 1, 6), &path),
             eq(&formatdoc! {r#"
@@ -305,7 +299,7 @@ mod tests {
     fn a_changed_file_s_header_shows_that_it_changed() -> Result<()> {
         let path = write_file("changed_header.dfn", "changed\n")?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"original\n");
+        source_map.register_file_digest(&path, source_digest(b"original\n"));
         verify_that!(
             source_map.render_header_without_position(&path),
             eq(&formatdoc! {r#"
@@ -318,7 +312,7 @@ mod tests {
     fn an_unchanged_file_s_header_names_only_the_file() -> Result<()> {
         let path = write_file("unchanged_header.dfn", "text\n")?;
         let source_map = SourceMap::new(None);
-        source_map.register_file(&path, b"text\n");
+        source_map.register_file_digest(&path, source_digest(b"text\n"));
         verify_that!(
             source_map.render_header_without_position(&path),
             eq(&format!("File \"{path}\""))

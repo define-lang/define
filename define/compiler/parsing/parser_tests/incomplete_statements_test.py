@@ -42,8 +42,8 @@ def test_file_starts_with_indented_trigger_conditions(
     parse_with_diagnostics: ParseWithDiagnostics,
 ):
     result = parse_with_diagnostics("    it happens when {\n")
-    assert isinstance(result.syntax_error, syntax_errors.ExpectedGlobalDefinition)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.ExpectedGlobalDefinition)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=5, end_line=1, end_column=21
     )
     assert result.diagnostics == [
@@ -316,8 +316,8 @@ def test_action_trigger_clause_missing_open_brace(
         + "it happens when\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingOpenBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingOpenBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=2, column=16, end_line=2, end_column=16
     )
     assert result.diagnostics == [
@@ -376,8 +376,8 @@ def test_action_and_it_does_block_missing_close_brace(
         + "    } and it does {\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=62
     )
     assert result.diagnostics == [
@@ -1357,8 +1357,8 @@ def test_file_ending_where_terminator_belongs(
             )
         )
     ]
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=2, column=5, end_line=2, end_column=41
     )
     assert result.program is None

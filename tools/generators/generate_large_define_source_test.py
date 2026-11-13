@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:
     result = parser.parse(source.encode(), "generated.dfn")
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == []
     assert result.program is not None
     return result.program
@@ -147,7 +147,7 @@ def test_malformed_eof_preserves_valid_prefix():
     invalid = gen.generate_source_lines(500, malformed_eof=True)
     assert invalid[:-1] == valid
     result = parser.parse(("\n".join(invalid) + "\n").encode(), None)
-    assert result.syntax_error is not None
+    assert result.load_failure is not None
     assert result.diagnostics == []
     assert result.program is None
 

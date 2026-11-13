@@ -180,12 +180,6 @@ impl PySourceMap {
         }
     }
 
-    /// Records that the file at `path` was validated with the text `source`,
-    /// without keeping the text.
-    fn register_file(&self, path: &str, source: &[u8]) {
-        self.source_map.register_file(path, source);
-    }
-
     /// Records that the file at `path` was validated with a text whose digest
     /// is `digest`, as an extension that has the text computes it with the
     /// `source_rendering` crate, so that the text is not copied into Python.

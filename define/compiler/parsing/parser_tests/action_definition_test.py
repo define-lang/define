@@ -329,7 +329,7 @@ def test_action_block_no_indentation(
         + "}\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
@@ -765,8 +765,8 @@ def test_missing_close_brace_followed_by_global_definition(
         + "    }\n"
         + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == []
@@ -782,8 +782,8 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_global_definit
         + "        the position<run> has a particle.\n"
         + "define the potential position<mv:define-lang.org:parser:/other>.\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
@@ -1080,7 +1080,7 @@ def test_comment_trailing_space_first_in_action_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1108,7 +1108,7 @@ def test_comment_trailing_space_after_quality_implication(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1135,7 +1135,7 @@ def test_comment_trailing_space_after_interface_position(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1162,7 +1162,7 @@ def test_comment_trailing_space_before_action_close(
         + "    # comment \n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1236,7 +1236,7 @@ def test_comment_trailing_space_in_action_statements_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -1325,8 +1325,8 @@ def test_quality_assignment_block_missing_close_brace_followed_by_action_stateme
         + "    }\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=7, column=13, end_line=7, end_column=49
     )
     assert result.diagnostics == []
@@ -1343,8 +1343,8 @@ def test_trigger_conditions_block_missing_close_brace_followed_by_local_position
         + "    define the position<other>.\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=3, column=5, end_line=3, end_column=21
     )
     assert result.diagnostics == []
@@ -1363,8 +1363,8 @@ def test_action_statements_block_missing_close_brace_followed_by_implication(
         + "    it also assigns the position</q>.\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=5, column=7, end_line=5, end_column=19
     )
     assert result.diagnostics == []

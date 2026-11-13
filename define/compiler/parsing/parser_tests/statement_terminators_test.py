@@ -41,7 +41,7 @@ def test_missing_terminator(parse_syntax_error: ParseSyntaxError):
 
 def test_missing_newline_after_terminator(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics("define the potential position<standard:/path>.")
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
@@ -59,7 +59,7 @@ def test_missing_newline_after_last_definition(
         "define the potential position<mv:define-lang.org:parser:/first>.\n"
         + "define the potential position<mv:define-lang.org:parser:/second>."
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingNewlineAtEndOfFileDiagnostic(
@@ -100,7 +100,7 @@ def test_comment_directly_after_terminator(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>.# comment\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
@@ -158,7 +158,7 @@ def test_space_before_terminator(parse_syntax_error: ParseSyntaxError):
 
 def test_trailing_space_before_newline(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics("define the potential position<standard:/path>. \n")
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -178,7 +178,7 @@ def test_several_trailing_spaces_before_newline(
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>.   \n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -196,7 +196,7 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     result = parse_with_diagnostics(
         "define the potential position<mv:define-lang.org:parser:/path>. "
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -223,7 +223,7 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(

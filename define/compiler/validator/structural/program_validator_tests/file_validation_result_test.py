@@ -10,7 +10,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import syntax_errors
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (
@@ -115,6 +115,6 @@ def test_file_not_found_populates_load_failure(
     assert len(results) == 1
     result = results[0]
 
-    assert result.load_failure == diagnostics.SourceFileNotFoundDiagnostic(
+    assert result.load_failure == syntax_errors.SourceFileNotFound(
         file_path="nonexistent.dfn"
     )

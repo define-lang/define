@@ -61,17 +61,6 @@ class Diagnostic(BaseDiagnostic):
         )
 
 
-class FileLoadFailureDiagnostic(BaseDiagnostic):
-    """Base class for diagnostics that keep a Define file from loading or parsing."""
-
-
-class SourceFileNotFoundDiagnostic(FileLoadFailureDiagnostic):
-    """Diagnostic for a Define source file that is not on disk at file_path."""
-
-    file_path: str
-    message_format: ClassVar[str] = "Source file not found: {self.file_path}"
-
-
 class ReservedNameDiagnostic(Diagnostic):
     """Base class for reserved name diagnostics."""
 

@@ -7,7 +7,6 @@ other than the source map that loaded files are registered with.
 
 from __future__ import annotations
 
-import pathlib
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -24,7 +23,7 @@ from define.compiler.validator.structural import (
 
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
-    from define.compiler.data_structures import define_path
+    from define.compiler.errors import syntax_errors
 
 
 type FileDefinitions = typed_name_dict.TypedNameDict[
@@ -37,7 +36,7 @@ class LoadedFile(msgspec.Struct):
 
     context: file_validation_context.FileValidationContext
     # The diagnostic that kept the file from loading or parsing, if any.
-    load_failure: diagnostics.FileLoadFailureDiagnostic | None
+    load_failure: syntax_errors.FileLoadFailureDiagnostic | None
     file_diagnostics: list[diagnostics.Diagnostic]
     # The first definition of each typed name in the file. It does not change
     # after loading, so definitions can be validated concurrently.
@@ -101,48 +100,34 @@ class FileStructuralValidator:
         self, context: file_validation_context.FileValidationContext
     ) -> LoadedFile:
         """Load and parse a single file."""
-        source, load_failure = self._load_file(context.full_path)
-        if load_failure is not None:
-            return LoadedFile(
-                context=context,
-                load_failure=load_failure,
-                file_diagnostics=[],
-                definitions=typed_name_dict.TypedNameDict(),
-            )
-        self._source_map.register_file(str(context.full_path), source)
-        return self._load_source(context=context, source=source)
+        parse_result = parser.parse_file(str(context.full_path), self._source_map)
+        return self._check_file(context, parse_result)
 
     def load_source(self, source: str) -> LoadedFile:
         """Parse source text without loading from the filesystem."""
-        context = file_validation_context.EmptyFileValidationContext()
-        return self._load_source(
-            context=context,
+        parse_result = parser.parse(
             # A lone surrogate becomes invalid UTF-8, as it would be in a file,
             # instead of failing to encode.
-            source=source.encode(errors="surrogatepass"),
+            source.encode(errors="surrogatepass"),
+            None,
+            # Source that is not from the filesystem need not follow the indentation
+            # rules.
+            check_indentation=False,
+        )
+        return self._check_file(
+            file_validation_context.EmptyFileValidationContext(), parse_result
         )
 
     @staticmethod
-    def _load_source(
+    def _check_file(
         context: file_validation_context.FileValidationContext,
-        source: bytes,
+        parse_result: parser.ParseResult,
     ) -> LoadedFile:
-        """Parse UTF-8 source text and check the rules that concern the whole file."""
-        parser_file_path = (
-            str(context.full_path) if context.is_filesystem_context else None
-        )
-        parse_result = parser.parse(
-            source,
-            parser_file_path,
-            # Source that is not from the filesystem need not follow the indentation
-            # rules.
-            check_indentation=context.is_filesystem_context,
-        )
-
-        if parse_result.syntax_error is not None:
+        """Check the rules that concern a parsed file as a whole."""
+        if parse_result.load_failure is not None:
             return LoadedFile(
                 context=context,
-                load_failure=parse_result.syntax_error,
+                load_failure=parse_result.load_failure,
                 file_diagnostics=parse_result.diagnostics,
                 definitions=typed_name_dict.TypedNameDict(),
             )
@@ -177,21 +162,6 @@ class FileStructuralValidator:
             file_diagnostics=file_diagnostics,
             definitions=definitions,
         )
-
-    @staticmethod
-    def _load_file(
-        path: define_path.DefinePath,
-    ) -> tuple[bytes, diagnostics.SourceFileNotFoundDiagnostic | None]:
-        """Load a Define source file and return its source, or the diagnostic for why it could not be loaded."""
-        posix_path = path.as_posix_path()
-        try:
-            source = pathlib.Path(posix_path).read_bytes()
-        except FileNotFoundError:
-            return (
-                b"",
-                diagnostics.SourceFileNotFoundDiagnostic(file_path=str(posix_path)),
-            )
-        return source, None
 
 
 def _path_mismatch_diagnostics(

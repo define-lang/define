@@ -353,7 +353,7 @@ def test_comment_directly_after_block_open(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
@@ -374,7 +374,7 @@ def test_comment_directly_after_block_close(
         + "    }# note\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
@@ -463,7 +463,7 @@ def test_whitespace_line_at_start_of_potential_position_definition_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -488,7 +488,7 @@ def test_whitespace_line_after_quality_assignment_block(
         + "    \n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -513,7 +513,7 @@ def test_whitespace_line_at_start_of_quality_assignment_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
@@ -538,7 +538,7 @@ def test_whitespace_line_after_quality_assignment_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(

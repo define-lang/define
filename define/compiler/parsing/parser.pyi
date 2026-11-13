@@ -1,3 +1,4 @@
+from crates.source_rendering.python import rendering
 from define.compiler import ast
 from define.compiler.errors import diagnostics as diagnostics_mod
 from define.compiler.errors import syntax_errors
@@ -8,7 +9,7 @@ class ParseResult:
     @property
     def diagnostics(self) -> list[diagnostics_mod.Diagnostic]: ...
     @property
-    def syntax_error(self) -> syntax_errors.DefineSyntaxError | None: ...
+    def load_failure(self) -> syntax_errors.FileLoadFailureDiagnostic | None: ...
 
 def parse_global_name(
     name: bytes, file_path: str | None, line: int, column: int
@@ -19,3 +20,4 @@ def parse(
     *,
     check_indentation: bool = True,
 ) -> ParseResult: ...
+def parse_file(file_path: str, source_map: rendering.SourceMap) -> ParseResult: ...

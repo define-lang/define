@@ -10,15 +10,15 @@ py_binary(
     data = [
         "//define/compiler/parsing:ast",
         "//define/compiler/parsing:ast_constructors",
+        "//define/compiler/parsing:load_failures",
         "//define/compiler/parsing:parser_diagnostics",
-        "//define/compiler/parsing:syntax_errors",
     ],
     env = {
         "RUST_GENERATED_SOURCES": " ".join([
             "$(rlocationpath //define/compiler/parsing:ast)",
             "$(rlocationpath //define/compiler/parsing:ast_constructors)",
+            "$(rlocationpath //define/compiler/parsing:load_failures)",
             "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
-            "$(rlocationpath //define/compiler/parsing:syntax_errors)",
         ]),
     },
     deps = [
@@ -354,7 +354,7 @@ py_binary(
         "$(rlocationpath //define/compiler/parsing:ast)",
         "$(rlocationpath //define/compiler/parsing:ast_constructors)",
         "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
-        "$(rlocationpath //define/compiler/parsing:syntax_errors)",
+        "$(rlocationpath //define/compiler/parsing:load_failures)",
         "$(rlocationpath //defcl/python:error_types_gen)",
         "$(rlocationpath //define/compiler/codegen/literal/python:renderer_stub)",
         "$(rlocationpath //defcl/python:validator_extension)",
@@ -370,9 +370,9 @@ py_binary(
         "//define/compiler/codegen/literal/python:renderer_stub",
         "//define/compiler/parsing:ast",
         "//define/compiler/parsing:ast_constructors",
+        "//define/compiler/parsing:load_failures",
         "//define/compiler/parsing:parser_diagnostics",
         "//define/compiler/parsing:parser_extension",
-        "//define/compiler/parsing:syntax_errors",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],

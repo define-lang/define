@@ -16,14 +16,16 @@ mod value_definition;
 use crate::ast;
 use crate::ast_builder::AstBuilder;
 use crate::element_stack::ElementStack;
+use crate::load_failures::LoadFailures;
+use crate::node_construction::Node as _;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::operation_execution::OperationKind;
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::Scanner;
-use crate::syntax_errors::SyntaxErrors;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
 use source_rendering::Position;
+use std::io::ErrorKind;
 use terminals::{
     ACTION, DEFINE_THE, DEFINE_THE_ENCODING, DEFINE_THE_ENCODING_OPERATION,
     DEFINE_THE_LOGICAL_OPERATION, DEFINE_THE_OPERATION, DEFINE_THE_POTENTIAL,
@@ -31,6 +33,76 @@ use terminals::{
     DEFINE_THE_POTENTIAL_VALUE, ENCODING, ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION,
     OPERATION, POSITION, VALUE,
 };
+
+/// What parsing a program found.
+pub(crate) struct ParsedProgram<'py> {
+    /// The `ast.Program`, unless the parse ended in `load_failure`.
+    pub(crate) program: Option<Bound<'py, PyAny>>,
+    /// The diagnostics that the parse found, in the order it found them.
+    pub(crate) diagnostics: Bound<'py, PyList>,
+    /// The `syntax_errors.FileLoadFailureDiagnostic` that ended the parse, if
+    /// any.
+    pub(crate) load_failure: Option<Py<PyAny>>,
+}
+
+/// Parses `source`, UTF-8 Define source code in the file at `file_path`, if
+/// it is in a file. A line with the wrong indentation gets a diagnostic only if
+/// `checks_indentation`.
+pub(crate) fn parse_source<'py>(
+    py: Python<'py>,
+    source: &[u8],
+    file_path: Option<Bound<'py, PyString>>,
+    checks_indentation: bool,
+) -> PyResult<ParsedProgram<'py>> {
+    let mut parser = Parser::new(py, source, Position::START, file_path, checks_indentation)?;
+    let (program, load_failure) = match parser.parse_program() {
+        Ok(program) => (Some(program.into_object()), None),
+        Err(error) => (None, Some(error.into_load_failure()?)),
+    };
+    Ok(ParsedProgram {
+        program,
+        diagnostics: parser.into_diagnostics()?,
+        load_failure,
+    })
+}
+
+/// Reads the Define source file at `file_path`, registers it with the
+/// `SourceMap` `source_map`, and parses it, checking indentation. A file that
+/// does not exist ends the parse in a `syntax_errors.SourceFileNotFound`, and
+/// one that cannot be read for any other reason in a
+/// `syntax_errors.SourceFileUnreadable`.
+///
+/// # Errors
+///
+/// The exception that Python raised.
+pub(crate) fn parse_file<'py>(
+    file_path: Bound<'py, PyString>,
+    source_map: &Bound<'py, PyAny>,
+) -> PyResult<ParsedProgram<'py>> {
+    let py = file_path.py();
+    let path = file_path.to_str()?;
+    let source = match std::fs::read(path) {
+        Ok(source) => source,
+        Err(error) => {
+            let load_failures = LoadFailures::new(py, None);
+            let load_failure = if error.kind() == ErrorKind::NotFound {
+                load_failures.source_file_not_found(path)
+            } else {
+                load_failures.source_file_unreadable(path, &error.to_string())
+            };
+            return Ok(ParsedProgram {
+                program: None,
+                diagnostics: PyList::empty(py),
+                load_failure: Some(load_failure.into_load_failure()?),
+            });
+        }
+    };
+    let _: Bound<'_, PyAny> = source_map.call_method1(
+        "register_file_digest",
+        (&file_path, source_rendering::source_digest(&source)),
+    )?;
+    parse_source(py, &source, Some(file_path), true)
+}
 
 /// The words that begin each global definition.
 const GLOBAL_DEFINITION_STARTS: [&[u8]; 8] = [
@@ -53,7 +125,7 @@ pub(crate) struct Parser<'py, 'source> {
     /// Where `typed_name_text` spells a typed name, kept to reuse its
     /// allocation.
     typed_name_text_buffer: Vec<u8>,
-    errors: SyntaxErrors<'py>,
+    errors: LoadFailures<'py>,
     diagnostics: ParserDiagnostics<'py>,
     /// Whether a line with the wrong indentation gets a diagnostic.
     checks_indentation: bool,
@@ -75,7 +147,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             nodes: ElementStack::new(py),
             texts: ElementStack::new(py),
             typed_name_text_buffer: Vec::new(),
-            errors: SyntaxErrors::new(py, file_path.clone()),
+            errors: LoadFailures::new(py, file_path.clone()),
             diagnostics: ParserDiagnostics::new(py, file_path),
             checks_indentation,
         })

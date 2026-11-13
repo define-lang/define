@@ -126,7 +126,7 @@ def test_encoding_without_terminator_gets_a_diagnostic(
         + "    it has the encoding</decimal>\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(

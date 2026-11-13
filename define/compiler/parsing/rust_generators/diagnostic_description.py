@@ -28,15 +28,18 @@ def _annotation(cls: type, field: str) -> object:
 
 
 def describe_diagnostic(
-    cls: type[diagnostics.Diagnostic],
+    cls: type[diagnostics.BaseDiagnostic],
 ) -> rust_renderer.ParserDiagnostic:
-    """Describe a diagnostic class whose location comes first and whose other fields are integers or text."""
-    location, *field_names = cls.__struct_fields__
-    if (
-        location != "location"
-        or _annotation(cls, location) != "rendering.SourceLocation"
-    ):
-        raise ValueError(f"{cls.__name__} must have a location first")
+    """Describe a diagnostic class whose location, if it has one, comes first and whose other fields are integers or text."""
+    field_names = list(cls.__struct_fields__)
+    has_location = "location" in field_names
+    if has_location:
+        if (
+            field_names[0] != "location"
+            or _annotation(cls, "location") != "rendering.SourceLocation"
+        ):
+            raise ValueError(f"{cls.__name__} must have its location first")
+        del field_names[0]
     fields: list[rust_renderer.DiagnosticField] = []
     for field_name in field_names:
         annotation = _annotation(cls, field_name)
@@ -51,5 +54,6 @@ def describe_diagnostic(
     return rust_renderer.ParserDiagnostic(
         name=cls.__name__,
         snake_case_name=rust_names.snake_case_name(cls.__name__),
+        has_location=has_location,
         fields=fields,
     )

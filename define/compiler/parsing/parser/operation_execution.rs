@@ -2,12 +2,12 @@
 //! and their operation arguments blocks.
 
 use crate::ast;
+use crate::load_failures::LoadFailures;
 use crate::node_construction::{Node, NodeTuple, SourceLocation};
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::LineInBlock;
 use crate::parser::names::FqunWithCanonicalText;
-use crate::syntax_errors::SyntaxErrors;
 use source_rendering::Position;
 use terminals::{
     BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
@@ -359,7 +359,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // There is no ` looking at` after the view.
         if !self.scanner.consume(SPACE_LOOKING_AT) {
             return Err(
-                self.missing_connecting_word(SyntaxErrors::invalid_operation_argument_syntax)
+                self.missing_connecting_word(LoadFailures::invalid_operation_argument_syntax)
             );
         }
         // The line ends, or a non-letter character comes, where what the view
@@ -464,7 +464,7 @@ impl<'py> Parser<'py, '_> {
     #[cold]
     #[inline(never)]
     fn expected_view_in_logical_operation(&self) -> ParseError {
-        self.expected_view_instead_of_literal(SyntaxErrors::literal_in_logical_operation_execution)
+        self.expected_view_instead_of_literal(LoadFailures::literal_in_logical_operation_execution)
     }
 
     /// Returns the error for a name type, at the scanner's position, that is
@@ -474,7 +474,7 @@ impl<'py> Parser<'py, '_> {
     #[inline(never)]
     pub(crate) fn expected_view_instead_of_literal(
         &self,
-        literal_error: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
+        literal_error: fn(&LoadFailures<'py>, Position, Position) -> ParseError,
     ) -> ParseError {
         let is_literal = self
             .scanner

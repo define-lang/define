@@ -90,7 +90,7 @@ def test_destructor_without_terminator_gets_a_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -214,8 +214,8 @@ def test_destructor_action_block_missing_close_brace(
         + "    } and it does {\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingCloseBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingCloseBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == [

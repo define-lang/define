@@ -869,7 +869,7 @@ def test_source_file_not_found_error_message(
     result = validate_project({}, entry_file="nonexistent.dfn")
     assert len(result.program_result.file_results) == 1
     [load_failure] = result.program_result.all_diagnostics
-    assert isinstance(load_failure, diagnostics.SourceFileNotFoundDiagnostic)
+    assert isinstance(load_failure, syntax_errors.SourceFileNotFound)
     assert load_failure.file_path == "nonexistent.dfn"
     assert (
         load_failure.format(result.program_result.source_map)

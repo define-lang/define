@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.errors import diagnostics
+    from define.compiler.errors import diagnostics, syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
@@ -92,7 +92,7 @@ class FileValidationResult:
     """Validation output for one source file."""
 
     # The diagnostic that kept the file from loading or parsing, if any.
-    load_failure: diagnostics.FileLoadFailureDiagnostic | None
+    load_failure: syntax_errors.FileLoadFailureDiagnostic | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     file_diagnostics: list[diagnostics.Diagnostic]

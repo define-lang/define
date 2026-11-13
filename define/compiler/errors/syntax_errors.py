@@ -1,4 +1,4 @@
-"""The syntax errors that end a parse of Define source code."""
+"""The load failures that end a parse of Define source code: a source file that is missing or cannot be read, and the syntax errors."""
 
 # Add concrete errors to the section for their base class below.
 # Keep error classes alphabetical within each section.
@@ -11,7 +11,28 @@ from define.compiler import constants
 from define.compiler.errors import diagnostics, invisible_characters
 
 
-class DefineSyntaxError(diagnostics.Diagnostic, diagnostics.FileLoadFailureDiagnostic):
+class FileLoadFailureDiagnostic(diagnostics.BaseDiagnostic):
+    """Base class for diagnostics that keep a Define file from loading or parsing."""
+
+
+class SourceFileNotFound(FileLoadFailureDiagnostic):
+    """Diagnostic for a Define source file that is not on disk at file_path."""
+
+    file_path: str
+    message_format: ClassVar[str] = "Source file not found: {self.file_path}"
+
+
+class SourceFileUnreadable(FileLoadFailureDiagnostic):
+    """Diagnostic for a Define source file at file_path that cannot be read, for the reason that the operating system gives."""
+
+    file_path: str
+    reason: str
+    message_format: ClassVar[str] = (
+        "Cannot read source file {self.file_path}: {self.reason}"
+    )
+
+
+class DefineSyntaxError(diagnostics.Diagnostic, FileLoadFailureDiagnostic):
     """Base class for Define syntax errors, each of which ends the parse."""
 
     message_format: ClassVar[str] = "Syntax error."

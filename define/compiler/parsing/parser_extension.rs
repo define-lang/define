@@ -15,13 +15,13 @@ mod ast;
 #[rustfmt::skip]
 mod ast_constructors;
 #[rustfmt::skip]
-mod parser_diagnostics;
+mod load_failures;
 #[rustfmt::skip]
-mod syntax_errors;
+mod parser_diagnostics;
 
 use node_construction::Node as _;
 use parse_error::ParseError;
-use parser::Parser;
+use parser::{ParsedProgram, Parser};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
 use source_rendering::Position;
@@ -34,12 +34,23 @@ use source_rendering::Position;
     module = "define.compiler.parsing.parser"
 )]
 struct PythonParseResult {
-    /// The `ast.Program`, unless the parse ended in `syntax_error`.
+    /// The `ast.Program`, unless the parse ended in `load_failure`.
     program: Option<Py<PyAny>>,
     /// The diagnostics that the parse found, in the order it found them.
     diagnostics: Py<PyList>,
-    /// The `syntax_errors.DefineSyntaxError` that ended the parse, if any.
-    syntax_error: Option<Py<PyAny>>,
+    /// The `syntax_errors.FileLoadFailureDiagnostic` that ended the parse, if
+    /// any.
+    load_failure: Option<Py<PyAny>>,
+}
+
+impl From<ParsedProgram<'_>> for PythonParseResult {
+    fn from(parsed: ParsedProgram<'_>) -> Self {
+        Self {
+            program: parsed.program.map(Bound::unbind),
+            diagnostics: parsed.diagnostics.unbind(),
+            load_failure: parsed.load_failure,
+        }
+    }
 }
 
 /// Parses UTF-8 Define source code into an `ast.Program`. A line with the
@@ -52,17 +63,20 @@ fn parse<'py>(
     file_path: Option<Bound<'py, PyString>>,
     check_indentation: bool,
 ) -> PyResult<PythonParseResult> {
-    let mut parser = Parser::new(py, source, Position::START, file_path, check_indentation)?;
-    let (program, syntax_error) = match parser.parse_program() {
-        Ok(program) => (Some(program.into_object().unbind()), None),
-        Err(ParseError::Syntax(error)) => (None, Some(error)),
-        Err(ParseError::Python(error)) => return Err(error),
-    };
-    Ok(PythonParseResult {
-        program,
-        diagnostics: parser.into_diagnostics()?.unbind(),
-        syntax_error,
-    })
+    parser::parse_source(py, source, file_path, check_indentation).map(PythonParseResult::from)
+}
+
+/// Reads the Define source file at `file_path`, registers it with the
+/// `SourceMap` `source_map`, and parses it as `parse` does, checking
+/// indentation. A file that does not exist ends the parse in a
+/// `syntax_errors.SourceFileNotFound`, and one that cannot be read for any
+/// other reason in a `syntax_errors.SourceFileUnreadable`.
+#[pyfunction]
+fn parse_file<'py>(
+    file_path: Bound<'py, PyString>,
+    source_map: &Bound<'py, PyAny>,
+) -> PyResult<PythonParseResult> {
+    parser::parse_file(file_path, source_map).map(PythonParseResult::from)
 }
 
 /// Parses `name`, a global name that is not in Define source, such as one
@@ -81,8 +95,7 @@ fn parse_global_name<'py>(
     let mut parser = Parser::new(py, name, Position { line, column }, file_path, true)?;
     match parser.parse_global_name() {
         Ok(content) => Ok(content.into_object().unbind()),
-        Err(ParseError::Syntax(error)) => Ok(error),
-        Err(ParseError::Python(error)) => Err(error),
+        Err(error) => error.into_load_failure(),
     }
 }
 
@@ -91,5 +104,6 @@ fn parse_global_name<'py>(
 fn parser_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PythonParseResult>()?;
     module.add_function(wrap_pyfunction!(parse, module)?)?;
+    module.add_function(wrap_pyfunction!(parse_file, module)?)?;
     module.add_function(wrap_pyfunction!(parse_global_name, module)?)
 }

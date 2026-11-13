@@ -263,27 +263,27 @@ struct AstConstructors<'a> {
     description: &'a AstDescription,
 }
 
-/// Everything that the syntax errors template renders.
+/// Everything that the load failures template renders.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone, Template)]
-#[template(path = "syntax_errors.rs.j2", escape = "none")]
-struct SyntaxErrorsDescription {
+#[template(path = "load_failures.rs.j2", escape = "none")]
+struct LoadFailuresDescription {
     module_name: String,
-    syntax_errors: Vec<ParserDiagnostic>,
+    load_failures: Vec<ParserDiagnostic>,
 }
 
 #[pymethods]
-impl SyntaxErrorsDescription {
+impl LoadFailuresDescription {
     #[new]
-    const fn new(module_name: String, syntax_errors: Vec<ParserDiagnostic>) -> Self {
+    const fn new(module_name: String, load_failures: Vec<ParserDiagnostic>) -> Self {
         Self {
             module_name,
-            syntax_errors,
+            load_failures,
         }
     }
 }
 
-/// The type of a diagnostic's field after its location.
+/// The type of a diagnostic's field other than its location.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 enum DiagnosticFieldType {
@@ -291,7 +291,7 @@ enum DiagnosticFieldType {
     Text {},
 }
 
-/// A diagnostic's field after its location.
+/// A diagnostic's field other than its location.
 #[pyclass(frozen, from_py_object)]
 #[derive(Clone)]
 struct DiagnosticField {
@@ -332,17 +332,27 @@ impl DiagnosticField {
 struct ParserDiagnostic {
     name: String,
     snake_case_name: String,
-    /// The fields after `location`, in the order the class takes them.
+    /// Whether the class's first field is its `location`. Only a load failure,
+    /// such as a missing file, has no location.
+    has_location: bool,
+    /// The fields after `location`, if it has one, in the order the class
+    /// takes them.
     fields: Vec<DiagnosticField>,
 }
 
 #[pymethods]
 impl ParserDiagnostic {
     #[new]
-    const fn new(name: String, snake_case_name: String, fields: Vec<DiagnosticField>) -> Self {
+    const fn new(
+        name: String,
+        snake_case_name: String,
+        has_location: bool,
+        fields: Vec<DiagnosticField>,
+    ) -> Self {
         Self {
             name,
             snake_case_name,
+            has_location,
             fields,
         }
     }
@@ -397,7 +407,7 @@ fn render_ast_constructors(description: AstDescription) -> PyResult<String> {
     clippy::needless_pass_by_value,
     reason = "pyo3 extracts a description argument only by value"
 )]
-fn render_syntax_errors(description: SyntaxErrorsDescription) -> PyResult<String> {
+fn render_load_failures(description: LoadFailuresDescription) -> PyResult<String> {
     description
         .render()
         .map_err(|error| PyRuntimeError::new_err(error.to_string()))
@@ -419,8 +429,8 @@ mod rust_renderer {
     #[pymodule_export]
     use super::{
         AstDescription, Constructor, DiagnosticField, DiagnosticFieldType, EnumMember, FieldEnum,
-        FieldType, NodeClass, NodeUnion, Parameter, ParserDiagnostic, ParserDiagnosticsDescription,
-        SyntaxErrorsDescription, render_ast_constructors, render_ast_nodes,
-        render_parser_diagnostics, render_syntax_errors,
+        FieldType, LoadFailuresDescription, NodeClass, NodeUnion, Parameter, ParserDiagnostic,
+        ParserDiagnosticsDescription, render_ast_constructors, render_ast_nodes,
+        render_load_failures, render_parser_diagnostics,
     };
 }

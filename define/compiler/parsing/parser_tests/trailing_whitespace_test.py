@@ -24,7 +24,7 @@ def test_spaces_after_terminator_do_not_stop_the_next_definition(
         "define the potential position<mv:define-lang.org:parser:/first>.  \n"
         + "define the potential position<mv:define-lang.org:parser:/second>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -50,7 +50,7 @@ def test_spaces_after_block_open_do_not_stop_the_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -80,7 +80,7 @@ def test_spaces_after_block_close_do_not_stop_the_next_definition(
         + "}  \n"
         + "define the potential position<mv:define-lang.org:parser:/second>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -112,7 +112,7 @@ def test_line_of_only_spaces_in_a_block_gets_no_indentation_diagnostic(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -142,7 +142,7 @@ def test_misindented_comment_with_trailing_spaces_gets_both_diagnostics(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -179,7 +179,7 @@ def test_spaces_after_comment_after_statement_do_not_stop_the_next_statement(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -207,7 +207,7 @@ def test_each_line_with_trailing_spaces_gets_its_own_diagnostic(
         + "# note \n"
         + "define the potential position<mv:define-lang.org:parser:/second>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
@@ -247,8 +247,8 @@ def test_trailing_spaces_before_a_syntax_error_are_reported_with_it(
             )
         )
     ]
-    assert isinstance(result.syntax_error, syntax_errors.MissingTerminatorOrBrace)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingTerminatorOrBrace)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=2, column=65, end_line=2, end_column=65
     )
     assert result.program is None

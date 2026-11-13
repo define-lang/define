@@ -30,15 +30,21 @@ _PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
 )
 
 
+def _describe_parser_diagnostic(
+    cls: type[diagnostics.Diagnostic],
+) -> rust_renderer.ParserDiagnostic:
+    # Only a load failure, which ends the parse, can have no location.
+    if "location" not in cls.__struct_fields__:
+        raise ValueError(f"{cls.__name__} must have a location")
+    return diagnostic_description.describe_diagnostic(cls)
+
+
 def main():
     """Write the Rust parser diagnostics to the path given as the only argument."""
     (output_path,) = sys.argv[1:]
     description = rust_renderer.ParserDiagnosticsDescription(
         module_name=diagnostics.__name__,
-        diagnostics=[
-            diagnostic_description.describe_diagnostic(cls)
-            for cls in _PARSER_DIAGNOSTICS
-        ],
+        diagnostics=[_describe_parser_diagnostic(cls) for cls in _PARSER_DIAGNOSTICS],
     )
     _ = pathlib.Path(output_path).write_text(
         rust_renderer.render_parser_diagnostics(description),

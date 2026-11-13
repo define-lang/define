@@ -415,7 +415,7 @@ def test_encoding_operation_without_terminator_gets_a_diagnostic(
         + "        execute the encoding operation\n"
         + _OPERATION_SUFFIX
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
@@ -520,7 +520,7 @@ def test_argument_without_terminator_gets_a_diagnostic(
         + "        }\n"
         + _OPERATION_SUFFIX
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(

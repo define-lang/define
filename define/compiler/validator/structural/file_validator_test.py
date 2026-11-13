@@ -111,8 +111,23 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path, file_name="nonexistent.dfn")
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.load_failure == diagnostics.SourceFileNotFoundDiagnostic(
+        assert result.load_failure == syntax_errors.SourceFileNotFound(
             file_path=(tmp_path / "nonexistent.dfn").as_posix()
+        )
+        assert result.definition_results == []
+        assert _reference_edges(result) == []
+
+    def test_file_that_cannot_be_read(self, tmp_path: Path):
+        (tmp_path / "directory.dfn").mkdir()
+        ctx = _make_context(tmp_path, file_name="directory.dfn")
+        result = _load_and_validate_every_definition(ctx)
+
+        # The reason is the operating system's, whose words differ by platform.
+        assert isinstance(result.load_failure, syntax_errors.SourceFileUnreadable)
+        assert result.load_failure.reason
+        assert result.load_failure == syntax_errors.SourceFileUnreadable(
+            file_path=(tmp_path / "directory.dfn").as_posix(),
+            reason=result.load_failure.reason,
         )
         assert result.definition_results == []
         assert _reference_edges(result) == []

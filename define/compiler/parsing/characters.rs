@@ -5,10 +5,10 @@
 // a language other than English. Source that is printable ASCII never comes
 // here.
 
+use crate::load_failures::LoadFailures;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser_diagnostics::ParserDiagnostics;
 use crate::scanner::Scanner;
-use crate::syntax_errors::SyntaxErrors;
 pub use source_characters::TextKind;
 use source_characters::{DisallowedCharacter, DisallowedReason, Neighbors, disallowed_reason};
 use source_rendering::{Position, escape_invisible};
@@ -17,7 +17,7 @@ use std::fmt::Write as _;
 /// Returns the error for the first character in `text`, which begins at
 /// `start` and has no line feed, that `kind` does not allow.
 pub fn first_disallowed_character(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     start: Position,
     text: &[u8],
     kind: TextKind,
@@ -34,7 +34,7 @@ pub fn first_disallowed_character(
 /// at `start` and has no line feed, and returns the error for the first
 /// carriage return or bytes that are not valid UTF-8 in it, if it has one.
 pub fn check_comment_characters(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     diagnostics: &mut ParserDiagnostics,
     start: Position,
     comment: &[u8],
@@ -61,7 +61,7 @@ fn split_at_invalid_bytes(text: &[u8]) -> (&str, &[u8]) {
 /// Returns the error for `invalid`, the bytes that are not valid UTF-8 after
 /// the characters `valid` that begin at `start`, if there are any.
 fn invalid_bytes_error(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     start: Position,
     valid: &str,
     invalid: &[u8],
@@ -75,7 +75,7 @@ fn invalid_bytes_error(
 
 /// Returns the error for `found`, a character that a kind of text does not
 /// allow.
-fn character_error(errors: &SyntaxErrors, found: DisallowedCharacter) -> ParseError {
+fn character_error(errors: &LoadFailures, found: DisallowedCharacter) -> ParseError {
     let position = found.position;
     // The errors show the character as text.
     let mut buffer = [0; 4];
@@ -99,7 +99,7 @@ fn character_error(errors: &SyntaxErrors, found: DisallowedCharacter) -> ParseEr
 /// Adds the diagnostic for `found`, a character that comments do not allow,
 /// and returns the error if it must stop the parse instead.
 fn add_comment_character_diagnostic(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     diagnostics: &mut ParserDiagnostics,
     found: DisallowedCharacter,
 ) -> Option<ParseError> {
@@ -133,7 +133,7 @@ fn add_comment_character_diagnostic(
 /// have it.
 #[cold]
 pub fn disallowed_character_ahead(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     scanner: &Scanner,
     offset: usize,
 ) -> Option<ParseError> {
@@ -146,7 +146,7 @@ pub fn disallowed_character_ahead(
 /// `position` and has no line feed, if no syntax may have it.
 #[cold]
 pub fn disallowed_first_character(
-    errors: &SyntaxErrors,
+    errors: &LoadFailures,
     position: Position,
     text: &[u8],
 ) -> Option<ParseError> {
@@ -168,7 +168,7 @@ pub fn disallowed_first_character(
 /// Returns the error for the bytes at `position` that are not valid UTF-8.
 #[cold]
 #[inline(never)]
-fn invalid_encoding(errors: &SyntaxErrors, position: Position, bytes: &[u8]) -> ParseError {
+fn invalid_encoding(errors: &LoadFailures, position: Position, bytes: &[u8]) -> ParseError {
     // The bytes are not characters, so the error shows them as escapes.
     let mut escaped = String::with_capacity(bytes.len() * 4);
     for byte in bytes {

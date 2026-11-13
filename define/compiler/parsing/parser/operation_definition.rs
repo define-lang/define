@@ -2,13 +2,13 @@
 //! and their operation statements blocks.
 
 use crate::ast;
+use crate::load_failures::LoadFailures;
 use crate::node_construction::NodeTuple;
 use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::OperationKind;
-use crate::syntax_errors::SyntaxErrors;
 use source_rendering::Position;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
@@ -236,7 +236,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 line,
                 block_open_end,
                 statement_starts,
-                SyntaxErrors::missing_view_direction_statement,
+                LoadFailures::missing_view_direction_statement,
             ));
         }
         Ok((is_input, is_output, line, content_end))
@@ -445,14 +445,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         // There is no ` from` after the target.
         if !self.consume_connecting_word(SPACE_FROM, &VIEW_ONLY) {
             return Err(
-                self.missing_connecting_word(SyntaxErrors::invalid_view_setting_statement_syntax)
+                self.missing_connecting_word(LoadFailures::invalid_view_setting_statement_syntax)
             );
         }
         // The line ends, or something other than a view comes, where the
         // source's typed name belongs.
         if !self.space_before_word()? || !self.scanner.next_bytes_are(VIEW) {
             return Err(
-                self.expected_view_instead_of_literal(SyntaxErrors::literal_in_view_setting)
+                self.expected_view_instead_of_literal(LoadFailures::literal_in_view_setting)
             );
         }
         let source = self.parse_view_reference()?;
@@ -544,7 +544,7 @@ impl<'py> Parser<'py, '_> {
         line: LineInBlock,
         block_open_end: Position,
         statement_starts: &[&[u8]],
-        missing: fn(&SyntaxErrors<'py>, Position, Position) -> ParseError,
+        missing: fn(&LoadFailures<'py>, Position, Position) -> ParseError,
     ) -> ParseError {
         let start = self.scanner.position;
         match line {

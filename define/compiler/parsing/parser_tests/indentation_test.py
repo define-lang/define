@@ -27,7 +27,7 @@ def test_over_indented_quality_assignment(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -50,7 +50,7 @@ def test_under_indented_quality_assignment(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -73,7 +73,7 @@ def test_misindented_opener_does_not_move_its_block_contents(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -96,7 +96,7 @@ def test_under_indented_quality_assignment_block_close(
         + "  }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -119,7 +119,7 @@ def test_indented_definition_block_close(
         + "    }\n"
         + " }\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -143,7 +143,7 @@ def test_under_indented_comment_in_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -167,7 +167,7 @@ def test_unindented_comment_in_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -191,7 +191,7 @@ def test_under_indented_non_ascii_comment_in_block(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -210,7 +210,7 @@ def test_indented_top_level_comment(
     result = parse_with_diagnostics(
         "  # note\ndefine the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -234,8 +234,8 @@ def test_indentation_diagnostic_before_syntax_error(
         + "}\n"
     )
     assert result.program is None
-    assert isinstance(result.syntax_error, syntax_errors.MissingTerminator)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingTerminator)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=3, column=34, end_line=3, end_column=34
     )
     assert result.diagnostics == [
@@ -267,8 +267,8 @@ def test_action_statement_under_indented_after_blank_line(
         + "}\n"
         + "}\n"
     )
-    assert isinstance(result.syntax_error, syntax_errors.MissingTriggerConditionContent)
-    assert result.syntax_error.location == rendering.SourceLocation(
+    assert isinstance(result.load_failure, syntax_errors.MissingTriggerConditionContent)
+    assert result.load_failure.location == rendering.SourceLocation(
         line=5, column=1, end_line=5, end_column=1
     )
     assert result.diagnostics == [
@@ -301,7 +301,7 @@ def test_trigger_conditions_block_not_indented_in_action_block(
         + "}\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -347,7 +347,7 @@ def test_trigger_conditions_block_under_indented(
         + "  }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -393,7 +393,7 @@ def test_trigger_conditions_block_over_indented(
         + "        }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -439,7 +439,7 @@ def test_action_close_brace_indented(
         + "    }\n"
         + "    }\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -458,7 +458,7 @@ def test_top_level_definition_indented(
     result = parse_with_diagnostics(
         "    define the potential position<standard:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -484,7 +484,7 @@ def test_comment_in_action_block_not_indented(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -510,7 +510,7 @@ def test_indentation_wrong_in_several_definitions(
         + "  }\n"
         + "  }\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -571,7 +571,7 @@ def test_action_lines_indented_at_random(
         + "       }\n"
         + "           }\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
@@ -630,7 +630,7 @@ def test_every_line_of_shifted_definition_is_reported(
         + "      }\n"
         + "  }\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
@@ -685,7 +685,7 @@ def test_encoding_quality_assignment_under_indented(
         + "  it has the encoding</decimal_text>.\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
@@ -713,7 +713,7 @@ def test_view_direction_statement_under_indented(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
@@ -737,7 +737,7 @@ def test_operation_argument_under_indented(
         + "    }\n"
         + "}\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(

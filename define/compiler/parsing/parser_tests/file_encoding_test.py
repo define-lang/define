@@ -174,7 +174,7 @@ def test_variation_selector_after_space_in_comment_gets_a_diagnostic(
         "# \ufe0f\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
@@ -273,7 +273,7 @@ def test_comment_with_bidi_isolates_gets_a_diagnostic_for_each(
         "# isolate-wrapped rtl text: \u2067\u05e9\u05dc\u05d5\u05dd\u2069\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
@@ -298,7 +298,7 @@ def test_zero_width_space_in_comment_gets_a_diagnostic(
         "# a\u200bb\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
@@ -338,7 +338,7 @@ def test_byte_order_mark_inside_comment_gets_a_diagnostic(
         "# a\ufeffb\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ByteOrderMarkInCommentDiagnostic(
@@ -356,7 +356,7 @@ def test_c1_control_character_in_comment_gets_a_diagnostic(
         "# a\u0085b\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.ControlCharacterInCommentDiagnostic(
@@ -375,7 +375,7 @@ def test_zero_width_joiner_before_space_in_comment_gets_a_diagnostic(
         "# a\u200d b\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(
@@ -394,7 +394,7 @@ def test_tag_character_after_letter_in_comment_gets_a_diagnostic(
         "# a\U000e0041\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
         diagnostics.InvisibleCharacterInCommentDiagnostic(

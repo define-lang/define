@@ -73,6 +73,7 @@ py_library(
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_validation_context",

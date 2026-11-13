@@ -407,7 +407,7 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
         + "        execute the computer operation\n"
         + _ENCODING_OPERATION_SUFFIX
     )
-    assert result.syntax_error is None
+    assert result.load_failure is None
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
