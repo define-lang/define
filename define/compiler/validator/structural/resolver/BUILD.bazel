@@ -53,6 +53,7 @@ py_test(
     srcs = ["path_tracker_test.py"],
     deps = [
         ":path_tracker",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",

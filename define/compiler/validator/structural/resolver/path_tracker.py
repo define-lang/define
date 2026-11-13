@@ -57,7 +57,9 @@ class PathTracker[T]:
         self._results: dict[define_path.DefinePath, T | None] = {}
         self._not_found: set[define_path.DefinePath] = set()
         self._project_roots: _ProjectRootNode = _ProjectRootNode()
-        self._fqun_to_root: dict[str, define_path.DefinePath] = {}
+        self._fqun_to_project_root: dict[
+            str, tuple[define_path.DefinePath, config.ProjectRootConfig]
+        ] = {}
 
     def _get_project_root_node(
         self, path: define_path.DefinePath
@@ -186,7 +188,7 @@ class PathTracker[T]:
         if node.project_root is not None:
             raise ValueError(f"sub_root already registered: {root}")
         node.project_root = (root, root_config)
-        self._fqun_to_root[root_config.fqun] = root
+        self._fqun_to_project_root[root_config.fqun] = (root, root_config)
 
     def declare_sub_root(
         self,
@@ -224,9 +226,11 @@ class PathTracker[T]:
                 return node.declared_sub_root
         return None
 
-    def root_for_fqun(self, fqun: str) -> define_path.DefinePath | None:
-        """Return the root path registered for a given FQUN, or None."""
-        return self._fqun_to_root.get(fqun)
+    def project_root_for_fqun(
+        self, fqun: str
+    ) -> tuple[define_path.DefinePath, config.ProjectRootConfig] | None:
+        """Return the root path and resolved config registered for a given FQUN, or None."""
+        return self._fqun_to_project_root.get(fqun)
 
     def config_for_root(
         self, root: define_path.DefinePath

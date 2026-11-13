@@ -22,16 +22,15 @@ def test_not_a_project_root(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(testdata_project_directory)
+    declaring_entry = test_helpers.declaring_entry("sub.example.com:lib", "subroot")
 
     assert test_helpers.load_project_root_config(
-        _SUB_ROOT,
-        test_helpers.declaring_entry("sub.example.com:lib", "subroot"),
+        _SUB_ROOT, declaring_entry
     ) == config.RootConfigResult(
         root_config=None,
         diagnostics=[
             diagnostics.SubRootNotProjectRootDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
-                field_path=("deps", "local", 0, "path"),
+                location=declaring_entry.path_location,
                 sub_root_path=str(_SUB_ROOT),
                 sub_root_config_path=str(_SUB_ROOT / config.CONFIG_PATH),
             )
@@ -47,12 +46,23 @@ def test_resolves_fqun_and_sub_roots(
     assert test_helpers.load_project_root_config(_SUB_ROOT) == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
             fqun="sub.example.com:lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name"), root=_SUB_ROOT
+            ),
             sub_roots={
                 "mv:define-lang.org:lib": config.LocalDependencyEntry(
-                    deps_path=str(_SUB_ROOT / config.LOCAL_DEPS_PATH),
-                    index=0,
                     universe="mv:define-lang.org:lib",
                     path=define_path.DefinePathFromPosix(PurePosixPath("vendor/lib")),
+                    universe_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG,
+                        ("deps", "local", 0, "universe_name"),
+                        root=_SUB_ROOT,
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG,
+                        ("deps", "local", 0, "path"),
+                        root=_SUB_ROOT,
+                    ),
                 )
             },
         ),
@@ -69,7 +79,9 @@ def test_project_config_validation_error(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(_SUB_ROOT / config.CONFIG_PATH),
+                location=test_helpers.config_field_location(
+                    config.PROJECT_CONFIG, ("project", "universe_name"), root=_SUB_ROOT
+                ),
                 field_path=("project", "universe_name"),
                 violation_message="must be at least 1 characters",
             )
@@ -86,7 +98,11 @@ def test_local_deps_validation_error(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(_SUB_ROOT / config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG,
+                    ("deps", "local", 0, "path"),
+                    root=_SUB_ROOT,
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="value is required",
             )

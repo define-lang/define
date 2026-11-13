@@ -83,7 +83,9 @@ def test_empty_universe_name(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.CONFIG_PATH),
+                location=test_helpers.config_field_location(
+                    config.PROJECT_CONFIG, ("project", "universe_name")
+                ),
                 field_path=("project", "universe_name"),
                 violation_message="must be at least 1 characters",
             )
@@ -100,12 +102,16 @@ def test_local_deps_diagnostics_reported_too(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.CONFIG_PATH),
+                location=test_helpers.config_field_location(
+                    config.PROJECT_CONFIG, ("project", "universe_name")
+                ),
                 field_path=("project", "universe_name"),
                 violation_message="must be at least 1 characters",
             ),
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not be absolute",
             ),
@@ -140,7 +146,11 @@ def test_layout_error_still_resolves(
 
     result = test_helpers.load_project_root_config()
     assert result.root_config == config.ProjectRootConfig(
-        fqun="test.example.com:my_lib", sub_roots={}
+        fqun="test.example.com:my_lib",
+        fqun_location=test_helpers.config_field_location(
+            config.PROJECT_CONFIG, ("project", "universe_name")
+        ),
+        sub_roots={},
     )
     (diagnostic,) = result.diagnostics
     assert type(diagnostic) is errors.SyntaxDiagnostic
@@ -174,7 +184,9 @@ def test_layout_error_and_rule_violation(
     )
     assert blank_line.file_path == str(config.CONFIG_PATH)
     assert violation == diagnostics.ConfigViolationDiagnostic(
-        config_path=str(config.CONFIG_PATH),
+        location=test_helpers.config_field_location(
+            config.PROJECT_CONFIG, ("project", "universe_name")
+        ),
         field_path=("project", "universe_name"),
         violation_message="must be at least 1 characters",
     )

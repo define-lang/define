@@ -39,6 +39,22 @@ ENCODINGS_PATH = define_path.DefinePathFromPosix(
     PurePosixPath(".define/encodings/encodings.defcl")
 )
 
+
+class ConfigFile[M: message.Message](msgspec.Struct, frozen=True):
+    """A config file's path, relative to a project root, and the message type that it holds."""
+
+    path: define_path.DefinePath
+    message_type: type[M]
+
+
+PROJECT_CONFIG = ConfigFile(path=CONFIG_PATH, message_type=config_pb2.ProjectConfigFile)
+LOCAL_DEPS_CONFIG = ConfigFile(
+    path=LOCAL_DEPS_PATH, message_type=local_pb2.LocalDepsFile
+)
+ENCODINGS_CONFIG = ConfigFile(
+    path=ENCODINGS_PATH, message_type=encodings_pb2.EncodingsFile
+)
+
 _EMPTY_DEPS: types.MappingProxyType[str, LocalDependencyEntry] = types.MappingProxyType(
     {}
 )
@@ -56,19 +72,23 @@ def universe_needs_configuration(fqun: str) -> bool:
 class LocalDependencyEntry(msgspec.Struct, frozen=True):
     """One entry in a project's local dependencies config."""
 
-    # The path of the local dependencies config that holds the entry.
-    deps_path: str
-    # The entry's position in the config's list of local dependencies.
-    index: int
     universe: str
     # The sub-root's path, relative to the project that declares it.
     path: define_path.DefinePathFromPosix
+    # The locations of the entry's universe_name and path values in
+    # local_deps.defcl, for diagnostics about the entry that are found after the
+    # config is loaded.
+    universe_location: rendering.SourceLocation
+    path_location: rendering.SourceLocation
 
 
 class ProjectRootConfig(msgspec.Struct):
     """Resolved project configuration for a project root."""
 
     fqun: str
+    # The location of the universe_name value in project.defcl, for
+    # diagnostics about the universe that are found after the config is loaded.
+    fqun_location: rendering.SourceLocation
     # The local dependency entry for each universe that the project configures
     # as a sub-root.
     sub_roots: Mapping[str, LocalDependencyEntry]
@@ -134,8 +154,7 @@ class ConfigLoader:
                 root_config=None,
                 diagnostics=[
                     diagnostics.SubRootNotProjectRootDiagnostic(
-                        config_path=declaring_entry.deps_path,
-                        field_path=("deps", "local", declaring_entry.index, "path"),
+                        location=declaring_entry.path_location,
                         sub_root_path=str(self._root),
                         sub_root_config_path=str(config_path),
                     )
@@ -144,28 +163,26 @@ class ConfigLoader:
         # Every config file is loaded even when another has diagnostics that
         # keep the configuration from being used, so that all of their
         # diagnostics are reported at once.
-        project_config, config_diagnostics = self._load_config(
-            CONFIG_PATH, config_pb2.ProjectConfigFile
-        )
+        project_config, config_diagnostics = self._load_config(PROJECT_CONFIG)
         sub_roots, deps_diagnostics = self._local_deps_config()
         config_diagnostics.extend(deps_diagnostics)
         if project_config is None:
             return RootConfigResult(root_config=None, diagnostics=config_diagnostics)
         fqun = project_config.message.project.universe_name or ""
+        fqun_location = project_config.file.location_of(("project", "universe_name"))
         fqun_matches = True
         if declaring_entry is not None and fqun != declaring_entry.universe:
             fqun_matches = False
             config_diagnostics.append(
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    config_path=str(config_path),
-                    field_path=("project", "universe_name"),
+                    location=fqun_location,
                     expected_fqun=declaring_entry.universe,
                     actual_fqun=fqun,
                     sub_root_path=str(self._root),
                 )
             )
         value_encodings, encodings_diagnostics = self._value_encodings_config(
-            project_config.message.project.associations, fqun
+            project_config, fqun
         )
         config_diagnostics.extend(encodings_diagnostics)
         if not fqun_matches or sub_roots is None or value_encodings is None:
@@ -173,6 +190,7 @@ class ConfigLoader:
         return RootConfigResult(
             root_config=ProjectRootConfig(
                 fqun=fqun,
+                fqun_location=fqun_location,
                 sub_roots=sub_roots,
                 value_encodings=value_encodings,
             ),
@@ -180,9 +198,7 @@ class ConfigLoader:
         )
 
     def _load_config[M: message.Message](
-        self,
-        subpath: define_path.DefinePath,
-        message_type: type[M],
+        self, config_file: ConfigFile[M]
     ) -> tuple[
         defcl_loader.LoadedMessage[M] | None, list[diagnostics.FormattableDiagnostic]
     ]:
@@ -191,8 +207,10 @@ class ConfigLoader:
         Returns its message with the file, or None if a diagnostic keeps it
         from being used, with its diagnostics.
         """
-        path = (self._root / subpath).as_posix_path()
-        result = defcl_loader.load_file(str(path), message_type, self._source_map)
+        path = (self._root / config_file.path).as_posix_path()
+        result = defcl_loader.load_file(
+            str(path), config_file.message_type, self._source_map
+        )
         config_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
             result.diagnostics
         )
@@ -217,7 +235,7 @@ class ConfigLoader:
                         field_path.append(subscript.value)
                 config_diagnostics.append(
                     diagnostics.ConfigViolationDiagnostic(
-                        config_path=str(path),
+                        location=result.loaded.file.location_of(tuple(field_path)),
                         field_path=tuple(field_path),
                         violation_message=violation.proto.message,
                     )
@@ -241,42 +259,37 @@ class ConfigLoader:
         deps_path = (self._root / LOCAL_DEPS_PATH).as_posix_path()
         if not Path(deps_path).exists():
             return _EMPTY_DEPS, []
-        result, deps_diagnostics = self._load_config(
-            LOCAL_DEPS_PATH, local_pb2.LocalDepsFile
-        )
+        result, deps_diagnostics = self._load_config(LOCAL_DEPS_CONFIG)
         if result is None:
             return None, deps_diagnostics
         deps: dict[str, LocalDependencyEntry] = {}
         for index, dep in enumerate(result.message.deps.local):
+            universe_location = result.file.location_of(
+                ("deps", "local", index, "universe_name")
+            )
             first_entry = deps.get(dep.universe_name)
             if first_entry is not None:
                 deps_diagnostics.append(
                     diagnostics.DuplicateLocalDependencyDiagnostic(
-                        config_path=str(deps_path),
-                        field_path=("deps", "local", index, "universe_name"),
+                        location=universe_location,
                         universe_name=dep.universe_name,
-                        first_field_path=(
-                            "deps",
-                            "local",
-                            first_entry.index,
-                            "universe_name",
-                        ),
+                        first_location=first_entry.universe_location,
                     )
                 )
                 continue
             deps[dep.universe_name] = LocalDependencyEntry(
-                deps_path=str(deps_path),
-                index=index,
                 universe=dep.universe_name,
                 # Parses the config's path string once, and keeps the parsed
                 # path for joining onto the project later.
                 path=define_path.DefinePathFromPosix(PurePosixPath(dep.path)),
+                universe_location=universe_location,
+                path_location=result.file.location_of(("deps", "local", index, "path")),
             )
         return types.MappingProxyType(deps), deps_diagnostics
 
     def _value_encodings_config(
         self,
-        associations: config_pb2.Associations,
+        project_config: defcl_loader.LoadedMessage[config_pb2.ProjectConfigFile],
         fqun: str,
     ) -> tuple[
         types.MappingProxyType[str, list[ast.ReferenceGlobalNameContent]] | None,
@@ -291,12 +304,13 @@ class ConfigLoader:
         config's associations say the project has no Value Encoding
         Associations. An association repeated later, or whose encoding is not
         a valid global name, is ignored. fqun is the project's universe, whose
-        encodings the config must write in short form.
+        encodings the config must name in short form.
         """
         # TODO: Once a library can be compiled, report each association whose
         # value quality the compile never validated. Until then, an association
         # is checked only when the program uses its value quality, so one that
         # names an unused or undefined value quality goes unreported.
+        associations = project_config.message.project.associations
         if associations.has_encodings != boolean_pb2.Defcl.Boolean.TRUE:
             return _EMPTY_VALUE_ENCODINGS, []
         encodings_path = (self._root / ENCODINGS_PATH).as_posix_path()
@@ -304,14 +318,13 @@ class ConfigLoader:
         if not Path(encodings_path).exists():
             return None, [
                 diagnostics.EncodingsConfigNotFoundDiagnostic(
-                    config_path=str(self.config_path()),
-                    field_path=("project", "associations", "has_encodings"),
+                    location=project_config.file.location_of(
+                        ("project", "associations", "has_encodings")
+                    ),
                     encodings_config_path=str(encodings_path),
                 )
             ]
-        result, encodings_diagnostics = self._load_config(
-            ENCODINGS_PATH, encodings_pb2.EncodingsFile
-        )
+        result, encodings_diagnostics = self._load_config(ENCODINGS_CONFIG)
         if result is None:
             return None, encodings_diagnostics
         associations_list = result.message.encodings.value_encodings
@@ -326,7 +339,7 @@ class ConfigLoader:
         encodings, name_diagnostics = _config_global_names(result.file, names, fqun)
         encodings_diagnostics.extend(name_diagnostics)
         value_encodings, association_diagnostics = _value_encodings(
-            associations_list, encodings, encodings_path
+            associations_list, encodings, result.file
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
@@ -337,11 +350,11 @@ def _config_global_names(
     names: Sequence[tuple[diagnostics.FieldPath, str]],
     fqun: str,
 ) -> tuple[list[ast.ReferenceGlobalNameContent | None], list[diagnostics.Diagnostic]]:
-    """Parse and validate the global names that the config file writes, each in the field at its field path.
+    """Parse and validate the global names in the config file, each in the field at its field path.
 
-    Returns each name's content, located where the file writes it, or None for
+    Returns each name's content, located at its value in the file, or None for
     a name that is not valid, with the names' diagnostics. fqun is the
-    project's universe, whose names the file must write in short form.
+    project's universe, whose names must be in short form.
     """
     contents: list[ast.ReferenceGlobalNameContent | None] = []
     name_diagnostics: list[diagnostics.Diagnostic] = []
@@ -367,7 +380,7 @@ def _config_global_names(
 def _value_encodings(
     associations: Sequence[encodings_pb2.ValueEncoding],
     encodings: Sequence[ast.ReferenceGlobalNameContent | None],
-    encodings_path: PurePosixPath,
+    file: defcl_validator.ValidatedFile,
 ) -> tuple[
     dict[str, list[ast.ReferenceGlobalNameContent]],
     list[diagnostics.FormattableDiagnostic],
@@ -389,8 +402,7 @@ def _value_encodings(
         if association.value < previous_value:
             association_diagnostics.append(
                 diagnostics.UnsortedValueEncodingDiagnostic(
-                    config_path=str(encodings_path),
-                    field_path=(*field_path, "value"),
+                    location=file.location_of((*field_path, "value")),
                     value=association.value,
                     previous_value=previous_value,
                 )
@@ -401,11 +413,12 @@ def _value_encodings(
         if first_index is not None:
             association_diagnostics.append(
                 diagnostics.DuplicateValueEncodingDiagnostic(
-                    config_path=str(encodings_path),
-                    field_path=field_path,
+                    location=file.location_of(field_path),
                     value=association.value,
                     encoding=association.encoding,
-                    first_field_path=("encodings", "value_encodings", first_index),
+                    first_location=file.location_of(
+                        ("encodings", "value_encodings", first_index)
+                    ),
                 )
             )
             continue

@@ -9,7 +9,6 @@ from typing import ClassVar, Final
 
 import msgspec
 
-from defcl.python import validator as defcl_validator
 from define.compiler import constants, name_types
 from define.compiler.errors import invisible_characters
 from define.compiler.validator.reference_graph import propagation_step
@@ -1254,41 +1253,6 @@ class ConfigDiagnostic(BaseDiagnostic):
 type FieldPath = tuple[str | int, ...]
 
 
-class ConfigFieldDiagnostic(ConfigDiagnostic):
-    """Base class for diagnostics about the field of a config file at field_path."""
-
-    field_path: FieldPath
-
-    @property
-    def _field_path_text(self) -> str:
-        """The field path as it is written in messages, such as `deps.local[0].path`."""
-        text = ""
-        for element in self.field_path:
-            if isinstance(element, int):
-                text += f"[{element}]"
-            elif text:
-                text += f".{element}"
-            else:
-                text = element
-        return text
-
-    @typing.override
-    def format(self, sources: rendering.SourceMap, /) -> str:
-        """Format the diagnostic with the field that it is about, with its source line."""
-        field = self._render_field(sources, self.config_path, self.field_path)
-        return f"{field}\n{self.render_message(sources)}"
-
-    @staticmethod
-    def _render_field(
-        sources: rendering.SourceMap, config_path: str, field_path: FieldPath
-    ) -> str:
-        """Render where the config file at config_path writes the field at field_path, with its source line."""
-        location = defcl_validator.locate_field(sources, config_path, field_path)
-        if location is None:
-            return sources.render_header_without_position(config_path)
-        return sources.render_location(location)
-
-
 def _project_root_help(config_path: str) -> str:
     return (
         f"A project root is any directory containing {config_path}.\n"
@@ -1343,10 +1307,10 @@ class RelativePathOutsideProjectRootDiagnostic(PathOutsideProjectRootDiagnostic)
     label: ClassVar[str] = "Relative path resolves to outside the project root"
 
 
-class SubRootNotProjectRootDiagnostic(ConfigFieldDiagnostic):
+class SubRootNotProjectRootDiagnostic(Diagnostic):
     """Diagnostic for a sub-root that a local dependency names but that is not a project root.
 
-    Its field is the local dependency's path.
+    Its location is the local dependency's path.
     """
 
     sub_root_path: str
@@ -1362,39 +1326,51 @@ class SubRootNotProjectRootDiagnostic(ConfigFieldDiagnostic):
         )
 
 
-class ConfigViolationDiagnostic(ConfigFieldDiagnostic):
-    """Diagnostic for a field of a config file whose value breaks a rule of its schema."""
+class ConfigViolationDiagnostic(Diagnostic):
+    """Diagnostic for the field of a config file at field_path, whose value breaks a rule of its schema."""
 
+    field_path: FieldPath
     violation_message: str
 
     @typing.override
     def render_message(self, _sources: rendering.SourceMap, /) -> str:
-        return f"{self._field_path_text}: {self.violation_message}"
+        # The field path as it is written in messages, such as
+        # `deps.local[0].path`.
+        field_path_text = ""
+        for element in self.field_path:
+            if isinstance(element, int):
+                field_path_text += f"[{element}]"
+            elif field_path_text:
+                field_path_text += f".{element}"
+            else:
+                field_path_text = element
+        return f"{field_path_text}: {self.violation_message}"
 
 
-class DuplicateLocalDependencyDiagnostic(ConfigFieldDiagnostic):
+class DuplicateLocalDependencyDiagnostic(Diagnostic):
     """Diagnostic for a local dependency whose universe name an earlier local dependency already declares.
 
     The first declaration of a universe wins, and the later one is not used.
-    Its field is the later local dependency's universe_name.
+    Its location is the later local dependency's universe_name.
     """
 
     universe_name: str
-    first_field_path: FieldPath
+    # The universe_name of the earlier local dependency.
+    first_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
             f"Universe '{self.universe_name}' is already declared by an earlier"
             " local dependency, so only that one is used. It is here:\n"
-            f"{self._render_field(sources, self.config_path, self.first_field_path)}"
+            f"{sources.render_location(self.first_location)}"
         )
 
 
-class EncodingsConfigNotFoundDiagnostic(ConfigFieldDiagnostic):
+class EncodingsConfigNotFoundDiagnostic(Diagnostic):
     """Diagnostic for a project config that says the project has encoding associations, when encodings_config_path does not exist.
 
-    Its field is the project config's has_encodings.
+    Its location is the project config's has_encodings.
     """
 
     encodings_config_path: str
@@ -1407,10 +1383,10 @@ class EncodingsConfigNotFoundDiagnostic(ConfigFieldDiagnostic):
         )
 
 
-class UnsortedValueEncodingDiagnostic(ConfigFieldDiagnostic):
+class UnsortedValueEncodingDiagnostic(Diagnostic):
     """Diagnostic for an encoding association whose value quality sorts before the association before it.
 
-    Its field is the association's value.
+    Its location is the association's value.
     """
 
     value: str
@@ -1424,50 +1400,49 @@ class UnsortedValueEncodingDiagnostic(ConfigFieldDiagnostic):
         )
 
 
-class DuplicateValueEncodingDiagnostic(ConfigFieldDiagnostic):
+class DuplicateValueEncodingDiagnostic(Diagnostic):
     """Diagnostic for an encoding association that an earlier association already makes.
 
-    Its field is the later association.
+    Its location is the later association.
     """
 
     value: str
     encoding: str
-    first_field_path: FieldPath
+    # The earlier association.
+    first_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
             f"Value quality '{self.value}' is already associated with encoding"
             + f" '{self.encoding}' here:\n"
-            + self._render_field(sources, self.config_path, self.first_field_path)
+            + sources.render_location(self.first_location)
         )
 
 
-class DuplicateFqunDiagnostic(ConfigFieldDiagnostic):
+class DuplicateFqunDiagnostic(Diagnostic):
     """Diagnostic for two project roots that declare the same fully-qualified universe name.
 
-    Its field is the universe_name of the later project's config.
+    Its location is the universe_name of the later project's config.
     """
 
     fqun: str
-    # The earlier project's config, which declares the universe first.
-    existing_config: str
+    # The universe_name of the earlier project's config, which declares the
+    # universe first.
+    existing_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
-        existing_universe_name = self._render_field(
-            sources, self.existing_config, ("project", "universe_name")
-        )
         return (
             f"Universe '{self.fqun}' cannot be defined again here, since it is"
-            f" already defined here:\n{existing_universe_name}"
+            f" already defined here:\n{sources.render_location(self.existing_location)}"
         )
 
 
-class SubRootFqunMismatchDiagnostic(ConfigFieldDiagnostic):
+class SubRootFqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for a sub-root whose project config declares a different universe than the local dependency that names it.
 
-    Its field is the universe_name of the sub-root's project config.
+    Its location is the universe_name of the sub-root's project config.
     """
 
     expected_fqun: str
@@ -1480,24 +1455,20 @@ class SubRootFqunMismatchDiagnostic(ConfigFieldDiagnostic):
     )
 
 
-class SubRootPathAlreadyDeclaredDiagnostic(ConfigFieldDiagnostic):
+class SubRootPathAlreadyDeclaredDiagnostic(Diagnostic):
     """Diagnostic for a local dependency that declares a sub-root at a path that another local dependency already declared.
 
     The first declaration of a path wins, and the later one is not used. Its
-    field is the later local dependency's path.
+    location is the later local dependency's path.
     """
 
     sub_root_path: str
-    # The local dependencies config and field of the first local dependency
-    # that declares the path.
-    first_config_path: str
-    first_field_path: FieldPath
+    # The path of the first local dependency that declares the sub-root.
+    first_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
-        first_entry = self._render_field(
-            sources, self.first_config_path, self.first_field_path
-        )
+        first_entry = sources.render_location(self.first_location)
         return (
             f"This local dependency declares the sub-root '{self.sub_root_path}',"
             " but an earlier one already declares it, so only that one is used."
@@ -1505,11 +1476,11 @@ class SubRootPathAlreadyDeclaredDiagnostic(ConfigFieldDiagnostic):
         )
 
 
-class LocalDependencyOnOwnUniverseDiagnostic(ConfigFieldDiagnostic):
+class LocalDependencyOnOwnUniverseDiagnostic(Diagnostic):
     """Diagnostic for a local dependency that names the universe of the project that declares it.
 
     That universe is already at the project root, so the entry is not used.
-    Its field is the local dependency's universe_name.
+    Its location is the local dependency's universe_name.
     """
 
     universe: str

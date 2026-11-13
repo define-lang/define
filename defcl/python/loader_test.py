@@ -241,7 +241,7 @@ def test_loaded_file_with_layout_errors_locates_a_field(tmp_path: Path):
     )
 
 
-def test_loaded_file_cannot_locate_a_field_of_a_top_level_message_it_does_not_write():
+def test_loaded_file_cannot_locate_a_field_of_a_missing_top_level_message():
     result = loader.load_file(
         _testdata_path("valid/single_toplevel.defcl"),
         single_toplevel_pb2.SingleToplevelFile,

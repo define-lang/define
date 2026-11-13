@@ -25,6 +25,12 @@ if TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
+# Where the locations come from does not matter to these tests.
+_LOCATION = rendering.SourceLocation(
+    line=1, column=1, end_line=1, end_column=1, file_path=".define/project/config.defcl"
+)
+
+
 def _make_context(
     tmp_path: Path,
     file_name: str = "test.dfn",
@@ -36,6 +42,7 @@ def _make_context(
         root_prefix=define_path.DefinePath(tmp_path.as_posix()),
         root_config=config.ProjectRootConfig(
             fqun=fqun,
+            fqun_location=_LOCATION,
             sub_roots=types.MappingProxyType(sub_root_mappings or {}),
         ),
     )
@@ -253,10 +260,10 @@ class TestFileStructuralValidatorReferenceDiscovery:
             tmp_path,
             sub_root_mappings={
                 "other.domain.com:other_lib": config.LocalDependencyEntry(
-                    deps_path=".define/deps/local.defcl",
-                    index=0,
                     universe="other.domain.com:other_lib",
                     path=define_path.DefinePathFromPosix(PurePosixPath("deps/other")),
+                    universe_location=_LOCATION,
+                    path_location=_LOCATION,
                 )
             },
         )

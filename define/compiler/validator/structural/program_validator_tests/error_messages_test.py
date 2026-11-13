@@ -1137,7 +1137,7 @@ def test_config_field_error_message_for_a_changed_config_file(
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File ".define/project/config.defcl"
+        File ".define/project/config.defcl", line 2, column 18
             (source not shown: the file changed after it was validated)
         project.universe_name: must be at least 1 characters""")
 

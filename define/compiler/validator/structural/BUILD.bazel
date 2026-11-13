@@ -30,6 +30,7 @@ py_test(
     deps = [
         ":definition_validator",
         ":file_validation_context",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/parsing:test_helpers",

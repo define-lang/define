@@ -337,15 +337,15 @@ class ReferenceResolver:
             self._path_tracker.mark_root_failed(root_prefix)
             return None
         root_config = result.root_config
-        existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
-        if existing_root is not None and existing_root != root_prefix:
+        existing = self._path_tracker.project_root_for_fqun(root_config.fqun)
+        if existing is not None and existing[0] != root_prefix:
+            _, existing_config = existing
             self._path_tracker.mark_root_failed(root_prefix)
             self._program_diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
-                    config_path=str(root_prefix / config.CONFIG_PATH),
-                    field_path=("project", "universe_name"),
+                    location=root_config.fqun_location,
                     fqun=root_config.fqun,
-                    existing_config=str(existing_root / config.CONFIG_PATH),
+                    existing_location=existing_config.fqun_location,
                 )
             )
             return None
@@ -363,8 +363,7 @@ class ReferenceResolver:
                 self._disabled_universes.add((root_prefix, entry.universe))
                 self._program_diagnostics.append(
                     diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-                        config_path=entry.deps_path,
-                        field_path=("deps", "local", entry.index, "universe_name"),
+                        location=entry.universe_location,
                         universe=entry.universe,
                     )
                 )
@@ -375,10 +374,8 @@ class ReferenceResolver:
             self._disabled_universes.add((root_prefix, entry.universe))
             self._program_diagnostics.append(
                 diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-                    config_path=entry.deps_path,
-                    field_path=("deps", "local", entry.index, "path"),
+                    location=entry.path_location,
                     sub_root_path=str(sub_root_path),
-                    first_config_path=existing_entry.deps_path,
-                    first_field_path=("deps", "local", existing_entry.index, "path"),
+                    first_location=existing_entry.path_location,
                 )
             )

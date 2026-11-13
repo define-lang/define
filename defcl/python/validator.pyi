@@ -17,6 +17,3 @@ def validate_file(
     descriptor_set: bytes,
     top_level_message_type: str,
 ) -> tuple[ValidatedFile | None, list[errors.DefclDiagnostic]]: ...
-def locate_field(
-    source_map: rendering.SourceMap, path: str, field_path: tuple[str | int, ...]
-) -> rendering.SourceLocation | None: ...

@@ -6,13 +6,17 @@ import typing
 from pathlib import PurePosixPath
 
 from crates.source_rendering.python import rendering
+from defcl.python import loader as defcl_loader
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from google.protobuf import message
+
     from define.compiler import ast
+    from define.compiler.errors import diagnostics
 
 
 def load_project_root_config(
@@ -25,13 +29,36 @@ def load_project_root_config(
     )
 
 
+def config_field_location[M: message.Message](
+    config_file: config.ConfigFile[M],
+    field_path: diagnostics.FieldPath,
+    root: define_path.DefinePath = constants.PROJECT_ROOT,
+) -> rendering.SourceLocation:
+    """Return the location of the field at field_path in config_file of the project at root, relative to the current directory."""
+    path = (root / config_file.path).as_posix_path()
+    result = defcl_loader.load_file(
+        str(path), config_file.message_type, rendering.SourceMap()
+    )
+    assert result.loaded is not None
+    return result.loaded.file.location_of(field_path)
+
+
 def declaring_entry(universe: str, path: str) -> config.LocalDependencyEntry:
-    """Return the first local dependency entry of the project's local deps config."""
+    """Return a local dependency entry that declares a sub-root, as the declaring project's local deps config would."""
+    # The tests have no declaring project, so the entry's locations are only
+    # somewhere for diagnostics about it to point.
+    location = rendering.SourceLocation(
+        line=1,
+        column=1,
+        end_line=1,
+        end_column=1,
+        file_path=str(config.LOCAL_DEPS_PATH),
+    )
     return config.LocalDependencyEntry(
-        deps_path=str(config.LOCAL_DEPS_PATH),
-        index=0,
         universe=universe,
         path=define_path.DefinePathFromPosix(PurePosixPath(path)),
+        universe_location=location,
+        path_location=location,
     )
 
 

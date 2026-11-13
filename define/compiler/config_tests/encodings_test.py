@@ -43,7 +43,11 @@ def test_has_encodings_false_does_not_read_encodings(
 
     assert test_helpers.load_project_root_config() == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
-            fqun="test.example.com:my_lib", sub_roots={}
+            fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
+            sub_roots={},
         ),
         diagnostics=[],
     )
@@ -58,8 +62,9 @@ def test_missing_encodings(
         root_config=None,
         diagnostics=[
             diagnostics.EncodingsConfigNotFoundDiagnostic(
-                config_path=str(config.CONFIG_PATH),
-                field_path=("project", "associations", "has_encodings"),
+                location=test_helpers.config_field_location(
+                    config.PROJECT_CONFIG, ("project", "associations", "has_encodings")
+                ),
                 encodings_config_path=str(config.ENCODINGS_PATH),
             )
         ],
@@ -75,7 +80,10 @@ def test_value_that_is_not_a_short_global_name(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.ENCODINGS_PATH),
+                location=test_helpers.config_field_location(
+                    config.ENCODINGS_CONFIG,
+                    ("encodings", "value_encodings", 0, "value"),
+                ),
                 field_path=("encodings", "value_encodings", 0, "value"),
                 violation_message=(
                     "value must be a short global name, starting with '/'"
@@ -153,8 +161,9 @@ def test_unsorted_values(
     result = test_helpers.load_project_root_config()
     (diagnostic,) = result.diagnostics
     assert diagnostic == diagnostics.UnsortedValueEncodingDiagnostic(
-        config_path=str(config.ENCODINGS_PATH),
-        field_path=("encodings", "value_encodings", 1, "value"),
+        location=test_helpers.config_field_location(
+            config.ENCODINGS_CONFIG, ("encodings", "value_encodings", 1, "value")
+        ),
         value="/number/integer",
         previous_value="/number/natural",
     )
@@ -175,11 +184,14 @@ def test_duplicate_value_encoding(
     result = test_helpers.load_project_root_config()
     (diagnostic,) = result.diagnostics
     assert diagnostic == diagnostics.DuplicateValueEncodingDiagnostic(
-        config_path=str(config.ENCODINGS_PATH),
-        field_path=("encodings", "value_encodings", 1),
+        location=test_helpers.config_field_location(
+            config.ENCODINGS_CONFIG, ("encodings", "value_encodings", 1)
+        ),
         value="/number",
         encoding="/number/ascii",
-        first_field_path=("encodings", "value_encodings", 0),
+        first_location=test_helpers.config_field_location(
+            config.ENCODINGS_CONFIG, ("encodings", "value_encodings", 0)
+        ),
     )
     assert result.root_config is not None
     assert result.root_config.fqun == "test.example.com:my_lib"
@@ -215,11 +227,14 @@ def test_duplicate_value_encoding_with_invalid_name(
         )
     )
     assert duplicate == diagnostics.DuplicateValueEncodingDiagnostic(
-        config_path=str(config.ENCODINGS_PATH),
-        field_path=("encodings", "value_encodings", 1),
+        location=test_helpers.config_field_location(
+            config.ENCODINGS_CONFIG, ("encodings", "value_encodings", 1)
+        ),
         value="/number",
         encoding="number/ascii",
-        first_field_path=("encodings", "value_encodings", 0),
+        first_location=test_helpers.config_field_location(
+            config.ENCODINGS_CONFIG, ("encodings", "value_encodings", 0)
+        ),
     )
     assert result.root_config is not None
     assert result.root_config.fqun == "test.example.com:my_lib"
@@ -236,12 +251,17 @@ def test_local_deps_and_encodings_diagnostics(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not be absolute",
             ),
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.ENCODINGS_PATH),
+                location=test_helpers.config_field_location(
+                    config.ENCODINGS_CONFIG,
+                    ("encodings", "value_encodings", 0, "value"),
+                ),
                 field_path=("encodings", "value_encodings", 0, "value"),
                 violation_message=(
                     "value must be a short global name, starting with '/'"

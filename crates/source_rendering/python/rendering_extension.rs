@@ -193,13 +193,6 @@ impl PySourceMap {
         self.source_map.render_header_without_position(path)
     }
 
-    /// The text of the file at `path`, if the file was registered and still
-    /// has the text it was registered with.
-    fn file_text<'py>(&self, py: Python<'py>, path: &str) -> Option<Bound<'py, PyString>> {
-        self.source_map
-            .with_file_text(path, |text| PyString::new(py, text))
-    }
-
     /// `location` as diagnostics show it, with its source line when its file
     /// is unchanged.
     fn render_location(&self, location: &Bound<'_, PySourceLocation>) -> PyResult<String> {

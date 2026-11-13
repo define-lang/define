@@ -5,17 +5,23 @@ from pathlib import PurePosixPath
 
 import pytest
 
+from crates.source_rendering.python import rendering
 from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural.resolver import path_tracker
 
+# Where the locations come from does not matter to these tests.
+_LOCATION = rendering.SourceLocation(
+    line=1, column=1, end_line=1, end_column=1, file_path=".define/project/config.defcl"
+)
+
 
 def _entry(universe: str, path: str) -> config.LocalDependencyEntry:
     return config.LocalDependencyEntry(
-        deps_path=".define/deps/local.defcl",
-        index=0,
         universe=universe,
         path=define_path.DefinePathFromPosix(PurePosixPath(path)),
+        universe_location=_LOCATION,
+        path_location=_LOCATION,
     )
 
 
@@ -69,28 +75,32 @@ class TestPathTracker:
 
 
 class TestSubRootTracking:
-    def test_root_for_fqun_returns_root(self):
+    def test_project_root_for_fqun_returns_root_and_config(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        root_config = config.ProjectRootConfig(
+            fqun="my.universe",
+            fqun_location=_LOCATION,
+            sub_roots={"dep": _entry("dep", "ext/dep")},
+        )
+        tracker.register_project_root(define_path.EMPTY, root_config)
+        assert tracker.project_root_for_fqun("my.universe") == (
+            define_path.EMPTY,
+            root_config,
+        )
+
+    def test_project_root_for_fqun_returns_none_when_no_match(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
             config.ProjectRootConfig(
-                fqun="my.universe",
-                sub_roots={"dep": _entry("dep", "ext/dep")},
+                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
             ),
         )
-        assert tracker.root_for_fqun("my.universe") == define_path.EMPTY
+        assert tracker.project_root_for_fqun("other.universe") is None
 
-    def test_root_for_fqun_returns_none_when_no_match(self):
+    def test_project_root_for_fqun_returns_none_when_empty(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            define_path.EMPTY,
-            config.ProjectRootConfig(fqun="my.universe", sub_roots={}),
-        )
-        assert tracker.root_for_fqun("other.universe") is None
-
-    def test_root_for_fqun_returns_none_when_empty(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert tracker.root_for_fqun("my.universe") is None
+        assert tracker.project_root_for_fqun("my.universe") is None
 
     def test_config_for_root_returns_registered_config(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
@@ -98,6 +108,7 @@ class TestSubRootTracking:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="my.universe",
+                fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
             ),
         )
@@ -114,12 +125,16 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(fqun="my.universe", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         with pytest.raises(ValueError, match="already registered"):
             tracker.register_project_root(
                 define_path.EMPTY,
-                config.ProjectRootConfig(fqun="other.universe", sub_roots={}),
+                config.ProjectRootConfig(
+                    fqun="other.universe", fqun_location=_LOCATION, sub_roots={}
+                ),
             )
 
     def test_sub_root_entry(self):
@@ -128,6 +143,7 @@ class TestSubRootTracking:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="my.universe",
+                fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
             ),
         )
@@ -144,7 +160,9 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(fqun="my.universe", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         with pytest.raises(KeyError):
             tracker.sub_root_entry("unknown", define_path.EMPTY)
@@ -155,7 +173,9 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(fqun="lib.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert not tracker.is_under_failed_root(define_path.DefinePath("lib"))
         assert not tracker.is_under_failed_root(define_path.DefinePath("lib/a.dfn"))
@@ -170,7 +190,9 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert (
             tracker.find_enclosing_root(define_path.DefinePath("foo/bar.dfn"))
@@ -181,11 +203,15 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(fqun="lib.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert tracker.find_enclosing_root(
             define_path.DefinePath("lib/foo.dfn")
@@ -195,15 +221,21 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(fqun="lib.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib/inner"),
-            config.ProjectRootConfig(fqun="inner.uni", sub_roots={}),
+            config.ProjectRootConfig(
+                fqun="inner.uni", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert tracker.find_enclosing_root(
             define_path.DefinePath("lib/inner/x.dfn")
@@ -255,6 +287,7 @@ class TestUniverseRoot:
             define_path.EMPTY,
             config.ProjectRootConfig(
                 fqun="a.com:main",
+                fqun_location=_LOCATION,
                 sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
             ),
         )
@@ -265,14 +298,20 @@ class TestUniverseRoot:
     def test_unconfigured_universe_has_no_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
-            define_path.EMPTY, config.ProjectRootConfig(fqun="a.com:main", sub_roots={})
+            define_path.EMPTY,
+            config.ProjectRootConfig(
+                fqun="a.com:main", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert tracker.universe_root("b.com:lib", define_path.EMPTY) is None
 
     def test_standard_universe_needs_no_configuration(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
-            define_path.EMPTY, config.ProjectRootConfig(fqun="a.com:main", sub_roots={})
+            define_path.EMPTY,
+            config.ProjectRootConfig(
+                fqun="a.com:main", fqun_location=_LOCATION, sub_roots={}
+            ),
         )
         assert (
             tracker.universe_root(constants.STANDARD_UNIVERSE, define_path.EMPTY)

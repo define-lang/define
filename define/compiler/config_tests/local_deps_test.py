@@ -27,7 +27,9 @@ def test_missing_universe_name(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                ),
                 field_path=("deps", "local", 0, "universe_name"),
                 violation_message="value is required",
             )
@@ -44,7 +46,9 @@ def test_empty_universe_name(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                ),
                 field_path=("deps", "local", 0, "universe_name"),
                 violation_message="must be at least 1 characters",
             )
@@ -61,7 +65,9 @@ def test_missing_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="value is required",
             )
@@ -78,7 +84,9 @@ def test_absolute_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not be absolute",
             )
@@ -95,7 +103,9 @@ def test_dotdot_part_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not have a '..' part",
             )
@@ -112,7 +122,9 @@ def test_leading_dotdot_part_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not have a '..' part",
             )
@@ -129,7 +141,9 @@ def test_dot_part_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not have a '.' part",
             )
@@ -144,7 +158,9 @@ def test_dot_path(testdata_project_directory: Path, monkeypatch: pytest.MonkeyPa
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not have a '.' part",
             )
@@ -161,7 +177,9 @@ def test_empty_part_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not contain '//'",
             )
@@ -178,7 +196,9 @@ def test_backslash_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not contain a backslash",
             )
@@ -194,13 +214,20 @@ def test_dots_within_a_part_of_path(
     assert test_helpers.load_project_root_config() == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
             fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
             sub_roots={
                 "mv:define-lang.org:lib": config.LocalDependencyEntry(
-                    deps_path=str(config.LOCAL_DEPS_PATH),
-                    index=0,
                     universe="mv:define-lang.org:lib",
                     path=define_path.DefinePathFromPosix(
                         PurePosixPath("vendor/lib..v2/.hidden")
+                    ),
+                    universe_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
                     ),
                 ),
             },
@@ -218,7 +245,9 @@ def test_trailing_slash_in_path(
         root_config=None,
         diagnostics=[
             diagnostics.ConfigViolationDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                ),
                 field_path=("deps", "local", 0, "path"),
                 violation_message="path must not end with '/'",
             )
@@ -234,21 +263,31 @@ def test_duplicate_universe_name_uses_the_first_entry(
     assert test_helpers.load_project_root_config() == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
             fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
             sub_roots={
                 "mv:define-lang.org:lib": config.LocalDependencyEntry(
-                    deps_path=str(config.LOCAL_DEPS_PATH),
-                    index=0,
                     universe="mv:define-lang.org:lib",
                     path=define_path.DefinePathFromPosix(PurePosixPath("vendor/lib")),
+                    universe_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                    ),
                 )
             },
         ),
         diagnostics=[
             diagnostics.DuplicateLocalDependencyDiagnostic(
-                config_path=str(config.LOCAL_DEPS_PATH),
-                field_path=("deps", "local", 1, "universe_name"),
+                location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "universe_name")
+                ),
                 universe_name="mv:define-lang.org:lib",
-                first_field_path=("deps", "local", 0, "universe_name"),
+                first_location=test_helpers.config_field_location(
+                    config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                ),
             )
         ],
     )

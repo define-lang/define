@@ -24,18 +24,29 @@ def test_resolves_fqun_and_sub_roots(
     assert test_helpers.load_project_root_config() == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
             fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
             sub_roots={
                 "mv:define-lang.org:lib": config.LocalDependencyEntry(
-                    deps_path=str(config.LOCAL_DEPS_PATH),
-                    index=0,
                     universe="mv:define-lang.org:lib",
                     path=define_path.DefinePathFromPosix(PurePosixPath("vendor/lib")),
+                    universe_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                    ),
                 ),
                 "mv:define-lang.org:core": config.LocalDependencyEntry(
-                    deps_path=str(config.LOCAL_DEPS_PATH),
-                    index=1,
                     universe="mv:define-lang.org:core",
                     path=define_path.DefinePathFromPosix(PurePosixPath("vendor/core")),
+                    universe_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "universe_name")
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "path")
+                    ),
                 ),
             },
         ),
@@ -50,7 +61,11 @@ def test_missing_local_deps_resolves_empty_sub_roots(
 
     assert test_helpers.load_project_root_config() == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
-            fqun="test.example.com:my_lib", sub_roots={}
+            fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
+            sub_roots={},
         ),
         diagnostics=[],
     )
@@ -80,7 +95,11 @@ def test_declaring_entry_universe_match_succeeds(
         declaring_entry=test_helpers.declaring_entry("test.example.com:my_lib", ".")
     ) == config.RootConfigResult(
         root_config=config.ProjectRootConfig(
-            fqun="test.example.com:my_lib", sub_roots={}
+            fqun="test.example.com:my_lib",
+            fqun_location=test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
+            sub_roots={},
         ),
         diagnostics=[],
     )
@@ -97,8 +116,9 @@ def test_declaring_entry_universe_mismatch(
         root_config=None,
         diagnostics=[
             diagnostics.SubRootFqunMismatchDiagnostic(
-                config_path=str(config.CONFIG_PATH),
-                field_path=("project", "universe_name"),
+                location=test_helpers.config_field_location(
+                    config.PROJECT_CONFIG, ("project", "universe_name")
+                ),
                 expected_fqun="other.example.com:other_lib",
                 actual_fqun="test.example.com:my_lib",
                 sub_root_path=str(constants.PROJECT_ROOT),

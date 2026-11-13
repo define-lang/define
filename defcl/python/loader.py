@@ -26,7 +26,7 @@ class LoadResult[M: message.Message](msgspec.Struct, frozen=True):
 
 
 class LoadedMessage[M: message.Message](msgspec.Struct, frozen=True):
-    """The message that a defcl file holds, with the file, which knows where it writes each field."""
+    """The message that a defcl file holds, with the file, which can find the location of each field."""
 
     message: M
     file: validator.ValidatedFile
@@ -60,6 +60,12 @@ def load[M: message.Message](source: str, message_type: type[M]) -> LoadResult[M
     )
 
 
+# TODO: Consider returning objects built straight from the syntax tree, with
+# each value's location attached, instead of protobuf messages, using the
+# schema only to validate the file. Callers would then read a field's
+# location from the field itself, instead of looking up its field path in the
+# file. It needs a type for each schema's messages, and a replacement for
+# protovalidate's rules, which check only protobuf messages.
 def load_file[M: message.Message](
     path: str, message_type: type[M], source_map: rendering.SourceMap
 ) -> LoadFileResult[M]:

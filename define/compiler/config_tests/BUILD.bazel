@@ -95,12 +95,16 @@ py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//crates/source_rendering/python:rendering",
+        "//defcl/python:loader",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//protobuf",
     ],
 )
 

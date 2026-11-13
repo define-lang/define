@@ -1,4 +1,4 @@
-//! Finding where a defcl file writes the field that a field path names.
+//! Finding the location of the field that a field path names in a defcl file.
 
 use crate::syntax_tree::{Field, ParsedFile, Value};
 use derive_more::Display;
@@ -26,16 +26,17 @@ pub enum LocationError {
 }
 
 impl ParsedFile {
-    /// Where the file, whose source is `source`, writes the field at `path`,
-    /// whose first element is a top-level message: its value, or, if the file
-    /// does not write it, the name of the nearest field on `path` that the file
-    /// writes, or that field's value if it is an element of a repeated field,
-    /// which has no name.
+    /// The location of the field at `path` in the file, whose source is
+    /// `source`. The first element of `path` is a top-level message. A field
+    /// that appears in the file is located at its value. A field that is
+    /// missing from the file is located at the name of the nearest field on
+    /// `path` that appears in the file, or at that field's value if it is an
+    /// element of a repeated field, which has no name.
     ///
     /// # Errors
     ///
-    /// Returns why the path has no location if it does not start with a
-    /// top-level message that the file writes.
+    /// Returns why the path has no location if its top-level message does not
+    /// appear in the file.
     pub fn location_of(
         &self,
         source: &str,
@@ -170,7 +171,7 @@ mod tests {
     }
 
     #[gtest]
-    fn field_that_the_file_does_not_write_finds_its_message_s_name() -> Result<()> {
+    fn field_missing_from_the_file_finds_its_message_s_name() -> Result<()> {
         verify_that!(
             location_of(&[Field("project"), Field("owner")])?,
             ok(eq(&location(1, 1, 1, 7)))
@@ -178,7 +179,7 @@ mod tests {
     }
 
     #[gtest]
-    fn field_that_an_element_does_not_write_finds_the_element() -> Result<()> {
+    fn field_missing_from_an_element_finds_the_element() -> Result<()> {
         verify_that!(
             location_of(&[
                 Field("project"),
@@ -223,7 +224,7 @@ mod tests {
     }
 
     #[gtest]
-    fn top_level_message_that_the_file_does_not_write() -> Result<()> {
+    fn top_level_message_missing_from_the_file() -> Result<()> {
         verify_that!(
             location_of(&[Field("metadata"), Field("name")])?,
             err(eq(&LocationError::TopLevelMessageNotWritten))

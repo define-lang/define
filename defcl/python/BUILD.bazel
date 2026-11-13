@@ -58,7 +58,10 @@ rust_binary(
 py_library(
     name = "loader",
     srcs = ["loader.py"],
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = [
+        "//define/compiler:__pkg__",
+        "//define/compiler/config_tests:__pkg__",
+    ],
     deps = [
         ":errors",
         ":validator",

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
+from define.compiler import config
+from define.compiler.config_tests import test_helpers as config_test_helpers
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import program_validator
 
@@ -50,7 +52,9 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert result.file_results == []
     assert result.all_diagnostics == [
         diagnostics.ConfigViolationDiagnostic(
-            config_path=".define/project/config.defcl",
+            location=config_test_helpers.config_field_location(
+                config.PROJECT_CONFIG, ("project", "universe_name")
+            ),
             field_path=("project", "universe_name"),
             violation_message="must be at least 1 characters",
         )

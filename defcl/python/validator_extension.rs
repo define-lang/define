@@ -1,8 +1,6 @@
 //! The Python module that validates defcl files: `defcl.python.validator`.
 
-use defcl_parser::{
-    FieldPathElement, ParseResult, ParsedFile, SyntaxError, SyntaxErrorKind, parse,
-};
+use defcl_parser::{FieldPathElement, ParsedFile, SyntaxError, SyntaxErrorKind};
 use defcl_semantics::{FileDescriptorSet, SemanticError, SemanticErrorKind};
 use defcl_validator::FileErrors;
 use prost::Message as _;
@@ -251,60 +249,6 @@ fn validate_file<'py>(
     Ok((validated, diagnostics))
 }
 
-/// Where the defcl file at `path`, registered with the `SourceMap` `source_map`,
-/// writes the field that `field_path` names: a tuple of field names and
-/// indices of repeated values' elements whose first element is a top-level
-/// message. A field that the file writes is located at its value, and one that
-/// it does not write at the name of the nearest field on its path that it
-/// writes. `None` if the file is no longer as it was registered. Raises
-/// `ValueError` if a syntax error stopped the file's parse, or if the path
-/// does not start with a top-level message that the file writes, since only a
-/// file that loaded has fields to find, and it writes its top-level message.
-#[pyfunction]
-fn locate_field<'py>(
-    source_map: &Bound<'py, PyAny>,
-    path: &Bound<'py, PyString>,
-    field_path: &Bound<'py, PyTuple>,
-) -> PyResult<Option<Bound<'py, PyAny>>> {
-    let text: Option<String> = source_map.call_method1("file_text", (path,))?.extract()?;
-    let Some(text) = text else {
-        return Ok(None);
-    };
-    // TODO: If rendering many diagnostics in one config file ever makes
-    // parsing it again for each one too slow, keep each parsed file by its path
-    // and digest so that later lookups in it reuse the tree.
-    let ParseResult { file, errors } = parse(&text);
-    let file = file.ok_or_else(|| {
-        // A parse without a syntax tree has the error that stopped it.
-        let error = &errors[0];
-        PyValueError::new_err(match error.location {
-            Some(location) => format!("{}\n{error}", location.render(None, None)),
-            None => error.to_string(),
-        })
-    })?;
-    field_location(&file, &text, field_path, path).map(Some)
-}
-
-/// Where `file`, the syntax tree of the defcl file at `path` whose text is
-/// `text`, writes the field that `field_path` names, as `locate_field` locates
-/// it.
-fn field_location<'py>(
-    file: &ParsedFile,
-    text: &str,
-    field_path: &Bound<'py, PyTuple>,
-    path: &Bound<'py, PyString>,
-) -> PyResult<Bound<'py, PyAny>> {
-    let elements = field_path
-        .as_slice()
-        .iter()
-        .map(field_path_element)
-        .collect::<PyResult<Vec<_>>>()?;
-    let location = file
-        .location_of(text, &elements)
-        .map_err(|error| PyValueError::new_err(error.to_string()))?;
-    new_source_location(path.py(), location, Some(path))
-}
-
 /// The element of a field path that `object` is: a field name if it is a
 /// `str`, or an index if it is an `int`.
 fn field_path_element<'object>(
@@ -323,7 +267,7 @@ fn field_path_element<'object>(
 }
 
 /// A defcl file that still means exactly one message: its text, and the
-/// syntax tree that validating it parsed, so that finding where it writes a
+/// syntax tree that validating it parsed, so that finding the location of a
 /// field does not parse it again.
 #[pyclass(frozen, name = "ValidatedFile", module = "defcl.python.validator")]
 struct ValidatedFile {
@@ -339,12 +283,25 @@ impl ValidatedFile {
         &self.text
     }
 
-    /// Where the file writes the field that `field_path` names, as
-    /// `locate_field` locates it. Raises `ValueError` if the path does not
-    /// start with a top-level message that the file writes.
+    /// The location of the field that `field_path` names: a tuple of field
+    /// names and indices of repeated values' elements whose first element is a
+    /// top-level message. A field that appears in the file is located at its
+    /// value. A field that is missing from the file is located at the name of
+    /// the nearest field on its path that appears in the file. Raises
+    /// `ValueError` if the path's top-level message does not appear in the
+    /// file.
     fn location_of<'py>(&self, field_path: &Bound<'py, PyTuple>) -> PyResult<Bound<'py, PyAny>> {
+        let elements = field_path
+            .as_slice()
+            .iter()
+            .map(field_path_element)
+            .collect::<PyResult<Vec<_>>>()?;
+        let location = self
+            .file
+            .location_of(&self.text, &elements)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
         let path = self.path.bind(field_path.py());
-        field_location(&self.file, &self.text, field_path, path)
+        new_source_location(path.py(), location, Some(path))
     }
 }
 
@@ -379,5 +336,5 @@ fn diagnostics<'py>(
 #[pymodule(gil_used = false)]
 mod validator {
     #[pymodule_export]
-    use super::{ValidatedFile, locate_field, validate, validate_file};
+    use super::{ValidatedFile, validate, validate_file};
 }
