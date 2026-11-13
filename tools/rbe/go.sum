@@ -1,7 +1,7 @@
 cloud.google.com/go/longrunning v1.5.0 h1:aGonu6LHQl38DyozLs2jxGieI4Ixk+7GTnmHVcHt8zA=
 cloud.google.com/go/longrunning v1.5.0/go.mod h1:vjM1U85ZQuTv8lJoUBSA44HLWvM6BBFeaSJYGFF1Q00=
-github.com/bazelbuild/remote-apis v0.0.0-20261020142950-c2c07e3d718d h1:7izNenYM1R0KKGLzukza/7Z9aqm6DR+PRAZDJl+ZRrs=
-github.com/bazelbuild/remote-apis v0.0.0-20261020142950-c2c07e3d718d/go.mod h1:7Tyi5f5+hG+6LwC0X/G/EjCQS4ZYJUcpY0geSsU2NAw=
+github.com/bazelbuild/remote-apis v0.0.0-20261110225606-e0c0554bfc8a h1:gDr2nGTyUfbFrz4HU4cHoyPH0loLZyFoQDeRygMscMg=
+github.com/bazelbuild/remote-apis v0.0.0-20261110225606-e0c0554bfc8a/go.mod h1:7Tyi5f5+hG+6LwC0X/G/EjCQS4ZYJUcpY0geSsU2NAw=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
