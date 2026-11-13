@@ -111,7 +111,7 @@ single_version_override(
 # --- Python toolchain ---
 
 interpreters = use_extension("@rules_py//py:extensions.bzl", "python_interpreters")
-interpreters.configure(releases = ["20261026"])
+interpreters.configure(releases = ["20261110"])
 interpreters.toolchain(
     python_version = "3.15",
 )
