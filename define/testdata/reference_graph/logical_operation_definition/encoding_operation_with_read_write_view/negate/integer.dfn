@@ -1,0 +1,19 @@
+define the encoding_operation<my.domain.com:my_lib:/negate/integer> {
+    define the view<a> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

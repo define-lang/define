@@ -21,7 +21,7 @@ from define.compiler.validator.structural import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from define.compiler.validator.structural import file_validation_context
 
@@ -43,6 +43,8 @@ class DefinitionStructuralValidator:
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
     _associated_encodings: list[ast.GlobalTypedNameReference]
+    _encoding_operation_edges: list[reference_graph.ReferenceEdge]
+    _executed_logical_operations: list[str]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
@@ -71,6 +73,8 @@ class DefinitionStructuralValidator:
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
         self._associated_encodings = []
+        self._encoding_operation_edges = []
+        self._executed_logical_operations = []
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
@@ -107,6 +111,7 @@ class DefinitionStructuralValidator:
                 self._validate_operation_definition(definition)
             case ast.LogicalOperationDefinition() as definition:
                 self._validate_logical_operation_definition(definition)
+                self._validate_associated_encoding_operations(definition)
             case ast.ValueDefinition() as definition:
                 self._validate_logical_operation_support_statements(
                     definition.logical_operation_support_statements
@@ -125,6 +130,8 @@ class DefinitionStructuralValidator:
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,
             associated_encodings=self._associated_encodings,
+            encoding_operation_edges=self._encoding_operation_edges,
+            executed_logical_operations=self._executed_logical_operations,
         )
 
     def _validate_action_definition(
@@ -150,25 +157,39 @@ class DefinitionStructuralValidator:
         # Source compiled without a project root has no associations.
         if root_config is None:
             return
-        fqun = definition.typed_name.name_content.fqun
-        # TODO: Investigate having the config loader return each encoding as a
-        # `GlobalTypedNameReference` instead of only its name content, so that
-        # it is not built here. The loader would need an `ast.Fqun` for the
-        # project's universe, which means parsing the project config's
-        # `universe_name` with the parser, as encoding names are parsed.
-        # The encodings' names are located where the encodings config writes
-        # them, so diagnostics about them point there.
-        for encoding_name in root_config.value_encodings.get(
-            definition.typed_name.name_content.path.name, ()
+        for encoding in _associated_references(
+            definition, name_types.NameType.ENCODING, root_config.value_encodings
         ):
-            encoding = ast.GlobalTypedNameReference(
-                name_type=name_types.NameType.ENCODING,
-                name_content=encoding_name,
-                enclosing_fqun=fqun,
-                location=encoding_name.location,
-            )
             self._associated_encodings.append(encoding)
             self._process_reference(encoding)
+
+    def _validate_associated_encoding_operations(
+        self, definition: ast.LogicalOperationDefinition
+    ):
+        """Record an edge to each Encoding Operation that the project associates with the logical operation, which the program follows only if it executes the logical operation."""
+        # Executing a logical operation executes one of the Encoding Operations
+        # that perform it, so the program loads all of them when it executes
+        # the logical operation.
+        # TODO: Load only the Encoding Operations that the program's executions
+        # of the logical operation choose, instead of every one associated with
+        # it. That needs the associations to state each Encoding Operation's
+        # encodings, so that choosing one needs no loading, and loading during
+        # reference graph validation, when the encodings of each execution are
+        # known. That replaces `encoding_operation_edges` and
+        # `executed_logical_operations`, and the program validator's following
+        # of them.
+        root_config = self._context.root_config
+        # Source compiled without a project root has no associations.
+        if root_config is None:
+            return
+        for encoding_operation in _associated_references(
+            definition,
+            name_types.NameType.ENCODING_OPERATION,
+            root_config.logical_operation_encoding_operations,
+        ):
+            edge = self._reference_edge(encoding_operation)
+            if edge is not None:
+                self._encoding_operation_edges.append(edge)
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
         if isinstance(definition, ast.ValueOperationDefinition):
@@ -213,22 +234,9 @@ class DefinitionStructuralValidator:
                         statement.arguments,
                         validate_looked_at,
                     ):
-                        # Executing a logical operation executes one of the
-                        # Encoding Operations that perform it, so the
-                        # execution references all of them.
-                        # TODO: Load only the Encoding Operation chosen for
-                        # each instance's encodings, instead of every
-                        # candidate. That needs the association table to
-                        # state each Encoding Operation's encodings, so the
-                        # choice needs no loading, and loading during
-                        # reference graph validation, when instances are
-                        # built.
-                        for encoding_operation in encoding_operation_associations.logical_operation_encoding_operation_references(
-                            statement.logical_operation.full_typed_name,
-                            statement.logical_operation.location,
-                            definition.typed_name.name_content.fqun,
-                        ):
-                            self._process_reference(encoding_operation)
+                        self._executed_logical_operations.append(
+                            statement.logical_operation.full_typed_name
+                        )
                 case ast.ViewSettingStatement():
                     self._validate_view_setting(
                         definition,
@@ -1140,13 +1148,22 @@ class DefinitionStructuralValidator:
         typed_global_name: ast.GlobalTypedNameReference,
     ):
         """Record a reference edge for a global name reference."""
+        edge = self._reference_edge(typed_global_name)
+        if edge is not None:
+            self._reference_edges.append(edge)
+
+    def _reference_edge(
+        self,
+        typed_global_name: ast.GlobalTypedNameReference,
+    ) -> reference_graph.ReferenceEdge | None:
+        """Return the reference edge for a global name reference, or None if the definition already has an edge to its target, or a diagnostic keeps it from being followed."""
         global_name = typed_global_name.name_content
 
         # Only the first reference site per target emits an edge; downstream
         # per-target diagnostics (missing file, cycle, wrong type) then fire
         # once per (definition, target) pair instead of once per source line.
         if typed_global_name.full_typed_name in self._seen_edge_targets:
-            return
+            return None
         self._seen_edge_targets.add(typed_global_name.full_typed_name)
 
         # Process a cross-FQUN reference in a filesystem context.
@@ -1160,7 +1177,7 @@ class DefinitionStructuralValidator:
                 raise ValueError("filesystem contexts must define a root config")
             fqun_string = global_name.fqun.canonical
             if fqun_string in self._unknown_fquns:
-                return
+                return None
             if fqun_string not in root_config.sub_roots:
                 self._unknown_fquns.add(fqun_string)
                 self._diagnostics.append(
@@ -1170,11 +1187,37 @@ class DefinitionStructuralValidator:
                         current_universe_name=root_config.fqun,
                     )
                 )
-                return
+                return None
 
-        self._reference_edges.append(
-            reference_graph.ReferenceEdge(
-                enclosing_definition=self._definition,
-                global_name_reference=typed_global_name,
+        return reference_graph.ReferenceEdge(
+            enclosing_definition=self._definition,
+            global_name_reference=typed_global_name,
+        )
+
+
+def _associated_references(
+    definition: ast.GlobalDefinition,
+    name_type: name_types.NameType,
+    associations: Mapping[str, list[ast.ReferenceGlobalNameContent]],
+) -> list[ast.GlobalTypedNameReference]:
+    """Return references to the definitions of name_type that associations, from the project config, associates with the definition."""
+    fqun = definition.typed_name.name_content.fqun
+    # TODO: Investigate having the config loader return each associated
+    # name as a `GlobalTypedNameReference` instead of only its name
+    # content, so that it is not built here. The loader would need an
+    # `ast.Fqun` for the project's universe, which means parsing the
+    # project config's `universe_name` with the parser, as associated names
+    # are parsed.
+    # The associated names are located where the association config writes
+    # them, so diagnostics about them point there.
+    references: list[ast.GlobalTypedNameReference] = []
+    for name in associations.get(definition.typed_name.name_content.path.name, ()):
+        references.append(
+            ast.GlobalTypedNameReference(
+                name_type=name_type,
+                name_content=name,
+                enclosing_fqun=fqun,
+                location=name.location,
             )
         )
+    return references

@@ -37,46 +37,6 @@ INTEGER_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/integer/a
 NATURAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/natural/ascii>"
 SCALAR_UTF8_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/text/unicode/scalar/utf8>"
 UTF8_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/text/unicode/utf8>"
-# The paths, in the standard universe, of the Encoding Operations that perform
-# each logical operation, one for each combination of encodings they use.
-# TODO: Read Encoding Operation associations from configuration (DLP 48) once
-# it exists.
-BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS: Final = {
-    f"logical_operation<{STANDARD_UNIVERSE}:/binary/and>": ("/binary/ascii/and",),
-    f"logical_operation<{STANDARD_UNIVERSE}:/binary/equals>": ("/binary/ascii/equals",),
-    f"logical_operation<{STANDARD_UNIVERSE}:/binary/exclusive_or>": (
-        "/binary/ascii/exclusive_or",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/boolean/and>": ("/boolean/ascii/and",),
-    f"logical_operation<{STANDARD_UNIVERSE}:/boolean/not>": ("/boolean/ascii/not",),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/absolute_value>": (
-        "/number/integer/ascii/absolute_value",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/add>": (
-        "/number/integer/ascii/add",
-        "/number/natural/ascii/add",
-        "/number/natural/ascii/add_integer",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/less_than>": (
-        "/number/integer/ascii/less_than",
-        "/number/natural/ascii/less_than",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/minimum>": (
-        "/number/integer/ascii/minimum",
-        "/number/natural/ascii/minimum",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/multiply>": (
-        "/number/integer/ascii/multiply",
-        "/number/natural/ascii/multiply",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/number/negate>": (
-        "/number/integer/ascii/negate",
-        "/number/natural/ascii/negate",
-    ),
-    f"logical_operation<{STANDARD_UNIVERSE}:/text/less_than>": (
-        "/text/unicode/scalar/utf8/less_than",
-    ),
-}
 # The path, in the standard universe, of the Encoding Operation that performs
 # each Value Operation for the encodings of its input views.
 # TODO: Delete this once the standard Value Operations are compositions of

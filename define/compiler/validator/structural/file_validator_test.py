@@ -45,6 +45,7 @@ def _make_context(
             fqun_location=_LOCATION,
             sub_roots=types.MappingProxyType(sub_root_mappings or {}),
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
     )
 

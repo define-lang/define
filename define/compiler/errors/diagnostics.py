@@ -763,12 +763,6 @@ class ViewSettingReadWriteTargetNotFromExecutionDiagnostic(Diagnostic):
     )
 
 
-# TODO: Name the association's entry in its association configuration file,
-# instead of the built-in table, once those files exist (DLP 48). This applies
-# to every diagnostic about an associated Encoding Operation, including
-# DuplicateAssociatedEncodingOperationDiagnostic.
-
-
 class AssociatedEncodingOperationViewCountDiagnostic(Diagnostic):
     """Diagnostic for an Encoding Operation associated with a logical operation that has a different number of views."""
 
@@ -776,13 +770,17 @@ class AssociatedEncodingOperationViewCountDiagnostic(Diagnostic):
     view_count: int
     logical_operation_name: str
     logical_operation_view_count: int
-    message_format: ClassVar[str] = (
-        "'{self.encoding_operation_name}' has {self.view_count} views, but"
-        " '{self.logical_operation_name}',"
-        " which the compiler's built-in"
-        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
-        " with, has {self.logical_operation_view_count}"
-    )
+    # Where the association is written.
+    association_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"'{self.encoding_operation_name}' has {self.view_count} views, but"
+            + f" '{self.logical_operation_name}' has"
+            + f" {self.logical_operation_view_count}, and they are associated"
+            + f" here:\n{sources.render_location(self.association_location)}"
+        )
 
 
 class AssociatedEncodingOperationViewNameDiagnostic(Diagnostic):
@@ -793,14 +791,18 @@ class AssociatedEncodingOperationViewNameDiagnostic(Diagnostic):
     view_name: str
     logical_operation_name: str
     logical_operation_view_name: str
-    message_format: ClassVar[str] = (
-        "view {self.view_number} of '{self.encoding_operation_name}' is"
-        " '{self.view_name}', but view {self.view_number} of"
-        " '{self.logical_operation_name}',"
-        " which the compiler's built-in"
-        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
-        " with, is '{self.logical_operation_view_name}'"
-    )
+    # Where the association is written.
+    association_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"view {self.view_number} of '{self.encoding_operation_name}' is"
+            + f" '{self.view_name}', but view {self.view_number} of"
+            + f" '{self.logical_operation_name}' is"
+            + f" '{self.logical_operation_view_name}', and they are associated"
+            + f" here:\n{sources.render_location(self.association_location)}"
+        )
 
 
 class AssociatedEncodingOperationViewDirectionDiagnostic(Diagnostic):
@@ -811,15 +813,18 @@ class AssociatedEncodingOperationViewDirectionDiagnostic(Diagnostic):
     encoding_operation_name: str
     logical_operation_direction: str
     logical_operation_name: str
-    message_format: ClassVar[str] = (
-        "'{self.view_name}' is {self.direction} in"
-        " '{self.encoding_operation_name}', but"
-        " {self.logical_operation_direction} in"
-        " '{self.logical_operation_name}',"
-        " which the compiler's built-in"
-        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry associates it"
-        " with"
-    )
+    # Where the association is written.
+    association_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"'{self.view_name}' is {self.direction} in"
+            + f" '{self.encoding_operation_name}', but"
+            + f" {self.logical_operation_direction} in"
+            + f" '{self.logical_operation_name}', and they are associated"
+            + f" here:\n{sources.render_location(self.association_location)}"
+        )
 
 
 class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
@@ -828,14 +833,20 @@ class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
     encoding_operation_name: str
     first_encoding_operation_name: str
     logical_operation_name: str
-    message_format: ClassVar[str] = (
-        "'{self.encoding_operation_name}' and"
-        " '{self.first_encoding_operation_name}' are both associated with"
-        " '{self.logical_operation_name}' by the compiler's built-in"
-        " BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS entry for"
-        " '{self.logical_operation_name}', and their views have the same"
-        " encodings, so the compiler cannot choose between them"
-    )
+    # Where each Encoding Operation's association is written.
+    association_location: rendering.SourceLocation
+    first_association_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"'{self.encoding_operation_name}' and"
+            + f" '{self.first_encoding_operation_name}' are both associated with"
+            + f" '{self.logical_operation_name}', and their views have the same"
+            + " encodings, so the compiler cannot choose between them. They are"
+            + f" associated here:\n{sources.render_location(self.association_location)}"
+            + f"\n{sources.render_location(self.first_association_location)}"
+        )
 
 
 class ExecutedOperationHasReadWriteViewDiagnostic(Diagnostic):
@@ -1425,6 +1436,60 @@ class DuplicateValueEncodingDiagnostic(Diagnostic):
         return (
             f"Value quality '{self.value}' is already associated with encoding"
             + f" '{self.encoding}' here:\n"
+            + sources.render_location(self.first_location)
+        )
+
+
+class EncodingOperationsConfigNotFoundDiagnostic(Diagnostic):
+    """Diagnostic for a project config that says the project has Encoding Operation associations, when encoding_operations_config_path does not exist.
+
+    Its location is the project config's has_encoding_operations.
+    """
+
+    encoding_operations_config_path: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            "The project says it has Encoding Operation associations, but"
+            + f" {self.encoding_operations_config_path} was not found."
+        )
+
+
+class UnsortedEncodingOperationDiagnostic(Diagnostic):
+    """Diagnostic for an Encoding Operation association whose logical operation sorts before the association before it.
+
+    Its location is the association's logical operation.
+    """
+
+    logical_operation: str
+    previous_logical_operation: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            "Encoding Operation associations must be sorted by logical operation,"
+            + f" but '{self.logical_operation}' comes after"
+            + f" '{self.previous_logical_operation}'."
+        )
+
+
+class DuplicateEncodingOperationDiagnostic(Diagnostic):
+    """Diagnostic for an Encoding Operation association that an earlier association already makes.
+
+    Its location is the later association.
+    """
+
+    logical_operation: str
+    encoding_operation: str
+    # The earlier association.
+    first_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"Logical operation '{self.logical_operation}' is already associated"
+            + f" with Encoding Operation '{self.encoding_operation}' here:\n"
             + sources.render_location(self.first_location)
         )
 

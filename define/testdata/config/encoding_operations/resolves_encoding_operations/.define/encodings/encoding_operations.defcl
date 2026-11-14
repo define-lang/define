@@ -1,0 +1,16 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "/number/integer/add"
+    },
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "other.com:lib:/number/natural/add"
+    },
+    {
+      logical_operation: "/number/negate"
+      encoding_operation: "/number/integer/negate"
+    }
+  ]
+}

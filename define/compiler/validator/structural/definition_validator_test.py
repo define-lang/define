@@ -32,6 +32,7 @@ class TestDefinitionStructuralValidator:
                     fqun_location=_LOCATION,
                     sub_roots=types.MappingProxyType({}),
                     value_encodings={},
+                    logical_operation_encoding_operations={},
                 ),
             ),
         )

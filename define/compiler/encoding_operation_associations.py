@@ -1,4 +1,4 @@
-"""The Encoding Operations that perform each logical operation and each Value Operation."""
+"""The Encoding Operation that performs each Value Operation."""
 
 from __future__ import annotations
 
@@ -14,10 +14,9 @@ def _standard_encoding_operation_reference(
     path: str, location: rendering.SourceLocation, enclosing_fqun: ast.Fqun
 ) -> ast.GlobalTypedNameReference:
     """Return a reference, located at ``location``, to the Encoding Operation at ``path`` in the standard universe."""
-    # TODO: Stop synthesizing references that have no source once DLP 48
-    # decides where associations are written. Either the parser produces them
-    # from Define source, or references stop requiring AST nodes so that
-    # configuration can supply them.
+    # The reference has no source, since the built-in table writes the
+    # association. The table goes away when the standard Value Operations are
+    # compositions of logical operations.
     return ast.GlobalTypedNameReference(
         name_type=name_types.NameType.ENCODING_OPERATION,
         name_content=ast.ReferenceGlobalNameContent(
@@ -35,27 +34,6 @@ def _standard_encoding_operation_reference(
         enclosing_fqun=enclosing_fqun,
         location=location,
     )
-
-
-def logical_operation_encoding_operation_references(
-    logical_operation_name: str,
-    location: rendering.SourceLocation,
-    enclosing_fqun: ast.Fqun,
-) -> list[ast.GlobalTypedNameReference]:
-    """Return references to the Encoding Operations that perform the logical operation with the full typed name ``logical_operation_name``.
-
-    The references are located at ``location``, so diagnostics about them point
-    there.
-    """
-    paths = constants.BUILT_IN_LOGICAL_OPERATION_ENCODING_OPERATIONS.get(
-        logical_operation_name, ()
-    )
-    references: list[ast.GlobalTypedNameReference] = []
-    for path in paths:
-        references.append(
-            _standard_encoding_operation_reference(path, location, enclosing_fqun)
-        )
-    return references
 
 
 def encoding_operation_reference(

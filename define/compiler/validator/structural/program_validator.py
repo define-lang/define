@@ -18,6 +18,7 @@ from crates.source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     import pathlib
+    from collections.abc import Iterable
 
 
 from define.compiler import ast, work_pool
@@ -115,6 +116,15 @@ class _ProgramValidationRun:
     ]
     # The full typed names of definitions submitted for validation.
     _requested_definition_names: set[str]
+    # The full typed names of the logical operations that a validated
+    # definition executes.
+    _executed_logical_operations: set[str]
+    # Each validated logical operation definition, with its file, by full typed
+    # name.
+    _logical_operations: dict[
+        str,
+        tuple[file_validator.LoadedFile, validation_result.DefinitionValidationResult],
+    ]
     _allow_entry_action_interface_positions: bool
 
     def __init__(
@@ -131,6 +141,8 @@ class _ProgramValidationRun:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._definition_results = typed_name_dict.TypedNameDict()
         self._requested_definition_names = set()
+        self._executed_logical_operations = set()
+        self._logical_operations = {}
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
         )
@@ -241,7 +253,47 @@ class _ProgramValidationRun:
             definition_result
         )
         self._reference_graph.add_definition(definition_result.definition)
-        for edge in definition_result.reference_edges:
+        self._follow_edges(
+            loaded_file, definition_result, definition_result.reference_edges, pool
+        )
+        for logical_operation in definition_result.executed_logical_operations:
+            if logical_operation in self._executed_logical_operations:
+                continue
+            self._executed_logical_operations.add(logical_operation)
+            registered = self._logical_operations.get(logical_operation)
+            if registered is not None:
+                self._follow_encoding_operation_edges(*registered, pool)
+        if isinstance(definition_result.definition, ast.LogicalOperationDefinition):
+            name = definition_result.definition.typed_name.full_typed_name
+            self._logical_operations[name] = (loaded_file, definition_result)
+            if name in self._executed_logical_operations:
+                self._follow_encoding_operation_edges(
+                    loaded_file, definition_result, pool
+                )
+
+    def _follow_encoding_operation_edges(
+        self,
+        loaded_file: file_validator.LoadedFile,
+        definition_result: validation_result.DefinitionValidationResult,
+        pool: work_pool.WorkPool,
+    ):
+        """Follow the edges of an executed logical operation to the Encoding Operations that perform it."""
+        self._follow_edges(
+            loaded_file,
+            definition_result,
+            definition_result.encoding_operation_edges,
+            pool,
+        )
+
+    def _follow_edges(
+        self,
+        loaded_file: file_validator.LoadedFile,
+        definition_result: validation_result.DefinitionValidationResult,
+        edges: Iterable[reference_graph.ReferenceEdge],
+        pool: work_pool.WorkPool,
+    ):
+        """Add a validated definition's edges to the reference graph, and request the definitions that they reach."""
+        for edge in edges:
             if not self._add_reference_edge(edge, definition_result):
                 continue
             # A definition can reference only definitions that come before it

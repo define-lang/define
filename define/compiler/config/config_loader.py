@@ -8,6 +8,7 @@ import msgspec
 
 from define.compiler import constants
 from define.compiler.config import (
+    encoding_operations_config,
     encodings_config,
     local_deps_config,
     project_config,
@@ -43,6 +44,12 @@ class Config(msgspec.Struct):
     # value qualities, located inside encodings.defcl, keyed by the value
     # quality's short global name.
     value_encodings: Mapping[str, list[ast.ReferenceGlobalNameContent]]
+    # The global names of the Encoding Operations associated with each of the
+    # project's logical operations, located inside encoding_operations.defcl,
+    # keyed by the logical operation's short global name.
+    logical_operation_encoding_operations: Mapping[
+        str, list[ast.ReferenceGlobalNameContent]
+    ]
 
 
 class ConfigLoadResult(msgspec.Struct, frozen=True):
@@ -127,7 +134,15 @@ class ConfigLoader:
                 )
             )
         value_encodings = self._load_encodings(project, config_diagnostics)
-        if not fqun_matches or sub_roots is None or value_encodings is None:
+        encoding_operations = self._load_encoding_operations(
+            project, config_diagnostics
+        )
+        if (
+            not fqun_matches
+            or sub_roots is None
+            or value_encodings is None
+            or encoding_operations is None
+        ):
             return ConfigLoadResult(config=None, diagnostics=config_diagnostics)
         return ConfigLoadResult(
             config=Config(
@@ -135,6 +150,7 @@ class ConfigLoader:
                 fqun_location=project.fqun_location,
                 sub_roots=sub_roots,
                 value_encodings=value_encodings,
+                logical_operation_encoding_operations=encoding_operations,
             ),
             diagnostics=config_diagnostics,
         )
@@ -168,3 +184,17 @@ class ConfigLoader:
         ).load(project)
         config_diagnostics.extend(encodings_diagnostics)
         return value_encodings
+
+    def _load_encoding_operations(
+        self,
+        project: project_config.ProjectConfig,
+        config_diagnostics: list[diagnostics.FormattableDiagnostic],
+    ) -> Mapping[str, list[ast.ReferenceGlobalNameContent]] | None:
+        """Load the project's Encoding Operation associations with its logical operations, adding their diagnostics to config_diagnostics."""
+        encoding_operations, encoding_operations_diagnostics = (
+            encoding_operations_config.EncodingOperationsConfigReader(
+                self._root, self._source_map
+            ).load(project)
+        )
+        config_diagnostics.extend(encoding_operations_diagnostics)
+        return encoding_operations

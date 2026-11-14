@@ -3,6 +3,18 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
+proto_library(
+    name = "encoding_operations_proto",
+    srcs = ["encoding_operations.proto"],
+    deps = ["@protovalidate//proto/protovalidate/buf/validate:validate_proto"],
+)
+
+py_proto_library(
+    name = "encoding_operations_proto_py",
+    visibility = ["//define/compiler/config:__pkg__"],
+    deps = [":encoding_operations_proto"],
+)
+
 py_library(
     name = "encodings",
     srcs = ["__init__.py"],

@@ -53,6 +53,7 @@ def test_resolves_fqun_and_sub_roots(
                 ),
             },
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )
@@ -71,6 +72,7 @@ def test_missing_local_deps_resolves_empty_sub_roots(
             ),
             sub_roots={},
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )
@@ -106,6 +108,7 @@ def test_declaring_entry_universe_match_succeeds(
             ),
             sub_roots={},
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )

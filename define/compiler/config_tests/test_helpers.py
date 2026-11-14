@@ -10,6 +10,7 @@ from defcl.python import loader as defcl_loader
 from define.compiler import constants
 from define.compiler.config import (
     config_loader,
+    encoding_operations_config,
     encodings_config,
     local_deps_config,
 )
@@ -70,18 +71,18 @@ def declaring_entry(universe: str, path: str) -> local_deps_config.LocalDependen
     )
 
 
-def encoding_names(
-    value_encodings: Mapping[str, list[ast.ReferenceGlobalNameContent]],
+def associated_names(
+    associations: Mapping[str, list[ast.ReferenceGlobalNameContent]],
 ) -> dict[str, list[tuple[str, rendering.SourceLocation]]]:
-    """Return each value quality's encoding names as their text and locations."""
+    """Return the names associated with each key, as their text and locations."""
     result: dict[str, list[tuple[str, rendering.SourceLocation]]] = {}
-    for value, names in value_encodings.items():
-        result[value] = [(name.source_name, name.location) for name in names]
+    for key, names in associations.items():
+        result[key] = [(name.source_name, name.location) for name in names]
     return result
 
 
 def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
-    """Return an encoding name that the project's encodings config writes on line, as `encoding_names` returns it."""
+    """Return an encoding name that the project's encodings config writes on line, as `associated_names` returns it."""
     # Each test's encodings config writes `encoding: "` at the same
     # indentation, so the name always starts at the same column.
     return (
@@ -92,5 +93,23 @@ def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
             end_line=line,
             end_column=17 + len(name),
             file_path=str(encodings_config.CONFIG_FILE.path),
+        ),
+    )
+
+
+def encoding_operation_name(
+    name: str, line: int
+) -> tuple[str, rendering.SourceLocation]:
+    """Return an Encoding Operation name that the project's encoding operations config writes on line, as `associated_names` returns it."""
+    # Each test's config writes `encoding_operation: "` at the same
+    # indentation, so the name always starts at the same column.
+    return (
+        name,
+        rendering.SourceLocation(
+            line=line,
+            column=28,
+            end_line=line,
+            end_column=27 + len(name),
+            file_path=str(encoding_operations_config.CONFIG_FILE.path),
         ),
     )

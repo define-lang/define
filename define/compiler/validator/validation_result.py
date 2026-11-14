@@ -85,6 +85,15 @@ class DefinitionValidationResult(msgspec.Struct):
     associated_encodings: list[ast.GlobalTypedNameReference] = msgspec.field(
         default_factory=list
     )
+    # For a logical operation, an edge to each Encoding Operation that its
+    # project associates with it. The program follows them only if it executes
+    # the logical operation.
+    encoding_operation_edges: list[reference_graph.ReferenceEdge] = msgspec.field(
+        default_factory=list
+    )
+    # The full typed names of the logical operations that the definition
+    # executes.
+    executed_logical_operations: list[str] = msgspec.field(default_factory=list)
 
 
 @dataclass

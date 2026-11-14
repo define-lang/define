@@ -1,0 +1,7 @@
+# The Encoding Operations associated with a logical operation load only when something executes the logical operation, so an undefined one goes unreported when nothing does.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}

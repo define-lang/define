@@ -185,7 +185,6 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler:conftest",
-        "//define/compiler:constants",
         "//define/compiler:literal_parsers",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",

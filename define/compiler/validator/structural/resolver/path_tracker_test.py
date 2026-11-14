@@ -83,6 +83,7 @@ class TestSubRootTracking:
             fqun_location=_LOCATION,
             sub_roots={"dep": _entry("dep", "ext/dep")},
             value_encodings={},
+            logical_operation_encoding_operations={},
         )
         tracker.register_project_root(define_path.EMPTY, root_config)
         assert tracker.project_root_for_fqun("my.universe") == (
@@ -99,6 +100,7 @@ class TestSubRootTracking:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.project_root_for_fqun("other.universe") is None
@@ -116,6 +118,7 @@ class TestSubRootTracking:
                 fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         root_config = tracker.config_for_root(define_path.EMPTY)
@@ -136,6 +139,7 @@ class TestSubRootTracking:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         with pytest.raises(ValueError, match="already registered"):
@@ -146,6 +150,7 @@ class TestSubRootTracking:
                     fqun_location=_LOCATION,
                     sub_roots={},
                     value_encodings={},
+                    logical_operation_encoding_operations={},
                 ),
             )
 
@@ -158,6 +163,7 @@ class TestSubRootTracking:
                 fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.sub_root_entry("dep", define_path.EMPTY) == _entry(
@@ -178,6 +184,7 @@ class TestSubRootTracking:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         with pytest.raises(KeyError):
@@ -194,6 +201,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert not tracker.is_under_failed_root(define_path.DefinePath("lib"))
@@ -214,6 +222,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert (
@@ -230,6 +239,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         tracker.register_project_root(
@@ -239,6 +249,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.find_enclosing_root(
@@ -254,6 +265,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         tracker.register_project_root(
@@ -263,6 +275,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         tracker.register_project_root(
@@ -272,6 +285,7 @@ class TestConflictDetection:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.find_enclosing_root(
@@ -327,6 +341,7 @@ class TestUniverseRoot:
                 fqun_location=_LOCATION,
                 sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.universe_root(
@@ -342,6 +357,7 @@ class TestUniverseRoot:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert tracker.universe_root("b.com:lib", define_path.EMPTY) is None
@@ -355,6 +371,7 @@ class TestUniverseRoot:
                 fqun_location=_LOCATION,
                 sub_roots={},
                 value_encodings={},
+                logical_operation_encoding_operations={},
             ),
         )
         assert (

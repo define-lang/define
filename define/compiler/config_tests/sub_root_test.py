@@ -66,6 +66,7 @@ def test_resolves_fqun_and_sub_roots(
                 )
             },
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )

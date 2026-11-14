@@ -27,4 +27,7 @@ message Project {
 message Associations {
   // Whether the project has .define/encodings/encodings.defcl.
   defcl.schema.core.Defcl.Boolean has_encodings = 1;
+
+  // Whether the project has .define/encodings/encoding_operations.defcl.
+  defcl.schema.core.Defcl.Boolean has_encoding_operations = 2;
 }

@@ -49,6 +49,11 @@ def untracked_packages(repository: Path) -> list[str]:
     packages as deleted, or a package that is not part of the commit could
     fail it.
     """
+    # TODO: Keep untracked packages out of the build some other way. A deleted
+    # package's files belong to its parent package, so a parent that requires
+    # its files to be in child packages, such as define/testdata with
+    # require_subpackages, fails the commit when one of its child packages is
+    # untracked.
     untracked = _git_files(
         repository,
         "ls-files",

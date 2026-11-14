@@ -152,6 +152,7 @@ def test_layout_error_still_resolves(
         ),
         sub_roots={},
         value_encodings={},
+        logical_operation_encoding_operations={},
     )
     (diagnostic,) = result.diagnostics
     assert type(diagnostic) is errors.SyntaxDiagnostic

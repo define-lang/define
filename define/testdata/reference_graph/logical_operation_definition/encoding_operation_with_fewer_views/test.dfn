@@ -1,0 +1,22 @@
+# An Encoding Operation associated with a logical operation must have the logical operation's views. The project associates /number/integer/ascii/add, which also has view<b>, with /negate.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<amount> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<a> looking at view<amount>.
+            with view<result> looking at view<negated>.
+        }
+    }
+}

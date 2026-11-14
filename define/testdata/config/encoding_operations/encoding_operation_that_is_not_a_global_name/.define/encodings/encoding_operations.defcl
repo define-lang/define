@@ -1,0 +1,8 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "number/integer/add"
+    }
+  ]
+}

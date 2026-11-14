@@ -1,0 +1,8 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "other.com:lib:/number/add"
+      encoding_operation: "/number/integer/add"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ py_library(
     srcs = ["config_loader.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":encoding_operations_config",
         ":encodings_config",
         ":local_deps_config",
         ":project_config",
@@ -40,21 +41,49 @@ py_library(
 )
 
 py_library(
-    name = "encodings_config",
-    srcs = ["encodings_config.py"],
+    name = "encoding_operations_config",
+    srcs = ["encoding_operations_config.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":config_file",
+        ":global_names",
         ":project_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//define/config/encodings:encoding_operations_proto_py",
+    ],
+)
+
+py_library(
+    name = "encodings_config",
+    srcs = ["encodings_config.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":config_file",
+        ":global_names",
+        ":project_config",
+        "//crates/source_rendering/python:rendering",
+        "//defcl/python:validator",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/config/encodings:encodings_proto_py",
+    ],
+)
+
+py_library(
+    name = "global_names",
+    srcs = ["global_names.py"],
+    deps = [
+        "//defcl/python:validator",
+        "//define/compiler:ast",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/parsing:parser",
         "//define/compiler/validator/structural:name_validators",
-        "//define/config/encodings:encodings_proto_py",
     ],
 )
 
@@ -79,6 +108,7 @@ py_library(
     deps = [
         ":config_file",
         "//crates/source_rendering/python:rendering",
+        "//defcl/python:loader",
         "//defcl/schema/core:boolean_proto_py",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
@@ -95,7 +125,9 @@ pyright_test(
         ":config",
         ":config_file",
         ":config_loader",
+        ":encoding_operations_config",
         ":encodings_config",
+        ":global_names",
         ":local_deps_config",
         ":project_config",
     ],

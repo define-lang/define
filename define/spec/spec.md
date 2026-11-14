@@ -2183,6 +2183,13 @@ Value Setting Statements and Value Operations.
 
 The compiler validates an association only when the compiler must use it.
 
+There are some facts that all association configurations have in common:
+
+- The project root configuration states whether the association configuration
+  file exists, and the compiler throws an error if the file is expected to exist
+  and does not.
+- Names in the project's own universe use the global name short form.
+
 ### Dead Associations
 
 Any association defined in the root project that is not used during compilation
@@ -2196,13 +2203,10 @@ Proposals:
 - [DLP 47: Value Encoding Associations](../proposals/00047-value-encoding-associations.md)
 
 The configuration file `.define/encodings/encodings.defcl` contains associations
-between value qualities and encodings. The project root configuration states
-whether this file exists, and the compiler throws an error if the file is
-expected to exist and does not.
+between value qualities and encodings.
 
 An association declares that an encoding is potentially available for a value
-quality. Each association names a value quality and an encoding. Names in the
-project's own universe use the global name short form.
+quality. Each association names a value quality and an encoding.
 
 A value quality may be associated with several encodings, and an encoding with
 several value qualities. Associating the same value quality and encoding more
@@ -2219,6 +2223,35 @@ determination of what will be the most efficient to represent the program.
 
 <!-- TODO: A library compiled for consumption by other projects may leave
 its encodings unresolved for the consuming project's target configuration. -->
+
+### Encoding Operation Associations
+
+Proposals:
+
+- [DLP 48: Encoding Operation Associations](../proposals/00048-encoding-operation-associations.md)
+- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
+
+The configuration file `.define/encodings/encoding_operations.defcl` contains
+associations between logical operations and Encoding Operations.
+
+An association declares that an Encoding Operation can be used to implement a
+logical operation. Each association names a logical operation and an Encoding
+Operation.
+
+A logical operation may be associated with several Encoding Operations, and an
+Encoding Operation with several logical operations. Associating the same logical
+operation and Encoding Operation more than once is an error. The associations
+must be sorted lexicographically by logical operation name.
+
+The universe that defines the association must also define at least one of:
+
+- The named logical operation.
+- An encoding that is assigned to one of the named Encoding Operation's
+  Interface Views.
+
+<!-- TODO: Specify associating an Encoding Operation with a Value Operation,
+which DLP 55 and DLP 58 allow when the universe that defines the association
+also defines the Value Operation. -->
 
 ## Dead Code
 

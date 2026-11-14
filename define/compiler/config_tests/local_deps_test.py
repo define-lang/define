@@ -233,6 +233,7 @@ def test_dots_within_a_part_of_path(
                 ),
             },
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )
@@ -282,6 +283,7 @@ def test_duplicate_universe_name_uses_the_first_entry(
                 )
             },
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[
             diagnostics.DuplicateLocalDependencyDiagnostic(

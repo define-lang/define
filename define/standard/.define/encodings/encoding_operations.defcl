@@ -1,0 +1,76 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/binary/and"
+      encoding_operation: "/binary/ascii/and"
+    },
+    {
+      logical_operation: "/binary/equals"
+      encoding_operation: "/binary/ascii/equals"
+    },
+    {
+      logical_operation: "/binary/exclusive_or"
+      encoding_operation: "/binary/ascii/exclusive_or"
+    },
+    {
+      logical_operation: "/boolean/and"
+      encoding_operation: "/boolean/ascii/and"
+    },
+    {
+      logical_operation: "/boolean/not"
+      encoding_operation: "/boolean/ascii/not"
+    },
+    {
+      logical_operation: "/number/absolute_value"
+      encoding_operation: "/number/integer/ascii/absolute_value"
+    },
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "/number/integer/ascii/add"
+    },
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "/number/natural/ascii/add"
+    },
+    {
+      logical_operation: "/number/add"
+      encoding_operation: "/number/natural/ascii/add_integer"
+    },
+    {
+      logical_operation: "/number/less_than"
+      encoding_operation: "/number/integer/ascii/less_than"
+    },
+    {
+      logical_operation: "/number/less_than"
+      encoding_operation: "/number/natural/ascii/less_than"
+    },
+    {
+      logical_operation: "/number/minimum"
+      encoding_operation: "/number/integer/ascii/minimum"
+    },
+    {
+      logical_operation: "/number/minimum"
+      encoding_operation: "/number/natural/ascii/minimum"
+    },
+    {
+      logical_operation: "/number/multiply"
+      encoding_operation: "/number/integer/ascii/multiply"
+    },
+    {
+      logical_operation: "/number/multiply"
+      encoding_operation: "/number/natural/ascii/multiply"
+    },
+    {
+      logical_operation: "/number/negate"
+      encoding_operation: "/number/integer/ascii/negate"
+    },
+    {
+      logical_operation: "/number/negate"
+      encoding_operation: "/number/natural/ascii/negate"
+    },
+    {
+      logical_operation: "/text/less_than"
+      encoding_operation: "/text/unicode/scalar/utf8/less_than"
+    }
+  ]
+}

@@ -1,18 +1,4 @@
-# An Encoding Operation associated with a logical operation must have the logical operation's views. The test associates /number/integer/ascii/add, which also has view<b>, with /negate.
-define the logical_operation<my.domain.com:my_lib:/negate> {
-    define the view<a> {
-        it is read.
-    }
-    define the view<result> {
-        it is written.
-    }
-}
-define the potential value<my.domain.com:my_lib:/number> {
-    it supports the logical_operation</negate> {
-        it may be read.
-        it may be written.
-    }
-}
+# An Encoding Operation associated with an executed logical operation must be defined.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<amount> {
         it is read.

@@ -1,18 +1,4 @@
-# An Encoding Operation associated with a logical operation must have its views in the same order. The test associates /number/integer/ascii/negate, whose view<a> is first, with /negate.
-define the logical_operation<my.domain.com:my_lib:/negate> {
-    define the view<result> {
-        it is written.
-    }
-    define the view<a> {
-        it is read.
-    }
-}
-define the potential value<my.domain.com:my_lib:/number> {
-    it supports the logical_operation</negate> {
-        it may be read.
-        it may be written.
-    }
-}
+# An Encoding Operation associated with a logical operation must have its views in the same order. The project associates /number/integer/ascii/negate, whose view<a> is first, with /negate.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is written.

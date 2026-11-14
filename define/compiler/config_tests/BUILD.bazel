@@ -10,6 +10,24 @@ py_library(
 )
 
 py_test(
+    name = "encoding_operations_test",
+    size = "small",
+    srcs = ["encoding_operations_test.py"],
+    data = ["//define/testdata/config/encoding_operations"],
+    deps = [
+        ":test_helpers",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:conftest",
+        "//define/compiler/config:config_loader",
+        "//define/compiler/config:encoding_operations_config",
+        "//define/compiler/config:project_config",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "encodings_test",
     size = "small",
     srcs = ["encodings_test.py"],
@@ -114,6 +132,7 @@ py_library(
         "//define/compiler:constants",
         "//define/compiler/config:config_file",
         "//define/compiler/config:config_loader",
+        "//define/compiler/config:encoding_operations_config",
         "//define/compiler/config:encodings_config",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/data_structures:define_path",
@@ -126,6 +145,7 @@ filegroup(
     name = "test_sources",
     testonly = True,
     srcs = [
+        "encoding_operations_test.py",
         "encodings_test.py",
         "local_deps_test.py",
         "project_root_test.py",
@@ -139,6 +159,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":config_tests",
+        ":encoding_operations_test",
         ":encodings_test",
         ":local_deps_test",
         ":project_root_test",

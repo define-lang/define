@@ -1,21 +1,4 @@
-# Two Encoding Operations associated with one logical operation must not have the same encodings. The test associates /number/integer/ascii/add and /number/integer/ascii/multiply with /combine.
-define the logical_operation<my.domain.com:my_lib:/combine> {
-    define the view<a> {
-        it is read.
-    }
-    define the view<b> {
-        it is read.
-    }
-    define the view<result> {
-        it is written.
-    }
-}
-define the potential value<my.domain.com:my_lib:/number> {
-    it supports the logical_operation</combine> {
-        it may be read.
-        it may be written.
-    }
-}
+# Two Encoding Operations associated with one logical operation must not have the same encodings. The project associates /number/integer/ascii/add and /number/integer/ascii/multiply with /combine.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is read.

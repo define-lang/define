@@ -30,7 +30,7 @@ def test_resolves_value_encodings(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {
+    assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number/integer": [
             test_helpers.encoding_name("/number/integer/twos_complement", 5)
         ],
@@ -54,6 +54,7 @@ def test_has_encodings_false_does_not_read_encodings(
             ),
             sub_roots={},
             value_encodings={},
+            logical_operation_encoding_operations={},
         ),
         diagnostics=[],
     )
@@ -100,7 +101,7 @@ def test_value_in_another_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_value_that_is_not_a_global_name(
@@ -122,7 +123,7 @@ def test_value_that_is_not_a_global_name(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_value_full_name_in_own_universe(
@@ -145,7 +146,7 @@ def test_value_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_resolves_encoding_from_another_universe(
@@ -158,7 +159,7 @@ def test_resolves_encoding_from_another_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {
+    assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number": [test_helpers.encoding_name("other.com:lib:/number/ascii", 5)]
     }
 
@@ -182,7 +183,7 @@ def test_encoding_that_is_not_a_global_name(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_encoding_full_name_in_own_universe(
@@ -205,7 +206,7 @@ def test_encoding_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_unsorted_values(
@@ -225,7 +226,7 @@ def test_unsorted_values(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {
+    assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number/natural": [test_helpers.encoding_name("/number/natural/ascii", 5)],
         "/number/integer": [test_helpers.encoding_name("/number/integer/ascii", 9)],
     }
@@ -251,7 +252,7 @@ def test_duplicate_value_encoding(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {
+    assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number": [test_helpers.encoding_name("/number/ascii", 5)]
     }
 
@@ -294,7 +295,7 @@ def test_duplicate_value_encoding_with_invalid_name(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert test_helpers.encoding_names(result.config.value_encodings) == {}
+    assert test_helpers.associated_names(result.config.value_encodings) == {}
 
 
 def test_local_deps_and_encodings_diagnostics(

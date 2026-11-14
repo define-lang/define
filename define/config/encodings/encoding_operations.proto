@@ -1,0 +1,33 @@
+edition = "2024";
+
+package define.config.encodings;
+
+import "buf/validate/validate.proto";
+
+// Top-level wrapper for .define/encodings/encoding_operations.defcl files.
+message EncodingOperationsFile {
+  // The project's Encoding Operation associations.
+  EncodingOperations encoding_operations = 1;
+}
+
+// Wrapper for the repeated operation encoding field.
+message EncodingOperations {
+  // The associations between the project's logical operations and Encoding
+  // Operations, sorted by logical operation. Each pair must be unique
+  // (enforced at load time, not by proto validation).
+  repeated OperationEncoding operation_encodings = 1;
+}
+
+// Declares that an Encoding Operation potentially performs a logical
+// operation.
+message OperationEncoding {
+  // The short global name of a logical operation in the same universe as the
+  // project. The compiler parses it as Define parses a global name.
+  string logical_operation = 1 [(buf.validate.field).required = true];
+
+  // The global name of an Encoding Operation: a short global name for an
+  // Encoding Operation in the project's own universe, or a fully-qualified
+  // global name for one in another universe. The compiler parses it as Define
+  // parses a global name.
+  string encoding_operation = 2 [(buf.validate.field).required = true];
+}
