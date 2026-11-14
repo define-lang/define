@@ -1,5 +1,5 @@
 name: Set up Bazel
-description: Sets up Bazel with a disk cache that only runners with the same CPU share.
+description: Sets up Bazel with a disk cache shared by compatible CPUs.
 inputs:
   cache-name:
     description: Distinguishes this job's disk cache from other jobs' caches.
@@ -7,17 +7,9 @@ inputs:
 runs:
   using: composite
   steps:
-    # target-cpu=native produces CPU-specific Rust code. Runners with the same
-    # OS can have different CPUs, so even fallback cache restores must match
-    # the CPU model and features to avoid illegal-instruction crashes.
-    - name: Identify CPU for the build cache
-      id: cpu
-      shell: bash
-      run: python3 tools/cpu_fingerprint.py >> "$GITHUB_OUTPUT"
-
     - name: Set up Bazel
       uses: bazel-contrib/setup-bazel@f34d6a05eae3c24acab7fa54587492daeaeffdab # 0.19.2
       with:
         bazelisk-cache: true
-        disk-cache: ${{ github.workflow }}-${{ inputs.cache-name }}-cpu-v2-${{ steps.cpu.outputs.fingerprint }}
+        disk-cache: ${{ github.workflow }}-${{ inputs.cache-name }}-cpu-baseline-v1-${{ runner.arch }}
         repository-cache: true

@@ -1,0 +1,2 @@
+# CI runners share cached artifacts across CPUs with the same architecture.
+build --@rules_rust//rust/settings:extra_rustc_flag=-Ctarget-cpu=x86-64-v3

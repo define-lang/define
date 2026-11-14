@@ -8,6 +8,9 @@ on:
 
 permissions: {}
 
+env:
+  BAZELRC: ${{ github.workspace }}/.github/ci-linux.bazelrc
+
 # Main keeps every run so each commit gets its own coverage upload. Grouping by
 # branch lets CI on a lockfile commit cancel CI on the Renovate commit before
 # it.
@@ -58,6 +61,8 @@ jobs:
 
   test:
     name: Test (${{ matrix.os }})
+    env:
+      BAZELRC: ${{ github.workspace }}/.github/ci-${{ matrix.os == 'macos-26' && 'macos' || 'linux' }}.bazelrc
     strategy:
       matrix:
         os:
