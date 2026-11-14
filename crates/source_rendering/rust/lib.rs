@@ -95,9 +95,8 @@ impl SourceLocation {
     /// With no `source_line`, only the header.
     ///
     /// A location that continues onto later lines is underlined to the end of
-    /// its first line. Characters that are not printable show as
-    /// `escape_invisible` shows them, so that they cannot change what a
-    /// terminal shows.
+    /// its first line. Characters show as `escape_invisible` shows them, so
+    /// that they cannot change what a terminal shows.
     #[must_use]
     pub fn render(self, source_line: Option<&str>, file_path: Option<&str>) -> String {
         let mut rendered = match file_path {
@@ -139,9 +138,8 @@ impl SourceLocation {
     }
 }
 
-/// `text`, with its characters that are not printable replaced by the escapes
-/// that Rust's `char::escape_debug` writes, such as `\t`, `\0` and `\u{200b}`.
-/// Backslashes and quotes stay as they are.
+/// `text`, with characters escaped as by Rust's `char::escape_debug`, such as
+/// `\t`, `\0` and `\u{200b}`. Backslashes and quotes stay as they are.
 #[must_use]
 pub fn escape_invisible(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
@@ -150,10 +148,10 @@ pub fn escape_invisible(text: &str) -> String {
     escaped
 }
 
-/// Pushes `code` onto `rendered`, with its characters that are not printable
-/// escaped, and returns where the character indexes `start` and `end` of
-/// `code` are in the escaped code. An index after the last character, or no
-/// `end`, is the end of the escaped code.
+/// Pushes `code` onto `rendered`, with its characters escaped as by
+/// `escape_invisible`, and returns where the character indexes `start` and
+/// `end` of `code` are in the escaped code. An index after the last character,
+/// or no `end`, is the end of the escaped code.
 fn push_escaped(
     rendered: &mut String,
     code: &str,
@@ -179,13 +177,7 @@ fn push_escaped(
             width += 1;
             continue;
         }
-        // Other than backslashes and quotes, `str::escape_debug` escapes exactly
-        // the characters that are not printable. It also escapes a combining
-        // character that starts a string, so the character follows a space,
-        // which it leaves as it is.
-        let mut text = String::from(" ");
-        text.push(character);
-        for escaped in text.escape_debug().skip(1) {
+        for escaped in character.escape_debug() {
             rendered.push(escaped);
             width += 1;
         }
@@ -279,8 +271,19 @@ mod tests {
             // in a backslash, and the combining character must stay escaped.
             eq(
                 // ast-grep-ignore: rust-multi-line-strings-use-indoc
-                "line 1, column 7\n    # a\\u{200b}b\\u{e0001}c\u{301}\\\n                         ^"
+                "line 1, column 7\n    # a\\u{200b}b\\u{e0001}c\\u{301}\\\n                         ^"
             )
+        )
+    }
+
+    #[gtest]
+    fn underline_moves_past_escaped_combining_character() -> Result<()> {
+        verify_that!(
+            location(1, 3, 1, 3).render(Some("a\u{301}b"), None),
+            eq(indoc! {r"
+                line 1, column 3
+                    a\u{301}b
+                            ^"})
         )
     }
 
