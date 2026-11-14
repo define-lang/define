@@ -640,8 +640,9 @@ Encoding Operations still do the actual work at runtime. Since there is no
 longer a statement that says "execute the Encoding Operation for this value
 operation," the config from
 [DLP 48 (Encoding Operation Associations)](00048-encoding-operation-associations.md)
-now associates Encoding Operations with logical operations, instead. An entry
-has `logical_operation`, now, instead of `value_operation`:
+now also associates Encoding Operations with logical operations. An entry now
+has either `logical_operation` or `value_operation` as the key. Here's what it
+looks like for a logical operation:
 
 ```protocol-buffer-text-format
 encoding_operations: {
@@ -654,18 +655,42 @@ encoding_operations: {
 }
 ```
 
+And here's a Value Operation:
+
+```protocol-buffer-text-format
+encoding_operations: {
+    operation_encodings: [
+        {
+            value_operation: "standard:/number/multiply_add"
+            encoding_operation: "/number/integer/64bit/fmadd"
+        },
+    ]
+}
+```
+
+Note that one entry in `operation_encodings` may not specify both
+`logical_operation` and `value_operation`.
+
 An Encoding Operation associated with a logical operation must have the same
 views as the logical operation, with the same names and directions, in the same
 order.
 
-For each executed value operation, the compiler compiles the value operation's
-statements, choosing an Encoding Operation for each logical operation execution
-based on the encodings of what its views look at.
+When a Value Operation is associated with an Encoding Operation, the compiler
+executes that Encoding Operation instead of compiling the value operation's
+statements. Note that this means the compiler is trusting that the encoding
+operation implements that value operation. In the future the compiler will
+require verification that the encoding operation is logically equivalent to
+executing the value operation's logical operations as written.
 
-The compiler may also recognize a composition of logical operations and use an
-Encoding Operation that does all of it at once. Future proposals will provide a
-more comprehensive way for the compiler to understand when and how it can do
-this.
+When a Value Operation is _not_ associated with an encoding operation (or the
+associated encoding operation does not apply), the compiler generates code for
+the Value Operation by compiling the Value Operation's individual statements,
+choosing encoding operations to execute each logical operation based on the
+encodings that the logical operation's views are looking at in that execution.
+
+The compiler may also recognize a composition of operations and use an Encoding
+Operation that does all of it at once. Future proposals will provide a more
+comprehensive way for the compiler to understand when and how it can do this.
 
 #### Trust
 
