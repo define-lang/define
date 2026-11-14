@@ -48,17 +48,6 @@ single_version_override(
     ],
 )
 
-# On Windows, module-map-generator cannot read headers whose absolute paths
-# are MAX_PATH (260) characters or longer, which deep libc++ headers in exec
-# configuration output directories exceed.
-# TODO: Remove this patch once an llvm release includes
-# https://github.com/hermeticbuild/hermetic-llvm/pull/928.
-single_version_override(
-    module_name = "llvm",
-    patch_strip = 1,
-    patches = ["//tools/patches:llvm_module_map_generator_long_paths.patch"],
-)
-
 local_path_override(
     module_name = "re2",
     path = "vendored/re2",

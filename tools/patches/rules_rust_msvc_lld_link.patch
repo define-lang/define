@@ -1,13 +1,14 @@
 --- a/rust/private/rustc.bzl
 +++ b/rust/private/rustc.bzl
-@@ -412,13 +412,21 @@ _LinkerConfigInfo = provider(fields = [
+@@ -412,6 +412,7 @@
      "action_name",
      "feature_configuration",
      "is_direct_driver",
 +    "msvc_lld_link",
      "rpaths",
      "rust_linker",
-     "target_arch",
+     "target_abi",
+@@ -420,7 +421,14 @@
      "variables",
  ])
  
@@ -23,7 +24,7 @@
      user_link_flags = get_cc_user_link_flags(ctx)
  
      cc_linker = None
-@@ -461,6 +469,19 @@ def _get_linker_config(ctx, crate_type, toolchain, cc_toolchain, feature_configu
+@@ -463,6 +471,19 @@
      if use_rust_linker and not toolchain.linker:
          fail("No linker available for rustc. Either `rust_toolchain.linker` must be set or a `cc_toolchain` configured for the current configuration.")
  
@@ -43,17 +44,17 @@
      # Keep CcToolchainVariables and the Rust linker File until map_each runs so
      # cc_common and File.path use the Rustc action's path mapper.
      return _LinkerConfigInfo(
-@@ -468,7 +489,8 @@ def _get_linker_config(ctx, crate_type, toolchain, cc_toolchain, feature_configu
+@@ -470,7 +491,8 @@
          action_name = action_name,
          variables = link_variables,
          rust_linker = toolchain.linker if use_rust_linker else None,
 -        is_direct_driver = use_rust_linker and toolchain.linker_type == "direct",
 +        msvc_lld_link = msvc_lld_link,
 +        is_direct_driver = bool(msvc_lld_link) or (use_rust_linker and toolchain.linker_type == "direct"),
+         target_abi = toolchain.target_abi,
          target_arch = toolchain.target_arch,
-         rpaths = rpaths,
-     )
-@@ -476,6 +498,8 @@ def _get_linker_config(ctx, crate_type, toolchain, cc_toolchain, feature_configu
+         target_os = toolchain.target_os,
+@@ -480,6 +502,8 @@
  def _get_linker_path(linker_config):
      if linker_config.rust_linker:
          return linker_config.rust_linker.path
@@ -62,7 +63,7 @@
      return cc_common.get_tool_for_action(
          feature_configuration = linker_config.feature_configuration,
          action_name = linker_config.action_name,
-@@ -499,7 +523,33 @@ def _get_linker_args(linker_config):
+@@ -538,7 +562,33 @@
              variables = linker_config.variables,
          ))
  
@@ -97,7 +98,7 @@
          # Make sure we include RPATHs for Rust ABI dylibs even when no cc_toolchain.
          if linker_config.variables == None and linker_config.rpaths:
              for rpath in linker_config.rpaths.to_list():
-@@ -874,17 +924,7 @@ def collect_inputs(
+@@ -915,17 +965,7 @@
      """
      linker_script = getattr(file, "linker_script", None)
  
@@ -116,7 +117,7 @@
      compilation_mode = ctx.var["COMPILATION_MODE"]
  
      use_pic = should_use_pic(
-@@ -1545,6 +1585,7 @@ def construct_arguments(
+@@ -1586,6 +1626,7 @@
                  feature_configuration,
                  rpaths,
                  add_flags_for_binary = add_flags_for_binary,

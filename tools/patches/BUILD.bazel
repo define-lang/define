@@ -2,7 +2,6 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
     "bufplugin_checktest_windows_file_paths.patch",
-    "llvm_module_map_generator_long_paths.patch",
     "protobuf_python_import_paths.patch",
     "protobuf_python_unicode_escapes.patch",
     "pyyaml_without_libyaml.patch",
