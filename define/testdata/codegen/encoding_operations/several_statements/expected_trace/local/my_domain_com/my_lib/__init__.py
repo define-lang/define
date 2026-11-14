@@ -3,7 +3,7 @@
 import standard.number.natural.ascii
 
 
-def successors(view_number: int) -> tuple[int, int]:
-    view_plus_one = standard.number.natural.ascii.add(view_number, 1)
-    view_plus_two = standard.number.natural.ascii.add(view_number, 2)
+def encoding_successors(view_number: int) -> tuple[int, int]:
+    view_plus_one = standard.number.natural.ascii.encoding_add(view_number, 1)
+    view_plus_two = standard.number.natural.ascii.encoding_add(view_number, 2)
     return view_plus_one, view_plus_two

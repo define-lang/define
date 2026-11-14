@@ -3,9 +3,9 @@
 import standard.number.natural.ascii
 
 
-def increment(view_number: int) -> int:
-    return standard.number.natural.ascii.add(view_number, 1)
+def encoding_increment(view_number: int) -> int:
+    return standard.number.natural.ascii.encoding_add(view_number, 1)
 
 
-def successor(view_number: int) -> int:
-    return increment(view_number)
+def encoding_successor(view_number: int) -> int:
+    return encoding_increment(view_number)

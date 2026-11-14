@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.smaller.SmallerPosition
-        ).particle.value = standard.number.natural.ascii.minimum(
+        ).particle.value = standard.number.natural.ascii.encoding_minimum(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

@@ -41,7 +41,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/unlocked, False)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.exactly_one.ExactlyOnePosition
-        ).particle.value = standard.boolean.ascii.exclusive_or(
+        ).particle.value = standard.boolean.ascii.encoding_exclusive_or(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.powered.PoweredPosition
             ).particle.value,

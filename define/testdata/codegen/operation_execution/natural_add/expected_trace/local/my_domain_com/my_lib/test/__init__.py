@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/augend, 3)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.total.TotalPosition
-        ).particle.value = standard.number.natural.ascii.add(
+        ).particle.value = standard.number.natural.ascii.encoding_add(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.augend.AugendPosition
             ).particle.value,

@@ -36,7 +36,7 @@ class TestAction(literal.Action):
         ).particle.value = "é"
         self.on_particle.get_position(
             local.my_domain_com.my_lib.below.BelowPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.less_than(
+        ).particle.value = standard.text.unicode.scalar.utf8.encoding_less_than(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

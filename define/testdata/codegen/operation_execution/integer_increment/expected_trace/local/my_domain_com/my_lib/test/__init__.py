@@ -25,7 +25,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/count, -1)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.count.CountPosition
-        ).particle.value = standard.number.integer.ascii.increment(
+        ).particle.value = standard.number.integer.ascii.encoding_increment(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.count.CountPosition
             ).particle.value,

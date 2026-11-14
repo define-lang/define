@@ -3,6 +3,6 @@
 import standard.number.natural.ascii
 
 
-def double(view_number: int) -> int:
+def encoding_double(view_number: int) -> int:
     view_copy = view_number
-    return standard.number.natural.ascii.add(view_number, view_copy)
+    return standard.number.natural.ascii.encoding_add(view_number, view_copy)

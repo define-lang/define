@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         literal.record_operation('test.set_value(/reading, "h")')
         self.on_particle.get_position(
             local.my_domain_com.my_lib.at_most.AtMostPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.less_than_or_equal(
+        ).particle.value = standard.text.unicode.scalar.utf8.encoding_less_than_or_equal(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

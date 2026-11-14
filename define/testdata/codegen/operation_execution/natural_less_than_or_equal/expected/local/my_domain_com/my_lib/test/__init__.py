@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.at_most.AtMostPosition
-        ).particle.value = standard.number.natural.ascii.less_than_or_equal(
+        ).particle.value = standard.number.natural.ascii.encoding_less_than_or_equal(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

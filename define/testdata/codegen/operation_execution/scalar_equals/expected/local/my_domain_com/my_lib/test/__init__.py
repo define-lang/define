@@ -36,7 +36,7 @@ class TestAction(literal.Action):
         ).particle.value = "q"
         self.on_particle.get_position(
             local.my_domain_com.my_lib.matches.MatchesPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.equals(
+        ).particle.value = standard.text.unicode.scalar.utf8.encoding_equals(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

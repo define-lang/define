@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 5
         self.on_particle.get_position(
             local.my_domain_com.my_lib.remaining.RemainingPosition
-        ).particle.value = standard.number.natural.ascii.subtract(
+        ).particle.value = standard.number.natural.ascii.encoding_subtract(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.balance.BalancePosition
             ).particle.value,

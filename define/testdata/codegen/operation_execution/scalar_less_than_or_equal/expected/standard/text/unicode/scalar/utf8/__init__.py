@@ -3,10 +3,10 @@
 import standard.boolean.ascii
 
 
-def less_than(view_a: str, view_b: str) -> bool:
+def encoding_less_than(view_a: str, view_b: str) -> bool:
     return view_a < view_b
 
 
-def less_than_or_equal(view_a: str, view_b: str) -> bool:
-    view_greater = less_than(view_b, view_a)
-    return standard.boolean.ascii.not_(view_greater)
+def encoding_less_than_or_equal(view_a: str, view_b: str) -> bool:
+    view_greater = encoding_less_than(view_b, view_a)
+    return standard.boolean.ascii.encoding_not(view_greater)

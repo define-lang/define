@@ -2608,8 +2608,8 @@ class SecondDestructorAction(literal.Action):
 ## An action executes a Value Operation
 
 Executing a Value Operation calls the function of the Encoding Operation that
-performs it. The function is named after the last segment of the Encoding
-Operation's path, and lives in the module of the rest of its path.
+performs it. The function is named `encoding_` followed by the last segment of
+the Encoding Operation's path, and lives in the module of the rest of its path.
 
 ### test.dfn
 
@@ -2640,7 +2640,7 @@ class TestAction(literal.Action):
         self.on_particle.get_position(AugendPosition).particle.value = 3
         self.on_particle.get_position(
             TotalPosition
-        ).particle.value = standard.number.natural.ascii.add(
+        ).particle.value = standard.number.natural.ascii.encoding_add(
             self.on_particle.get_position(AugendPosition).particle.value,
             2,
         )
@@ -2650,6 +2650,6 @@ class TestAction(literal.Action):
 
 ```python
 # standard/number/natural/ascii/__init__.py
-def add(a: int, b: int) -> int:
+def encoding_add(a: int, b: int) -> int:
     return a + b
 ```

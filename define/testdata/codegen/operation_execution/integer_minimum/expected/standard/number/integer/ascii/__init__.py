@@ -3,5 +3,5 @@
 import builtins
 
 
-def minimum(view_a: int, view_b: int) -> int:
+def encoding_minimum(view_a: int, view_b: int) -> int:
     return builtins.min(view_a, view_b)

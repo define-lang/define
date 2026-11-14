@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/powered, True)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.both.BothPosition
-        ).particle.value = standard.boolean.ascii.and_(
+        ).particle.value = standard.boolean.ascii.encoding_and(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.powered.PoweredPosition
             ).particle.value,

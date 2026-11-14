@@ -23,7 +23,7 @@ class TestAction(literal.Action):
         ).particle.value = 0
         self.on_particle.get_position(
             local.my_domain_com.my_lib.count.CountPosition
-        ).particle.value = standard.number.natural.ascii.decrement_saturating(
+        ).particle.value = standard.number.natural.ascii.encoding_decrement_saturating(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.count.CountPosition
             ).particle.value,

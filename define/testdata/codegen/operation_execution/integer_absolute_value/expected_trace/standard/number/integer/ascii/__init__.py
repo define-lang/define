@@ -3,5 +3,5 @@
 import builtins
 
 
-def absolute_value(view_a: int) -> int:
+def encoding_absolute_value(view_a: int) -> int:
     return builtins.abs(view_a)

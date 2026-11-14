@@ -3,5 +3,5 @@
 import builtins
 
 
-def maximum(view_a: int, view_b: int) -> int:
+def encoding_maximum(view_a: int, view_b: int) -> int:
     return builtins.max(view_a, view_b)

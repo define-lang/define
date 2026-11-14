@@ -3,6 +3,6 @@
 import standard.number.integer.ascii
 
 
-def increment(view_value: int) -> int:
-    view_sum = standard.number.integer.ascii.add(view_value, 1)
+def encoding_increment(view_value: int) -> int:
+    view_sum = standard.number.integer.ascii.encoding_add(view_value, 1)
     return view_sum

@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/offset, -3)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.distance.DistancePosition
-        ).particle.value = standard.number.integer.ascii.absolute_value(
+        ).particle.value = standard.number.integer.ascii.encoding_absolute_value(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.offset.OffsetPosition
             ).particle.value,

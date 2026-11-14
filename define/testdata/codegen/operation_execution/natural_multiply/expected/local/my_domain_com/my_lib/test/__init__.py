@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.product.ProductPosition
-        ).particle.value = standard.number.natural.ascii.multiply(
+        ).particle.value = standard.number.natural.ascii.encoding_multiply(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.factor.FactorPosition
             ).particle.value,

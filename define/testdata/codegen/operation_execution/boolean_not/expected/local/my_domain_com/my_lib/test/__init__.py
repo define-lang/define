@@ -20,6 +20,6 @@ class TestAction(literal.Action):
         ).create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.enabled.EnabledPosition
-        ).particle.value = standard.boolean.ascii.not_(
+        ).particle.value = standard.boolean.ascii.encoding_not(
             True,
         )

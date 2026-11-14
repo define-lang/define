@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 0b1100
         self.on_particle.get_position(
             local.my_domain_com.my_lib.masked.MaskedPosition
-        ).particle.value = standard.binary.ascii.and_(
+        ).particle.value = standard.binary.ascii.encoding_and(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.flags.FlagsPosition
             ).particle.value,

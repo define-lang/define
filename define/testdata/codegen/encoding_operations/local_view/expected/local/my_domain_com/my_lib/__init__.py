@@ -3,6 +3,6 @@
 import standard.number.natural.ascii
 
 
-def minimum_of_three(view_a: int, view_b: int, view_c: int) -> int:
-    view_smaller = standard.number.natural.ascii.minimum(view_a, view_b)
-    return standard.number.natural.ascii.minimum(view_smaller, view_c)
+def encoding_minimum_of_three(view_a: int, view_b: int, view_c: int) -> int:
+    view_smaller = standard.number.natural.ascii.encoding_minimum(view_a, view_b)
+    return standard.number.natural.ascii.encoding_minimum(view_smaller, view_c)

@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = 3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.larger.LargerPosition
-        ).particle.value = standard.number.natural.ascii.maximum(
+        ).particle.value = standard.number.natural.ascii.encoding_maximum(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

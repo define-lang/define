@@ -41,7 +41,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/mask, 0b1010)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.combined.CombinedPosition
-        ).particle.value = standard.binary.ascii.or_(
+        ).particle.value = standard.binary.ascii.encoding_or(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.flags.FlagsPosition
             ).particle.value,

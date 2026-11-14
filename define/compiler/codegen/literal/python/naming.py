@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import builtins
 import hashlib
 import keyword
 import re
@@ -28,9 +27,14 @@ _READABLE_AUTHORITY = re.compile(r"[a-z0-9]+(?:[./][a-z0-9]+)*")
 # Separates a translated authority from the digest of the original. Readable
 # authority segments never contain it, so the two forms never collide.
 _AUTHORITY_DIGEST_SEPARATOR = "___"
-# A function name that is also a built-in would hide the built-in from the
-# rest of its module.
-_BUILTIN_NAMES: typing.Final = frozenset(dir(builtins))
+# An Encoding Operation's function lives in the module of its path's parent,
+# beside the packages of its sibling path segments. The prefix keeps its name
+# from being a package name, a keyword, or a built-in, so that every function
+# and module name depends only on the Define name it is for.
+_ENCODING_OPERATION_PREFIX = "encoding_"
+# A module-name component that starts with one of these gets one more leading
+# `_`, so that no module-name component starts with a function's prefix.
+_ESCAPED_COMPONENT_PREFIXES = ("_", _ENCODING_OPERATION_PREFIX)
 # Local names start with a prefix so that no local name is a keyword, a
 # built-in, or a name the generated method itself uses.
 VIEW_PREFIX = "view_"
@@ -82,11 +86,16 @@ def _truncate_module_component(component: str) -> str:
 
 
 def _escape_module_component(component: str) -> str:
-    """Make a module-name component importable without colliding with another.
+    """Make a module-name component importable without colliding with another component or a function.
 
     Python keywords cannot appear in an ``import`` statement. Appending ``_``
     to every component that already ends in ``_`` keeps the escaping one-to-one.
+    Prepending ``_`` to every component that starts with a function's prefix
+    or with ``_`` keeps every component from being a function's name, and is
+    also one-to-one.
     """
+    if component.startswith(_ESCAPED_COMPONENT_PREFIXES):
+        component = "_" + component
     if keyword.iskeyword(component) or component.endswith("_"):
         return component + "_"
     return component
@@ -232,9 +241,6 @@ class NameConverter:
 
     _class_names: dict[tuple[define_path.DefinePath, str], str]
     _class_references: dict[str, renderer.ClassReference]
-    # Keyed by the FQUN and path segments of the package that holds the names.
-    _package_components: dict[tuple[str, tuple[str, ...]], dict[str, str]]
-    _used_package_names: dict[tuple[str, tuple[str, ...]], set[str]]
     # The module name components that name each FQUN, keyed by its canonical
     # form.
     _universe_module_name_parts: dict[str, list[str]]
@@ -244,22 +250,6 @@ class NameConverter:
         self._universe_module_name_parts = {}
         self._class_names = {}
         self._class_references = {}
-        self._package_components = {}
-        self._used_package_names = {}
-
-    def reserve_function_name(
-        self,
-        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    ):
-        """Reserve a generated function's name in the module of its path's parent.
-
-        Every function name must be reserved before any module is named, so that
-        no package gets the name of a function in the same parent package.
-        """
-        package_key = self._parent_package_key(typed_global_name)
-        self._used_package_names.setdefault(package_key, set()).add(
-            self._function_name(typed_global_name)
-        )
 
     def function_reference(
         self,
@@ -277,20 +267,9 @@ class NameConverter:
     def _function_name(
         typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
     ) -> str:
-        name = typed_global_name.name_content.path.relative_path.parts[-1]
-        # Appending `_` to every name that already ends in `_` keeps the
-        # escaping one-to-one.
-        if name in _BUILTIN_NAMES or name.endswith("_"):
-            return name + "_"
-        return _escape_module_component(name)
-
-    def _parent_package_key(
-        self,
-        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    ) -> tuple[str, tuple[str, ...]]:
         return (
-            self._fqun(typed_global_name).canonical,
-            tuple(typed_global_name.name_content.path.relative_path.parts[:-1]),
+            _ENCODING_OPERATION_PREFIX
+            + typed_global_name.name_content.path.relative_path.parts[-1]
         )
 
     @staticmethod
@@ -302,29 +281,6 @@ class NameConverter:
         return typing.cast(
             "ast.DefinitionGlobalNameContent", typed_global_name.name_content
         ).fqun
-
-    def _package_component(
-        self, fqun: ast.Fqun, parent_segments: tuple[str, ...], segment: str
-    ) -> str:
-        """Name a path segment's package so that it differs from its siblings and from functions in its parent.
-
-        A package is named after its segment unless a function in the parent
-        package already has that name, in which case it gets underscores until
-        its name is unused. So its name depends on the other definitions in
-        the program.
-        """
-        package_key = (fqun.canonical, parent_segments)
-        components = self._package_components.setdefault(package_key, {})
-        existing = components.get(segment)
-        if existing is not None:
-            return existing
-        used = self._used_package_names.setdefault(package_key, set())
-        name = _escape_module_component(segment)
-        while name in used:
-            name += "_"
-        used.add(name)
-        components[segment] = name
-        return name
 
     def class_name(
         self,
@@ -371,12 +327,8 @@ class NameConverter:
             parts = self._universe_parts(fqun)
             self._universe_module_name_parts[fqun.canonical] = parts
         parts = parts.copy()
-        for index, segment in enumerate(path_segments):
-            parts.append(
-                _truncate_module_component(
-                    self._package_component(fqun, tuple(path_segments[:index]), segment)
-                )
-            )
+        for segment in path_segments:
+            parts.append(_truncate_module_component(_escape_module_component(segment)))
         return parts
 
     @staticmethod

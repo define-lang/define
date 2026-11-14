@@ -132,13 +132,6 @@ class _ModulePlan(msgspec.Struct, frozen=True):
         """Assign definitions to modules, in definition order."""
         definition_indexes: dict[str, int] = {}
         definition_counts: dict[str, int] = {}
-        # A package must not get the name of a function in its parent package,
-        # so every function name is reserved before any module is named.
-        for definition in definitions:
-            if isinstance(definition, ast.EncodingOperationDefinition):
-                converter.reserve_function_name(definition.typed_name)
-        # Authority-name and package-name collisions are assigned by first use,
-        # so this runs in definition order before workers share the converter.
         for index, definition in enumerate(definitions):
             module_name = _module_name(definition, converter)
             if _generates_module_part(definition):

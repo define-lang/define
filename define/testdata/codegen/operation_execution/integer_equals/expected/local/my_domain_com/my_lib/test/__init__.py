@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         ).particle.value = -3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.matches.MatchesPosition
-        ).particle.value = standard.number.integer.ascii.equals(
+        ).particle.value = standard.number.integer.ascii.encoding_equals(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.reading.ReadingPosition
             ).particle.value,

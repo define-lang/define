@@ -36,7 +36,7 @@ class TestAction(literal.Action):
         ).particle.value = False
         self.on_particle.get_position(
             local.my_domain_com.my_lib.either.EitherPosition
-        ).particle.value = standard.boolean.ascii.or_(
+        ).particle.value = standard.boolean.ascii.encoding_or(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.powered.PoweredPosition
             ).particle.value,

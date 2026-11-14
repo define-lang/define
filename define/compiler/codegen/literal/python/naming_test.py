@@ -108,7 +108,7 @@ def test_function_reference_in_standard_universe():
         location=_LOCATION,
     )
     function = converter.function_reference(encoding_operation_name)
-    assert function.function_name == "add"
+    assert function.function_name == "encoding_add"
     assert function.module_name == "standard.number.natural.ascii"
 
 
@@ -160,63 +160,53 @@ def _encoding_operation_name(path: str) -> ast.GlobalTypedNameInDefinition:
 def test_function_reference_is_in_parent_module():
     converter = naming.NameConverter()
     function = converter.function_reference(_encoding_operation_name("/number/add"))
-    assert function.function_name == "add"
+    assert function.function_name == "encoding_add"
     assert function.module_name == "local.my_domain_com.my_lib.number"
 
 
 def test_function_reference_at_universe_root():
     converter = naming.NameConverter()
     function = converter.function_reference(_encoding_operation_name("/add"))
-    assert function.function_name == "add"
+    assert function.function_name == "encoding_add"
     assert function.module_name == "local.my_domain_com.my_lib"
 
 
-def test_function_name_escapes_keyword():
+def test_function_name_of_keyword_segment_needs_no_escaping():
     converter = naming.NameConverter()
     assert (
         converter.function_reference(
             _encoding_operation_name("/number/if")
         ).function_name
-        == "if_"
+        == "encoding_if"
     )
 
 
-def test_package_named_like_function_gets_underscore():
+def test_package_named_like_function_segment_keeps_its_name():
     converter = naming.NameConverter()
-    converter.reserve_function_name(_encoding_operation_name("/number/add"))
-    count = _typed_name(name_types.NameType.POSITION, "/number/add/count").name_content
-    assert (
-        converter.module_name(count) == "local.my_domain_com.my_lib.number.add_.count"
-    )
-
-
-def test_definition_at_function_path_gets_underscore():
-    converter = naming.NameConverter()
-    converter.reserve_function_name(_encoding_operation_name("/number/add"))
-    position = _typed_name(name_types.NameType.POSITION, "/number/add").name_content
-    assert converter.module_name(position) == "local.my_domain_com.my_lib.number.add_"
-
-
-def test_package_under_function_with_underscored_sibling_stays_distinct():
-    converter = naming.NameConverter()
-    converter.reserve_function_name(_encoding_operation_name("/number/if"))
-    keyword_package = _typed_name(name_types.NameType.POSITION, "/number/if/count")
-    underscored_package = _typed_name(name_types.NameType.POSITION, "/number/if_/count")
-    assert (
-        converter.module_name(keyword_package.name_content)
-        == "local.my_domain_com.my_lib.number.if__.count"
-    )
-    assert (
-        converter.module_name(underscored_package.name_content)
-        == "local.my_domain_com.my_lib.number.if___.count"
-    )
-
-
-def test_package_without_function_keeps_its_name():
-    converter = naming.NameConverter()
-    converter.reserve_function_name(_encoding_operation_name("/other/add"))
     count = _typed_name(name_types.NameType.POSITION, "/number/add/count").name_content
     assert converter.module_name(count) == "local.my_domain_com.my_lib.number.add.count"
+
+
+def test_package_starting_with_function_prefix_gets_underscore():
+    converter = naming.NameConverter()
+    count = _typed_name(
+        name_types.NameType.POSITION, "/number/encoding_add/count"
+    ).name_content
+    assert (
+        converter.module_name(count)
+        == "local.my_domain_com.my_lib.number._encoding_add.count"
+    )
+
+
+def test_package_starting_with_underscore_gets_underscore():
+    converter = naming.NameConverter()
+    count = _typed_name(
+        name_types.NameType.POSITION, "/number/_encoding_add/count"
+    ).name_content
+    assert (
+        converter.module_name(count)
+        == "local.my_domain_com.my_lib.number.__encoding_add.count"
+    )
 
 
 def test_file_path_for_module_basic():

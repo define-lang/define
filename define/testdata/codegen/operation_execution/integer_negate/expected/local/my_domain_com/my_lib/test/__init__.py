@@ -23,7 +23,7 @@ class TestAction(literal.Action):
         ).particle.value = 3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.balance.BalancePosition
-        ).particle.value = standard.number.integer.ascii.negate(
+        ).particle.value = standard.number.integer.ascii.encoding_negate(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.balance.BalancePosition
             ).particle.value,

@@ -31,7 +31,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/balance, 2)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.remaining.RemainingPosition
-        ).particle.value = standard.number.natural.ascii.subtract_saturating(
+        ).particle.value = standard.number.natural.ascii.encoding_subtract_saturating(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.balance.BalancePosition
             ).particle.value,
