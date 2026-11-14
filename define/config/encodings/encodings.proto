@@ -21,14 +21,8 @@ message Encodings {
 // Declares that an encoding is potentially available for a value quality.
 message ValueEncoding {
   // The short global name of a value quality in the project's own universe.
-  string value = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).cel = {
-      id: "value_encoding.value.short_global_name"
-      message: "value must be a short global name, starting with '/'"
-      expression: "this.startsWith('/')"
-    }
-  ];
+  // The compiler parses it as Define parses a global name.
+  string value = 1 [(buf.validate.field).required = true];
 
   // The global name of an encoding: a short global name for an encoding in
   // the project's own universe, or a fully-qualified global name for an

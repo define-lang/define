@@ -71,26 +71,74 @@ def test_missing_encodings(
     )
 
 
-def test_value_that_is_not_a_short_global_name(
+def test_value_in_another_universe(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_project_root_config() == config.RootConfigResult(
-        root_config=None,
-        diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
-                location=test_helpers.config_field_location(
-                    config.ENCODINGS_CONFIG,
-                    ("encodings", "value_encodings", 0, "value"),
-                ),
-                field_path=("encodings", "value_encodings", 0, "value"),
-                violation_message=(
-                    "value must be a short global name, starting with '/'"
-                ),
-            )
-        ],
+    result = test_helpers.load_project_root_config()
+    (diagnostic,) = result.diagnostics
+    assert diagnostic == diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+        location=rendering.SourceLocation(
+            line=4,
+            column=15,
+            end_line=4,
+            end_column=35,
+            file_path=str(config.ENCODINGS_PATH),
+        ),
+        field_name="value",
+        name="other.com:lib:/number",
+        fqun="test.example.com:my_lib",
     )
+    assert result.root_config is not None
+    assert result.root_config.fqun == "test.example.com:my_lib"
+    assert result.root_config.sub_roots == {}
+    assert test_helpers.encoding_names(result.root_config.value_encodings) == {}
+
+
+def test_value_that_is_not_a_global_name(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    result = test_helpers.load_project_root_config()
+    (diagnostic,) = result.diagnostics
+    assert diagnostic == syntax_errors.InvalidGlobalName(
+        location=rendering.SourceLocation(
+            line=4,
+            column=15,
+            end_line=4,
+            end_column=20,
+            file_path=str(config.ENCODINGS_PATH),
+        )
+    )
+    assert result.root_config is not None
+    assert result.root_config.fqun == "test.example.com:my_lib"
+    assert result.root_config.sub_roots == {}
+    assert test_helpers.encoding_names(result.root_config.value_encodings) == {}
+
+
+def test_value_full_name_in_own_universe(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    result = test_helpers.load_project_root_config()
+    (diagnostic,) = result.diagnostics
+    assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+        location=rendering.SourceLocation(
+            line=4,
+            column=15,
+            end_line=4,
+            end_column=37,
+            file_path=str(config.ENCODINGS_PATH),
+        ),
+        fqun="test.example.com:my_lib",
+    )
+    assert result.root_config is not None
+    assert result.root_config.fqun == "test.example.com:my_lib"
+    assert result.root_config.sub_roots == {}
+    assert test_helpers.encoding_names(result.root_config.value_encodings) == {}
 
 
 def test_resolves_encoding_from_another_universe(
@@ -260,12 +308,10 @@ def test_local_deps_and_encodings_diagnostics(
             diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     config.ENCODINGS_CONFIG,
-                    ("encodings", "value_encodings", 0, "value"),
+                    ("encodings", "value_encodings", 0, "encoding"),
                 ),
-                field_path=("encodings", "value_encodings", 0, "value"),
-                violation_message=(
-                    "value must be a short global name, starting with '/'"
-                ),
+                field_path=("encodings", "value_encodings", 0, "encoding"),
+                violation_message="value is required",
             ),
         ],
     )

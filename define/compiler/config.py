@@ -327,78 +327,91 @@ class ConfigLoader:
         result, encodings_diagnostics = self._load_config(ENCODINGS_CONFIG)
         if result is None:
             return None, encodings_diagnostics
-        associations_list = result.message.encodings.value_encodings
-        names: list[tuple[diagnostics.FieldPath, str]] = []
-        for index, association in enumerate(associations_list):
-            names.append(
-                (
-                    ("encodings", "value_encodings", index, "encoding"),
-                    association.encoding,
-                )
-            )
-        encodings, name_diagnostics = _config_global_names(result.file, names, fqun)
-        encodings_diagnostics.extend(name_diagnostics)
         value_encodings, association_diagnostics = _value_encodings(
-            associations_list, encodings, result.file
+            result.message.encodings.value_encodings, result.file, fqun
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
 
 
-def _config_global_names(
+def _config_global_name(
     file: defcl_validator.ValidatedFile,
-    names: Sequence[tuple[diagnostics.FieldPath, str]],
+    field_path: diagnostics.FieldPath,
+    name: str,
     fqun: str,
-) -> tuple[list[ast.ReferenceGlobalNameContent | None], list[diagnostics.Diagnostic]]:
-    """Parse and validate the global names in the config file, each in the field at its field path.
+) -> tuple[ast.ReferenceGlobalNameContent | None, list[diagnostics.Diagnostic]]:
+    """Parse and validate the global name in the config file's field at field_path.
 
-    Returns each name's content, located at its value in the file, or None for
-    a name that is not valid, with the names' diagnostics. fqun is the
-    project's universe, whose names must be in short form.
+    Returns the name's content, located at its value in the file, or None if
+    the name is not valid, with the name's diagnostics. fqun is the project's
+    universe, whose names must be in short form.
     """
-    contents: list[ast.ReferenceGlobalNameContent | None] = []
-    name_diagnostics: list[diagnostics.Diagnostic] = []
-    for field_path, name in names:
-        # Each field's value is a string, so it is located at its opening
-        # quote, and the name starts after it.
-        quote = file.location_of(field_path)
-        name_content = parser.parse_global_name(
-            name.encode(), quote.file_path, quote.line, quote.column + 1
-        )
-        if isinstance(name_content, syntax_errors.DefineSyntaxError):
-            name_diagnostics.append(name_content)
-            contents.append(None)
-            continue
-        content_diagnostics = name_validators.validate_global_name(
-            name_content, must_use_short_form=fqun
-        )
-        name_diagnostics.extend(content_diagnostics)
-        contents.append(None if content_diagnostics else name_content)
-    return contents, name_diagnostics
+    # Each field's value is a string, so it is located at its opening quote,
+    # and the name starts after it.
+    quote = file.location_of(field_path)
+    name_content = parser.parse_global_name(
+        name.encode(), quote.file_path, quote.line, quote.column + 1
+    )
+    if isinstance(name_content, syntax_errors.DefineSyntaxError):
+        return None, [name_content]
+    content_diagnostics = name_validators.validate_global_name(
+        name_content, must_use_short_form=fqun
+    )
+    return (None if content_diagnostics else name_content), content_diagnostics
+
+
+def _check_global_name_in_this_universe(
+    field_name: str, content: ast.ReferenceGlobalNameContent, fqun: str
+) -> diagnostics.Diagnostic | None:
+    """Return a diagnostic if the parsed name in the field field_name is not in the same universe as the project, fqun."""
+    # A short name is in the project's universe. `_config_global_name` rejects
+    # a name with the project's own FQUN, so any other name with an FQUN is
+    # in another universe.
+    if content.fqun is None:
+        return None
+    return diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+        location=content.location,
+        field_name=field_name,
+        name=content.source_name,
+        fqun=fqun,
+    )
 
 
 def _value_encodings(
     associations: Sequence[encodings_pb2.ValueEncoding],
-    encodings: Sequence[ast.ReferenceGlobalNameContent | None],
     file: defcl_validator.ValidatedFile,
+    fqun: str,
 ) -> tuple[
     dict[str, list[ast.ReferenceGlobalNameContent]],
     list[diagnostics.FormattableDiagnostic],
 ]:
-    """Return each value quality's encodings from the Value Encoding Associations, whose encodings' parsed names are encodings, with the diagnostics about their order.
+    """Return each value quality's encodings from the Value Encoding Associations, with the diagnostics about the associations.
 
-    An association repeated later, or whose encoding's name is None, is
-    ignored.
+    An association repeated later, or whose value quality or encoding is not a
+    valid name for it, is ignored. fqun is the project's universe.
     """
     value_encodings: dict[str, list[ast.ReferenceGlobalNameContent]] = {}
     association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
     # The index of the first association of each value quality and encoding.
     first_indexes: dict[tuple[str, str], int] = {}
     previous_value = ""
-    for index, (association, encoding) in enumerate(
-        zip(associations, encodings, strict=True)
-    ):
+    for index, association in enumerate(associations):
         field_path = ("encodings", "value_encodings", index)
+        value, value_diagnostics = _config_global_name(
+            file, (*field_path, "value"), association.value, fqun
+        )
+        association_diagnostics.extend(value_diagnostics)
+        if value is not None:
+            universe_diagnostic = _check_global_name_in_this_universe(
+                "value", value, fqun
+            )
+            if universe_diagnostic is not None:
+                association_diagnostics.append(universe_diagnostic)
+                value = None
+        encoding, encoding_diagnostics = _config_global_name(
+            file, (*field_path, "encoding"), association.encoding, fqun
+        )
+        association_diagnostics.extend(encoding_diagnostics)
         if association.value < previous_value:
             association_diagnostics.append(
                 diagnostics.UnsortedValueEncodingDiagnostic(
@@ -423,6 +436,6 @@ def _value_encodings(
             )
             continue
         first_indexes[pair] = index
-        if encoding is not None:
-            value_encodings.setdefault(association.value, []).append(encoding)
+        if value is not None and encoding is not None:
+            value_encodings.setdefault(value.path.name, []).append(encoding)
     return value_encodings, association_diagnostics

@@ -1372,6 +1372,26 @@ class EncodingsConfigNotFoundDiagnostic(Diagnostic):
         )
 
 
+class AssociationNameInAnotherUniverseDiagnostic(Diagnostic):
+    """Diagnostic for a name in an association config file whose field requires a definition in the same universe as the project, when the name is in another universe.
+
+    Its location is the name.
+    """
+
+    # The association's field that holds the name.
+    field_name: str
+    name: str
+    # The project's universe.
+    fqun: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            f"'{self.field_name}' must be in this project's universe,"
+            + f" '{self.fqun}', but '{self.name}' is not."
+        )
+
+
 class UnsortedValueEncodingDiagnostic(Diagnostic):
     """Diagnostic for an encoding association whose value quality sorts before the association before it.
 
