@@ -6,7 +6,8 @@ import typing
 
 import msgspec
 
-from define.compiler import config, constants
+from define.compiler import constants
+from define.compiler.config import config_loader
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.structural import (
     file_validation_context,
@@ -16,6 +17,7 @@ from define.compiler.validator.structural.resolver import path_tracker
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
+    from define.compiler.config import local_deps_config
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -185,7 +187,7 @@ class ReferenceResolver:
         edge: reference_graph.ReferenceEdge,
         target_root: define_path.DefinePath,
         referencing_root: define_path.DefinePath,
-    ) -> config.ProjectRootConfig | None:
+    ) -> config_loader.Config | None:
         """Return the config of the project root that an edge from referencing_root leads into, loading it if needed.
 
         Returns None, after recording the config's diagnostics, if the config
@@ -318,8 +320,8 @@ class ReferenceResolver:
     def _load_root_config(
         self,
         root_prefix: define_path.DefinePath,
-        declaring_entry: config.LocalDependencyEntry | None = None,
-    ) -> config.ProjectRootConfig | None:
+        declaring_entry: local_deps_config.LocalDependencyEntry | None = None,
+    ) -> config_loader.Config | None:
         """Load project config for a root and register it.
 
         Records the config's diagnostics. They are in the config, not at a
@@ -327,14 +329,14 @@ class ReferenceResolver:
         into the root. If the config cannot be used, marks the root failed and
         returns None.
         """
-        result = config.ConfigLoader(
+        result = config_loader.ConfigLoader(
             root_prefix, self._source_map
         ).load_project_root_config(declaring_entry)
         self._program_diagnostics.extend(result.diagnostics)
-        if result.root_config is None:
+        if result.config is None:
             self._path_tracker.mark_root_failed(root_prefix)
             return None
-        root_config = result.root_config
+        root_config = result.config
         existing = self._path_tracker.project_root_for_fqun(root_config.fqun)
         if existing is not None and existing[0] != root_prefix:
             _, existing_config = existing
@@ -352,7 +354,9 @@ class ReferenceResolver:
         return root_config
 
     def _declare_sub_roots(
-        self, root_prefix: define_path.DefinePath, root_config: config.ProjectRootConfig
+        self,
+        root_prefix: define_path.DefinePath,
+        root_config: config_loader.Config,
     ):
         """Record the sub-roots that a loaded project's local dependencies declare."""
         for entry in root_config.sub_roots.values():

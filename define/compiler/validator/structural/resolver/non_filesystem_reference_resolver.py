@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import config, constants
+from define.compiler import constants
+from define.compiler.config import config_loader
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import reference_resolver
 
@@ -85,7 +86,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
         Reports why a reference cannot resolve the first time that happens.
         """
-        if not config.universe_needs_configuration(
+        if not config_loader.universe_needs_configuration(
             edge.global_name_reference.effective_fqun.canonical
         ):
             return True
@@ -111,7 +112,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
     def _project_root_config(
         self, edge: reference_graph.ReferenceEdge
-    ) -> config.ProjectRootConfig | None:
+    ) -> config_loader.Config | None:
         """Return the project config, loading it for the first reference that needs it.
 
         If there is no project config, reports that at that reference. If it
@@ -134,11 +135,11 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             # is in, which the supplied source defines, so a reference to any
             # other universe writes its FQUN.
             location = typing.cast("ast.Fqun", reference.name_content.fqun).location
-        config_loader = config.ConfigLoader(constants.PROJECT_ROOT, self._source_map)
-        if config_loader.is_project_root():
+        loader = config_loader.ConfigLoader(constants.PROJECT_ROOT, self._source_map)
+        if loader.is_project_root():
             return self._load_root_config(constants.PROJECT_ROOT)
         self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-        config_path = str(config_loader.config_path())
+        config_path = str(loader.config_path())
         if names_source_universe:
             self._source_file.file_diagnostics.append(
                 diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(

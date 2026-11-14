@@ -44,7 +44,7 @@ py_library(
     name = "parser",
     srcs = ["parser.pyi"],
     visibility = [
-        "//define/compiler:__pkg__",
+        "//define/compiler/config:__pkg__",
         "//define/compiler/parsing:__subpackages__",
         "//define/compiler/validator/structural:__pkg__",
         "//tools/generators:__pkg__",

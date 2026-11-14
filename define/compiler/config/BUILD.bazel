@@ -1,0 +1,104 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "config",
+    srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "config_file",
+    srcs = ["config_file.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//defcl/python:loader",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//msgspec",
+        "@pypi//protobuf",
+        "@pypi//protovalidate",
+    ],
+)
+
+py_library(
+    name = "config_loader",
+    srcs = ["config_loader.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":encodings_config",
+        ":local_deps_config",
+        ":project_config",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "encodings_config",
+    srcs = ["encodings_config.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":config_file",
+        ":project_config",
+        "//crates/source_rendering/python:rendering",
+        "//defcl/python:validator",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
+        "//define/compiler/parsing:parser",
+        "//define/compiler/validator/structural:name_validators",
+        "//define/config/encodings:encodings_proto_py",
+    ],
+)
+
+py_library(
+    name = "local_deps_config",
+    srcs = ["local_deps_config.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":config_file",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/config/deps:local_proto_py",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "project_config",
+    srcs = ["project_config.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":config_file",
+        "//crates/source_rendering/python:rendering",
+        "//defcl/schema/core:boolean_proto_py",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/config/project:config_proto_py",
+        "@pypi//msgspec",
+    ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":config",
+        ":config_file",
+        ":config_loader",
+        ":encodings_config",
+        ":local_deps_config",
+        ":project_config",
+    ],
+)
+
+check_build_file()

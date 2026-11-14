@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import config
+from define.compiler.config import local_deps_config, project_config
 from define.compiler.config_tests import test_helpers as config_test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -45,13 +45,13 @@ def test_sub_root_redeclares_parent_fqun(
     assert result.all_diagnostics == [
         diagnostics.DuplicateFqunDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.PROJECT_CONFIG,
+                project_config.CONFIG_FILE,
                 ("project", "universe_name"),
                 root=define_path.DefinePath("lib/nested"),
             ),
             fqun="mv:define-lang.org:parent",
             existing_location=config_test_helpers.config_field_location(
-                config.PROJECT_CONFIG, ("project", "universe_name")
+                project_config.CONFIG_FILE, ("project", "universe_name")
             ),
         ),
     ]
@@ -121,7 +121,7 @@ def test_cross_fqun_sub_root_missing_config(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",
@@ -140,7 +140,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",
@@ -158,7 +158,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert result.all_diagnostics == [
         diagnostics.SubRootFqunMismatchDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.PROJECT_CONFIG,
+                project_config.CONFIG_FILE,
                 ("project", "universe_name"),
                 root=define_path.DefinePath("lib"),
             ),
@@ -180,11 +180,11 @@ def test_second_universe_declared_at_same_sub_root_path(
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
             sub_root_path="lib",
             first_location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
         ),
     ]
@@ -203,11 +203,11 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
             sub_root_path="lib",
             first_location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
         ),
         diagnostics.CircularGlobalReferenceDiagnostic(
@@ -257,13 +257,13 @@ def test_sub_root_path_declared_by_outer_project_wins(
     assert result.all_diagnostics == [
         diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG,
+                local_deps_config.CONFIG_FILE,
                 ("deps", "local", 0, "path"),
                 root=define_path.DefinePath("p"),
             ),
             sub_root_path="p/lib",
             first_location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
         ),
     ]
@@ -298,7 +298,7 @@ def test_sub_root_is_current_universe(
     assert result.all_diagnostics == [
         diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
             ),
             universe="mv:define-lang.org:test_parent",
         ),
@@ -504,7 +504,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 1, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
             sub_root_path="lib_b",
             sub_root_config_path="lib_b/.define/project/config.defcl",
@@ -544,7 +544,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",
@@ -563,7 +563,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",

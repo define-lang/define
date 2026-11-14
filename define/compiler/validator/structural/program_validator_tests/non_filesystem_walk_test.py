@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import config
+from define.compiler.config import local_deps_config
 from define.compiler.config_tests import test_helpers as config_test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -99,7 +99,7 @@ def test_external_universe_invalid_local_deps(
     assert result.all_diagnostics == [
         diagnostics.ConfigViolationDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
             ),
             field_path=("deps", "local", 0, "universe_name"),
             violation_message="value is required",
@@ -129,7 +129,7 @@ def test_source_universe_definition_invalid_local_deps(
     assert result.all_diagnostics == [
         diagnostics.ConfigViolationDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "universe_name")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
             ),
             field_path=("deps", "local", 0, "universe_name"),
             violation_message="value is required",
@@ -145,7 +145,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="vendor/other",
             sub_root_config_path="vendor/other/.define/project/config.defcl",
@@ -275,7 +275,7 @@ def test_unknown_universe_reported_with_sub_root_config_error(
     assert result.all_diagnostics == [
         diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
-                config.LOCAL_DEPS_CONFIG, ("deps", "local", 0, "path")
+                local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",

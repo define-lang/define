@@ -18,7 +18,7 @@ proto_library(
 
 py_proto_library(
     name = "local_proto_py",
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = ["//define/compiler/config:__pkg__"],
     deps = [":local_proto"],
 )
 

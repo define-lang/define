@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import (
     ast,
-    config,
     constants,
     encoding_operation_associations,
     name_types,
 )
+from define.compiler.config import config_loader
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
@@ -1152,7 +1152,7 @@ class DefinitionStructuralValidator:
         # Process a cross-FQUN reference in a filesystem context.
         if (
             global_name.fqun is not None
-            and config.universe_needs_configuration(global_name.fqun.canonical)
+            and config_loader.universe_needs_configuration(global_name.fqun.canonical)
             and self._context.is_filesystem_context
         ):
             root_config = self._context.root_config

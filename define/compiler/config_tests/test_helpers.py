@@ -7,7 +7,12 @@ from pathlib import PurePosixPath
 
 from crates.source_rendering.python import rendering
 from defcl.python import loader as defcl_loader
-from define.compiler import config, constants
+from define.compiler import constants
+from define.compiler.config import (
+    config_loader,
+    encodings_config,
+    local_deps_config,
+)
 from define.compiler.data_structures import define_path
 
 if typing.TYPE_CHECKING:
@@ -16,21 +21,24 @@ if typing.TYPE_CHECKING:
     from google.protobuf import message
 
     from define.compiler import ast
+    from define.compiler.config import (
+        config_file,
+    )
     from define.compiler.errors import diagnostics
 
 
-def load_project_root_config(
+def load_config(
     root: define_path.DefinePath = constants.PROJECT_ROOT,
-    declaring_entry: config.LocalDependencyEntry | None = None,
-) -> config.RootConfigResult:
+    declaring_entry: local_deps_config.LocalDependencyEntry | None = None,
+) -> config_loader.ConfigLoadResult:
     """Load the configuration of the project at root."""
-    return config.ConfigLoader(root, rendering.SourceMap()).load_project_root_config(
-        declaring_entry
-    )
+    return config_loader.ConfigLoader(
+        root, rendering.SourceMap()
+    ).load_project_root_config(declaring_entry)
 
 
 def config_field_location[M: message.Message](
-    config_file: config.ConfigFile[M],
+    config_file: config_file.ConfigFile[M],
     field_path: diagnostics.FieldPath,
     root: define_path.DefinePath = constants.PROJECT_ROOT,
 ) -> rendering.SourceLocation:
@@ -43,7 +51,7 @@ def config_field_location[M: message.Message](
     return result.loaded.file.location_of(field_path)
 
 
-def declaring_entry(universe: str, path: str) -> config.LocalDependencyEntry:
+def declaring_entry(universe: str, path: str) -> local_deps_config.LocalDependencyEntry:
     """Return a local dependency entry that declares a sub-root, as the declaring project's local deps config would."""
     # The tests have no declaring project, so the entry's locations are only
     # somewhere for diagnostics about it to point.
@@ -52,9 +60,9 @@ def declaring_entry(universe: str, path: str) -> config.LocalDependencyEntry:
         column=1,
         end_line=1,
         end_column=1,
-        file_path=str(config.LOCAL_DEPS_PATH),
+        file_path=str(local_deps_config.CONFIG_FILE.path),
     )
-    return config.LocalDependencyEntry(
+    return local_deps_config.LocalDependencyEntry(
         universe=universe,
         path=define_path.DefinePathFromPosix(PurePosixPath(path)),
         universe_location=location,
@@ -83,6 +91,6 @@ def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
             column=18,
             end_line=line,
             end_column=17 + len(name),
-            file_path=str(config.ENCODINGS_PATH),
+            file_path=str(encodings_config.CONFIG_FILE.path),
         ),
     )

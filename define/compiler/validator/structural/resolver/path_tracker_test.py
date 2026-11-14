@@ -6,7 +6,8 @@ from pathlib import PurePosixPath
 import pytest
 
 from crates.source_rendering.python import rendering
-from define.compiler import config, constants
+from define.compiler import constants
+from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural.resolver import path_tracker
 
@@ -16,8 +17,8 @@ _LOCATION = rendering.SourceLocation(
 )
 
 
-def _entry(universe: str, path: str) -> config.LocalDependencyEntry:
-    return config.LocalDependencyEntry(
+def _entry(universe: str, path: str) -> local_deps_config.LocalDependencyEntry:
+    return local_deps_config.LocalDependencyEntry(
         universe=universe,
         path=define_path.DefinePathFromPosix(PurePosixPath(path)),
         universe_location=_LOCATION,
@@ -77,10 +78,11 @@ class TestPathTracker:
 class TestSubRootTracking:
     def test_project_root_for_fqun_returns_root_and_config(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root_config = config.ProjectRootConfig(
+        root_config = config_loader.Config(
             fqun="my.universe",
             fqun_location=_LOCATION,
             sub_roots={"dep": _entry("dep", "ext/dep")},
+            value_encodings={},
         )
         tracker.register_project_root(define_path.EMPTY, root_config)
         assert tracker.project_root_for_fqun("my.universe") == (
@@ -92,8 +94,11 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="my.universe",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert tracker.project_root_for_fqun("other.universe") is None
@@ -106,10 +111,11 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
+            config_loader.Config(
                 fqun="my.universe",
                 fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
+                value_encodings={},
             ),
         )
         root_config = tracker.config_for_root(define_path.EMPTY)
@@ -125,15 +131,21 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="my.universe",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         with pytest.raises(ValueError, match="already registered"):
             tracker.register_project_root(
                 define_path.EMPTY,
-                config.ProjectRootConfig(
-                    fqun="other.universe", fqun_location=_LOCATION, sub_roots={}
+                config_loader.Config(
+                    fqun="other.universe",
+                    fqun_location=_LOCATION,
+                    sub_roots={},
+                    value_encodings={},
                 ),
             )
 
@@ -141,10 +153,11 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
+            config_loader.Config(
                 fqun="my.universe",
                 fqun_location=_LOCATION,
                 sub_roots={"dep": _entry("dep", "ext/dep")},
+                value_encodings={},
             ),
         )
         assert tracker.sub_root_entry("dep", define_path.EMPTY) == _entry(
@@ -160,8 +173,11 @@ class TestSubRootTracking:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="my.universe", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="my.universe",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         with pytest.raises(KeyError):
@@ -173,8 +189,11 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(
-                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="lib.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert not tracker.is_under_failed_root(define_path.DefinePath("lib"))
@@ -190,8 +209,11 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="root.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert (
@@ -203,14 +225,20 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="root.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(
-                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="lib.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert tracker.find_enclosing_root(
@@ -221,20 +249,29 @@ class TestConflictDetection:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="root.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="root.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib"),
-            config.ProjectRootConfig(
-                fqun="lib.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="lib.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         tracker.register_project_root(
             define_path.DefinePath("lib/inner"),
-            config.ProjectRootConfig(
-                fqun="inner.uni", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="inner.uni",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert tracker.find_enclosing_root(
@@ -285,10 +322,11 @@ class TestUniverseRoot:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
+            config_loader.Config(
                 fqun="a.com:main",
                 fqun_location=_LOCATION,
                 sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
+                value_encodings={},
             ),
         )
         assert tracker.universe_root(
@@ -299,8 +337,11 @@ class TestUniverseRoot:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="a.com:main", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="a.com:main",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert tracker.universe_root("b.com:lib", define_path.EMPTY) is None
@@ -309,8 +350,11 @@ class TestUniverseRoot:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
             define_path.EMPTY,
-            config.ProjectRootConfig(
-                fqun="a.com:main", fqun_location=_LOCATION, sub_roots={}
+            config_loader.Config(
+                fqun="a.com:main",
+                fqun_location=_LOCATION,
+                sub_roots={},
+                value_encodings={},
             ),
         )
         assert (

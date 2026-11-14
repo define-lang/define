@@ -59,7 +59,7 @@ py_library(
     name = "loader",
     srcs = ["loader.py"],
     visibility = [
-        "//define/compiler:__pkg__",
+        "//define/compiler/config:__pkg__",
         "//define/compiler/config_tests:__pkg__",
     ],
     deps = [
@@ -113,7 +113,7 @@ py_library(
     name = "validator",
     srcs = ["validator.pyi"],
     visibility = [
-        "//define/compiler:__pkg__",
+        "//define/compiler/config:__pkg__",
         "//define/compiler/errors:__pkg__",
     ],
     deps = [

@@ -9,7 +9,7 @@ import msgspec
 from define.compiler import constants
 
 if TYPE_CHECKING:
-    from define.compiler import config
+    from define.compiler.config import config_loader, local_deps_config
     from define.compiler.data_structures import define_path
 
 
@@ -17,11 +17,11 @@ if TYPE_CHECKING:
 class _ProjectRootNode(msgspec.Struct, eq=False):
     children: dict[str, _ProjectRootNode] | None = None
     failed: bool = False
-    project_root: tuple[define_path.DefinePath, config.ProjectRootConfig] | None = None
+    project_root: tuple[define_path.DefinePath, config_loader.Config] | None = None
     # The sub-root that a loaded project's local dependency declares at this
     # path, which may not be loaded yet.
     declared_sub_root: (
-        tuple[define_path.DefinePath, config.LocalDependencyEntry] | None
+        tuple[define_path.DefinePath, local_deps_config.LocalDependencyEntry] | None
     ) = None
 
     def get_child(self, part: str) -> _ProjectRootNode | None:
@@ -58,7 +58,7 @@ class PathTracker[T]:
         self._not_found: set[define_path.DefinePath] = set()
         self._project_roots: _ProjectRootNode = _ProjectRootNode()
         self._fqun_to_project_root: dict[
-            str, tuple[define_path.DefinePath, config.ProjectRootConfig]
+            str, tuple[define_path.DefinePath, config_loader.Config]
         ] = {}
 
     def _get_project_root_node(
@@ -81,7 +81,7 @@ class PathTracker[T]:
 
     def _project_root_for_path(
         self, path: define_path.DefinePath
-    ) -> tuple[define_path.DefinePath, config.ProjectRootConfig]:
+    ) -> tuple[define_path.DefinePath, config_loader.Config]:
         node = self._project_roots
         project_root = node.project_root
         parts = path.parts
@@ -97,7 +97,8 @@ class PathTracker[T]:
             if node.project_root is not None:
                 project_root = node.project_root
         return cast(
-            "tuple[define_path.DefinePath, config.ProjectRootConfig]", project_root
+            "tuple[define_path.DefinePath, config_loader.Config]",
+            project_root,
         )
 
     def is_tracked(self, path: define_path.DefinePath) -> bool:
@@ -170,7 +171,7 @@ class PathTracker[T]:
     def register_project_root(
         self,
         root: define_path.DefinePath,
-        root_config: config.ProjectRootConfig,
+        root_config: config_loader.Config,
     ):
         """Register a project root's resolved configuration at a certain path.
 
@@ -193,8 +194,8 @@ class PathTracker[T]:
     def declare_sub_root(
         self,
         sub_root_path: define_path.DefinePath,
-        entry: config.LocalDependencyEntry,
-    ) -> config.LocalDependencyEntry | None:
+        entry: local_deps_config.LocalDependencyEntry,
+    ) -> local_deps_config.LocalDependencyEntry | None:
         """Record that a local dependency declares a sub-root at a path, unless one already does.
 
         The first declaration of a path wins. Returns the entry that already
@@ -208,7 +209,7 @@ class PathTracker[T]:
 
     def declared_sub_root_containing(
         self, root: define_path.DefinePath, path: define_path.DefinePath
-    ) -> tuple[define_path.DefinePath, config.LocalDependencyEntry] | None:
+    ) -> tuple[define_path.DefinePath, local_deps_config.LocalDependencyEntry] | None:
         """Return the sub-root declared between a loaded project root and a path in it, if there is one.
 
         A path in a more deeply declared sub-root is also in this one.
@@ -228,13 +229,13 @@ class PathTracker[T]:
 
     def project_root_for_fqun(
         self, fqun: str
-    ) -> tuple[define_path.DefinePath, config.ProjectRootConfig] | None:
+    ) -> tuple[define_path.DefinePath, config_loader.Config] | None:
         """Return the root path and resolved config registered for a given FQUN, or None."""
         return self._fqun_to_project_root.get(fqun)
 
     def config_for_root(
         self, root: define_path.DefinePath
-    ) -> config.ProjectRootConfig | None:
+    ) -> config_loader.Config | None:
         """Return the resolved config registered for an exact project root path, or None."""
         node = self._get_project_root_node(root)
         if node is None or node.project_root is None:
@@ -270,7 +271,7 @@ class PathTracker[T]:
 
     def sub_root_entry(
         self, fqun: str, parent_root: define_path.DefinePath
-    ) -> config.LocalDependencyEntry:
+    ) -> local_deps_config.LocalDependencyEntry:
         """Return the local dependency entry that configures fqun as a sub-root of parent_root.
 
         Raises:

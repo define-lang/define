@@ -56,31 +56,6 @@ py_library(
 )
 
 py_library(
-    name = "config",
-    srcs = ["config.py"],
-    visibility = [":__subpackages__"],
-    deps = [
-        ":ast",
-        ":constants",
-        "//crates/source_rendering/python:rendering",
-        "//defcl/python:loader",
-        "//defcl/python:validator",
-        "//defcl/schema/core:boolean_proto_py",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/errors:syntax_errors",
-        "//define/compiler/parsing:parser",
-        "//define/compiler/validator/structural:name_validators",
-        "//define/config/deps:local_proto_py",
-        "//define/config/encodings:encodings_proto_py",
-        "//define/config/project:config_proto_py",
-        "@pypi//msgspec",
-        "@pypi//protobuf",
-        "@pypi//protovalidate",
-    ],
-)
-
-py_library(
     name = "conftest",
     testonly = True,
     srcs = ["conftest.py"],
@@ -268,7 +243,6 @@ pyright_test(
         ":chained_name",
         ":chained_name_test",
         ":compiler",
-        ":config",
         ":conftest",
         ":constants",
         ":driver",

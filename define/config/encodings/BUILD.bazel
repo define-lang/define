@@ -18,7 +18,7 @@ proto_library(
 
 py_proto_library(
     name = "encodings_proto_py",
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = ["//define/compiler/config:__pkg__"],
     deps = [":encodings_proto"],
 )
 

@@ -10,7 +10,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import config
+from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.structural import (
@@ -35,15 +35,16 @@ def _make_context(
     tmp_path: Path,
     file_name: str = "test.dfn",
     fqun: str = "my.domain.com:my_lib",
-    sub_root_mappings: dict[str, config.LocalDependencyEntry] | None = None,
+    sub_root_mappings: dict[str, local_deps_config.LocalDependencyEntry] | None = None,
 ) -> file_validation_context.FileValidationContext:
     return file_validation_context.FileValidationContext(
         file_path=define_path.DefinePath(file_name),
         root_prefix=define_path.DefinePath(tmp_path.as_posix()),
-        root_config=config.ProjectRootConfig(
+        root_config=config_loader.Config(
             fqun=fqun,
             fqun_location=_LOCATION,
             sub_roots=types.MappingProxyType(sub_root_mappings or {}),
+            value_encodings={},
         ),
     )
 
@@ -274,7 +275,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         ctx = _make_context(
             tmp_path,
             sub_root_mappings={
-                "other.domain.com:other_lib": config.LocalDependencyEntry(
+                "other.domain.com:other_lib": local_deps_config.LocalDependencyEntry(
                     universe="other.domain.com:other_lib",
                     path=define_path.DefinePathFromPosix(PurePosixPath("deps/other")),
                     universe_location=_LOCATION,

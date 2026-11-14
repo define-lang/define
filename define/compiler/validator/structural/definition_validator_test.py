@@ -3,7 +3,7 @@ from __future__ import annotations
 import types
 
 from crates.source_rendering.python import rendering
-from define.compiler import config
+from define.compiler.config import config_loader
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
 from define.compiler.validator import validation_result
@@ -27,10 +27,11 @@ class TestDefinitionStructuralValidator:
             context=file_validation_context.FileValidationContext(
                 file_path=define_path.DefinePath("test.dfn"),
                 root_prefix=define_path.DefinePath("/project"),
-                root_config=config.ProjectRootConfig(
+                root_config=config_loader.Config(
                     fqun="my.domain.com:my_lib",
                     fqun_location=_LOCATION,
                     sub_roots=types.MappingProxyType({}),
+                    value_encodings={},
                 ),
             ),
         )
