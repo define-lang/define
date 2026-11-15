@@ -29,6 +29,10 @@ def _allow_by_default_lints(rustc: Path) -> frozenset[str]:
 def _unknown_lints(rustc: Path, lints: Collection[str]) -> frozenset[str]:
     # Stable rustc lists the lints that only nightly rustc enables, but reports
     # them as unknown once it compiles a crate with them.
+    # rustc looks for the standard library beside the file that its path
+    # resolves to, which sandboxes that link each file separately break. The
+    # toolchain's runfiles hold rustc in bin/ beside the standard library.
+    sysroot = rustc.parent.parent
     lint_flags: list[str] = []
     for lint in sorted(lints):
         lint_flags.extend(["-A", lint])
@@ -40,6 +44,7 @@ def _unknown_lints(rustc: Path, lints: Collection[str]) -> frozenset[str]:
                 "--emit=metadata",
                 "--error-format=json",
                 f"--out-dir={output_directory}",
+                f"--sysroot={sysroot}",
                 *lint_flags,
                 "-",
             ],
