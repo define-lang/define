@@ -656,7 +656,13 @@ class ParticleStateStore:
         """Apply the Guarantees of ``action``, which this action triggered."""
         triggered_at = action.get_last_action().location
         action_parent_position = _action_parent_position_key(action)
-        guaranteed_keys: list[chained_name.PositionReferenceTuple] = []
+        # Each Guarantee, with the position it is for from this action's
+        # perspective.
+        guarantees: list[
+            tuple[
+                chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            ]
+        ] = []
         # Each particle from the caller that the callee moved leaves its
         # position before anything is put anywhere: the Guarantees name it by
         # where it was before the callee ran, and its destination can be
@@ -674,8 +680,8 @@ class ParticleStateStore:
             destination = chained_name.position(
                 (*action_parent_position, *guaranteed.position)
             )
-            guaranteed_keys.append(destination)
             guarantee = guaranteed.guarantee
+            guarantees.append((destination, guarantee))
             if not isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 replaced.add(destination)
                 continue
@@ -700,8 +706,8 @@ class ParticleStateStore:
                 moving[destination] = None
             else:
                 moving[destination] = (origin_node, self._state.pop_subtree(origin))
-        for key, guaranteed in zip(guaranteed_keys, contract.guarantees, strict=True):
-            self._apply_guarantee(key, guaranteed.guarantee, triggered_at, moving)
+        for destination, guarantee in guarantees:
+            self._apply_guarantee(destination, guarantee, triggered_at, moving)
 
     def _apply_guarantee(
         self,

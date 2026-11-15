@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import random
 
+import msgspec
+
 from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -13,6 +15,11 @@ from define.compiler.validator.reference_graph.particles import particle_info
 
 def _chain(*names: str) -> chained_name.ChainedNameTuple:
     return chained_name.ChainedNameTuple(names)
+
+
+class _Snapshot(msgspec.Struct, frozen=True):
+    store: child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
+    expected: child_state.ChildOccupancyMap
 
 
 def test_independent_callers():
@@ -49,10 +56,7 @@ def test_repeated_compaction_preserves_earlier_states():
         position_occupancy.PositionOccupancyState.EMPTY,
         position_occupancy.PositionOccupancyState.ERROR,
     )
-    snapshots: list[
-        child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
-    ] = []
-    oracles: list[child_state.ChildOccupancyMap] = []
+    snapshots: list[_Snapshot] = []
     snapshot: child_state.ChildStateStore[position_occupancy.PositionOccupancyState] = (
         child_state.FlatChildStateStore({})
     )
@@ -64,18 +68,17 @@ def test_repeated_compaction_preserves_earlier_states():
             caller[_chain(str(index))] = occupancies[index % len(occupancies)]
         expected = caller | expected
         snapshot = snapshot.with_caller(caller)
-        snapshots.append(snapshot)
-        oracles.append(expected)
+        snapshots.append(_Snapshot(store=snapshot, expected=expected))
         first = count
-    assert isinstance(snapshots[0], child_state.FlatChildStateStore)
-    assert isinstance(snapshots[1], child_state.ExtendedChildStateStore)
-    assert isinstance(snapshots[2], child_state.FlatChildStateStore)
-    assert isinstance(snapshots[3], child_state.ExtendedChildStateStore)
-    assert isinstance(snapshots[4], child_state.FlatChildStateStore)
-    for actual, oracle in zip(snapshots, oracles, strict=True):
+    assert isinstance(snapshots[0].store, child_state.FlatChildStateStore)
+    assert isinstance(snapshots[1].store, child_state.ExtendedChildStateStore)
+    assert isinstance(snapshots[2].store, child_state.FlatChildStateStore)
+    assert isinstance(snapshots[3].store, child_state.ExtendedChildStateStore)
+    assert isinstance(snapshots[4].store, child_state.FlatChildStateStore)
+    for checked in snapshots:
         for index in range(65):
             position = _chain(str(index))
-            assert actual.get(position) is oracle.get(position)
+            assert checked.store.get(position) is checked.expected.get(position)
 
 
 def test_large_branching_callers_preserve_retained_knowledge():
@@ -83,10 +86,9 @@ def test_large_branching_callers_preserve_retained_knowledge():
     initial: child_state.ChildOccupancyMap = {}
     for index in range(1_024):
         initial[_chain(str(index))] = position_occupancy.PositionOccupancyState.EMPTY
-    histories: list[
-        child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
-    ] = [child_state.FlatChildStateStore(initial)]
-    oracles = [initial]
+    histories = [
+        _Snapshot(store=child_state.FlatChildStateStore(initial), expected=initial)
+    ]
     for index in range(80):
         callee = randomizer.randrange(len(histories))
         knowledge: child_state.ChildOccupancyMap = {}
@@ -94,12 +96,17 @@ def test_large_branching_callers_preserve_retained_knowledge():
             knowledge[_chain(str(key))] = (
                 position_occupancy.PositionOccupancyState.ERROR
             )
-        oracles.append(knowledge | oracles[callee])
-        histories.append(histories[callee].with_caller(knowledge))
+        callee_history = histories[callee]
+        histories.append(
+            _Snapshot(
+                store=callee_history.store.with_caller(knowledge),
+                expected=knowledge | callee_history.expected,
+            )
+        )
     positions = [_chain(str(index)) for index in range(1_024 + 80 * 300 + 1)]
-    for snapshot, expected in zip(histories, oracles, strict=True):
+    for history in histories:
         for position in positions:
-            assert snapshot.get(position) is expected.get(position)
+            assert history.store.get(position) is history.expected.get(position)
 
 
 def test_resolve_value_without_changing_occupancy():

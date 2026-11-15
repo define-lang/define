@@ -90,8 +90,14 @@ class DestructionContractValidator:
     ):
         """Add what this action knows to one destruction of the callee, whose Destruction Contracts share a Child State."""
         action_chain = execution.action_chain
-        contracted_roots: list[destruction_walk.DestructionRoot] = []
-        connections: list[destruction_contract.DestructionConnection] = []
+        # Each contracted particle that this action has, with the connection
+        # that receives what this action adds to its destruction.
+        occupied: list[
+            tuple[
+                destruction_walk.DestructionRoot,
+                destruction_contract.DestructionConnection,
+            ]
+        ] = []
         for callee_contract in callee_contracts.particles:
             connection = destruction_contract.DestructionConnection(
                 callee_destruction_contract=callee_contract,
@@ -103,16 +109,14 @@ class DestructionContractValidator:
             particle = self._tracker.get_occupancy_info(position).occupant
             if particle is None:
                 continue
-            contracted_roots.append(
-                destruction_walk.DestructionRoot(
-                    position=position,
-                    particle=particle,
-                    destruction_fact=callee_contract.destruction_fact,
-                    position_in_child_state=callee_contract.position_in_child_state,
-                    validated_destructors=callee_contract.validated_destructors,
-                )
+            root = destruction_walk.DestructionRoot(
+                position=position,
+                particle=particle,
+                destruction_fact=callee_contract.destruction_fact,
+                position_in_child_state=callee_contract.position_in_child_state,
+                validated_destructors=callee_contract.validated_destructors,
             )
-            connections.append(connection)
+            occupied.append((root, connection))
         # Every group from the callee shares its caller and callee, and each
         # extends its own earlier history without copying it.
         trigger = action_contract.PropagationHistory(
@@ -121,11 +125,12 @@ class DestructionContractValidator:
             kind=execution.trigger_kind,
             previous=callee_contracts.propagation,
         )
+        contracted_roots = [root for root, _ in occupied]
         state = _callee_state_at_destruction(
             self._tracker, callee_contracts, contracted_roots, trigger
         )
         destruction_contracts: list[destruction_contract.DestructionContract] = []
-        for root, connection in zip(contracted_roots, connections, strict=True):
+        for root, connection in occupied:
             walked = self._walker.walk(root, state)
             result.destructor_executions.extend(
                 _destructor_executions(root, walked, state)

@@ -24,6 +24,7 @@ py_test(
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph/particles:particle_info",
+        "@pypi//msgspec",
     ],
 )
 

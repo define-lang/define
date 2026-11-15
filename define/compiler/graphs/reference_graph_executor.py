@@ -15,6 +15,17 @@ if typing.TYPE_CHECKING:
 
 
 @typing.final
+class _NotProcessed:
+    """The result slot of a definition that was not processed.
+
+    A definition's result can itself be None, so None cannot mark this.
+    """
+
+
+_NOT_PROCESSED: typing.Final = _NotProcessed()
+
+
+@typing.final
 class _ReferenceOrderProcessor[DefinitionT: ast.GlobalDefinition, ResultT]:
     """Runs definitions after their referenced definitions complete."""
 
@@ -37,9 +48,9 @@ class _ReferenceOrderProcessor[DefinitionT: ast.GlobalDefinition, ResultT]:
         # into its own slot, so nothing waits on another definition. This only
         # lets process() return the results in the same order every run, so
         # that the compiler's output doesn't depend on thread timing.
-        self._results: list[ResultT | None] = [None] * len(order.definitions)
-        # Kept apart from results because None is a valid result.
-        self._processed = bytearray(len(order.definitions))
+        self._results: list[ResultT | _NotProcessed] = [_NOT_PROCESSED] * len(
+            order.definitions
+        )
 
     def process(self) -> list[ResultT]:
         """Return the results of processed definitions in definition order.
@@ -55,16 +66,15 @@ class _ReferenceOrderProcessor[DefinitionT: ast.GlobalDefinition, ResultT]:
         self._pool.run_until_idle()
 
         ordered_results: list[ResultT] = []
-        for result, was_processed in zip(self._results, self._processed, strict=True):
-            if was_processed:
-                ordered_results.append(typing.cast("ResultT", result))
+        for result in self._results:
+            if not isinstance(result, _NotProcessed):
+                ordered_results.append(result)
         return ordered_results
 
     def _handle_result(
         self, definition_index: int, result: ResultT, _pool: work_pool.WorkPool
     ):
         self._results[definition_index] = result
-        self._processed[definition_index] = True
         self._complete_definitions([definition_index])
 
     def _release_definition(
